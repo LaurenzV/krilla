@@ -5,6 +5,7 @@ mod path;
 mod resource;
 mod transform;
 mod util;
+mod allocate;
 
 pub use path::*;
 pub use tiny_skia_path::Transform;
