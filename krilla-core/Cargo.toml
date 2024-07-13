@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 tiny-skia-path = {workspace = true}
 strict-num = {workspace = true}
+pdf-writer = {workspace = true}

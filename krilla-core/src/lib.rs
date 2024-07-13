@@ -1,3 +1,4 @@
+mod canvas;
 mod color;
 mod paint;
 mod path;
