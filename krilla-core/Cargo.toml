@@ -1,0 +1,8 @@
+[package]
+name = "krilla-types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tiny-skia-path = {workspace = true}
+strict-num = {workspace = true}

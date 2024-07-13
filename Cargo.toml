@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "krilla-core",
+]
+
+[workspace.dependencies]
+tiny-skia-path = "0.11.4"
+strict-num = "0.2.0"
