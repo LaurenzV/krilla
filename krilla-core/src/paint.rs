@@ -1,8 +1,9 @@
 use crate::color::Color;
-use crate::Opacity;
-use strict_num::{NormalizedF64, PositiveF64};
-use tiny_skia_path::Transform;
+use crate::transform::FiniteTransform;
+use strict_num::{NormalizedF32, NormalizedF64, PositiveF32};
+use tiny_skia_path::FiniteF32;
 
+#[derive(Debug, Hash)]
 pub enum SpreadMethod {
     Pad,
     Reflect,
@@ -17,35 +18,39 @@ impl Default for SpreadMethod {
 
 pub type StopOffset = NormalizedF64;
 
+#[derive(Debug, Hash)]
 pub struct Stop {
     pub offset: StopOffset,
     pub color: Color,
-    pub opacity: Opacity,
+    pub opacity: NormalizedF32,
 }
 
+#[derive(Debug, Hash)]
 pub struct LinearGradient {
-    pub x1: f64,
-    pub y1: f64,
-    pub x2: f64,
-    pub y2: f64,
-    pub transform: Transform,
+    pub x1: FiniteF32,
+    pub y1: FiniteF32,
+    pub x2: FiniteF32,
+    pub y2: FiniteF32,
+    pub transform: FiniteTransform,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
 }
 
+#[derive(Debug, Hash)]
 pub struct RadialGradient {
-    pub cx: f64,
-    pub cy: f64,
-    pub r: PositiveF64,
-    pub fx: f64,
-    pub fy: f64,
-    pub transform: Transform,
+    pub cx: FiniteF32,
+    pub cy: FiniteF32,
+    pub r: PositiveF32,
+    pub fx: FiniteF32,
+    pub fy: FiniteF32,
+    pub transform: FiniteTransform,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
 }
 
+#[derive(Debug, Hash)]
 pub enum Paint {
     Color(Color),
     LinearGradient(LinearGradient),

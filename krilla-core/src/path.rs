@@ -1,6 +1,7 @@
 use crate::color::Color;
 use crate::paint::Paint;
-use strict_num::NormalizedF64;
+use strict_num::{NonZeroPositiveF32, NormalizedF32, NormalizedF64};
+use tiny_skia_path::FiniteF32;
 pub use tiny_skia_path::{Path, PathBuilder};
 
 pub enum LineCap {
@@ -33,24 +34,22 @@ pub struct StrokeDash {
 }
 
 pub struct Stroke {
-    pub width: f32,
-    pub miter_limit: f32,
+    pub width: NonZeroPositiveF32,
+    pub miter_limit: NonZeroPositiveF32,
     pub line_cap: LineCap,
     pub line_join: LineJoin,
-    pub opacity: Opacity,
+    pub opacity: NormalizedF32,
     pub dash: Option<StrokeDash>,
 }
-
-pub type Opacity = NormalizedF64;
 
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
-            width: 1.0,
-            miter_limit: 4.0,
+            width: NonZeroPositiveF32::new(1.0).unwrap(),
+            miter_limit: NonZeroPositiveF32::new(4.0).unwrap(),
             line_cap: LineCap::default(),
             line_join: LineJoin::default(),
-            opacity: Opacity::ONE,
+            opacity: NormalizedF32::ONE,
             dash: None,
         }
     }
@@ -69,7 +68,7 @@ impl Default for FillRule {
 
 pub struct Fill {
     pub paint: Paint,
-    pub opacity: Opacity,
+    pub opacity: NormalizedF32,
     pub rule: FillRule,
 }
 
@@ -77,7 +76,7 @@ impl Default for Fill {
     fn default() -> Self {
         Fill {
             paint: Paint::Color(Color::black()),
-            opacity: Opacity::ONE,
+            opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }
     }

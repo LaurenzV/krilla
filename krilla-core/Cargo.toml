@@ -7,3 +7,5 @@ edition = "2021"
 tiny-skia-path = {workspace = true}
 strict-num = {workspace = true}
 pdf-writer = {workspace = true}
+once_cell = {workspace = true}
+miniz_oxide = {workspace = true}

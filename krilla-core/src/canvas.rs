@@ -4,14 +4,14 @@ use pdf_writer::Content;
 use tiny_skia_path::{Path, PathSegment};
 
 pub struct Canvas {
-    content: pdf_writer::Content,
+    content: Content,
     q_nesting: u8,
 }
 
 impl Canvas {
     pub fn new() -> Self {
         Self {
-            content: pdf_writer::Content::new(),
+            content: Content::new(),
             q_nesting: 0,
         }
     }
@@ -40,16 +40,15 @@ impl Canvas {
     ) {
         self.save_state();
         self.transform(transform);
-        self.content.set_line_width(stroke.width().get());
-        self.content.set_miter_limit(stroke.miterlimit().get());
+        self.content.set_line_width(stroke.width.get());
+        self.content.set_miter_limit(stroke.miter_limit.get());
+        self.content.set_line_cap(stroke.line_cap.to_pdf_line_cap());
         self.content
-            .set_line_cap(stroke.linecap().to_pdf_line_cap());
-        self.content
-            .set_line_join(stroke.linejoin().to_pdf_line_join());
+            .set_line_join(stroke.line_join.to_pdf_line_join());
 
-        if let Some(dasharray) = &stroke.dasharray() {
+        if let Some(stroke_dash) = &stroke.dash {
             self.content
-                .set_dash_pattern(dasharray.iter().cloned(), stroke.dashoffset());
+                .set_dash_pattern(stroke_dash.array.iter().cloned(), stroke_dash.offset);
         } else {
             self.content.set_dash_pattern(vec![], 0.0);
         }
