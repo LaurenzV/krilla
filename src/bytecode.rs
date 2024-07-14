@@ -1,11 +1,12 @@
 use crate::canvas::Canvas;
-use crate::Stroke;
+use crate::{Fill, Stroke};
 use tiny_skia_path::Path;
 
 pub enum Instruction {
     SaveState,
     RestoreState,
     StrokePath(Box<(Path, tiny_skia_path::Transform, Stroke)>),
+    FillPath(Box<(Path, tiny_skia_path::Transform, Fill)>),
     DrawCanvas(Box<Canvas>),
 }
 

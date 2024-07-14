@@ -4,9 +4,9 @@ use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{LineCap, LineJoin, Stroke};
+use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
-use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
 
 pub struct Canvas {
     byte_code: ByteCode,
@@ -29,6 +29,11 @@ impl Canvas {
     ) {
         self.byte_code
             .push(Instruction::StrokePath(Box::new((path, transform, stroke))));
+    }
+
+    pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
+        self.byte_code
+            .push(Instruction::FillPath(Box::new((path, transform, fill))));
     }
 }
 
@@ -62,6 +67,33 @@ impl CanvasPdfSerializer {
     }
 
     pub fn restore_state(&mut self) {
+        self.content.restore_state();
+    }
+
+    pub fn fill_path(&mut self, path: &Path, transform: &tiny_skia_path::Transform, fill: &Fill) {
+        let path_bbox = path.bounds().transform(*transform).unwrap();
+        self.bbox.expand(&path_bbox);
+
+        self.content.save_state();
+        self.transform(transform);
+
+        match &fill.paint {
+            Paint::Color(c) => {
+                let color_space = self
+                    .resource_dictionary
+                    .register_color_space(c.get_pdf_color_space());
+                self.content.set_fill_color_space(color_space.to_pdf_name());
+                self.content.set_fill_color(c.to_pdf_components());
+            }
+            Paint::LinearGradient(_) => unimplemented!(),
+            Paint::RadialGradient(_) => unimplemented!(),
+        }
+
+        draw_path(path.segments(), &mut self.content);
+        match fill.rule {
+            FillRule::NonZero => self.content.fill_nonzero(),
+            FillRule::EvenOdd => self.content.fill_even_odd(),
+        };
         self.content.restore_state();
     }
 
@@ -142,7 +174,10 @@ impl ObjectSerialize for Canvas {
                         serializer.restore_state();
                     }
                     Instruction::StrokePath(stroke_data) => {
-                        serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
+                        serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2);
+                    }
+                    Instruction::FillPath(fill_data) => {
+                        serializer.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
                     }
                     Instruction::DrawCanvas(_) => todo!(),
                 }
@@ -202,6 +237,9 @@ impl PageSerialize for Canvas {
                     }
                     Instruction::StrokePath(stroke_data) => {
                         serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
+                    }
+                    Instruction::FillPath(fill_data) => {
+                        serializer.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
                     }
                     Instruction::DrawCanvas(_) => todo!(),
                 }
@@ -284,8 +322,10 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 #[cfg(test)]
 mod tests {
     use crate::canvas::Canvas;
+    use crate::color::Color;
+    use crate::paint::Paint;
     use crate::serialize::{ObjectSerialize, SerializeSettings};
-    use crate::Stroke;
+    use crate::{Fill, Stroke};
     use tiny_skia_path::{Path, PathBuilder, Size, Transform};
 
     fn dummy_path() -> Path {
@@ -313,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize_canvas_2() {
+    fn serialize_canvas_stroke() {
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
             dummy_path(),
@@ -326,7 +366,7 @@ mod tests {
         };
 
         let chunk = canvas.serialize(&serialize_settings).0;
-        std::fs::write("out/serialize_canvas_2.txt", chunk.as_bytes());
+        std::fs::write("out/serialize_canvas_stroke.txt", chunk.as_bytes());
     }
 
     #[test]
@@ -347,5 +387,29 @@ mod tests {
         let finished = chunk.finish();
         std::fs::write("out/serialize_canvas_page.txt", &finished);
         std::fs::write("out/serialize_canvas_page.pdf", &finished);
+    }
+
+    #[test]
+    fn serialize_canvas_fill() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
+        canvas.fill_path(
+            dummy_path(),
+            Transform::from_scale(2.0, 2.0),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(200, 0, 0)),
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let finished = chunk.finish();
+
+        std::fs::write("out/serialize_canvas_fill.txt", &finished);
+        std::fs::write("out/serialize_canvas_fill.pdf", &finished);
     }
 }
