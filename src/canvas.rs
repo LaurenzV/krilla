@@ -2,11 +2,11 @@ use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
-use crate::serialize::{ObjectSerialize, RefAllocator, SerializeSettings};
+use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{LineCap, LineJoin, Stroke};
-use pdf_writer::{Chunk, Content, Finish, Ref};
-use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect, Size};
+use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect, Size, Transform};
 
 pub struct Canvas {
     byte_code: ByteCode,
@@ -168,6 +168,74 @@ impl ObjectSerialize for Canvas {
     }
 }
 
+impl PageSerialize for Canvas {
+    fn serialize(self, serialize_settings: &SerializeSettings) -> Pdf {
+        let mut ref_allocator = RefAllocator::new();
+
+        let catalog_ref = ref_allocator.new_ref();
+        let page_tree_ref = ref_allocator.new_ref();
+        let page_ref = ref_allocator.new_ref();
+        let content_ref = ref_allocator.new_ref();
+
+        let mut chunk = Chunk::new();
+
+        chunk.pages(page_tree_ref).count(1).kids([page_ref]);
+
+        let (content_stream, mut resource_dictionary, _) = {
+            let mut serializer = CanvasPdfSerializer::new();
+            serializer.transform(&Transform::from_row(
+                1.0,
+                0.0,
+                0.0,
+                -1.0,
+                0.0,
+                self.size.height(),
+            ));
+
+            for op in self.byte_code.instructions() {
+                match op {
+                    Instruction::SaveState => {
+                        serializer.save_state();
+                    }
+                    Instruction::RestoreState => {
+                        serializer.restore_state();
+                    }
+                    Instruction::StrokePath(stroke_data) => {
+                        serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
+                    }
+                    Instruction::DrawCanvas(_) => todo!(),
+                }
+            }
+
+            serializer.finish()
+        };
+
+        if serialize_settings.serialize_dependencies {
+            for color_space in resource_dictionary.color_spaces.get_entries() {
+                color_space
+                    .1
+                    .serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
+            }
+        }
+
+        chunk.stream(content_ref, &content_stream);
+
+        let mut page = chunk.page(page_ref);
+        resource_dictionary.to_pdf_resources(&mut ref_allocator, &mut page.resources());
+
+        page.media_box(self.size.to_rect(0.0, 0.0).unwrap().to_pdf_rect());
+        page.parent(page_tree_ref);
+        page.contents(content_ref);
+        page.finish();
+
+        let mut pdf = Pdf::new();
+        pdf.catalog(catalog_ref).pages(page_tree_ref);
+        pdf.extend(&chunk);
+
+        pdf
+    }
+}
+
 /// Draws a path into a content stream. Note that this does not perform any stroking/filling,
 /// it only creates a subpath.
 fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content) {
@@ -223,7 +291,6 @@ mod tests {
     fn dummy_path() -> Path {
         let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
-        builder.line_to(100.0, 100.0);
         builder.line_to(100.0, 0.0);
         builder.line_to(100.0, 100.0);
         builder.line_to(0.0, 100.0);
@@ -261,5 +328,25 @@ mod tests {
         let chunk = canvas.serialize(&serialize_settings).0;
         std::fs::write("serialize_canvas_2.txt", chunk.as_bytes());
         assert!(false);
+    }
+
+    #[test]
+    fn serialize_canvas_page() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
+        canvas.stroke_path(
+            dummy_path(),
+            Transform::from_scale(0.5, 0.5),
+            Stroke::default(),
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let finished = chunk.finish();
+        std::fs::write("serialize_canvas_page.txt", &finished);
+        std::fs::write("serialize_canvas_page.pdf", &finished);
     }
 }

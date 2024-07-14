@@ -59,3 +59,7 @@ pub trait ObjectSerialize: Sized {
         (chunk, _ref)
     }
 }
+
+pub trait PageSerialize: Sized {
+    fn serialize(self, serialize_settings: &SerializeSettings) -> Pdf;
+}
