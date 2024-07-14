@@ -1,7 +1,6 @@
 use crate::color::Color;
 use crate::paint::Paint;
-use strict_num::{NonZeroPositiveF32, NormalizedF32, NormalizedF64};
-use tiny_skia_path::FiniteF32;
+use strict_num::{NonZeroPositiveF32, NormalizedF32};
 pub use tiny_skia_path::{Path, PathBuilder};
 
 #[derive(Eq, PartialEq)]
