@@ -54,3 +54,89 @@ impl ObjectSerialize for ExtGState {
         root_ref
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
+pub enum CompositeMode {
+    /// The composite mode 'Clear'.
+    Clear,
+    /// The composite mode 'Source'.
+    Source,
+    /// The composite mode 'Destination'.
+    Destination,
+    /// The composite mode 'SourceOver'.
+    #[default]
+    SourceOver,
+    /// The composite mode 'DestinationOver'.
+    DestinationOver,
+    /// The composite mode 'SourceIn'.
+    SourceIn,
+    /// The composite mode 'DestinationIn'.
+    DestinationIn,
+    /// The composite mode 'SourceOut'.
+    SourceOut,
+    /// The composite mode 'DestinationOut'.
+    DestinationOut,
+    /// The composite mode 'SourceAtop'.
+    SourceAtop,
+    /// The composite mode 'DestinationAtop'.
+    DestinationAtop,
+    /// The composite mode 'Xor'.
+    Xor,
+    /// The composite mode 'Plus'.
+    Plus,
+    /// The composite mode 'Screen'.
+    Screen,
+    /// The composite mode 'Overlay'.
+    Overlay,
+    /// The composite mode 'Darken'.
+    Darken,
+    /// The composite mode 'Lighten'.
+    Lighten,
+    /// The composite mode 'ColorDodge'.
+    ColorDodge,
+    /// The composite mode 'ColorBurn'.
+    ColorBurn,
+    /// The composite mode 'HardLight'.
+    HardLight,
+    /// The composite mode 'SoftLight'.
+    SoftLight,
+    /// The composite mode 'Difference'.
+    Difference,
+    /// The composite mode 'Exclusion'.
+    Exclusion,
+    /// The composite mode 'Multiply'.
+    Multiply,
+    /// The composite mode 'Hue'.
+    Hue,
+    /// The composite mode 'Saturation'.
+    Saturation,
+    /// The composite mode 'Color'.
+    Color,
+    /// The composite mode 'Luminosity'.
+    Luminosity,
+}
+
+impl CompositeMode {
+    pub fn is_pdf_blend_mode(&self) -> bool {
+        use CompositeMode::*;
+        matches!(
+            self,
+            SourceOver
+                | Multiply
+                | Screen
+                | Overlay
+                | Darken
+                | Lighten
+                | ColorDodge
+                | ColorBurn
+                | HardLight
+                | SoftLight
+                | Difference
+                | Exclusion
+                | Hue
+                | Saturation
+                | Color
+                | Luminosity
+        )
+    }
+}
