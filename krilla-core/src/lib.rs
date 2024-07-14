@@ -4,6 +4,7 @@ mod color;
 mod paint;
 mod path;
 mod resource;
+mod serialize;
 mod transform;
 mod util;
 

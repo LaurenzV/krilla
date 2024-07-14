@@ -1,4 +1,7 @@
+use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::paint::{LinearGradient, RadialGradient};
+use crate::serialize::{ObjectSerialize, RefAllocator, SerializeSettings};
+use pdf_writer::{Chunk, Ref};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
@@ -37,6 +40,34 @@ pub enum PdfColorSpace {
 impl PDFResource for PdfColorSpace {
     fn get_name() -> &'static str {
         "cs"
+    }
+}
+
+impl ObjectSerialize for PdfColorSpace {
+    fn serialize(&self, _: &SerializeSettings) -> (Chunk, Ref) {
+        let mut chunk = Chunk::new();
+        let mut _ref = Ref::new(1);
+        let mut root_ref = _ref.bump();
+
+        match self {
+            PdfColorSpace::SRGB => {
+                chunk
+                    .icc_profile(root_ref, &SRGB_ICC_DEFLATED)
+                    .n(3)
+                    .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
+                    .filter(pdf_writer::Filter::FlateDecode);
+            }
+            PdfColorSpace::D65Gray => {
+                chunk
+                    .icc_profile(root_ref, &GREY_ICC_DEFLATED)
+                    .n(1)
+                    .range([0.0, 1.0])
+                    .filter(pdf_writer::Filter::FlateDecode);
+            }
+            _ => unimplemented!(),
+        }
+
+        (chunk, root_ref)
     }
 }
 
@@ -162,6 +193,7 @@ impl ResourceNumberAllocator {
 #[cfg(test)]
 mod tests {
     use crate::resource::{CsResourceMapper, PdfColorSpace};
+    use crate::serialize::ObjectSerialize;
 
     #[test]
     fn test_cs_resource_mapper() {
