@@ -155,12 +155,8 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 #[cfg(test)]
 mod tests {
     use crate::canvas::Canvas;
-    use crate::color::Color;
-    use crate::paint::Paint;
-    use crate::resource::{CsResourceMapper, PdfColorSpace};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::Stroke;
-    use strict_num::NonZeroPositiveF32;
     use tiny_skia_path::{Path, PathBuilder, Transform};
 
     fn dummy_path() -> Path {
@@ -176,7 +172,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize() {
+    fn serialize_canvas_1() {
         let mut canvas = Canvas::new();
         canvas.stroke_path(
             &dummy_path(),
@@ -185,6 +181,6 @@ mod tests {
         );
 
         let (chunk, _) = canvas.serialize(&SerializeSettings::default());
-        std::fs::write("out.txt", chunk.as_bytes());
+        std::fs::write("serialize_canvas_1.txt", chunk.as_bytes());
     }
 }
