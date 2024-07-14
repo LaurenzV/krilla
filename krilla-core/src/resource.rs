@@ -9,6 +9,8 @@ trait PDFResource {
     fn get_name() -> &'static str;
 }
 
+pub type CsResourceMapper = ResourceMapper<PdfColorSpace>;
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PdfColorSpace {
     SRGB,
@@ -16,8 +18,6 @@ pub enum PdfColorSpace {
     LinearGradient(Arc<LinearGradient>),
     RadialGradient(Arc<RadialGradient>),
 }
-
-pub type CsResourceMapper = ResourceMapper<PdfColorSpace>;
 
 impl PDFResource for PdfColorSpace {
     fn get_name() -> &'static str {
@@ -46,7 +46,15 @@ where
         }
     }
 
-    pub fn get_number(&mut self, resource: V) -> ResourceNumber {
+    pub fn get(&self, resource: V) -> Option<ResourceNumber> {
+        self.backward.get(&resource).copied()
+    }
+
+    pub fn get_with_name(&self, resource: V) -> Option<String> {
+        self.get(resource).map(|u| Self::name_from_number(u))
+    }
+
+    pub fn remap(&mut self, resource: V) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
         let counter = &mut self.counter;
@@ -59,12 +67,12 @@ where
         })
     }
 
-    fn name_from_number(num: ResourceNumber) -> String {
-        format!("{}{}", V::get_name(), num)
+    pub fn remap_with_name(&mut self, resource: V) -> String {
+        Self::name_from_number(self.remap(resource))
     }
 
-    pub fn get_name(&mut self, resource: V) -> String {
-        Self::name_from_number(self.get_number(resource))
+    fn name_from_number(num: ResourceNumber) -> String {
+        format!("{}{}", V::get_name(), num)
     }
 
     pub fn get_entries(&self) -> impl Iterator<Item = (String, V)> + '_ {
@@ -143,10 +151,10 @@ mod tests {
     #[test]
     fn test_cs_resource_mapper() {
         let mut mapper = CsResourceMapper::new();
-        assert_eq!(mapper.get_number(PdfColorSpace::SRGB), 1);
-        assert_eq!(mapper.get_number(PdfColorSpace::D65Gray), 2);
-        assert_eq!(mapper.get_number(PdfColorSpace::SRGB), 1);
-        assert_eq!(mapper.get_name(PdfColorSpace::SRGB), String::from("cs1"));
+        assert_eq!(mapper.remap(PdfColorSpace::SRGB), 1);
+        assert_eq!(mapper.remap(PdfColorSpace::D65Gray), 2);
+        assert_eq!(mapper.remap(PdfColorSpace::SRGB), 1);
+        assert_eq!(mapper.remap_with_name(PdfColorSpace::SRGB), String::from("cs1"));
         let items = mapper.get_entries().collect::<Vec<_>>();
         assert_eq!(items[0], (String::from("cs1"), PdfColorSpace::SRGB));
         assert_eq!(items[1], (String::from("cs2"), PdfColorSpace::D65Gray));
