@@ -1,9 +1,8 @@
 use crate::color::PdfColorExt;
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
-use crate::util::NameExt;
-use crate::{LineCap, LineJoin, Stroke};
-use pdf_writer::types::{LineCapStyle, LineJoinStyle};
+use crate::util::{LineCapExt, LineJoinExt, NameExt, TransformExt};
+use crate::Stroke;
 use pdf_writer::Content;
 use tiny_skia_path::{Path, PathSegment};
 
@@ -124,40 +123,3 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
     }
 }
 
-trait TransformExt {
-    fn to_pdf_transform(&self) -> [f32; 6];
-}
-
-impl TransformExt for tiny_skia_path::Transform {
-    fn to_pdf_transform(&self) -> [f32; 6] {
-        [self.sx, self.ky, self.kx, self.sy, self.tx, self.ty]
-    }
-}
-
-pub trait LineCapExt {
-    fn to_pdf_line_cap(&self) -> LineCapStyle;
-}
-
-impl LineCapExt for LineCap {
-    fn to_pdf_line_cap(&self) -> LineCapStyle {
-        match self {
-            LineCap::Butt => LineCapStyle::ButtCap,
-            LineCap::Round => LineCapStyle::RoundCap,
-            LineCap::Square => LineCapStyle::ProjectingSquareCap,
-        }
-    }
-}
-
-pub trait LineJoinExt {
-    fn to_pdf_line_join(&self) -> LineJoinStyle;
-}
-
-impl LineJoinExt for LineJoin {
-    fn to_pdf_line_join(&self) -> LineJoinStyle {
-        match self {
-            LineJoin::Miter => LineJoinStyle::MiterJoin,
-            LineJoin::Round => LineJoinStyle::RoundJoin,
-            LineJoin::Bevel => LineJoinStyle::BevelJoin,
-        }
-    }
-}
