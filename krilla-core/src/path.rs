@@ -4,6 +4,7 @@ use strict_num::{NonZeroPositiveF32, NormalizedF32, NormalizedF64};
 use tiny_skia_path::FiniteF32;
 pub use tiny_skia_path::{Path, PathBuilder};
 
+#[derive(Eq, PartialEq)]
 pub enum LineCap {
     Butt,
     Round,
@@ -16,6 +17,7 @@ impl Default for LineCap {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum LineJoin {
     Miter,
     Round,
@@ -48,7 +50,7 @@ impl Default for Stroke {
         Stroke {
             paint: Paint::Color(Color::black()),
             width: NonZeroPositiveF32::new(1.0).unwrap(),
-            miter_limit: NonZeroPositiveF32::new(4.0).unwrap(),
+            miter_limit: NonZeroPositiveF32::new(10.0).unwrap(),
             line_cap: LineCap::default(),
             line_join: LineJoin::default(),
             opacity: NormalizedF32::ONE,

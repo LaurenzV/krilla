@@ -3,7 +3,7 @@ use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, TransformExt};
-use crate::Stroke;
+use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use tiny_skia_path::{Path, PathSegment};
 
@@ -34,7 +34,7 @@ impl Canvas {
     }
 
     fn restore_state(&mut self) {
-        self.content.save_state();
+        self.content.restore_state();
         self.q_nesting = self.q_nesting.checked_sub(1).unwrap();
     }
 
@@ -59,17 +59,29 @@ impl Canvas {
             Paint::LinearGradient(_) => unimplemented!(),
             Paint::RadialGradient(_) => unimplemented!(),
         }
-        self.content.set_line_width(stroke.width.get());
-        self.content.set_miter_limit(stroke.miter_limit.get());
-        self.content.set_line_cap(stroke.line_cap.to_pdf_line_cap());
-        self.content
-            .set_line_join(stroke.line_join.to_pdf_line_join());
+
+        // Only write if they don't correspond to the default values as defined in the
+        // PDF specification.
+        if stroke.width.get() != 1.0 {
+            self.content.set_line_width(stroke.width.get());
+        }
+
+        if stroke.miter_limit.get() != 10.0 {
+            self.content.set_miter_limit(stroke.miter_limit.get());
+        }
+
+        if stroke.line_cap != LineCap::Butt {
+            self.content.set_line_cap(stroke.line_cap.to_pdf_line_cap());
+        }
+
+        if stroke.line_join != LineJoin::Miter {
+            self.content
+                .set_line_join(stroke.line_join.to_pdf_line_join());
+        }
 
         if let Some(stroke_dash) = &stroke.dash {
             self.content
                 .set_dash_pattern(stroke_dash.array.iter().cloned(), stroke_dash.offset);
-        } else {
-            self.content.set_dash_pattern(vec![], 0.0);
         }
 
         draw_path(path.segments(), &mut self.content);
