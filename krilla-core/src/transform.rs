@@ -1,7 +1,7 @@
 use strict_num::FiniteF32;
 use tiny_skia_path::Transform;
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct FiniteTransform {
     pub sx: FiniteF32,
     pub kx: FiniteF32,

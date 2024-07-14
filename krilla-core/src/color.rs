@@ -5,19 +5,19 @@ use once_cell::sync::Lazy;
 static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> = Lazy::new(|| deflate(include_bytes!("icc/sRGB-v4.icc")));
 static GREY_ICC_DEFLATED: Lazy<Vec<u8>> = Lazy::new(|| deflate(include_bytes!("icc/sGrey-v4.icc")));
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Rgb {
     pub red: u8,
     pub green: u8,
     pub blue: u8,
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Grey {
     pub lightness: u8,
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Color {
     Rgb(Rgb),
     Grey(Grey),

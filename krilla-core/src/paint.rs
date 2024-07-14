@@ -3,7 +3,7 @@ use crate::transform::FiniteTransform;
 use strict_num::{NormalizedF32, NormalizedF64, PositiveF32};
 use tiny_skia_path::FiniteF32;
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub enum SpreadMethod {
     Pad,
     Reflect,
@@ -18,14 +18,14 @@ impl Default for SpreadMethod {
 
 pub type StopOffset = NormalizedF64;
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Stop {
     pub offset: StopOffset,
     pub color: Color,
     pub opacity: NormalizedF32,
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct LinearGradient {
     pub x1: FiniteF32,
     pub y1: FiniteF32,
@@ -37,7 +37,7 @@ pub struct LinearGradient {
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct RadialGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
@@ -50,7 +50,7 @@ pub struct RadialGradient {
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Paint {
     Color(Color),
     LinearGradient(LinearGradient),
