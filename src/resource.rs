@@ -71,9 +71,7 @@ impl ObjectSerialize for PdfColorSpace {
         match self {
             PdfColorSpace::SRGB => {
                 let icc_ref = ref_allocator.new_ref();
-                let mut array = chunk
-                    .indirect(root_ref)
-                    .array();
+                let mut array = chunk.indirect(root_ref).array();
                 array.item(Name(b"ICCBased"));
                 array.item(icc_ref);
                 array.finish();

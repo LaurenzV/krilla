@@ -52,6 +52,26 @@ impl CanvasPdfSerializer {
         }
     }
 
+    pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
+        for op in instructions {
+            match op {
+                Instruction::SaveState => {
+                    self.save_state();
+                }
+                Instruction::RestoreState => {
+                    self.restore_state();
+                }
+                Instruction::StrokePath(stroke_data) => {
+                    self.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
+                }
+                Instruction::FillPath(fill_data) => {
+                    self.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
+                }
+                Instruction::DrawCanvas(_) => todo!(),
+            }
+        }
+    }
+
     pub fn transform(&mut self, transform: &tiny_skia_path::Transform) {
         if !transform.is_identity() {
             self.content.transform(transform.to_pdf_transform());
@@ -164,25 +184,7 @@ impl ObjectSerialize for Canvas {
 
         let (content_stream, mut resource_dictionary, bbox) = {
             let mut serializer = CanvasPdfSerializer::new();
-
-            for op in self.byte_code.instructions() {
-                match op {
-                    Instruction::SaveState => {
-                        serializer.save_state();
-                    }
-                    Instruction::RestoreState => {
-                        serializer.restore_state();
-                    }
-                    Instruction::StrokePath(stroke_data) => {
-                        serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2);
-                    }
-                    Instruction::FillPath(fill_data) => {
-                        serializer.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
-                    }
-                    Instruction::DrawCanvas(_) => todo!(),
-                }
-            }
-
+            serializer.serialize_instructions(self.byte_code.instructions());
             serializer.finish()
         };
 
@@ -226,24 +228,7 @@ impl PageSerialize for Canvas {
                 0.0,
                 self.size.height(),
             ));
-
-            for op in self.byte_code.instructions() {
-                match op {
-                    Instruction::SaveState => {
-                        serializer.save_state();
-                    }
-                    Instruction::RestoreState => {
-                        serializer.restore_state();
-                    }
-                    Instruction::StrokePath(stroke_data) => {
-                        serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
-                    }
-                    Instruction::FillPath(fill_data) => {
-                        serializer.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
-                    }
-                    Instruction::DrawCanvas(_) => todo!(),
-                }
-            }
+            serializer.serialize_instructions(self.byte_code.instructions());
 
             serializer.finish()
         };
