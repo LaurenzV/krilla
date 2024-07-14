@@ -58,8 +58,4 @@ pub trait ObjectSerialize: Sized {
         let _ref = self.serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
         (chunk, _ref)
     }
-
-    fn serialize_chunk_only(self, serialize_settings: &SerializeSettings) -> Chunk {
-        self.serialize(serialize_settings).0
-    }
 }

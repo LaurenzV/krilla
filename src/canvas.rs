@@ -10,14 +10,14 @@ use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect, Size};
 
 pub struct Canvas {
     byte_code: ByteCode,
-    size: Size
+    size: Size,
 }
 
 impl Canvas {
     pub fn new(size: Size) -> Self {
         Self {
             byte_code: ByteCode::new(),
-            size
+            size,
         }
     }
 
@@ -47,7 +47,7 @@ impl CanvasPdfSerializer {
         }
     }
 
-    fn transform(&mut self, transform: &tiny_skia_path::Transform) {
+    pub fn transform(&mut self, transform: &tiny_skia_path::Transform) {
         if !transform.is_identity() {
             self.content.transform(transform.to_pdf_transform());
         }
@@ -218,7 +218,7 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::Stroke;
-    use tiny_skia_path::{Path, PathBuilder, Transform};
+    use tiny_skia_path::{Path, PathBuilder, Size, Transform};
 
     fn dummy_path() -> Path {
         let mut builder = PathBuilder::new();
@@ -234,20 +234,20 @@ mod tests {
 
     #[test]
     fn serialize_canvas_1() {
-        let mut canvas = Canvas::new();
+        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
             dummy_path(),
             Transform::from_scale(2.0, 2.0),
             Stroke::default(),
         );
 
-        let chunk = canvas.serialize_chunk_only(&SerializeSettings::default());
+        let chunk = canvas.serialize(&SerializeSettings::default()).0;
         std::fs::write("serialize_canvas_1.txt", chunk.as_bytes());
     }
 
     #[test]
     fn serialize_canvas_2() {
-        let mut canvas = Canvas::new();
+        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
             dummy_path(),
             Transform::from_scale(2.0, 2.0),
@@ -258,7 +258,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = canvas.serialize_chunk_only(&serialize_settings);
+        let chunk = canvas.serialize(&serialize_settings).0;
         std::fs::write("serialize_canvas_2.txt", chunk.as_bytes());
         assert!(false);
     }
