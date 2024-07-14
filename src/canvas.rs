@@ -309,7 +309,7 @@ mod tests {
         );
 
         let chunk = canvas.serialize(&SerializeSettings::default()).0;
-        std::fs::write("serialize_canvas_1.txt", chunk.as_bytes());
+        std::fs::write("out/serialize_canvas_1.txt", chunk.as_bytes());
     }
 
     #[test]
@@ -326,8 +326,7 @@ mod tests {
         };
 
         let chunk = canvas.serialize(&serialize_settings).0;
-        std::fs::write("serialize_canvas_2.txt", chunk.as_bytes());
-        assert!(false);
+        std::fs::write("out/serialize_canvas_2.txt", chunk.as_bytes());
     }
 
     #[test]
@@ -346,7 +345,7 @@ mod tests {
 
         let chunk = PageSerialize::serialize(canvas, &serialize_settings);
         let finished = chunk.finish();
-        std::fs::write("serialize_canvas_page.txt", &finished);
-        std::fs::write("serialize_canvas_page.pdf", &finished);
+        std::fs::write("out/serialize_canvas_page.txt", &finished);
+        std::fs::write("out/serialize_canvas_page.pdf", &finished);
     }
 }
