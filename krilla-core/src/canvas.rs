@@ -92,18 +92,29 @@ impl Canvas {
 }
 
 impl ObjectSerialize for Canvas {
-    fn serialize(self, serialize_settings: &SerializeSettings) -> (Chunk, Ref) {
-        let mut chunk = Chunk::new();
-        let mut ref_allocator = RefAllocator::new();
+    fn serialize_into(
+        self,
+        chunk: &mut Chunk,
+        ref_allocator: &mut RefAllocator,
+        serialize_settings: &SerializeSettings,
+    ) -> Ref {
         let root_ref = ref_allocator.new_ref();
+
+        if serialize_settings.serialize_dependencies {
+            for color_space in self.resource_dictionary.color_spaces.get_entries() {
+                color_space
+                    .1
+                    .serialize_into(chunk, ref_allocator, serialize_settings);
+            }
+        }
 
         let content_stream = self.content.finish();
         let mut x_object = chunk.form_xobject(root_ref, &content_stream);
         self.resource_dictionary
-            .to_pdf_resources(&mut ref_allocator, &mut x_object.resources());
+            .to_pdf_resources(ref_allocator, &mut x_object.resources());
         x_object.finish();
 
-        (chunk, root_ref)
+        root_ref
     }
 }
 
@@ -180,7 +191,25 @@ mod tests {
             &Stroke::default(),
         );
 
-        let (chunk, _) = canvas.serialize(&SerializeSettings::default());
+        let chunk = canvas.serialize_chunk_only(&SerializeSettings::default());
         std::fs::write("serialize_canvas_1.txt", chunk.as_bytes());
+    }
+
+    #[test]
+    fn serialize_canvas_2() {
+        let mut canvas = Canvas::new();
+        canvas.stroke_path(
+            &dummy_path(),
+            &Transform::from_scale(2.0, 2.0),
+            &Stroke::default(),
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = canvas.serialize_chunk_only(&serialize_settings);
+        std::fs::write("serialize_canvas_2.txt", chunk.as_bytes());
+        assert!(false);
     }
 }

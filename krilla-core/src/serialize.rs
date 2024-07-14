@@ -21,7 +21,7 @@ impl RefAllocator {
         }
     }
 
-    pub fn get_cached_ref(&mut self, object: PdfObject) -> Ref {
+    pub fn cached_ref(&mut self, object: PdfObject) -> Ref {
         let mappings = &mut self.mappings;
         let _ref = &mut self._ref;
         *mappings.entry(object.clone()).or_insert(_ref.bump())
@@ -33,7 +33,7 @@ impl RefAllocator {
 }
 
 pub struct SerializeSettings {
-    serialize_dependencies: bool,
+    pub serialize_dependencies: bool,
 }
 
 impl Default for SerializeSettings {
@@ -44,6 +44,22 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait ObjectSerialize {
-    fn serialize(self, serialize_settings: &SerializeSettings) -> (Chunk, Ref);
+pub trait ObjectSerialize: Sized {
+    fn serialize_into(
+        self,
+        chunk: &mut Chunk,
+        ref_allocator: &mut RefAllocator,
+        serialize_settings: &SerializeSettings,
+    ) -> Ref;
+
+    fn serialize(self, serialize_settings: &SerializeSettings) -> (Chunk, Ref) {
+        let mut chunk = Chunk::new();
+        let mut ref_allocator = RefAllocator::new();
+        let _ref = self.serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
+        (chunk, _ref)
+    }
+
+    fn serialize_chunk_only(self, serialize_settings: &SerializeSettings) -> Chunk {
+        self.serialize(serialize_settings).0
+    }
 }

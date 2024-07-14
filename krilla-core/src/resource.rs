@@ -8,7 +8,7 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 pub struct ResourceDictionary {
-    color_spaces: CsResourceMapper,
+    pub color_spaces: CsResourceMapper,
 }
 
 impl ResourceDictionary {
@@ -31,7 +31,7 @@ impl ResourceDictionary {
         for (name, entry) in self.color_spaces.get_entries() {
             color_spaces.pair(
                 name.to_pdf_name(),
-                ref_allocator.get_cached_ref(PdfObject::PdfColorSpace(entry)),
+                ref_allocator.cached_ref(PdfObject::PdfColorSpace(entry)),
             );
         }
     }
@@ -60,10 +60,13 @@ impl PDFResource for PdfColorSpace {
 }
 
 impl ObjectSerialize for PdfColorSpace {
-    fn serialize(self, _: &SerializeSettings) -> (Chunk, Ref) {
-        let mut chunk = Chunk::new();
-        let mut _ref = Ref::new(1);
-        let mut root_ref = _ref.bump();
+    fn serialize_into(
+        self,
+        chunk: &mut Chunk,
+        ref_allocator: &mut RefAllocator,
+        _: &SerializeSettings,
+    ) -> Ref {
+        let root_ref = ref_allocator.cached_ref(PdfObject::PdfColorSpace(self.clone()));
 
         match self {
             PdfColorSpace::SRGB => {
@@ -83,7 +86,7 @@ impl ObjectSerialize for PdfColorSpace {
             _ => unimplemented!(),
         }
 
-        (chunk, root_ref)
+        root_ref
     }
 }
 
