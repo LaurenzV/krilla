@@ -8,12 +8,12 @@ pub enum PdfObject {
     PdfColorSpace(PdfColorSpace),
 }
 
-pub struct ObjectCache {
+pub struct RefAllocator {
     mappings: HashMap<PdfObject, Ref>,
     _ref: Ref,
 }
 
-impl ObjectCache {
+impl RefAllocator {
     pub fn new() -> Self {
         Self {
             mappings: HashMap::new(),
@@ -21,10 +21,14 @@ impl ObjectCache {
         }
     }
 
-    pub fn get_ref(&mut self, object: PdfObject) -> Ref {
+    pub fn get_cached_ref(&mut self, object: PdfObject) -> Ref {
         let mappings = &mut self.mappings;
         let _ref = &mut self._ref;
         *mappings.entry(object.clone()).or_insert(_ref.bump())
+    }
+
+    pub fn new_ref(&mut self) -> Ref {
+        self._ref.bump()
     }
 }
 
@@ -41,5 +45,5 @@ impl Default for SerializeSettings {
 }
 
 pub trait ObjectSerialize {
-    fn serialize(&self, serialize_settings: &SerializeSettings) -> (Chunk, Ref);
+    fn serialize(self, serialize_settings: &SerializeSettings) -> (Chunk, Ref);
 }

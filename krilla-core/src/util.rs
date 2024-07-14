@@ -1,6 +1,6 @@
-use pdf_writer::Name;
-use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use crate::{LineCap, LineJoin};
+use pdf_writer::types::{LineCapStyle, LineJoinStyle};
+use pdf_writer::Name;
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;
@@ -17,7 +17,7 @@ impl NameExt for String {
     }
 }
 
-trait TransformExt {
+pub trait TransformExt {
     fn to_pdf_transform(&self) -> [f32; 6];
 }
 

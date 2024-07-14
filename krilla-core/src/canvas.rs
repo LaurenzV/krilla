@@ -1,9 +1,10 @@
 use crate::color::PdfColorExt;
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
+use crate::serialize::{ObjectSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, TransformExt};
 use crate::Stroke;
-use pdf_writer::Content;
+use pdf_writer::{Chunk, Content, Finish, Ref};
 use tiny_skia_path::{Path, PathSegment};
 
 pub struct Canvas {
@@ -29,12 +30,12 @@ impl Canvas {
 
     fn save_state(&mut self) {
         self.content.save_state();
-        self.q_nesting.checked_add(1).unwrap();
+        self.q_nesting = self.q_nesting.checked_add(1).unwrap();
     }
 
     fn restore_state(&mut self) {
         self.content.save_state();
-        self.q_nesting.checked_sub(1).unwrap();
+        self.q_nesting = self.q_nesting.checked_sub(1).unwrap();
     }
 
     pub fn stroke_path(
@@ -75,6 +76,22 @@ impl Canvas {
         self.content.stroke();
 
         self.restore_state();
+    }
+}
+
+impl ObjectSerialize for Canvas {
+    fn serialize(self, serialize_settings: &SerializeSettings) -> (Chunk, Ref) {
+        let mut chunk = Chunk::new();
+        let mut ref_allocator = RefAllocator::new();
+        let root_ref = ref_allocator.new_ref();
+
+        let content_stream = self.content.finish();
+        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
+        self.resource_dictionary
+            .to_pdf_resources(&mut ref_allocator, &mut x_object.resources());
+        x_object.finish();
+
+        (chunk, root_ref)
     }
 }
 
@@ -123,3 +140,39 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::canvas::Canvas;
+    use crate::color::Color;
+    use crate::paint::Paint;
+    use crate::resource::{CsResourceMapper, PdfColorSpace};
+    use crate::serialize::{ObjectSerialize, SerializeSettings};
+    use crate::Stroke;
+    use strict_num::NonZeroPositiveF32;
+    use tiny_skia_path::{Path, PathBuilder, Transform};
+
+    fn dummy_path() -> Path {
+        let mut builder = PathBuilder::new();
+        builder.move_to(0.0, 0.0);
+        builder.line_to(100.0, 100.0);
+        builder.line_to(100.0, 0.0);
+        builder.line_to(100.0, 100.0);
+        builder.line_to(0.0, 100.0);
+        builder.close();
+
+        builder.finish().unwrap()
+    }
+
+    #[test]
+    fn serialize() {
+        let mut canvas = Canvas::new();
+        canvas.stroke_path(
+            &dummy_path(),
+            &Transform::from_scale(2.0, 2.0),
+            &Stroke::default(),
+        );
+
+        let (chunk, _) = canvas.serialize(&SerializeSettings::default());
+        std::fs::write("out.txt", chunk.as_bytes());
+    }
+}

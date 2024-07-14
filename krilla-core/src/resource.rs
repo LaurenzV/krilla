@@ -1,6 +1,6 @@
 use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::paint::{LinearGradient, RadialGradient};
-use crate::serialize::{ObjectCache, ObjectSerialize, PdfObject, SerializeSettings};
+use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
 use crate::util::NameExt;
 use pdf_writer::{Chunk, Ref};
 use std::collections::{BTreeMap, HashMap};
@@ -24,14 +24,14 @@ impl ResourceDictionary {
 
     pub fn to_pdf_resources(
         &self,
-        object_cache: &mut ObjectCache,
+        ref_allocator: &mut RefAllocator,
         resources: &mut pdf_writer::writers::Resources,
     ) {
         let mut color_spaces = resources.color_spaces();
         for (name, entry) in self.color_spaces.get_entries() {
             color_spaces.pair(
                 name.to_pdf_name(),
-                object_cache.get_ref(PdfObject::PdfColorSpace(entry)),
+                ref_allocator.get_cached_ref(PdfObject::PdfColorSpace(entry)),
             );
         }
     }
@@ -60,7 +60,7 @@ impl PDFResource for PdfColorSpace {
 }
 
 impl ObjectSerialize for PdfColorSpace {
-    fn serialize(&self, _: &SerializeSettings) -> (Chunk, Ref) {
+    fn serialize(self, _: &SerializeSettings) -> (Chunk, Ref) {
         let mut chunk = Chunk::new();
         let mut _ref = Ref::new(1);
         let mut root_ref = _ref.bump();
