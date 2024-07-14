@@ -100,6 +100,12 @@ impl ObjectSerialize for Canvas {
     ) -> Ref {
         let root_ref = ref_allocator.new_ref();
 
+        let content_stream = self.content.finish();
+        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
+        self.resource_dictionary
+            .to_pdf_resources(ref_allocator, &mut x_object.resources());
+        x_object.finish();
+
         if serialize_settings.serialize_dependencies {
             for color_space in self.resource_dictionary.color_spaces.get_entries() {
                 color_space
@@ -107,12 +113,6 @@ impl ObjectSerialize for Canvas {
                     .serialize_into(chunk, ref_allocator, serialize_settings);
             }
         }
-
-        let content_stream = self.content.finish();
-        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
-        self.resource_dictionary
-            .to_pdf_resources(ref_allocator, &mut x_object.resources());
-        x_object.finish();
 
         root_ref
     }
