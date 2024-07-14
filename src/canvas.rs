@@ -6,16 +6,18 @@ use crate::serialize::{ObjectSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Ref};
-use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect};
+use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect, Size};
 
 pub struct Canvas {
     byte_code: ByteCode,
+    size: Size
 }
 
 impl Canvas {
-    pub fn new() -> Self {
+    pub fn new(size: Size) -> Self {
         Self {
             byte_code: ByteCode::new(),
+            size
         }
     }
 
