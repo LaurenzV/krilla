@@ -44,12 +44,14 @@ impl Canvas {
         canvas: Canvas,
         transform: Transform,
         composite_mode: CompositeMode,
+        opacity: NormalizedF32,
         isolated: bool,
     ) {
         self.byte_code.push(Instruction::DrawCanvas(Box::new((
             canvas,
             transform,
             composite_mode,
+            opacity,
             isolated,
         ))));
     }
@@ -126,6 +128,7 @@ pub struct CanvasPdfSerializer {
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
+    base_opacity: NormalizedF32,
 }
 
 impl CanvasPdfSerializer {
@@ -135,6 +138,7 @@ impl CanvasPdfSerializer {
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
+            base_opacity: NormalizedF32::new(1.0).unwrap(),
         }
     }
 
@@ -148,9 +152,25 @@ impl CanvasPdfSerializer {
                     self.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
                 }
                 Instruction::DrawCanvas(canvas_data) => {
-                    self.draw_canvas(&canvas_data.0, &canvas_data.1, canvas_data.2, canvas_data.3);
+                    self.draw_canvas(
+                        &canvas_data.0,
+                        &canvas_data.1,
+                        canvas_data.2,
+                        canvas_data.3,
+                        canvas_data.4,
+                    );
                 }
             }
+        }
+    }
+
+    pub fn set_base_opacity(&mut self, alpha: NormalizedF32) {
+        if alpha.get() != 1.0 {
+            self.base_opacity = self.base_opacity * alpha;
+            // fill/stroke opacities are always set locally when drawing a path,
+            // so here it will always be None, thus we can just apply it directly.
+            let state = ExtGState::new(Some(self.base_opacity), Some(self.base_opacity), None);
+            self.graphics_states.add_ext_g_state(&state);
         }
     }
 
@@ -177,7 +197,7 @@ impl CanvasPdfSerializer {
 
     pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new(Some(alpha), None, None);
+            let state = ExtGState::new(Some(alpha * self.base_opacity), None, None);
             self.graphics_states.add_ext_g_state(&state);
 
             let ext = self.resource_dictionary.register_ext_g_state(state);
@@ -187,7 +207,7 @@ impl CanvasPdfSerializer {
 
     pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new(None, Some(alpha), None);
+            let state = ExtGState::new(None, Some(alpha * self.base_opacity), None);
             self.graphics_states.add_ext_g_state(&state);
 
             let ext = self.resource_dictionary.register_ext_g_state(state);
@@ -291,12 +311,14 @@ impl CanvasPdfSerializer {
         canvas: &Canvas,
         transform: &Transform,
         composite_mode: CompositeMode,
+        opacity: NormalizedF32,
         isolated: bool,
     ) {
         // TODO: Handle nested opacities
         // TODO: Handle transforms on gradients/patterns
         // TODO: Handle embedding as XObject
         self.save_state();
+        self.set_base_opacity(opacity);
         self.transform(transform);
         if let Ok(blend_mode) = composite_mode.try_into() {
             self.set_blend_mode(blend_mode);
@@ -578,6 +600,7 @@ mod tests {
             second,
             Transform::from_translate(100.0, 100.0),
             CompositeMode::Difference,
+            NormalizedF32::ONE,
             false,
         );
 
@@ -590,5 +613,49 @@ mod tests {
 
         std::fs::write("out/serialize_canvas_blend.txt", &finished);
         std::fs::write("out/serialize_canvas_blend.pdf", &finished);
+    }
+
+    #[test]
+    fn serialize_nested_opacity() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.fill_path(
+            dummy_path(),
+            Transform::identity(),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(255, 255, 0)),
+                opacity: NormalizedF32::new(0.5).unwrap(),
+                ..Fill::default()
+            },
+        );
+
+        let mut second = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        second.fill_path(
+            dummy_path(),
+            Transform::identity(),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(255, 255, 0)),
+                opacity: NormalizedF32::new(0.5).unwrap(),
+                ..Fill::default()
+            },
+        );
+
+        canvas.draw_canvas(
+            second,
+            Transform::from_translate(100.0, 100.0),
+            CompositeMode::Difference,
+            NormalizedF32::new(0.5).unwrap(),
+            false,
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let finished = chunk.finish();
+
+        std::fs::write("out/serialize_nested_opacity.txt", &finished);
+        std::fs::write("out/serialize_nested_opacity.pdf", &finished);
     }
 }

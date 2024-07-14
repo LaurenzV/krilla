@@ -1,12 +1,13 @@
 use crate::canvas::Canvas;
 use crate::ext_g_state::CompositeMode;
 use crate::{Fill, Stroke};
+use strict_num::NormalizedF32;
 use tiny_skia_path::{Path, Transform};
 
 pub enum Instruction {
     StrokePath(Box<(Path, Transform, Stroke)>),
     FillPath(Box<(Path, Transform, Fill)>),
-    DrawCanvas(Box<(Canvas, Transform, CompositeMode, bool)>),
+    DrawCanvas(Box<(Canvas, Transform, CompositeMode, NormalizedF32, bool)>),
 }
 
 pub struct ByteCode(Vec<Instruction>);
