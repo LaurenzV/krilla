@@ -2,7 +2,7 @@ mod allocate;
 mod bytecode;
 mod canvas;
 mod color;
-mod ext_st;
+mod ext_g_state;
 mod paint;
 mod path;
 mod resource;

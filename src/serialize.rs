@@ -1,3 +1,4 @@
+use crate::ext_g_state::ExtGState;
 use crate::resource::PdfColorSpace;
 use pdf_writer::{Chunk, Pdf, Ref};
 use std::collections::HashMap;
@@ -6,6 +7,7 @@ use std::hash::Hash;
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PdfObject {
     PdfColorSpace(PdfColorSpace),
+    ExtGState(ExtGState),
 }
 
 pub struct RefAllocator {

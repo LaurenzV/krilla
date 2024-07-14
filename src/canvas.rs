@@ -1,11 +1,13 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
+use crate::ext_g_state::ExtGState;
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use strict_num::NormalizedF32;
 use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
 
 pub struct Canvas {
@@ -97,6 +99,12 @@ impl CanvasPdfSerializer {
         self.content.save_state();
         self.transform(transform);
 
+        if fill.opacity.get() != 1.0 {
+            let state = ExtGState::new(Some(fill.opacity), None);
+            let ext = self.resource_dictionary.register_ext_g_state(state);
+            self.content.set_parameters(ext.to_pdf_name());
+        }
+
         match &fill.paint {
             Paint::Color(c) => {
                 let color_space = self
@@ -117,17 +125,18 @@ impl CanvasPdfSerializer {
         self.content.restore_state();
     }
 
-    pub fn stroke_path(
-        &mut self,
-        path: &Path,
-        transform: &tiny_skia_path::Transform,
-        stroke: &Stroke,
-    ) {
+    pub fn stroke_path(&mut self, path: &Path, transform: &Transform, stroke: &Stroke) {
         let path_bbox = path.bounds().transform(*transform).unwrap();
         self.bbox.expand(&path_bbox);
 
         self.content.save_state();
         self.transform(transform);
+
+        if stroke.opacity.get() != 1.0 {
+            let state = ExtGState::new(None, Some(stroke.opacity));
+            let ext = self.resource_dictionary.register_ext_g_state(state);
+            self.content.set_parameters(ext.to_pdf_name());
+        }
 
         match &stroke.paint {
             Paint::Color(c) => {
@@ -199,6 +208,12 @@ impl ObjectSerialize for Canvas {
                     .1
                     .serialize_into(chunk, ref_allocator, serialize_settings);
             }
+
+            for ext_g_state in resource_dictionary.ext_g_state.get_entries() {
+                ext_g_state
+                    .1
+                    .serialize_into(chunk, ref_allocator, serialize_settings);
+            }
         }
 
         root_ref
@@ -236,6 +251,12 @@ impl PageSerialize for Canvas {
         if serialize_settings.serialize_dependencies {
             for color_space in resource_dictionary.color_spaces.get_entries() {
                 color_space
+                    .1
+                    .serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
+            }
+
+            for ext_g_state in resource_dictionary.ext_g_state.get_entries() {
+                ext_g_state
                     .1
                     .serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
             }
@@ -311,6 +332,7 @@ mod tests {
     use crate::paint::Paint;
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, Stroke};
+    use strict_num::NormalizedF32;
     use tiny_skia_path::{Path, PathBuilder, Size, Transform};
 
     fn dummy_path() -> Path {
@@ -383,6 +405,7 @@ mod tests {
             Transform::from_scale(2.0, 2.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(200, 0, 0)),
+                opacity: NormalizedF32::new(0.25).unwrap(),
                 ..Fill::default()
             },
         );
