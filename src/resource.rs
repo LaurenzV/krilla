@@ -2,7 +2,7 @@ use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::paint::{LinearGradient, RadialGradient};
 use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
 use crate::util::NameExt;
-use pdf_writer::{Chunk, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::sync::Arc;
@@ -70,8 +70,16 @@ impl ObjectSerialize for PdfColorSpace {
 
         match self {
             PdfColorSpace::SRGB => {
+                let icc_ref = ref_allocator.new_ref();
+                let mut array = chunk
+                    .indirect(root_ref)
+                    .array();
+                array.item(Name(b"ICCBased"));
+                array.item(icc_ref);
+                array.finish();
+
                 chunk
-                    .icc_profile(root_ref, &SRGB_ICC_DEFLATED)
+                    .icc_profile(icc_ref, &SRGB_ICC_DEFLATED)
                     .n(3)
                     .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
