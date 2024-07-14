@@ -1,5 +1,6 @@
 use crate::resource::PDFResource;
 use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
 use strict_num::NormalizedF32;
@@ -8,6 +9,7 @@ use strict_num::NormalizedF32;
 pub struct Repr {
     non_stroking_alpha: Option<NormalizedF32>,
     stroking_alpha: Option<NormalizedF32>,
+    blend_mode: Option<BlendMode>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -17,10 +19,12 @@ impl ExtGState {
     pub fn new(
         non_stroking_alpha: Option<NormalizedF32>,
         stroking_alpha: Option<NormalizedF32>,
+        blend_mode: Option<BlendMode>,
     ) -> Self {
         Self(Arc::new(Repr {
             non_stroking_alpha,
             stroking_alpha,
+            blend_mode,
         }))
     }
 }
@@ -49,13 +53,17 @@ impl ObjectSerialize for ExtGState {
             ext_st.stroking_alpha(sa.get());
         }
 
+        if let Some(bm) = self.0.blend_mode {
+            ext_st.blend_mode(bm);
+        }
+
         ext_st.finish();
 
         root_ref
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum CompositeMode {
     /// The composite mode 'Clear'.
     Clear,
@@ -116,27 +124,29 @@ pub enum CompositeMode {
     Luminosity,
 }
 
-impl CompositeMode {
-    pub fn is_pdf_blend_mode(&self) -> bool {
+impl TryInto<BlendMode> for CompositeMode {
+    type Error = ();
+
+    fn try_into(self) -> Result<BlendMode, Self::Error> {
         use CompositeMode::*;
-        matches!(
-            self,
-            SourceOver
-                | Multiply
-                | Screen
-                | Overlay
-                | Darken
-                | Lighten
-                | ColorDodge
-                | ColorBurn
-                | HardLight
-                | SoftLight
-                | Difference
-                | Exclusion
-                | Hue
-                | Saturation
-                | Color
-                | Luminosity
-        )
+        match self {
+            SourceOver => Ok(BlendMode::Normal),
+            Multiply => Ok(BlendMode::Multiply),
+            Screen => Ok(BlendMode::Screen),
+            Overlay => Ok(BlendMode::Overlay),
+            Darken => Ok(BlendMode::Darken),
+            Lighten => Ok(BlendMode::Lighten),
+            ColorDodge => Ok(BlendMode::ColorDodge),
+            ColorBurn => Ok(BlendMode::ColorBurn),
+            HardLight => Ok(BlendMode::HardLight),
+            SoftLight => Ok(BlendMode::SoftLight),
+            Difference => Ok(BlendMode::Difference),
+            Exclusion => Ok(BlendMode::Exclusion),
+            Hue => Ok(BlendMode::Hue),
+            Saturation => Ok(BlendMode::Saturation),
+            Color => Ok(BlendMode::Color),
+            Luminosity => Ok(BlendMode::Luminosity),
+            _ => Err(()),
+        }
     }
 }

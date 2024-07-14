@@ -1,13 +1,12 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
-use crate::ext_g_state::ExtGState;
+use crate::ext_g_state::{CompositeMode, ExtGState};
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
-use strict_num::NormalizedF32;
 use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
 
 pub struct Canvas {
@@ -37,6 +36,21 @@ impl Canvas {
         self.byte_code
             .push(Instruction::FillPath(Box::new((path, transform, fill))));
     }
+
+    pub fn draw_canvas(
+        &mut self,
+        canvas: Canvas,
+        transform: Transform,
+        composite_mode: CompositeMode,
+        isolated: bool,
+    ) {
+        self.byte_code.push(Instruction::DrawCanvas(Box::new((
+            canvas,
+            transform,
+            composite_mode,
+            isolated,
+        ))));
+    }
 }
 
 pub struct CanvasPdfSerializer {
@@ -57,19 +71,15 @@ impl CanvasPdfSerializer {
     pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
         for op in instructions {
             match op {
-                Instruction::SaveState => {
-                    self.save_state();
-                }
-                Instruction::RestoreState => {
-                    self.restore_state();
-                }
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
                 }
                 Instruction::FillPath(fill_data) => {
                     self.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
                 }
-                Instruction::DrawCanvas(_) => todo!(),
+                Instruction::DrawCanvas(canvas_data) => {
+                    self.draw_canvas(&canvas_data.0, &canvas_data.1, canvas_data.2, canvas_data.3);
+                }
             }
         }
     }
@@ -96,11 +106,11 @@ impl CanvasPdfSerializer {
         let path_bbox = path.bounds().transform(*transform).unwrap();
         self.bbox.expand(&path_bbox);
 
-        self.content.save_state();
+        self.save_state();
         self.transform(transform);
 
         if fill.opacity.get() != 1.0 {
-            let state = ExtGState::new(Some(fill.opacity), None);
+            let state = ExtGState::new(Some(fill.opacity), None, None);
             let ext = self.resource_dictionary.register_ext_g_state(state);
             self.content.set_parameters(ext.to_pdf_name());
         }
@@ -122,18 +132,18 @@ impl CanvasPdfSerializer {
             FillRule::NonZero => self.content.fill_nonzero(),
             FillRule::EvenOdd => self.content.fill_even_odd(),
         };
-        self.content.restore_state();
+        self.restore_state();
     }
 
     pub fn stroke_path(&mut self, path: &Path, transform: &Transform, stroke: &Stroke) {
         let path_bbox = path.bounds().transform(*transform).unwrap();
         self.bbox.expand(&path_bbox);
 
-        self.content.save_state();
+        self.save_state();
         self.transform(transform);
 
         if stroke.opacity.get() != 1.0 {
-            let state = ExtGState::new(None, Some(stroke.opacity));
+            let state = ExtGState::new(None, Some(stroke.opacity), None);
             let ext = self.resource_dictionary.register_ext_g_state(state);
             self.content.set_parameters(ext.to_pdf_name());
         }
@@ -178,7 +188,31 @@ impl CanvasPdfSerializer {
         draw_path(path.segments(), &mut self.content);
         self.content.stroke();
 
-        self.content.restore_state();
+        self.restore_state();
+    }
+
+    pub fn draw_canvas(
+        &mut self,
+        canvas: &Canvas,
+        transform: &Transform,
+        composite_mode: CompositeMode,
+        isolated: bool,
+    ) {
+        // TODO: Handle nested opacities
+        // TODO: Handle transforms on gradients/patterns
+        // TODO: Handle embedding as XObject
+        // let mut instructions = ByteCode::new();
+        // self.save_state();
+        // self.transform(transform);
+        // if let Ok(blend_mode) = composite_mode.try_into() {
+        //     if blend_mode != BlendMode::Normal {
+        //         let state = ExtGState::new(None, None, Some(blend_mode));
+        //         let ext = self.resource_dictionary.register_ext_g_state(state);
+        //         self.content.set_parameters(ext.to_pdf_name());
+        //     }
+        // }
+        // self.serialize_instructions(canvas.byte_code.instructions());
+        // self.restore_state()
     }
 }
 
@@ -235,6 +269,7 @@ impl PageSerialize for Canvas {
 
         let (content_stream, mut resource_dictionary, _) = {
             let mut serializer = CanvasPdfSerializer::new();
+            // TODO: Update bbox?
             serializer.transform(&Transform::from_row(
                 1.0,
                 0.0,
@@ -400,6 +435,31 @@ mod tests {
     fn serialize_canvas_fill() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
+        canvas.fill_path(
+            dummy_path(),
+            Transform::from_scale(2.0, 2.0),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(200, 0, 0)),
+                opacity: NormalizedF32::new(0.25).unwrap(),
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let finished = chunk.finish();
+
+        std::fs::write("out/serialize_canvas_fill.txt", &finished);
+        std::fs::write("out/serialize_canvas_fill.pdf", &finished);
+    }
+
+    #[test]
+    fn serialize_canvas_blend_mode() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
             dummy_path(),
             Transform::from_scale(2.0, 2.0),

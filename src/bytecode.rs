@@ -1,13 +1,12 @@
 use crate::canvas::Canvas;
+use crate::ext_g_state::CompositeMode;
 use crate::{Fill, Stroke};
-use tiny_skia_path::Path;
+use tiny_skia_path::{Path, Transform};
 
 pub enum Instruction {
-    SaveState,
-    RestoreState,
-    StrokePath(Box<(Path, tiny_skia_path::Transform, Stroke)>),
-    FillPath(Box<(Path, tiny_skia_path::Transform, Fill)>),
-    DrawCanvas(Box<Canvas>),
+    StrokePath(Box<(Path, Transform, Stroke)>),
+    FillPath(Box<(Path, Transform, Fill)>),
+    DrawCanvas(Box<(Canvas, Transform, CompositeMode, bool)>),
 }
 
 pub struct ByteCode(Vec<Instruction>);
