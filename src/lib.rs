@@ -1,4 +1,5 @@
 mod allocate;
+mod bytecode;
 mod canvas;
 mod color;
 mod paint;

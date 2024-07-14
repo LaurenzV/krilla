@@ -1,3 +1,4 @@
+use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
@@ -8,17 +9,37 @@ use pdf_writer::{Chunk, Content, Finish, Ref};
 use tiny_skia_path::{Path, PathSegment};
 
 pub struct Canvas {
-    content: Content,
-    resource_dictionary: ResourceDictionary,
-    q_nesting: u8,
+    byte_code: ByteCode,
 }
 
 impl Canvas {
     pub fn new() -> Self {
         Self {
-            content: Content::new(),
+            byte_code: ByteCode::new(),
+        }
+    }
+
+    pub fn stroke_path(
+        &mut self,
+        path: Path,
+        transform: tiny_skia_path::Transform,
+        stroke: Stroke,
+    ) {
+        self.byte_code
+            .push(Instruction::StrokePath(Box::new((path, transform, stroke))));
+    }
+}
+
+pub struct CanvasPdfSerializer {
+    resource_dictionary: ResourceDictionary,
+    content: Content,
+}
+
+impl CanvasPdfSerializer {
+    pub fn new() -> Self {
+        Self {
             resource_dictionary: ResourceDictionary::new(),
-            q_nesting: 0,
+            content: Content::new(),
         }
     }
 
@@ -28,14 +49,16 @@ impl Canvas {
         }
     }
 
-    fn save_state(&mut self) {
-        self.content.save_state();
-        self.q_nesting = self.q_nesting.checked_add(1).unwrap();
+    pub fn finish(self) -> (Vec<u8>, ResourceDictionary) {
+        (self.content.finish(), self.resource_dictionary)
     }
 
-    fn restore_state(&mut self) {
+    pub fn save_state(&mut self) {
+        self.content.save_state();
+    }
+
+    pub fn restore_state(&mut self) {
         self.content.restore_state();
-        self.q_nesting = self.q_nesting.checked_sub(1).unwrap();
     }
 
     pub fn stroke_path(
@@ -44,7 +67,7 @@ impl Canvas {
         transform: &tiny_skia_path::Transform,
         stroke: &Stroke,
     ) {
-        self.save_state();
+        self.content.save_state();
         self.transform(transform);
 
         match &stroke.paint {
@@ -87,7 +110,7 @@ impl Canvas {
         draw_path(path.segments(), &mut self.content);
         self.content.stroke();
 
-        self.restore_state();
+        self.content.restore_state();
     }
 }
 
@@ -100,14 +123,33 @@ impl ObjectSerialize for Canvas {
     ) -> Ref {
         let root_ref = ref_allocator.new_ref();
 
-        let content_stream = self.content.finish();
+        let (content_stream, mut resource_dictionary) = {
+            let mut serializer = CanvasPdfSerializer::new();
+
+            for op in self.byte_code.instructions() {
+                match op {
+                    Instruction::SaveState => {
+                        serializer.save_state();
+                    }
+                    Instruction::RestoreState => {
+                        serializer.restore_state();
+                    }
+                    Instruction::StrokePath(stroke_data) => {
+                        serializer.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
+                    }
+                    Instruction::DrawCanvas(_) => todo!(),
+                }
+            }
+
+            serializer.finish()
+        };
+
         let mut x_object = chunk.form_xobject(root_ref, &content_stream);
-        self.resource_dictionary
-            .to_pdf_resources(ref_allocator, &mut x_object.resources());
+        resource_dictionary.to_pdf_resources(ref_allocator, &mut x_object.resources());
         x_object.finish();
 
         if serialize_settings.serialize_dependencies {
-            for color_space in self.resource_dictionary.color_spaces.get_entries() {
+            for color_space in resource_dictionary.color_spaces.get_entries() {
                 color_space
                     .1
                     .serialize_into(chunk, ref_allocator, serialize_settings);
@@ -186,9 +228,9 @@ mod tests {
     fn serialize_canvas_1() {
         let mut canvas = Canvas::new();
         canvas.stroke_path(
-            &dummy_path(),
-            &Transform::from_scale(2.0, 2.0),
-            &Stroke::default(),
+            dummy_path(),
+            Transform::from_scale(2.0, 2.0),
+            Stroke::default(),
         );
 
         let chunk = canvas.serialize_chunk_only(&SerializeSettings::default());
@@ -199,9 +241,9 @@ mod tests {
     fn serialize_canvas_2() {
         let mut canvas = Canvas::new();
         canvas.stroke_path(
-            &dummy_path(),
-            &Transform::from_scale(2.0, 2.0),
-            &Stroke::default(),
+            dummy_path(),
+            Transform::from_scale(2.0, 2.0),
+            Stroke::default(),
         );
 
         let serialize_settings = SerializeSettings {
