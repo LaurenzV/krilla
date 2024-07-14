@@ -8,12 +8,12 @@ pub enum PdfObject {
     PdfColorSpace(PdfColorSpace),
 }
 
-pub struct RefAllocator {
+pub struct ObjectCache {
     mappings: HashMap<PdfObject, Ref>,
     _ref: Ref,
 }
 
-impl RefAllocator {
+impl ObjectCache {
     pub fn new() -> Self {
         Self {
             mappings: HashMap::new(),
