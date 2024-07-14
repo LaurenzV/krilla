@@ -34,6 +34,7 @@ pub struct StrokeDash {
 }
 
 pub struct Stroke {
+    pub paint: Paint,
     pub width: NonZeroPositiveF32,
     pub miter_limit: NonZeroPositiveF32,
     pub line_cap: LineCap,
@@ -45,6 +46,7 @@ pub struct Stroke {
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
+            paint: Paint::Color(Color::black()),
             width: NonZeroPositiveF32::new(1.0).unwrap(),
             miter_limit: NonZeroPositiveF32::new(4.0).unwrap(),
             line_cap: LineCap::default(),

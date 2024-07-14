@@ -1,8 +1,11 @@
+use crate::color::PdfColorExt;
+use crate::paint::Paint;
+use crate::resource::ResourceDictionary;
+use crate::util::NameExt;
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Content;
 use tiny_skia_path::{Path, PathSegment};
-use crate::resource::ResourceDictionary;
 
 pub struct Canvas {
     content: Content,
@@ -43,6 +46,19 @@ impl Canvas {
     ) {
         self.save_state();
         self.transform(transform);
+
+        match &stroke.paint {
+            Paint::Color(c) => {
+                let color_space = self
+                    .resource_dictionary
+                    .register_color_space(c.get_pdf_color_space());
+                self.content
+                    .set_stroke_color_space(color_space.to_pdf_name());
+                self.content.set_stroke_color(c.to_pdf_components());
+            }
+            Paint::LinearGradient(_) => unimplemented!(),
+            Paint::RadialGradient(_) => unimplemented!(),
+        }
         self.content.set_line_width(stroke.width.get());
         self.content.set_miter_limit(stroke.miter_limit.get());
         self.content.set_line_cap(stroke.line_cap.to_pdf_line_cap());
@@ -57,6 +73,7 @@ impl Canvas {
         }
 
         draw_path(path.segments(), &mut self.content);
+        self.content.stroke();
 
         self.restore_state();
     }

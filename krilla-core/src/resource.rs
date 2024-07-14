@@ -4,13 +4,13 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 pub struct ResourceDictionary {
-    color_spaces: CsResourceMapper
+    color_spaces: CsResourceMapper,
 }
 
 impl ResourceDictionary {
     pub fn new() -> Self {
         Self {
-            color_spaces: CsResourceMapper::new()
+            color_spaces: CsResourceMapper::new(),
         }
     }
     pub fn register_color_space(&mut self, color_space: PdfColorSpace) -> String {
@@ -169,7 +169,10 @@ mod tests {
         assert_eq!(mapper.remap(PdfColorSpace::SRGB), 1);
         assert_eq!(mapper.remap(PdfColorSpace::D65Gray), 2);
         assert_eq!(mapper.remap(PdfColorSpace::SRGB), 1);
-        assert_eq!(mapper.remap_with_name(PdfColorSpace::SRGB), String::from("cs1"));
+        assert_eq!(
+            mapper.remap_with_name(PdfColorSpace::SRGB),
+            String::from("cs1")
+        );
         let items = mapper.get_entries().collect::<Vec<_>>();
         assert_eq!(items[0], (String::from("cs1"), PdfColorSpace::SRGB));
         assert_eq!(items[1], (String::from("cs2"), PdfColorSpace::D65Gray));
