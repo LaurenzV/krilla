@@ -6,8 +6,8 @@ use tiny_skia_path::FiniteF32;
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum SpreadMethod {
     Pad,
-    Reflect,
-    Repeat,
+    // Reflect,
+    // Repeat,
 }
 
 impl Default for SpreadMethod {
