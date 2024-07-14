@@ -5,7 +5,7 @@ use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
+use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
 use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
 
@@ -53,9 +53,76 @@ impl Canvas {
     }
 }
 
+#[derive(Clone, Copy)]
+struct GraphicsState {
+    ext_g_state: ext_g_state::Repr,
+    ctm: Transform,
+}
+
+impl Default for GraphicsState {
+    fn default() -> Self {
+        Self {
+            ext_g_state: ext_g_state::Repr::default(),
+            ctm: Transform::identity(),
+        }
+    }
+}
+
+impl GraphicsState {
+    fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
+        self.ext_g_state.add_ext_g_state(other);
+    }
+
+    fn concat_transform(&mut self, transform: Transform) {
+        self.ctm = self.ctm.pre_concat(transform);
+    }
+
+    fn transform(&self) -> Transform {
+        self.ctm
+    }
+}
+
+struct GraphicsStates {
+    graphics_states: Vec<GraphicsState>,
+}
+
+impl GraphicsStates {
+    fn new() -> Self {
+        GraphicsStates {
+            graphics_states: vec![GraphicsState::default()],
+        }
+    }
+
+    fn cur(&self) -> GraphicsState {
+        *self.graphics_states.last().unwrap()
+    }
+
+    fn save_state(&mut self) {
+        let state = self.cur();
+        self.graphics_states.push(state)
+    }
+
+    fn restore_state(&mut self) {
+        self.graphics_states.pop();
+    }
+
+    fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
+        self.cur().add_ext_g_state(other);
+    }
+
+    fn transform(&mut self, transform: Transform) {
+        self.cur().concat_transform(transform);
+    }
+
+    fn transform_bbox(&self, bbox: Rect) -> Rect {
+        bbox.transform(self.cur().transform()).unwrap()
+    }
+}
+
 pub struct CanvasPdfSerializer {
     resource_dictionary: ResourceDictionary,
     content: Content,
+    graphics_states: GraphicsStates,
     bbox: Rect,
 }
 
@@ -64,6 +131,7 @@ impl CanvasPdfSerializer {
         Self {
             resource_dictionary: ResourceDictionary::new(),
             content: Content::new(),
+            graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
         }
     }
@@ -86,6 +154,7 @@ impl CanvasPdfSerializer {
 
     pub fn transform(&mut self, transform: &tiny_skia_path::Transform) {
         if !transform.is_identity() {
+            self.graphics_states.transform(*transform);
             self.content.transform(transform.to_pdf_transform());
         }
     }
@@ -95,19 +164,21 @@ impl CanvasPdfSerializer {
     }
 
     pub fn save_state(&mut self) {
+        self.graphics_states.save_state();
         self.content.save_state();
     }
 
     pub fn restore_state(&mut self) {
+        self.graphics_states.restore_state();
         self.content.restore_state();
     }
 
-    pub fn fill_path(&mut self, path: &Path, transform: &tiny_skia_path::Transform, fill: &Fill) {
-        let path_bbox = path.bounds().transform(*transform).unwrap();
-        self.bbox.expand(&path_bbox);
-
+    pub fn fill_path(&mut self, path: &Path, transform: &Transform, fill: &Fill) {
         self.save_state();
         self.transform(transform);
+
+        self.bbox
+            .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
         if fill.opacity.get() != 1.0 {
             let state = ExtGState::new(Some(fill.opacity), None, None);

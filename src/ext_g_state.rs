@@ -1,3 +1,4 @@
+use crate::ext_g_state;
 use crate::resource::PDFResource;
 use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
 use pdf_writer::types::BlendMode;
@@ -5,11 +6,27 @@ use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
 use strict_num::NormalizedF32;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub struct Repr {
     non_stroking_alpha: Option<NormalizedF32>,
     stroking_alpha: Option<NormalizedF32>,
     blend_mode: Option<BlendMode>,
+}
+
+impl Repr {
+    pub(crate) fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
+        if let Some(non_stroking_alpha) = other.non_stroking_alpha {
+            self.non_stroking_alpha = Some(non_stroking_alpha);
+        }
+
+        if let Some(stroking_alpha) = other.stroking_alpha {
+            self.stroking_alpha = Some(stroking_alpha);
+        }
+
+        if let Some(blend_mpde) = other.blend_mode {
+            self.blend_mode = Some(blend_mpde)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
