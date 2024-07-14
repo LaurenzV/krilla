@@ -3,6 +3,7 @@ use crate::resource::PDFResource;
 use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Ref};
+use std::ops::Deref;
 use std::sync::Arc;
 use strict_num::NormalizedF32;
 
@@ -31,6 +32,14 @@ impl Repr {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ExtGState(Arc<Repr>);
+
+impl Deref for ExtGState {
+    type Target = Repr;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
 
 impl ExtGState {
     pub fn new(

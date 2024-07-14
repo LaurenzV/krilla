@@ -6,7 +6,9 @@ use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
+use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use strict_num::NormalizedF32;
 use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
 
 pub struct Canvas {
@@ -173,6 +175,36 @@ impl CanvasPdfSerializer {
         self.content.restore_state();
     }
 
+    pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
+        if alpha.get() != 1.0 {
+            let state = ExtGState::new(Some(alpha), None, None);
+            self.graphics_states.add_ext_g_state(&state);
+
+            let ext = self.resource_dictionary.register_ext_g_state(state);
+            self.content.set_parameters(ext.to_pdf_name());
+        }
+    }
+
+    pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
+        if alpha.get() != 1.0 {
+            let state = ExtGState::new(None, Some(alpha), None);
+            self.graphics_states.add_ext_g_state(&state);
+
+            let ext = self.resource_dictionary.register_ext_g_state(state);
+            self.content.set_parameters(ext.to_pdf_name());
+        }
+    }
+
+    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
+        if blend_mode != BlendMode::Normal {
+            let state = ExtGState::new(None, None, Some(blend_mode));
+            self.graphics_states.add_ext_g_state(&state);
+
+            let ext = self.resource_dictionary.register_ext_g_state(state);
+            self.content.set_parameters(ext.to_pdf_name());
+        }
+    }
+
     pub fn fill_path(&mut self, path: &Path, transform: &Transform, fill: &Fill) {
         self.save_state();
         self.transform(transform);
@@ -180,11 +212,7 @@ impl CanvasPdfSerializer {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
-        if fill.opacity.get() != 1.0 {
-            let state = ExtGState::new(Some(fill.opacity), None, None);
-            let ext = self.resource_dictionary.register_ext_g_state(state);
-            self.content.set_parameters(ext.to_pdf_name());
-        }
+        self.set_fill_opacity(fill.opacity);
 
         match &fill.paint {
             Paint::Color(c) => {
@@ -213,11 +241,7 @@ impl CanvasPdfSerializer {
         self.save_state();
         self.transform(transform);
 
-        if stroke.opacity.get() != 1.0 {
-            let state = ExtGState::new(None, Some(stroke.opacity), None);
-            let ext = self.resource_dictionary.register_ext_g_state(state);
-            self.content.set_parameters(ext.to_pdf_name());
-        }
+        self.set_stroke_opacity(stroke.opacity);
 
         match &stroke.paint {
             Paint::Color(c) => {
@@ -272,18 +296,15 @@ impl CanvasPdfSerializer {
         // TODO: Handle nested opacities
         // TODO: Handle transforms on gradients/patterns
         // TODO: Handle embedding as XObject
-        // let mut instructions = ByteCode::new();
-        // self.save_state();
-        // self.transform(transform);
-        // if let Ok(blend_mode) = composite_mode.try_into() {
-        //     if blend_mode != BlendMode::Normal {
-        //         let state = ExtGState::new(None, None, Some(blend_mode));
-        //         let ext = self.resource_dictionary.register_ext_g_state(state);
-        //         self.content.set_parameters(ext.to_pdf_name());
-        //     }
-        // }
-        // self.serialize_instructions(canvas.byte_code.instructions());
-        // self.restore_state()
+        self.save_state();
+        self.transform(transform);
+        if let Ok(blend_mode) = composite_mode.try_into() {
+            self.set_blend_mode(blend_mode);
+        } else {
+            unimplemented!();
+        }
+        self.serialize_instructions(canvas.byte_code.instructions());
+        self.restore_state()
     }
 }
 
@@ -435,6 +456,7 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
+    use crate::ext_g_state::CompositeMode;
     use crate::paint::Paint;
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, Stroke};
@@ -533,12 +555,30 @@ mod tests {
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
             dummy_path(),
-            Transform::from_scale(2.0, 2.0),
+            Transform::from_translate(25.0, 25.0),
             Fill {
-                paint: Paint::Color(Color::new_rgb(200, 0, 0)),
+                paint: Paint::Color(Color::new_rgb(255, 0, 0)),
                 opacity: NormalizedF32::new(0.25).unwrap(),
                 ..Fill::default()
             },
+        );
+
+        let mut second = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
+        second.fill_path(
+            dummy_path(),
+            Transform::from_translate(-25.0, -25.0),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(255, 255, 0)),
+                opacity: NormalizedF32::new(1.0).unwrap(),
+                ..Fill::default()
+            },
+        );
+
+        canvas.draw_canvas(
+            second,
+            Transform::from_translate(100.0, 100.0),
+            CompositeMode::Difference,
+            false,
         );
 
         let serialize_settings = SerializeSettings {
@@ -548,7 +588,7 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, &serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/serialize_canvas_fill.txt", &finished);
-        std::fs::write("out/serialize_canvas_fill.pdf", &finished);
+        std::fs::write("out/serialize_canvas_blend.txt", &finished);
+        std::fs::write("out/serialize_canvas_blend.pdf", &finished);
     }
 }
