@@ -2,9 +2,11 @@ use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Content;
 use tiny_skia_path::{Path, PathSegment};
+use crate::resource::ResourceDictionary;
 
 pub struct Canvas {
     content: Content,
+    resource_dictionary: ResourceDictionary,
     q_nesting: u8,
 }
 
@@ -12,6 +14,7 @@ impl Canvas {
     pub fn new() -> Self {
         Self {
             content: Content::new(),
+            resource_dictionary: ResourceDictionary::new(),
             q_nesting: 0,
         }
     }
