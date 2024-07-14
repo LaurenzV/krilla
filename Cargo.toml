@@ -1,13 +1,12 @@
-[workspace]
-resolver = "2"
+[package]
+name = "krilla"
+version = "0.1.0"
+edition = "2021"
 
-members = [
-    "krilla-core",
-]
-
-[workspace.dependencies]
-tiny-skia-path = "0.11.4"
-strict-num = "0.2.0"
-pdf-writer = "0.10.0"
+[dependencies]
+miniz_oxide = "0.7.4"
 once_cell = "1.19.0"
-miniz_oxide = "0.7"
+pdf-writer = "0.10.0"
+strict-num = "0.2.0"
+tiny-skia-path = "0.11.4"
+
