@@ -3,10 +3,10 @@ use crate::color::PdfColorExt;
 use crate::paint::Paint;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, RefAllocator, SerializeSettings};
-use crate::util::{LineCapExt, LineJoinExt, NameExt, TransformExt};
+use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::{Chunk, Content, Finish, Ref};
-use tiny_skia_path::{Path, PathSegment};
+use tiny_skia_path::{NonZeroRect, Path, PathSegment, Rect};
 
 pub struct Canvas {
     byte_code: ByteCode,
@@ -33,6 +33,7 @@ impl Canvas {
 pub struct CanvasPdfSerializer {
     resource_dictionary: ResourceDictionary,
     content: Content,
+    bbox: Rect,
 }
 
 impl CanvasPdfSerializer {
@@ -40,6 +41,7 @@ impl CanvasPdfSerializer {
         Self {
             resource_dictionary: ResourceDictionary::new(),
             content: Content::new(),
+            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
         }
     }
 
@@ -49,8 +51,8 @@ impl CanvasPdfSerializer {
         }
     }
 
-    pub fn finish(self) -> (Vec<u8>, ResourceDictionary) {
-        (self.content.finish(), self.resource_dictionary)
+    pub fn finish(self) -> (Vec<u8>, ResourceDictionary, Rect) {
+        (self.content.finish(), self.resource_dictionary, self.bbox)
     }
 
     pub fn save_state(&mut self) {
@@ -67,6 +69,9 @@ impl CanvasPdfSerializer {
         transform: &tiny_skia_path::Transform,
         stroke: &Stroke,
     ) {
+        let path_bbox = path.bounds().transform(*transform).unwrap();
+        self.bbox.expand(&path_bbox);
+
         self.content.save_state();
         self.transform(transform);
 
@@ -123,7 +128,7 @@ impl ObjectSerialize for Canvas {
     ) -> Ref {
         let root_ref = ref_allocator.new_ref();
 
-        let (content_stream, mut resource_dictionary) = {
+        let (content_stream, mut resource_dictionary, bbox) = {
             let mut serializer = CanvasPdfSerializer::new();
 
             for op in self.byte_code.instructions() {
@@ -146,6 +151,7 @@ impl ObjectSerialize for Canvas {
 
         let mut x_object = chunk.form_xobject(root_ref, &content_stream);
         resource_dictionary.to_pdf_resources(ref_allocator, &mut x_object.resources());
+        x_object.bbox(bbox.to_pdf_rect());
         x_object.finish();
 
         if serialize_settings.serialize_dependencies {

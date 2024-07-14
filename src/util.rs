@@ -1,6 +1,7 @@
 use crate::{LineCap, LineJoin};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
+use tiny_skia_path::Rect;
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;
@@ -52,5 +53,29 @@ impl LineJoinExt for LineJoin {
             LineJoin::Round => LineJoinStyle::RoundJoin,
             LineJoin::Bevel => LineJoinStyle::BevelJoin,
         }
+    }
+}
+
+pub trait RectExt {
+    fn expand(&mut self, other: &Rect);
+    fn to_pdf_rect(&self) -> pdf_writer::Rect;
+}
+
+impl RectExt for Rect {
+    fn expand(&mut self, other: &Rect) {
+        let left = self.left().min(other.left());
+        let top = self.top().min(other.top());
+        let right = self.right().max(other.right());
+        let bottom = self.bottom().max(other.bottom());
+        *self = Rect::from_ltrb(left, top, right, bottom).unwrap();
+    }
+
+    fn to_pdf_rect(&self) -> pdf_writer::Rect {
+        pdf_writer::Rect::new(
+            self.x(),
+            self.y(),
+            self.x() + self.width(),
+            self.y() + self.height(),
+        )
     }
 }

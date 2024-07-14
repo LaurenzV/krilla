@@ -2,6 +2,7 @@ mod allocate;
 mod bytecode;
 mod canvas;
 mod color;
+mod ext_st;
 mod paint;
 mod path;
 mod resource;
