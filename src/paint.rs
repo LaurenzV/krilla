@@ -16,7 +16,7 @@ impl Default for SpreadMethod {
     }
 }
 
-pub type StopOffset = NormalizedF64;
+pub type StopOffset = NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stop {
