@@ -4,7 +4,7 @@ use crate::serialize::{ObjectSerialize, RefAllocator};
 use pdf_writer::{Chunk, Finish, Ref};
 use strict_num::NormalizedF32;
 
-fn stop_function(stops: Vec<Stop>, chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
+fn serialize_stop_function(stops: Vec<Stop>, chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
     debug_assert!(stops.len() > 1);
 
     fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
