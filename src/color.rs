@@ -1,7 +1,9 @@
 use crate::resource::PdfColorSpace;
 use crate::util::deflate;
 use once_cell::sync::Lazy;
+use pdf_writer::types::FunctionShadingType;
 use strict_num::NormalizedF32;
+use tiny_skia_path::Transform;
 
 // The ICC profiles.
 pub static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> =

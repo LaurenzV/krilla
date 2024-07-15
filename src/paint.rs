@@ -1,7 +1,8 @@
 use crate::color::Color;
 use crate::transform::FiniteTransform;
+use pdf_writer::types::FunctionShadingType;
 use strict_num::{NormalizedF32, NormalizedF64, PositiveF32};
-use tiny_skia_path::FiniteF32;
+use tiny_skia_path::{FiniteF32, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum SpreadMethod {
@@ -55,4 +56,38 @@ pub enum Paint {
     Color(Color),
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
+}
+
+struct GradientProperties {
+    coords: Vec<FiniteF32>,
+    shading_type: FunctionShadingType,
+    stops: Vec<Stop>,
+    transform: FiniteTransform,
+}
+
+impl GradientProperties {
+    fn try_from_paint(paint: &Paint) -> Option<Self> {
+        match paint {
+            Paint::LinearGradient(l) => Some(Self {
+                coords: vec![l.x1, l.y1, l.x2, l.y2],
+                shading_type: FunctionShadingType::Axial,
+                stops: Vec::from(l.stops.clone()),
+                transform: l.transform,
+            }),
+            Paint::RadialGradient(r) => Some(Self {
+                coords: vec![
+                    r.fx,
+                    r.fy,
+                    FiniteF32::new(0.0).unwrap(),
+                    r.cx,
+                    r.cy,
+                    FiniteF32::new(r.r.get()).unwrap(),
+                ],
+                shading_type: FunctionShadingType::Radial,
+                stops: Vec::from(r.stops.clone()),
+                transform: r.transform,
+            }),
+            _ => None,
+        }
+    }
 }
