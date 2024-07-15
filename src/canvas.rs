@@ -13,6 +13,7 @@ use pdf_writer::types::ColorSpaceOperand::Pattern;
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Canvas {
     byte_code: ByteCode,
     size: Size,
@@ -32,13 +33,19 @@ impl Canvas {
         transform: tiny_skia_path::Transform,
         stroke: Stroke,
     ) {
-        self.byte_code
-            .push(Instruction::StrokePath(Box::new((path, transform, stroke))));
+        self.byte_code.push(Instruction::StrokePath(Box::new((
+            path.into(),
+            transform.try_into().unwrap(),
+            stroke,
+        ))));
     }
 
     pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
-        self.byte_code
-            .push(Instruction::FillPath(Box::new((path, transform, fill))));
+        self.byte_code.push(Instruction::FillPath(Box::new((
+            path.into(),
+            transform.try_into().unwrap(),
+            fill,
+        ))));
     }
 
     pub fn push_layer(&mut self) {
@@ -51,7 +58,7 @@ impl Canvas {
 
     pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
         self.byte_code
-            .push(Instruction::ClipPath(Box::new((path, clip_rule))));
+            .push(Instruction::ClipPath(Box::new((path.into(), clip_rule))));
     }
 
     pub fn draw_canvas(
@@ -64,7 +71,7 @@ impl Canvas {
     ) {
         self.byte_code.push(Instruction::DrawCanvas(Box::new((
             canvas,
-            transform,
+            transform.try_into().unwrap(),
             composite_mode,
             opacity,
             isolated,
@@ -167,22 +174,30 @@ impl CanvasPdfSerializer {
             match op {
                 Instruction::PushLayer => self.save_state(),
                 Instruction::PopLayer => self.restore_state(),
-                Instruction::StrokePath(stroke_data) => {
-                    self.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
-                }
+                Instruction::StrokePath(stroke_data) => self.stroke_path(
+                    &stroke_data.0 .0,
+                    &stroke_data.1.try_into().unwrap(),
+                    &stroke_data.2,
+                ),
                 Instruction::FillPath(fill_data) => {
-                    self.fill_path(&fill_data.0, &fill_data.1, &fill_data.2);
+                    self.fill_path(
+                        &fill_data.0 .0,
+                        &fill_data.1.try_into().unwrap(),
+                        &fill_data.2,
+                    );
                 }
                 Instruction::DrawCanvas(canvas_data) => {
                     self.draw_canvas(
                         &canvas_data.0,
-                        &canvas_data.1,
+                        &canvas_data.1.try_into().unwrap(),
                         canvas_data.2,
                         canvas_data.3,
                         canvas_data.4,
                     );
                 }
-                Instruction::ClipPath(clip_data) => self.set_clip_path(&clip_data.0, &clip_data.1),
+                Instruction::ClipPath(clip_data) => {
+                    self.set_clip_path(&clip_data.0 .0, &clip_data.1)
+                }
             }
         }
     }
@@ -375,8 +390,10 @@ impl CanvasPdfSerializer {
         }
 
         if let Some(stroke_dash) = &stroke.dash {
-            self.content
-                .set_dash_pattern(stroke_dash.array.iter().cloned(), stroke_dash.offset);
+            self.content.set_dash_pattern(
+                stroke_dash.array.iter().map(|n| n.get()),
+                stroke_dash.offset.get(),
+            );
         }
 
         draw_path(path.segments(), &mut self.content);

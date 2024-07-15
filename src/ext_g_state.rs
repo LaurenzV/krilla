@@ -80,7 +80,7 @@ impl ObjectSerialize for ExtGState {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Hash)]
 pub enum CompositeMode {
     /// The composite mode 'Clear'.
     Clear,
