@@ -7,10 +7,15 @@ use crate::util::TransformExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use strict_num::NormalizedF32;
-use tiny_skia_path::Transform;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingPattern(Arc<GradientProperties>, FiniteTransform);
+
+impl ShadingPattern {
+    pub fn new(gradient_properties: GradientProperties, transform: FiniteTransform) -> Self {
+        Self(Arc::new(gradient_properties), transform)
+    }
+}
 
 impl ObjectSerialize for ShadingPattern {
     fn serialize_into(

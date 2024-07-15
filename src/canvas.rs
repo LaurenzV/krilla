@@ -1,13 +1,16 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
-use crate::paint::Paint;
-use crate::resource::ResourceDictionary;
+use crate::paint::{GradientPropertiesExt, Paint};
+use crate::resource::{PdfColorSpace, ResourceDictionary};
 use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
+use crate::shading::ShadingPattern;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
+use pdf_writer::types::ColorSpaceOperand::Pattern;
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use std::sync::Arc;
 use strict_num::NormalizedF32;
 use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
 
@@ -242,7 +245,16 @@ impl CanvasPdfSerializer {
                 self.content.set_fill_color_space(color_space.to_pdf_name());
                 self.content.set_fill_color(c.to_pdf_components());
             }
-            Paint::LinearGradient(_) => unimplemented!(),
+            Paint::LinearGradient(lg) => {
+                let (gradient_props, transform) = lg.gradient_properties();
+                let shading_pattern = ShadingPattern::new(gradient_props, transform);
+                let color_space = self
+                    .resource_dictionary
+                    .register_color_space(PdfColorSpace::Shading(shading_pattern));
+                self.content.set_fill_color_space(Pattern);
+                self.content
+                    .set_fill_pattern(None, color_space.to_pdf_name());
+            }
             Paint::RadialGradient(_) => unimplemented!(),
         }
 

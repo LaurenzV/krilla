@@ -68,33 +68,39 @@ pub struct GradientProperties {
     pub stops: Vec<Stop>,
 }
 
-impl Paint {
-    fn gradient_properties(&self) -> Option<((GradientProperties, FiniteTransform))> {
-        match self {
-            Paint::LinearGradient(l) => Some((
-                GradientProperties {
-                    coords: vec![l.x1, l.y1, l.x2, l.y2],
-                    shading_type: FunctionShadingType::Axial,
-                    stops: Vec::from(l.stops.clone()),
-                },
-                l.transform,
-            )),
-            Paint::RadialGradient(r) => Some((
-                GradientProperties {
-                    coords: vec![
-                        r.fx,
-                        r.fy,
-                        FiniteF32::new(0.0).unwrap(),
-                        r.cx,
-                        r.cy,
-                        FiniteF32::new(r.r.get()).unwrap(),
-                    ],
-                    shading_type: FunctionShadingType::Radial,
-                    stops: Vec::from(r.stops.clone()),
-                },
-                r.transform,
-            )),
-            _ => None,
-        }
+pub trait GradientPropertiesExt {
+    fn gradient_properties(&self) -> (GradientProperties, FiniteTransform);
+}
+
+impl GradientPropertiesExt for LinearGradient {
+    fn gradient_properties(&self) -> (GradientProperties, FiniteTransform) {
+        (
+            GradientProperties {
+                coords: vec![self.x1, self.y1, self.x2, self.y2],
+                shading_type: FunctionShadingType::Axial,
+                stops: Vec::from(self.stops.clone()),
+            },
+            self.transform,
+        )
+    }
+}
+
+impl GradientPropertiesExt for RadialGradient {
+    fn gradient_properties(&self) -> (GradientProperties, FiniteTransform) {
+        (
+            GradientProperties {
+                coords: vec![
+                    self.fx,
+                    self.fy,
+                    FiniteF32::new(0.0).unwrap(),
+                    self.cx,
+                    self.cy,
+                    FiniteF32::new(self.r.get()).unwrap(),
+                ],
+                shading_type: FunctionShadingType::Radial,
+                stops: Vec::from(self.stops.clone()),
+            },
+            self.transform,
+        )
     }
 }

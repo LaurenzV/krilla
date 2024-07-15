@@ -2,6 +2,7 @@ use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::ext_g_state::ExtGState;
 use crate::paint::{LinearGradient, RadialGradient};
 use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use crate::shading::ShadingPattern;
 use crate::util::NameExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::collections::{BTreeMap, HashMap};
@@ -66,8 +67,7 @@ pub type ExtGStateResourceMapper = ResourceMapper<ExtGState>;
 pub enum PdfColorSpace {
     SRGB,
     D65Gray,
-    LinearGradient(Arc<LinearGradient>),
-    RadialGradient(Arc<RadialGradient>),
+    Shading(ShadingPattern),
 }
 
 impl PDFResource for PdfColorSpace {
@@ -81,12 +81,11 @@ impl ObjectSerialize for PdfColorSpace {
         self,
         chunk: &mut Chunk,
         ref_allocator: &mut RefAllocator,
-        _: &SerializeSettings,
+        serialize_settings: &SerializeSettings,
     ) -> Ref {
-        let root_ref = ref_allocator.cached_ref(PdfObject::PdfColorSpace(self.clone()));
-
         match self {
             PdfColorSpace::SRGB => {
+                let root_ref = ref_allocator.cached_ref(PdfObject::PdfColorSpace(self.clone()));
                 let icc_ref = ref_allocator.new_ref();
                 let mut array = chunk.indirect(root_ref).array();
                 array.item(Name(b"ICCBased"));
@@ -98,18 +97,21 @@ impl ObjectSerialize for PdfColorSpace {
                     .n(3)
                     .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
+                root_ref
             }
             PdfColorSpace::D65Gray => {
+                let root_ref = ref_allocator.cached_ref(PdfObject::PdfColorSpace(self.clone()));
                 chunk
                     .icc_profile(root_ref, &GREY_ICC_DEFLATED)
                     .n(1)
                     .range([0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
+                root_ref
             }
-            _ => unimplemented!(),
+            PdfColorSpace::Shading(sh) => {
+                sh.serialize_into(chunk, ref_allocator, serialize_settings)
+            }
         }
-
-        root_ref
     }
 }
 
