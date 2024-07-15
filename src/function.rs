@@ -1,11 +1,10 @@
 use crate::color::PdfColorExt;
 use crate::paint::Stop;
-use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use crate::serialize::{ObjectSerialize, RefAllocator};
 use pdf_writer::{Chunk, Finish, Ref};
-use std::sync::Arc;
 use strict_num::NormalizedF32;
 
-fn stop_function(stops: Vec<Stop>, ref_allocator: &mut RefAllocator) -> Ref {
+fn stop_function(stops: Vec<Stop>, chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
     debug_assert!(stops.len() > 1);
 
     fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
@@ -30,123 +29,72 @@ fn stop_function(stops: Vec<Stop>, ref_allocator: &mut RefAllocator) -> Ref {
     }
 
     let stops = pad_stops(stops);
-    ref_allocator.cached_ref(PdfObject::PdfFunction(select_function(stops)))
+    select_function(&stops, chunk, ref_allocator)
 }
 
-fn select_function(stops: Vec<Stop>) -> PdfFunction {
+fn select_function(stops: &[Stop], chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
     if stops.len() == 2 {
-        PdfFunction::ExponentialFunction(ExponentialFunction::new(
-            stops[0].clone().color.to_normalized_pdf_components(),
-            stops[1].clone().color.to_normalized_pdf_components(),
-        ))
+        serialize_exponential(
+            &stops[0].color.to_normalized_pdf_components(),
+            &stops[1].color.to_normalized_pdf_components(),
+            chunk,
+            ref_allocator,
+        )
     } else {
-        PdfFunction::StitchingFunction(StitchingFunction(Arc::new(stops.clone())))
+        serialize_stitching(stops, chunk, ref_allocator)
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum PdfFunction {
-    StitchingFunction(StitchingFunction),
-    ExponentialFunction(ExponentialFunction),
-}
+fn serialize_stitching(stops: &[Stop], chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
+    let root_ref = ref_allocator.new_ref();
+    let mut functions = vec![];
+    let mut bounds = vec![];
+    let mut encode = vec![];
+    let mut count = 0;
 
-impl ObjectSerialize for PdfFunction {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        serialize_settings: &SerializeSettings,
-    ) -> Ref {
-        match self {
-            PdfFunction::StitchingFunction(st) => {
-                st.serialize_into(chunk, ref_allocator, serialize_settings)
-            }
-            PdfFunction::ExponentialFunction(ef) => {
-                ef.serialize_into(chunk, ref_allocator, serialize_settings)
-            }
-        }
+    for window in stops.windows(2) {
+        let (first, second) = (&window[0], &window[1]);
+        bounds.push(second.offset.get());
+
+        let c0_components = first.color.to_normalized_pdf_components();
+        let c1_components = second.color.to_normalized_pdf_components();
+        debug_assert!(c0_components.len() == c1_components.len());
+        count = c0_components.len();
+
+        let exp_ref = serialize_exponential(&c0_components, &c1_components, chunk, ref_allocator);
+
+        functions.push(exp_ref);
+        encode.extend([0.0, 1.0]);
     }
+
+    bounds.pop();
+    let mut stitching_function = chunk.stitching_function(root_ref);
+    stitching_function.domain([0.0, 1.0]);
+    stitching_function.range([0.0, 1.0].repeat(count));
+    stitching_function.functions(functions);
+    stitching_function.bounds(bounds);
+    stitching_function.encode(encode);
+
+    root_ref
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct StitchingFunction(Arc<Vec<Stop>>);
+fn serialize_exponential(
+    first_comps: &[NormalizedF32],
+    second_comps: &[NormalizedF32],
+    chunk: &mut Chunk,
+    ref_allocator: &mut RefAllocator,
+) -> Ref {
+    let root_ref = ref_allocator.new_ref();
+    debug_assert_eq!(first_comps.len(), second_comps.len());
+    let num_components = first_comps.len();
 
-impl ObjectSerialize for StitchingFunction {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        _: &SerializeSettings,
-    ) -> Ref {
-        let root_ref = ref_allocator.new_ref();
-        let mut functions = vec![];
-        let mut bounds = vec![];
-        let mut encode = vec![];
-        let mut count = 0;
+    let mut exp = chunk.exponential_function(root_ref);
 
-        for window in self.0.windows(2) {
-            let (first, second) = (&window[0], &window[1]);
-            bounds.push(second.offset.get());
-
-            let c0_components = first.color.to_normalized_pdf_components();
-            let c1_components = second.color.to_normalized_pdf_components();
-            debug_assert!(c0_components.len() == c1_components.len());
-            count = c0_components.len();
-
-            let exp_ref = ref_allocator.cached_ref(PdfObject::ExponentialFunction(
-                ExponentialFunction::new(c0_components, c1_components),
-            ));
-
-            functions.push(exp_ref);
-            encode.extend([0.0, 1.0]);
-        }
-
-        bounds.pop();
-        let mut stitching_function = chunk.stitching_function(root_ref);
-        stitching_function.domain([0.0, 1.0]);
-        stitching_function.range([0.0, 1.0].repeat(count));
-        stitching_function.functions(functions);
-        stitching_function.bounds(bounds);
-        stitching_function.encode(encode);
-
-        root_ref
-    }
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-struct ExponentialFunctionRepr {
-    c0: Vec<NormalizedF32>,
-    c1: Vec<NormalizedF32>,
-}
-
-impl ExponentialFunction {
-    pub fn new(c0: Vec<NormalizedF32>, c1: Vec<NormalizedF32>) -> Self {
-        Self(Arc::new(ExponentialFunctionRepr { c0, c1 }))
-    }
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ExponentialFunction(Arc<ExponentialFunctionRepr>);
-
-impl ObjectSerialize for ExponentialFunction {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        _: &SerializeSettings,
-    ) -> Ref {
-        let root_ref = ref_allocator.cached_ref(PdfObject::ExponentialFunction(self.clone()));
-        debug_assert_eq!(self.0.c0.len(), self.0.c1.len());
-        let num_components = self.0.c0.len();
-
-        let mut exp = chunk.exponential_function(root_ref);
-
-        exp.range([0.0, 1.0].repeat(num_components));
-        exp.c0(self.0.c0.clone().into_iter().map(|n| n.get()));
-        exp.c1(self.0.c1.clone().into_iter().map(|n| n.get()));
-        exp.domain([0.0, 1.0]);
-        exp.n(1.0);
-        exp.finish();
-        root_ref
-    }
+    exp.range([0.0, 1.0].repeat(num_components));
+    exp.c0(first_comps.into_iter().map(|n| n.get()));
+    exp.c1(second_comps.into_iter().map(|n| n.get()));
+    exp.domain([0.0, 1.0]);
+    exp.n(1.0);
+    exp.finish();
+    root_ref
 }

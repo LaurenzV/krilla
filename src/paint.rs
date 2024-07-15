@@ -58,6 +58,10 @@ pub enum Paint {
     RadialGradient(RadialGradient),
 }
 
+#[derive(Debug, Hash, Eq, PartialEq)]
+struct Shading(GradientProperties);
+
+#[derive(Debug, Hash, Eq, PartialEq)]
 struct GradientProperties {
     coords: Vec<FiniteF32>,
     shading_type: FunctionShadingType,
