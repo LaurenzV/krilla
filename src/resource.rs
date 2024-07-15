@@ -87,7 +87,7 @@ pub enum PdfPattern {
 
 impl PDFResource for PdfPattern {
     fn get_name() -> &'static str {
-        "pa"
+        "P"
     }
 }
 
@@ -108,7 +108,7 @@ pub enum PdfColorSpace {
 
 impl PDFResource for PdfColorSpace {
     fn get_name() -> &'static str {
-        "cs"
+        "C"
     }
 }
 
@@ -210,10 +210,10 @@ mod tests {
         assert_eq!(mapper.remap(PdfColorSpace::SRGB), 0);
         assert_eq!(
             mapper.remap_with_name(PdfColorSpace::SRGB),
-            String::from("cs0")
+            String::from("C0")
         );
         let items = mapper.get_entries().collect::<Vec<_>>();
-        assert_eq!(items[0], (String::from("cs0"), PdfColorSpace::SRGB));
-        assert_eq!(items[1], (String::from("cs1"), PdfColorSpace::D65Gray));
+        assert_eq!(items[0], (String::from("C0"), PdfColorSpace::SRGB));
+        assert_eq!(items[1], (String::from("C1"), PdfColorSpace::D65Gray));
     }
 }

@@ -57,7 +57,7 @@ impl ExtGState {
 
 impl PDFResource for ExtGState {
     fn get_name() -> &'static str {
-        "gs"
+        "G"
     }
 }
 
