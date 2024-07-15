@@ -1,5 +1,5 @@
 use crate::ext_g_state::ExtGState;
-use crate::function::ExponentialFunction;
+use crate::function::{ExponentialFunction, StitchingFunction};
 use crate::resource::PdfColorSpace;
 use pdf_writer::{Chunk, Pdf, Ref};
 use std::collections::HashMap;
@@ -10,6 +10,7 @@ pub enum PdfObject {
     PdfColorSpace(PdfColorSpace),
     ExtGState(ExtGState),
     ExponentialFunction(ExponentialFunction),
+    StitchingFunction(StitchingFunction),
 }
 
 pub struct RefAllocator {

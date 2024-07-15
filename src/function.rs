@@ -5,6 +5,49 @@ use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
 use strict_num::NormalizedF32;
 
+// fn stop_function(
+//     stops: Vec<Stop>,
+//     chunk: &mut Chunk,
+//     ref_allocator: &mut RefAllocator,
+// ) {
+//     debug_assert!(stops.len() > 1);
+//
+//     fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
+//         // We manually pad the stops if necessary so that they are always in the range from 0-1
+//         if let Some(first) = stops.first() {
+//             if first.offset != 0.0 {
+//                 let mut new_stop = *first;
+//                 new_stop.offset = NormalizedF32::ZERO;
+//                 stops.insert(0, new_stop);
+//             }
+//         }
+//
+//         if let Some(last) = stops.last() {
+//             if last.offset != 1.0 {
+//                 let mut new_stop = *last;
+//                 new_stop.offset = NormalizedF32::ONE;
+//                 stops.push(new_stop);
+//             }
+//         }
+//
+//         stops
+//     }
+//
+//     let stops = pad_stops(stops);
+// }
+
+// fn select_function<const COUNT: usize>(
+//     stops: Vec<Stop>,
+//     chunk: &mut Chunk,
+//     ctx: &mut Context,
+// ) -> Ref {
+//     if stops.len() == 2 {
+//         exponential_function(&stops[0], &stops[1], chunk, ctx)
+//     } else {
+//         stitching_function(stops, chunk, ctx)
+//     }
+// }
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct StitchingFunction(Arc<Vec<Stop>>);
 
@@ -40,10 +83,9 @@ impl ObjectSerialize for StitchingFunction {
             debug_assert!(c0_components.len() == c1_components.len());
             count = c0_components.len();
 
-            let exp_ref =
-                ref_allocator.cached_ref(PdfObject::ExponentialFunction(ExponentialFunction(
-                    Arc::new(ExponentialFunctionRepr::new(c0_components, c1_components)),
-                )));
+            let exp_ref = ref_allocator.cached_ref(PdfObject::ExponentialFunction(
+                ExponentialFunction::new(c0_components, c1_components),
+            ));
 
             functions.push(exp_ref);
             encode.extend([0.0, 1.0]);
@@ -62,14 +104,14 @@ impl ObjectSerialize for StitchingFunction {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ExponentialFunctionRepr {
+struct ExponentialFunctionRepr {
     c0: Vec<NormalizedF32>,
     c1: Vec<NormalizedF32>,
 }
 
-impl ExponentialFunctionRepr {
+impl ExponentialFunction {
     pub fn new(c0: Vec<NormalizedF32>, c1: Vec<NormalizedF32>) -> Self {
-        Self { c0, c1 }
+        Self(Arc::new(ExponentialFunctionRepr { c0, c1 }))
     }
 }
 
@@ -81,7 +123,7 @@ impl ObjectSerialize for ExponentialFunction {
         self,
         chunk: &mut Chunk,
         ref_allocator: &mut RefAllocator,
-        serialize_settings: &SerializeSettings,
+        _: &SerializeSettings,
     ) -> Ref {
         let root_ref = ref_allocator.cached_ref(PdfObject::ExponentialFunction(self.clone()));
         debug_assert_eq!(self.0.c0.len(), self.0.c1.len());
