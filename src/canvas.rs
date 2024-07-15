@@ -152,6 +152,8 @@ impl CanvasPdfSerializer {
     pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
         for op in instructions {
             match op {
+                Instruction::PushLayer => self.save_state(),
+                Instruction::PopLayer => self.restore_state(),
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0, &stroke_data.1, &stroke_data.2)
                 }

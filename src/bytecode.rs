@@ -4,6 +4,8 @@ use crate::{Fill, Stroke};
 use tiny_skia_path::{NormalizedF32, Path, Transform};
 
 pub enum Instruction {
+    PushLayer,
+    PopLayer,
     StrokePath(Box<(Path, Transform, Stroke)>),
     FillPath(Box<(Path, Transform, Fill)>),
     DrawCanvas(Box<(Canvas, Transform, CompositeMode, NormalizedF32, bool)>),
