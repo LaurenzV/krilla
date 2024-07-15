@@ -1,11 +1,12 @@
 use crate::canvas::Canvas;
 use crate::ext_g_state::CompositeMode;
-use crate::{Fill, Stroke};
+use crate::{Fill, FillRule, Stroke};
 use tiny_skia_path::{NormalizedF32, Path, Transform};
 
 pub enum Instruction {
     PushLayer,
     PopLayer,
+    ClipPath(Box<(Path, FillRule)>),
     StrokePath(Box<(Path, Transform, Stroke)>),
     FillPath(Box<(Path, Transform, Fill)>),
     DrawCanvas(Box<(Canvas, Transform, CompositeMode, NormalizedF32, bool)>),

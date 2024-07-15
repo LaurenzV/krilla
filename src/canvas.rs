@@ -41,6 +41,19 @@ impl Canvas {
             .push(Instruction::FillPath(Box::new((path, transform, fill))));
     }
 
+    pub fn push_layer(&mut self) {
+        self.byte_code.push(Instruction::PushLayer);
+    }
+
+    pub fn pop_layer(&mut self) {
+        self.byte_code.push(Instruction::PopLayer);
+    }
+
+    pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
+        self.byte_code
+            .push(Instruction::ClipPath(Box::new((path, clip_rule))));
+    }
+
     pub fn draw_canvas(
         &mut self,
         canvas: Canvas,
@@ -169,6 +182,7 @@ impl CanvasPdfSerializer {
                         canvas_data.4,
                     );
                 }
+                Instruction::ClipPath(clip_data) => self.set_clip_path(&clip_data.0, &clip_data.1),
             }
         }
     }
@@ -190,6 +204,7 @@ impl CanvasPdfSerializer {
         }
     }
 
+    // TODO: Panic if q_nesting level is uneven
     pub fn finish(self) -> (Vec<u8>, ResourceDictionary, Rect) {
         (self.content.finish(), self.resource_dictionary, self.bbox)
     }
@@ -283,6 +298,17 @@ impl CanvasPdfSerializer {
             FillRule::EvenOdd => self.content.fill_even_odd(),
         };
         self.restore_state();
+    }
+
+    pub fn set_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
+        draw_path(path.segments(), &mut self.content);
+
+        match clip_rule {
+            FillRule::NonZero => self.content.clip_nonzero(),
+            FillRule::EvenOdd => self.content.clip_even_odd(),
+        };
+
+        self.content.end_path();
     }
 
     pub fn stroke_path(&mut self, path: &Path, transform: &Transform, stroke: &Stroke) {
@@ -497,7 +523,7 @@ mod tests {
     use crate::ext_g_state::CompositeMode;
     use crate::paint::{LinearGradient, Paint, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
-    use crate::{Fill, Stroke};
+    use crate::{Fill, FillRule, Stroke};
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
     fn dummy_path_100() -> Path {
@@ -737,5 +763,33 @@ mod tests {
 
         std::fs::write("out/serialize_canvas_gradient_fill.txt", &finished);
         std::fs::write("out/serialize_canvas_gradient_fill.pdf", &finished);
+    }
+
+    #[test]
+    fn clip_path() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.push_layer();
+        canvas.set_clip_path(dummy_path_100(), FillRule::NonZero);
+        canvas.fill_path(
+            dummy_path_200(),
+            Transform::from_scale(1.0, 1.0),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(200, 0, 0)),
+                opacity: NormalizedF32::new(0.25).unwrap(),
+                ..Fill::default()
+            },
+        );
+        canvas.pop_layer();
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        std::fs::write("out/clip_path.txt", &finished);
+        std::fs::write("out/clip_path.pdf", &finished);
     }
 }
