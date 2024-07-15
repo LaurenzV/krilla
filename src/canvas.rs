@@ -586,20 +586,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize_canvas_1() {
-        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
-        canvas.stroke_path(
-            dummy_path(100.0),
-            Transform::from_scale(2.0, 2.0),
-            Stroke::default(),
-        );
-
-        let chunk = canvas.serialize(SerializeSettings::default()).0;
-        std::fs::write("out/serialize_canvas_1.txt", chunk.as_bytes());
-    }
-
-    #[test]
-    fn serialize_canvas_stroke() {
+    fn canvas_stroke() {
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
             dummy_path(100.0),
@@ -612,11 +599,11 @@ mod tests {
         };
 
         let chunk = canvas.serialize(serialize_settings).0;
-        std::fs::write("out/serialize_canvas_stroke.txt", chunk.as_bytes());
+        write("pattern", &chunk.as_bytes());
     }
 
     #[test]
-    fn serialize_canvas_page() {
+    fn canvas_page() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
@@ -631,12 +618,11 @@ mod tests {
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
-        std::fs::write("out/serialize_canvas_page.txt", &finished);
-        std::fs::write("out/serialize_canvas_page.pdf", &finished);
+        write("canvas_page", &finished);
     }
 
     #[test]
-    fn serialize_canvas_fill() {
+    fn fill() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.fill_path(
@@ -656,12 +642,11 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/serialize_canvas_fill.txt", &finished);
-        std::fs::write("out/serialize_canvas_fill.pdf", &finished);
+        write("fill", &finished);
     }
 
     #[test]
-    fn serialize_canvas_blend_mode() {
+    fn blend() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
@@ -700,12 +685,11 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/serialize_canvas_blend.txt", &finished);
-        std::fs::write("out/serialize_canvas_blend.pdf", &finished);
+        write("blend", &finished);
     }
 
     #[test]
-    fn serialize_nested_opacity() {
+    fn nested_opacity() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
@@ -744,12 +728,11 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/serialize_nested_opacity.txt", &finished);
-        std::fs::write("out/serialize_nested_opacity.pdf", &finished);
+        write("nested_opacity", &finished);
     }
 
     #[test]
-    fn serialize_canvas_gradient_fill() {
+    fn gradient_fill() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
@@ -798,8 +781,7 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/serialize_canvas_gradient_fill.txt", &finished);
-        std::fs::write("out/serialize_canvas_gradient_fill.pdf", &finished);
+        write("gradient_fill", &finished);
     }
 
     #[test]
@@ -826,8 +808,7 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/clip_path.txt", &finished);
-        std::fs::write("out/clip_path.pdf", &finished);
+        write("clip_path", &finished);
     }
 
     #[test]
@@ -876,7 +857,11 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        std::fs::write("out/pattern.txt", &finished);
-        std::fs::write("out/pattern.pdf", &finished);
+        write("pattern", &finished);
+    }
+
+    fn write(name: &str, data: &[u8]) {
+        let _ = std::fs::write(format!("out/{name}.txt"), &data);
+        let _ = std::fs::write(format!("out/{name}.pdf"), &data);
     }
 }
