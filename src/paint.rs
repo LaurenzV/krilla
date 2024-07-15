@@ -18,7 +18,7 @@ impl Default for SpreadMethod {
 
 pub type StopOffset = NormalizedF64;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stop {
     pub offset: StopOffset,
     pub color: Color,
