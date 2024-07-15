@@ -1,7 +1,7 @@
 use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, Stop};
 use crate::resource::PdfColorSpace;
-use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
 use crate::transform::FiniteTransform;
 use crate::util::TransformExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -18,22 +18,13 @@ impl ShadingPattern {
 }
 
 impl ObjectSerialize for ShadingPattern {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        serialize_settings: &SerializeSettings,
-    ) -> Ref {
-        let root_ref = ref_allocator.cached_ref(PdfObject::ShadingPattern(self.clone()));
-
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let shading_function = ShadingFunction(self.0.clone());
-        let shading_ref = shading_function.serialize_into(chunk, ref_allocator, serialize_settings);
-        let mut shading_pattern = chunk.shading_pattern(root_ref);
+        let shading_ref = sc.add_cached(CacheableObject::ShadingFunction(shading_function));
+        let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.1.to_pdf_transform());
         shading_pattern.finish();
-
-        root_ref
     }
 }
 
@@ -41,34 +32,23 @@ impl ObjectSerialize for ShadingPattern {
 pub struct ShadingFunction(Arc<GradientProperties>);
 
 impl ObjectSerialize for ShadingFunction {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        _: &SerializeSettings,
-    ) -> Ref {
-        let root_ref = ref_allocator.cached_ref(PdfObject::ShadingFunction(self.clone()));
-        let function_ref = serialize_stop_function(self.0.stops.clone(), chunk, ref_allocator);
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        let function_ref = serialize_stop_function(self.0.stops.clone(), sc);
 
-        let mut shading = chunk.function_shading(root_ref);
+        let cs_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
+
+        let mut shading = sc.chunk_mut().function_shading(root_ref);
         shading.shading_type(self.0.shading_type);
-        shading
-            .insert(Name(b"ColorSpace"))
-            .primitive(ref_allocator.cached_ref(PdfObject::PdfColorSpace(PdfColorSpace::SRGB)));
+        shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
         shading.function(function_ref);
         shading.coords(self.0.coords.iter().map(|n| n.get()));
         shading.extend([true, true]);
         shading.finish();
-        root_ref
     }
 }
 
-fn serialize_stop_function(
-    stops: Vec<Stop>,
-    chunk: &mut Chunk,
-    ref_allocator: &mut RefAllocator,
-) -> Ref {
+fn serialize_stop_function(stops: Vec<Stop>, sc: &mut SerializerContext) -> Ref {
     debug_assert!(stops.len() > 1);
 
     // fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
@@ -93,24 +73,23 @@ fn serialize_stop_function(
     // }
 
     // let stops = pad_stops(stops);
-    select_function(&stops, chunk, ref_allocator)
+    select_function(&stops, sc)
 }
 
-fn select_function(stops: &[Stop], chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
+fn select_function(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
     if stops.len() == 2 {
         serialize_exponential(
             &stops[0].color.to_normalized_pdf_components(),
             &stops[1].color.to_normalized_pdf_components(),
-            chunk,
-            ref_allocator,
+            sc,
         )
     } else {
-        serialize_stitching(stops, chunk, ref_allocator)
+        serialize_stitching(stops, sc)
     }
 }
 
-fn serialize_stitching(stops: &[Stop], chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
-    let root_ref = ref_allocator.new_ref();
+fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
+    let root_ref = sc.new_ref();
     let mut functions = vec![];
     let mut bounds = vec![];
     let mut encode = vec![];
@@ -125,14 +104,14 @@ fn serialize_stitching(stops: &[Stop], chunk: &mut Chunk, ref_allocator: &mut Re
         debug_assert!(c0_components.len() == c1_components.len());
         count = c0_components.len();
 
-        let exp_ref = serialize_exponential(&c0_components, &c1_components, chunk, ref_allocator);
+        let exp_ref = serialize_exponential(&c0_components, &c1_components, sc);
 
         functions.push(exp_ref);
         encode.extend([0.0, 1.0]);
     }
 
     bounds.pop();
-    let mut stitching_function = chunk.stitching_function(root_ref);
+    let mut stitching_function = sc.chunk_mut().stitching_function(root_ref);
     stitching_function.domain([0.0, 1.0]);
     stitching_function.range([0.0, 1.0].repeat(count));
     stitching_function.functions(functions);
@@ -145,14 +124,13 @@ fn serialize_stitching(stops: &[Stop], chunk: &mut Chunk, ref_allocator: &mut Re
 fn serialize_exponential(
     first_comps: &[NormalizedF32],
     second_comps: &[NormalizedF32],
-    chunk: &mut Chunk,
-    ref_allocator: &mut RefAllocator,
+    sc: &mut SerializerContext,
 ) -> Ref {
-    let root_ref = ref_allocator.new_ref();
+    let root_ref = sc.new_ref();
     debug_assert_eq!(first_comps.len(), second_comps.len());
     let num_components = first_comps.len();
 
-    let mut exp = chunk.exponential_function(root_ref);
+    let mut exp = sc.chunk_mut().exponential_function(root_ref);
 
     exp.range([0.0, 1.0].repeat(num_components));
     exp.c0(first_comps.into_iter().map(|n| n.get()));

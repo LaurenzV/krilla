@@ -3,7 +3,7 @@ use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
 use crate::paint::{GradientPropertiesExt, Paint};
 use crate::resource::{PdfColorSpace, ResourceDictionary};
-use crate::serialize::{ObjectSerialize, PageSerialize, RefAllocator, SerializeSettings};
+use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
@@ -341,14 +341,8 @@ impl CanvasPdfSerializer {
 }
 
 impl ObjectSerialize for Canvas {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        serialize_settings: &SerializeSettings,
-    ) -> Ref {
-        let root_ref = ref_allocator.new_ref();
-
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        let mut chunk = Chunk::new();
         let (content_stream, mut resource_dictionary, bbox) = {
             let mut serializer = CanvasPdfSerializer::new();
             serializer.serialize_instructions(self.byte_code.instructions());
@@ -356,39 +350,22 @@ impl ObjectSerialize for Canvas {
         };
 
         let mut x_object = chunk.form_xobject(root_ref, &content_stream);
-        resource_dictionary.to_pdf_resources(ref_allocator, &mut x_object.resources());
+        resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
         x_object.bbox(bbox.to_pdf_rect());
         x_object.finish();
-
-        if serialize_settings.serialize_dependencies {
-            for color_space in resource_dictionary.color_spaces.get_entries() {
-                color_space
-                    .1
-                    .serialize_into(chunk, ref_allocator, serialize_settings);
-            }
-
-            for ext_g_state in resource_dictionary.ext_g_state.get_entries() {
-                ext_g_state
-                    .1
-                    .serialize_into(chunk, ref_allocator, serialize_settings);
-            }
-        }
-
-        root_ref
     }
 }
 
 impl PageSerialize for Canvas {
-    fn serialize(self, serialize_settings: &SerializeSettings) -> Pdf {
-        let mut ref_allocator = RefAllocator::new();
+    fn serialize(self, serialize_settings: SerializeSettings) -> Pdf {
+        let mut sc = SerializerContext::new(serialize_settings);
 
-        let catalog_ref = ref_allocator.new_ref();
-        let page_tree_ref = ref_allocator.new_ref();
-        let page_ref = ref_allocator.new_ref();
-        let content_ref = ref_allocator.new_ref();
+        let catalog_ref = sc.new_ref();
+        let page_tree_ref = sc.new_ref();
+        let page_ref = sc.new_ref();
+        let content_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
-
         chunk.pages(page_tree_ref).count(1).kids([page_ref]);
 
         let (content_stream, mut resource_dictionary, _) = {
@@ -406,25 +383,10 @@ impl PageSerialize for Canvas {
 
             serializer.finish()
         };
-
-        if serialize_settings.serialize_dependencies {
-            for color_space in resource_dictionary.color_spaces.get_entries() {
-                color_space
-                    .1
-                    .serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
-            }
-
-            for ext_g_state in resource_dictionary.ext_g_state.get_entries() {
-                ext_g_state
-                    .1
-                    .serialize_into(&mut chunk, &mut ref_allocator, serialize_settings);
-            }
-        }
-
         chunk.stream(content_ref, &content_stream);
 
         let mut page = chunk.page(page_ref);
-        resource_dictionary.to_pdf_resources(&mut ref_allocator, &mut page.resources());
+        resource_dictionary.to_pdf_resources(&mut sc, &mut page.resources());
 
         page.media_box(self.size.to_rect(0.0, 0.0).unwrap().to_pdf_rect());
         page.parent(page_tree_ref);
@@ -434,6 +396,7 @@ impl PageSerialize for Canvas {
         let mut pdf = Pdf::new();
         pdf.catalog(catalog_ref).pages(page_tree_ref);
         pdf.extend(&chunk);
+        pdf.extend(sc.current_chunk());
 
         pdf
     }
@@ -514,7 +477,7 @@ mod tests {
             Stroke::default(),
         );
 
-        let chunk = canvas.serialize(&SerializeSettings::default()).0;
+        let chunk = canvas.serialize(SerializeSettings::default()).0;
         std::fs::write("out/serialize_canvas_1.txt", chunk.as_bytes());
     }
 
@@ -531,7 +494,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = canvas.serialize(&serialize_settings).0;
+        let chunk = canvas.serialize(serialize_settings).0;
         std::fs::write("out/serialize_canvas_stroke.txt", chunk.as_bytes());
     }
 
@@ -549,7 +512,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
         std::fs::write("out/serialize_canvas_page.txt", &finished);
         std::fs::write("out/serialize_canvas_page.pdf", &finished);
@@ -573,7 +536,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
         std::fs::write("out/serialize_canvas_fill.txt", &finished);
@@ -617,7 +580,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
         std::fs::write("out/serialize_canvas_blend.txt", &finished);
@@ -661,7 +624,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
         std::fs::write("out/serialize_nested_opacity.txt", &finished);
@@ -671,15 +634,15 @@ mod tests {
     #[test]
     fn serialize_canvas_gradient_fill() {
         use crate::serialize::PageSerialize;
-        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
             dummy_path(),
-            Transform::from_scale(2.0, 2.0),
+            Transform::from_scale(1.0, 1.0),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
                     x1: Default::default(),
                     y1: Default::default(),
-                    x2: FiniteF32::new(1.0).unwrap(),
+                    x2: FiniteF32::new(200.0).unwrap(),
                     y2: Default::default(),
                     transform: Transform::identity().try_into().unwrap(),
                     spread_method: Default::default(),
@@ -693,7 +656,7 @@ mod tests {
                             offset: FiniteF32::new(200.0).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
                             opacity: NormalizedF32::ONE,
-                        }
+                        },
                     ],
                 }),
                 opacity: NormalizedF32::ONE,
@@ -705,7 +668,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
         std::fs::write("out/serialize_canvas_gradient_fill.txt", &finished);

@@ -1,7 +1,7 @@
 use crate::color::Color;
 use crate::paint::Paint;
-pub use tiny_skia_path::{Path, PathBuilder};
 use tiny_skia_path::{NonZeroPositiveF32, NormalizedF32};
+pub use tiny_skia_path::{Path, PathBuilder};
 
 #[derive(Eq, PartialEq)]
 pub enum LineCap {

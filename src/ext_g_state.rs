@@ -1,6 +1,6 @@
 use crate::ext_g_state;
 use crate::resource::PDFResource;
-use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::Deref;
@@ -62,15 +62,8 @@ impl PDFResource for ExtGState {
 }
 
 impl ObjectSerialize for ExtGState {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        _: &SerializeSettings,
-    ) -> Ref {
-        let root_ref = ref_allocator.cached_ref(PdfObject::ExtGState(self.clone()));
-
-        let mut ext_st = chunk.ext_graphics(root_ref);
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        let mut ext_st = sc.chunk_mut().ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
             ext_st.non_stroking_alpha(nsa.get());
         }
@@ -84,8 +77,6 @@ impl ObjectSerialize for ExtGState {
         }
 
         ext_st.finish();
-
-        root_ref
     }
 }
 

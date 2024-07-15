@@ -1,13 +1,11 @@
 use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::ext_g_state::ExtGState;
-use crate::paint::{LinearGradient, RadialGradient};
-use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
 use crate::util::NameExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
-use std::sync::Arc;
 
 pub struct ResourceDictionary {
     pub color_spaces: CsResourceMapper,
@@ -32,14 +30,14 @@ impl ResourceDictionary {
 
     pub fn to_pdf_resources(
         &self,
-        ref_allocator: &mut RefAllocator,
+        sc: &mut SerializerContext,
         resources: &mut pdf_writer::writers::Resources,
     ) {
         let mut color_spaces = resources.color_spaces();
         for (name, entry) in self.color_spaces.get_entries() {
             color_spaces.pair(
                 name.to_pdf_name(),
-                ref_allocator.cached_ref(PdfObject::PdfColorSpace(entry)),
+                sc.add_cached(CacheableObject::PdfColorSpace(entry)),
             );
         }
         color_spaces.finish();
@@ -49,7 +47,7 @@ impl ResourceDictionary {
         for (name, entry) in self.ext_g_state.get_entries() {
             ext_g_states.pair(
                 name.to_pdf_name(),
-                ref_allocator.cached_ref(PdfObject::ExtGState(entry)),
+                sc.add_cached(CacheableObject::ExtGState(entry)),
             );
         }
         ext_g_states.finish();
@@ -77,39 +75,31 @@ impl PDFResource for PdfColorSpace {
 }
 
 impl ObjectSerialize for PdfColorSpace {
-    fn serialize_into(
-        self,
-        chunk: &mut Chunk,
-        ref_allocator: &mut RefAllocator,
-        serialize_settings: &SerializeSettings,
-    ) -> Ref {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         match self {
             PdfColorSpace::SRGB => {
-                let root_ref = ref_allocator.cached_ref(PdfObject::PdfColorSpace(self.clone()));
-                let icc_ref = ref_allocator.new_ref();
-                let mut array = chunk.indirect(root_ref).array();
+                let icc_ref = sc.new_ref();
+                let mut array = sc.chunk_mut().indirect(root_ref).array();
                 array.item(Name(b"ICCBased"));
                 array.item(icc_ref);
                 array.finish();
 
-                chunk
+                sc.chunk_mut()
                     .icc_profile(icc_ref, &SRGB_ICC_DEFLATED)
                     .n(3)
                     .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
-                root_ref
             }
             PdfColorSpace::D65Gray => {
-                let root_ref = ref_allocator.cached_ref(PdfObject::PdfColorSpace(self.clone()));
-                chunk
+                sc.chunk_mut()
                     .icc_profile(root_ref, &GREY_ICC_DEFLATED)
                     .n(1)
                     .range([0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
-                root_ref
             }
             PdfColorSpace::Shading(sh) => {
-                sh.serialize_into(chunk, ref_allocator, serialize_settings)
+                let shading_pattern = CacheableObject::ShadingPattern(sh);
+                shading_pattern.serialize_into(sc, root_ref)
             }
         }
     }
@@ -119,7 +109,7 @@ pub struct ResourceMapper<V>
 where
     V: Hash + Eq,
 {
-    forward: BTreeMap<ResourceNumber, V>,
+    forward: Vec<V>,
     backward: HashMap<V, ResourceNumber>,
     counter: ResourceNumber,
 }
@@ -130,9 +120,9 @@ where
 {
     pub fn new() -> Self {
         Self {
-            forward: BTreeMap::new(),
+            forward: Vec::new(),
             backward: HashMap::new(),
-            counter: 1,
+            counter: 0,
         }
     }
 
@@ -147,13 +137,11 @@ where
     pub fn remap(&mut self, resource: V) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
-        let counter = &mut self.counter;
 
         *backward.entry(resource.clone()).or_insert_with(|| {
-            let old = *counter;
-            *counter += 1;
-            forward.insert(old, resource.clone());
-            old
+            let old = forward.len();
+            forward.push(resource.clone());
+            old as ResourceNumber
         })
     }
 
@@ -168,7 +156,8 @@ where
     pub fn get_entries(&self) -> impl Iterator<Item = (String, V)> + '_ {
         self.forward
             .iter()
-            .map(|s| (Self::name_from_number(*s.0), s.1.clone()))
+            .enumerate()
+            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r.clone()))
     }
 }
 
@@ -182,15 +171,15 @@ mod tests {
     #[test]
     fn test_cs_resource_mapper() {
         let mut mapper = CsResourceMapper::new();
-        assert_eq!(mapper.remap(PdfColorSpace::SRGB), 1);
-        assert_eq!(mapper.remap(PdfColorSpace::D65Gray), 2);
-        assert_eq!(mapper.remap(PdfColorSpace::SRGB), 1);
+        assert_eq!(mapper.remap(PdfColorSpace::SRGB), 0);
+        assert_eq!(mapper.remap(PdfColorSpace::D65Gray), 1);
+        assert_eq!(mapper.remap(PdfColorSpace::SRGB), 0);
         assert_eq!(
             mapper.remap_with_name(PdfColorSpace::SRGB),
-            String::from("cs1")
+            String::from("cs0")
         );
         let items = mapper.get_entries().collect::<Vec<_>>();
-        assert_eq!(items[0], (String::from("cs1"), PdfColorSpace::SRGB));
-        assert_eq!(items[1], (String::from("cs2"), PdfColorSpace::D65Gray));
+        assert_eq!(items[0], (String::from("cs0"), PdfColorSpace::SRGB));
+        assert_eq!(items[1], (String::from("cs1"), PdfColorSpace::D65Gray));
     }
 }
