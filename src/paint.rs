@@ -66,19 +66,17 @@ struct GradientProperties {
     coords: Vec<FiniteF32>,
     shading_type: FunctionShadingType,
     stops: Vec<Stop>,
-    transform: FiniteTransform,
 }
 
-impl GradientProperties {
-    fn try_from_paint(paint: &Paint) -> Option<Self> {
-        match paint {
-            Paint::LinearGradient(l) => Some(Self {
+impl Paint {
+    fn gradient_properties(&self) -> Option<((GradientProperties, FiniteTransform))> {
+        match self {
+            Paint::LinearGradient(l) => Some((GradientProperties {
                 coords: vec![l.x1, l.y1, l.x2, l.y2],
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(l.stops.clone()),
-                transform: l.transform,
-            }),
-            Paint::RadialGradient(r) => Some(Self {
+            }, l.transform)),
+            Paint::RadialGradient(r) => Some((GradientProperties {
                 coords: vec![
                     r.fx,
                     r.fy,
@@ -88,9 +86,8 @@ impl GradientProperties {
                     FiniteF32::new(r.r.get()).unwrap(),
                 ],
                 shading_type: FunctionShadingType::Radial,
-                stops: Vec::from(r.stops.clone()),
-                transform: r.transform,
-            }),
+                stops: Vec::from(r.stops.clone())
+            }, r.transform)),
             _ => None,
         }
     }
