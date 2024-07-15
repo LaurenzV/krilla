@@ -62,32 +62,38 @@ pub enum Paint {
 struct Shading(GradientProperties);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-struct GradientProperties {
-    coords: Vec<FiniteF32>,
-    shading_type: FunctionShadingType,
-    stops: Vec<Stop>,
+pub struct GradientProperties {
+    pub coords: Vec<FiniteF32>,
+    pub shading_type: FunctionShadingType,
+    pub stops: Vec<Stop>,
 }
 
 impl Paint {
     fn gradient_properties(&self) -> Option<((GradientProperties, FiniteTransform))> {
         match self {
-            Paint::LinearGradient(l) => Some((GradientProperties {
-                coords: vec![l.x1, l.y1, l.x2, l.y2],
-                shading_type: FunctionShadingType::Axial,
-                stops: Vec::from(l.stops.clone()),
-            }, l.transform)),
-            Paint::RadialGradient(r) => Some((GradientProperties {
-                coords: vec![
-                    r.fx,
-                    r.fy,
-                    FiniteF32::new(0.0).unwrap(),
-                    r.cx,
-                    r.cy,
-                    FiniteF32::new(r.r.get()).unwrap(),
-                ],
-                shading_type: FunctionShadingType::Radial,
-                stops: Vec::from(r.stops.clone())
-            }, r.transform)),
+            Paint::LinearGradient(l) => Some((
+                GradientProperties {
+                    coords: vec![l.x1, l.y1, l.x2, l.y2],
+                    shading_type: FunctionShadingType::Axial,
+                    stops: Vec::from(l.stops.clone()),
+                },
+                l.transform,
+            )),
+            Paint::RadialGradient(r) => Some((
+                GradientProperties {
+                    coords: vec![
+                        r.fx,
+                        r.fy,
+                        FiniteF32::new(0.0).unwrap(),
+                        r.cx,
+                        r.cy,
+                        FiniteF32::new(r.r.get()).unwrap(),
+                    ],
+                    shading_type: FunctionShadingType::Radial,
+                    stops: Vec::from(r.stops.clone()),
+                },
+                r.transform,
+            )),
             _ => None,
         }
     }

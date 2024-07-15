@@ -3,11 +3,11 @@ mod bytecode;
 mod canvas;
 mod color;
 mod ext_g_state;
-mod shading;
 mod paint;
 mod path;
 mod resource;
 mod serialize;
+mod shading;
 mod transform;
 mod util;
 

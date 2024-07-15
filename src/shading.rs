@@ -1,10 +1,43 @@
 use crate::color::PdfColorExt;
-use crate::paint::Stop;
-use crate::serialize::{ObjectSerialize, RefAllocator};
-use pdf_writer::{Chunk, Finish, Ref};
+use crate::paint::{GradientProperties, Stop};
+use crate::resource::PdfColorSpace;
+use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::sync::Arc;
 use strict_num::NormalizedF32;
 
-fn serialize_stop_function(stops: Vec<Stop>, chunk: &mut Chunk, ref_allocator: &mut RefAllocator) -> Ref {
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct ShadingFunction(Arc<GradientProperties>);
+
+impl ObjectSerialize for ShadingFunction {
+    fn serialize_into(
+        self,
+        chunk: &mut Chunk,
+        ref_allocator: &mut RefAllocator,
+        _: &SerializeSettings,
+    ) -> Ref {
+        let root_ref = ref_allocator.cached_ref(PdfObject::ShadingFunction(self.clone()));
+        let function_ref = serialize_stop_function(self.0.stops.clone(), chunk, ref_allocator);
+
+        let mut shading = chunk.function_shading(root_ref);
+        shading.shading_type(self.0.shading_type);
+        shading
+            .insert(Name(b"ColorSpace"))
+            .primitive(ref_allocator.cached_ref(PdfObject::PdfColorSpace(PdfColorSpace::SRGB)));
+
+        shading.function(function_ref);
+        shading.coords(self.0.coords.iter().map(|n| n.get()));
+        shading.extend([true, true]);
+        shading.finish();
+        root_ref
+    }
+}
+
+fn serialize_stop_function(
+    stops: Vec<Stop>,
+    chunk: &mut Chunk,
+    ref_allocator: &mut RefAllocator,
+) -> Ref {
     debug_assert!(stops.len() > 1);
 
     fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
