@@ -1,8 +1,7 @@
 use crate::canvas::Canvas;
 use crate::ext_g_state::CompositeMode;
 use crate::{Fill, Stroke};
-use strict_num::NormalizedF32;
-use tiny_skia_path::{Path, Transform};
+use tiny_skia_path::{NormalizedF32, Path, Transform};
 
 pub enum Instruction {
     StrokePath(Box<(Path, Transform, Stroke)>),

@@ -1,5 +1,4 @@
-use strict_num::FiniteF32;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{FiniteF32, Transform};
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct FiniteTransform {

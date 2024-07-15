@@ -10,9 +10,7 @@ use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
 use pdf_writer::types::ColorSpaceOperand::Pattern;
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
-use std::sync::Arc;
-use strict_num::NormalizedF32;
-use tiny_skia_path::{Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
 pub struct Canvas {
     byte_code: ByteCode,
@@ -491,11 +489,10 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::ext_g_state::CompositeMode;
-    use crate::paint::Paint;
+    use crate::paint::{LinearGradient, Paint, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, Stroke};
-    use strict_num::NormalizedF32;
-    use tiny_skia_path::{Path, PathBuilder, Size, Transform};
+    use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
     fn dummy_path() -> Path {
         let mut builder = PathBuilder::new();
@@ -669,5 +666,49 @@ mod tests {
 
         std::fs::write("out/serialize_nested_opacity.txt", &finished);
         std::fs::write("out/serialize_nested_opacity.pdf", &finished);
+    }
+
+    #[test]
+    fn serialize_canvas_gradient_fill() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
+        canvas.fill_path(
+            dummy_path(),
+            Transform::from_scale(2.0, 2.0),
+            Fill {
+                paint: Paint::LinearGradient(LinearGradient {
+                    x1: Default::default(),
+                    y1: Default::default(),
+                    x2: FiniteF32::new(1.0).unwrap(),
+                    y2: Default::default(),
+                    transform: Transform::identity().try_into().unwrap(),
+                    spread_method: Default::default(),
+                    stops: vec![
+                        Stop {
+                            offset: FiniteF32::new(0.0).unwrap(),
+                            color: Color::new_rgb(255, 0, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: FiniteF32::new(200.0).unwrap(),
+                            color: Color::new_rgb(0, 255, 0),
+                            opacity: NormalizedF32::ONE,
+                        }
+                    ],
+                }),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, &serialize_settings);
+        let finished = chunk.finish();
+
+        std::fs::write("out/serialize_canvas_gradient_fill.txt", &finished);
+        std::fs::write("out/serialize_canvas_gradient_fill.pdf", &finished);
     }
 }

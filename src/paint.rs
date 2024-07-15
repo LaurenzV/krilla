@@ -1,8 +1,7 @@
 use crate::color::Color;
 use crate::transform::FiniteTransform;
 use pdf_writer::types::FunctionShadingType;
-use strict_num::{NormalizedF32, NormalizedF64, PositiveF32};
-use tiny_skia_path::{FiniteF32, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum SpreadMethod {
@@ -17,7 +16,7 @@ impl Default for SpreadMethod {
     }
 }
 
-pub type StopOffset = NormalizedF32;
+pub type StopOffset = FiniteF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Stop {
@@ -42,7 +41,7 @@ pub struct LinearGradient {
 pub struct RadialGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
-    pub r: PositiveF32,
+    pub r: FiniteF32,
     pub fx: FiniteF32,
     pub fy: FiniteF32,
     pub transform: FiniteTransform,

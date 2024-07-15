@@ -5,7 +5,7 @@ use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::Deref;
 use std::sync::Arc;
-use strict_num::NormalizedF32;
+use tiny_skia_path::NormalizedF32;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub struct Repr {
