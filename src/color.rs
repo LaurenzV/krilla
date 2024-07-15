@@ -1,6 +1,7 @@
 use crate::resource::PdfColorSpace;
 use crate::util::deflate;
 use once_cell::sync::Lazy;
+use strict_num::NormalizedF32;
 
 // The ICC profiles.
 pub static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> =
@@ -46,6 +47,7 @@ impl Color {
 
 pub trait PdfColorExt {
     fn to_pdf_components(&self) -> Vec<f32>;
+    fn to_normalized_pdf_components(&self) -> Vec<NormalizedF32>;
     fn get_pdf_color_space(&self) -> PdfColorSpace;
 }
 
@@ -59,6 +61,13 @@ impl PdfColorExt for Color {
             ],
             Color::Grey(grey) => vec![grey.lightness as f32 / 255.0],
         }
+    }
+
+    fn to_normalized_pdf_components(&self) -> Vec<NormalizedF32> {
+        self.to_pdf_components()
+            .into_iter()
+            .map(|n| NormalizedF32::new(n).unwrap())
+            .collect()
     }
 
     fn get_pdf_color_space(&self) -> PdfColorSpace {

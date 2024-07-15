@@ -5,48 +5,68 @@ use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
 use strict_num::NormalizedF32;
 
-// fn stop_function(
-//     stops: Vec<Stop>,
-//     chunk: &mut Chunk,
-//     ref_allocator: &mut RefAllocator,
-// ) {
-//     debug_assert!(stops.len() > 1);
-//
-//     fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
-//         // We manually pad the stops if necessary so that they are always in the range from 0-1
-//         if let Some(first) = stops.first() {
-//             if first.offset != 0.0 {
-//                 let mut new_stop = *first;
-//                 new_stop.offset = NormalizedF32::ZERO;
-//                 stops.insert(0, new_stop);
-//             }
-//         }
-//
-//         if let Some(last) = stops.last() {
-//             if last.offset != 1.0 {
-//                 let mut new_stop = *last;
-//                 new_stop.offset = NormalizedF32::ONE;
-//                 stops.push(new_stop);
-//             }
-//         }
-//
-//         stops
-//     }
-//
-//     let stops = pad_stops(stops);
-// }
+fn stop_function(stops: Vec<Stop>, ref_allocator: &mut RefAllocator) -> Ref {
+    debug_assert!(stops.len() > 1);
 
-// fn select_function<const COUNT: usize>(
-//     stops: Vec<Stop>,
-//     chunk: &mut Chunk,
-//     ctx: &mut Context,
-// ) -> Ref {
-//     if stops.len() == 2 {
-//         exponential_function(&stops[0], &stops[1], chunk, ctx)
-//     } else {
-//         stitching_function(stops, chunk, ctx)
-//     }
-// }
+    fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
+        // We manually pad the stops if necessary so that they are always in the range from 0-1
+        if let Some(first) = stops.first() {
+            if first.offset != 0.0 {
+                let mut new_stop = *first;
+                new_stop.offset = NormalizedF32::ZERO;
+                stops.insert(0, new_stop);
+            }
+        }
+
+        if let Some(last) = stops.last() {
+            if last.offset != 1.0 {
+                let mut new_stop = *last;
+                new_stop.offset = NormalizedF32::ONE;
+                stops.push(new_stop);
+            }
+        }
+
+        stops
+    }
+
+    let stops = pad_stops(stops);
+    ref_allocator.cached_ref(PdfObject::PdfFunction(select_function(stops)))
+}
+
+fn select_function(stops: Vec<Stop>) -> PdfFunction {
+    if stops.len() == 2 {
+        PdfFunction::ExponentialFunction(ExponentialFunction::new(
+            stops[0].clone().color.to_normalized_pdf_components(),
+            stops[1].clone().color.to_normalized_pdf_components(),
+        ))
+    } else {
+        PdfFunction::StitchingFunction(StitchingFunction(Arc::new(stops.clone())))
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum PdfFunction {
+    StitchingFunction(StitchingFunction),
+    ExponentialFunction(ExponentialFunction),
+}
+
+impl ObjectSerialize for PdfFunction {
+    fn serialize_into(
+        self,
+        chunk: &mut Chunk,
+        ref_allocator: &mut RefAllocator,
+        serialize_settings: &SerializeSettings,
+    ) -> Ref {
+        match self {
+            PdfFunction::StitchingFunction(st) => {
+                st.serialize_into(chunk, ref_allocator, serialize_settings)
+            }
+            PdfFunction::ExponentialFunction(ef) => {
+                ef.serialize_into(chunk, ref_allocator, serialize_settings)
+            }
+        }
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct StitchingFunction(Arc<Vec<Stop>>);
@@ -68,18 +88,8 @@ impl ObjectSerialize for StitchingFunction {
             let (first, second) = (&window[0], &window[1]);
             bounds.push(second.offset.get());
 
-            let c0_components = first
-                .color
-                .to_pdf_components()
-                .into_iter()
-                .map(|n| NormalizedF32::new(n).unwrap())
-                .collect::<Vec<_>>();
-            let c1_components = second
-                .color
-                .to_pdf_components()
-                .into_iter()
-                .map(|n| NormalizedF32::new(n).unwrap())
-                .collect::<Vec<_>>();
+            let c0_components = first.color.to_normalized_pdf_components();
+            let c1_components = second.color.to_normalized_pdf_components();
             debug_assert!(c0_components.len() == c1_components.len());
             count = c0_components.len();
 
