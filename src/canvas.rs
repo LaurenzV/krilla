@@ -1,7 +1,7 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
-use crate::paint::{GradientPropertiesExt, Paint};
+use crate::paint::{GradientProperties, GradientPropertiesExt, Paint};
 use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
@@ -241,6 +241,22 @@ impl CanvasPdfSerializer {
 
         self.set_fill_opacity(fill.opacity);
 
+        let mut write_gradient = |gradient_props: GradientProperties,
+                                  transform: FiniteTransform| {
+            let transform = {
+                let mut transform: Transform = transform.into();
+                transform = transform.post_concat(self.graphics_states.cur().transform());
+                transform.try_into().unwrap()
+            };
+            let shading_pattern = ShadingPattern::new(gradient_props, transform);
+            let color_space = self
+                .resource_dictionary
+                .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
+            self.content.set_fill_color_space(Pattern);
+            self.content
+                .set_fill_pattern(None, color_space.to_pdf_name());
+        };
+
         match &fill.paint {
             Paint::Color(c) => {
                 let color_space = self
@@ -251,20 +267,12 @@ impl CanvasPdfSerializer {
             }
             Paint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.gradient_properties();
-                let transform = {
-                    let mut transform: Transform = transform.into();
-                    transform = transform.post_concat(self.graphics_states.cur().transform());
-                    transform.try_into().unwrap()
-                };
-                let shading_pattern = ShadingPattern::new(gradient_props, transform);
-                let color_space = self
-                    .resource_dictionary
-                    .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
-                self.content.set_fill_color_space(Pattern);
-                self.content
-                    .set_fill_pattern(None, color_space.to_pdf_name());
+                write_gradient(gradient_props, transform);
             }
-            Paint::RadialGradient(_) => unimplemented!(),
+            Paint::RadialGradient(rg) => {
+                let (gradient_props, transform) = rg.gradient_properties();
+                write_gradient(gradient_props, transform);
+            }
         }
 
         draw_path(path.segments(), &mut self.content);
@@ -284,6 +292,22 @@ impl CanvasPdfSerializer {
 
         self.set_stroke_opacity(stroke.opacity);
 
+        let mut write_gradient = |gradient_props: GradientProperties,
+                                  transform: FiniteTransform| {
+            let transform = {
+                let mut transform: Transform = transform.into();
+                transform = transform.post_concat(self.graphics_states.cur().transform());
+                transform.try_into().unwrap()
+            };
+            let shading_pattern = ShadingPattern::new(gradient_props, transform);
+            let color_space = self
+                .resource_dictionary
+                .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
+            self.content.set_stroke_color_space(Pattern);
+            self.content
+                .set_stroke_pattern(None, color_space.to_pdf_name());
+        };
+
         match &stroke.paint {
             Paint::Color(c) => {
                 let color_space = self
@@ -293,8 +317,14 @@ impl CanvasPdfSerializer {
                     .set_stroke_color_space(color_space.to_pdf_name());
                 self.content.set_stroke_color(c.to_pdf_components());
             }
-            Paint::LinearGradient(_) => unimplemented!(),
-            Paint::RadialGradient(_) => unimplemented!(),
+            Paint::LinearGradient(lg) => {
+                let (gradient_props, transform) = lg.gradient_properties();
+                write_gradient(gradient_props, transform);
+            }
+            Paint::RadialGradient(rg) => {
+                let (gradient_props, transform) = rg.gradient_properties();
+                write_gradient(gradient_props, transform);
+            }
         }
 
         // Only write if they don't correspond to the default values as defined in the
@@ -705,6 +735,5 @@ mod tests {
 
         std::fs::write("out/serialize_canvas_gradient_fill.txt", &finished);
         std::fs::write("out/serialize_canvas_gradient_fill.pdf", &finished);
-        assert!(false);
     }
 }
