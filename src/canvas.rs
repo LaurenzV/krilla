@@ -1,7 +1,7 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
-use crate::paint::{GradientProperties, GradientPropertiesExt, Paint};
+use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
 use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
@@ -11,12 +11,13 @@ use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
 use pdf_writer::types::ColorSpaceOperand::Pattern;
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Canvas {
-    byte_code: ByteCode,
-    size: Size,
+    pub(crate) byte_code: ByteCode,
+    pub(crate) size: Size,
 }
 
 impl Canvas {
@@ -273,13 +274,15 @@ impl CanvasPdfSerializer {
 
         self.set_fill_opacity(fill.opacity);
 
+        let pattern_transform = |transform: FiniteTransform| -> FiniteTransform {
+            let mut transform: Transform = transform.into();
+            transform = transform.post_concat(self.graphics_states.cur().transform());
+            transform.try_into().unwrap()
+        };
+
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: FiniteTransform| {
-            let transform = {
-                let mut transform: Transform = transform.into();
-                transform = transform.post_concat(self.graphics_states.cur().transform());
-                transform.try_into().unwrap()
-            };
+            let transform = pattern_transform(transform);
             let shading_pattern = ShadingPattern::new(gradient_props, transform);
             let color_space = self
                 .resource_dictionary
@@ -304,6 +307,19 @@ impl CanvasPdfSerializer {
             Paint::RadialGradient(rg) => {
                 let (gradient_props, transform) = rg.gradient_properties();
                 write_gradient(gradient_props, transform);
+            }
+            Paint::Pattern(pat) => {
+                let mut pat = pat.clone();
+                let transform = pat.transform;
+
+                Arc::make_mut(&mut pat).transform = pattern_transform(transform);
+
+                let color_space = self
+                    .resource_dictionary
+                    .register_pattern(PdfPattern::TilingPattern(TilingPattern(pat.clone())));
+                self.content.set_fill_color_space(Pattern);
+                self.content
+                    .set_fill_pattern(None, color_space.to_pdf_name());
             }
         }
 
@@ -335,13 +351,15 @@ impl CanvasPdfSerializer {
 
         self.set_stroke_opacity(stroke.opacity);
 
+        let pattern_transform = |transform: FiniteTransform| -> FiniteTransform {
+            let mut transform: Transform = transform.into();
+            transform = transform.post_concat(self.graphics_states.cur().transform());
+            transform.try_into().unwrap()
+        };
+
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: FiniteTransform| {
-            let transform = {
-                let mut transform: Transform = transform.into();
-                transform = transform.post_concat(self.graphics_states.cur().transform());
-                transform.try_into().unwrap()
-            };
+            let transform = pattern_transform(transform);
             let shading_pattern = ShadingPattern::new(gradient_props, transform);
             let color_space = self
                 .resource_dictionary
@@ -367,6 +385,18 @@ impl CanvasPdfSerializer {
             Paint::RadialGradient(rg) => {
                 let (gradient_props, transform) = rg.gradient_properties();
                 write_gradient(gradient_props, transform);
+            }
+            Paint::Pattern(pat) => {
+                let mut pat = pat.clone();
+                let transform = pat.transform;
+
+                Arc::make_mut(&mut pat).transform = pattern_transform(transform);
+                let color_space = self
+                    .resource_dictionary
+                    .register_pattern(PdfPattern::TilingPattern(TilingPattern(pat.clone())));
+                self.content.set_stroke_color_space(Pattern);
+                self.content
+                    .set_stroke_pattern(None, color_space.to_pdf_name());
             }
         }
 
@@ -538,28 +568,18 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::ext_g_state::CompositeMode;
-    use crate::paint::{LinearGradient, Paint, Stop, StopOffset};
+    use crate::paint::{LinearGradient, Paint, Pattern, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, FillRule, Stroke};
+    use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
-    fn dummy_path_100() -> Path {
+    fn dummy_path(w: f32) -> Path {
         let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
-        builder.line_to(100.0, 0.0);
-        builder.line_to(100.0, 100.0);
-        builder.line_to(0.0, 100.0);
-        builder.close();
-
-        builder.finish().unwrap()
-    }
-
-    fn dummy_path_200() -> Path {
-        let mut builder = PathBuilder::new();
-        builder.move_to(0.0, 0.0);
-        builder.line_to(200.0, 0.0);
-        builder.line_to(200.0, 200.0);
-        builder.line_to(0.0, 200.0);
+        builder.line_to(w, 0.0);
+        builder.line_to(w, w);
+        builder.line_to(0.0, w);
         builder.close();
 
         builder.finish().unwrap()
@@ -569,7 +589,7 @@ mod tests {
     fn serialize_canvas_1() {
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_scale(2.0, 2.0),
             Stroke::default(),
         );
@@ -582,7 +602,7 @@ mod tests {
     fn serialize_canvas_stroke() {
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_scale(2.0, 2.0),
             Stroke::default(),
         );
@@ -600,7 +620,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_scale(0.5, 0.5),
             Stroke::default(),
         );
@@ -620,7 +640,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.fill_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_scale(2.0, 2.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(200, 0, 0)),
@@ -645,7 +665,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_translate(25.0, 25.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 0, 0)),
@@ -656,7 +676,7 @@ mod tests {
 
         let mut second = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         second.fill_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_translate(-25.0, -25.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 255, 0)),
@@ -689,7 +709,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::identity(),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 255, 0)),
@@ -700,7 +720,7 @@ mod tests {
 
         let mut second = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         second.fill_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::identity(),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 255, 0)),
@@ -733,7 +753,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path_100(),
+            dummy_path(100.0),
             Transform::from_scale(2.0, 2.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
@@ -787,9 +807,9 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.push_layer();
-        canvas.set_clip_path(dummy_path_100(), FillRule::NonZero);
+        canvas.set_clip_path(dummy_path(100.0), FillRule::NonZero);
         canvas.fill_path(
-            dummy_path_200(),
+            dummy_path(200.0),
             Transform::from_scale(1.0, 1.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(200, 0, 0)),
@@ -808,5 +828,55 @@ mod tests {
 
         std::fs::write("out/clip_path.txt", &finished);
         std::fs::write("out/clip_path.pdf", &finished);
+    }
+
+    #[test]
+    fn pattern() {
+        use crate::serialize::PageSerialize;
+
+        let mut pattern_canvas = Canvas::new(Size::from_wh(10.0, 10.0).unwrap());
+        pattern_canvas.fill_path(
+            dummy_path(5.0),
+            Transform::default(),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(0, 255, 0)),
+                ..Fill::default()
+            },
+        );
+
+        pattern_canvas.fill_path(
+            dummy_path(5.0),
+            Transform::from_translate(5.0, 5.0),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(0, 0, 255)),
+                ..Fill::default()
+            },
+        );
+
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.fill_path(
+            dummy_path(200.0),
+            Transform::from_scale(2.0, 2.0).try_into().unwrap(),
+            Fill {
+                paint: Paint::Pattern(Arc::new(Pattern {
+                    canvas: Arc::new(pattern_canvas),
+                    transform: Transform::from_rotate_at(45.0, 2.5, 2.5)
+                        .try_into()
+                        .unwrap(),
+                })),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        std::fs::write("out/pattern.txt", &finished);
+        std::fs::write("out/pattern.pdf", &finished);
     }
 }

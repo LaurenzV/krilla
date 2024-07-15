@@ -1,5 +1,6 @@
 use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::ext_g_state::ExtGState;
+use crate::paint::TilingPattern;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
 use crate::util::NameExt;
@@ -81,6 +82,7 @@ pub type PatternResourceMapper = ResourceMapper<PdfPattern>;
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PdfPattern {
     ShadingPattern(ShadingPattern),
+    TilingPattern(TilingPattern),
 }
 
 impl PDFResource for PdfPattern {
@@ -93,6 +95,7 @@ impl ObjectSerialize for PdfPattern {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         match self {
             PdfPattern::ShadingPattern(sh) => sh.serialize_into(sc, root_ref),
+            PdfPattern::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
         }
     }
 }
