@@ -10,6 +10,7 @@ use std::hash::Hash;
 pub struct ResourceDictionary {
     pub color_spaces: CsResourceMapper,
     pub ext_g_state: ExtGStateResourceMapper,
+    pub patterns: PatternResourceMapper,
 }
 
 impl ResourceDictionary {
@@ -17,6 +18,7 @@ impl ResourceDictionary {
         Self {
             color_spaces: CsResourceMapper::new(),
             ext_g_state: ExtGStateResourceMapper::new(),
+            patterns: PatternResourceMapper::new(),
         }
     }
 
@@ -26,6 +28,10 @@ impl ResourceDictionary {
 
     pub fn register_ext_g_state(&mut self, ext_state: ExtGState) -> String {
         self.ext_g_state.remap_with_name(ext_state)
+    }
+
+    pub fn register_pattern(&mut self, pdf_pattern: PdfPattern) -> String {
+        self.patterns.remap_with_name(pdf_pattern)
     }
 
     pub fn to_pdf_resources(
@@ -51,6 +57,16 @@ impl ResourceDictionary {
             );
         }
         ext_g_states.finish();
+
+        let mut patterns = resources.patterns();
+
+        for (name, entry) in self.patterns.get_entries() {
+            patterns.pair(
+                name.to_pdf_name(),
+                sc.add_cached(CacheableObject::PdfPattern(entry)),
+            );
+        }
+        patterns.finish();
     }
 }
 
@@ -60,12 +76,31 @@ pub trait PDFResource {
 
 pub type CsResourceMapper = ResourceMapper<PdfColorSpace>;
 pub type ExtGStateResourceMapper = ResourceMapper<ExtGState>;
+pub type PatternResourceMapper = ResourceMapper<PdfPattern>;
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum PdfPattern {
+    ShadingPattern(ShadingPattern),
+}
+
+impl PDFResource for PdfPattern {
+    fn get_name() -> &'static str {
+        "pa"
+    }
+}
+
+impl ObjectSerialize for PdfPattern {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        match self {
+            PdfPattern::ShadingPattern(sh) => sh.serialize_into(sc, root_ref),
+        }
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PdfColorSpace {
     SRGB,
     D65Gray,
-    Shading(ShadingPattern),
 }
 
 impl PDFResource for PdfColorSpace {
@@ -96,10 +131,6 @@ impl ObjectSerialize for PdfColorSpace {
                     .n(1)
                     .range([0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
-            }
-            PdfColorSpace::Shading(sh) => {
-                let shading_pattern = CacheableObject::ShadingPattern(sh);
-                shading_pattern.serialize_into(sc, root_ref)
             }
         }
     }

@@ -1,5 +1,5 @@
 use crate::ext_g_state::ExtGState;
-use crate::resource::PdfColorSpace;
+use crate::resource::{PdfColorSpace, PdfPattern};
 use crate::shading::{ShadingFunction, ShadingPattern};
 use pdf_writer::{Chunk, Pdf, Ref};
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ pub enum CacheableObject {
     PdfColorSpace(PdfColorSpace),
     ExtGState(ExtGState),
     ShadingFunction(ShadingFunction),
-    ShadingPattern(ShadingPattern),
+    PdfPattern(PdfPattern),
 }
 
 impl ObjectSerialize for CacheableObject {
@@ -19,7 +19,7 @@ impl ObjectSerialize for CacheableObject {
             CacheableObject::PdfColorSpace(cs) => cs.serialize_into(sc, root_ref),
             CacheableObject::ExtGState(st) => st.serialize_into(sc, root_ref),
             CacheableObject::ShadingFunction(sf) => sf.serialize_into(sc, root_ref),
-            CacheableObject::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
+            CacheableObject::PdfPattern(pp) => pp.serialize_into(sc, root_ref),
         }
     }
 }

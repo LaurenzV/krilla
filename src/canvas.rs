@@ -2,7 +2,7 @@ use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
 use crate::paint::{GradientPropertiesExt, Paint};
-use crate::resource::{PdfColorSpace, ResourceDictionary};
+use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -248,7 +248,7 @@ impl CanvasPdfSerializer {
                 let shading_pattern = ShadingPattern::new(gradient_props, transform);
                 let color_space = self
                     .resource_dictionary
-                    .register_color_space(PdfColorSpace::Shading(shading_pattern));
+                    .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
                 self.content.set_fill_color_space(Pattern);
                 self.content
                     .set_fill_pattern(None, color_space.to_pdf_name());
