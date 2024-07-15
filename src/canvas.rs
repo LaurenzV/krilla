@@ -5,6 +5,7 @@ use crate::paint::{GradientPropertiesExt, Paint};
 use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
+use crate::transform::FiniteTransform;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
@@ -58,7 +59,7 @@ impl Canvas {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct GraphicsState {
     ext_g_state: ext_g_state::Repr,
     ctm: Transform,
@@ -80,6 +81,7 @@ impl GraphicsState {
 
     fn concat_transform(&mut self, transform: Transform) {
         self.ctm = self.ctm.pre_concat(transform);
+        println!("result: {:?}", self.ctm);
     }
 
     fn transform(&self) -> Transform {
@@ -98,13 +100,17 @@ impl GraphicsStates {
         }
     }
 
-    fn cur(&self) -> GraphicsState {
-        *self.graphics_states.last().unwrap()
+    fn cur(&self) -> &GraphicsState {
+        self.graphics_states.last().unwrap()
+    }
+
+    fn cur_mut(&mut self) -> &mut GraphicsState {
+        self.graphics_states.last_mut().unwrap()
     }
 
     fn save_state(&mut self) {
         let state = self.cur();
-        self.graphics_states.push(state)
+        self.graphics_states.push(state.clone())
     }
 
     fn restore_state(&mut self) {
@@ -112,11 +118,11 @@ impl GraphicsStates {
     }
 
     fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
-        self.cur().add_ext_g_state(other);
+        self.cur_mut().add_ext_g_state(other);
     }
 
     fn transform(&mut self, transform: Transform) {
-        self.cur().concat_transform(transform);
+        self.cur_mut().concat_transform(transform);
     }
 
     fn transform_bbox(&self, bbox: Rect) -> Rect {
@@ -245,6 +251,11 @@ impl CanvasPdfSerializer {
             }
             Paint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.gradient_properties();
+                let transform = {
+                    let mut transform: Transform = transform.into();
+                    transform = transform.post_concat(self.graphics_states.cur().transform());
+                    transform.try_into().unwrap()
+                };
                 let shading_pattern = ShadingPattern::new(gradient_props, transform);
                 let color_space = self
                     .resource_dictionary
@@ -457,7 +468,7 @@ mod tests {
     use crate::{Fill, Stroke};
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
-    fn dummy_path() -> Path {
+    fn dummy_path_100() -> Path {
         let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
         builder.line_to(100.0, 0.0);
@@ -468,11 +479,22 @@ mod tests {
         builder.finish().unwrap()
     }
 
+    fn dummy_path_200() -> Path {
+        let mut builder = PathBuilder::new();
+        builder.move_to(0.0, 0.0);
+        builder.line_to(200.0, 0.0);
+        builder.line_to(200.0, 200.0);
+        builder.line_to(0.0, 200.0);
+        builder.close();
+
+        builder.finish().unwrap()
+    }
+
     #[test]
     fn serialize_canvas_1() {
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::from_scale(2.0, 2.0),
             Stroke::default(),
         );
@@ -485,7 +507,7 @@ mod tests {
     fn serialize_canvas_stroke() {
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::from_scale(2.0, 2.0),
             Stroke::default(),
         );
@@ -503,7 +525,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.stroke_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::from_scale(0.5, 0.5),
             Stroke::default(),
         );
@@ -523,7 +545,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         canvas.fill_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::from_scale(2.0, 2.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(200, 0, 0)),
@@ -548,7 +570,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::from_translate(25.0, 25.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 0, 0)),
@@ -559,7 +581,7 @@ mod tests {
 
         let mut second = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
         second.fill_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::from_translate(-25.0, -25.0),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 255, 0)),
@@ -592,7 +614,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::identity(),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 255, 0)),
@@ -603,7 +625,7 @@ mod tests {
 
         let mut second = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         second.fill_path(
-            dummy_path(),
+            dummy_path_100(),
             Transform::identity(),
             Fill {
                 paint: Paint::Color(Color::new_rgb(255, 255, 0)),
@@ -636,25 +658,35 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path(),
-            Transform::from_scale(1.0, 1.0),
+            dummy_path_100(),
+            Transform::from_scale(2.0, 2.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
                     x1: Default::default(),
                     y1: Default::default(),
-                    x2: FiniteF32::new(200.0).unwrap(),
+                    x2: FiniteF32::new(100.0).unwrap(),
                     y2: Default::default(),
                     transform: Transform::identity().try_into().unwrap(),
                     spread_method: Default::default(),
                     stops: vec![
                         Stop {
-                            offset: FiniteF32::new(0.0).unwrap(),
+                            offset: NormalizedF32::new(0.0).unwrap(),
                             color: Color::new_rgb(255, 0, 0),
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: FiniteF32::new(200.0).unwrap(),
+                            offset: NormalizedF32::new(0.4).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(0.6).unwrap(),
+                            color: Color::new_rgb(0, 0, 255),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(1.0).unwrap(),
+                            color: Color::new_rgb(0, 0, 0),
                             opacity: NormalizedF32::ONE,
                         },
                     ],
@@ -673,5 +705,6 @@ mod tests {
 
         std::fs::write("out/serialize_canvas_gradient_fill.txt", &finished);
         std::fs::write("out/serialize_canvas_gradient_fill.pdf", &finished);
+        assert!(false);
     }
 }
