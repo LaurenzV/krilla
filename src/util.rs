@@ -1,7 +1,8 @@
+use crate::transform::FiniteTransform;
 use crate::{LineCap, LineJoin};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Rect, Transform};
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;
@@ -25,6 +26,13 @@ pub trait TransformExt {
 impl TransformExt for tiny_skia_path::Transform {
     fn to_pdf_transform(&self) -> [f32; 6] {
         [self.sx, self.ky, self.kx, self.sy, self.tx, self.ty]
+    }
+}
+
+impl TransformExt for FiniteTransform {
+    fn to_pdf_transform(&self) -> [f32; 6] {
+        let transform: Transform = (*self).into();
+        transform.to_pdf_transform()
     }
 }
 

@@ -2,9 +2,35 @@ use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, Stop};
 use crate::resource::PdfColorSpace;
 use crate::serialize::{ObjectSerialize, PdfObject, RefAllocator, SerializeSettings};
+use crate::transform::FiniteTransform;
+use crate::util::TransformExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use strict_num::NormalizedF32;
+use tiny_skia_path::Transform;
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct ShadingPattern(Arc<GradientProperties>, FiniteTransform);
+
+impl ObjectSerialize for ShadingPattern {
+    fn serialize_into(
+        self,
+        chunk: &mut Chunk,
+        ref_allocator: &mut RefAllocator,
+        serialize_settings: &SerializeSettings,
+    ) -> Ref {
+        let root_ref = ref_allocator.cached_ref(PdfObject::ShadingPattern(self.clone()));
+
+        let shading_function = ShadingFunction(self.0.clone());
+        let shading_ref = shading_function.serialize_into(chunk, ref_allocator, serialize_settings);
+        let mut shading_pattern = chunk.shading_pattern(root_ref);
+        shading_pattern.pair(Name(b"Shading"), shading_ref);
+        shading_pattern.matrix(self.1.to_pdf_transform());
+        shading_pattern.finish();
+
+        root_ref
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingFunction(Arc<GradientProperties>);

@@ -1,6 +1,6 @@
 use crate::ext_g_state::ExtGState;
 use crate::resource::PdfColorSpace;
-use crate::shading::ShadingFunction;
+use crate::shading::{ShadingFunction, ShadingPattern};
 use pdf_writer::{Chunk, Pdf, Ref};
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -10,6 +10,7 @@ pub enum PdfObject {
     PdfColorSpace(PdfColorSpace),
     ExtGState(ExtGState),
     ShadingFunction(ShadingFunction),
+    ShadingPattern(ShadingPattern),
 }
 
 pub struct RefAllocator {
