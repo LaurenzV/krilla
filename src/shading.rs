@@ -3,11 +3,11 @@ use crate::paint::{GradientProperties, Stop};
 use crate::resource::PdfColorSpace;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use crate::transform::FiniteTransform;
-use crate::util::TransformExt;
+use crate::util::{RectExt, TransformExt};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
-use tiny_skia_path::NormalizedF32;
+use tiny_skia_path::{NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingPattern(Arc<GradientProperties>, FiniteTransform);
@@ -34,7 +34,10 @@ pub struct ShadingFunction(Arc<GradientProperties>, FiniteTransform);
 
 impl ObjectSerialize for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let function_ref = serialize_stop_function(self.0.as_ref(), sc);
+        let mut bbox = self.0.bbox;
+        // bbox.expand(&bbox.transform(self.1.into()).unwrap());
+
+        let function_ref = serialize_stop_function(self.0.as_ref(), sc, &bbox);
 
         let cs_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
 
@@ -44,8 +47,6 @@ impl ObjectSerialize for ShadingFunction {
 
         shading.function(function_ref);
 
-        let bbox = self.0.bbox.transform(self.1.into()).unwrap();
-
         shading.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
         // shading.coords(self.0.coords.iter().map(|n| n.get()));
         // shading.extend([true, true]);
@@ -53,7 +54,7 @@ impl ObjectSerialize for ShadingFunction {
     }
 }
 
-fn serialize_stop_function(properties: &GradientProperties, sc: &mut SerializerContext) -> Ref {
+fn serialize_stop_function(properties: &GradientProperties, sc: &mut SerializerContext, bbox: &Rect) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
     // fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
@@ -78,10 +79,10 @@ fn serialize_stop_function(properties: &GradientProperties, sc: &mut SerializerC
     // }
 
     // let stops = pad_stops(stops);
-    select_function(properties, sc)
+    select_function(properties, sc, bbox)
 }
 
-fn select_function(properties: &GradientProperties, sc: &mut SerializerContext) -> Ref {
+fn select_function(properties: &GradientProperties, sc: &mut SerializerContext, bbox: &Rect) -> Ref {
     // if stops.len() == 2 {
     //     serialize_exponential(
     //         &stops[0].color.to_normalized_pdf_components(),
@@ -91,10 +92,10 @@ fn select_function(properties: &GradientProperties, sc: &mut SerializerContext) 
     // } else {
     //     serialize_stitching(stops, sc)
     // }
-    serialize_postscript(properties, sc)
+    serialize_postscript(properties, sc, bbox)
 }
 
-fn serialize_postscript(properties: &GradientProperties, sc: &mut SerializerContext) -> Ref {
+fn serialize_postscript(properties: &GradientProperties, sc: &mut SerializerContext, bbox: &Rect) -> Ref {
     let root_ref = sc.new_ref();
 
     // Assumes that y0 = y1 and x1 <= x2
@@ -227,7 +228,7 @@ fn serialize_postscript(properties: &GradientProperties, sc: &mut SerializerCont
 
     let code = code.join(" ").into_bytes();
     let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
-    postscript_function.domain([0.0, 100.0, 0.0, 100.0]);
+    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
     postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
 
     root_ref
