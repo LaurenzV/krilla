@@ -133,11 +133,19 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x length min n {n/length}
         "floor".to_string(),
         // x length min n i
-        "3 index".to_string(),
-        // x length min n i length
+        "exch".to_string(),
+        // x length min i n
+        "1 index".to_string(),
+        // x length min i n i
+        "4 index".to_string(),
+        // x length min i n i length
         "mul".to_string(),
-        // x length min n {i * length}
+        // x length min i n {i * length}
         "sub".to_string(),
+        // x length min i o
+        "exch".to_string(),
+        // x length min o i
+        "pop".to_string(),
         // x length min o
         "add".to_string(),
         // x length x_new
