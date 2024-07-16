@@ -119,45 +119,41 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x
         format!("{length} {min}"),
         // x length min
-        "index 2".to_string(),
+        "2 index".to_string(),
         // x length min x
-        "index 1".to_string(),
+        "1 index".to_string(),
         // x length min x min
         "sub".to_string(),
         // x length min n
-        "index 2".to_string(),
+        "2 index".to_string(),
         // x length min n length
         "div".to_string(),
         // x length min {n/length}
         "floor".to_string(),
         // x length min i
-        "index 2".to_string(),
+        "2 index".to_string(),
         // x length min i length
         "mul".to_string(),
         // x length min {i * length}
-        "index 3".to_string(),
+        "3 index".to_string(),
         // x length min {i * length} x
-        "index 1".to_string(),
+        "1 index".to_string(),
         // x length min x {i * length}
-        "sub ".to_string(),
+        "sub".to_string(),
         // x length min o
-        "add ".to_string(),
+        "add".to_string(),
         // x length x_new
-        "roll 3 1 ".to_string(),
+        "3 1 roll".to_string(),
         // x_new x length
-        "pop pop ".to_string()
-        // x_new
+        "pop pop".to_string(), // x_new
     ];
 
     let color_code = [
         // Stack: x_new
-        "40 le {1 0 0} {0 1 0} ifelse".to_string()
+        "50 le {1 0 0} {0 1 0} ifelse".to_string(),
     ];
 
-
-    let end_code = [
-        "}".to_string(),
-    ];
+    let end_code = ["}".to_string()];
 
     let mut code = Vec::new();
     code.extend(start_code);
@@ -165,7 +161,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
     code.extend(color_code);
     code.extend(end_code);
 
-    let code = code.join("\n").into_bytes();
+    let code = code.join(" ").into_bytes();
     let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
     postscript_function.domain([0.0, 100.0, 0.0, 100.0]);
     postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);

@@ -736,8 +736,8 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path(10.0),
-            Transform::from_scale(2.0, 2.0).try_into().unwrap(),
+            dummy_path(100.0),
+            Transform::from_scale(1.0, 1.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
                     x1: Default::default(),
