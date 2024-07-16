@@ -1,10 +1,11 @@
 use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, Stop};
 use crate::resource::PdfColorSpace;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
+use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use crate::transform::FiniteTransform;
 use crate::util::TransformExt;
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::types::FunctionShadingType;
+use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
 
@@ -38,12 +39,13 @@ impl ObjectSerialize for ShadingFunction {
         let cs_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
 
         let mut shading = sc.chunk_mut().function_shading(root_ref);
-        shading.shading_type(self.0.shading_type);
+        shading.shading_type(FunctionShadingType::Function);
         shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
         shading.function(function_ref);
-        shading.coords(self.0.coords.iter().map(|n| n.get()));
-        shading.extend([true, true]);
+        shading.domain([0.0, 100.0, 0.0, 100.0]);
+        // shading.coords(self.0.coords.iter().map(|n| n.get()));
+        // shading.extend([true, true]);
         shading.finish();
     }
 }
@@ -77,15 +79,98 @@ fn serialize_stop_function(stops: Vec<Stop>, sc: &mut SerializerContext) -> Ref 
 }
 
 fn select_function(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
-    if stops.len() == 2 {
-        serialize_exponential(
-            &stops[0].color.to_normalized_pdf_components(),
-            &stops[1].color.to_normalized_pdf_components(),
-            sc,
-        )
-    } else {
-        serialize_stitching(stops, sc)
-    }
+    // if stops.len() == 2 {
+    //     serialize_exponential(
+    //         &stops[0].color.to_normalized_pdf_components(),
+    //         &stops[1].color.to_normalized_pdf_components(),
+    //         sc,
+    //     )
+    // } else {
+    //     serialize_stitching(stops, sc)
+    // }
+    serialize_postscript(sc)
+}
+
+fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
+    let root_ref = sc.new_ref();
+
+    let min = 30;
+    let max = 50;
+    let length = max - min;
+
+    let mirror = false;
+
+    let start_code = [
+        "{".to_string(),
+        // Stack: x y
+        // Ignore the y coordinate. We account for it in the gradient transform.
+        "pop".to_string(),
+        // Stack: x
+    ];
+
+    let repeat_code = [
+        // For repeat, we do:
+        // 1. Normalize by doing n = x - min.
+        // 2. Calculate the "interval" we are in by doing i = floor(n / length)
+        // 3. Calculate the offset by doing o = x - i * length
+        // 4. Calculate the final value with x_new = min + o.
+
+        // Current stack:
+        // x
+        format!("{length} {min}"),
+        // x length min
+        "index 2".to_string(),
+        // x length min x
+        "index 1".to_string(),
+        // x length min x min
+        "sub".to_string(),
+        // x length min n
+        "index 2".to_string(),
+        // x length min n length
+        "div".to_string(),
+        // x length min {n/length}
+        "floor".to_string(),
+        // x length min i
+        "index 2".to_string(),
+        // x length min i length
+        "mul".to_string(),
+        // x length min {i * length}
+        "index 3".to_string(),
+        // x length min {i * length} x
+        "index 1".to_string(),
+        // x length min x {i * length}
+        "sub ".to_string(),
+        // x length min o
+        "add ".to_string(),
+        // x length x_new
+        "roll 3 1 ".to_string(),
+        // x_new x length
+        "pop pop ".to_string()
+        // x_new
+    ];
+
+    let color_code = [
+        // Stack: x_new
+        "40 le {1 0 0} {0 1 0} ifelse".to_string()
+    ];
+
+
+    let end_code = [
+        "}".to_string(),
+    ];
+
+    let mut code = Vec::new();
+    code.extend(start_code);
+    code.extend(repeat_code);
+    code.extend(color_code);
+    code.extend(end_code);
+
+    let code = code.join("\n").into_bytes();
+    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
+    postscript_function.domain([0.0, 100.0, 0.0, 100.0]);
+    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+
+    root_ref
 }
 
 fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
