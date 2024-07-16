@@ -124,6 +124,8 @@ fn serialize_postscript(
 
     let mirror = false;
 
+    // TODO: Improve formatting of PS code.
+
     let start_code = [
         "{".to_string(),
         // Stack: x y
@@ -196,6 +198,7 @@ fn serialize_postscript(
         // x_new
     ];
 
+    // Encode the interpolation for two stops
     fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
         let encode_two_stops = |c0: &[f32], c1: &[f32]| {
             debug_assert_eq!(c0.len(), c1.len());
