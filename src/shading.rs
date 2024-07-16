@@ -94,8 +94,8 @@ fn select_function(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
 fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min = 30;
-    let max = 50;
+    let min: f32 = 40.0;
+    let max: f32 = 50.0;
     let length = max - min;
 
     let mirror = false;
@@ -138,19 +138,20 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         "3 index".to_string(),
         // x length min {i * length} x
         "1 index".to_string(),
-        // x length min x {i * length}
+        // x length min {i * length} x {i * length}
         "sub".to_string(),
-        // x length min o
+        // x length min {i * length} o
         "add".to_string(),
-        // x length x_new
-        "3 1 roll".to_string(),
-        // x_new x length
-        "pop pop".to_string(), // x_new
+        // x length min x_new
+        "4 1 roll".to_string(),
+        // x_new x length min
+        "pop pop pop".to_string(),
+        // x_new
     ];
 
     let color_code = [
         // Stack: x_new
-        "50 le {1 0 0} {0 1 0} ifelse".to_string(),
+        "40 le {1 0 0} {0 1 0} ifelse".to_string(),
     ];
 
     let end_code = ["}".to_string()];
