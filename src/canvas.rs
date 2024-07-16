@@ -282,8 +282,11 @@ impl CanvasPdfSerializer {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: FiniteTransform| {
-            let transform = pattern_transform(transform);
-            let shading_pattern = ShadingPattern::new(gradient_props, transform);
+            let shading_pattern = ShadingPattern::new(
+                gradient_props,
+                self.graphics_states.cur().transform().try_into().unwrap(),
+                transform,
+            );
             let color_space = self
                 .resource_dictionary
                 .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
@@ -360,7 +363,11 @@ impl CanvasPdfSerializer {
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: FiniteTransform| {
             let transform = pattern_transform(transform);
-            let shading_pattern = ShadingPattern::new(gradient_props, transform);
+            let shading_pattern = ShadingPattern::new(
+                gradient_props,
+                self.graphics_states.cur().transform().try_into().unwrap(),
+                transform,
+            );
             let color_space = self
                 .resource_dictionary
                 .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
@@ -744,7 +751,11 @@ mod tests {
                     y1: Default::default(),
                     x2: FiniteF32::new(60.0).unwrap(),
                     y2: Default::default(),
-                    transform: Transform::from_scale(1.0, 1.0).try_into().unwrap(),
+                    transform: Transform::from_translate(0.0, 30.0)
+                        .pre_concat(Transform::from_scale(0.5, 0.5))
+                        .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0))
+                        .try_into()
+                        .unwrap(),
                     spread_method: Default::default(),
                     stops: vec![
                         Stop {

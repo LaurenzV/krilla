@@ -10,21 +10,26 @@ use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingPattern(Arc<GradientProperties>, FiniteTransform);
+pub struct ShadingPattern(Arc<GradientProperties>, FiniteTransform, FiniteTransform);
 
 impl ShadingPattern {
-    pub fn new(gradient_properties: GradientProperties, transform: FiniteTransform) -> Self {
-        Self(Arc::new(gradient_properties), transform)
+    pub fn new(
+        gradient_properties: GradientProperties,
+        ctm: FiniteTransform,
+        pattern_transform: FiniteTransform,
+    ) -> Self {
+        Self(Arc::new(gradient_properties), ctm, pattern_transform)
     }
 }
 
 impl ObjectSerialize for ShadingPattern {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let shading_function = ShadingFunction(self.0.clone(), self.1);
+        // CTM doesn't need to be included to calculate the domain
+        let shading_function = ShadingFunction(self.0.clone(), self.2);
         let shading_ref = sc.add_cached(CacheableObject::ShadingFunction(shading_function));
         let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
-        shading_pattern.matrix(self.1.to_pdf_transform());
+        shading_pattern.matrix(self.1.get().pre_concat(self.2.get()).to_pdf_transform());
         shading_pattern.finish();
     }
 }
@@ -35,7 +40,7 @@ pub struct ShadingFunction(Arc<GradientProperties>, FiniteTransform);
 impl ObjectSerialize for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut bbox = self.0.bbox;
-        // bbox.expand(&bbox.transform(self.1.into()).unwrap());
+        bbox.expand(&bbox.transform(self.1.get().invert().unwrap()).unwrap());
 
         let function_ref = serialize_stop_function(self.0.as_ref(), sc, &bbox);
 
@@ -54,7 +59,11 @@ impl ObjectSerialize for ShadingFunction {
     }
 }
 
-fn serialize_stop_function(properties: &GradientProperties, sc: &mut SerializerContext, bbox: &Rect) -> Ref {
+fn serialize_stop_function(
+    properties: &GradientProperties,
+    sc: &mut SerializerContext,
+    bbox: &Rect,
+) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
     // fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
@@ -82,7 +91,11 @@ fn serialize_stop_function(properties: &GradientProperties, sc: &mut SerializerC
     select_function(properties, sc, bbox)
 }
 
-fn select_function(properties: &GradientProperties, sc: &mut SerializerContext, bbox: &Rect) -> Ref {
+fn select_function(
+    properties: &GradientProperties,
+    sc: &mut SerializerContext,
+    bbox: &Rect,
+) -> Ref {
     // if stops.len() == 2 {
     //     serialize_exponential(
     //         &stops[0].color.to_normalized_pdf_components(),
@@ -95,10 +108,15 @@ fn select_function(properties: &GradientProperties, sc: &mut SerializerContext, 
     serialize_postscript(properties, sc, bbox)
 }
 
-fn serialize_postscript(properties: &GradientProperties, sc: &mut SerializerContext, bbox: &Rect) -> Ref {
+fn serialize_postscript(
+    properties: &GradientProperties,
+    sc: &mut SerializerContext,
+    bbox: &Rect,
+) -> Ref {
     let root_ref = sc.new_ref();
 
     // Assumes that y0 = y1 and x1 <= x2
+    // TODO: Fix the above
 
     let min: f32 = properties.coords[0].get();
     let max: f32 = properties.coords[2].get();
@@ -202,13 +220,23 @@ fn serialize_postscript(properties: &GradientProperties, sc: &mut SerializerCont
         };
 
         return if stops.len() == 1 {
-            stops[0].color.to_pdf_components().iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" ")
+            stops[0]
+                .color
+                .to_pdf_components()
+                .iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
         } else {
             let denormalized_offset = min + stops[1].offset.get() * (max - min);
             format!(
                 "dup {} le {{{}}} {{{}}} ifelse",
                 denormalized_offset,
-                encode_two_stops(&stops[0].color.to_pdf_components(), &stops[1].color.to_pdf_components()).join(" "),
+                encode_two_stops(
+                    &stops[0].color.to_pdf_components(),
+                    &stops[1].color.to_pdf_components()
+                )
+                .join(" "),
                 encode_stops(&stops[1..], min, max)
             )
         };

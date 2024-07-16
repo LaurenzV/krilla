@@ -115,7 +115,7 @@ pub struct GradientProperties {
     pub coords: Vec<FiniteF32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
-    pub bbox: Rect
+    pub bbox: Rect,
 }
 
 pub trait GradientPropertiesExt {
@@ -130,7 +130,7 @@ impl GradientPropertiesExt for LinearGradient {
                 coords: vec![self.x1, self.y1, self.x2, self.y2],
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
-                bbox
+                bbox,
             },
             self.transform,
         )
@@ -151,7 +151,7 @@ impl GradientPropertiesExt for RadialGradient {
                 ],
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
-                bbox
+                bbox,
             },
             self.transform,
         )

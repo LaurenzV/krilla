@@ -10,6 +10,12 @@ pub(crate) struct FiniteTransform {
     pub ty: FiniteF32,
 }
 
+impl FiniteTransform {
+    pub fn get(&self) -> Transform {
+        (*self).try_into().unwrap()
+    }
+}
+
 impl Into<Transform> for FiniteTransform {
     fn into(self) -> Transform {
         Transform {
