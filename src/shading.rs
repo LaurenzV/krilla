@@ -95,7 +95,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
     let root_ref = sc.new_ref();
 
     let min: f32 = 40.0;
-    let max: f32 = 50.0;
+    let max: f32 = 60.0;
     let length = max - min;
 
     let mirror = false;
@@ -151,7 +151,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
 
     let color_code = [
         // Stack: x_new
-        "40 le {1 0 0} {0 1 0} ifelse".to_string(),
+        "dup 40 le {1 0 0} {dup 50 le {0 1 0} {0 0 1} ifelse} ifelse 4 -1 roll pop".to_string(),
     ];
 
     let end_code = ["}".to_string()];
