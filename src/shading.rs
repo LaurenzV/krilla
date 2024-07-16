@@ -43,7 +43,7 @@ impl ObjectSerialize for ShadingFunction {
         shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
         shading.function(function_ref);
-        shading.domain([0.0, 1.0, 0.0, 1.0]);
+        shading.domain([0.0, 100.0, 0.0, 100.0]);
         // shading.coords(self.0.coords.iter().map(|n| n.get()));
         // shading.extend([true, true]);
         shading.finish();
@@ -94,8 +94,8 @@ fn select_function(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
 fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min: f32 = 0.4;
-    let max: f32 = 0.6;
+    let min: f32 = 40.0;
+    let max: f32 = 60.0;
     let length = max - min;
 
     let mirror = false;
@@ -172,12 +172,6 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x_new
     ];
 
-    let stops = [
-        ([1.0, 0.0, 0.0], 30),
-        ([0.0, 1.0, 0.0], 40),
-        ([0.0, 0.0, 1.0], 50),
-    ];
-
     let c0 = 1;
     let c1 = 0;
     let c2 = 0;
@@ -210,7 +204,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
 
     let code = code.join(" ").into_bytes();
     let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
-    postscript_function.domain([0.0, 1.0, 0.0, 1.0]);
+    postscript_function.domain([0.0, 100.0, 0.0, 100.0]);
     postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
 
     root_ref
