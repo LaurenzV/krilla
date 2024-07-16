@@ -181,17 +181,23 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
     let c0 = 1;
     let c1 = 0;
     let c2 = 0;
-    let c3 = 0;
+    let c3 = 1;
     let c4 = 0;
-    let c5 = 0;
+    let c5 = 1;
 
     let color_code = [
         // Stack: x_new
+        // Normalize x_new to be between 0 and 1.
+        format!("{min} sub {max} {min} sub div"),
+        // x_norm
         format!("0 index {c0} exch {c1} {c0} sub mul add"),
-        // Stack: x_new, c1
+        // x_norm, c1
         format!("1 index  {c2} exch {c3} {c2} sub mul add"),
-        // Stack: x_new, c1, c2
-        format!("2 index {c4} exch {c5} {c4} sub mul add 4 -1 roll pop"),
+        // x_norm, c1, c2
+        format!("2 index {c4} exch {c5} {c4} sub mul add"),
+        // x_norm, c1, c2, c3
+        "4 -1 roll pop".to_string()
+        // c1 c2 c3
     ];
 
     let end_code = ["}".to_string()];
