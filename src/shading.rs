@@ -98,7 +98,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
     let max: f32 = 60.0;
     let length = max - min;
 
-    let mirror = false;
+    let mirror = true;
 
     let start_code = [
         "{".to_string(),
@@ -108,12 +108,13 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // Stack: x
     ];
 
-    let repeat_code = [
-        // For repeat, we do:
+    let spread_method_program = [
+        // We do the following:
         // 1. Normalize by doing n = x - min.
         // 2. Calculate the "interval" we are in by doing i = floor(n / length)
         // 3. Calculate the offset by doing o = n - i * length
-        // 4. Calculate the final value with x_new = min + o.
+        // 4. If the spread method is repeat, we additionally calculate o = length - 0 if i % 2 == 1
+        // 5. Calculate the final value with x_new = min + o.
 
         // Current stack:
         // x
@@ -151,9 +152,14 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x length min o {abs(i) % 2}
         "1 eq".to_string(),
         // x length min o {(abs(i) % 2) == 1}
-        "pop".to_string(),
-
-
+        format!(
+            "{}",
+            if mirror {
+                "{2 index exch sub} if"
+            } else {
+                "pop"
+            }
+        ),
         // x length min o
         "add".to_string(),
         // x length x_new
@@ -172,7 +178,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
 
     let mut code = Vec::new();
     code.extend(start_code);
-    code.extend(repeat_code);
+    code.extend(spread_method_program);
     code.extend(color_code);
     code.extend(end_code);
 
