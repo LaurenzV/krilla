@@ -282,8 +282,11 @@ impl CanvasPdfSerializer {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: FiniteTransform| {
-            let transform = pattern_transform(transform);
-            let shading_pattern = ShadingPattern::new(gradient_props, transform);
+            let shading_pattern = ShadingPattern::new(
+                gradient_props,
+                self.graphics_states.cur().transform().try_into().unwrap(),
+                transform,
+            );
             let color_space = self
                 .resource_dictionary
                 .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
@@ -301,11 +304,11 @@ impl CanvasPdfSerializer {
                 self.content.set_fill_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties();
+                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties();
+                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -360,7 +363,11 @@ impl CanvasPdfSerializer {
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: FiniteTransform| {
             let transform = pattern_transform(transform);
-            let shading_pattern = ShadingPattern::new(gradient_props, transform);
+            let shading_pattern = ShadingPattern::new(
+                gradient_props,
+                self.graphics_states.cur().transform().try_into().unwrap(),
+                transform,
+            );
             let color_space = self
                 .resource_dictionary
                 .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
@@ -379,11 +386,11 @@ impl CanvasPdfSerializer {
                 self.content.set_stroke_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties();
+                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties();
+                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -568,7 +575,7 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::ext_g_state::CompositeMode;
-    use crate::paint::{LinearGradient, Paint, Pattern, Stop, StopOffset};
+    use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, FillRule, Stroke};
     use std::sync::Arc;
@@ -737,15 +744,19 @@ mod tests {
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
             dummy_path(100.0),
-            Transform::from_scale(2.0, 2.0).try_into().unwrap(),
+            Transform::from_scale(1.0, 1.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
-                    x1: Default::default(),
+                    x1: FiniteF32::new(40.0).unwrap(),
                     y1: Default::default(),
-                    x2: FiniteF32::new(100.0).unwrap(),
+                    x2: FiniteF32::new(60.0).unwrap(),
                     y2: Default::default(),
-                    transform: Transform::identity().try_into().unwrap(),
-                    spread_method: Default::default(),
+                    transform: Transform::from_translate(0.0, 30.0)
+                        .pre_concat(Transform::from_scale(0.5, 0.5))
+                        .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0))
+                        .try_into()
+                        .unwrap(),
+                    spread_method: SpreadMethod::Reflect,
                     stops: vec![
                         Stop {
                             offset: NormalizedF32::new(0.0).unwrap(),
@@ -753,18 +764,13 @@ mod tests {
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.4).unwrap(),
+                            offset: NormalizedF32::new(0.5).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.6).unwrap(),
-                            color: Color::new_rgb(0, 0, 255),
-                            opacity: NormalizedF32::ONE,
-                        },
-                        Stop {
                             offset: NormalizedF32::new(1.0).unwrap(),
-                            color: Color::new_rgb(0, 0, 0),
+                            color: Color::new_rgb(0, 0, 255),
                             opacity: NormalizedF32::ONE,
                         },
                     ],
