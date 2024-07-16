@@ -105,7 +105,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // Stack: x y
         // Ignore the y coordinate. We account for it in the gradient transform.
         "pop".to_string(),
-        // Stack: x
+        // x
     ];
 
     let spread_method_program = [
@@ -172,9 +172,15 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x_new
     ];
 
+    let stops = [
+        ([1.0, 0.0, 0.0], 30),
+        ([0.0, 1.0, 0.0], 40),
+        ([0.0, 0.0, 1.0], 50),
+    ];
+
     let color_code = [
         // Stack: x_new
-        "dup 45 le {1 0 0} {dup 50 le {0 1 0} {0 0 1} ifelse} ifelse 4 -1 roll pop".to_string(),
+        "dup 1 0 0 1 0 0".to_string(),
     ];
 
     let end_code = ["}".to_string()];
