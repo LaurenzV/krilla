@@ -1,6 +1,7 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
+use crate::mask::Mask;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
 use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
@@ -69,6 +70,7 @@ impl Canvas {
         composite_mode: CompositeMode,
         opacity: NormalizedF32,
         isolated: bool,
+        mask: Option<Mask>,
     ) {
         self.byte_code.push(Instruction::DrawCanvas(Box::new((
             canvas,
@@ -76,6 +78,7 @@ impl Canvas {
             composite_mode,
             opacity,
             isolated,
+            mask,
         ))));
     }
 }
@@ -194,6 +197,7 @@ impl CanvasPdfSerializer {
                         canvas_data.2,
                         canvas_data.3,
                         canvas_data.4,
+                        canvas_data.5.clone(),
                     );
                 }
                 Instruction::ClipPath(clip_data) => {
@@ -208,7 +212,8 @@ impl CanvasPdfSerializer {
             self.base_opacity = self.base_opacity * alpha;
             // fill/stroke opacities are always set locally when drawing a path,
             // so here it will always be None, thus we can just apply it directly.
-            let state = ExtGState::new(Some(self.base_opacity), Some(self.base_opacity), None);
+            let state =
+                ExtGState::new(Some(self.base_opacity), Some(self.base_opacity), None, None);
             self.graphics_states.add_ext_g_state(&state);
         }
     }
@@ -235,9 +240,17 @@ impl CanvasPdfSerializer {
         self.content.restore_state();
     }
 
+    pub fn set_mask(&mut self, mask: Mask) {
+        let state = ExtGState::new(None, None, None, Some(mask));
+        self.graphics_states.add_ext_g_state(&state);
+
+        let ext = self.resource_dictionary.register_ext_g_state(state);
+        self.content.set_parameters(ext.to_pdf_name());
+    }
+
     pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new(Some(alpha * self.base_opacity), None, None);
+            let state = ExtGState::new(Some(alpha * self.base_opacity), None, None, None);
             self.graphics_states.add_ext_g_state(&state);
 
             let ext = self.resource_dictionary.register_ext_g_state(state);
@@ -247,7 +260,7 @@ impl CanvasPdfSerializer {
 
     pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new(None, Some(alpha * self.base_opacity), None);
+            let state = ExtGState::new(None, Some(alpha * self.base_opacity), None, None);
             self.graphics_states.add_ext_g_state(&state);
 
             let ext = self.resource_dictionary.register_ext_g_state(state);
@@ -257,7 +270,7 @@ impl CanvasPdfSerializer {
 
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         if blend_mode != BlendMode::Normal {
-            let state = ExtGState::new(None, None, Some(blend_mode));
+            let state = ExtGState::new(None, None, Some(blend_mode), None);
             self.graphics_states.add_ext_g_state(&state);
 
             let ext = self.resource_dictionary.register_ext_g_state(state);
@@ -446,10 +459,10 @@ impl CanvasPdfSerializer {
         composite_mode: CompositeMode,
         opacity: NormalizedF32,
         isolated: bool,
+        mask: Option<Mask>,
     ) {
-        // TODO: Handle nested opacities
-        // TODO: Handle transforms on gradients/patterns
         // TODO: Handle embedding as XObject
+        // TODO: Nested masks
         self.save_state();
         self.set_base_opacity(opacity);
         self.transform(transform);
@@ -458,11 +471,19 @@ impl CanvasPdfSerializer {
         } else {
             unimplemented!();
         }
+
+        if let Some(mask) = mask {
+            self.set_mask(mask);
+        }
+
         self.serialize_instructions(canvas.byte_code.instructions());
+
         self.restore_state()
     }
 }
 
+// TODO: Add ProcSet?
+// TODO: Deduplicate with other implementations
 impl ObjectSerialize for Canvas {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
@@ -575,6 +596,7 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::ext_g_state::CompositeMode;
+    use crate::mask::{Mask, MaskType};
     use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, FillRule, Stroke};
@@ -683,6 +705,7 @@ mod tests {
             CompositeMode::Difference,
             NormalizedF32::ONE,
             false,
+            None,
         );
 
         let serialize_settings = SerializeSettings {
@@ -726,6 +749,7 @@ mod tests {
             CompositeMode::Difference,
             NormalizedF32::new(0.5).unwrap(),
             false,
+            None,
         );
 
         let serialize_settings = SerializeSettings {
@@ -864,6 +888,52 @@ mod tests {
         let finished = chunk.finish();
 
         write("pattern", &finished);
+    }
+
+    #[test]
+    fn mask_luminance() {
+        use crate::serialize::PageSerialize;
+
+        let mut mask_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        mask_canvas.fill_path(
+            dummy_path(200.0),
+            Transform::default(),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(255, 255, 255)),
+                opacity: NormalizedF32::new(1.0).unwrap(),
+                ..Fill::default()
+            },
+        );
+
+        let mut path_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        path_canvas.fill_path(
+            dummy_path(200.0),
+            Transform::identity().try_into().unwrap(),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(0, 0, 0)),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let mut final_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        final_canvas.draw_canvas(
+            path_canvas,
+            Transform::identity(),
+            CompositeMode::SourceOver,
+            NormalizedF32::ONE,
+            false,
+            Some(Mask::new(mask_canvas, MaskType::Luminance)),
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(final_canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write("mask_luminance", &finished);
     }
 
     fn write(name: &str, data: &[u8]) {

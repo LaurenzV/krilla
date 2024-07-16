@@ -1,17 +1,19 @@
 use crate::ext_g_state;
+use crate::mask::Mask;
 use crate::resource::PDFResource;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Finish, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::Deref;
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
 pub struct Repr {
     non_stroking_alpha: Option<NormalizedF32>,
     stroking_alpha: Option<NormalizedF32>,
     blend_mode: Option<BlendMode>,
+    mask: Option<Mask>,
 }
 
 impl Repr {
@@ -24,8 +26,12 @@ impl Repr {
             self.stroking_alpha = Some(stroking_alpha);
         }
 
-        if let Some(blend_mpde) = other.blend_mode {
-            self.blend_mode = Some(blend_mpde)
+        if let Some(blend_mode) = other.blend_mode {
+            self.blend_mode = Some(blend_mode)
+        }
+
+        if let Some(mask) = other.mask.clone() {
+            self.mask = Some(mask);
         }
     }
 }
@@ -46,11 +52,13 @@ impl ExtGState {
         non_stroking_alpha: Option<NormalizedF32>,
         stroking_alpha: Option<NormalizedF32>,
         blend_mode: Option<BlendMode>,
+        mask: Option<Mask>,
     ) -> Self {
         Self(Arc::new(Repr {
             non_stroking_alpha,
             stroking_alpha,
             blend_mode,
+            mask,
         }))
     }
 }
@@ -63,6 +71,12 @@ impl PDFResource for ExtGState {
 
 impl ObjectSerialize for ExtGState {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        let mask_ref = self
+            .0
+            .mask
+            .clone()
+            .map(|ma| sc.add_cached(CacheableObject::Mask(ma)));
+
         let mut ext_st = sc.chunk_mut().ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
             ext_st.non_stroking_alpha(nsa.get());
@@ -74,6 +88,10 @@ impl ObjectSerialize for ExtGState {
 
         if let Some(bm) = self.0.blend_mode {
             ext_st.blend_mode(bm);
+        }
+
+        if let Some(mask_ref) = mask_ref {
+            ext_st.pair(Name(b"SMask"), mask_ref);
         }
 
         ext_st.finish();

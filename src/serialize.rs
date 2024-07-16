@@ -1,4 +1,5 @@
 use crate::ext_g_state::ExtGState;
+use crate::mask::Mask;
 use crate::resource::{PdfColorSpace, PdfPattern};
 use crate::shading::{ShadingFunction, ShadingPattern};
 use pdf_writer::{Chunk, Pdf, Ref};
@@ -11,6 +12,7 @@ pub enum CacheableObject {
     ExtGState(ExtGState),
     ShadingFunction(ShadingFunction),
     PdfPattern(PdfPattern),
+    Mask(Mask),
 }
 
 impl ObjectSerialize for CacheableObject {
@@ -20,6 +22,7 @@ impl ObjectSerialize for CacheableObject {
             CacheableObject::ExtGState(st) => st.serialize_into(sc, root_ref),
             CacheableObject::ShadingFunction(sf) => sf.serialize_into(sc, root_ref),
             CacheableObject::PdfPattern(pp) => pp.serialize_into(sc, root_ref),
+            CacheableObject::Mask(ma) => ma.serialize_into(sc, root_ref),
         }
     }
 }
@@ -73,6 +76,7 @@ impl SerializerContext {
             *_ref
         } else {
             let root_ref = self.new_ref();
+            self.cached_mappings.insert(object.clone(), root_ref);
             object.serialize_into(self, root_ref);
             root_ref
         }

@@ -1,5 +1,6 @@
 use crate::canvas::Canvas;
 use crate::ext_g_state::CompositeMode;
+use crate::mask::Mask;
 use crate::transform::FiniteTransform;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
 use tiny_skia_path::{NormalizedF32, Path, Transform};
@@ -11,7 +12,16 @@ pub enum Instruction {
     ClipPath(Box<(PathWrapper, FillRule)>),
     StrokePath(Box<(PathWrapper, FiniteTransform, Stroke)>),
     FillPath(Box<(PathWrapper, FiniteTransform, Fill)>),
-    DrawCanvas(Box<(Canvas, FiniteTransform, CompositeMode, NormalizedF32, bool)>),
+    DrawCanvas(
+        Box<(
+            Canvas,
+            FiniteTransform,
+            CompositeMode,
+            NormalizedF32,
+            bool,
+            Option<Mask>,
+        )>,
+    ),
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
