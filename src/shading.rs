@@ -146,12 +146,15 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x length min i o
         "exch".to_string(),
         // x length min o i
+        "cvi".to_string(),
         "abs".to_string(),
         // x length min o abs(i)
         "2 mod".to_string(),
         // x length min o {abs(i) % 2}
-        "1 eq".to_string(),
-        // x length min o {(abs(i) % 2) == 1}
+        // See https://github.com/google/skia/blob/645b77ce61449951cb9f3cf754b47d4977b68e1a/src/pdf/SkPDFGradientShader.cpp#L402-L408
+        // for why we check > 0 instead of == 1.
+        "0 gt".to_string(),
+        // x length min o {(abs(i) % 2) > 0}
         format!(
             "{}",
             if mirror {
