@@ -145,7 +145,15 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x length min i o
         "exch".to_string(),
         // x length min o i
+        "abs".to_string(),
+        // x length min o abs(i)
+        "2 mod".to_string(),
+        // x length min o {abs(i) % 2}
+        "1 eq".to_string(),
+        // x length min o {(abs(i) % 2) == 1}
         "pop".to_string(),
+
+
         // x length min o
         "add".to_string(),
         // x length x_new
