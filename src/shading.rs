@@ -172,31 +172,54 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x_new
     ];
 
-    let encode_two_stops = |c0: &[f32], c1: &[f32]| {
-        debug_assert_eq!(c0.len(), c1.len());
-        debug_assert!(c0.len() > 1);
+    let stops = [
+        ([1.0, 0.0, 0.0], 40.0),
+        ([1.0, 0.0, 0.0], 40.0),
+        ([0.0, 1.0, 0.0], 50.0),
+        ([0.0, 0.0, 1.0], 60.0),
+    ];
 
-        let mut snippets = vec![
-            // Normalize x_new to be between 0 and 1.
-            format!("{min} sub {max} {min} sub div")
-        ];
+    fn encode_stops(stops: &[([f32; 3], f32)], min: f32, max: f32) -> String {
+        let encode_two_stops = |c0: &[f32], c1: &[f32]| {
+            debug_assert_eq!(c0.len(), c1.len());
+            debug_assert!(c0.len() > 1);
 
-        for i in 0..c0.len() {
-            snippets.push(format!("{} index {} exch {} {} sub mul add", i, c0[i], c1[i], c0[i]));
-            // x_norm, c0, c1, ...
-        }
-        snippets.push(format!("{} -1 roll pop", c0.len() + 1));
-        // c0, c1, c2, ...
+            let mut snippets = vec![
+                // Normalize x_new to be between 0 and 1.
+                format!("{min} sub {max} {min} sub div"),
+            ];
 
-        snippets
-    };
+            for i in 0..c0.len() {
+                snippets.push(format!(
+                    "{} index {} exch {} {} sub mul add",
+                    i, c0[i], c1[i], c0[i]
+                ));
+                // x_norm, c0, c1, ...
+            }
+            snippets.push(format!("{} -1 roll pop", c0.len() + 1));
+            // c0, c1, c2, ...
+
+            snippets
+        };
+
+        return if stops.len() == 1 {
+            format!("{} {} {}", stops[0].0[0], stops[0].0[1], stops[0].0[2])
+        } else {
+            format!(
+                "dup {} le {{{}}} {{{}}} ifelse",
+                stops[1].1,
+                encode_two_stops(&stops[0].0, &stops[1].0).join(" "),
+                encode_stops(&stops[1..], min, max)
+            )
+        };
+    }
 
     let end_code = ["}".to_string()];
 
     let mut code = Vec::new();
     code.extend(start_code);
     code.extend(spread_method_program);
-    code.extend(encode_two_stops(&[1.0, 0.0, 0.0], &[0.0, 1.0, 1.0]));
+    code.extend(vec![encode_stops(&stops, min, max)]);
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
