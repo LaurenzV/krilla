@@ -1,5 +1,5 @@
 use crate::color::PdfColorExt;
-use crate::paint::{GradientProperties, Stop};
+use crate::paint::{GradientProperties, SpreadMethod, Stop};
 use crate::resource::PdfColorSpace;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use crate::transform::FiniteTransform;
@@ -122,7 +122,7 @@ fn serialize_postscript(
     let max: f32 = properties.coords[2].get();
     let length = max - min;
 
-    let mirror = false;
+    let reflect = properties.spread_method == SpreadMethod::Reflect;
 
     // TODO: Improve formatting of PS code.
 
@@ -183,7 +183,7 @@ fn serialize_postscript(
         // x length min o {(abs(i) % 2) > 0}
         format!(
             "{}",
-            if mirror {
+            if reflect {
                 "{2 index exch sub} if"
             } else {
                 "pop"
@@ -253,7 +253,9 @@ fn serialize_postscript(
 
     let mut code = Vec::new();
     code.extend(start_code);
-    code.extend(spread_method_program);
+    if properties.spread_method != SpreadMethod::Pad {
+        code.extend(spread_method_program);
+    }
     code.extend(vec![encode_stops(&padded_stops, min, max)]);
     code.extend(end_code);
 

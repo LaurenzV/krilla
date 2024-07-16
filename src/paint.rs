@@ -8,11 +8,11 @@ use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
     Pad,
-    // Reflect,
-    // Repeat,
+    Reflect,
+    Repeat,
 }
 
 impl Default for SpreadMethod {
@@ -115,7 +115,9 @@ pub struct GradientProperties {
     pub coords: Vec<FiniteF32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
+    // The bbox of the object the gradient is applied to
     pub bbox: Rect,
+    pub spread_method: SpreadMethod,
 }
 
 pub trait GradientPropertiesExt {
@@ -131,6 +133,7 @@ impl GradientPropertiesExt for LinearGradient {
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
                 bbox,
+                spread_method: self.spread_method,
             },
             self.transform,
         )
@@ -152,6 +155,7 @@ impl GradientPropertiesExt for RadialGradient {
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
                 bbox,
+                spread_method: self.spread_method,
             },
             self.transform,
         )

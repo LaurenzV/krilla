@@ -575,7 +575,7 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::ext_g_state::CompositeMode;
-    use crate::paint::{LinearGradient, Paint, Pattern, Stop, StopOffset};
+    use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, FillRule, Stroke};
     use std::sync::Arc;
@@ -756,7 +756,7 @@ mod tests {
                         .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0))
                         .try_into()
                         .unwrap(),
-                    spread_method: Default::default(),
+                    spread_method: SpreadMethod::Reflect,
                     stops: vec![
                         Stop {
                             offset: NormalizedF32::new(0.0).unwrap(),
