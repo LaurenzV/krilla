@@ -172,34 +172,31 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x_new
     ];
 
-    let c0 = 1;
-    let c1 = 0;
-    let c2 = 0;
-    let c3 = 1;
-    let c4 = 0;
-    let c5 = 1;
+    let encode_two_stops = |c0: &[f32], c1: &[f32]| {
+        debug_assert_eq!(c0.len(), c1.len());
+        debug_assert!(c0.len() > 1);
 
-    let color_code = [
-        // Stack: x_new
-        // Normalize x_new to be between 0 and 1.
-        format!("{min} sub {max} {min} sub div"),
-        // x_norm
-        format!("0 index {c0} exch {c1} {c0} sub mul add"),
-        // x_norm, c1
-        format!("1 index  {c2} exch {c3} {c2} sub mul add"),
-        // x_norm, c1, c2
-        format!("2 index {c4} exch {c5} {c4} sub mul add"),
-        // x_norm, c1, c2, c3
-        "4 -1 roll pop".to_string()
-        // c1 c2 c3
-    ];
+        let mut snippets = vec![
+            // Normalize x_new to be between 0 and 1.
+            format!("{min} sub {max} {min} sub div")
+        ];
+
+        for i in 0..c0.len() {
+            snippets.push(format!("{} index {} exch {} {} sub mul add", i, c0[i], c1[i], c0[i]));
+            // x_norm, c0, c1, ...
+        }
+        snippets.push(format!("{} -1 roll pop", c0.len() + 1));
+        // c0, c1, c2, ...
+
+        snippets
+    };
 
     let end_code = ["}".to_string()];
 
     let mut code = Vec::new();
     code.extend(start_code);
     code.extend(spread_method_program);
-    code.extend(color_code);
+    code.extend(encode_two_stops(&[1.0, 0.0, 0.0], &[0.0, 1.0, 1.0]));
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
