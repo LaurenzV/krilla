@@ -6,7 +6,7 @@ use crate::util::TransformExt;
 use pdf_writer::types::{FunctionShadingType, PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum SpreadMethod {
@@ -115,19 +115,22 @@ pub struct GradientProperties {
     pub coords: Vec<FiniteF32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
+    pub bbox: Rect
 }
 
 pub trait GradientPropertiesExt {
-    fn gradient_properties(&self) -> (GradientProperties, FiniteTransform);
+    // TODO: BBox only needed if extend is not pad
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, FiniteTransform);
 }
 
 impl GradientPropertiesExt for LinearGradient {
-    fn gradient_properties(&self) -> (GradientProperties, FiniteTransform) {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, FiniteTransform) {
         (
             GradientProperties {
                 coords: vec![self.x1, self.y1, self.x2, self.y2],
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
+                bbox
             },
             self.transform,
         )
@@ -135,7 +138,7 @@ impl GradientPropertiesExt for LinearGradient {
 }
 
 impl GradientPropertiesExt for RadialGradient {
-    fn gradient_properties(&self) -> (GradientProperties, FiniteTransform) {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, FiniteTransform) {
         (
             GradientProperties {
                 coords: vec![
@@ -148,6 +151,7 @@ impl GradientPropertiesExt for RadialGradient {
                 ],
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
+                bbox
             },
             self.transform,
         )

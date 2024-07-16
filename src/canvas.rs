@@ -301,11 +301,11 @@ impl CanvasPdfSerializer {
                 self.content.set_fill_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties();
+                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties();
+                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -379,11 +379,11 @@ impl CanvasPdfSerializer {
                 self.content.set_stroke_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties();
+                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties();
+                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -740,9 +740,9 @@ mod tests {
             Transform::from_scale(1.0, 1.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
-                    x1: Default::default(),
+                    x1: FiniteF32::new(40.0).unwrap(),
                     y1: Default::default(),
-                    x2: FiniteF32::new(100.0).unwrap(),
+                    x2: FiniteF32::new(60.0).unwrap(),
                     y2: Default::default(),
                     transform: Transform::from_scale(1.0, 1.0).try_into().unwrap(),
                     spread_method: Default::default(),
@@ -753,18 +753,13 @@ mod tests {
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.4).unwrap(),
+                            offset: NormalizedF32::new(0.5).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.6).unwrap(),
-                            color: Color::new_rgb(0, 0, 255),
-                            opacity: NormalizedF32::ONE,
-                        },
-                        Stop {
                             offset: NormalizedF32::new(1.0).unwrap(),
-                            color: Color::new_rgb(0, 0, 0),
+                            color: Color::new_rgb(0, 0, 255),
                             opacity: NormalizedF32::ONE,
                         },
                     ],

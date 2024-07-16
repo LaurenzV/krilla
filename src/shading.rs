@@ -20,7 +20,7 @@ impl ShadingPattern {
 
 impl ObjectSerialize for ShadingPattern {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let shading_function = ShadingFunction(self.0.clone());
+        let shading_function = ShadingFunction(self.0.clone(), self.1);
         let shading_ref = sc.add_cached(CacheableObject::ShadingFunction(shading_function));
         let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
@@ -30,11 +30,11 @@ impl ObjectSerialize for ShadingPattern {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingFunction(Arc<GradientProperties>);
+pub struct ShadingFunction(Arc<GradientProperties>, FiniteTransform);
 
 impl ObjectSerialize for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let function_ref = serialize_stop_function(self.0.stops.clone(), sc);
+        let function_ref = serialize_stop_function(self.0.as_ref(), sc);
 
         let cs_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
 
@@ -43,15 +43,18 @@ impl ObjectSerialize for ShadingFunction {
         shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
         shading.function(function_ref);
-        shading.domain([0.0, 100.0, 0.0, 100.0]);
+
+        let bbox = self.0.bbox.transform(self.1.into()).unwrap();
+
+        shading.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
         // shading.coords(self.0.coords.iter().map(|n| n.get()));
         // shading.extend([true, true]);
         shading.finish();
     }
 }
 
-fn serialize_stop_function(stops: Vec<Stop>, sc: &mut SerializerContext) -> Ref {
-    debug_assert!(stops.len() > 1);
+fn serialize_stop_function(properties: &GradientProperties, sc: &mut SerializerContext) -> Ref {
+    debug_assert!(properties.stops.len() > 1);
 
     // fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
     //     // We manually pad the stops if necessary so that they are always in the range from 0-1
@@ -75,10 +78,10 @@ fn serialize_stop_function(stops: Vec<Stop>, sc: &mut SerializerContext) -> Ref 
     // }
 
     // let stops = pad_stops(stops);
-    select_function(&stops, sc)
+    select_function(properties, sc)
 }
 
-fn select_function(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
+fn select_function(properties: &GradientProperties, sc: &mut SerializerContext) -> Ref {
     // if stops.len() == 2 {
     //     serialize_exponential(
     //         &stops[0].color.to_normalized_pdf_components(),
@@ -88,14 +91,16 @@ fn select_function(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
     // } else {
     //     serialize_stitching(stops, sc)
     // }
-    serialize_postscript(sc)
+    serialize_postscript(properties, sc)
 }
 
-fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
+fn serialize_postscript(properties: &GradientProperties, sc: &mut SerializerContext) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min: f32 = 40.0;
-    let max: f32 = 60.0;
+    // Assumes that y0 = y1 and x1 <= x2
+
+    let min: f32 = properties.coords[0].get();
+    let max: f32 = properties.coords[2].get();
     let length = max - min;
 
     let mirror = false;
@@ -172,14 +177,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x_new
     ];
 
-    let stops = [
-        ([1.0, 0.0, 0.0], 40.0),
-        ([1.0, 0.0, 0.0], 40.0),
-        ([0.0, 1.0, 0.0], 50.0),
-        ([0.0, 0.0, 1.0], 60.0),
-    ];
-
-    fn encode_stops(stops: &[([f32; 3], f32)], min: f32, max: f32) -> String {
+    fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
         let encode_two_stops = |c0: &[f32], c1: &[f32]| {
             debug_assert_eq!(c0.len(), c1.len());
             debug_assert!(c0.len() > 1);
@@ -203,12 +201,13 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         };
 
         return if stops.len() == 1 {
-            format!("{} {} {}", stops[0].0[0], stops[0].0[1], stops[0].0[2])
+            stops[0].color.to_pdf_components().iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" ")
         } else {
+            let denormalized_offset = min + stops[1].offset.get() * (max - min);
             format!(
                 "dup {} le {{{}}} {{{}}} ifelse",
-                stops[1].1,
-                encode_two_stops(&stops[0].0, &stops[1].0).join(" "),
+                denormalized_offset,
+                encode_two_stops(&stops[0].color.to_pdf_components(), &stops[1].color.to_pdf_components()).join(" "),
                 encode_stops(&stops[1..], min, max)
             )
         };
@@ -216,10 +215,14 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
 
     let end_code = ["}".to_string()];
 
+    let mut padded_stops = properties.stops.clone();
+    let first = padded_stops[0].clone();
+    padded_stops.insert(0, first);
+
     let mut code = Vec::new();
     code.extend(start_code);
     code.extend(spread_method_program);
-    code.extend(vec![encode_stops(&stops, min, max)]);
+    code.extend(vec![encode_stops(&padded_stops, min, max)]);
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
