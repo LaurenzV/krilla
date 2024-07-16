@@ -112,7 +112,7 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // For repeat, we do:
         // 1. Normalize by doing n = x - min.
         // 2. Calculate the "interval" we are in by doing i = floor(n / length)
-        // 3. Calculate the offset by doing o = x - i * length
+        // 3. Calculate the offset by doing o = n - i * length
         // 4. Calculate the final value with x_new = min + o.
 
         // Current stack:
@@ -125,33 +125,31 @@ fn serialize_postscript(sc: &mut SerializerContext) -> Ref {
         // x length min x min
         "sub".to_string(),
         // x length min n
-        "2 index".to_string(),
-        // x length min n length
-        "div".to_string(),
-        // x length min {n/length}
-        "floor".to_string(),
-        // x length min i
-        "2 index".to_string(),
-        // x length min i length
-        "mul".to_string(),
-        // x length min {i * length}
+        "dup".to_string(),
+        // x length min n n
         "3 index".to_string(),
-        // x length min {i * length} x
-        "1 index".to_string(),
-        // x length min {i * length} x {i * length}
+        // x length min n n length
+        "div".to_string(),
+        // x length min n {n/length}
+        "floor".to_string(),
+        // x length min n i
+        "3 index".to_string(),
+        // x length min n i length
+        "mul".to_string(),
+        // x length min n {i * length}
         "sub".to_string(),
-        // x length min {i * length} o
+        // x length min o
         "add".to_string(),
-        // x length min x_new
-        "4 1 roll".to_string(),
-        // x_new x length min
-        "pop pop pop".to_string(),
+        // x length x_new
+        "3 1 roll".to_string(),
+        // x_new x length
+        "pop pop".to_string(),
         // x_new
     ];
 
     let color_code = [
         // Stack: x_new
-        "dup 40 le {1 0 0} {dup 50 le {0 1 0} {0 0 1} ifelse} ifelse 4 -1 roll pop".to_string(),
+        "dup 45 le {1 0 0} {dup 50 le {0 1 0} {0 0 1} ifelse} ifelse 4 -1 roll pop".to_string(),
     ];
 
     let end_code = ["}".to_string()];
