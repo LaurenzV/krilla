@@ -16,7 +16,7 @@ use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Canvas {
     pub(crate) byte_code: ByteCode,
     pub(crate) size: Size,

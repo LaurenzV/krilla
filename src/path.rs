@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use tiny_skia_path::{FiniteF32, NonZeroPositiveF32, NormalizedF32};
 pub use tiny_skia_path::{Path, PathBuilder};
 
-#[derive(Eq, PartialEq, Debug, Hash)]
+#[derive(Eq, PartialEq, Debug, Hash, Clone, Copy)]
 pub enum LineCap {
     Butt,
     Round,
@@ -17,7 +17,7 @@ impl Default for LineCap {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Hash)]
+#[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 pub enum LineJoin {
     Miter,
     Round,
@@ -30,13 +30,13 @@ impl Default for LineJoin {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct StrokeDash {
     pub array: Vec<FiniteF32>,
     pub offset: FiniteF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stroke {
     pub paint: Paint,
     pub width: NonZeroPositiveF32,
@@ -61,7 +61,7 @@ impl Default for Stroke {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum FillRule {
     NonZero,
     EvenOdd,
@@ -73,7 +73,7 @@ impl Default for FillRule {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Fill {
     pub paint: Paint,
     pub opacity: NormalizedF32,

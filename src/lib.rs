@@ -1,17 +1,19 @@
-mod allocate;
-mod bytecode;
-mod canvas;
-mod color;
-mod ext_g_state;
-mod image;
-mod mask;
-mod paint;
-mod path;
-mod resource;
-mod serialize;
-mod shading;
-mod transform;
-mod util;
+pub mod allocate;
+pub mod bytecode;
+pub mod canvas;
+pub mod color;
+pub mod ext_g_state;
+pub mod image;
+pub mod mask;
+pub mod paint;
+pub mod path;
+pub mod resource;
+pub mod serialize;
+pub mod shading;
+pub mod transform;
+pub mod util;
 
 pub use path::*;
-pub use tiny_skia_path::Transform;
+pub use tiny_skia_path::{Transform, Size};
+
+

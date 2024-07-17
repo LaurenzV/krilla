@@ -31,7 +31,7 @@ pub struct Stop {
     pub opacity: NormalizedF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct LinearGradient {
     pub x1: FiniteF32,
     pub y1: FiniteF32,
@@ -43,7 +43,7 @@ pub struct LinearGradient {
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct RadialGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
@@ -101,7 +101,7 @@ pub struct Pattern {
     pub(crate) transform: FiniteTransform,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Paint {
     Color(Color),
     LinearGradient(LinearGradient),

@@ -7,7 +7,7 @@ use crate::{Fill, FillRule, PathWrapper, Stroke};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Instruction {
     PushLayer,
     PopLayer,
@@ -27,7 +27,7 @@ pub enum Instruction {
     ),
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ByteCode(Vec<Instruction>);
 
 impl ByteCode {
