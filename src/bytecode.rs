@@ -1,10 +1,11 @@
 use crate::canvas::Canvas;
 use crate::ext_g_state::CompositeMode;
+use crate::image::Image;
 use crate::mask::Mask;
 use crate::transform::FiniteTransform;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, Transform};
+use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Instruction {
@@ -12,6 +13,7 @@ pub enum Instruction {
     PopLayer,
     ClipPath(Box<(PathWrapper, FillRule)>),
     StrokePath(Box<(PathWrapper, FiniteTransform, Stroke)>),
+    DrawImage(Box<(Image, Size, FiniteTransform)>),
     FillPath(Box<(PathWrapper, FiniteTransform, Fill)>),
     DrawCanvas(
         Box<(

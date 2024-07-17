@@ -3,6 +3,7 @@ mod bytecode;
 mod canvas;
 mod color;
 mod ext_g_state;
+mod image;
 mod mask;
 mod paint;
 mod path;

@@ -1,6 +1,7 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
+use crate::image::Image;
 use crate::mask::Mask;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
 use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary, XObject};
@@ -61,6 +62,14 @@ impl Canvas {
     pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
         self.byte_code
             .push(Instruction::ClipPath(Box::new((path.into(), clip_rule))));
+    }
+
+    pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
+        self.byte_code.push(Instruction::DrawImage(Box::new((
+            image,
+            size,
+            transform.try_into().unwrap(),
+        ))))
     }
 
     pub fn draw_canvas(
@@ -191,6 +200,9 @@ impl<'a> CanvasPdfSerializer<'a> {
                         &fill_data.1.try_into().unwrap(),
                         &fill_data.2,
                     );
+                }
+                Instruction::DrawImage(image_data) => {
+                    self.draw_image(image_data.0.clone(), image_data.1, &image_data.2.get())
                 }
                 Instruction::DrawCanvas(canvas_data) => {
                     self.draw_canvas(
@@ -454,6 +466,15 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
+    pub fn draw_image(&mut self, image: Image, size: Size, transform: &Transform) {
+        let image_name = self.resource_dictionary.register_image(image);
+        let transform = Transform::from_scale(size.width(), size.height()).pre_concat(*transform);
+        self.save_state();
+        self.transform(&transform);
+        self.content.x_object(image_name.to_pdf_name());
+        self.restore_state()
+    }
+
     pub fn draw_canvas(
         &mut self,
         canvas: Arc<Canvas>,
@@ -475,7 +496,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
 
         if mask.is_some() || isolated {
-            let x_object = XObject { canvas, isolated, needs_transparency: mask.is_some() };
+            let x_object = XObject {
+                canvas,
+                isolated,
+                needs_transparency: mask.is_some(),
+            };
 
             if let Some(mask) = mask {
                 self.set_mask(mask);
@@ -525,14 +550,14 @@ impl PageSerialize for Canvas {
         let (content_stream, _) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
             // TODO: Update bbox?
-            serializer.transform(&Transform::from_row(
-                1.0,
-                0.0,
-                0.0,
-                -1.0,
-                0.0,
-                self.size.height(),
-            ));
+            // serializer.transform(&Transform::from_row(
+            //     1.0,
+            //     0.0,
+            //     0.0,
+            //     -1.0,
+            //     0.0,
+            //     self.size.height(),
+            // ));
             serializer.serialize_instructions(self.byte_code.instructions());
 
             serializer.finish()
@@ -606,10 +631,12 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::ext_g_state::CompositeMode;
+    use crate::image::Image;
     use crate::mask::{Mask, MaskType};
     use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
     use crate::{Fill, FillRule, Stroke};
+    use image::DynamicImage;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
@@ -944,6 +971,28 @@ mod tests {
         let finished = chunk.finish();
 
         write("mask_luminance", &finished);
+    }
+
+    #[test]
+    fn png_image() {
+        use crate::serialize::PageSerialize;
+        let image_data = include_bytes!("../data/image.png");
+        let dynamic_image = image::load_from_memory(image_data).unwrap();
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.draw_image(
+            Image::new(&dynamic_image),
+            Size::from_wh(50.0, 50.0).unwrap(),
+            Transform::from_translate(0.0, 0.0),
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write("png_image", &finished);
     }
 
     fn write(name: &str, data: &[u8]) {

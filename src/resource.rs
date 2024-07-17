@@ -1,6 +1,7 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::ext_g_state::ExtGState;
+use crate::image::Image;
 use crate::mask::Mask;
 use crate::paint::TilingPattern;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
@@ -16,6 +17,7 @@ pub struct ResourceDictionary {
     pub ext_g_state: ExtGStateResourceMapper,
     pub patterns: PatternResourceMapper,
     pub x_objects: XObjectResourceMapper,
+    pub images: ImageResourceMapper,
 }
 
 impl ResourceDictionary {
@@ -25,6 +27,7 @@ impl ResourceDictionary {
             ext_g_state: ExtGStateResourceMapper::new(),
             patterns: PatternResourceMapper::new(),
             x_objects: XObjectResourceMapper::new(),
+            images: ImageResourceMapper::new(),
         }
     }
 
@@ -42,6 +45,10 @@ impl ResourceDictionary {
 
     pub fn register_x_object(&mut self, x_object: XObject) -> String {
         self.x_objects.remap_with_name(x_object)
+    }
+
+    pub fn register_image(&mut self, image: Image) -> String {
+        self.images.remap_with_name(image)
     }
 
     pub fn to_pdf_resources(
@@ -84,6 +91,10 @@ impl ResourceDictionary {
             x_objects.pair(name.to_pdf_name(), sc.add_uncached(entry));
         }
 
+        for (name, entry) in self.images.get_entries() {
+            x_objects.pair(name.to_pdf_name(), sc.add_uncached(entry));
+        }
+
         x_objects.finish();
     }
 }
@@ -96,13 +107,19 @@ pub type CsResourceMapper = ResourceMapper<PdfColorSpace>;
 pub type ExtGStateResourceMapper = ResourceMapper<ExtGState>;
 pub type PatternResourceMapper = ResourceMapper<PdfPattern>;
 pub type XObjectResourceMapper = ResourceMapper<XObject>;
+pub type ImageResourceMapper = ResourceMapper<Image>;
+
+impl PDFResource for Image {
+    fn get_name() -> &'static str {
+        "I"
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct XObject {
     pub canvas: Arc<Canvas>,
     pub isolated: bool,
-    // Needed to circumvent (a potential) bug in Chrome.
-    pub needs_transparency: bool
+    pub needs_transparency: bool,
 }
 
 impl PDFResource for XObject {
@@ -190,8 +207,14 @@ impl ObjectSerialize for PdfColorSpace {
                     .filter(pdf_writer::Filter::FlateDecode);
             }
             PdfColorSpace::D65Gray => {
+                let icc_ref = sc.new_ref();
+                let mut array = sc.chunk_mut().indirect(root_ref).array();
+                array.item(Name(b"ICCBased"));
+                array.item(icc_ref);
+                array.finish();
+
                 sc.chunk_mut()
-                    .icc_profile(root_ref, &GREY_ICC_DEFLATED)
+                    .icc_profile(icc_ref, &GREY_ICC_DEFLATED)
                     .n(1)
                     .range([0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);

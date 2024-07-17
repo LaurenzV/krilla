@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+image = { version = "0.25.1", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 miniz_oxide = "0.7.4"
 once_cell = "1.19.0"
 pdf-writer = "0.10.0"
