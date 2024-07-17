@@ -1,5 +1,5 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
-use crate::resource::PdfColorSpace;
+use crate::resource::{PdfColorSpace, ResourceDictionary};
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -41,8 +41,9 @@ impl ObjectSerialize for Mask {
         let srgb_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
 
         let mut chunk = Chunk::new();
-        let (content_stream, mut resource_dictionary, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new();
+        let mut resource_dictionary = ResourceDictionary::new();
+        let (content_stream, bbox) = {
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
             serializer.serialize_instructions(self.canvas.byte_code.instructions());
             serializer.finish()
         };
@@ -56,7 +57,7 @@ impl ObjectSerialize for Mask {
             .transparency()
             .isolated(false)
             .knockout(false)
-            .pair(Name(b"CS"), Name(b"DeviceRGB"));
+            .pair(Name(b"CS"), srgb_ref);
 
         x_object.finish();
 

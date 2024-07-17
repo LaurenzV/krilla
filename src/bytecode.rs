@@ -3,6 +3,7 @@ use crate::ext_g_state::CompositeMode;
 use crate::mask::Mask;
 use crate::transform::FiniteTransform;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
+use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -14,7 +15,7 @@ pub enum Instruction {
     FillPath(Box<(PathWrapper, FiniteTransform, Fill)>),
     DrawCanvas(
         Box<(
-            Canvas,
+            Arc<Canvas>,
             FiniteTransform,
             CompositeMode,
             NormalizedF32,

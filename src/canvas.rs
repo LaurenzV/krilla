@@ -3,7 +3,7 @@ use crate::color::PdfColorExt;
 use crate::ext_g_state::{CompositeMode, ExtGState};
 use crate::mask::Mask;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
-use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary};
+use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary, XObject};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
 use crate::transform::FiniteTransform;
@@ -73,7 +73,7 @@ impl Canvas {
         mask: Option<Mask>,
     ) {
         self.byte_code.push(Instruction::DrawCanvas(Box::new((
-            canvas,
+            Arc::new(canvas),
             transform.try_into().unwrap(),
             composite_mode,
             opacity,
@@ -154,22 +154,24 @@ impl GraphicsStates {
     }
 }
 
-pub struct CanvasPdfSerializer {
-    resource_dictionary: ResourceDictionary,
+pub struct CanvasPdfSerializer<'a> {
+    resource_dictionary: &'a mut ResourceDictionary,
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
     base_opacity: NormalizedF32,
+    isolate: bool,
 }
 
-impl CanvasPdfSerializer {
-    pub fn new() -> Self {
+impl<'a> CanvasPdfSerializer<'a> {
+    pub fn new(resource_dictionary: &'a mut ResourceDictionary) -> Self {
         Self {
-            resource_dictionary: ResourceDictionary::new(),
+            resource_dictionary,
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             base_opacity: NormalizedF32::new(1.0).unwrap(),
+            isolate: false,
         }
     }
 
@@ -192,7 +194,7 @@ impl CanvasPdfSerializer {
                 }
                 Instruction::DrawCanvas(canvas_data) => {
                     self.draw_canvas(
-                        &canvas_data.0,
+                        canvas_data.0.clone(),
                         &canvas_data.1.try_into().unwrap(),
                         canvas_data.2,
                         canvas_data.3,
@@ -226,8 +228,8 @@ impl CanvasPdfSerializer {
     }
 
     // TODO: Panic if q_nesting level is uneven
-    pub fn finish(self) -> (Vec<u8>, ResourceDictionary, Rect) {
-        (self.content.finish(), self.resource_dictionary, self.bbox)
+    pub fn finish(self) -> (Vec<u8>, Rect) {
+        (self.content.finish(), self.bbox)
     }
 
     pub fn save_state(&mut self) {
@@ -454,7 +456,7 @@ impl CanvasPdfSerializer {
 
     pub fn draw_canvas(
         &mut self,
-        canvas: &Canvas,
+        canvas: Arc<Canvas>,
         transform: &Transform,
         composite_mode: CompositeMode,
         opacity: NormalizedF32,
@@ -472,11 +474,17 @@ impl CanvasPdfSerializer {
             unimplemented!();
         }
 
-        if let Some(mask) = mask {
-            self.set_mask(mask);
-        }
+        if mask.is_some() || isolated {
+            let x_object = XObject { canvas, isolated, needs_transparency: mask.is_some() };
 
-        self.serialize_instructions(canvas.byte_code.instructions());
+            if let Some(mask) = mask {
+                self.set_mask(mask);
+            }
+            let name = self.resource_dictionary.register_x_object(x_object);
+            self.content.x_object(name.to_pdf_name());
+        } else {
+            self.serialize_instructions(canvas.byte_code.instructions());
+        }
 
         self.restore_state()
     }
@@ -487,8 +495,9 @@ impl CanvasPdfSerializer {
 impl ObjectSerialize for Canvas {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
-        let (content_stream, mut resource_dictionary, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new();
+        let mut resource_dictionary = ResourceDictionary::new();
+        let (content_stream, bbox) = {
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
             serializer.serialize_instructions(self.byte_code.instructions());
             serializer.finish()
         };
@@ -512,8 +521,9 @@ impl PageSerialize for Canvas {
         let mut chunk = Chunk::new();
         chunk.pages(page_tree_ref).count(1).kids([page_ref]);
 
-        let (content_stream, mut resource_dictionary, _) = {
-            let mut serializer = CanvasPdfSerializer::new();
+        let mut resource_dictionary = ResourceDictionary::new();
+        let (content_stream, _) = {
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
             // TODO: Update bbox?
             serializer.transform(&Transform::from_row(
                 1.0,
@@ -899,7 +909,7 @@ mod tests {
             dummy_path(200.0),
             Transform::default(),
             Fill {
-                paint: Paint::Color(Color::new_rgb(255, 255, 255)),
+                paint: Paint::Color(Color::new_rgb(255, 0, 0)),
                 opacity: NormalizedF32::new(1.0).unwrap(),
                 ..Fill::default()
             },
@@ -910,7 +920,7 @@ mod tests {
             dummy_path(200.0),
             Transform::identity().try_into().unwrap(),
             Fill {
-                paint: Paint::Color(Color::new_rgb(0, 0, 0)),
+                paint: Paint::Color(Color::new_rgb(255, 0, 0)),
                 opacity: NormalizedF32::ONE,
                 ..Fill::default()
             },

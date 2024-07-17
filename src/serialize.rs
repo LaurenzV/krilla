@@ -86,8 +86,13 @@ impl SerializerContext {
         self.cur_ref.bump()
     }
 
-    pub fn add_uncached(&mut self, chunk: &Chunk) {
-        self.chunk.extend(chunk);
+    pub fn add_uncached<T>(&mut self, o: T) -> Ref
+    where
+        T: ObjectSerialize,
+    {
+        let _ref = self.new_ref();
+        o.serialize_into(self, _ref);
+        _ref
     }
 
     pub fn current_chunk(&self) -> &Chunk {

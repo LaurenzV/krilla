@@ -1,17 +1,21 @@
+use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
 use crate::ext_g_state::ExtGState;
+use crate::mask::Mask;
 use crate::paint::TilingPattern;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
-use crate::util::NameExt;
+use crate::util::{NameExt, RectExt};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
+use std::sync::Arc;
 
 pub struct ResourceDictionary {
     pub color_spaces: CsResourceMapper,
     pub ext_g_state: ExtGStateResourceMapper,
     pub patterns: PatternResourceMapper,
+    pub x_objects: XObjectResourceMapper,
 }
 
 impl ResourceDictionary {
@@ -20,6 +24,7 @@ impl ResourceDictionary {
             color_spaces: CsResourceMapper::new(),
             ext_g_state: ExtGStateResourceMapper::new(),
             patterns: PatternResourceMapper::new(),
+            x_objects: XObjectResourceMapper::new(),
         }
     }
 
@@ -33,6 +38,10 @@ impl ResourceDictionary {
 
     pub fn register_pattern(&mut self, pdf_pattern: PdfPattern) -> String {
         self.patterns.remap_with_name(pdf_pattern)
+    }
+
+    pub fn register_x_object(&mut self, x_object: XObject) -> String {
+        self.x_objects.remap_with_name(x_object)
     }
 
     pub fn to_pdf_resources(
@@ -68,6 +77,14 @@ impl ResourceDictionary {
             );
         }
         patterns.finish();
+
+        let mut x_objects = resources.x_objects();
+
+        for (name, entry) in self.x_objects.get_entries() {
+            x_objects.pair(name.to_pdf_name(), sc.add_uncached(entry));
+        }
+
+        x_objects.finish();
     }
 }
 
@@ -78,6 +95,50 @@ pub trait PDFResource {
 pub type CsResourceMapper = ResourceMapper<PdfColorSpace>;
 pub type ExtGStateResourceMapper = ResourceMapper<ExtGState>;
 pub type PatternResourceMapper = ResourceMapper<PdfPattern>;
+pub type XObjectResourceMapper = ResourceMapper<XObject>;
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct XObject {
+    pub canvas: Arc<Canvas>,
+    pub isolated: bool,
+    // Needed to circumvent (a potential) bug in Chrome.
+    pub needs_transparency: bool
+}
+
+impl PDFResource for XObject {
+    fn get_name() -> &'static str {
+        "X"
+    }
+}
+
+impl ObjectSerialize for XObject {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        let srgb_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
+        let mut chunk = Chunk::new();
+        let mut resource_dictionary = ResourceDictionary::new();
+        let (content_stream, bbox) = {
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
+            serializer.serialize_instructions(self.canvas.byte_code.instructions());
+            serializer.finish()
+        };
+
+        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
+        resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
+        x_object.bbox(bbox.to_pdf_rect());
+
+        if self.isolated || self.needs_transparency {
+            x_object
+                .group()
+                .transparency()
+                .isolated(self.isolated)
+                .pair(Name(b"CS"), srgb_ref);
+        }
+
+        x_object.finish();
+
+        sc.chunk_mut().extend(&chunk);
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PdfPattern {

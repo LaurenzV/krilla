@@ -1,5 +1,6 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::color::Color;
+use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, SerializerContext};
 use crate::transform::FiniteTransform;
 use crate::util::TransformExt;
@@ -62,8 +63,9 @@ impl ObjectSerialize for TilingPattern {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         // TODO: Deduplicate
-        let (content_stream, mut resource_dictionary, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new();
+        let mut resource_dictionary = ResourceDictionary::new();
+        let (content_stream, bbox) = {
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
             serializer.serialize_instructions(self.0.canvas.byte_code.instructions());
             serializer.finish()
         };
