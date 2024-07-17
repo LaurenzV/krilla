@@ -468,7 +468,15 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn draw_image(&mut self, image: Image, size: Size, transform: &Transform) {
         let image_name = self.resource_dictionary.register_image(image);
-        let transform = Transform::from_scale(size.width(), size.height()).pre_concat(*transform);
+        // Apply user-supplied transform and scale the image from 1x1 to the actual dimensions.
+        let transform = transform.pre_concat(Transform::from_row(
+            size.width(),
+            0.0,
+            0.0,
+            -size.height(),
+            0.0,
+            size.height(),
+        ));
         self.save_state();
         self.transform(&transform);
         self.content.x_object(image_name.to_pdf_name());
@@ -550,14 +558,14 @@ impl PageSerialize for Canvas {
         let (content_stream, _) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
             // TODO: Update bbox?
-            // serializer.transform(&Transform::from_row(
-            //     1.0,
-            //     0.0,
-            //     0.0,
-            //     -1.0,
-            //     0.0,
-            //     self.size.height(),
-            // ));
+            serializer.transform(&Transform::from_row(
+                1.0,
+                0.0,
+                0.0,
+                -1.0,
+                0.0,
+                self.size.height(),
+            ));
             serializer.serialize_instructions(self.byte_code.instructions());
 
             serializer.finish()
@@ -982,7 +990,7 @@ mod tests {
         canvas.draw_image(
             Image::new(&dynamic_image),
             Size::from_wh(50.0, 50.0).unwrap(),
-            Transform::from_translate(0.0, 0.0),
+            Transform::from_translate(20.0, 20.0),
         );
 
         let serialize_settings = SerializeSettings {
