@@ -1,6 +1,4 @@
-use crate::object::color_space::ColorSpace;
-use crate::object::Cacheable;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
+use crate::serialize::{ObjectSerialize, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
@@ -19,8 +17,6 @@ pub struct Repr {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Repr>);
 
-impl Cacheable for Image {}
-
 impl Image {
     pub fn new(dynamic_image: &DynamicImage) -> Self {
         let (samples, filter, mask_bytes) = handle_transparent_image(&dynamic_image);
@@ -38,6 +34,8 @@ impl Image {
 }
 
 impl ObjectSerialize for Image {
+    const CACHED: bool = true;
+
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         // TODO: Error handling
         let mut chunk = Chunk::new();

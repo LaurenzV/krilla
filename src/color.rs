@@ -1,6 +1,3 @@
-use crate::resource::PdfColorSpace;
-use crate::util::deflate;
-use once_cell::sync::Lazy;
 use tiny_skia_path::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

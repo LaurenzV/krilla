@@ -1,7 +1,6 @@
 use crate::object::mask::Mask;
-use crate::object::Cacheable;
 use crate::resource::PDFResource;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
+use crate::serialize::{ObjectSerialize, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
@@ -17,8 +16,6 @@ struct Repr {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
 pub(crate) struct ExtGState(Arc<Repr>);
-
-impl Cacheable for ExtGState {}
 
 impl ExtGState {
     pub fn new() -> Self {
@@ -75,12 +72,10 @@ impl PDFResource for ExtGState {
 }
 
 impl ObjectSerialize for ExtGState {
+    const CACHED: bool = true;
+
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mask_ref = self
-            .0
-            .mask
-            .clone()
-            .map(|ma| sc.add_cached(CacheableObject::Mask(ma)));
+        let mask_ref = self.0.mask.clone().map(|ma| sc.add(ma));
 
         let mut ext_st = sc.chunk_mut().ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {

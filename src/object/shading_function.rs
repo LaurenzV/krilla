@@ -1,8 +1,6 @@
 use crate::color::PdfColorExt;
-use crate::object::color_space::ColorSpace;
-use crate::object::Cacheable;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
+use crate::serialize::{ObjectSerialize, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
@@ -19,8 +17,6 @@ struct Repr {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingFunction(Arc<Repr>);
 
-impl Cacheable for ShadingFunction {}
-
 impl ShadingFunction {
     pub fn new(properties: GradientProperties, shading_transform: TransformWrapper) -> Self {
         Self(Arc::new(Repr {
@@ -35,6 +31,8 @@ impl ShadingFunction {
 }
 
 impl ObjectSerialize for ShadingFunction {
+    const CACHED: bool = true;
+
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut bbox = self.0.properties.bbox;
         // We need to make sure the shading covers the whole bbox of the object after

@@ -1,5 +1,4 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
-use crate::object::Cacheable;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, SerializerContext};
 use crate::transform::TransformWrapper;
@@ -24,9 +23,9 @@ impl TilingPattern {
     }
 }
 
-impl Cacheable for TilingPattern {}
-
 impl ObjectSerialize for TilingPattern {
+    const CACHED: bool = true;
+
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         // TODO: Deduplicate.

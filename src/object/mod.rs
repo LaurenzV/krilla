@@ -9,7 +9,3 @@ pub mod shading_function;
 pub mod shading_pattern;
 pub mod tiling_pattern;
 pub mod xobject;
-
-/// Marker trait for PDF objects that can be cached. The type
-/// should be cheap to clone.
-pub trait Cacheable: ObjectSerialize + Hash + Eq + Clone {}

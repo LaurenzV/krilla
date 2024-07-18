@@ -28,6 +28,8 @@ impl XObject {
 }
 
 impl ObjectSerialize for XObject {
+    const CACHED: bool = false;
+
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let srgb_ref = sc.srgb();
 

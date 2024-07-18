@@ -1,4 +1,3 @@
-use crate::object::Cacheable;
 use crate::resource::PDFResource;
 use crate::serialize::{ObjectSerialize, SerializerContext};
 use crate::util::deflate;
@@ -17,8 +16,6 @@ pub enum ColorSpace {
     D65Gray,
 }
 
-impl Cacheable for ColorSpace {}
-
 impl PDFResource for ColorSpace {
     fn get_name() -> &'static str {
         "C"
@@ -26,6 +23,8 @@ impl PDFResource for ColorSpace {
 }
 
 impl ObjectSerialize for ColorSpace {
+    const CACHED: bool = true;
+
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         match self {
             ColorSpace::SRGB => {
