@@ -6,7 +6,6 @@ use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
-use tiny_skia_path::Transform;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
