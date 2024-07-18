@@ -4,10 +4,10 @@ use crate::ext_g_state::{CompositeMode, ExtGState};
 use crate::image::Image;
 use crate::mask::Mask;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
-use crate::resource::{PdfColorSpace, PdfPattern, ResourceDictionary, XObject};
+use crate::resource::{PdfPattern, ResourceDictionary, XObject};
 use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
-use crate::transform::FiniteTransform;
+use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
@@ -38,7 +38,7 @@ impl Canvas {
     ) {
         self.byte_code.push(Instruction::StrokePath(Box::new((
             path.into(),
-            transform.try_into().unwrap(),
+            TransformWrapper(transform),
             stroke,
         ))));
     }
@@ -46,7 +46,7 @@ impl Canvas {
     pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
         self.byte_code.push(Instruction::FillPath(Box::new((
             path.into(),
-            transform.try_into().unwrap(),
+            TransformWrapper(transform),
             fill,
         ))));
     }
@@ -68,7 +68,7 @@ impl Canvas {
         self.byte_code.push(Instruction::DrawImage(Box::new((
             image,
             size,
-            transform.try_into().unwrap(),
+            TransformWrapper(transform),
         ))))
     }
 
@@ -83,7 +83,7 @@ impl Canvas {
     ) {
         self.byte_code.push(Instruction::DrawCanvas(Box::new((
             Arc::new(canvas),
-            transform.try_into().unwrap(),
+            TransformWrapper(transform),
             composite_mode,
             opacity,
             isolated,
@@ -189,25 +189,19 @@ impl<'a> CanvasPdfSerializer<'a> {
             match op {
                 Instruction::PushLayer => self.save_state(),
                 Instruction::PopLayer => self.restore_state(),
-                Instruction::StrokePath(stroke_data) => self.stroke_path(
-                    &stroke_data.0 .0,
-                    &stroke_data.1.try_into().unwrap(),
-                    &stroke_data.2,
-                ),
+                Instruction::StrokePath(stroke_data) => {
+                    self.stroke_path(&stroke_data.0 .0, &stroke_data.1 .0, &stroke_data.2)
+                }
                 Instruction::FillPath(fill_data) => {
-                    self.fill_path(
-                        &fill_data.0 .0,
-                        &fill_data.1.try_into().unwrap(),
-                        &fill_data.2,
-                    );
+                    self.fill_path(&fill_data.0 .0, &fill_data.1 .0, &fill_data.2);
                 }
                 Instruction::DrawImage(image_data) => {
-                    self.draw_image(image_data.0.clone(), image_data.1, &image_data.2.get())
+                    self.draw_image(image_data.0.clone(), image_data.1, &image_data.2 .0)
                 }
                 Instruction::DrawCanvas(canvas_data) => {
                     self.draw_canvas(
                         canvas_data.0.clone(),
-                        &canvas_data.1.try_into().unwrap(),
+                        &canvas_data.1 .0,
                         canvas_data.2,
                         canvas_data.3,
                         canvas_data.4,
@@ -301,17 +295,19 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         self.set_fill_opacity(fill.opacity);
 
-        let pattern_transform = |transform: FiniteTransform| -> FiniteTransform {
-            let mut transform: Transform = transform.into();
-            transform = transform.post_concat(self.graphics_states.cur().transform());
-            transform.try_into().unwrap()
+        let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
+            TransformWrapper(
+                transform
+                    .0
+                    .post_concat(self.graphics_states.cur().transform()),
+            )
         };
 
         let mut write_gradient = |gradient_props: GradientProperties,
-                                  transform: FiniteTransform| {
+                                  transform: TransformWrapper| {
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
-                self.graphics_states.cur().transform().try_into().unwrap(),
+                TransformWrapper(self.graphics_states.cur().transform()),
                 transform,
             );
             let color_space = self
@@ -381,18 +377,20 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         self.set_stroke_opacity(stroke.opacity);
 
-        let pattern_transform = |transform: FiniteTransform| -> FiniteTransform {
-            let mut transform: Transform = transform.into();
-            transform = transform.post_concat(self.graphics_states.cur().transform());
-            transform.try_into().unwrap()
+        let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
+            TransformWrapper(
+                transform
+                    .0
+                    .post_concat(self.graphics_states.cur().transform()),
+            )
         };
 
         let mut write_gradient = |gradient_props: GradientProperties,
-                                  transform: FiniteTransform| {
+                                  transform: TransformWrapper| {
             let transform = pattern_transform(transform);
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
-                self.graphics_states.cur().transform().try_into().unwrap(),
+                TransformWrapper(self.graphics_states.cur().transform()),
                 transform,
             );
             let color_space = self
@@ -643,6 +641,7 @@ mod tests {
     use crate::mask::{Mask, MaskType};
     use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
     use crate::serialize::{ObjectSerialize, SerializeSettings};
+    use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
     use image::DynamicImage;
     use std::sync::Arc;
@@ -820,11 +819,11 @@ mod tests {
                     y1: Default::default(),
                     x2: FiniteF32::new(60.0).unwrap(),
                     y2: Default::default(),
-                    transform: Transform::from_translate(0.0, 30.0)
-                        .pre_concat(Transform::from_scale(0.5, 0.5))
-                        .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0))
-                        .try_into()
-                        .unwrap(),
+                    transform: TransformWrapper(
+                        Transform::from_translate(0.0, 30.0)
+                            .pre_concat(Transform::from_scale(0.5, 0.5))
+                            .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0)),
+                    ),
                     spread_method: SpreadMethod::Reflect,
                     stops: vec![
                         Stop {
@@ -916,9 +915,7 @@ mod tests {
             Fill {
                 paint: Paint::Pattern(Arc::new(Pattern {
                     canvas: Arc::new(pattern_canvas),
-                    transform: Transform::from_rotate_at(45.0, 2.5, 2.5)
-                        .try_into()
-                        .unwrap(),
+                    transform: TransformWrapper(Transform::from_rotate_at(45.0, 2.5, 2.5)),
                 })),
                 opacity: NormalizedF32::ONE,
                 ..Fill::default()

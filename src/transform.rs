@@ -1,45 +1,19 @@
-use tiny_skia_path::{FiniteF32, Transform};
+use std::hash::{Hash, Hasher};
+use tiny_skia_path::Transform;
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) struct FiniteTransform {
-    pub sx: FiniteF32,
-    pub kx: FiniteF32,
-    pub ky: FiniteF32,
-    pub sy: FiniteF32,
-    pub tx: FiniteF32,
-    pub ty: FiniteF32,
-}
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct TransformWrapper(pub(crate) Transform);
 
-impl FiniteTransform {
-    pub fn get(&self) -> Transform {
-        (*self).try_into().unwrap()
-    }
-}
+// We don't care about NaNs.
+impl Eq for TransformWrapper {}
 
-impl Into<Transform> for FiniteTransform {
-    fn into(self) -> Transform {
-        Transform {
-            sx: self.sx.get(),
-            kx: self.kx.get(),
-            ky: self.ky.get(),
-            sy: self.sy.get(),
-            tx: self.tx.get(),
-            ty: self.ty.get(),
-        }
-    }
-}
-
-impl TryFrom<Transform> for FiniteTransform {
-    type Error = ();
-
-    fn try_from(value: Transform) -> Result<Self, Self::Error> {
-        Ok(FiniteTransform {
-            sx: FiniteF32::new(value.sx).ok_or(())?,
-            kx: FiniteF32::new(value.kx).ok_or(())?,
-            ky: FiniteF32::new(value.ky).ok_or(())?,
-            sy: FiniteF32::new(value.sy).ok_or(())?,
-            tx: FiniteF32::new(value.tx).ok_or(())?,
-            ty: FiniteF32::new(value.ty).ok_or(())?,
-        })
+impl Hash for TransformWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.tx.to_bits().hash(state);
+        self.0.ty.to_bits().hash(state);
+        self.0.sx.to_bits().hash(state);
+        self.0.sy.to_bits().hash(state);
+        self.0.kx.to_bits().hash(state);
+        self.0.ky.to_bits().hash(state);
     }
 }

@@ -2,7 +2,7 @@ use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
 use crate::resource::PdfColorSpace;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
-use crate::transform::FiniteTransform;
+use crate::transform::TransformWrapper;
 use crate::util::{RectExt, TransformExt};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
@@ -10,13 +10,13 @@ use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingPattern(Arc<GradientProperties>, FiniteTransform, FiniteTransform);
+pub struct ShadingPattern(Arc<GradientProperties>, TransformWrapper, TransformWrapper);
 
 impl ShadingPattern {
     pub fn new(
         gradient_properties: GradientProperties,
-        ctm: FiniteTransform,
-        pattern_transform: FiniteTransform,
+        ctm: TransformWrapper,
+        pattern_transform: TransformWrapper,
     ) -> Self {
         Self(Arc::new(gradient_properties), ctm, pattern_transform)
     }
@@ -29,18 +29,18 @@ impl ObjectSerialize for ShadingPattern {
         let shading_ref = sc.add_cached(CacheableObject::ShadingFunction(shading_function));
         let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
-        shading_pattern.matrix(self.1.get().pre_concat(self.2.get()).to_pdf_transform());
+        shading_pattern.matrix(self.1 .0.pre_concat(self.2 .0).to_pdf_transform());
         shading_pattern.finish();
     }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingFunction(Arc<GradientProperties>, FiniteTransform);
+pub struct ShadingFunction(Arc<GradientProperties>, TransformWrapper);
 
 impl ObjectSerialize for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut bbox = self.0.bbox;
-        bbox.expand(&bbox.transform(self.1.get().invert().unwrap()).unwrap());
+        bbox.expand(&bbox.transform(self.1 .0.invert().unwrap()).unwrap());
 
         let function_ref = serialize_stop_function(self.0.as_ref(), sc, &bbox);
 

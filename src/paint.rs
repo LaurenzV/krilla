@@ -2,7 +2,7 @@ use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::color::Color;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{ObjectSerialize, SerializerContext};
-use crate::transform::FiniteTransform;
+use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{FunctionShadingType, PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
@@ -37,7 +37,7 @@ pub struct LinearGradient {
     pub y1: FiniteF32,
     pub x2: FiniteF32,
     pub y2: FiniteF32,
-    pub transform: FiniteTransform,
+    pub transform: TransformWrapper,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
@@ -50,7 +50,7 @@ pub struct RadialGradient {
     pub r: FiniteF32,
     pub fx: FiniteF32,
     pub fy: FiniteF32,
-    pub transform: FiniteTransform,
+    pub transform: TransformWrapper,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
@@ -86,7 +86,7 @@ impl ObjectSerialize for TilingPattern {
             .tiling_type(TilingType::ConstantSpacing)
             .paint_type(PaintType::Colored)
             .bbox(final_bbox)
-            .matrix(self.0.transform.to_pdf_transform())
+            .matrix(self.0.transform.0.to_pdf_transform())
             .x_step(final_bbox.x2 - final_bbox.x1)
             .y_step(final_bbox.y2 - final_bbox.y1);
 
@@ -98,7 +98,7 @@ impl ObjectSerialize for TilingPattern {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Pattern {
     pub(crate) canvas: Arc<Canvas>,
-    pub(crate) transform: FiniteTransform,
+    pub(crate) transform: TransformWrapper,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -124,11 +124,11 @@ pub struct GradientProperties {
 
 pub trait GradientPropertiesExt {
     // TODO: BBox only needed if extend is not pad
-    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, FiniteTransform);
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper);
 }
 
 impl GradientPropertiesExt for LinearGradient {
-    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, FiniteTransform) {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         (
             GradientProperties {
                 coords: vec![self.x1, self.y1, self.x2, self.y2],
@@ -143,7 +143,7 @@ impl GradientPropertiesExt for LinearGradient {
 }
 
 impl GradientPropertiesExt for RadialGradient {
-    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, FiniteTransform) {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         (
             GradientProperties {
                 coords: vec![

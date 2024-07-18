@@ -14,6 +14,4 @@ pub mod transform;
 pub mod util;
 
 pub use path::*;
-pub use tiny_skia_path::{Transform, Size};
-
-
+pub use tiny_skia_path::{Size, Transform};

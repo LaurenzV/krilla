@@ -1,4 +1,4 @@
-use crate::transform::FiniteTransform;
+use crate::transform::TransformWrapper;
 use crate::{LineCap, LineJoin};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
@@ -26,13 +26,6 @@ pub trait TransformExt {
 impl TransformExt for tiny_skia_path::Transform {
     fn to_pdf_transform(&self) -> [f32; 6] {
         [self.sx, self.ky, self.kx, self.sy, self.tx, self.ty]
-    }
-}
-
-impl TransformExt for FiniteTransform {
-    fn to_pdf_transform(&self) -> [f32; 6] {
-        let transform: Transform = (*self).into();
-        transform.to_pdf_transform()
     }
 }
 

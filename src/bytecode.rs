@@ -2,7 +2,7 @@ use crate::canvas::Canvas;
 use crate::ext_g_state::CompositeMode;
 use crate::image::Image;
 use crate::mask::Mask;
-use crate::transform::FiniteTransform;
+use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
@@ -12,13 +12,13 @@ pub enum Instruction {
     PushLayer,
     PopLayer,
     ClipPath(Box<(PathWrapper, FillRule)>),
-    StrokePath(Box<(PathWrapper, FiniteTransform, Stroke)>),
-    DrawImage(Box<(Image, Size, FiniteTransform)>),
-    FillPath(Box<(PathWrapper, FiniteTransform, Fill)>),
+    StrokePath(Box<(PathWrapper, TransformWrapper, Stroke)>),
+    DrawImage(Box<(Image, Size, TransformWrapper)>),
+    FillPath(Box<(PathWrapper, TransformWrapper, Fill)>),
     DrawCanvas(
         Box<(
             Arc<Canvas>,
-            FiniteTransform,
+            TransformWrapper,
             CompositeMode,
             NormalizedF32,
             bool,
