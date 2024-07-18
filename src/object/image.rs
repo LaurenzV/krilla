@@ -1,11 +1,11 @@
-use crate::resource::PdfColorSpace;
+use crate::object::Cacheable;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use crate::object::Cacheable;
+use crate::object::color_space::PdfColorSpace;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {

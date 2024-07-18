@@ -73,6 +73,8 @@ impl SerializerContext {
             serialize_settings,
         }
     }
+
+    // TODO: Add method to get srgb_ref
     pub fn add_cached(&mut self, object: CacheableObject) -> Ref {
         if let Some(_ref) = self.cached_mappings.get(&object) {
             *_ref

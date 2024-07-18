@@ -1,6 +1,7 @@
-use std::hash::Hash;
 use crate::serialize::ObjectSerialize;
+use std::hash::Hash;
 
+mod color_space;
 mod ext_g_state;
 mod image;
 mod shading_function;

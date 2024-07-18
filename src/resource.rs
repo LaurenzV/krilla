@@ -99,6 +99,8 @@ impl ResourceDictionary {
     }
 }
 
+// TODO: trait should return what kind of resource an object is (so that image and XObject both
+// get assigned to XObject)
 pub trait PDFResource {
     fn get_name() -> &'static str;
 }
@@ -174,51 +176,6 @@ impl ObjectSerialize for PdfPattern {
         match self {
             PdfPattern::ShadingPattern(sh) => sh.serialize_into(sc, root_ref),
             PdfPattern::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
-        }
-    }
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum PdfColorSpace {
-    SRGB,
-    D65Gray,
-}
-
-impl PDFResource for PdfColorSpace {
-    fn get_name() -> &'static str {
-        "C"
-    }
-}
-
-impl ObjectSerialize for PdfColorSpace {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        match self {
-            PdfColorSpace::SRGB => {
-                let icc_ref = sc.new_ref();
-                let mut array = sc.chunk_mut().indirect(root_ref).array();
-                array.item(Name(b"ICCBased"));
-                array.item(icc_ref);
-                array.finish();
-
-                sc.chunk_mut()
-                    .icc_profile(icc_ref, &SRGB_ICC_DEFLATED)
-                    .n(3)
-                    .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
-                    .filter(pdf_writer::Filter::FlateDecode);
-            }
-            PdfColorSpace::D65Gray => {
-                let icc_ref = sc.new_ref();
-                let mut array = sc.chunk_mut().indirect(root_ref).array();
-                array.item(Name(b"ICCBased"));
-                array.item(icc_ref);
-                array.finish();
-
-                sc.chunk_mut()
-                    .icc_profile(icc_ref, &GREY_ICC_DEFLATED)
-                    .n(1)
-                    .range([0.0, 1.0])
-                    .filter(pdf_writer::Filter::FlateDecode);
-            }
         }
     }
 }

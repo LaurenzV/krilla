@@ -1,11 +1,11 @@
 use crate::mask::Mask;
+use crate::object::Cacheable;
 use crate::resource::PDFResource;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
-use crate::object::Cacheable;
 
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
 struct Repr {

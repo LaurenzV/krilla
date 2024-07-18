@@ -1,11 +1,11 @@
 use crate::object::shading_function::ShadingFunction;
+use crate::object::Cacheable;
 use crate::paint::GradientProperties;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
-use crate::object::Cacheable;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {

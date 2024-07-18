@@ -1,6 +1,6 @@
 use crate::color::PdfColorExt;
+use crate::object::Cacheable;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
-use crate::resource::PdfColorSpace;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
@@ -8,7 +8,7 @@ use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::object::Cacheable;
+use crate::object::color_space::PdfColorSpace;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
