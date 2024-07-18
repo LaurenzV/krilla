@@ -1,11 +1,11 @@
 use crate::serialize::ObjectSerialize;
 use std::hash::Hash;
 
-mod color_space;
-mod ext_g_state;
-mod image;
-mod shading_function;
-mod shading_pattern;
+pub mod color_space;
+pub mod ext_g_state;
+pub mod image;
+pub mod shading_function;
+pub mod shading_pattern;
 
 /// Marker trait for PDF objects that can be cached. The type
 /// should be cheap to clone.

@@ -1,4 +1,5 @@
 use crate::color::PdfColorExt;
+use crate::object::color_space::PdfColorSpace;
 use crate::object::Cacheable;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
@@ -8,7 +9,6 @@ use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::object::color_space::PdfColorSpace;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
@@ -47,7 +47,7 @@ impl ObjectSerialize for ShadingFunction {
         );
 
         let function_ref = serialize_stop_function(&self.0.properties, sc, &bbox);
-        let cs_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
+        let cs_ref = sc.srgb_ref();
 
         let mut shading = sc.chunk_mut().function_shading(root_ref);
         // TODO: Readd axial/radial shading.

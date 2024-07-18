@@ -1,3 +1,4 @@
+use crate::object::color_space::PdfColorSpace;
 use crate::object::Cacheable;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
@@ -5,7 +6,6 @@ use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use crate::object::color_space::PdfColorSpace;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
@@ -63,15 +63,9 @@ impl ObjectSerialize for Image {
         image_x_object.height(self.0.size.height() as i32);
 
         if self.0.color_type.has_color() {
-            image_x_object.pair(
-                Name(b"ColorSpace"),
-                sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB)),
-            );
+            image_x_object.pair(Name(b"ColorSpace"), sc.srgb_ref());
         } else {
-            image_x_object.pair(
-                Name(b"ColorSpace"),
-                sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::D65Gray)),
-            );
+            image_x_object.pair(Name(b"ColorSpace"), sc.d65gray_ref());
         }
 
         image_x_object.bits_per_component(calculate_bits_per_component(self.0.color_type));
