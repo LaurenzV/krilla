@@ -1,9 +1,9 @@
+use crate::object::Cacheable;
 use crate::resource::PDFResource;
 use crate::serialize::{ObjectSerialize, SerializerContext};
 use crate::util::deflate;
 use once_cell::sync::Lazy;
 use pdf_writer::{Finish, Name, Ref};
-use crate::object::Cacheable;
 
 // The ICC profiles.
 pub static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> =
