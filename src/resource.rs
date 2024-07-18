@@ -258,6 +258,7 @@ where
 
 pub type ResourceNumber = u32;
 
+// TODO: Re-enable
 // #[cfg(test)]
 // mod tests {
 //     use crate::resource::{CsResourceMapper, PdfColorSpace};
