@@ -1,6 +1,6 @@
 use crate::ext_g_state::ExtGState;
 use crate::mask::Mask;
-use crate::object::color_space::PdfColorSpace;
+use crate::object::color_space::ColorSpace;
 use crate::resource::{PdfColorSpace, PdfPattern};
 use crate::shading::{ShadingFunction, ShadingPattern};
 use pdf_writer::{Chunk, Pdf, Ref};
@@ -10,7 +10,7 @@ use std::hash::Hash;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum CacheableObject {
-    PdfColorSpace(PdfColorSpace),
+    PdfColorSpace(ColorSpace),
     ExtGState(ExtGState),
     ShadingFunction(ShadingFunction),
     PdfPattern(PdfPattern),
@@ -86,11 +86,11 @@ impl SerializerContext {
     }
 
     pub fn srgb_ref(&mut self) -> Ref {
-        self.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB))
+        self.add_cached(CacheableObject::PdfColorSpace(ColorSpace::SRGB))
     }
 
     pub fn d65gray_ref(&mut self) -> Ref {
-        self.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::D65Gray))
+        self.add_cached(CacheableObject::PdfColorSpace(ColorSpace::D65Gray))
     }
 
     pub fn new_ref(&mut self) -> Ref {

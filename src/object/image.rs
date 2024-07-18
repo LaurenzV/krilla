@@ -1,4 +1,4 @@
-use crate::object::color_space::PdfColorSpace;
+use crate::object::color_space::ColorSpace;
 use crate::object::Cacheable;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};

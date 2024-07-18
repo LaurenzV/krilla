@@ -1,5 +1,5 @@
 use crate::color::PdfColorExt;
-use crate::object::color_space::PdfColorSpace;
+use crate::object::color_space::ColorSpace;
 use crate::object::Cacheable;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
