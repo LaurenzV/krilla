@@ -1,6 +1,5 @@
 pub mod canvas;
 pub mod color;
-pub mod mask;
 mod object;
 pub mod paint;
 pub mod path;

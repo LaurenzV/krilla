@@ -97,6 +97,8 @@ impl SerializerContext {
         self.cur_ref.bump()
     }
 
+    // TODO: Make distinction between cached and uncached here instead of exposing
+    // to methods
     pub fn add_uncached<T>(&mut self, o: T) -> Ref
     where
         T: ObjectSerialize,

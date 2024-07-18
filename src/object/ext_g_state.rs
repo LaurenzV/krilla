@@ -1,4 +1,4 @@
-use crate::mask::Mask;
+use crate::object::mask::Mask;
 use crate::object::Cacheable;
 use crate::resource::PDFResource;
 use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};

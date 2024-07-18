@@ -7,15 +7,22 @@ use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::sync::Arc;
+use tiny_skia_path::Transform;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    canvas: Canvas,
+    canvas: Arc<Canvas>,
     transform: TransformWrapper,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct TilingPattern(Arc<Repr>);
+
+impl TilingPattern {
+    pub fn new(canvas: Arc<Canvas>, transform: TransformWrapper) -> Self {
+        Self(Arc::new(Repr { canvas, transform }))
+    }
+}
 
 impl Cacheable for TilingPattern {}
 

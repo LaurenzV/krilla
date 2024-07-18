@@ -7,9 +7,9 @@ use std::sync::Arc;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    canvas: Canvas,
+    canvas: Arc<Canvas>,
     isolated: bool,
-    needs_transparency: bool,
+    transparency_group_color_space: bool,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -18,13 +18,11 @@ pub struct XObject(Arc<Repr>);
 // We don't cache XObjects for now.
 
 impl XObject {
-    pub fn new(canvas: Canvas, isolated: bool) -> Self {
-        let has_mask = canvas.has_mask();
+    pub fn new(canvas: Arc<Canvas>, isolated: bool, transparency_group_color_space: bool) -> Self {
         XObject(Arc::new(Repr {
             canvas,
             isolated,
-            // TODO: Figure out how to initialize correctly
-            needs_transparency: has_mask,
+            transparency_group_color_space,
         }))
     }
 }
@@ -47,14 +45,14 @@ impl ObjectSerialize for XObject {
         resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
         x_object.bbox(bbox.to_pdf_rect());
 
-        if self.0.isolated || self.0.needs_transparency {
+        if self.0.isolated || self.0.transparency_group_color_space {
             let mut transparency = x_object.group().transparency();
 
             if self.0.isolated {
                 transparency.isolated(self.0.isolated);
             }
 
-            if self.0.needs_transparency {
+            if self.0.transparency_group_color_space {
                 transparency.pair(Name(b"CS"), srgb_ref);
             }
 
