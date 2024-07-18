@@ -5,7 +5,7 @@ use crate::image::Image;
 use crate::mask::Mask;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
 use crate::resource::{PdfPattern, ResourceDictionary, XObject};
-use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
+use crate::serialize::{Object, PageSerialize, SerializeSettings, SerializerContext};
 use crate::shading::ShadingPattern;
 use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -528,7 +528,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
 // TODO: Add ProcSet?
 // TODO: Deduplicate with other implementations
-impl ObjectSerialize for Canvas {
+impl Object for Canvas {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         let mut resource_dictionary = ResourceDictionary::new();
@@ -645,7 +645,7 @@ mod tests {
     use crate::image::Image;
     use crate::mask::{Mask, MaskType};
     use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
-    use crate::serialize::{ObjectSerialize, SerializeSettings};
+    use crate::serialize::{Object, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
     use image::DynamicImage;

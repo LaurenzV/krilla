@@ -1,6 +1,6 @@
 use crate::canvas::Canvas;
 use crate::object::xobject::XObject;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
 
@@ -34,7 +34,7 @@ impl MaskType {
     }
 }
 
-impl ObjectSerialize for Mask {
+impl Object for Mask {
     const CACHED: bool = false;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

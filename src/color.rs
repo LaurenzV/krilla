@@ -1,4 +1,5 @@
 use tiny_skia_path::NormalizedF32;
+use crate::object::color_space::ColorSpace;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Rgb {
@@ -39,7 +40,7 @@ impl Color {
 pub trait PdfColorExt {
     fn to_pdf_components(&self) -> Vec<f32>;
     fn to_normalized_pdf_components(&self) -> Vec<NormalizedF32>;
-    fn get_pdf_color_space(&self) -> PdfColorSpace;
+    fn get_pdf_color_space(&self) -> ColorSpace;
 }
 
 impl PdfColorExt for Color {
@@ -61,10 +62,10 @@ impl PdfColorExt for Color {
             .collect()
     }
 
-    fn get_pdf_color_space(&self) -> PdfColorSpace {
+    fn get_pdf_color_space(&self) -> ColorSpace {
         match self {
-            Color::Rgb(_) => PdfColorSpace::SRGB,
-            Color::Grey(_) => PdfColorSpace::D65Gray,
+            Color::Rgb(_) => ColorSpace::SRGB,
+            Color::Grey(_) => ColorSpace::D65Gray,
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::resource::ResourceDictionary;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -25,7 +25,7 @@ impl XObject {
     }
 }
 
-impl ObjectSerialize for XObject {
+impl Object for XObject {
     const CACHED: bool = false;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

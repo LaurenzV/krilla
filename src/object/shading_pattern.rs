@@ -1,6 +1,6 @@
 use crate::object::shading_function::ShadingFunction;
 use crate::paint::GradientProperties;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::{Name, Ref};
@@ -29,7 +29,7 @@ impl ShadingPattern {
     }
 }
 
-impl ObjectSerialize for ShadingPattern {
+impl Object for ShadingPattern {
     const CACHED: bool = true;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

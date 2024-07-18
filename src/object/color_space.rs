@@ -1,5 +1,5 @@
 use crate::resource::PDFResource;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::util::deflate;
 use once_cell::sync::Lazy;
 use pdf_writer::{Finish, Name, Ref};
@@ -22,7 +22,7 @@ impl PDFResource for ColorSpace {
     }
 }
 
-impl ObjectSerialize for ColorSpace {
+impl Object for ColorSpace {
     const CACHED: bool = true;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

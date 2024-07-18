@@ -19,7 +19,7 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait ObjectSerialize: Sized + Hash {
+pub trait Object: Sized + Hash + 'static {
     const CACHED: bool;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref);
@@ -59,7 +59,7 @@ impl SerializerContext {
 
     fn add_cached<T>(&mut self, object: T) -> Ref
     where
-        T: ObjectSerialize,
+        T: Object,
     {
         let hash = hash_item(&object);
         if let Some(_ref) = self.cached_mappings.get(&hash) {
@@ -82,7 +82,7 @@ impl SerializerContext {
 
     fn add_uncached<T>(&mut self, object: T) -> Ref
     where
-        T: ObjectSerialize,
+        T: Object,
     {
         let _ref = self.new_ref();
         object.serialize_into(self, _ref);
@@ -91,7 +91,7 @@ impl SerializerContext {
 
     pub fn add<T>(&mut self, object: T) -> Ref
     where
-        T: ObjectSerialize,
+        T: Object,
     {
         if T::CACHED {
             self.add_cached(object)

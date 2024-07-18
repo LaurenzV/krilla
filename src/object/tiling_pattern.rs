@@ -1,6 +1,6 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::resource::ResourceDictionary;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
@@ -23,7 +23,7 @@ impl TilingPattern {
     }
 }
 
-impl ObjectSerialize for TilingPattern {
+impl Object for TilingPattern {
     const CACHED: bool = true;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

@@ -1,6 +1,6 @@
 use crate::object::mask::Mask;
 use crate::resource::PDFResource;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
@@ -71,7 +71,7 @@ impl PDFResource for ExtGState {
     }
 }
 
-impl ObjectSerialize for ExtGState {
+impl Object for ExtGState {
     const CACHED: bool = true;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

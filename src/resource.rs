@@ -1,11 +1,5 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
-use crate::color::{GREY_ICC_DEFLATED, SRGB_ICC_DEFLATED};
-use crate::ext_g_state::ExtGState;
-use crate::image::Image;
-use crate::mask::Mask;
-use crate::paint::TilingPattern;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
-use crate::shading::ShadingPattern;
+use crate::serialize::{Object, SerializeSettings, SerializerContext};
 use crate::util::{NameExt, RectExt};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::collections::{BTreeMap, HashMap};
@@ -191,7 +185,7 @@ pub type ResourceNumber = u32;
 #[cfg(test)]
 mod tests {
     use crate::resource::{CsResourceMapper, PdfColorSpace};
-    use crate::serialize::ObjectSerialize;
+    use crate::serialize::Object;
 
     #[test]
     fn test_cs_resource_mapper() {

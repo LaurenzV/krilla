@@ -1,4 +1,4 @@
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
@@ -33,7 +33,7 @@ impl Image {
     }
 }
 
-impl ObjectSerialize for Image {
+impl Object for Image {
     const CACHED: bool = true;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

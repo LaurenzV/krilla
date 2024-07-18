@@ -1,4 +1,4 @@
-use crate::serialize::ObjectSerialize;
+use crate::serialize::Object;
 use std::hash::Hash;
 
 pub mod color_space;

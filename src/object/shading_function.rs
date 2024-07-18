@@ -1,6 +1,6 @@
 use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
@@ -30,7 +30,7 @@ impl ShadingFunction {
     }
 }
 
-impl ObjectSerialize for ShadingFunction {
+impl Object for ShadingFunction {
     const CACHED: bool = true;
 
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {

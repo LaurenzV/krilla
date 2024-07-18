@@ -1,7 +1,7 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::color::Color;
 use crate::resource::ResourceDictionary;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{FunctionShadingType, PaintType, TilingType};
