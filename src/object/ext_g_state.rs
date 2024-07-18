@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
 use crate::object::Cacheable;
 
-#[derive(Debug, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
 struct Repr {
     non_stroking_alpha: Option<NormalizedF32>,
     stroking_alpha: Option<NormalizedF32>,
@@ -27,7 +27,7 @@ impl ExtGState {
 
     #[must_use]
     pub fn stroking_alpha(mut self, stroking_alpha: NormalizedF32) -> Self {
-        Arc::make_mut(self.0).stroking_alpha = Some(stroking_alpha);
+        Arc::make_mut(&mut self.0).stroking_alpha = Some(stroking_alpha);
         self
     }
 
