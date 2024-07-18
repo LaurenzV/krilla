@@ -18,24 +18,24 @@ impl ExtGState {
         Self::default()
     }
 
-    pub fn stroking_alpha(&mut self, stroking_alpha: NormalizedF32) -> Self {
+    pub fn stroking_alpha(mut self, stroking_alpha: NormalizedF32) -> Self {
         self.stroking_alpha = Some(stroking_alpha);
-        Self
+        self
     }
 
-    pub fn non_stroking_alpha(&mut self, non_stroking_alpha: NormalizedF32) -> Self {
+    pub fn non_stroking_alpha(mut self, non_stroking_alpha: NormalizedF32) -> Self {
         self.non_stroking_alpha = Some(non_stroking_alpha);
-        Self
+        self
     }
 
-    pub fn blend_mode(&mut self, blend_mode: BlendMode) -> Self {
+    pub fn blend_mode(mut self, blend_mode: BlendMode) -> Self {
         self.blend_mode = Some(blend_mode);
-        Self
+        self
     }
 
-    pub fn mask(&mut self, mask: Mask) -> Self {
+    pub fn mask(mut self, mask: Mask) -> Self {
         self.mask = Some(mask);
-        Self
+        self
     }
 
     pub fn combine(&mut self, other: &ExtGState) {
@@ -88,93 +88,5 @@ impl ObjectSerialize for ExtGState {
         }
 
         ext_st.finish();
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Hash)]
-pub enum CompositeMode {
-    /// The composite mode 'Clear'.
-    Clear,
-    /// The composite mode 'Source'.
-    Source,
-    /// The composite mode 'Destination'.
-    Destination,
-    /// The composite mode 'SourceOver'.
-    #[default]
-    SourceOver,
-    /// The composite mode 'DestinationOver'.
-    DestinationOver,
-    /// The composite mode 'SourceIn'.
-    SourceIn,
-    /// The composite mode 'DestinationIn'.
-    DestinationIn,
-    /// The composite mode 'SourceOut'.
-    SourceOut,
-    /// The composite mode 'DestinationOut'.
-    DestinationOut,
-    /// The composite mode 'SourceAtop'.
-    SourceAtop,
-    /// The composite mode 'DestinationAtop'.
-    DestinationAtop,
-    /// The composite mode 'Xor'.
-    Xor,
-    /// The composite mode 'Plus'.
-    Plus,
-    /// The composite mode 'Screen'.
-    Screen,
-    /// The composite mode 'Overlay'.
-    Overlay,
-    /// The composite mode 'Darken'.
-    Darken,
-    /// The composite mode 'Lighten'.
-    Lighten,
-    /// The composite mode 'ColorDodge'.
-    ColorDodge,
-    /// The composite mode 'ColorBurn'.
-    ColorBurn,
-    /// The composite mode 'HardLight'.
-    HardLight,
-    /// The composite mode 'SoftLight'.
-    SoftLight,
-    /// The composite mode 'Difference'.
-    Difference,
-    /// The composite mode 'Exclusion'.
-    Exclusion,
-    /// The composite mode 'Multiply'.
-    Multiply,
-    /// The composite mode 'Hue'.
-    Hue,
-    /// The composite mode 'Saturation'.
-    Saturation,
-    /// The composite mode 'Color'.
-    Color,
-    /// The composite mode 'Luminosity'.
-    Luminosity,
-}
-
-impl TryInto<BlendMode> for CompositeMode {
-    type Error = ();
-
-    fn try_into(self) -> Result<BlendMode, Self::Error> {
-        use CompositeMode::*;
-        match self {
-            SourceOver => Ok(BlendMode::Normal),
-            Multiply => Ok(BlendMode::Multiply),
-            Screen => Ok(BlendMode::Screen),
-            Overlay => Ok(BlendMode::Overlay),
-            Darken => Ok(BlendMode::Darken),
-            Lighten => Ok(BlendMode::Lighten),
-            ColorDodge => Ok(BlendMode::ColorDodge),
-            ColorBurn => Ok(BlendMode::ColorBurn),
-            HardLight => Ok(BlendMode::HardLight),
-            SoftLight => Ok(BlendMode::SoftLight),
-            Difference => Ok(BlendMode::Difference),
-            Exclusion => Ok(BlendMode::Exclusion),
-            Hue => Ok(BlendMode::Hue),
-            Saturation => Ok(BlendMode::Saturation),
-            Color => Ok(BlendMode::Color),
-            Luminosity => Ok(BlendMode::Luminosity),
-            _ => Err(()),
-        }
     }
 }
