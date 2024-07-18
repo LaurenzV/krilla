@@ -1,5 +1,3 @@
-pub mod allocate;
-pub mod bytecode;
 pub mod canvas;
 pub mod color;
 pub mod mask;

@@ -130,56 +130,6 @@ impl PDFResource for XObject {
     }
 }
 
-impl ObjectSerialize for XObject {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let srgb_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
-        let mut chunk = Chunk::new();
-        let mut resource_dictionary = ResourceDictionary::new();
-        let (content_stream, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_instructions(self.canvas.byte_code.instructions());
-            serializer.finish()
-        };
-
-        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
-        resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
-        x_object.bbox(bbox.to_pdf_rect());
-
-        if self.isolated || self.needs_transparency {
-            x_object
-                .group()
-                .transparency()
-                .isolated(self.isolated)
-                .pair(Name(b"CS"), srgb_ref);
-        }
-
-        x_object.finish();
-
-        sc.chunk_mut().extend(&chunk);
-    }
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum PdfPattern {
-    ShadingPattern(ShadingPattern),
-    TilingPattern(TilingPattern),
-}
-
-impl PDFResource for PdfPattern {
-    fn get_name() -> &'static str {
-        "P"
-    }
-}
-
-impl ObjectSerialize for PdfPattern {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        match self {
-            PdfPattern::ShadingPattern(sh) => sh.serialize_into(sc, root_ref),
-            PdfPattern::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
-        }
-    }
-}
-
 pub struct ResourceMapper<V>
 where
     V: Hash + Eq,

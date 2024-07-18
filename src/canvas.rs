@@ -30,6 +30,10 @@ impl Canvas {
         }
     }
 
+    pub fn has_mask(&self) -> bool {
+        true
+    }
+
     pub fn stroke_path(
         &mut self,
         path: Path,
