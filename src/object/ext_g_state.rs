@@ -84,7 +84,7 @@ impl ObjectSerialize for ExtGState {
         }
 
         if let Some(mask_ref) = mask_ref {
-            ext_st.soft_mask().group(mask_ref);
+            ext_st.pair(Name(b"SMask"), mask_ref);
         }
 
         ext_st.finish();
