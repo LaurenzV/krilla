@@ -6,6 +6,8 @@ use pdf_writer::{Chunk, Pdf, Ref};
 use std::collections::HashMap;
 use std::hash::Hash;
 
+// TODO: Add marker trait for cacheable object
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum CacheableObject {
     PdfColorSpace(PdfColorSpace),

@@ -6,7 +6,7 @@ use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
     samples: Vec<u8>,
     size: Size,

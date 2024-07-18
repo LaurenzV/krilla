@@ -8,7 +8,6 @@ pub mod paint;
 pub mod path;
 pub mod resource;
 pub mod serialize;
-pub mod shading;
 pub mod transform;
 pub mod util;
 
