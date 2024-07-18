@@ -1,5 +1,4 @@
 use crate::object::mask::Mask;
-use crate::resource::PDFResource;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Finish, Name, Ref};
@@ -65,15 +64,7 @@ impl ExtGState {
     }
 }
 
-impl PDFResource for ExtGState {
-    fn get_name() -> &'static str {
-        "G"
-    }
-}
-
 impl Object for ExtGState {
-    const CACHED: bool = true;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mask_ref = self.0.mask.clone().map(|ma| sc.add(ma));
 
@@ -95,5 +86,9 @@ impl Object for ExtGState {
         }
 
         ext_st.finish();
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }

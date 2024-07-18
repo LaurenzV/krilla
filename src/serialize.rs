@@ -19,9 +19,7 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: Sized + Hash + 'static {
-    const CACHED: bool;
-
+pub trait Object: Sized + Hash + Clone + 'static {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref);
 
     fn serialize(self, serialize_settings: SerializeSettings) -> (Chunk, Ref) {
@@ -30,6 +28,8 @@ pub trait Object: Sized + Hash + 'static {
         self.serialize_into(&mut sc, root_ref);
         (sc.chunk, root_ref)
     }
+
+    fn is_cached(&self) -> bool;
 }
 
 pub trait PageSerialize: Sized {
@@ -93,7 +93,7 @@ impl SerializerContext {
     where
         T: Object,
     {
-        if T::CACHED {
+        if object.is_cached() {
             self.add_cached(object)
         } else {
             self.add_uncached(object)

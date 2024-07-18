@@ -34,8 +34,6 @@ impl Image {
 }
 
 impl Object for Image {
-    const CACHED: bool = true;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         // TODO: Error handling
         let mut chunk = Chunk::new();
@@ -73,6 +71,10 @@ impl Object for Image {
         image_x_object.finish();
 
         sc.chunk_mut().extend(&chunk);
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }
 

@@ -30,8 +30,6 @@ impl ShadingPattern {
 }
 
 impl Object for ShadingPattern {
-    const CACHED: bool = true;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let shading_ref = sc.add(self.0.shading_function.clone());
         let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
@@ -43,5 +41,9 @@ impl Object for ShadingPattern {
                 .pre_concat(self.0.shading_function.shading_transform().0)
                 .to_pdf_transform(),
         );
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }

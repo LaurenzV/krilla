@@ -24,8 +24,6 @@ impl TilingPattern {
 }
 
 impl Object for TilingPattern {
-    const CACHED: bool = true;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         // TODO: Deduplicate.
@@ -58,5 +56,9 @@ impl Object for TilingPattern {
         tiling_pattern.finish();
 
         sc.chunk_mut().extend(&chunk);
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }

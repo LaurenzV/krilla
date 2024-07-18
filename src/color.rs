@@ -1,5 +1,5 @@
-use tiny_skia_path::NormalizedF32;
 use crate::object::color_space::ColorSpace;
+use tiny_skia_path::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Rgb {

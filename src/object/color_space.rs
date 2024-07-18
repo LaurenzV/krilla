@@ -1,4 +1,3 @@
-use crate::resource::PDFResource;
 use crate::serialize::{Object, SerializerContext};
 use crate::util::deflate;
 use once_cell::sync::Lazy;
@@ -16,15 +15,7 @@ pub enum ColorSpace {
     D65Gray,
 }
 
-impl PDFResource for ColorSpace {
-    fn get_name() -> &'static str {
-        "C"
-    }
-}
-
 impl Object for ColorSpace {
-    const CACHED: bool = true;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         match self {
             ColorSpace::SRGB => {
@@ -54,5 +45,9 @@ impl Object for ColorSpace {
                     .filter(pdf_writer::Filter::FlateDecode);
             }
         }
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }

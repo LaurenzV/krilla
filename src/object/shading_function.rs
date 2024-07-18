@@ -31,8 +31,6 @@ impl ShadingFunction {
 }
 
 impl Object for ShadingFunction {
-    const CACHED: bool = true;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut bbox = self.0.properties.bbox;
         // We need to make sure the shading covers the whole bbox of the object after
@@ -58,6 +56,10 @@ impl Object for ShadingFunction {
         // shading.coords(self.0.coords.iter().map(|n| n.get()));
         // shading.extend([true, true]);
         shading.finish();
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }
 

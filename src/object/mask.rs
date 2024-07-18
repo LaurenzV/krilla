@@ -35,8 +35,6 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    const CACHED: bool = false;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let x_ref = sc.add(XObject::new(self.0.canvas.clone(), false, true));
 
@@ -44,5 +42,9 @@ impl Object for Mask {
         dict.pair(Name(b"Type"), Name(b"Mask"));
         dict.pair(Name(b"S"), self.0.mask_type.to_name());
         dict.pair(Name(b"G"), x_ref);
+    }
+
+    fn is_cached(&self) -> bool {
+        false
     }
 }

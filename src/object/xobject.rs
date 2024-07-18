@@ -26,8 +26,6 @@ impl XObject {
 }
 
 impl Object for XObject {
-    const CACHED: bool = false;
-
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let srgb_ref = sc.srgb();
 
@@ -62,5 +60,9 @@ impl Object for XObject {
         x_object.finish();
 
         sc.chunk_mut().extend(&chunk);
+    }
+
+    fn is_cached(&self) -> bool {
+        false
     }
 }
