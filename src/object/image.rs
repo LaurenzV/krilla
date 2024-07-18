@@ -63,9 +63,9 @@ impl ObjectSerialize for Image {
         image_x_object.height(self.0.size.height() as i32);
 
         if self.0.color_type.has_color() {
-            image_x_object.pair(Name(b"ColorSpace"), sc.srgb_ref());
+            image_x_object.pair(Name(b"ColorSpace"), sc.srgb());
         } else {
-            image_x_object.pair(Name(b"ColorSpace"), sc.d65gray_ref());
+            image_x_object.pair(Name(b"ColorSpace"), sc.d65_gray());
         }
 
         image_x_object.bits_per_component(calculate_bits_per_component(self.0.color_type));

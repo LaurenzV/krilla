@@ -29,7 +29,7 @@ impl XObject {
 
 impl ObjectSerialize for XObject {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let srgb_ref = sc.srgb_ref();
+        let srgb_ref = sc.srgb();
 
         let mut chunk = Chunk::new();
 

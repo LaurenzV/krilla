@@ -47,7 +47,7 @@ impl ObjectSerialize for ShadingFunction {
         );
 
         let function_ref = serialize_stop_function(&self.0.properties, sc, &bbox);
-        let cs_ref = sc.srgb_ref();
+        let cs_ref = sc.srgb();
 
         let mut shading = sc.chunk_mut().function_shading(root_ref);
         // TODO: Readd axial/radial shading.

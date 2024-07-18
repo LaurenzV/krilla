@@ -85,11 +85,11 @@ impl SerializerContext {
         }
     }
 
-    pub fn srgb_ref(&mut self) -> Ref {
+    pub fn srgb(&mut self) -> Ref {
         self.add_cached(CacheableObject::PdfColorSpace(ColorSpace::SRGB))
     }
 
-    pub fn d65gray_ref(&mut self) -> Ref {
+    pub fn d65_gray(&mut self) -> Ref {
         self.add_cached(CacheableObject::PdfColorSpace(ColorSpace::D65Gray))
     }
 
