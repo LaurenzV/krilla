@@ -7,7 +7,8 @@ pub mod image;
 pub mod shading_function;
 pub mod shading_pattern;
 pub mod tiling_pattern;
-mod x_object;
+pub mod xobject;
+pub mod mask;
 
 /// Marker trait for PDF objects that can be cached. The type
 /// should be cheap to clone.
