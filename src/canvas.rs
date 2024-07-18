@@ -434,6 +434,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         // Only write if they don't correspond to the default values as defined in the
         // PDF specification.
+        // TODO: Use external graphics state for that?
         if stroke.width.get() != 1.0 {
             self.content.set_line_width(stroke.width.get());
         }
