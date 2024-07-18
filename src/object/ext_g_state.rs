@@ -1,23 +1,44 @@
-use crate::ext_g_state;
 use crate::mask::Mask;
 use crate::resource::PDFResource;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializeSettings, SerializerContext};
+use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::ops::Deref;
-use std::sync::Arc;
+use pdf_writer::{Finish, Name, Ref};
 use tiny_skia_path::NormalizedF32;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
-pub struct Repr {
+pub(crate) struct ExtGState {
     non_stroking_alpha: Option<NormalizedF32>,
     stroking_alpha: Option<NormalizedF32>,
     blend_mode: Option<BlendMode>,
     mask: Option<Mask>,
 }
 
-impl Repr {
-    pub(crate) fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
+impl ExtGState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn stroking_alpha(&mut self, stroking_alpha: NormalizedF32) -> Self {
+        self.stroking_alpha = Some(stroking_alpha);
+        Self
+    }
+
+    pub fn non_stroking_alpha(&mut self, non_stroking_alpha: NormalizedF32) -> Self {
+        self.non_stroking_alpha = Some(non_stroking_alpha);
+        Self
+    }
+
+    pub fn blend_mode(&mut self, blend_mode: BlendMode) -> Self {
+        self.blend_mode = Some(blend_mode);
+        Self
+    }
+
+    pub fn mask(&mut self, mask: Mask) -> Self {
+        self.mask = Some(mask);
+        Self
+    }
+
+    pub fn combine(&mut self, other: &ExtGState) {
         if let Some(non_stroking_alpha) = other.non_stroking_alpha {
             self.non_stroking_alpha = Some(non_stroking_alpha);
         }
@@ -36,33 +57,6 @@ impl Repr {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ExtGState(Arc<Repr>);
-
-impl Deref for ExtGState {
-    type Target = Repr;
-
-    fn deref(&self) -> &Self::Target {
-        self.0.as_ref()
-    }
-}
-
-impl ExtGState {
-    pub fn new(
-        non_stroking_alpha: Option<NormalizedF32>,
-        stroking_alpha: Option<NormalizedF32>,
-        blend_mode: Option<BlendMode>,
-        mask: Option<Mask>,
-    ) -> Self {
-        Self(Arc::new(Repr {
-            non_stroking_alpha,
-            stroking_alpha,
-            blend_mode,
-            mask,
-        }))
-    }
-}
-
 impl PDFResource for ExtGState {
     fn get_name() -> &'static str {
         "G"
@@ -72,26 +66,25 @@ impl PDFResource for ExtGState {
 impl ObjectSerialize for ExtGState {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mask_ref = self
-            .0
             .mask
             .clone()
             .map(|ma| sc.add_cached(CacheableObject::Mask(ma)));
 
         let mut ext_st = sc.chunk_mut().ext_graphics(root_ref);
-        if let Some(nsa) = self.0.non_stroking_alpha {
+        if let Some(nsa) = self.non_stroking_alpha {
             ext_st.non_stroking_alpha(nsa.get());
         }
 
-        if let Some(sa) = self.0.stroking_alpha {
+        if let Some(sa) = self.stroking_alpha {
             ext_st.stroking_alpha(sa.get());
         }
 
-        if let Some(bm) = self.0.blend_mode {
+        if let Some(bm) = self.blend_mode {
             ext_st.blend_mode(bm);
         }
 
         if let Some(mask_ref) = mask_ref {
-            ext_st.pair(Name(b"SMask"), mask_ref);
+            ext_st.soft_mask().group(mask_ref);
         }
 
         ext_st.finish();
