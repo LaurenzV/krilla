@@ -15,8 +15,6 @@ struct Repr {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct XObject(Arc<Repr>);
 
-// We don't cache XObjects for now.
-
 impl XObject {
     pub fn new(canvas: Arc<Canvas>, isolated: bool, transparency_group_color_space: bool) -> Self {
         XObject(Arc::new(Repr {
