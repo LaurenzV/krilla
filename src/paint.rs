@@ -1,13 +1,10 @@
-use crate::canvas::{Canvas, CanvasPdfSerializer};
+use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::resource::ResourceDictionary;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::Object;
 use crate::transform::TransformWrapper;
-use crate::util::TransformExt;
-use pdf_writer::types::{FunctionShadingType, PaintType, TilingType};
-use pdf_writer::{Chunk, Finish, Ref};
+use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {

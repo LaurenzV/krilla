@@ -1,8 +1,7 @@
-use crate::transform::TransformWrapper;
 use crate::{LineCap, LineJoin};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;

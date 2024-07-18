@@ -4,12 +4,12 @@ use crate::object::image::Image;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializeSettings, SerializerContext};
-use crate::util::{NameExt, RectExt};
+use crate::serialize::{Object, SerializerContext};
+use crate::util::NameExt;
 use pdf_writer::writers::Resources;
-use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
-use std::collections::{BTreeMap, HashMap};
-use std::hash::{Hash, Hasher};
+use pdf_writer::{Dict, Finish, Ref};
+use std::collections::HashMap;
+use std::hash::Hash;
 
 trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
