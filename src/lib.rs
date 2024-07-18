@@ -2,7 +2,6 @@ pub mod allocate;
 pub mod bytecode;
 pub mod canvas;
 pub mod color;
-pub mod image;
 pub mod mask;
 mod object;
 pub mod paint;
