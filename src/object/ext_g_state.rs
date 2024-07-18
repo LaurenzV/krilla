@@ -5,6 +5,7 @@ use pdf_writer::types::BlendMode;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
+use crate::object::Cacheable;
 
 #[derive(Debug, Hash, PartialEq, Eq, Default)]
 struct Repr {
@@ -16,6 +17,8 @@ struct Repr {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
 pub(crate) struct ExtGState(Arc<Repr>);
+
+impl Cacheable for ExtGState {}
 
 impl ExtGState {
     pub fn new() -> Self {

@@ -8,6 +8,7 @@ use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Rect;
+use crate::object::Cacheable;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
@@ -17,6 +18,8 @@ struct Repr {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingFunction(Arc<Repr>);
+
+impl Cacheable for ShadingFunction {}
 
 impl ShadingFunction {
     pub fn new(properties: GradientProperties, shading_transform: TransformWrapper) -> Self {

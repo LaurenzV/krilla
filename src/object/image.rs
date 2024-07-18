@@ -5,6 +5,7 @@ use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::object::Cacheable;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
@@ -17,6 +18,8 @@ pub struct Repr {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Repr>);
+
+impl Cacheable for Image {}
 
 impl Image {
     pub fn new(dynamic_image: &DynamicImage) -> Self {

@@ -5,6 +5,7 @@ use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
+use crate::object::Cacheable;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
@@ -28,6 +29,8 @@ impl ShadingPattern {
         }))
     }
 }
+
+impl Cacheable for ShadingPattern {}
 
 impl ObjectSerialize for ShadingPattern {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
