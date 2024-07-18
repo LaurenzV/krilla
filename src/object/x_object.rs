@@ -1,6 +1,6 @@
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::resource::ResourceDictionary;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
+use crate::serialize::{ObjectSerialize, SerializerContext};
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -29,7 +29,7 @@ impl XObject {
     }
 }
 
-impl ObjectSerialize for crate::resource::XObject {
+impl ObjectSerialize for XObject {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let srgb_ref = sc.srgb_ref();
 
@@ -39,7 +39,7 @@ impl ObjectSerialize for crate::resource::XObject {
         let mut resource_dictionary = ResourceDictionary::new();
         let (content_stream, bbox) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_instructions(self.canvas.byte_code.instructions());
+            serializer.serialize_instructions(self.0.canvas.byte_code.instructions());
             serializer.finish()
         };
 
@@ -47,14 +47,14 @@ impl ObjectSerialize for crate::resource::XObject {
         resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
         x_object.bbox(bbox.to_pdf_rect());
 
-        if self.isolated || self.needs_transparency {
+        if self.0.isolated || self.0.needs_transparency {
             let mut transparency = x_object.group().transparency();
 
-            if self.isolated {
-                transparency.isolated(self.isolated);
+            if self.0.isolated {
+                transparency.isolated(self.0.isolated);
             }
 
-            if self.needs_transparency {
+            if self.0.needs_transparency {
                 transparency.pair(Name(b"CS"), srgb_ref);
             }
 
