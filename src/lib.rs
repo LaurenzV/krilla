@@ -1,15 +1,14 @@
-pub mod allocate;
+#![forbid(unsafe_code)]
+
 pub mod bytecode;
 pub mod canvas;
 pub mod color;
-pub mod ext_g_state;
-pub mod image;
-pub mod mask;
+mod graphics_state;
+mod object;
 pub mod paint;
 pub mod path;
 pub mod resource;
 pub mod serialize;
-pub mod shading;
 pub mod transform;
 pub mod util;
 

@@ -1,31 +1,10 @@
-use crate::ext_g_state::ExtGState;
-use crate::mask::Mask;
-use crate::resource::{PdfColorSpace, PdfPattern};
-use crate::shading::{ShadingFunction, ShadingPattern};
+use crate::object::color_space::ColorSpace;
 use pdf_writer::{Chunk, Pdf, Ref};
+use std::any::Any;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum CacheableObject {
-    PdfColorSpace(PdfColorSpace),
-    ExtGState(ExtGState),
-    ShadingFunction(ShadingFunction),
-    PdfPattern(PdfPattern),
-    Mask(Mask),
-}
-
-impl ObjectSerialize for CacheableObject {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        match self {
-            CacheableObject::PdfColorSpace(cs) => cs.serialize_into(sc, root_ref),
-            CacheableObject::ExtGState(st) => st.serialize_into(sc, root_ref),
-            CacheableObject::ShadingFunction(sf) => sf.serialize_into(sc, root_ref),
-            CacheableObject::PdfPattern(pp) => pp.serialize_into(sc, root_ref),
-            CacheableObject::Mask(ma) => ma.serialize_into(sc, root_ref),
-        }
-    }
-}
+use siphasher::sip128::{Hasher128, SipHasher13};
 
 #[derive(Copy, Clone)]
 pub struct SerializeSettings {
@@ -40,7 +19,7 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait ObjectSerialize: Sized {
+pub trait Object: Sized + Hash + Clone + 'static {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref);
 
     fn serialize(self, serialize_settings: SerializeSettings) -> (Chunk, Ref) {
@@ -49,6 +28,8 @@ pub trait ObjectSerialize: Sized {
         self.serialize_into(&mut sc, root_ref);
         (sc.chunk, root_ref)
     }
+
+    fn is_cached(&self) -> bool;
 }
 
 pub trait PageSerialize: Sized {
@@ -56,7 +37,7 @@ pub trait PageSerialize: Sized {
 }
 
 pub struct SerializerContext {
-    cached_mappings: HashMap<CacheableObject, Ref>,
+    cached_mappings: HashMap<u128, Ref>,
     chunk: Chunk,
     cur_ref: Ref,
     serialize_settings: SerializeSettings,
@@ -71,35 +52,69 @@ impl SerializerContext {
             serialize_settings,
         }
     }
-    pub fn add_cached(&mut self, object: CacheableObject) -> Ref {
-        if let Some(_ref) = self.cached_mappings.get(&object) {
-            *_ref
-        } else {
-            let root_ref = self.new_ref();
-            self.cached_mappings.insert(object.clone(), root_ref);
-            object.serialize_into(self, root_ref);
-            root_ref
-        }
-    }
 
     pub fn new_ref(&mut self) -> Ref {
         self.cur_ref.bump()
     }
 
-    pub fn add_uncached<T>(&mut self, o: T) -> Ref
+    fn add_cached<T>(&mut self, object: T) -> Ref
     where
-        T: ObjectSerialize,
+        T: Object,
+    {
+        let hash = hash_item(&object);
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            *_ref
+        } else {
+            let root_ref = self.new_ref();
+            self.cached_mappings.insert(hash, root_ref);
+            object.serialize_into(self, root_ref);
+            root_ref
+        }
+    }
+
+    pub fn srgb(&mut self) -> Ref {
+        self.add(ColorSpace::SRGB)
+    }
+
+    pub fn d65_gray(&mut self) -> Ref {
+        self.add(ColorSpace::D65Gray)
+    }
+
+    fn add_uncached<T>(&mut self, object: T) -> Ref
+    where
+        T: Object,
     {
         let _ref = self.new_ref();
-        o.serialize_into(self, _ref);
+        object.serialize_into(self, _ref);
         _ref
     }
 
-    pub fn current_chunk(&self) -> &Chunk {
-        &self.chunk
+    pub fn add<T>(&mut self, object: T) -> Ref
+    where
+        T: Object,
+    {
+        if object.is_cached() {
+            self.add_cached(object)
+        } else {
+            self.add_uncached(object)
+        }
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
         &mut self.chunk
     }
+    pub fn chunk(&self) -> &Chunk {
+        &self.chunk
+    }
+}
+
+/// Hash the item.
+#[inline]
+fn hash_item<T: Hash + ?Sized + 'static>(item: &T) -> u128 {
+    // Also hash the TypeId because the type might be converted
+    // through an unsized coercion.
+    let mut state = SipHasher13::new();
+    item.type_id().hash(&mut state);
+    item.hash(&mut state);
+    state.finish128().as_u128()
 }

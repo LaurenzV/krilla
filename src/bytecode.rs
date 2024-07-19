@@ -1,9 +1,9 @@
 use crate::canvas::Canvas;
-use crate::ext_g_state::CompositeMode;
-use crate::image::Image;
-use crate::mask::Mask;
+use crate::object::image::Image;
+use crate::object::mask::Mask;
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
+use pdf_writer::types::BlendMode;
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
 
@@ -19,7 +19,7 @@ pub enum Instruction {
         Box<(
             Arc<Canvas>,
             TransformWrapper,
-            CompositeMode,
+            BlendMode,
             NormalizedF32,
             bool,
             Option<Mask>,
