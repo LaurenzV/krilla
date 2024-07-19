@@ -198,25 +198,36 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 /// of a gradient, returns the interpolated color value depending on where it
 /// lies within the stops.
 fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
-    // Our algorithm requires the first stop to be padded, since we work in windows of step size 2.
+    // Our algorithm requires the stops to be padded.
     let mut stops = stops.iter().cloned().collect::<Vec<_>>();
-    let first = stops[0].clone();
-    stops.insert(0, first);
+
+    if let Some(first) = stops.first() {
+        if first.offset != NormalizedF32::ZERO {
+            let mut first = first.clone();
+            first.offset = NormalizedF32::ZERO;
+            stops.insert(0, first);
+        }
+    }
+
+    if let Some(last) = stops.last() {
+        if last.offset != NormalizedF32::ONE {
+            let mut last = last.clone();
+            last.offset = NormalizedF32::ZERO;
+            stops.push(last);
+        }
+    }
 
     encode_stops_impl(&stops, min, max)
 }
 
 fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
-    let encode_two_stops = |c0: &[f32], c1: &[f32], o1: NormalizedF32, o2: NormalizedF32| {
+    let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
         debug_assert_eq!(c0.len(), c1.len());
         debug_assert!(c0.len() > 1);
 
-        let start = min * o1.get();
-        let end = max * o2.get();
-
         let mut snippets = vec![
             // Normalize the x coordinate to be between 0 and 1.
-            format!("{start} sub {end} {start} sub div"),
+            format!("{min} sub {max} {min} sub div"),
         ];
 
         for i in 0..c0.len() {
@@ -243,16 +254,18 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
             .collect::<Vec<_>>()
             .join(" ")
     } else {
-        let denormalized_offset = min + stops[1].offset.get() * (max - min);
+        let length = max - min;
+        let stops_min = min + length * stops[0].offset.get();
+        let stops_max = min + length * stops[1].offset.get();
         // Write the if conditions to find the corresponding set of two stops.
         format!(
             "dup {} le {{{}}} {{{}}} ifelse",
-            denormalized_offset,
+            stops_max,
             encode_two_stops(
                 &stops[0].color.to_pdf_components(),
                 &stops[1].color.to_pdf_components(),
-                stops[0].offset,
-                stops[1].offset,
+                stops_min,
+                stops_max,
             )
             .join(" "),
             encode_stops_impl(&stops[1..], min, max)

@@ -770,18 +770,20 @@ mod tests {
             Transform::from_translate(20.0, 20.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
-                    x1: FiniteF32::new(0.0).unwrap(),
+                    x1: FiniteF32::new(56.0).unwrap(),
                     y1: Default::default(),
-                    x2: FiniteF32::new(140.0).unwrap(),
+                    x2: FiniteF32::new(84.0).unwrap(),
                     y2: Default::default(),
-                    transform: TransformWrapper(Transform::identity()),
+                    transform: TransformWrapper(
+                        Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0))
+                    ),
                     spread_method,
                     stops: vec![
-                        // Stop {
-                        //     offset: NormalizedF32::new(0.2).unwrap(),
-                        //     color: Color::new_rgb(255, 0, 0),
-                        //     opacity: NormalizedF32::ONE,
-                        // },
+                        Stop {
+                            offset: NormalizedF32::new(0.2).unwrap(),
+                            color: Color::new_rgb(255, 0, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
                         Stop {
                             offset: NormalizedF32::new(0.4).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
