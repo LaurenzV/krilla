@@ -1,12 +1,11 @@
-use crate::resource::PdfColorSpace;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
     samples: Vec<u8>,
     size: Size,
@@ -34,7 +33,7 @@ impl Image {
     }
 }
 
-impl ObjectSerialize for Image {
+impl Object for Image {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         // TODO: Error handling
         let mut chunk = Chunk::new();
@@ -60,15 +59,9 @@ impl ObjectSerialize for Image {
         image_x_object.height(self.0.size.height() as i32);
 
         if self.0.color_type.has_color() {
-            image_x_object.pair(
-                Name(b"ColorSpace"),
-                sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB)),
-            );
+            image_x_object.pair(Name(b"ColorSpace"), sc.srgb());
         } else {
-            image_x_object.pair(
-                Name(b"ColorSpace"),
-                sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::D65Gray)),
-            );
+            image_x_object.pair(Name(b"ColorSpace"), sc.d65_gray());
         }
 
         image_x_object.bits_per_component(calculate_bits_per_component(self.0.color_type));
@@ -78,6 +71,10 @@ impl ObjectSerialize for Image {
         image_x_object.finish();
 
         sc.chunk_mut().extend(&chunk);
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }
 

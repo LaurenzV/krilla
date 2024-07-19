@@ -1,52 +1,52 @@
 use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, SpreadMethod, Stop};
-use crate::resource::PdfColorSpace;
-use crate::serialize::{CacheableObject, ObjectSerialize, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{RectExt, TransformExt};
+use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Rect};
+use tiny_skia_path::Rect;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingPattern(Arc<GradientProperties>, TransformWrapper, TransformWrapper);
-
-impl ShadingPattern {
-    pub fn new(
-        gradient_properties: GradientProperties,
-        ctm: TransformWrapper,
-        pattern_transform: TransformWrapper,
-    ) -> Self {
-        Self(Arc::new(gradient_properties), ctm, pattern_transform)
-    }
-}
-
-impl ObjectSerialize for ShadingPattern {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        // CTM doesn't need to be included to calculate the domain
-        let shading_function = ShadingFunction(self.0.clone(), self.2);
-        let shading_ref = sc.add_cached(CacheableObject::ShadingFunction(shading_function));
-        let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
-        shading_pattern.pair(Name(b"Shading"), shading_ref);
-        shading_pattern.matrix(self.1 .0.pre_concat(self.2 .0).to_pdf_transform());
-        shading_pattern.finish();
-    }
+#[derive(Debug, Hash, Eq, PartialEq)]
+struct Repr {
+    properties: GradientProperties,
+    shading_transform: TransformWrapper,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingFunction(Arc<GradientProperties>, TransformWrapper);
+pub struct ShadingFunction(Arc<Repr>);
 
-impl ObjectSerialize for ShadingFunction {
+impl ShadingFunction {
+    pub fn new(properties: GradientProperties, shading_transform: TransformWrapper) -> Self {
+        Self(Arc::new(Repr {
+            properties,
+            shading_transform,
+        }))
+    }
+
+    pub fn shading_transform(&self) -> TransformWrapper {
+        self.0.shading_transform
+    }
+}
+
+impl Object for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mut bbox = self.0.bbox;
-        bbox.expand(&bbox.transform(self.1 .0.invert().unwrap()).unwrap());
+        let mut bbox = self.0.properties.bbox;
+        // We need to make sure the shading covers the whole bbox of the object after
+        // the transform as been applied. In order to know that, we need to calculate the
+        // resulting bbox from the inverted transform.
+        bbox.expand(
+            &bbox
+                .transform(self.0.shading_transform.0.invert().unwrap())
+                .unwrap(),
+        );
 
-        let function_ref = serialize_stop_function(self.0.as_ref(), sc, &bbox);
-
-        let cs_ref = sc.add_cached(CacheableObject::PdfColorSpace(PdfColorSpace::SRGB));
+        let function_ref = serialize_stop_function(&self.0.properties, sc, &bbox);
+        let cs_ref = sc.srgb();
 
         let mut shading = sc.chunk_mut().function_shading(root_ref);
+        // TODO: Readd axial/radial shading.
         shading.shading_type(FunctionShadingType::Function);
         shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
@@ -56,6 +56,10 @@ impl ObjectSerialize for ShadingFunction {
         // shading.coords(self.0.coords.iter().map(|n| n.get()));
         // shading.extend([true, true]);
         shading.finish();
+    }
+
+    fn is_cached(&self) -> bool {
+        true
     }
 }
 
@@ -102,7 +106,6 @@ fn serialize_postscript(
     let reflect = properties.spread_method == SpreadMethod::Reflect;
 
     // TODO: Improve formatting of PS code.
-
     let start_code = [
         "{".to_string(),
         // Stack: x y
@@ -244,55 +247,55 @@ fn serialize_postscript(
     root_ref
 }
 
-fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
-    let root_ref = sc.new_ref();
-    let mut functions = vec![];
-    let mut bounds = vec![];
-    let mut encode = vec![];
-    let mut count = 0;
-
-    for window in stops.windows(2) {
-        let (first, second) = (&window[0], &window[1]);
-        bounds.push(second.offset.get());
-
-        let c0_components = first.color.to_normalized_pdf_components();
-        let c1_components = second.color.to_normalized_pdf_components();
-        debug_assert!(c0_components.len() == c1_components.len());
-        count = c0_components.len();
-
-        let exp_ref = serialize_exponential(&c0_components, &c1_components, sc);
-
-        functions.push(exp_ref);
-        encode.extend([0.0, 1.0]);
-    }
-
-    bounds.pop();
-    let mut stitching_function = sc.chunk_mut().stitching_function(root_ref);
-    stitching_function.domain([0.0, 1.0]);
-    stitching_function.range([0.0, 1.0].repeat(count));
-    stitching_function.functions(functions);
-    stitching_function.bounds(bounds);
-    stitching_function.encode(encode);
-
-    root_ref
-}
-
-fn serialize_exponential(
-    first_comps: &[NormalizedF32],
-    second_comps: &[NormalizedF32],
-    sc: &mut SerializerContext,
-) -> Ref {
-    let root_ref = sc.new_ref();
-    debug_assert_eq!(first_comps.len(), second_comps.len());
-    let num_components = first_comps.len();
-
-    let mut exp = sc.chunk_mut().exponential_function(root_ref);
-
-    exp.range([0.0, 1.0].repeat(num_components));
-    exp.c0(first_comps.into_iter().map(|n| n.get()));
-    exp.c1(second_comps.into_iter().map(|n| n.get()));
-    exp.domain([0.0, 1.0]);
-    exp.n(1.0);
-    exp.finish();
-    root_ref
-}
+// fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
+//     let root_ref = sc.new_ref();
+//     let mut functions = vec![];
+//     let mut bounds = vec![];
+//     let mut encode = vec![];
+//     let mut count = 0;
+//
+//     for window in stops.windows(2) {
+//         let (first, second) = (&window[0], &window[1]);
+//         bounds.push(second.offset.get());
+//
+//         let c0_components = first.color.to_normalized_pdf_components();
+//         let c1_components = second.color.to_normalized_pdf_components();
+//         debug_assert!(c0_components.len() == c1_components.len());
+//         count = c0_components.len();
+//
+//         let exp_ref = serialize_exponential(&c0_components, &c1_components, sc);
+//
+//         functions.push(exp_ref);
+//         encode.extend([0.0, 1.0]);
+//     }
+//
+//     bounds.pop();
+//     let mut stitching_function = sc.chunk_mut().stitching_function(root_ref);
+//     stitching_function.domain([0.0, 1.0]);
+//     stitching_function.range([0.0, 1.0].repeat(count));
+//     stitching_function.functions(functions);
+//     stitching_function.bounds(bounds);
+//     stitching_function.encode(encode);
+//
+//     root_ref
+// }
+//
+// fn serialize_exponential(
+//     first_comps: &[NormalizedF32],
+//     second_comps: &[NormalizedF32],
+//     sc: &mut SerializerContext,
+// ) -> Ref {
+//     let root_ref = sc.new_ref();
+//     debug_assert_eq!(first_comps.len(), second_comps.len());
+//     let num_components = first_comps.len();
+//
+//     let mut exp = sc.chunk_mut().exponential_function(root_ref);
+//
+//     exp.range([0.0, 1.0].repeat(num_components));
+//     exp.c0(first_comps.into_iter().map(|n| n.get()));
+//     exp.c1(second_comps.into_iter().map(|n| n.get()));
+//     exp.domain([0.0, 1.0]);
+//     exp.n(1.0);
+//     exp.finish();
+//     root_ref
+// }

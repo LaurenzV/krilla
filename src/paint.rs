@@ -1,13 +1,10 @@
-use crate::canvas::{Canvas, CanvasPdfSerializer};
+use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::resource::ResourceDictionary;
-use crate::serialize::{ObjectSerialize, SerializerContext};
+use crate::serialize::Object;
 use crate::transform::TransformWrapper;
-use crate::util::TransformExt;
-use pdf_writer::types::{FunctionShadingType, PaintType, TilingType};
-use pdf_writer::{Chunk, Finish, Ref};
+use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
@@ -54,45 +51,6 @@ pub struct RadialGradient {
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct TilingPattern(pub Arc<Pattern>);
-
-impl ObjectSerialize for TilingPattern {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
-        // TODO: Deduplicate
-        let mut resource_dictionary = ResourceDictionary::new();
-        let (content_stream, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_instructions(self.0.canvas.byte_code.instructions());
-            serializer.finish()
-        };
-
-        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &content_stream);
-        resource_dictionary.to_pdf_resources(sc, &mut tiling_pattern.resources());
-
-        // We already account for the x/y of the pattern by appending it to the matrix above, so here we just need to take the height / width
-        // in consideration
-        let final_bbox = pdf_writer::Rect::new(
-            0.0,
-            0.0,
-            self.0.canvas.size.width(),
-            self.0.canvas.size.height(),
-        );
-
-        tiling_pattern
-            .tiling_type(TilingType::ConstantSpacing)
-            .paint_type(PaintType::Colored)
-            .bbox(final_bbox)
-            .matrix(self.0.transform.0.to_pdf_transform())
-            .x_step(final_bbox.x2 - final_bbox.x1)
-            .y_step(final_bbox.y2 - final_bbox.y1);
-
-        tiling_pattern.finish();
-        sc.chunk_mut().extend(&chunk);
-    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]

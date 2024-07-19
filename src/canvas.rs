@@ -1,17 +1,19 @@
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
-use crate::ext_g_state::{CompositeMode, ExtGState};
-use crate::image::Image;
-use crate::mask::Mask;
-use crate::paint::{GradientProperties, GradientPropertiesExt, Paint, TilingPattern};
-use crate::resource::{PdfPattern, ResourceDictionary, XObject};
-use crate::serialize::{ObjectSerialize, PageSerialize, SerializeSettings, SerializerContext};
-use crate::shading::ShadingPattern;
+use crate::graphics_state::GraphicsStates;
+use crate::object::ext_g_state::ExtGState;
+use crate::object::image::Image;
+use crate::object::mask::Mask;
+use crate::object::shading_pattern::ShadingPattern;
+use crate::object::tiling_pattern::TilingPattern;
+use crate::object::xobject::XObject;
+use crate::paint::{GradientProperties, GradientPropertiesExt, Paint};
+use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
+use crate::serialize::{Object, PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{ext_g_state, Fill, FillRule, LineCap, LineJoin, Stroke};
+use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
-use pdf_writer::types::ColorSpaceOperand::Pattern;
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
@@ -76,7 +78,7 @@ impl Canvas {
         &mut self,
         canvas: Canvas,
         transform: Transform,
-        composite_mode: CompositeMode,
+        composite_mode: BlendMode,
         opacity: NormalizedF32,
         isolated: bool,
         mask: Option<Mask>,
@@ -89,77 +91,6 @@ impl Canvas {
             isolated,
             mask,
         ))));
-    }
-}
-
-#[derive(Clone)]
-struct GraphicsState {
-    ext_g_state: ext_g_state::Repr,
-    ctm: Transform,
-}
-
-impl Default for GraphicsState {
-    fn default() -> Self {
-        Self {
-            ext_g_state: ext_g_state::Repr::default(),
-            ctm: Transform::identity(),
-        }
-    }
-}
-
-impl GraphicsState {
-    fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
-        self.ext_g_state.add_ext_g_state(other);
-    }
-
-    fn concat_transform(&mut self, transform: Transform) {
-        self.ctm = self.ctm.pre_concat(transform);
-        println!("result: {:?}", self.ctm);
-    }
-
-    fn transform(&self) -> Transform {
-        self.ctm
-    }
-}
-
-struct GraphicsStates {
-    graphics_states: Vec<GraphicsState>,
-}
-
-impl GraphicsStates {
-    fn new() -> Self {
-        GraphicsStates {
-            graphics_states: vec![GraphicsState::default()],
-        }
-    }
-
-    fn cur(&self) -> &GraphicsState {
-        self.graphics_states.last().unwrap()
-    }
-
-    fn cur_mut(&mut self) -> &mut GraphicsState {
-        self.graphics_states.last_mut().unwrap()
-    }
-
-    fn save_state(&mut self) {
-        let state = self.cur();
-        self.graphics_states.push(state.clone())
-    }
-
-    fn restore_state(&mut self) {
-        self.graphics_states.pop();
-    }
-
-    fn add_ext_g_state(&mut self, other: &ext_g_state::Repr) {
-        self.cur_mut().add_ext_g_state(other);
-    }
-
-    fn transform(&mut self, transform: Transform) {
-        self.cur_mut().concat_transform(transform);
-    }
-
-    fn transform_bbox(&self, bbox: Rect) -> Rect {
-        bbox.transform(self.cur().transform()).unwrap()
     }
 }
 
@@ -220,9 +151,10 @@ impl<'a> CanvasPdfSerializer<'a> {
             self.base_opacity = self.base_opacity * alpha;
             // fill/stroke opacities are always set locally when drawing a path,
             // so here it will always be None, thus we can just apply it directly.
-            let state =
-                ExtGState::new(Some(self.base_opacity), Some(self.base_opacity), None, None);
-            self.graphics_states.add_ext_g_state(&state);
+            let state = ExtGState::new()
+                .stroking_alpha(alpha)
+                .non_stroking_alpha(alpha);
+            self.graphics_states.combine(&state);
         }
     }
 
@@ -249,39 +181,47 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn set_mask(&mut self, mask: Mask) {
-        let state = ExtGState::new(None, None, None, Some(mask));
-        self.graphics_states.add_ext_g_state(&state);
+        let state = ExtGState::new().mask(mask);
+        self.graphics_states.combine(&state);
 
-        let ext = self.resource_dictionary.register_ext_g_state(state);
+        let ext = self
+            .resource_dictionary
+            .register_resource(Resource::ExtGState(state));
         self.content.set_parameters(ext.to_pdf_name());
     }
 
     pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new(Some(alpha * self.base_opacity), None, None, None);
-            self.graphics_states.add_ext_g_state(&state);
+            let state = ExtGState::new().non_stroking_alpha(alpha * self.base_opacity);
+            self.graphics_states.combine(&state);
 
-            let ext = self.resource_dictionary.register_ext_g_state(state);
+            let ext = self
+                .resource_dictionary
+                .register_resource(Resource::ExtGState(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
     }
 
     pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new(None, Some(alpha * self.base_opacity), None, None);
-            self.graphics_states.add_ext_g_state(&state);
+            let state = ExtGState::new().stroking_alpha(alpha * self.base_opacity);
+            self.graphics_states.combine(&state);
 
-            let ext = self.resource_dictionary.register_ext_g_state(state);
+            let ext = self
+                .resource_dictionary
+                .register_resource(Resource::ExtGState(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
     }
 
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         if blend_mode != BlendMode::Normal {
-            let state = ExtGState::new(None, None, Some(blend_mode), None);
-            self.graphics_states.add_ext_g_state(&state);
+            let state = ExtGState::new().blend_mode(blend_mode);
+            self.graphics_states.combine(&state);
 
-            let ext = self.resource_dictionary.register_ext_g_state(state);
+            let ext = self
+                .resource_dictionary
+                .register_resource(Resource::ExtGState(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
     }
@@ -312,8 +252,11 @@ impl<'a> CanvasPdfSerializer<'a> {
             );
             let color_space = self
                 .resource_dictionary
-                .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
-            self.content.set_fill_color_space(Pattern);
+                .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
+                    shading_pattern,
+                )));
+            self.content
+                .set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             self.content
                 .set_fill_pattern(None, color_space.to_pdf_name());
         };
@@ -322,7 +265,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             Paint::Color(c) => {
                 let color_space = self
                     .resource_dictionary
-                    .register_color_space(c.get_pdf_color_space());
+                    .register_resource(Resource::ColorSpace(c.get_pdf_color_space()));
                 self.content.set_fill_color_space(color_space.to_pdf_name());
                 self.content.set_fill_color(c.to_pdf_components());
             }
@@ -342,8 +285,11 @@ impl<'a> CanvasPdfSerializer<'a> {
 
                 let color_space = self
                     .resource_dictionary
-                    .register_pattern(PdfPattern::TilingPattern(TilingPattern(pat.clone())));
-                self.content.set_fill_color_space(Pattern);
+                    .register_resource(Resource::Pattern(PatternResource::TilingPattern(
+                        TilingPattern::new(pat.canvas.clone(), pat.transform),
+                    )));
+                self.content
+                    .set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
                 self.content
                     .set_fill_pattern(None, color_space.to_pdf_name());
             }
@@ -395,8 +341,11 @@ impl<'a> CanvasPdfSerializer<'a> {
             );
             let color_space = self
                 .resource_dictionary
-                .register_pattern(PdfPattern::ShadingPattern(shading_pattern));
-            self.content.set_stroke_color_space(Pattern);
+                .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
+                    shading_pattern,
+                )));
+            self.content
+                .set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             self.content
                 .set_stroke_pattern(None, color_space.to_pdf_name());
         };
@@ -405,7 +354,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             Paint::Color(c) => {
                 let color_space = self
                     .resource_dictionary
-                    .register_color_space(c.get_pdf_color_space());
+                    .register_resource(Resource::ColorSpace(c.get_pdf_color_space()));
                 self.content
                     .set_stroke_color_space(color_space.to_pdf_name());
                 self.content.set_stroke_color(c.to_pdf_components());
@@ -423,10 +372,15 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let transform = pat.transform;
 
                 Arc::make_mut(&mut pat).transform = pattern_transform(transform);
+
                 let color_space = self
                     .resource_dictionary
-                    .register_pattern(PdfPattern::TilingPattern(TilingPattern(pat.clone())));
-                self.content.set_stroke_color_space(Pattern);
+                    .register_resource(Resource::Pattern(PatternResource::TilingPattern(
+                        TilingPattern::new(pat.canvas.clone(), pat.transform),
+                    )));
+
+                self.content
+                    .set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
                 self.content
                     .set_stroke_pattern(None, color_space.to_pdf_name());
             }
@@ -465,7 +419,9 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn draw_image(&mut self, image: Image, size: Size, transform: &Transform) {
-        let image_name = self.resource_dictionary.register_image(image);
+        let image_name = self
+            .resource_dictionary
+            .register_resource(Resource::XObject(XObjectResource::Image(image)));
         // Apply user-supplied transform and scale the image from 1x1 to the actual dimensions.
         let transform = transform.pre_concat(Transform::from_row(
             size.width(),
@@ -485,7 +441,7 @@ impl<'a> CanvasPdfSerializer<'a> {
         &mut self,
         canvas: Arc<Canvas>,
         transform: &Transform,
-        composite_mode: CompositeMode,
+        composite_mode: BlendMode,
         opacity: NormalizedF32,
         isolated: bool,
         mask: Option<Mask>,
@@ -502,16 +458,14 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
 
         if mask.is_some() || isolated {
-            let x_object = XObject {
-                canvas,
-                isolated,
-                needs_transparency: mask.is_some(),
-            };
+            let x_object = XObject::new(canvas.clone(), isolated, mask.is_some());
 
             if let Some(mask) = mask {
                 self.set_mask(mask);
             }
-            let name = self.resource_dictionary.register_x_object(x_object);
+            let name = self
+                .resource_dictionary
+                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
             self.content.x_object(name.to_pdf_name());
         } else {
             self.serialize_instructions(canvas.byte_code.instructions());
@@ -523,22 +477,22 @@ impl<'a> CanvasPdfSerializer<'a> {
 
 // TODO: Add ProcSet?
 // TODO: Deduplicate with other implementations
-impl ObjectSerialize for Canvas {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
-        let mut resource_dictionary = ResourceDictionary::new();
-        let (content_stream, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_instructions(self.byte_code.instructions());
-            serializer.finish()
-        };
-
-        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
-        resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
-        x_object.bbox(bbox.to_pdf_rect());
-        x_object.finish();
-    }
-}
+// impl ObjectSerialize for Canvas {
+//     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+//         let mut chunk = Chunk::new();
+//         let mut resource_dictionary = ResourceDictionary::new();
+//         let (content_stream, bbox) = {
+//             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
+//             serializer.serialize_instructions(self.byte_code.instructions());
+//             serializer.finish()
+//         };
+//
+//         let mut x_object = chunk.form_xobject(root_ref, &content_stream);
+//         resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
+//         x_object.bbox(bbox.to_pdf_rect());
+//         x_object.finish();
+//     }
+// }
 
 impl PageSerialize for Canvas {
     fn serialize(self, serialize_settings: SerializeSettings) -> Pdf {
@@ -581,7 +535,7 @@ impl PageSerialize for Canvas {
         let mut pdf = Pdf::new();
         pdf.catalog(catalog_ref).pages(page_tree_ref);
         pdf.extend(&chunk);
-        pdf.extend(sc.current_chunk());
+        pdf.extend(sc.chunk());
 
         pdf
     }
@@ -636,14 +590,13 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 mod tests {
     use crate::canvas::Canvas;
     use crate::color::Color;
-    use crate::ext_g_state::CompositeMode;
-    use crate::image::Image;
-    use crate::mask::{Mask, MaskType};
+    use crate::object::image::Image;
+    use crate::object::mask::{Mask, MaskType};
     use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
-    use crate::serialize::{ObjectSerialize, SerializeSettings};
+    use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
-    use image::DynamicImage;
+    use pdf_writer::types::BlendMode;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
@@ -671,7 +624,7 @@ mod tests {
             serialize_dependencies: true,
         };
 
-        let chunk = canvas.serialize(serialize_settings).0;
+        let chunk = canvas.serialize(serialize_settings);
         write("pattern", &chunk.as_bytes());
     }
 
@@ -746,7 +699,7 @@ mod tests {
         canvas.draw_canvas(
             second,
             Transform::from_translate(100.0, 100.0),
-            CompositeMode::Difference,
+            BlendMode::Difference,
             NormalizedF32::ONE,
             false,
             None,
@@ -790,7 +743,7 @@ mod tests {
         canvas.draw_canvas(
             second,
             Transform::from_translate(100.0, 100.0),
-            CompositeMode::Difference,
+            BlendMode::Difference,
             NormalizedF32::new(0.5).unwrap(),
             false,
             None,
@@ -962,10 +915,10 @@ mod tests {
         final_canvas.draw_canvas(
             path_canvas,
             Transform::identity(),
-            CompositeMode::SourceOver,
+            BlendMode::Normal,
             NormalizedF32::ONE,
             false,
-            Some(Mask::new(mask_canvas, MaskType::Luminance)),
+            Some(Mask::new(Arc::new(mask_canvas), MaskType::Luminance)),
         );
 
         let serialize_settings = SerializeSettings {
