@@ -18,8 +18,8 @@ pub struct ShadingPattern(Arc<Repr>);
 impl ShadingPattern {
     pub fn new(
         gradient_properties: GradientProperties,
-        pattern_transform: TransformWrapper,
         ctm: TransformWrapper,
+        pattern_transform: TransformWrapper,
     ) -> Self {
         Self(Arc::new(Repr {
             // CTM doesn't need to be included to calculate the domain of the shading function
