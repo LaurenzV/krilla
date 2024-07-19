@@ -2,6 +2,7 @@
 
 pub mod canvas;
 pub mod color;
+mod graphics_state;
 mod object;
 pub mod paint;
 pub mod path;
