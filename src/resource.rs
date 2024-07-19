@@ -205,7 +205,6 @@ where
 {
     forward: Vec<V>,
     backward: HashMap<V, ResourceNumber>,
-    counter: ResourceNumber,
 }
 
 impl<V> ResourceMapper<V>
@@ -216,7 +215,6 @@ where
         Self {
             forward: Vec::new(),
             backward: HashMap::new(),
-            counter: 0,
         }
     }
 
@@ -248,7 +246,7 @@ where
     }
 
     pub fn len(&self) -> u32 {
-        self.counter
+        self.forward.len() as u32
     }
 
     pub fn get_entries(&self) -> impl Iterator<Item = (String, V)> + '_ {
