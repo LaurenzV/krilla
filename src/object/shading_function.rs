@@ -10,7 +10,7 @@ use tiny_skia_path::{NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    properties: GradientProperties,
+    pub(crate) properties: GradientProperties,
     shading_transform: TransformWrapper,
 }
 
@@ -33,14 +33,6 @@ impl ShadingFunction {
 impl Object for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut bbox = self.0.properties.bbox;
-        // We need to make sure the shading covers the whole bbox of the object after
-        // the transform as been applied. In order to know that, we need to calculate the
-        // resulting bbox from the inverted transform.
-        bbox.expand(
-            &bbox
-                .transform(self.0.shading_transform.0.invert().unwrap())
-                .unwrap(),
-        );
 
         let function_ref = serialize_stop_function(&self.0.properties, sc, &bbox);
         let cs_ref = sc.srgb();

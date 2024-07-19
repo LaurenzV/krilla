@@ -4,7 +4,8 @@ use crate::serialize::Object;
 use crate::transform::TransformWrapper;
 use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Rect};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Transform};
+use crate::util::RectExt;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
@@ -97,6 +98,18 @@ pub trait GradientPropertiesExt {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper);
 }
 
+fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
+    // We need to make sure the shading covers the whole bbox of the object after
+    // the transform as been applied. In order to know that, we need to calculate the
+    // resulting bbox from the inverted transform.
+    bbox.expand(
+        &bbox
+            .transform(shading_transform.invert().unwrap())
+            .unwrap(),
+    );
+    bbox
+}
+
 impl GradientPropertiesExt for LinearGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         (
@@ -104,7 +117,7 @@ impl GradientPropertiesExt for LinearGradient {
                 coords: vec![self.x1, self.y1, self.x2, self.y2],
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
-                bbox,
+                bbox: get_expanded_bbox(bbox, self.transform.0),
                 spread_method: self.spread_method,
             },
             self.transform,
@@ -120,7 +133,7 @@ impl GradientPropertiesExt for SweepGradient {
                 coords: vec![],
                 shading_type: FunctionShadingType::Function,
                 stops: Vec::from(self.stops.clone()),
-                bbox,
+                bbox: get_expanded_bbox(bbox, self.transform.0),
                 spread_method: self.spread_method,
             },
             self.transform,
@@ -142,7 +155,7 @@ impl GradientPropertiesExt for RadialGradient {
                 ],
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
-                bbox,
+                bbox: get_expanded_bbox(bbox, self.transform.0),
                 spread_method: self.spread_method,
             },
             self.transform,
