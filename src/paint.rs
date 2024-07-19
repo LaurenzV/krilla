@@ -54,6 +54,17 @@ pub struct RadialGradient {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct SweepGradient {
+    pub cx: FiniteF32,
+    pub cy: FiniteF32,
+    pub angle: FiniteF32,
+    pub transform: TransformWrapper,
+    pub spread_method: SpreadMethod,
+    // TODO: Add note that all stops must be in the same color space
+    pub stops: Vec<Stop>,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Pattern {
     pub(crate) canvas: Arc<Canvas>,
     pub(crate) transform: TransformWrapper,
@@ -64,6 +75,7 @@ pub enum Paint {
     Color(Color),
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
+    SweepGradient(SweepGradient),
     Pattern(Arc<Pattern>),
 }
 
@@ -91,6 +103,22 @@ impl GradientPropertiesExt for LinearGradient {
             GradientProperties {
                 coords: vec![self.x1, self.y1, self.x2, self.y2],
                 shading_type: FunctionShadingType::Axial,
+                stops: Vec::from(self.stops.clone()),
+                bbox,
+                spread_method: self.spread_method,
+            },
+            self.transform,
+        )
+    }
+}
+
+impl GradientPropertiesExt for SweepGradient {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        (
+            GradientProperties {
+                // Not used
+                coords: vec![],
+                shading_type: FunctionShadingType::Function,
                 stops: Vec::from(self.stops.clone()),
                 bbox,
                 spread_method: self.spread_method,

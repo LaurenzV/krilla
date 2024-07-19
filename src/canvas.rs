@@ -277,6 +277,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
+            Paint::SweepGradient(_) => todo!(),
             Paint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
@@ -367,6 +368,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
+            Paint::SweepGradient(_) => todo!(),
             Paint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
@@ -588,7 +590,6 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::format;
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::object::image::Image;
@@ -598,6 +599,7 @@ mod tests {
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
     use pdf_writer::types::BlendMode;
+    use std::fmt::format;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 

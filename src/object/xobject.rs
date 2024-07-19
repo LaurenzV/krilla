@@ -44,7 +44,7 @@ impl Object for XObject {
         x_object.bbox(bbox.to_pdf_rect());
 
         if self.0.isolated || self.0.transparency_group_color_space {
-            let mut group  = x_object.group();
+            let mut group = x_object.group();
             let mut transparency = group.transparency();
 
             if self.0.isolated {

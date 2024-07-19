@@ -178,65 +178,14 @@ fn serialize_postscript(
         // x_new
     ];
 
-    // Encode the interpolation for two stops
-    fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
-        let encode_two_stops = |c0: &[f32], c1: &[f32]| {
-            debug_assert_eq!(c0.len(), c1.len());
-            debug_assert!(c0.len() > 1);
-
-            let mut snippets = vec![
-                // Normalize x_new to be between 0 and 1.
-                format!("{min} sub {max} {min} sub div"),
-            ];
-
-            for i in 0..c0.len() {
-                snippets.push(format!(
-                    "{} index {} exch {} {} sub mul add",
-                    i, c0[i], c1[i], c0[i]
-                ));
-                // x_norm, c0, c1, ...
-            }
-            snippets.push(format!("{} -1 roll pop", c0.len() + 1));
-            // c0, c1, c2, ...
-
-            snippets
-        };
-
-        return if stops.len() == 1 {
-            stops[0]
-                .color
-                .to_pdf_components()
-                .iter()
-                .map(|n| n.to_string())
-                .collect::<Vec<_>>()
-                .join(" ")
-        } else {
-            let denormalized_offset = min + stops[1].offset.get() * (max - min);
-            format!(
-                "dup {} le {{{}}} {{{}}} ifelse",
-                denormalized_offset,
-                encode_two_stops(
-                    &stops[0].color.to_pdf_components(),
-                    &stops[1].color.to_pdf_components()
-                )
-                .join(" "),
-                encode_stops(&stops[1..], min, max)
-            )
-        };
-    }
-
     let end_code = ["}".to_string()];
-
-    let mut padded_stops = properties.stops.clone();
-    let first = padded_stops[0].clone();
-    padded_stops.insert(0, first);
 
     let mut code = Vec::new();
     code.extend(start_code);
     if properties.spread_method != SpreadMethod::Pad {
         code.extend(spread_method_program);
     }
-    code.extend(vec![encode_stops(&padded_stops, min, max)]);
+    code.extend(vec![encode_stops(&properties.stops, min, max)]);
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
@@ -245,6 +194,62 @@ fn serialize_postscript(
     postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
 
     root_ref
+}
+
+/// Postscript code that, given an x coordinate between the min and max
+/// of a gradient, returns the interpolated color value.
+fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
+    // Our algorithm requires the first stop to be padded, since we work in windows of step size 2.
+    let mut padded_stops = stops.iter().cloned().collect::<Vec<_>>();
+    let first = padded_stops[0].clone();
+    padded_stops.insert(0, first);
+
+    let encode_two_stops = |c0: &[f32], c1: &[f32]| {
+        debug_assert_eq!(c0.len(), c1.len());
+        debug_assert!(c0.len() > 1);
+
+        let mut snippets = vec![
+            // Normalize the x coordinate to be between 0 and 1.
+            format!("{min} sub {max} {min} sub div"),
+        ];
+
+        for i in 0..c0.len() {
+            // Interpolate each color component c0 + x_norm * (x1 - c0).
+            snippets.push(format!(
+                "{} index {} exch {} {} sub mul add",
+                i, c0[i], c1[i], c0[i]
+            ));
+            // x_norm, c0, c1, ...
+        }
+        // Remove x_norm from the stack.
+        snippets.push(format!("{} -1 roll pop", c0.len() + 1));
+        // c0, c1, c2, ...
+
+        snippets
+    };
+
+    return if stops.len() == 1 {
+        stops[0]
+            .color
+            .to_pdf_components()
+            .iter()
+            .map(|n| n.to_string())
+            .collect::<Vec<_>>()
+            .join(" ")
+    } else {
+        let denormalized_offset = min + stops[1].offset.get() * (max - min);
+        // Write the if conditions to find the
+        format!(
+            "dup {} le {{{}}} {{{}}} ifelse",
+            denormalized_offset,
+            encode_two_stops(
+                &stops[0].color.to_pdf_components(),
+                &stops[1].color.to_pdf_components()
+            )
+            .join(" "),
+            encode_stops(&stops[1..], min, max)
+        )
+    };
 }
 
 // fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
