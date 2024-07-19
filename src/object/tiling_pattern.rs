@@ -1,4 +1,4 @@
-use crate::canvas::{Canvas};
+use crate::canvas::Canvas;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;

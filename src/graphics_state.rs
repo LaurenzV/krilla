@@ -1,7 +1,7 @@
 use crate::object::ext_g_state;
 use crate::object::ext_g_state::ExtGState;
-use tiny_skia_path::{Rect, Transform};
 use crate::transform::TransformWrapper;
+use tiny_skia_path::{Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct GraphicsState {
@@ -19,16 +19,16 @@ impl Default for GraphicsState {
 }
 
 impl GraphicsState {
-    fn combine(&mut self, other: &ext_g_state::ExtGState) {
+    pub fn combine(&mut self, other: &ext_g_state::ExtGState) {
         self.ext_g_state.combine(other);
     }
 
-    fn concat_transform(&mut self, transform: Transform) {
+    pub fn concat_transform(&mut self, transform: Transform) {
         self.ctm = TransformWrapper(self.ctm.0.pre_concat(transform));
         println!("result: {:?}", self.ctm);
     }
 
-    fn transform(&self) -> Transform {
+    pub fn transform(&self) -> Transform {
         self.ctm.0
     }
 }

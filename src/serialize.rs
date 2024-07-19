@@ -103,6 +103,9 @@ impl SerializerContext {
     pub fn chunk_mut(&mut self) -> &mut Chunk {
         &mut self.chunk
     }
+    pub fn chunk(&self) -> &Chunk {
+        &self.chunk
+    }
 }
 
 /// Hash the item.

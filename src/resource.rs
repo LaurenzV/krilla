@@ -100,7 +100,7 @@ impl Object for XObjectResource {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PatternResource {
     ShadingPattern(ShadingPattern),
-    TiledPattern(TilingPattern),
+    TilingPattern(TilingPattern),
 }
 
 impl ResourceTrait for PatternResource {
@@ -117,19 +117,19 @@ impl Object for PatternResource {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         match self {
             PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
-            PatternResource::TiledPattern(tp) => tp.serialize_into(sc, root_ref),
+            PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
         }
     }
 
     fn is_cached(&self) -> bool {
         match self {
             PatternResource::ShadingPattern(sp) => sp.is_cached(),
-            PatternResource::TiledPattern(tp) => tp.is_cached(),
+            PatternResource::TilingPattern(tp) => tp.is_cached(),
         }
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ResourceDictionary {
     pub color_spaces: ResourceMapper<ColorSpace>,
     pub ext_g_states: ResourceMapper<ExtGState>,
@@ -198,7 +198,7 @@ fn write_resource_type<T>(
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct ResourceMapper<V>
 where
     V: Hash + Eq + PartialEq + Debug,
