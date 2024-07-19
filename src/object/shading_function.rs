@@ -98,12 +98,8 @@ fn serialize_postscript(
 
     // Assumes that y0 = y1 and x1 <= x2
     // TODO: Fix the above
-
     let min: f32 = properties.coords[0].get();
     let max: f32 = properties.coords[2].get();
-    let length = max - min;
-
-    let reflect = properties.spread_method == SpreadMethod::Reflect;
 
     // TODO: Improve formatting of PS code.
     let start_code = [
@@ -114,7 +110,34 @@ fn serialize_postscript(
         // x
     ];
 
-    let spread_method_program = [
+    let end_code = ["}".to_string()];
+
+    let mut code = Vec::new();
+    code.extend(start_code);
+    code.push(encode_spread_method(min, max, properties.spread_method));
+    code.push(encode_stops(&properties.stops, min, max));
+    code.extend(end_code);
+
+    let code = code.join(" ").into_bytes();
+    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
+    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
+    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+
+    root_ref
+}
+
+/// Postscript code that, given an arbitrary x coordinate, normalizes it to an x coordinate
+/// between min and max that yields the correct color, depending on the spread mode. In the case
+/// of the `Pad` spread methods, the coordinate will not be normalized since the Postscript functions
+/// assign the correct value by default.
+fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> String {
+    if spread_method == SpreadMethod::Pad {
+        return "".to_string();
+    }
+
+    let length = max - min;
+
+    [
         // We do the following:
         // 1. Normalize by doing n = x - min.
         // 2. Calculate the "interval" we are in by doing i = floor(n / length)
@@ -163,7 +186,7 @@ fn serialize_postscript(
         // x length min o {(abs(i) % 2) > 0}
         format!(
             "{}",
-            if reflect {
+            if spread_method == SpreadMethod::Reflect {
                 "{2 index exch sub} if"
             } else {
                 "pop"
@@ -176,28 +199,13 @@ fn serialize_postscript(
         // x_new x length
         "pop pop".to_string(),
         // x_new
-    ];
-
-    let end_code = ["}".to_string()];
-
-    let mut code = Vec::new();
-    code.extend(start_code);
-    if properties.spread_method != SpreadMethod::Pad {
-        code.extend(spread_method_program);
-    }
-    code.extend(vec![encode_stops(&properties.stops, min, max)]);
-    code.extend(end_code);
-
-    let code = code.join(" ").into_bytes();
-    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
-    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
-    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
-
-    root_ref
+    ]
+    .join(" ")
 }
 
 /// Postscript code that, given an x coordinate between the min and max
-/// of a gradient, returns the interpolated color value.
+/// of a gradient, returns the interpolated color value depending on where it
+/// lies within the stops.
 fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
     // Our algorithm requires the first stop to be padded, since we work in windows of step size 2.
     let mut padded_stops = stops.iter().cloned().collect::<Vec<_>>();
@@ -238,7 +246,7 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
             .join(" ")
     } else {
         let denormalized_offset = min + stops[1].offset.get() * (max - min);
-        // Write the if conditions to find the
+        // Write the if conditions to find the corresponding set of two stops.
         format!(
             "dup {} le {{{}}} {{{}}} ifelse",
             denormalized_offset,
