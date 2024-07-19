@@ -766,33 +766,29 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path(100.0),
-            Transform::from_scale(1.0, 1.0).try_into().unwrap(),
+            dummy_path(140.0),
+            Transform::from_translate(20.0, 20.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
-                    x1: FiniteF32::new(40.0).unwrap(),
+                    x1: FiniteF32::new(0.0).unwrap(),
                     y1: Default::default(),
-                    x2: FiniteF32::new(60.0).unwrap(),
+                    x2: FiniteF32::new(140.0).unwrap(),
                     y2: Default::default(),
-                    transform: TransformWrapper(
-                        Transform::from_translate(0.0, 30.0)
-                            .pre_concat(Transform::from_scale(0.5, 0.5))
-                            .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0)),
-                    ),
-                    spread_method: spread_method,
+                    transform: TransformWrapper(Transform::identity()),
+                    spread_method,
                     stops: vec![
+                        // Stop {
+                        //     offset: NormalizedF32::new(0.2).unwrap(),
+                        //     color: Color::new_rgb(255, 0, 0),
+                        //     opacity: NormalizedF32::ONE,
+                        // },
                         Stop {
-                            offset: NormalizedF32::new(0.0).unwrap(),
-                            color: Color::new_rgb(255, 0, 0),
-                            opacity: NormalizedF32::ONE,
-                        },
-                        Stop {
-                            offset: NormalizedF32::new(0.5).unwrap(),
+                            offset: NormalizedF32::new(0.4).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(1.0).unwrap(),
+                            offset: NormalizedF32::new(0.7).unwrap(),
                             color: Color::new_rgb(0, 0, 255),
                             opacity: NormalizedF32::ONE,
                         },

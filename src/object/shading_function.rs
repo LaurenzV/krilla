@@ -6,7 +6,7 @@ use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
-use tiny_skia_path::Rect;
+use tiny_skia_path::{NormalizedF32, Rect};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
@@ -77,15 +77,6 @@ fn select_function(
     sc: &mut SerializerContext,
     bbox: &Rect,
 ) -> Ref {
-    // if stops.len() == 2 {
-    //     serialize_exponential(
-    //         &stops[0].color.to_normalized_pdf_components(),
-    //         &stops[1].color.to_normalized_pdf_components(),
-    //         sc,
-    //     )
-    // } else {
-    //     serialize_stitching(stops, sc)
-    // }
     serialize_postscript(properties, sc, bbox)
 }
 
@@ -208,17 +199,24 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 /// lies within the stops.
 fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
     // Our algorithm requires the first stop to be padded, since we work in windows of step size 2.
-    let mut padded_stops = stops.iter().cloned().collect::<Vec<_>>();
-    let first = padded_stops[0].clone();
-    padded_stops.insert(0, first);
+    let mut stops = stops.iter().cloned().collect::<Vec<_>>();
+    let first = stops[0].clone();
+    stops.insert(0, first);
 
-    let encode_two_stops = |c0: &[f32], c1: &[f32]| {
+    encode_stops_impl(&stops, min, max)
+}
+
+fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
+    let encode_two_stops = |c0: &[f32], c1: &[f32], o1: NormalizedF32, o2: NormalizedF32| {
         debug_assert_eq!(c0.len(), c1.len());
         debug_assert!(c0.len() > 1);
 
+        let start = min * o1.get();
+        let end = max * o2.get();
+
         let mut snippets = vec![
             // Normalize the x coordinate to be between 0 and 1.
-            format!("{min} sub {max} {min} sub div"),
+            format!("{start} sub {end} {start} sub div"),
         ];
 
         for i in 0..c0.len() {
@@ -252,10 +250,12 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
             denormalized_offset,
             encode_two_stops(
                 &stops[0].color.to_pdf_components(),
-                &stops[1].color.to_pdf_components()
+                &stops[1].color.to_pdf_components(),
+                stops[0].offset,
+                stops[1].offset,
             )
             .join(" "),
-            encode_stops(&stops[1..], min, max)
+            encode_stops_impl(&stops[1..], min, max)
         )
     };
 }
