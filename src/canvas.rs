@@ -588,6 +588,7 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::format;
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::object::image::Image;
@@ -759,8 +760,7 @@ mod tests {
         write("nested_opacity", &finished);
     }
 
-    #[test]
-    fn gradient_fill() {
+    fn gradient(spread_method: SpreadMethod, name: &str) {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
@@ -777,7 +777,7 @@ mod tests {
                             .pre_concat(Transform::from_scale(0.5, 0.5))
                             .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0)),
                     ),
-                    spread_method: SpreadMethod::Reflect,
+                    spread_method: spread_method,
                     stops: vec![
                         Stop {
                             offset: NormalizedF32::new(0.0).unwrap(),
@@ -808,7 +808,22 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        write("gradient_fill", &finished);
+        write(&format!("gradient_{}", name), &finished);
+    }
+
+    #[test]
+    fn gradient_reflect() {
+        gradient(SpreadMethod::Reflect, "reflect");
+    }
+
+    #[test]
+    fn gradient_repeat() {
+        gradient(SpreadMethod::Repeat, "repeat");
+    }
+
+    #[test]
+    fn gradient_pad() {
+        gradient(SpreadMethod::Pad, "pad");
     }
 
     #[test]
