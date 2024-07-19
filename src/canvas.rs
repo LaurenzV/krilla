@@ -90,17 +90,17 @@ pub struct CanvasPdfSerializer<'a> {
     isolate: bool,
 }
 
-impl<'a> CanvasPdfSerializer<'a> {
-    pub fn new(resource_dictionary: &'a mut ResourceDictionary) -> Self {
-        Self {
-            resource_dictionary,
-            content: Content::new(),
-            // graphics_states: GraphicsStates::new(),
-            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
-            base_opacity: NormalizedF32::new(1.0).unwrap(),
-            isolate: false,
-        }
-    }
+// impl<'a> CanvasPdfSerializer<'a> {
+//     pub fn new(resource_dictionary: &'a mut ResourceDictionary) -> Self {
+//         Self {
+//             resource_dictionary,
+//             content: Content::new(),
+//             // graphics_states: GraphicsStates::new(),
+//             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
+//             base_opacity: NormalizedF32::new(1.0).unwrap(),
+//             isolate: false,
+//         }
+//     }
     //
     // pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
     //     for op in instructions {
@@ -438,7 +438,7 @@ impl<'a> CanvasPdfSerializer<'a> {
     //
     //     self.restore_state()
     // }
-}
+// }
 
 // TODO: Add ProcSet?
 // TODO: Deduplicate with other implementations

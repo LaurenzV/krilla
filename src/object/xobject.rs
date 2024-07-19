@@ -1,4 +1,4 @@
-use crate::canvas::{Canvas, CanvasPdfSerializer};
+use crate::canvas::{Canvas};
 use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, SerializerContext};
 use crate::util::RectExt;
