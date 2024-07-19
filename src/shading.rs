@@ -65,29 +65,6 @@ fn serialize_stop_function(
     bbox: &Rect,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
-
-    // fn pad_stops(mut stops: Vec<Stop>) -> Vec<Stop> {
-    //     // We manually pad the stops if necessary so that they are always in the range from 0-1
-    //     if let Some(first) = stops.first() {
-    //         if first.offset != 0.0 {
-    //             let mut new_stop = *first;
-    //             new_stop.offset = NormalizedF32::ZERO;
-    //             stops.insert(0, new_stop);
-    //         }
-    //     }
-    //
-    //     if let Some(last) = stops.last() {
-    //         if last.offset != 1.0 {
-    //             let mut new_stop = *last;
-    //             new_stop.offset = NormalizedF32::ONE;
-    //             stops.push(new_stop);
-    //         }
-    //     }
-    //
-    //     stops
-    // }
-
-    // let stops = pad_stops(stops);
     select_function(properties, sc, bbox)
 }
 
