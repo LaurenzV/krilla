@@ -7,7 +7,7 @@ edition = "2021"
 image = { version = "0.25.1", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 miniz_oxide = "0.7.4"
 once_cell = "1.19.0"
-pdf-writer = "0.10.0"
+pdf-writer = {path = "../pdf-writer"}
 siphasher = "1.0.1"
 tiny-skia-path = {path = "../tiny-skia/path"}
 

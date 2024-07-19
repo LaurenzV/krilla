@@ -9,6 +9,7 @@ use crate::util::NameExt;
 use pdf_writer::writers::Resources;
 use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::hash::Hash;
 
 trait ResourceTrait: Object {
@@ -64,7 +65,7 @@ impl Object for Resource {
     }
 }
 
-#[derive(Hash, Clone, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum XObjectResource {
     XObject(XObject),
     Image(Image),
@@ -128,6 +129,7 @@ impl Object for PatternResource {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct ResourceDictionary {
     pub color_spaces: ResourceMapper<ColorSpace>,
     pub ext_g_states: ResourceMapper<ExtGState>,
@@ -183,7 +185,7 @@ fn write_resource_type<T>(
     resources: &mut pdf_writer::writers::Resources,
     resource_mapper: &ResourceMapper<T>,
 ) where
-    T: Hash + Eq + ResourceTrait,
+    T: Hash + Eq + ResourceTrait + Debug,
 {
     if resource_mapper.len() > 0 {
         let mut dict = T::get_dict(resources);
@@ -196,9 +198,10 @@ fn write_resource_type<T>(
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct ResourceMapper<V>
 where
-    V: Hash + Eq,
+    V: Hash + Eq + PartialEq + Debug,
 {
     forward: Vec<V>,
     backward: HashMap<V, ResourceNumber>,
@@ -207,7 +210,7 @@ where
 
 impl<V> ResourceMapper<V>
 where
-    V: Hash + Eq + Clone + ResourceTrait,
+    V: Hash + Eq + Clone + ResourceTrait + Debug,
 {
     pub fn new() -> Self {
         Self {

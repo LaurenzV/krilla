@@ -1,18 +1,19 @@
 use crate::object::ext_g_state;
 use crate::object::ext_g_state::ExtGState;
 use tiny_skia_path::{Rect, Transform};
+use crate::transform::TransformWrapper;
 
-#[derive(Clone)]
-struct GraphicsState {
-    ext_g_state: ext_g_state::ExtGState,
-    ctm: Transform,
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct GraphicsState {
+    ext_g_state: ExtGState,
+    ctm: TransformWrapper,
 }
 
 impl Default for GraphicsState {
     fn default() -> Self {
         Self {
             ext_g_state: ExtGState::new(),
-            ctm: Transform::identity(),
+            ctm: TransformWrapper(Transform::identity()),
         }
     }
 }
@@ -23,52 +24,53 @@ impl GraphicsState {
     }
 
     fn concat_transform(&mut self, transform: Transform) {
-        self.ctm = self.ctm.pre_concat(transform);
+        self.ctm = TransformWrapper(self.ctm.0.pre_concat(transform));
         println!("result: {:?}", self.ctm);
     }
 
     fn transform(&self) -> Transform {
-        self.ctm
+        self.ctm.0
     }
 }
 
-struct GraphicsStates {
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct GraphicsStates {
     graphics_states: Vec<GraphicsState>,
 }
 
 impl GraphicsStates {
-    fn new() -> Self {
+    pub fn new() -> Self {
         GraphicsStates {
             graphics_states: vec![GraphicsState::default()],
         }
     }
 
-    fn cur(&self) -> &GraphicsState {
+    pub fn cur(&self) -> &GraphicsState {
         self.graphics_states.last().unwrap()
     }
 
-    fn cur_mut(&mut self) -> &mut GraphicsState {
+    pub fn cur_mut(&mut self) -> &mut GraphicsState {
         self.graphics_states.last_mut().unwrap()
     }
 
-    fn save_state(&mut self) {
+    pub fn save_state(&mut self) {
         let state = self.cur();
         self.graphics_states.push(state.clone())
     }
 
-    fn restore_state(&mut self) {
+    pub fn restore_state(&mut self) {
         self.graphics_states.pop();
     }
 
-    fn combine(&mut self, other: &ExtGState) {
+    pub fn combine(&mut self, other: &ExtGState) {
         self.cur_mut().combine(other);
     }
 
-    fn transform(&mut self, transform: Transform) {
+    pub fn transform(&mut self, transform: Transform) {
         self.cur_mut().concat_transform(transform);
     }
 
-    fn transform_bbox(&self, bbox: Rect) -> Rect {
+    pub fn transform_bbox(&self, bbox: Rect) -> Rect {
         bbox.transform(self.cur().transform()).unwrap()
     }
 }

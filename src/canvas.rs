@@ -4,17 +4,29 @@ use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, PageSerialize, SerializeSettings, SerializerContext};
 use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use crate::graphics_state::GraphicsStates;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Canvas {
-    pub(crate) size: Size,
+    resource_dictionary: ResourceDictionary,
+    content: Content,
+    graphics_states: GraphicsStates,
+    bbox: Rect,
+    base_opacity: NormalizedF32,
+    size: Size,
 }
 
-impl Canvas {
-    pub fn new(size: Size) -> Self {
-        Self { size }
-    }
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct CanvasRefMut<'a> {
+    resource_dictionary: &'a mut ResourceDictionary,
+    content: &'a mut Content,
+    graphics_states: &'a mut GraphicsStates,
+    bbox: &'a mut Rect,
+    base_opacity: &'a mut NormalizedF32,
+    size: &'a mut Size,
+}
 
+impl<'a> CanvasRefMut<'a> {
     // pub fn has_mask(&self) -> bool {
     //     true
     // }

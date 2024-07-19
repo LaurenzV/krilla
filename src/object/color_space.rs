@@ -9,7 +9,7 @@ pub static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> =
 pub static GREY_ICC_DEFLATED: Lazy<Vec<u8>> =
     Lazy::new(|| deflate(include_bytes!("../icc/sGrey-v4.icc")));
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Ord, PartialOrd)]
 pub enum ColorSpace {
     SRGB,
     D65Gray,
