@@ -2,10 +2,10 @@ use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::serialize::Object;
 use crate::transform::TransformWrapper;
+use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Transform};
-use crate::util::RectExt;
+use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Scalar, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
@@ -85,7 +85,8 @@ struct Shading(GradientProperties);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct GradientProperties {
-    pub coords: Vec<FiniteF32>,
+    pub min: FiniteF32,
+    pub max: FiniteF32,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
     // The bbox of the object the gradient is applied to
@@ -110,11 +111,26 @@ fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
     bbox
 }
 
+fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
+    let dist = start.distance(end);
+
+    let dx = end.x - start.x;
+    let dy = end.y - start.y;
+    let angle = dy.atan2(dx).to_degrees();
+
+    (Transform::from_rotate_at(angle, start.x, start.y), start.x, start.x + dist)
+}
+
 impl GradientPropertiesExt for LinearGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+
+        // TODO: Make prettier
+
+        let (ts, mut min, mut max) = get_point_ts(Point::from_xy(self.x1.get(), self.y1.get()), Point::from_xy(self.x2.get(), self.y2.get()));
         (
             GradientProperties {
-                coords: vec![self.x1, self.y1, self.x2, self.y2],
+                min: FiniteF32::new(min).unwrap(),
+                max: FiniteF32::new(max).unwrap(),
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, self.transform.0),
@@ -127,38 +143,31 @@ impl GradientPropertiesExt for LinearGradient {
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        (
-            GradientProperties {
-                // Not used
-                coords: vec![],
-                shading_type: FunctionShadingType::Function,
-                stops: Vec::from(self.stops.clone()),
-                bbox: get_expanded_bbox(bbox, self.transform.0),
-                spread_method: self.spread_method,
-            },
-            self.transform,
-        )
+        todo!()
     }
 }
 
 impl GradientPropertiesExt for RadialGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        (
-            GradientProperties {
-                coords: vec![
-                    self.fx,
-                    self.fy,
-                    FiniteF32::new(0.0).unwrap(),
-                    self.cx,
-                    self.cy,
-                    FiniteF32::new(self.r.get()).unwrap(),
-                ],
-                shading_type: FunctionShadingType::Radial,
-                stops: Vec::from(self.stops.clone()),
-                bbox: get_expanded_bbox(bbox, self.transform.0),
-                spread_method: self.spread_method,
-            },
-            self.transform,
-        )
+        // TODO: Normalize coords
+        todo!();
+        // let (bbox, transform) = get_normalized(bbox, self.transform.0);
+        // (
+        //     GradientProperties {
+        //         coords: vec![
+        //             self.fx,
+        //             self.fy,
+        //             FiniteF32::new(0.0).unwrap(),
+        //             self.cx,
+        //             self.cy,
+        //             FiniteF32::new(self.r.get()).unwrap(),
+        //         ],
+        //         shading_type: FunctionShadingType::Radial,
+        //         stops: Vec::from(self.stops.clone()),
+        //         spread_method: self.spread_method,
+        //         bbox,
+        //     },
+        //     TransformWrapper(transform),
+        // )
     }
 }

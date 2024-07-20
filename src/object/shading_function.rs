@@ -81,8 +81,8 @@ fn serialize_postscript(
 
     // Assumes that y0 = y1 and x1 <= x2
     // TODO: Fix the above
-    let min: f32 = properties.coords[0].get();
-    let max: f32 = properties.coords[2].get();
+    let min: f32 = properties.min.get();
+    let max: f32 = properties.max.get();
 
     // TODO: Improve formatting of PS code.
     let start_code = [
