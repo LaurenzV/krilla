@@ -154,17 +154,19 @@ impl GradientPropertiesExt for LinearGradient {
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        let transform = self.transform.0.post_concat(Transform::from_translate(self.cx.get(), self.cy.get()));
+
         (
             GradientProperties {
                 min: self.start_angle,
                 max: self.end_angle,
                 shading_type: FunctionShadingType::Function,
                 stops: Vec::from(self.stops.clone()),
-                bbox: get_expanded_bbox(bbox, self.transform.0),
+                bbox: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
             },
-            self.transform,
+            TransformWrapper(transform),
         )
     }
 }

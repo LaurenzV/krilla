@@ -95,7 +95,7 @@ fn serialize_sweep_postscript(
         "{".to_string(),
         // Stack: x y
         // Ignore the y coordinate. We account for it in the gradient transform.
-        "80 sub exch 80 sub dup 0 eq {pop 0.0001} if atan 360 div 0 0".to_string(),
+        "exch atan 360 div 0 0".to_string(),
         // "pop".to_string(),
         // x
     ];
