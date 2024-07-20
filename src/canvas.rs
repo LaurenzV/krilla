@@ -33,7 +33,8 @@ impl Canvas {
     }
 
     pub(crate) fn transform(&mut self, transform: Transform) {
-        self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
+        self.byte_code
+            .push(Instruction::Transform(TransformWrapper(transform)));
     }
 
     pub fn stroke_path(
@@ -59,6 +60,10 @@ impl Canvas {
 
     pub fn push_layer(&mut self) {
         self.byte_code.push(Instruction::PushLayer);
+    }
+
+    pub fn blend_mode(&mut self, blend_mode: BlendMode) {
+        self.byte_code.push(Instruction::BlendMode(blend_mode));
     }
 
     pub fn pop_layer(&mut self) {
@@ -124,6 +129,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             match op {
                 Instruction::PushLayer => self.save_state(),
                 Instruction::PopLayer => self.restore_state(),
+                Instruction::BlendMode(bm) => self.set_blend_mode(*bm),
                 Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0 .0, &stroke_data.1 .0, &stroke_data.2)
