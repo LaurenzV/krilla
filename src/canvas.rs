@@ -277,7 +277,10 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
-            Paint::SweepGradient(_) => todo!(),
+            Paint::SweepGradient(sg) => {
+                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                write_gradient(gradient_props, transform);
+            }
             Paint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
@@ -368,7 +371,10 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
-            Paint::SweepGradient(_) => todo!(),
+            Paint::SweepGradient(sg) => {
+                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                write_gradient(gradient_props, transform);
+            }
             Paint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
@@ -594,7 +600,9 @@ mod tests {
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
-    use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
+    use crate::paint::{
+        LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset, SweepGradient,
+    };
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
@@ -762,6 +770,72 @@ mod tests {
         write("nested_opacity", &finished);
     }
 
+    fn sweep_gradient(spread_method: SpreadMethod, name: &str) {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.fill_path(
+            dummy_path(160.0),
+            Transform::from_translate(0.0, 0.0).try_into().unwrap(),
+            Fill {
+                paint: Paint::SweepGradient(SweepGradient {
+                    cx: FiniteF32::new(80.0).unwrap(),
+                    cy: FiniteF32::new(80.0).unwrap(),
+                    start_angle: FiniteF32::new(0.0).unwrap(),
+                    end_angle: FiniteF32::new(360.0).unwrap(),
+                    transform: TransformWrapper(
+                        // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                        // ), // Transform::from_scale(0.5, 0.5),
+                        Transform::identity(),
+                    ),
+                    spread_method,
+                    stops: vec![
+                        Stop {
+                            offset: NormalizedF32::new(0.0).unwrap(),
+                            color: Color::new_rgb(255, 0, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        // Stop {
+                        //     offset: NormalizedF32::new(0.4).unwrap(),
+                        //     color: Color::new_rgb(0, 255, 0),
+                        //     opacity: NormalizedF32::ONE,
+                        // },
+                        Stop {
+                            offset: NormalizedF32::new(1.0).unwrap(),
+                            color: Color::new_rgb(0, 0, 255),
+                            opacity: NormalizedF32::ONE,
+                        },
+                    ],
+                }),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write(&format!("sweep_gradient_{}", name), &finished);
+    }
+
+    #[test]
+    fn sweep_gradient_reflect() {
+        sweep_gradient(SpreadMethod::Reflect, "reflect");
+    }
+
+    #[test]
+    fn sweep_gradient_repeat() {
+        sweep_gradient(SpreadMethod::Repeat, "repeat");
+    }
+
+    #[test]
+    fn sweep_gradient_pad() {
+        sweep_gradient(SpreadMethod::Pad, "pad");
+    }
+
     fn linear_gradient(spread_method: SpreadMethod, name: &str) {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
@@ -813,17 +887,17 @@ mod tests {
     }
 
     #[test]
-    fn gradient_reflect() {
+    fn linear_gradient_reflect() {
         linear_gradient(SpreadMethod::Reflect, "reflect");
     }
 
     #[test]
-    fn gradient_repeat() {
+    fn linear_gradient_repeat() {
         linear_gradient(SpreadMethod::Repeat, "repeat");
     }
 
     #[test]
-    fn gradient_pad() {
+    fn linear_gradient_pad() {
         linear_gradient(SpreadMethod::Pad, "pad");
     }
 

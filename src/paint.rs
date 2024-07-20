@@ -58,7 +58,8 @@ pub struct RadialGradient {
 pub struct SweepGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
-    pub angle: FiniteF32,
+    pub start_angle: FiniteF32,
+    pub end_angle: FiniteF32,
     pub transform: TransformWrapper,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
@@ -81,6 +82,12 @@ pub enum Paint {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
+pub enum GradientType {
+    Sweep,
+    Linear,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
 struct Shading(GradientProperties);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -92,6 +99,7 @@ pub struct GradientProperties {
     // The bbox of the object the gradient is applied to
     pub bbox: Rect,
     pub spread_method: SpreadMethod,
+    pub gradient_type: GradientType,
 }
 
 pub trait GradientPropertiesExt {
@@ -137,6 +145,7 @@ impl GradientPropertiesExt for LinearGradient {
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
                 spread_method: self.spread_method,
+                gradient_type: GradientType::Linear,
             },
             TransformWrapper(self.transform.0.post_concat(ts)),
         )
@@ -145,7 +154,18 @@ impl GradientPropertiesExt for LinearGradient {
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        todo!()
+        (
+            GradientProperties {
+                min: self.start_angle,
+                max: self.end_angle,
+                shading_type: FunctionShadingType::Function,
+                stops: Vec::from(self.stops.clone()),
+                bbox: get_expanded_bbox(bbox, self.transform.0),
+                spread_method: self.spread_method,
+                gradient_type: GradientType::Sweep,
+            },
+            self.transform,
+        )
     }
 }
 
