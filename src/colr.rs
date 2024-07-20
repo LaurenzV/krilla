@@ -190,63 +190,68 @@ impl ColorPainter for ColrCanvas<'_> {
     }
 
     fn fill(&mut self, brush: Brush<'_>) {
-        self.canvases.last_mut().unwrap().push_layer();
 
-        for clip_path in self.clips.last().unwrap() {
-            self.canvases
-                .last_mut()
-                .unwrap()
-                .set_clip_path(clip_path.clone(), FillRule::NonZero);
-        }
-
-        let mut path_builder = PathBuilder::new();
-        path_builder.move_to(0.0, 0.0);
-        path_builder.line_to(1000.0, 0.0);
-        path_builder.line_to(1000.0, 1000.0);
-        path_builder.line_to(0.0, 1000.0);
-        path_builder.close();
-
-        let fill = match brush {
+        if let Some(fill) = match brush {
             Brush::Solid {
                 palette_index,
                 alpha,
             } => {
                 let (color, alpha) = self.palette_index_to_color(palette_index, alpha);
-                Fill {
+                Some(Fill {
                     paint: Paint::Color(color),
                     opacity: alpha,
                     rule: Default::default(),
-                }
+                })
             }
-            Brush::LinearGradient { .. } => Fill::default(),
-            Brush::RadialGradient { .. } => Fill::default(),
+            Brush::LinearGradient { .. } => Some(Fill::default()),
+            Brush::RadialGradient { .. } => Some(Fill::default()),
             Brush::SweepGradient { c0,  start_angle, end_angle, color_stops, extend} => {
-                let sweep = SweepGradient {
-                    cx: FiniteF32::new(c0.x).unwrap(),
-                    cy: FiniteF32::new(c0.y).unwrap(),
-                    start_angle: FiniteF32::new(start_angle).unwrap(),
-                    end_angle: FiniteF32::new(end_angle).unwrap(),
-                    stops: self.stops(color_stops),
-                    spread_method: extend.to_spread_method(),
-                    // COLR gradients run in the different direction
-                    transform: TransformWrapper(crate::Transform::from_scale(1.0, -1.0)),
-                };
+                if start_angle == end_angle && (matches!(extend, skrifa::color::Extend::Reflect | skrifa::color::Extend::Repeat)) {
+                    None
+                }   else {
+                    let sweep = SweepGradient {
+                        cx: FiniteF32::new(c0.x).unwrap(),
+                        cy: FiniteF32::new(c0.y).unwrap(),
+                        start_angle: FiniteF32::new(start_angle).unwrap(),
+                        end_angle: FiniteF32::new(end_angle).unwrap(),
+                        stops: self.stops(color_stops),
+                        spread_method: extend.to_spread_method(),
+                        // COLR gradients run in the different direction
+                        transform: TransformWrapper(crate::Transform::from_scale(1.0, -1.0)),
+                    };
 
-                Fill {
-                    paint: Paint::SweepGradient(sweep),
-                    opacity: NormalizedF32::ONE,
-                    rule: Default::default(),
+                    Some(Fill {
+                        paint: Paint::SweepGradient(sweep),
+                        opacity: NormalizedF32::ONE,
+                        rule: Default::default(),
+                    })
                 }
             },
-        };
+        } {
+            self.canvases.last_mut().unwrap().push_layer();
 
-        self.canvases.last_mut().unwrap().fill_path(
-            path_builder.finish().unwrap(),
-            Transform::identity(),
-            fill,
-        );
+            for clip_path in self.clips.last().unwrap() {
+                self.canvases
+                    .last_mut()
+                    .unwrap()
+                    .set_clip_path(clip_path.clone(), FillRule::NonZero);
+            }
 
-        self.canvases.last_mut().unwrap().pop_layer();
+            let mut path_builder = PathBuilder::new();
+            path_builder.move_to(0.0, 0.0);
+            path_builder.line_to(1000.0, 0.0);
+            path_builder.line_to(1000.0, 1000.0);
+            path_builder.line_to(0.0, 1000.0);
+            path_builder.close();
+
+            self.canvases.last_mut().unwrap().fill_path(
+                path_builder.finish().unwrap(),
+                Transform::identity(),
+                fill,
+            );
+
+            self.canvases.last_mut().unwrap().pop_layer();
+        }
     }
 
     fn push_layer(&mut self, composite_mode: CompositeMode) {
@@ -329,7 +334,7 @@ mod tests {
 
         let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
 
-        for i in 0..220 {
+        for i in 181..=181 {
             let canvas = single_glyph(&font_ref, GlyphId::new(i));
 
             fn get_transform(

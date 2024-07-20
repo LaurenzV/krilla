@@ -154,6 +154,14 @@ impl GradientPropertiesExt for LinearGradient {
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        let mut min = self.start_angle;
+        let max = self.end_angle;
+
+        // The postscript code can't properly deal with having the same angles.
+        if min == max {
+            min = FiniteF32::new(min.get() - 0.001).unwrap();
+        }
+
         let transform = self
             .transform
             .0
@@ -161,8 +169,8 @@ impl GradientPropertiesExt for SweepGradient {
 
         (
             GradientProperties {
-                min: self.start_angle,
-                max: self.end_angle,
+                min,
+                max,
                 shading_type: FunctionShadingType::Function,
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, transform),
