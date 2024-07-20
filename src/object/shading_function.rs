@@ -258,6 +258,10 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
 
 fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
     let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
+
+        if c0.len() != c1.len() {
+            panic!();
+        }
         debug_assert_eq!(c0.len(), c1.len());
         debug_assert!(c0.len() > 1);
 

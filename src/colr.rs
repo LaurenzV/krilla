@@ -1,10 +1,10 @@
 use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::paint::Paint;
+use crate::paint::{Paint, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
-use skrifa::color::{Brush, ColorPainter, CompositeMode};
+use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::prelude::LocationRef;
 use skrifa::raw::tables::colr::PaintTransform;
@@ -12,7 +12,7 @@ use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::arch::aarch64::uint16x4_t;
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
 
 struct GlyphBuilder(PathBuilder);
 
@@ -89,7 +89,34 @@ impl ColrCanvas<'_> {
 
             (Color::new_rgb(color.red, color.green, color.blue), NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap())
         } else {
-            (Color::black(), NormalizedF32::new(alpha).unwrap())
+            (Color::new_rgb(0, 0, 0), NormalizedF32::new(alpha).unwrap())
+        }
+    }
+
+    fn stops(&self, stops: &[ColorStop]) -> Vec<Stop> {
+        stops.iter().map(|s| {
+            let (color, alpha) = self.palette_index_to_color(s.palette_index, s.alpha);
+
+            Stop {
+                offset: NormalizedF32::new(s.offset).unwrap(),
+                color,
+                opacity: alpha,
+            }
+        }).collect::<Vec<_>>()
+    }
+}
+
+trait ExtendExt {
+    fn to_spread_method(&self) -> SpreadMethod;
+}
+
+impl ExtendExt for skrifa::color::Extend {
+    fn to_spread_method(&self) -> SpreadMethod {
+        match self {
+            skrifa::color::Extend::Pad => SpreadMethod::Pad,
+            skrifa::color::Extend::Repeat => SpreadMethod::Repeat,
+            skrifa::color::Extend::Reflect => SpreadMethod::Reflect,
+            skrifa::color::Extend::Unknown => SpreadMethod::Pad
         }
     }
 }
@@ -193,7 +220,24 @@ impl ColorPainter for ColrCanvas<'_> {
             }
             Brush::LinearGradient { .. } => Fill::default(),
             Brush::RadialGradient { .. } => Fill::default(),
-            Brush::SweepGradient { .. } => Fill::default(),
+            Brush::SweepGradient { c0,  start_angle, end_angle, color_stops, extend} => {
+                let sweep = SweepGradient {
+                    cx: FiniteF32::new(c0.x).unwrap(),
+                    cy: FiniteF32::new(c0.y).unwrap(),
+                    start_angle: FiniteF32::new(start_angle).unwrap(),
+                    end_angle: FiniteF32::new(end_angle).unwrap(),
+                    stops: self.stops(color_stops),
+                    spread_method: extend.to_spread_method(),
+                    // COLR gradients run in the different direction
+                    transform: TransformWrapper(crate::Transform::from_scale(1.0, -1.0)),
+                };
+
+                Fill {
+                    paint: Paint::SweepGradient(sweep),
+                    opacity: NormalizedF32::ONE,
+                    rule: Default::default(),
+                }
+            },
         };
 
         self.canvases.last_mut().unwrap().fill_path(
