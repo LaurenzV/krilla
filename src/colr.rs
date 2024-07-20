@@ -175,7 +175,7 @@ impl ColorPainter for ColrCanvas<'_> {
 
                 Fill {
                     paint: Paint::Color(Color::new_rgb(color.red, color.green, color.blue)),
-                    opacity: NormalizedF32::ONE,
+                    opacity: NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
                     rule: Default::default(),
                 }
             }
@@ -248,7 +248,7 @@ mod tests {
         let mut colr_canvas = ColrCanvas::new(&font_ref);
 
         let colr_glyphs = font_ref.color_glyphs();
-        let colr_glyph = colr_glyphs.get(GlyphId::new(133)).unwrap();
+        let colr_glyph = colr_glyphs.get(GlyphId::new(209)).unwrap();
         colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
 
         let canvas = colr_canvas.canvases.last().unwrap().clone();
@@ -257,7 +257,5 @@ mod tests {
 
         let pdf = canvas.serialize(SerializeSettings::default());
         std::fs::write("out.pdf", pdf.finish());
-
-        assert!(false);
     }
 }
