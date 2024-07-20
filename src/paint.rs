@@ -157,11 +157,6 @@ impl GradientPropertiesExt for SweepGradient {
         let mut min = self.start_angle;
         let max = self.end_angle;
 
-        // The postscript code can't properly deal with having the same angles.
-        if min == max {
-            min = FiniteF32::new(min.get() - 0.001).unwrap();
-        }
-
         let transform = self
             .transform
             .0

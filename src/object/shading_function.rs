@@ -254,6 +254,10 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
 
 fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
     let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
+        if min == max {
+            return format!("pop {}", c0.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" "));
+        }
+
         debug_assert_eq!(c0.len(), c1.len());
         debug_assert!(c0.len() > 1);
 
@@ -274,7 +278,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
         snippets.push(format!("{} -1 roll pop", c0.len() + 1));
         // c0, c1, c2, ...
 
-        snippets
+        snippets.join(" ")
     };
 
     return if stops.len() == 1 {
@@ -298,8 +302,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
                 &stops[1].color.to_pdf_components(),
                 stops_min,
                 stops_max,
-            )
-            .join(" "),
+            ),
             encode_stops_impl(&stops[1..], min, max)
         )
     };
