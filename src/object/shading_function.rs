@@ -238,19 +238,15 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
     let mut stops = stops.iter().cloned().collect::<Vec<_>>();
 
     if let Some(first) = stops.first() {
-        if first.offset != NormalizedF32::ZERO {
-            let mut first = first.clone();
-            first.offset = NormalizedF32::ZERO;
-            stops.insert(0, first);
-        }
+        let mut first = first.clone();
+        first.offset = NormalizedF32::ZERO;
+        stops.insert(0, first);
     }
 
     if let Some(last) = stops.last() {
-        if last.offset != NormalizedF32::ONE {
-            let mut last = last.clone();
-            last.offset = NormalizedF32::ZERO;
-            stops.push(last);
-        }
+        let mut last = last.clone();
+        last.offset = NormalizedF32::ONE;
+        stops.push(last);
     }
 
     encode_stops_impl(&stops, min, max)
@@ -258,10 +254,6 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
 
 fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
     let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
-
-        if c0.len() != c1.len() {
-            panic!();
-        }
         debug_assert_eq!(c0.len(), c1.len());
         debug_assert!(c0.len() > 1);
 

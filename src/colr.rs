@@ -334,7 +334,7 @@ mod tests {
 
         let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
 
-        for i in 181..=181 {
+        for i in 0..=220 {
             let canvas = single_glyph(&font_ref, GlyphId::new(i));
 
             fn get_transform(
