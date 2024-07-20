@@ -11,6 +11,7 @@ use skrifa::raw::tables::colr::PaintTransform;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
+use std::arch::aarch64::uint16x4_t;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
 
 struct GlyphBuilder(PathBuilder);
@@ -165,18 +166,26 @@ impl ColorPainter for ColrCanvas<'_> {
                 palette_index,
                 alpha,
             } => {
-                let color = self
-                    .font
-                    .cpal()
-                    .unwrap()
-                    .color_records_array()
-                    .unwrap()
-                    .unwrap()[palette_index as usize];
+                if palette_index != u16::MAX {
+                    let color = self
+                        .font
+                        .cpal()
+                        .unwrap()
+                        .color_records_array()
+                        .unwrap()
+                        .unwrap()[palette_index as usize];
 
-                Fill {
-                    paint: Paint::Color(Color::new_rgb(color.red, color.green, color.blue)),
-                    opacity: NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
-                    rule: Default::default(),
+                    Fill {
+                        paint: Paint::Color(Color::new_rgb(color.red, color.green, color.blue)),
+                        opacity: NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
+                        rule: Default::default(),
+                    }
+                } else {
+                    Fill {
+                        paint: Paint::Color(Color::black()),
+                        opacity: NormalizedF32::new(alpha).unwrap(),
+                        rule: Default::default(),
+                    }
                 }
             }
             Brush::LinearGradient { .. } => Fill::default(),
@@ -234,10 +243,25 @@ impl ColorPainter for ColrCanvas<'_> {
 
 #[cfg(test)]
 mod tests {
+    use crate::canvas::Canvas;
     use crate::colr::ColrCanvas;
     use crate::serialize::{PageSerialize, SerializeSettings};
+    use pdf_writer::types::BlendMode;
+    use skrifa::color::Transform;
     use skrifa::prelude::LocationRef;
     use skrifa::{FontRef, GlyphId, MetadataProvider};
+    use tiny_skia_path::{NormalizedF32, Size};
+
+    fn single_glyph(font_ref: &FontRef, glyph: GlyphId) -> Canvas {
+        let mut colr_canvas = ColrCanvas::new(&font_ref);
+
+        let colr_glyphs = font_ref.color_glyphs();
+        if let Some(colr_glyph) = colr_glyphs.get(glyph) {
+            colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
+        }
+        let canvas = colr_canvas.canvases.last().unwrap().clone();
+        canvas
+    }
 
     #[test]
     fn try_it() {
@@ -245,17 +269,55 @@ mod tests {
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
-        let mut colr_canvas = ColrCanvas::new(&font_ref);
+        let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
+        let units_per_em = metrics.units_per_em as f32;
+        let num_glyphs = 220;
 
-        let colr_glyphs = font_ref.color_glyphs();
-        let colr_glyph = colr_glyphs.get(GlyphId::new(209)).unwrap();
-        colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
+        let width = 2000;
 
-        let canvas = colr_canvas.canvases.last().unwrap().clone();
+        let size = 150u32;
+        let num_cols = width / size;
+        let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
+        let mut cur_point = 0;
 
-        eprintln!("{:#?}", canvas);
+        let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
 
-        let pdf = canvas.serialize(SerializeSettings::default());
+        for i in 0..220 {
+            let canvas = single_glyph(&font_ref, GlyphId::new(i));
+
+            fn get_transform(
+                cur_point: u32,
+                size: u32,
+                num_cols: u32,
+                units_per_em: f32,
+            ) -> crate::Transform {
+                let el = cur_point / size;
+                let col = el % num_cols;
+                let row = el / num_cols;
+
+                crate::Transform::from_row(
+                    (1.0 / units_per_em) * size as f32,
+                    0.0,
+                    0.0,
+                    (1.0 / units_per_em) * size as f32,
+                    col as f32 * size as f32,
+                    row as f32 * size as f32,
+                )
+            }
+
+            parent_canvas.draw_canvas(
+                canvas,
+                get_transform(cur_point, size, num_cols, units_per_em),
+                BlendMode::Normal,
+                NormalizedF32::ONE,
+                false,
+                None,
+            );
+
+            cur_point += size;
+        }
+
+        let pdf = parent_canvas.serialize(SerializeSettings::default());
         std::fs::write("out.pdf", pdf.finish());
     }
 }
