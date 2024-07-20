@@ -11,6 +11,7 @@ pub mod resource;
 pub mod serialize;
 pub mod transform;
 pub mod util;
+pub mod colr;
 
 pub use path::*;
 pub use tiny_skia_path::{Size, Transform};

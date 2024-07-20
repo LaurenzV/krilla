@@ -11,6 +11,7 @@ use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
 pub enum Instruction {
     PushLayer,
     PopLayer,
+    Transform(TransformWrapper),
     ClipPath(Box<(PathWrapper, FillRule)>),
     StrokePath(Box<(PathWrapper, TransformWrapper, Stroke)>),
     DrawImage(Box<(Image, Size, TransformWrapper)>),

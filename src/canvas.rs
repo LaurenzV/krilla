@@ -32,6 +32,10 @@ impl Canvas {
         }
     }
 
+    pub(crate) fn transform(&mut self, transform: Transform) {
+        self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
+    }
+
     pub fn stroke_path(
         &mut self,
         path: Path,
@@ -120,6 +124,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             match op {
                 Instruction::PushLayer => self.save_state(),
                 Instruction::PopLayer => self.restore_state(),
+                Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0 .0, &stroke_data.1 .0, &stroke_data.2)
                 }
