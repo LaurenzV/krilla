@@ -94,18 +94,20 @@ fn serialize_sweep_postscript(
     let start_code = [
         "{".to_string(),
         // Stack: x y
-        // Ignore the y coordinate. We account for it in the gradient transform.
-        "exch atan 360 div 0 0".to_string(),
-        // "pop".to_string(),
-        // x
+        "exch".to_string(),
+        // y x
+        // Make sure x is never 0.
+        "dup dup 0.0001 lt exch -0.0001 gt and {pop 0.0001} if ".to_string(),
+        // Get the angle
+        "atan".to_string(),
     ];
 
     let end_code = ["}".to_string()];
 
     let mut code = Vec::new();
     code.extend(start_code);
-    // code.push(encode_spread_method(min, max, properties.spread_method));
-    // code.push(encode_stops(&properties.stops, min, max));
+    code.push(encode_spread_method(min, max, properties.spread_method));
+    code.push(encode_stops(&properties.stops, min, max));
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();

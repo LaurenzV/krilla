@@ -790,17 +790,17 @@ mod tests {
                     spread_method,
                     stops: vec![
                         Stop {
-                            offset: NormalizedF32::new(0.0).unwrap(),
+                            offset: NormalizedF32::new(0.2).unwrap(),
                             color: Color::new_rgb(255, 0, 0),
                             opacity: NormalizedF32::ONE,
                         },
-                        // Stop {
-                        //     offset: NormalizedF32::new(0.4).unwrap(),
-                        //     color: Color::new_rgb(0, 255, 0),
-                        //     opacity: NormalizedF32::ONE,
-                        // },
                         Stop {
-                            offset: NormalizedF32::new(1.0).unwrap(),
+                            offset: NormalizedF32::new(0.4).unwrap(),
+                            color: Color::new_rgb(0, 255, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(0.6).unwrap(),
                             color: Color::new_rgb(0, 0, 255),
                             opacity: NormalizedF32::ONE,
                         },
