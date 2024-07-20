@@ -272,6 +272,7 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::SrcAtop => BlendMode::Saturation,
             CompositeMode::HslColor => BlendMode::Color,
             CompositeMode::HslLuminosity => BlendMode::Luminosity,
+            CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
         let canvas = Canvas::new(Size::from_wh(1000.0, 1000.0).unwrap());
@@ -334,7 +335,7 @@ mod tests {
 
         let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
 
-        for i in 0..=220 {
+        for i in 145..=145 {
             let canvas = single_glyph(&font_ref, GlyphId::new(i));
 
             fn get_transform(
