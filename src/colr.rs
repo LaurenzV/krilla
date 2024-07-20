@@ -2,11 +2,14 @@ use skrifa::color::{Brush, ColorPainter, CompositeMode};
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::prelude::LocationRef;
+use skrifa::raw::TableProvider;
 use skrifa::raw::tables::colr::PaintTransform;
 use skrifa::raw::types::BoundingBox;
-use tiny_skia_path::{Path, PathBuilder, PathVerb, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
 use crate::canvas::Canvas;
 use crate::{Fill, FillRule};
+use crate::color::Color;
+use crate::paint::Paint;
 use crate::transform::TransformWrapper;
 
 struct GlyphBuilder(PathBuilder);
@@ -41,18 +44,30 @@ impl OutlinePen for GlyphBuilder {
 
 struct ColrCanvas<'a> {
     font: &'a FontRef<'a>,
-    clips: Vec<PathBuilder>,
+    clips: Vec<Vec<Path>>,
     transforms: Vec<Transform>,
     canvas: Canvas
 }
 
 impl<'a> ColrCanvas<'a> {
     pub fn new(font_ref: &'a FontRef<'a>) -> Self {
+        let mut canvas = Canvas::new(Size::from_wh(1000.0, 1000.0).unwrap());
+        canvas.transform(Transform::from_row(
+            1.0,
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            (font_ref.metrics(
+                    skrifa::instance::Size::unscaled(), LocationRef::default()
+                ).units_per_em as f32
+        )));
+
         Self {
             font: font_ref,
             transforms: vec![Transform::identity()],
-            clips: vec![PathBuilder::new()],
-            canvas: Canvas::new(Size::from_wh(2000.0, 2000.0).unwrap())
+            clips: vec![vec![]],
+            canvas
         }
     }
 }
@@ -68,20 +83,22 @@ impl ColorPainter for ColrCanvas<'_> {
     }
 
     fn push_clip_glyph(&mut self, glyph_id: GlyphId) {
-        let mut new_builder = self.clips.last().unwrap().clone();
+        let mut old = self.clips.last().unwrap().clone();
 
         let mut glyph_builder = GlyphBuilder(PathBuilder::new());
         let outline_glyphs = self.font.outline_glyphs();
         let outline_glyph = outline_glyphs.get(glyph_id).unwrap();
         outline_glyph.draw(DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()), &mut glyph_builder).unwrap();
-        let path = glyph_builder.finish().unwrap().transform(*self.transforms.last().unwrap()).unwrap();
-        new_builder.push_path(&path);
+        let path = glyph_builder.finish().unwrap()
+            .transform(*self.transforms.last().unwrap()).unwrap();
 
-        self.clips.push(new_builder);
+        old.push(path);
+
+        self.clips.push(old);
     }
 
     fn push_clip_box(&mut self, clip_box: BoundingBox<f32>) {
-        let mut new_builder = self.clips.last().unwrap().clone();
+        let mut old = self.clips.last().unwrap().clone();
 
         let mut path_builder = PathBuilder::new();
         path_builder.move_to(clip_box.x_min, clip_box.y_min);
@@ -91,9 +108,9 @@ impl ColorPainter for ColrCanvas<'_> {
         path_builder.close();
 
         let path = path_builder.finish().unwrap().transform(*self.transforms.last().unwrap()).unwrap();
-        new_builder.push_path(&path);
+        old.push(path);
 
-        self.clips.push(new_builder);
+        self.clips.push(old);
     }
 
     fn pop_clip(&mut self) {
@@ -103,20 +120,37 @@ impl ColorPainter for ColrCanvas<'_> {
     fn fill(&mut self, brush: Brush<'_>) {
         self.canvas.push_layer();
 
-        let clip_path = self.clips.last().unwrap().clone().finish().unwrap();
-        self.canvas.set_clip_path(clip_path, FillRule::NonZero);
+
+        for clip_path in self.clips.last().unwrap() {
+            self.canvas.set_clip_path(clip_path.clone(), FillRule::NonZero);
+        }
 
         let mut path_builder = PathBuilder::new();
         path_builder.move_to(0.0, 0.0);
-        path_builder.line_to(2000.0, 0.0);
-        path_builder.line_to(2000.0, 2000.0);
-        path_builder.line_to(0.0, 2000.0);
+        path_builder.line_to(1000.0, 0.0);
+        path_builder.line_to(1000.0, 1000.0);
+        path_builder.line_to(0.0, 1000.0);
         path_builder.close();
+
+        let fill = match brush {
+            Brush::Solid { palette_index, alpha } => {
+                let color = self.font.cpal().unwrap().color_records_array().unwrap().unwrap()[palette_index as usize];
+
+                Fill {
+                    paint: Paint::Color(Color::new_rgb(color.red,color.green, color.blue)),
+                    opacity: NormalizedF32::ONE,
+                    rule: Default::default(),
+                }
+            },
+            Brush::LinearGradient { .. } => Fill::default(),
+            Brush::RadialGradient { .. } => Fill::default(),
+            Brush::SweepGradient { .. } => Fill::default(),
+        };
 
         self.canvas.fill_path(
             path_builder.finish().unwrap(),
             Transform::identity(),
-            Fill::default()
+            fill
         );
 
         self.canvas.pop_layer();
