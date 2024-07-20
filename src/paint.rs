@@ -154,7 +154,10 @@ impl GradientPropertiesExt for LinearGradient {
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        let transform = self.transform.0.post_concat(Transform::from_translate(self.cx.get(), self.cy.get()));
+        let transform = self
+            .transform
+            .0
+            .post_concat(Transform::from_translate(self.cx.get(), self.cy.get()));
 
         (
             GradientProperties {

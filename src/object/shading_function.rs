@@ -71,7 +71,7 @@ fn select_function(
 ) -> Ref {
     if properties.gradient_type == GradientType::Linear {
         serialize_linear_postscript(properties, sc, bbox)
-    }   else {
+    } else {
         serialize_sweep_postscript(properties, sc, bbox)
     }
 }

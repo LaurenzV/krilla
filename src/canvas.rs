@@ -783,14 +783,14 @@ mod tests {
                     start_angle: FiniteF32::new(0.0).unwrap(),
                     end_angle: FiniteF32::new(360.0).unwrap(),
                     transform: TransformWrapper(
-                        // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                        // Transform::from_scale(0.5, 0.5),
                         // ), // Transform::from_scale(0.5, 0.5),
-                        Transform::identity(),
+                        Transform::from_scale(1.0, -1.0),
                     ),
                     spread_method,
                     stops: vec![
                         Stop {
-                            offset: NormalizedF32::new(0.2).unwrap(),
+                            offset: NormalizedF32::new(0.0).unwrap(),
                             color: Color::new_rgb(255, 0, 0),
                             opacity: NormalizedF32::ONE,
                         },
@@ -800,7 +800,7 @@ mod tests {
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.6).unwrap(),
+                            offset: NormalizedF32::new(1.0).unwrap(),
                             color: Color::new_rgb(0, 0, 255),
                             opacity: NormalizedF32::ONE,
                         },
