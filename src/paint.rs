@@ -103,11 +103,7 @@ fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
     // We need to make sure the shading covers the whole bbox of the object after
     // the transform as been applied. In order to know that, we need to calculate the
     // resulting bbox from the inverted transform.
-    bbox.expand(
-        &bbox
-            .transform(shading_transform.invert().unwrap())
-            .unwrap(),
-    );
+    bbox.expand(&bbox.transform(shading_transform.invert().unwrap()).unwrap());
     bbox
 }
 
@@ -118,25 +114,32 @@ fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     let dy = end.y - start.y;
     let angle = dy.atan2(dx).to_degrees();
 
-    (Transform::from_rotate_at(angle, start.x, start.y), start.x, start.x + dist)
+    (
+        Transform::from_rotate_at(angle, start.x, start.y),
+        start.x,
+        start.x + dist,
+    )
 }
 
 impl GradientPropertiesExt for LinearGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-
         // TODO: Make prettier
 
-        let (ts, mut min, mut max) = get_point_ts(Point::from_xy(self.x1.get(), self.y1.get()), Point::from_xy(self.x2.get(), self.y2.get()));
+        let (ts, min, max) = get_point_ts(
+            Point::from_xy(self.x1.get(), self.y1.get()),
+            Point::from_xy(self.x2.get(), self.y2.get()),
+        );
+        let a = 2;
         (
             GradientProperties {
                 min: FiniteF32::new(min).unwrap(),
                 max: FiniteF32::new(max).unwrap(),
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
-                bbox: get_expanded_bbox(bbox, self.transform.0),
+                bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
                 spread_method: self.spread_method,
             },
-            self.transform,
+            TransformWrapper(self.transform.0.post_concat(ts)),
         )
     }
 }
