@@ -762,7 +762,7 @@ mod tests {
         write("nested_opacity", &finished);
     }
 
-    fn gradient(spread_method: SpreadMethod, name: &str) {
+    fn linear_gradient(spread_method: SpreadMethod, name: &str) {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
@@ -809,22 +809,22 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        write(&format!("gradient_{}", name), &finished);
+        write(&format!("linear_gradient_{}", name), &finished);
     }
 
     #[test]
     fn gradient_reflect() {
-        gradient(SpreadMethod::Reflect, "reflect");
+        linear_gradient(SpreadMethod::Reflect, "reflect");
     }
 
     #[test]
     fn gradient_repeat() {
-        gradient(SpreadMethod::Repeat, "repeat");
+        linear_gradient(SpreadMethod::Repeat, "repeat");
     }
 
     #[test]
     fn gradient_pad() {
-        gradient(SpreadMethod::Pad, "pad");
+        linear_gradient(SpreadMethod::Pad, "pad");
     }
 
     #[test]

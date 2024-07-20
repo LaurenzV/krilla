@@ -129,7 +129,6 @@ impl GradientPropertiesExt for LinearGradient {
             Point::from_xy(self.x1.get(), self.y1.get()),
             Point::from_xy(self.x2.get(), self.y2.get()),
         );
-        let a = 2;
         (
             GradientProperties {
                 min: FiniteF32::new(min).unwrap(),
