@@ -76,6 +76,24 @@ impl<'a> ColrCanvas<'a> {
     }
 }
 
+impl ColrCanvas<'_> {
+    fn palette_index_to_color(&self, palette_index: u16, alpha: f32) -> (Color, NormalizedF32) {
+        if palette_index != u16::MAX {
+            let color = self
+                .font
+                .cpal()
+                .unwrap()
+                .color_records_array()
+                .unwrap()
+                .unwrap()[palette_index as usize];
+
+            (Color::new_rgb(color.red, color.green, color.blue), NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap())
+        } else {
+            (Color::black(), NormalizedF32::new(alpha).unwrap())
+        }
+    }
+}
+
 impl ColorPainter for ColrCanvas<'_> {
     fn push_transform(&mut self, transform: skrifa::color::Transform) {
         let new_transform = self
@@ -166,26 +184,11 @@ impl ColorPainter for ColrCanvas<'_> {
                 palette_index,
                 alpha,
             } => {
-                if palette_index != u16::MAX {
-                    let color = self
-                        .font
-                        .cpal()
-                        .unwrap()
-                        .color_records_array()
-                        .unwrap()
-                        .unwrap()[palette_index as usize];
-
-                    Fill {
-                        paint: Paint::Color(Color::new_rgb(color.red, color.green, color.blue)),
-                        opacity: NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
-                        rule: Default::default(),
-                    }
-                } else {
-                    Fill {
-                        paint: Paint::Color(Color::black()),
-                        opacity: NormalizedF32::new(alpha).unwrap(),
-                        rule: Default::default(),
-                    }
+                let (color, alpha) = self.palette_index_to_color(palette_index, alpha);
+                Fill {
+                    paint: Paint::Color(color),
+                    opacity: alpha,
+                    rule: Default::default(),
                 }
             }
             Brush::LinearGradient { .. } => Fill::default(),
