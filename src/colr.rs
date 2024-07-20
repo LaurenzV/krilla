@@ -1,6 +1,6 @@
 use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::paint::{Paint, SpreadMethod, Stop, SweepGradient};
+use crate::paint::{LinearGradient, Paint, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
@@ -203,7 +203,23 @@ impl ColorPainter for ColrCanvas<'_> {
                     rule: Default::default(),
                 })
             }
-            Brush::LinearGradient { .. } => Some(Fill::default()),
+            Brush::LinearGradient { p0, p1, color_stops, extend } => {
+                let linear = LinearGradient {
+                    x1: FiniteF32::new(p0.x).unwrap(),
+                    y1: FiniteF32::new(p0.y).unwrap(),
+                    x2: FiniteF32::new(p1.x).unwrap(),
+                    y2: FiniteF32::new(p1.y).unwrap(),
+                    stops: self.stops(color_stops),
+                    spread_method: extend.to_spread_method(),
+                    transform: TransformWrapper(crate::Transform::identity()),
+                };
+
+                Some(Fill {
+                    paint: Paint::LinearGradient(linear),
+                    opacity: NormalizedF32::ONE,
+                    rule: Default::default(),
+                })
+            },
             Brush::RadialGradient { .. } => Some(Fill::default()),
             Brush::SweepGradient { c0,  start_angle, end_angle, color_stops, extend} => {
                 if start_angle == end_angle && (matches!(extend, skrifa::color::Extend::Reflect | skrifa::color::Extend::Repeat)) {
@@ -335,7 +351,7 @@ mod tests {
 
         let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
 
-        for i in 145..=145 {
+        for i in 0..=220 {
             let canvas = single_glyph(&font_ref, GlyphId::new(i));
 
             fn get_transform(
