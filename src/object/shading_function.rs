@@ -1,5 +1,5 @@
 use crate::color::PdfColorExt;
-use crate::paint::{GradientProperties, SpreadMethod, Stop};
+use crate::paint::{GradientProperties, GradientType, SpreadMethod, Stop};
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
@@ -69,18 +69,60 @@ fn select_function(
     sc: &mut SerializerContext,
     bbox: &Rect,
 ) -> Ref {
-    serialize_postscript(properties, sc, bbox)
+    if properties.gradient_type == GradientType::Linear {
+        serialize_linear_postscript(properties, sc, bbox)
+    }   else {
+        serialize_sweep_postscript(properties, sc, bbox)
+    }
 }
 
-fn serialize_postscript(
+fn serialize_sweep_postscript(
     properties: &GradientProperties,
     sc: &mut SerializerContext,
     bbox: &Rect,
 ) -> Ref {
     let root_ref = sc.new_ref();
 
-    // Assumes that y0 = y1 and x1 <= x2
-    // TODO: Fix the above
+    // let dx = end.x - start.x;
+    //     let dy = end.y - start.y;
+    //     let angle = dy.atan2(dx).to_degrees();
+
+    let min: f32 = properties.min.get();
+    let max: f32 = properties.max.get();
+
+    // TODO: Improve formatting of PS code.
+    let start_code = [
+        "{".to_string(),
+        // Stack: x y
+        // Ignore the y coordinate. We account for it in the gradient transform.
+        "80 sub exch 80 sub atan 360 div dup 1 exch sub 0".to_string(),
+        // "pop".to_string(),
+        // x
+    ];
+
+    let end_code = ["}".to_string()];
+
+    let mut code = Vec::new();
+    code.extend(start_code);
+    // code.push(encode_spread_method(min, max, properties.spread_method));
+    // code.push(encode_stops(&properties.stops, min, max));
+    code.extend(end_code);
+
+    let code = code.join(" ").into_bytes();
+    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
+    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
+    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+
+    root_ref
+}
+
+fn serialize_linear_postscript(
+    properties: &GradientProperties,
+    sc: &mut SerializerContext,
+    bbox: &Rect,
+) -> Ref {
+    let root_ref = sc.new_ref();
+
     let min: f32 = properties.min.get();
     let max: f32 = properties.max.get();
 
