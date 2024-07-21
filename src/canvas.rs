@@ -923,14 +923,14 @@ mod tests {
                 paint: Paint::RadialGradient(RadialGradient {
                     cx: FiniteF32::new(80.0).unwrap(),
                     cy: FiniteF32::new(80.0).unwrap(),
-                    cr: FiniteF32::new(50.0).unwrap(),
+                    cr: FiniteF32::new(0.0).unwrap(),
                     fx: FiniteF32::new(100.0).unwrap(),
                     fy: FiniteF32::new(100.0).unwrap(),
-                    fr: FiniteF32::new(80.0).unwrap(),
+                    fr: FiniteF32::new(50.0).unwrap(),
                     transform: TransformWrapper(
-                        // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                        Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
                         // Transform::from_scale(0.5, 0.5),
-                        Transform::identity(),
+                        // Transform::identity(),
                     ),
                     spread_method,
                     stops: vec![

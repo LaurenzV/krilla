@@ -60,14 +60,15 @@ impl ShadingFunction {
 
         shading.function(function_ref);
         if self.0.properties.shading_type == FunctionShadingType::Radial {
-            shading.coords([
-                self.0.properties.min.get(),
-                self.0.properties.coords.as_ref().unwrap()[1].get(),
-                self.0.properties.coords.as_ref().unwrap()[2].get(),
-                self.0.properties.max.get(),
-                self.0.properties.coords.as_ref().unwrap()[4].get(),
-                self.0.properties.coords.as_ref().unwrap()[5].get(),
-            ]);
+            shading.coords(
+                self.0
+                    .properties
+                    .coords
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|n| n.get()),
+            );
         } else {
             shading.coords([
                 self.0.properties.min.get(),
@@ -84,8 +85,7 @@ impl ShadingFunction {
 impl Object for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         if self.0.properties.gradient_type == GradientType::Sweep
-            || (self.0.properties.spread_method != SpreadMethod::Pad
-                && self.0.properties.gradient_type != GradientType::Radial)
+            || self.0.properties.gradient_type == GradientType::Linear
         {
             self.serialize_postscript_shading(sc, root_ref);
         } else {

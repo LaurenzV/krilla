@@ -7,11 +7,9 @@ use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::prelude::LocationRef;
-use skrifa::raw::tables::colr::PaintTransform;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use std::arch::aarch64::uint16x4_t;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
 
 struct GlyphBuilder(PathBuilder);
@@ -50,21 +48,16 @@ struct ColrCanvas<'a> {
     transforms: Vec<Transform>,
     canvases: Vec<Canvas>,
     blend_modes: Vec<BlendMode>,
+    size: u16,
 }
 
 impl<'a> ColrCanvas<'a> {
     pub fn new(font_ref: &'a FontRef<'a>) -> Self {
-        let mut canvas = Canvas::new(Size::from_wh(1000.0, 1000.0).unwrap());
-        canvas.transform(Transform::from_row(
-            1.0,
-            0.0,
-            0.0,
-            -1.0,
-            0.0,
-            (font_ref
-                .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
-                .units_per_em as f32),
-        ));
+        let size = font_ref
+            .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
+            .units_per_em;
+        let mut canvas = Canvas::new(Size::from_wh(size as f32, size as f32).unwrap());
+        canvas.transform(Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, size as f32));
 
         Self {
             font: font_ref,
@@ -72,6 +65,7 @@ impl<'a> ColrCanvas<'a> {
             clips: vec![vec![]],
             canvases: vec![canvas],
             blend_modes: vec![],
+            size,
         }
     }
 }
@@ -301,9 +295,9 @@ impl ColorPainter for ColrCanvas<'_> {
 
             let mut path_builder = PathBuilder::new();
             path_builder.move_to(0.0, 0.0);
-            path_builder.line_to(1000.0, 0.0);
-            path_builder.line_to(1000.0, 1000.0);
-            path_builder.line_to(0.0, 1000.0);
+            path_builder.line_to(self.size as f32, 0.0);
+            path_builder.line_to(self.size as f32, self.size as f32);
+            path_builder.line_to(0.0, self.size as f32);
             path_builder.close();
 
             self.canvases.last_mut().unwrap().fill_path(
@@ -337,7 +331,7 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        let canvas = Canvas::new(Size::from_wh(1000.0, 1000.0).unwrap());
+        let canvas = Canvas::new(Size::from_wh(self.size as f32, self.size as f32).unwrap());
         self.blend_modes.push(mode);
         self.canvases.push(canvas);
     }
@@ -364,6 +358,7 @@ mod tests {
     use pdf_writer::types::BlendMode;
     use skrifa::color::Transform;
     use skrifa::prelude::LocationRef;
+    use skrifa::raw::TableProvider;
     use skrifa::{FontRef, GlyphId, MetadataProvider};
     use tiny_skia_path::{NormalizedF32, Size};
 
@@ -383,21 +378,28 @@ mod tests {
         let font_data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
+        // let font_data =
+        //     std::fs::read("/Library/Fonts/seguiemj.ttf")
+        //         .unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
-        let units_per_em = metrics.units_per_em as f32;
-        let num_glyphs = 220;
+
+        let glyphs = (0u16..=220).collect::<Vec<_>>();
+        // let glyphs = vec![2268];
+
+        let num_glyphs = glyphs.len();
 
         let width = 2000;
 
         let size = 150u32;
         let num_cols = width / size;
         let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
+        let units_per_em = metrics.units_per_em as f32;
         let mut cur_point = 0;
 
         let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
 
-        for i in 0..=220 {
+        for i in glyphs.iter().copied() {
             let canvas = single_glyph(&font_ref, GlyphId::new(i));
 
             fn get_transform(

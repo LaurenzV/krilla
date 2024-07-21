@@ -185,23 +185,18 @@ impl GradientPropertiesExt for SweepGradient {
 
 impl GradientPropertiesExt for RadialGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        let (ts, min, max) = get_point_ts(
-            Point::from_xy(self.fx.get(), self.fy.get()),
-            Point::from_xy(self.cx.get(), self.cy.get()),
-        );
-
         (
             GradientProperties {
-                min: FiniteF32::new(min).unwrap(),
-                max: FiniteF32::new(max).unwrap(),
+                min: FiniteF32::new(0.0).unwrap(),
+                max: FiniteF32::new(0.0).unwrap(),
                 coords: Some(vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr]),
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
-                bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
+                bbox: get_expanded_bbox(bbox, self.transform.0),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Radial,
             },
-            TransformWrapper(self.transform.0.post_concat(ts)),
+            TransformWrapper(self.transform.0),
         )
     }
 }
