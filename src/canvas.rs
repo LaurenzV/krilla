@@ -14,7 +14,7 @@ use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use pdf_writer::{Chunk, Content, Finish, Pdf};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
@@ -66,10 +66,9 @@ macro_rules! canvas_impl {
                 self.byte_code.push(Instruction::Pop);
             }
 
-            // pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
-            //     self.byte_code
-            //         .push(Instruction::ClipPath(Box::new((path.into(), clip_rule))));
-            // }
+            pub fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
+                Clipped::new(&mut self.byte_code, self.size, path, clip_rule)
+            }
 
             pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
                 self.byte_code.push(Instruction::Push);
@@ -107,6 +106,7 @@ macro_rules! canvas_impl {
 canvas_impl!(Canvas);
 canvas_impl!(Masked<'a>);
 canvas_impl!(Blended<'a>);
+canvas_impl!(Clipped<'a>);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Masked<'a> {
@@ -160,6 +160,38 @@ impl<'a> Blended<'a> {
 }
 
 impl Drop for Blended<'_> {
+    fn drop(&mut self) {
+        self.byte_code.push(Instruction::Pop);
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Clipped<'a> {
+    pub(crate) byte_code: &'a mut ByteCode,
+    pub(crate) size: Size,
+}
+
+impl<'a> Clipped<'a> {
+    pub fn new(
+        parent_byte_code: &'a mut ByteCode,
+        size: Size,
+        path: Path,
+        fill_rule: FillRule,
+    ) -> Self {
+        parent_byte_code.push(Instruction::PushClip(Box::new((path.into(), fill_rule))));
+
+        Self {
+            byte_code: parent_byte_code,
+            size,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Clipped<'_> {
     fn drop(&mut self) {
         self.byte_code.push(Instruction::Pop);
     }
