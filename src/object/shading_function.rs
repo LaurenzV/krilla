@@ -62,11 +62,11 @@ impl ShadingFunction {
         if self.0.properties.shading_type == FunctionShadingType::Radial {
             shading.coords([
                 self.0.properties.min.get(),
-                self.0.properties.coords.unwrap()[1].get(),
-                self.0.properties.coords.unwrap()[2].get(),
+                self.0.properties.coords.as_ref().unwrap()[1].get(),
+                self.0.properties.coords.as_ref().unwrap()[2].get(),
                 self.0.properties.max.get(),
-                self.0.properties.coords.unwrap()[4].get(),
-                self.0.properties.coords.unwrap()[5].get(),
+                self.0.properties.coords.as_ref().unwrap()[4].get(),
+                self.0.properties.coords.as_ref().unwrap()[5].get(),
             ]);
         } else {
             shading.coords([

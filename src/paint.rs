@@ -97,7 +97,7 @@ pub struct GradientProperties {
     pub min: FiniteF32,
     pub max: FiniteF32,
     // Only use for radial
-    pub coords: Option<[FiniteF32; 6]>,
+    pub coords: Option<Vec<FiniteF32>>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
     // The bbox of the object the gradient is applied to
@@ -145,7 +145,7 @@ impl GradientPropertiesExt for LinearGradient {
             GradientProperties {
                 min: FiniteF32::new(min).unwrap(),
                 max: FiniteF32::new(max).unwrap(),
-                coords: None,
+                coords: Some(vec![self.x1, self.y1, self.x2, self.y2]),
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
@@ -194,7 +194,7 @@ impl GradientPropertiesExt for RadialGradient {
             GradientProperties {
                 min: FiniteF32::new(min).unwrap(),
                 max: FiniteF32::new(max).unwrap(),
-                coords: Some([self.fx, self.fy, self.fr, self.cx, self.cy, self.cr]),
+                coords: Some(vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr]),
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
