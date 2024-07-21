@@ -72,6 +72,7 @@ canvas_impl!(Canvas);
 canvas_impl!(Masked<'a>);
 canvas_impl!(Blended<'a>);
 canvas_impl!(Clipped<'a>);
+canvas_impl!(Transformed<'a>);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Masked<'a> {
@@ -202,6 +203,32 @@ impl Drop for Transformed<'_> {
         } else {
             self.parent_byte_code.extend(&self.byte_code);
         }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Isolated<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    byte_code: ByteCode,
+}
+
+impl<'a> Isolated<'a> {
+    pub(crate) fn new(parent_byte_code: &'a mut ByteCode) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Isolated<'_> {
+    fn drop(&mut self) {
+        self.parent_byte_code
+            .push(Instruction::Isolated(Box::new(self.byte_code.clone())))
     }
 }
 
