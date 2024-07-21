@@ -13,5 +13,9 @@ pub mod serialize;
 pub mod transform;
 pub mod util;
 
+pub use paint::*;
+pub use color::*;
+pub use object::mask::MaskType;
+
 pub use path::*;
-pub use tiny_skia_path::{Size, Transform};
+pub use tiny_skia_path::*;

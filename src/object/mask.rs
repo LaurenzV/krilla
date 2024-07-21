@@ -21,7 +21,7 @@ impl Mask {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum MaskType {
-    Luminance,
+    Luminosity,
     Alpha,
 }
 
@@ -29,7 +29,7 @@ impl MaskType {
     pub fn to_name(self) -> Name<'static> {
         match self {
             MaskType::Alpha => Name(b"Alpha"),
-            MaskType::Luminance => Name(b"Luminosity"),
+            MaskType::Luminosity => Name(b"Luminosity"),
         }
     }
 }
