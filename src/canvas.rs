@@ -848,8 +848,9 @@ mod tests {
             },
         );
 
-        let mut second = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
-        second.fill_path(
+        let mut blended = canvas.blended(BlendMode::Difference);
+        let mut transformed = blended.transformed(Transform::from_translate(100.0, 100.0));
+        transformed.fill_path(
             dummy_path(100.0),
             Transform::from_translate(-25.0, -25.0),
             Fill {
@@ -859,14 +860,8 @@ mod tests {
             },
         );
 
-        // canvas.draw_canvas(
-        //     second,
-        //     Transform::from_translate(100.0, 100.0),
-        //     BlendMode::Difference,
-        //     NormalizedF32::ONE,
-        //     false,
-        //     None,
-        // );
+        transformed.finish();
+        blended.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -1120,9 +1115,10 @@ mod tests {
     fn clip_path() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        // canvas.push_layer();
-        // canvas.set_clip_path(dummy_path(100.0), FillRule::NonZero);
-        canvas.fill_path(
+
+        let mut clipped = canvas.clipped(dummy_path(100.0), FillRule::NonZero);
+
+        clipped.fill_path(
             dummy_path(200.0),
             Transform::from_scale(1.0, 1.0),
             Fill {
@@ -1131,7 +1127,8 @@ mod tests {
                 ..Fill::default()
             },
         );
-        // canvas.pop_layer();
+
+        clipped.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -1205,8 +1202,9 @@ mod tests {
             },
         );
 
-        let mut path_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        path_canvas.fill_path(
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        let mut masked = canvas.masked(Mask::new(Arc::new(mask_canvas), MaskType::Luminance));
+        masked.fill_path(
             dummy_path(200.0),
             Transform::identity().try_into().unwrap(),
             Fill {
@@ -1216,21 +1214,13 @@ mod tests {
             },
         );
 
-        let mut final_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        // final_canvas.draw_canvas(
-        //     path_canvas,
-        //     Transform::identity(),
-        //     BlendMode::Normal,
-        //     NormalizedF32::ONE,
-        //     false,
-        //     Some(Mask::new(Arc::new(mask_canvas), MaskType::Luminance)),
-        // );
+        masked.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(final_canvas, serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
         write("mask_luminance", &finished);
