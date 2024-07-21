@@ -9,7 +9,7 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint};
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
-use crate::serialize::{Object, PageSerialize, SerializeSettings, SerializerContext};
+use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
@@ -308,7 +308,6 @@ pub struct CanvasPdfSerializer<'a> {
     graphics_states: GraphicsStates,
     bbox: Rect,
     base_opacity: NormalizedF32,
-    isolate: bool,
 }
 
 impl<'a> CanvasPdfSerializer<'a> {
@@ -319,7 +318,6 @@ impl<'a> CanvasPdfSerializer<'a> {
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             base_opacity: NormalizedF32::new(1.0).unwrap(),
-            isolate: false,
         }
     }
 
@@ -818,19 +816,17 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::{Blended, Canvas};
+    use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
     use crate::paint::{
-        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, StopOffset,
-        SweepGradient,
+        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, SweepGradient,
     };
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
     use pdf_writer::types::BlendMode;
-    use std::fmt::format;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 

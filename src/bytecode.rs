@@ -1,4 +1,3 @@
-use crate::canvas::Canvas;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::transform::TransformWrapper;

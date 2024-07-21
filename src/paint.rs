@@ -1,11 +1,10 @@
 use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::serialize::Object;
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Scalar, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
@@ -90,9 +89,6 @@ pub enum GradientType {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-struct Shading(GradientProperties);
-
-#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct GradientProperties {
     pub min: FiniteF32,
     pub max: FiniteF32,
@@ -159,7 +155,7 @@ impl GradientPropertiesExt for LinearGradient {
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        let mut min = self.start_angle;
+        let min = self.start_angle;
         let max = self.end_angle;
 
         let transform = self

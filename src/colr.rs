@@ -4,14 +4,13 @@ use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, Sw
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
-use pdf_writer::Finish;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
 struct GlyphBuilder(PathBuilder);
 
@@ -284,7 +283,7 @@ impl ColorPainter for ColrCanvas<'_> {
                 }
             }
         } {
-            let mut canvas = self.canvases.last_mut().unwrap();
+            let canvas = self.canvases.last_mut().unwrap();
 
             let mut clipped =
                 canvas.clipped_many(self.clips.last().unwrap().clone(), FillRule::NonZero);
@@ -331,7 +330,7 @@ impl ColorPainter for ColrCanvas<'_> {
     fn pop_layer(&mut self) {
         let draw_canvas = self.canvases.pop().unwrap();
 
-        let mut canvas = self.canvases.last_mut().unwrap();
+        let canvas = self.canvases.last_mut().unwrap();
         let mut blended = canvas.blended(self.blend_modes.pop().unwrap());
         let mut isolated = blended.isolated();
         isolated.draw_canvas(draw_canvas);
@@ -345,19 +344,16 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::colr::ColrCanvas;
     use crate::serialize::{PageSerialize, SerializeSettings};
-    use pdf_writer::types::BlendMode;
-    use skrifa::color::Transform;
     use skrifa::prelude::LocationRef;
-    use skrifa::raw::TableProvider;
     use skrifa::{FontRef, GlyphId, MetadataProvider};
-    use tiny_skia_path::{NormalizedF32, Size};
+    use tiny_skia_path::Size;
 
     fn single_glyph(font_ref: &FontRef, glyph: GlyphId) -> Canvas {
         let mut colr_canvas = ColrCanvas::new(&font_ref);
 
         let colr_glyphs = font_ref.color_glyphs();
         if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-            colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
+            let _ = colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
         }
         let canvas = colr_canvas.canvases.last().unwrap().clone();
         canvas
@@ -431,6 +427,6 @@ mod tests {
         }
 
         let pdf = parent_canvas.serialize(SerializeSettings::default());
-        std::fs::write("out.pdf", pdf.finish());
+        let _ = std::fs::write("out.pdf", pdf.finish());
     }
 }

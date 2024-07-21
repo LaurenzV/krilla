@@ -14,7 +14,7 @@ struct Repr {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
-pub(crate) struct ExtGState(Arc<Repr>);
+pub struct ExtGState(Arc<Repr>);
 
 impl ExtGState {
     pub fn new() -> Self {

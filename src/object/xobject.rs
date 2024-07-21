@@ -1,5 +1,5 @@
 use crate::bytecode::ByteCode;
-use crate::canvas::{Canvas, CanvasPdfSerializer};
+use crate::canvas::CanvasPdfSerializer;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, SerializerContext};
 use crate::util::RectExt;
@@ -50,7 +50,7 @@ impl Object for XObject {
 
         if self.0.isolated || self.0.transparency_group_color_space {
             let mut group = x_object.group();
-            let mut transparency = group.transparency();
+            let transparency = group.transparency();
 
             if self.0.isolated {
                 transparency.isolated(self.0.isolated);
