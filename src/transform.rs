@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 use tiny_skia_path::Transform;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct TransformWrapper(pub(crate) Transform);
+pub struct TransformWrapper(pub(crate) Transform);
 
 // We don't care about NaNs.
 impl Eq for TransformWrapper {}

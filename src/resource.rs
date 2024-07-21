@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-trait ResourceTrait: Object {
+pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
 }

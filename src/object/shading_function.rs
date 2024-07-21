@@ -2,7 +2,6 @@ use crate::color::PdfColorExt;
 use crate::paint::{GradientProperties, GradientType, SpreadMethod, Stop};
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
@@ -30,7 +29,7 @@ impl ShadingFunction {
     }
 
     fn serialize_postscript_shading(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mut bbox = self.0.properties.bbox;
+        let bbox = self.0.properties.bbox;
 
         let function_ref = select_postscript_function(&self.0.properties, sc, &bbox);
         let cs_ref = sc.srgb();
@@ -127,43 +126,41 @@ fn select_postscript_function(
     } else if properties.gradient_type == GradientType::Sweep {
         serialize_sweep_postscript(properties, sc, bbox)
     } else {
-        serialize_radial_postscript(properties, sc, bbox)
+        todo!();
+        // serialize_radial_postscript(properties, sc, bbox)
     }
 }
 
 // Not working yet
-fn serialize_radial_postscript(
-    properties: &GradientProperties,
-    sc: &mut SerializerContext,
-    bbox: &Rect,
-) -> Ref {
-    let root_ref = sc.new_ref();
-
-    let min: f32 = properties.min.get();
-    let max: f32 = properties.max.get();
-
-    // TODO: Improve formatting of PS code.
-    let start_code = [
-        "{".to_string(),
-        // Stack: x y
-        "80 exch 80 sub dup mul 3 1 roll sub dup mul add sqrt 120 div 0 0".to_string(),
-    ];
-
-    let end_code = ["}".to_string()];
-
-    let mut code = Vec::new();
-    code.extend(start_code);
-    // code.push(encode_spread_method(min, max, properties.spread_method));
-    // code.push(encode_stops(&properties.stops, min, max));
-    code.extend(end_code);
-
-    let code = code.join(" ").into_bytes();
-    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
-    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
-    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
-
-    root_ref
-}
+// fn serialize_radial_postscript(
+//     properties: &GradientProperties,
+//     sc: &mut SerializerContext,
+//     bbox: &Rect,
+// ) -> Ref {
+// let root_ref = sc.new_ref();
+//
+// // TODO: Improve formatting of PS code.
+// let start_code = [
+//     "{".to_string(),
+//     // Stack: x y
+//     "80 exch 80 sub dup mul 3 1 roll sub dup mul add sqrt 120 div 0 0".to_string(),
+// ];
+//
+// let end_code = ["}".to_string()];
+//
+// let mut code = Vec::new();
+// code.extend(start_code);
+// // code.push(encode_spread_method(min, max, properties.spread_method));
+// // code.push(encode_stops(&properties.stops, min, max));
+// code.extend(end_code);
+//
+// let code = code.join(" ").into_bytes();
+// let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
+// postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
+// postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+//
+// root_ref
+// }
 
 fn serialize_sweep_postscript(
     properties: &GradientProperties,

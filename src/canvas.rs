@@ -9,14 +9,283 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::{GradientProperties, GradientPropertiesExt, Paint};
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
-use crate::serialize::{Object, PageSerialize, SerializeSettings, SerializerContext};
+use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
+use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
+use pdf_writer::{Chunk, Content, Finish, Pdf};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+
+macro_rules! canvas_impl {
+    ($type:ident $(<$($lifetime:tt),+>)?) => {
+        impl $(<$($lifetime),+>)? $type $(<$($lifetime),+>)? {
+
+            pub fn masked(&mut self, mask: Mask) -> Masked {
+                Masked::new(&mut self.byte_code, mask)
+            }
+
+            pub fn stroke_path(
+                &mut self,
+                path: Path,
+                transform: tiny_skia_path::Transform,
+                stroke: Stroke,
+            ) {
+                let mut transformed = self.transformed(transform);
+                transformed.byte_code.push(Instruction::StrokePath(Box::new((path.into(), stroke))));
+            }
+
+            pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
+                let mut transformed = self.transformed(transform);
+                transformed.byte_code.push(Instruction::FillPath(Box::new((
+                    path.into(),
+                    fill,
+                ))));
+            }
+
+            pub fn blended(&mut self, blend_mode: BlendMode) -> Blended {
+                Blended::new(&mut self.byte_code, blend_mode)
+            }
+
+            pub fn opacified(&mut self, opacity: NormalizedF32) -> Opacified {
+                Opacified::new(&mut self.byte_code, opacity)
+            }
+
+            pub fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped {
+                Clipped::new(&mut self.byte_code, paths, clip_rule)
+            }
+
+            pub fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
+                Clipped::new(&mut self.byte_code, vec![path], clip_rule)
+            }
+
+            pub fn isolated(&mut self) -> Isolated {
+                Isolated::new(&mut self.byte_code)
+            }
+
+            pub fn transformed(&mut self, transform: Transform) -> Transformed {
+                Transformed::new(&mut self.byte_code, transform)
+            }
+
+            pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
+                let mut transformed = self.transformed(transform);
+                transformed.byte_code.push(Instruction::DrawImage(Box::new((
+                    image,
+                    size,
+                ))));
+            }
+
+            pub fn draw_canvas(&mut self, canvas: Canvas) {
+                self.byte_code.extend(&canvas.byte_code);
+            }
+        }
+    };
+}
+
+// Apply the macro for Canvas and Test
+canvas_impl!(Canvas);
+canvas_impl!(Masked<'a>);
+canvas_impl!(Blended<'a>);
+canvas_impl!(Clipped<'a>);
+canvas_impl!(Transformed<'a>);
+canvas_impl!(Opacified<'a>);
+canvas_impl!(Isolated<'a>);
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Masked<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    mask: Mask,
+}
+
+impl<'a> Masked<'a> {
+    pub(crate) fn new(parent_byte_code: &'a mut ByteCode, mask: Mask) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            mask,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Masked<'_> {
+    fn drop(&mut self) {
+        self.parent_byte_code.push(Instruction::Masked(Box::new((
+            self.mask.clone(),
+            self.byte_code.clone(),
+        ))))
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Blended<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    blend_mode: BlendMode,
+}
+
+impl<'a> Blended<'a> {
+    pub fn new(parent_byte_code: &'a mut ByteCode, blend_mode: BlendMode) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            blend_mode,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Blended<'_> {
+    fn drop(&mut self) {
+        if self.blend_mode != BlendMode::Normal {
+            self.parent_byte_code.push(Instruction::Blended(Box::new((
+                self.blend_mode,
+                self.byte_code.clone(),
+            ))))
+        } else {
+            self.parent_byte_code.extend(&self.byte_code)
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Opacified<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    opacity: NormalizedF32,
+}
+
+impl<'a> Opacified<'a> {
+    pub fn new(parent_byte_code: &'a mut ByteCode, opacity: NormalizedF32) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            opacity,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Opacified<'_> {
+    fn drop(&mut self) {
+        if self.opacity != NormalizedF32::ONE {
+            self.parent_byte_code.push(Instruction::Opacified(Box::new((
+                self.opacity,
+                self.byte_code.clone(),
+            ))))
+        } else {
+            self.parent_byte_code.extend(&self.byte_code)
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Clipped<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    paths: Vec<PathWrapper>,
+    fill_rule: FillRule,
+}
+
+impl<'a> Clipped<'a> {
+    pub fn new(parent_byte_code: &'a mut ByteCode, paths: Vec<Path>, fill_rule: FillRule) -> Self {
+        Self {
+            parent_byte_code,
+            paths: paths
+                .into_iter()
+                .map(|p| PathWrapper(p))
+                .collect::<Vec<_>>(),
+            byte_code: ByteCode::new(),
+            fill_rule,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Clipped<'_> {
+    fn drop(&mut self) {
+        self.parent_byte_code.push(Instruction::Clipped(Box::new((
+            self.paths.clone(),
+            self.fill_rule,
+            self.byte_code.clone(),
+        ))));
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Transformed<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    transform: TransformWrapper,
+}
+
+impl<'a> Transformed<'a> {
+    pub(crate) fn new(parent_byte_code: &'a mut ByteCode, transform: Transform) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            transform: TransformWrapper(transform),
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Transformed<'_> {
+    fn drop(&mut self) {
+        if self.transform.0 != Transform::identity() {
+            self.parent_byte_code
+                .push(Instruction::Transformed(Box::new((
+                    self.transform,
+                    self.byte_code.clone(),
+                ))))
+        } else {
+            self.parent_byte_code.extend(&self.byte_code);
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Isolated<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    byte_code: ByteCode,
+}
+
+impl<'a> Isolated<'a> {
+    pub(crate) fn new(parent_byte_code: &'a mut ByteCode) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Isolated<'_> {
+    fn drop(&mut self) {
+        self.parent_byte_code
+            .push(Instruction::Isolated(Arc::new(self.byte_code.clone())))
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Canvas {
@@ -31,76 +300,6 @@ impl Canvas {
             size,
         }
     }
-
-    pub(crate) fn transform(&mut self, transform: Transform) {
-        self.byte_code
-            .push(Instruction::Transform(TransformWrapper(transform)));
-    }
-
-    pub fn stroke_path(
-        &mut self,
-        path: Path,
-        transform: tiny_skia_path::Transform,
-        stroke: Stroke,
-    ) {
-        self.byte_code.push(Instruction::StrokePath(Box::new((
-            path.into(),
-            TransformWrapper(transform),
-            stroke,
-        ))));
-    }
-
-    pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
-        self.byte_code.push(Instruction::FillPath(Box::new((
-            path.into(),
-            TransformWrapper(transform),
-            fill,
-        ))));
-    }
-
-    pub fn push_layer(&mut self) {
-        self.byte_code.push(Instruction::PushLayer);
-    }
-
-    pub fn blend_mode(&mut self, blend_mode: BlendMode) {
-        self.byte_code.push(Instruction::BlendMode(blend_mode));
-    }
-
-    pub fn pop_layer(&mut self) {
-        self.byte_code.push(Instruction::PopLayer);
-    }
-
-    pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
-        self.byte_code
-            .push(Instruction::ClipPath(Box::new((path.into(), clip_rule))));
-    }
-
-    pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
-        self.byte_code.push(Instruction::DrawImage(Box::new((
-            image,
-            size,
-            TransformWrapper(transform),
-        ))))
-    }
-
-    pub fn draw_canvas(
-        &mut self,
-        canvas: Canvas,
-        transform: Transform,
-        composite_mode: BlendMode,
-        opacity: NormalizedF32,
-        isolated: bool,
-        mask: Option<Mask>,
-    ) {
-        self.byte_code.push(Instruction::DrawCanvas(Box::new((
-            Arc::new(canvas),
-            TransformWrapper(transform),
-            composite_mode,
-            opacity,
-            isolated,
-            mask,
-        ))));
-    }
 }
 
 pub struct CanvasPdfSerializer<'a> {
@@ -109,7 +308,6 @@ pub struct CanvasPdfSerializer<'a> {
     graphics_states: GraphicsStates,
     bbox: Rect,
     base_opacity: NormalizedF32,
-    isolate: bool,
 }
 
 impl<'a> CanvasPdfSerializer<'a> {
@@ -120,38 +318,40 @@ impl<'a> CanvasPdfSerializer<'a> {
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             base_opacity: NormalizedF32::new(1.0).unwrap(),
-            isolate: false,
         }
     }
 
     pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
         for op in instructions {
             match op {
-                Instruction::PushLayer => self.save_state(),
-                Instruction::PopLayer => self.restore_state(),
-                Instruction::BlendMode(bm) => self.set_blend_mode(*bm),
-                Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
-                    self.stroke_path(&stroke_data.0 .0, &stroke_data.1 .0, &stroke_data.2)
+                    self.stroke_path(&stroke_data.0 .0, &stroke_data.1)
                 }
                 Instruction::FillPath(fill_data) => {
-                    self.fill_path(&fill_data.0 .0, &fill_data.1 .0, &fill_data.2);
+                    self.fill_path(&fill_data.0 .0, &fill_data.1);
                 }
                 Instruction::DrawImage(image_data) => {
-                    self.draw_image(image_data.0.clone(), image_data.1, &image_data.2 .0)
+                    self.draw_image(image_data.0.clone(), image_data.1)
                 }
-                Instruction::DrawCanvas(canvas_data) => {
-                    self.draw_canvas(
-                        canvas_data.0.clone(),
-                        &canvas_data.1 .0,
-                        canvas_data.2,
-                        canvas_data.3,
-                        canvas_data.4,
-                        canvas_data.5.clone(),
-                    );
+                Instruction::Blended(blend_data) => {
+                    self.draw_blended(blend_data.0, blend_data.1.instructions())
                 }
-                Instruction::ClipPath(clip_data) => {
-                    self.set_clip_path(&clip_data.0 .0, &clip_data.1)
+                Instruction::Transformed(transform_data) => {
+                    self.draw_transformed(transform_data.0 .0, transform_data.1.instructions())
+                }
+                Instruction::Masked(mask_data) => {
+                    self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
+                }
+                Instruction::Clipped(clip_data) => self.draw_clipped(
+                    clip_data.0.as_slice(),
+                    &clip_data.1,
+                    clip_data.2.instructions(),
+                ),
+                Instruction::Opacified(opacity_data) => {
+                    self.draw_opacified(opacity_data.0, opacity_data.1.instructions())
+                }
+                Instruction::Isolated(isolated_data) => {
+                    self.draw_isolated(isolated_data.clone());
                 }
             }
         }
@@ -237,12 +437,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn fill_path(&mut self, path: &Path, transform: &Transform, fill: &Fill) {
-        self.save_state();
-        self.transform(transform);
-
+    pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
+
+        self.save_state();
 
         self.set_fill_opacity(fill.opacity);
 
@@ -329,13 +528,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.end_path();
     }
 
-    pub fn stroke_path(&mut self, path: &Path, transform: &Transform, stroke: &Stroke) {
-        let path_bbox = path.bounds().transform(*transform).unwrap();
-        self.bbox.expand(&path_bbox);
+    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+        self.bbox
+            .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
         self.save_state();
-        self.transform(transform);
-
         self.set_stroke_opacity(stroke.opacity);
 
         let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
@@ -437,59 +634,71 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
-    pub fn draw_image(&mut self, image: Image, size: Size, transform: &Transform) {
+    pub fn draw_blended(&mut self, blend_mode: BlendMode, instructions: &[Instruction]) {
+        self.save_state();
+        self.set_blend_mode(blend_mode);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_transformed(&mut self, transform: Transform, instructions: &[Instruction]) {
+        self.save_state();
+        self.transform(&transform);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_clipped(
+        &mut self,
+        clip_paths: &[PathWrapper],
+        fill_rule: &FillRule,
+        instructions: &[Instruction],
+    ) {
+        self.save_state();
+        for clip_path in clip_paths {
+            self.set_clip_path(&clip_path.0, fill_rule);
+        }
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
+        self.save_state();
+        self.set_base_opacity(opacity);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_masked(&mut self, mask: Mask, instructions: &[Instruction]) {
+        self.save_state();
+        self.set_mask(mask);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_isolated(&mut self, byte_code: Arc<ByteCode>) {
+        let x_object = XObject::new(
+            byte_code,
+            true,
+            self.graphics_states.cur().ext_g_state().has_mask(),
+        );
+        let name = self
+            .resource_dictionary
+            .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+        self.content.x_object(name.to_pdf_name());
+    }
+
+    pub fn draw_image(&mut self, image: Image, size: Size) {
+        // TODO: Expand bbox
         let image_name = self
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::Image(image)));
         // Apply user-supplied transform and scale the image from 1x1 to the actual dimensions.
-        let transform = transform.pre_concat(Transform::from_row(
-            size.width(),
-            0.0,
-            0.0,
-            -size.height(),
-            0.0,
-            size.height(),
-        ));
+        let transform =
+            Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
         self.save_state();
         self.transform(&transform);
         self.content.x_object(image_name.to_pdf_name());
-        self.restore_state()
-    }
-
-    pub fn draw_canvas(
-        &mut self,
-        canvas: Arc<Canvas>,
-        transform: &Transform,
-        composite_mode: BlendMode,
-        opacity: NormalizedF32,
-        isolated: bool,
-        mask: Option<Mask>,
-    ) {
-        // TODO: Handle embedding as XObject
-        // TODO: Nested masks
-        self.save_state();
-        self.set_base_opacity(opacity);
-        self.transform(transform);
-        if let Ok(blend_mode) = composite_mode.try_into() {
-            self.set_blend_mode(blend_mode);
-        } else {
-            unimplemented!();
-        }
-
-        if mask.is_some() || isolated {
-            let x_object = XObject::new(canvas.clone(), isolated, mask.is_some());
-
-            if let Some(mask) = mask {
-                self.set_mask(mask);
-            }
-            let name = self
-                .resource_dictionary
-                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-            self.content.x_object(name.to_pdf_name());
-        } else {
-            self.serialize_instructions(canvas.byte_code.instructions());
-        }
-
         self.restore_state()
     }
 }
@@ -612,14 +821,12 @@ mod tests {
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
     use crate::paint::{
-        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, StopOffset,
-        SweepGradient,
+        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, SweepGradient,
     };
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
     use pdf_writer::types::BlendMode;
-    use std::fmt::format;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
@@ -708,8 +915,9 @@ mod tests {
             },
         );
 
-        let mut second = Canvas::new(Size::from_wh(100.0, 100.0).unwrap());
-        second.fill_path(
+        let mut blended = canvas.blended(BlendMode::Difference);
+        let mut transformed = blended.transformed(Transform::from_translate(100.0, 100.0));
+        transformed.fill_path(
             dummy_path(100.0),
             Transform::from_translate(-25.0, -25.0),
             Fill {
@@ -719,14 +927,8 @@ mod tests {
             },
         );
 
-        canvas.draw_canvas(
-            second,
-            Transform::from_translate(100.0, 100.0),
-            BlendMode::Difference,
-            NormalizedF32::ONE,
-            false,
-            None,
-        );
+        transformed.finish();
+        blended.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -752,8 +954,9 @@ mod tests {
             },
         );
 
-        let mut second = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        second.fill_path(
+        let mut translated = canvas.transformed(Transform::from_translate(100.0, 100.0));
+        let mut opacified = translated.opacified(NormalizedF32::new(0.5).unwrap());
+        opacified.fill_path(
             dummy_path(100.0),
             Transform::identity(),
             Fill {
@@ -763,14 +966,8 @@ mod tests {
             },
         );
 
-        canvas.draw_canvas(
-            second,
-            Transform::from_translate(100.0, 100.0),
-            BlendMode::Difference,
-            NormalizedF32::new(0.5).unwrap(),
-            false,
-            None,
-        );
+        opacified.finish();
+        translated.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -980,9 +1177,10 @@ mod tests {
     fn clip_path() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        canvas.push_layer();
-        canvas.set_clip_path(dummy_path(100.0), FillRule::NonZero);
-        canvas.fill_path(
+
+        let mut clipped = canvas.clipped(dummy_path(100.0), FillRule::NonZero);
+
+        clipped.fill_path(
             dummy_path(200.0),
             Transform::from_scale(1.0, 1.0),
             Fill {
@@ -991,7 +1189,8 @@ mod tests {
                 ..Fill::default()
             },
         );
-        canvas.pop_layer();
+
+        clipped.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -1065,8 +1264,9 @@ mod tests {
             },
         );
 
-        let mut path_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        path_canvas.fill_path(
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        let mut masked = canvas.masked(Mask::new(Arc::new(mask_canvas), MaskType::Luminance));
+        masked.fill_path(
             dummy_path(200.0),
             Transform::identity().try_into().unwrap(),
             Fill {
@@ -1076,21 +1276,13 @@ mod tests {
             },
         );
 
-        let mut final_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        final_canvas.draw_canvas(
-            path_canvas,
-            Transform::identity(),
-            BlendMode::Normal,
-            NormalizedF32::ONE,
-            false,
-            Some(Mask::new(Arc::new(mask_canvas), MaskType::Luminance)),
-        );
+        masked.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
         };
 
-        let chunk = PageSerialize::serialize(final_canvas, serialize_settings);
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
         write("mask_luminance", &finished);

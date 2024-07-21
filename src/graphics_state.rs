@@ -31,6 +31,10 @@ impl GraphicsState {
     pub fn transform(&self) -> Transform {
         self.ctm.0
     }
+
+    pub fn ext_g_state(&self) -> &ExtGState {
+        &self.ext_g_state
+    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]

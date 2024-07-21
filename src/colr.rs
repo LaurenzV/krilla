@@ -10,7 +10,7 @@ use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, PathVerb, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
 struct GlyphBuilder(PathBuilder);
 
@@ -56,8 +56,7 @@ impl<'a> ColrCanvas<'a> {
         let size = font_ref
             .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
             .units_per_em;
-        let mut canvas = Canvas::new(Size::from_wh(size as f32, size as f32).unwrap());
-        canvas.transform(Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, size as f32));
+        let canvas = Canvas::new(Size::from_wh(size as f32, size as f32).unwrap());
 
         Self {
             font: font_ref,
@@ -284,14 +283,10 @@ impl ColorPainter for ColrCanvas<'_> {
                 }
             }
         } {
-            self.canvases.last_mut().unwrap().push_layer();
+            let canvas = self.canvases.last_mut().unwrap();
 
-            for clip_path in self.clips.last().unwrap() {
-                self.canvases
-                    .last_mut()
-                    .unwrap()
-                    .set_clip_path(clip_path.clone(), FillRule::NonZero);
-            }
+            let mut clipped =
+                canvas.clipped_many(self.clips.last().unwrap().clone(), FillRule::NonZero);
 
             let mut path_builder = PathBuilder::new();
             path_builder.move_to(0.0, 0.0);
@@ -300,13 +295,9 @@ impl ColorPainter for ColrCanvas<'_> {
             path_builder.line_to(0.0, self.size as f32);
             path_builder.close();
 
-            self.canvases.last_mut().unwrap().fill_path(
-                path_builder.finish().unwrap(),
-                Transform::identity(),
-                fill,
-            );
+            clipped.fill_path(path_builder.finish().unwrap(), Transform::identity(), fill);
 
-            self.canvases.last_mut().unwrap().pop_layer();
+            clipped.finish();
         }
     }
 
@@ -337,16 +328,14 @@ impl ColorPainter for ColrCanvas<'_> {
     }
 
     fn pop_layer(&mut self) {
-        let canvas = self.canvases.pop().unwrap();
+        let draw_canvas = self.canvases.pop().unwrap();
 
-        self.canvases.last_mut().unwrap().draw_canvas(
-            canvas,
-            Transform::identity(),
-            self.blend_modes.pop().unwrap(),
-            NormalizedF32::ONE,
-            true,
-            None,
-        );
+        let canvas = self.canvases.last_mut().unwrap();
+        let mut blended = canvas.blended(self.blend_modes.pop().unwrap());
+        let mut isolated = blended.isolated();
+        isolated.draw_canvas(draw_canvas);
+        isolated.finish();
+        blended.finish();
     }
 }
 
@@ -355,19 +344,16 @@ mod tests {
     use crate::canvas::Canvas;
     use crate::colr::ColrCanvas;
     use crate::serialize::{PageSerialize, SerializeSettings};
-    use pdf_writer::types::BlendMode;
-    use skrifa::color::Transform;
     use skrifa::prelude::LocationRef;
-    use skrifa::raw::TableProvider;
     use skrifa::{FontRef, GlyphId, MetadataProvider};
-    use tiny_skia_path::{NormalizedF32, Size};
+    use tiny_skia_path::Size;
 
     fn single_glyph(font_ref: &FontRef, glyph: GlyphId) -> Canvas {
         let mut colr_canvas = ColrCanvas::new(&font_ref);
 
         let colr_glyphs = font_ref.color_glyphs();
         if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-            colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
+            let _ = colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
         }
         let canvas = colr_canvas.canvases.last().unwrap().clone();
         canvas
@@ -422,19 +408,25 @@ mod tests {
                 )
             }
 
-            parent_canvas.draw_canvas(
-                canvas,
-                get_transform(cur_point, size, num_cols, units_per_em),
-                BlendMode::Normal,
-                NormalizedF32::ONE,
-                false,
-                None,
+            let mut transformed = parent_canvas.transformed(
+                get_transform(cur_point, size, num_cols, units_per_em).pre_concat(
+                    tiny_skia_path::Transform::from_row(
+                        1.0,
+                        0.0,
+                        0.0,
+                        -1.0,
+                        0.0,
+                        units_per_em as f32,
+                    ),
+                ),
             );
+            transformed.draw_canvas(canvas);
+            transformed.finish();
 
             cur_point += size;
         }
 
         let pdf = parent_canvas.serialize(SerializeSettings::default());
-        std::fs::write("out.pdf", pdf.finish());
+        let _ = std::fs::write("out.pdf", pdf.finish());
     }
 }

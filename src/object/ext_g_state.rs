@@ -14,7 +14,7 @@ struct Repr {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
-pub(crate) struct ExtGState(Arc<Repr>);
+pub struct ExtGState(Arc<Repr>);
 
 impl ExtGState {
     pub fn new() -> Self {
@@ -43,6 +43,10 @@ impl ExtGState {
     pub fn mask(mut self, mask: Mask) -> Self {
         Arc::make_mut(&mut self.0).mask = Some(mask);
         self
+    }
+
+    pub fn has_mask(&self) -> bool {
+        self.0.mask.is_some()
     }
 
     pub fn combine(&mut self, other: &ExtGState) {

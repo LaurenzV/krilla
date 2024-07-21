@@ -36,7 +36,11 @@ impl MaskType {
 
 impl Object for Mask {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let x_ref = sc.add(XObject::new(self.0.canvas.clone(), false, true));
+        let x_ref = sc.add(XObject::new(
+            Arc::new(self.0.canvas.byte_code.clone()),
+            false,
+            true,
+        ));
 
         let mut dict = sc.chunk_mut().indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
