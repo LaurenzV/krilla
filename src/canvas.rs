@@ -280,6 +280,18 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::DrawImage(image_data) => {
                     self.draw_image(image_data.0.clone(), image_data.1)
                 }
+                Instruction::Blended(blend_data) => {
+                    self.draw_blended(blend_data.0, blend_data.1.instructions())
+                }
+                Instruction::Transformed(transform_data) => {
+                    self.draw_transformed(transform_data.0 .0, transform_data.1.instructions())
+                }
+                Instruction::Masked(mask_data) => {
+                    self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
+                }
+                Instruction::Clipped(clip_data) => {
+                    self.draw_clipped(&clip_data.0 .0, &clip_data.1, clip_data.2.instructions())
+                }
                 _ => todo!(), // Instruction::DrawCanvas(canvas_data) => {
                               //     self.draw_canvas(
                               //         canvas_data.0.clone(),
@@ -574,6 +586,39 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
+    pub fn draw_blended(&mut self, blend_mode: BlendMode, instructions: &[Instruction]) {
+        self.save_state();
+        self.set_blend_mode(blend_mode);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_transformed(&mut self, transform: Transform, instructions: &[Instruction]) {
+        self.save_state();
+        self.transform(&transform);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_clipped(
+        &mut self,
+        clip_path: &Path,
+        fill_rule: &FillRule,
+        instructions: &[Instruction],
+    ) {
+        self.save_state();
+        self.set_clip_path(clip_path, fill_rule);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_masked(&mut self, mask: Mask, instructions: &[Instruction]) {
+        self.save_state();
+        self.set_mask(mask);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
     pub fn draw_image(&mut self, image: Image, size: Size) {
         // TODO: Expand bbox
         let image_name = self
@@ -585,43 +630,6 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.save_state();
         self.transform(&transform);
         self.content.x_object(image_name.to_pdf_name());
-        self.restore_state()
-    }
-
-    pub fn draw_canvas(
-        &mut self,
-        canvas: Arc<Canvas>,
-        transform: &Transform,
-        composite_mode: BlendMode,
-        opacity: NormalizedF32,
-        isolated: bool,
-        mask: Option<Mask>,
-    ) {
-        // TODO: Handle embedding as XObject
-        // TODO: Nested masks
-        self.save_state();
-        self.set_base_opacity(opacity);
-        self.transform(transform);
-        if let Ok(blend_mode) = composite_mode.try_into() {
-            self.set_blend_mode(blend_mode);
-        } else {
-            unimplemented!();
-        }
-
-        if mask.is_some() || isolated {
-            let x_object = XObject::new(canvas.clone(), isolated, mask.is_some());
-
-            if let Some(mask) = mask {
-                self.set_mask(mask);
-            }
-            let name = self
-                .resource_dictionary
-                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-            self.content.x_object(name.to_pdf_name());
-        } else {
-            self.serialize_instructions(canvas.byte_code.instructions());
-        }
-
         self.restore_state()
     }
 }
