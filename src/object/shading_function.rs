@@ -60,7 +60,14 @@ impl ShadingFunction {
 
         shading.function(function_ref);
         if self.0.properties.shading_type == FunctionShadingType::Radial {
-            shading.coords(self.0.properties.coords.unwrap().map(|n| n.get()));
+            shading.coords([
+                self.0.properties.min.get(),
+                self.0.properties.coords.unwrap()[1].get(),
+                self.0.properties.coords.unwrap()[2].get(),
+                self.0.properties.max.get(),
+                self.0.properties.coords.unwrap()[4].get(),
+                self.0.properties.coords.unwrap()[5].get(),
+            ]);
         } else {
             shading.coords([
                 self.0.properties.min.get(),
