@@ -12,7 +12,7 @@ use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectReso
 use crate::serialize::{Object, PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{Fill, FillRule, LineCap, LineJoin, Stroke};
+use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Content, Finish, Pdf};
 use std::sync::Arc;
@@ -22,13 +22,8 @@ macro_rules! canvas_impl {
     ($type:ident $(<$($lifetime:tt),+>)?) => {
         impl $(<$($lifetime),+>)? $type $(<$($lifetime),+>)? {
 
-            pub(crate) fn transform(&mut self, transform: Transform) {
-                self.byte_code
-                    .push(Instruction::Transform(TransformWrapper(transform)));
-            }
-
             pub fn masked(&mut self, mask: Mask) -> Masked {
-                Masked::new(&mut self.byte_code, mask, self.size)
+                Masked::new(&mut self.byte_code, mask)
             }
 
             pub fn stroke_path(
@@ -37,67 +32,37 @@ macro_rules! canvas_impl {
                 transform: tiny_skia_path::Transform,
                 stroke: Stroke,
             ) {
-                self.byte_code.push(Instruction::Push);
-                self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
-                self.byte_code.push(Instruction::StrokePath(Box::new((path.into(), stroke,
-                ))));
-                self.byte_code.push(Instruction::Pop)
+                let mut transformed = self.transformed(transform);
+                transformed.byte_code.push(Instruction::StrokePath(Box::new((path.into(), stroke))));
             }
 
             pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
-                self.byte_code.push(Instruction::Push);
-                self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
-                self.byte_code.push(Instruction::FillPath(Box::new((
+                let mut transformed = self.transformed(transform);
+                transformed.byte_code.push(Instruction::FillPath(Box::new((
                     path.into(),
                     fill,
                 ))));
-                self.byte_code.push(Instruction::Pop)
-            }
-
-            pub fn push_layer(&mut self) {
-                self.byte_code.push(Instruction::Push);
             }
 
             pub fn blended(&mut self, blend_mode: BlendMode) -> Blended {
-                Blended::new(&mut self.byte_code, self.size, blend_mode)
-            }
-
-            pub fn pop_layer(&mut self) {
-                self.byte_code.push(Instruction::Pop);
+                Blended::new(&mut self.byte_code, blend_mode)
             }
 
             pub fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
-                Clipped::new(&mut self.byte_code, self.size, path, clip_rule)
+                Clipped::new(&mut self.byte_code, path, clip_rule)
+            }
+
+            pub fn transformed(&mut self, transform: Transform) -> Transformed {
+                Transformed::new(&mut self.byte_code, transform)
             }
 
             pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
-                self.byte_code.push(Instruction::Push);
-                self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
-                self.byte_code.push(Instruction::DrawImage(Box::new((
+                let mut transformed = self.transformed(transform);
+                transformed.byte_code.push(Instruction::DrawImage(Box::new((
                     image,
                     size,
                 ))));
-                self.byte_code.push(Instruction::Pop)
             }
-
-            // pub fn draw_canvas(
-            //     &mut self,
-            //     canvas: Canvas,
-            //     transform: Transform,
-            //     composite_mode: BlendMode,
-            //     opacity: NormalizedF32,
-            //     isolated: bool,
-            //     mask: Option<Mask>,
-            // ) {
-            //     self.byte_code.push(Instruction::DrawCanvas(Box::new((
-            //         Arc::new(canvas),
-            //         TransformWrapper(transform),
-            //         composite_mode,
-            //         opacity,
-            //         isolated,
-            //         mask,
-            //     ))));
-            // }
         }
     };
 }
@@ -110,19 +75,17 @@ canvas_impl!(Clipped<'a>);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Masked<'a> {
-    pub(crate) parent_byte_code: &'a mut ByteCode,
+    parent_byte_code: &'a mut ByteCode,
     pub(crate) byte_code: ByteCode,
-    pub(crate) size: Size,
+    mask: Mask,
 }
 
 impl<'a> Masked<'a> {
-    pub fn new(parent_byte_code: &'a mut ByteCode, mask: Mask, size: Size) -> Self {
-        parent_byte_code.push(Instruction::PushMasked(mask));
-
+    pub(crate) fn new(parent_byte_code: &'a mut ByteCode, mask: Mask) -> Self {
         Self {
             parent_byte_code,
             byte_code: ByteCode::new(),
-            size,
+            mask,
         }
     }
 
@@ -133,24 +96,26 @@ impl<'a> Masked<'a> {
 
 impl Drop for Masked<'_> {
     fn drop(&mut self) {
-        self.parent_byte_code.extend(&self.byte_code);
-        self.parent_byte_code.push(Instruction::Pop);
+        self.parent_byte_code.push(Instruction::Masked(Box::new((
+            self.mask.clone(),
+            self.byte_code.clone(),
+        ))))
     }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Blended<'a> {
-    pub(crate) byte_code: &'a mut ByteCode,
-    pub(crate) size: Size,
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    blend_mode: BlendMode,
 }
 
 impl<'a> Blended<'a> {
-    pub fn new(parent_byte_code: &'a mut ByteCode, size: Size, blend_mode: BlendMode) -> Self {
-        parent_byte_code.push(Instruction::PushBlend(blend_mode));
-
+    pub fn new(parent_byte_code: &'a mut ByteCode, blend_mode: BlendMode) -> Self {
         Self {
-            byte_code: parent_byte_code,
-            size,
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            blend_mode,
         }
     }
 
@@ -161,28 +126,32 @@ impl<'a> Blended<'a> {
 
 impl Drop for Blended<'_> {
     fn drop(&mut self) {
-        self.byte_code.push(Instruction::Pop);
+        if self.blend_mode != BlendMode::Normal {
+            self.parent_byte_code.push(Instruction::Blended(Box::new((
+                self.blend_mode,
+                self.byte_code.clone(),
+            ))))
+        } else {
+            self.parent_byte_code.extend(&self.byte_code)
+        }
     }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Clipped<'a> {
-    pub(crate) byte_code: &'a mut ByteCode,
-    pub(crate) size: Size,
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    path: PathWrapper,
+    fill_rule: FillRule,
 }
 
 impl<'a> Clipped<'a> {
-    pub fn new(
-        parent_byte_code: &'a mut ByteCode,
-        size: Size,
-        path: Path,
-        fill_rule: FillRule,
-    ) -> Self {
-        parent_byte_code.push(Instruction::PushClip(Box::new((path.into(), fill_rule))));
-
+    pub fn new(parent_byte_code: &'a mut ByteCode, path: Path, fill_rule: FillRule) -> Self {
         Self {
-            byte_code: parent_byte_code,
-            size,
+            parent_byte_code,
+            path: PathWrapper(path),
+            byte_code: ByteCode::new(),
+            fill_rule,
         }
     }
 
@@ -193,7 +162,46 @@ impl<'a> Clipped<'a> {
 
 impl Drop for Clipped<'_> {
     fn drop(&mut self) {
-        self.byte_code.push(Instruction::Pop);
+        self.parent_byte_code.push(Instruction::Clipped(Box::new((
+            self.path.clone(),
+            self.fill_rule,
+            self.byte_code.clone(),
+        ))));
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Transformed<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    transform: TransformWrapper,
+}
+
+impl<'a> Transformed<'a> {
+    pub(crate) fn new(parent_byte_code: &'a mut ByteCode, transform: Transform) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            transform: TransformWrapper(transform),
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Transformed<'_> {
+    fn drop(&mut self) {
+        if self.transform.0 != Transform::identity() {
+            self.parent_byte_code
+                .push(Instruction::Transformed(Box::new((
+                    self.transform,
+                    self.byte_code.clone(),
+                ))))
+        } else {
+            self.parent_byte_code.extend(&self.byte_code);
+        }
     }
 }
 
@@ -236,10 +244,6 @@ impl<'a> CanvasPdfSerializer<'a> {
     pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
         for op in instructions {
             match op {
-                Instruction::Push => self.save_state(),
-                Instruction::Pop => self.restore_state(),
-                Instruction::BlendMode(bm) => self.set_blend_mode(*bm),
-                Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0 .0, &stroke_data.1)
                 }
@@ -1081,7 +1085,7 @@ mod tests {
     fn clip_path() {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        canvas.push_layer();
+        // canvas.push_layer();
         // canvas.set_clip_path(dummy_path(100.0), FillRule::NonZero);
         canvas.fill_path(
             dummy_path(200.0),
@@ -1092,7 +1096,7 @@ mod tests {
                 ..Fill::default()
             },
         );
-        canvas.pop_layer();
+        // canvas.pop_layer();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,

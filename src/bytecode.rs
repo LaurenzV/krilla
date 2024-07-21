@@ -9,20 +9,17 @@ use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Instruction {
-    BlendMode(BlendMode),
-    Transform(TransformWrapper),
+    Transformed(Box<(TransformWrapper, ByteCode)>),
+    Isolated(Box<ByteCode>),
+    Blended(Box<(BlendMode, ByteCode)>),
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
-    Push,
-    PushClip(Box<(PathWrapper, FillRule)>),
-    PushBlend(BlendMode),
-    PushMasked(Mask),
-    Pop,
-    PushIsolated,
-    DrawCanvas(Arc<Canvas>),
+    Clipped(Box<(PathWrapper, FillRule, ByteCode)>),
+    Masked(Box<(Mask, ByteCode)>),
 }
 
+// TODO: Make cheap to clone?
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ByteCode(Vec<Instruction>);
 
