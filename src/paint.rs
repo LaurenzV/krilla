@@ -45,9 +45,10 @@ pub struct LinearGradient {
 pub struct RadialGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
-    pub r: FiniteF32,
+    pub cr: FiniteF32,
     pub fx: FiniteF32,
     pub fy: FiniteF32,
+    pub fr: FiniteF32,
     pub transform: TransformWrapper,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
@@ -85,6 +86,7 @@ pub enum Paint {
 pub enum GradientType {
     Sweep,
     Linear,
+    Radial,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -94,6 +96,10 @@ struct Shading(GradientProperties);
 pub struct GradientProperties {
     pub min: FiniteF32,
     pub max: FiniteF32,
+    // Only use for radial
+    pub cr: FiniteF32,
+    // Only use for radial
+    pub fr: FiniteF32,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
     // The bbox of the object the gradient is applied to
@@ -141,6 +147,8 @@ impl GradientPropertiesExt for LinearGradient {
             GradientProperties {
                 min: FiniteF32::new(min).unwrap(),
                 max: FiniteF32::new(max).unwrap(),
+                cr: FiniteF32::new(0.0).unwrap(),
+                fr: FiniteF32::new(0.0).unwrap(),
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
@@ -166,6 +174,8 @@ impl GradientPropertiesExt for SweepGradient {
             GradientProperties {
                 min,
                 max,
+                cr: FiniteF32::new(0.0).unwrap(),
+                fr: FiniteF32::new(0.0).unwrap(),
                 shading_type: FunctionShadingType::Function,
                 stops: Vec::from(self.stops.clone()),
                 bbox: get_expanded_bbox(bbox, transform),
@@ -179,25 +189,24 @@ impl GradientPropertiesExt for SweepGradient {
 
 impl GradientPropertiesExt for RadialGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
-        // TODO: Normalize coords
-        todo!();
-        // let (bbox, transform) = get_normalized(bbox, self.transform.0);
-        // (
-        //     GradientProperties {
-        //         coords: vec![
-        //             self.fx,
-        //             self.fy,
-        //             FiniteF32::new(0.0).unwrap(),
-        //             self.cx,
-        //             self.cy,
-        //             FiniteF32::new(self.r.get()).unwrap(),
-        //         ],
-        //         shading_type: FunctionShadingType::Radial,
-        //         stops: Vec::from(self.stops.clone()),
-        //         spread_method: self.spread_method,
-        //         bbox,
-        //     },
-        //     TransformWrapper(transform),
-        // )
+        let (ts, min, max) = get_point_ts(
+            Point::from_xy(self.cx.get(), self.cy.get()),
+            Point::from_xy(self.fx.get(), self.fy.get()),
+        );
+
+        (
+            GradientProperties {
+                min: FiniteF32::new(min).unwrap(),
+                max: FiniteF32::new(max).unwrap(),
+                cr: self.cr,
+                fr: self.fr,
+                shading_type: FunctionShadingType::Radial,
+                stops: Vec::from(self.stops.clone()),
+                bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
+                spread_method: self.spread_method,
+                gradient_type: GradientType::Radial,
+            },
+            TransformWrapper(self.transform.0.post_concat(ts)),
+        )
     }
 }

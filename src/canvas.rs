@@ -611,9 +611,7 @@ mod tests {
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
-    use crate::paint::{
-        LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset, SweepGradient,
-    };
+    use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, StopOffset, SweepGradient};
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
@@ -910,6 +908,69 @@ mod tests {
     #[test]
     fn linear_gradient_pad() {
         linear_gradient(SpreadMethod::Pad, "pad");
+    }
+
+    fn radial_gradient(spread_method: SpreadMethod, name: &str) {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.fill_path(
+            dummy_path(160.0),
+            Transform::from_translate(0.0, 0.0).try_into().unwrap(),
+            Fill {
+                paint: Paint::RadialGradient(RadialGradient {
+                    cx: FiniteF32::new(80.0).unwrap(),
+                    cy: FiniteF32::new(80.0).unwrap(),
+                    cr: FiniteF32::new(50.0).unwrap(),
+                    fx: FiniteF32::new(100.0).unwrap(),
+                    fy: FiniteF32::new(100.0).unwrap(),
+                    fr: FiniteF32::new(80.0).unwrap(),
+                    transform: TransformWrapper(
+                        // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                     // Transform::from_scale(0.5, 0.5),
+                    Transform::identity()
+                    ),
+                    spread_method,
+                    stops: vec![
+                        Stop {
+                            offset: NormalizedF32::new(0.2).unwrap(),
+                            color: Color::new_rgb(255, 0, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(0.7).unwrap(),
+                            color: Color::new_rgb(0, 0, 255),
+                            opacity: NormalizedF32::ONE,
+                        },
+                    ],
+                }),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write(&format!("radial_gradient_{}", name), &finished);
+    }
+
+    #[test]
+    fn radial_gradient_reflect() {
+        crate::canvas::tests::radial_gradient(SpreadMethod::Reflect, "reflect");
+    }
+
+    #[test]
+    fn radial_gradient_repeat() {
+        crate::canvas::tests::radial_gradient(SpreadMethod::Repeat, "repeat");
+    }
+
+    #[test]
+    fn radial_gradient_pad() {
+        crate::canvas::tests::radial_gradient(SpreadMethod::Pad, "pad");
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::paint::{LinearGradient, Paint, SpreadMethod, Stop, SweepGradient};
+use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
@@ -220,7 +220,25 @@ impl ColorPainter for ColrCanvas<'_> {
                     rule: Default::default(),
                 })
             },
-            Brush::RadialGradient { .. } => Some(Fill::default()),
+            Brush::RadialGradient { c0, r0, c1, r1, color_stops, extend } => {
+                let radial = RadialGradient {
+                    cx: FiniteF32::new(c0.x).unwrap(),
+                    cy: FiniteF32::new(c0.y).unwrap(),
+                    cr: FiniteF32::new(r0).unwrap(),
+                    fx: FiniteF32::new(c1.x).unwrap(),
+                    fy: FiniteF32::new(c1.y).unwrap(),
+                    fr: FiniteF32::new(r1).unwrap(),
+                    stops: self.stops(color_stops),
+                    spread_method: extend.to_spread_method(),
+                    transform: TransformWrapper(crate::Transform::identity()),
+                };
+
+                Some(Fill {
+                    paint: Paint::RadialGradient(radial),
+                    opacity: NormalizedF32::ONE,
+                    rule: Default::default(),
+                })
+            },
             Brush::SweepGradient { c0,  start_angle, end_angle, color_stops, extend} => {
                 if start_angle == end_angle && (matches!(extend, skrifa::color::Extend::Reflect | skrifa::color::Extend::Repeat)) {
                     None
