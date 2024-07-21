@@ -3,6 +3,7 @@
 pub mod bytecode;
 pub mod canvas;
 pub mod color;
+pub mod colr;
 mod graphics_state;
 mod object;
 pub mod paint;

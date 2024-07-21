@@ -2,9 +2,10 @@ use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::serialize::Object;
 use crate::transform::TransformWrapper;
+use crate::util::RectExt;
 use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Rect};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Scalar, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
@@ -44,9 +45,10 @@ pub struct LinearGradient {
 pub struct RadialGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
-    pub r: FiniteF32,
+    pub cr: FiniteF32,
     pub fx: FiniteF32,
     pub fy: FiniteF32,
+    pub fr: FiniteF32,
     pub transform: TransformWrapper,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
@@ -57,7 +59,8 @@ pub struct RadialGradient {
 pub struct SweepGradient {
     pub cx: FiniteF32,
     pub cy: FiniteF32,
-    pub angle: FiniteF32,
+    pub start_angle: FiniteF32,
+    pub end_angle: FiniteF32,
     pub transform: TransformWrapper,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
@@ -80,16 +83,27 @@ pub enum Paint {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
+pub enum GradientType {
+    Sweep,
+    Linear,
+    Radial,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
 struct Shading(GradientProperties);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct GradientProperties {
-    pub coords: Vec<FiniteF32>,
+    pub min: FiniteF32,
+    pub max: FiniteF32,
+    // Only use for radial
+    pub coords: Option<Vec<FiniteF32>>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
     // The bbox of the object the gradient is applied to
     pub bbox: Rect,
     pub spread_method: SpreadMethod,
+    pub gradient_type: GradientType,
 }
 
 pub trait GradientPropertiesExt {
@@ -97,33 +111,74 @@ pub trait GradientPropertiesExt {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper);
 }
 
+fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
+    // We need to make sure the shading covers the whole bbox of the object after
+    // the transform as been applied. In order to know that, we need to calculate the
+    // resulting bbox from the inverted transform.
+    bbox.expand(&bbox.transform(shading_transform.invert().unwrap()).unwrap());
+    bbox
+}
+
+fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
+    let dist = start.distance(end);
+
+    let dx = end.x - start.x;
+    let dy = end.y - start.y;
+    let angle = dy.atan2(dx).to_degrees();
+
+    (
+        Transform::from_rotate_at(angle, start.x, start.y),
+        start.x,
+        start.x + dist,
+    )
+}
+
 impl GradientPropertiesExt for LinearGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        // TODO: Make prettier
+
+        let (ts, min, max) = get_point_ts(
+            Point::from_xy(self.x1.get(), self.y1.get()),
+            Point::from_xy(self.x2.get(), self.y2.get()),
+        );
         (
             GradientProperties {
-                coords: vec![self.x1, self.y1, self.x2, self.y2],
+                min: FiniteF32::new(min).unwrap(),
+                max: FiniteF32::new(max).unwrap(),
+                coords: Some(vec![self.x1, self.y1, self.x2, self.y2]),
                 shading_type: FunctionShadingType::Axial,
                 stops: Vec::from(self.stops.clone()),
-                bbox,
+                bbox: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
                 spread_method: self.spread_method,
+                gradient_type: GradientType::Linear,
             },
-            self.transform,
+            TransformWrapper(self.transform.0.post_concat(ts)),
         )
     }
 }
 
 impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        let mut min = self.start_angle;
+        let max = self.end_angle;
+
+        let transform = self
+            .transform
+            .0
+            .post_concat(Transform::from_translate(self.cx.get(), self.cy.get()));
+
         (
             GradientProperties {
-                // Not used
-                coords: vec![],
+                min,
+                max,
+                coords: None,
                 shading_type: FunctionShadingType::Function,
                 stops: Vec::from(self.stops.clone()),
-                bbox,
+                bbox: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
+                gradient_type: GradientType::Sweep,
             },
-            self.transform,
+            TransformWrapper(transform),
         )
     }
 }
@@ -132,20 +187,16 @@ impl GradientPropertiesExt for RadialGradient {
     fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         (
             GradientProperties {
-                coords: vec![
-                    self.fx,
-                    self.fy,
-                    FiniteF32::new(0.0).unwrap(),
-                    self.cx,
-                    self.cy,
-                    FiniteF32::new(self.r.get()).unwrap(),
-                ],
+                min: FiniteF32::new(0.0).unwrap(),
+                max: FiniteF32::new(0.0).unwrap(),
+                coords: Some(vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr]),
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
-                bbox,
+                bbox: get_expanded_bbox(bbox, self.transform.0),
                 spread_method: self.spread_method,
+                gradient_type: GradientType::Radial,
             },
-            self.transform,
+            TransformWrapper(self.transform.0),
         )
     }
 }

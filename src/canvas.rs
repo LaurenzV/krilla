@@ -32,6 +32,11 @@ impl Canvas {
         }
     }
 
+    pub(crate) fn transform(&mut self, transform: Transform) {
+        self.byte_code
+            .push(Instruction::Transform(TransformWrapper(transform)));
+    }
+
     pub fn stroke_path(
         &mut self,
         path: Path,
@@ -55,6 +60,10 @@ impl Canvas {
 
     pub fn push_layer(&mut self) {
         self.byte_code.push(Instruction::PushLayer);
+    }
+
+    pub fn blend_mode(&mut self, blend_mode: BlendMode) {
+        self.byte_code.push(Instruction::BlendMode(blend_mode));
     }
 
     pub fn pop_layer(&mut self) {
@@ -120,6 +129,8 @@ impl<'a> CanvasPdfSerializer<'a> {
             match op {
                 Instruction::PushLayer => self.save_state(),
                 Instruction::PopLayer => self.restore_state(),
+                Instruction::BlendMode(bm) => self.set_blend_mode(*bm),
+                Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0 .0, &stroke_data.1 .0, &stroke_data.2)
                 }
@@ -277,7 +288,10 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
-            Paint::SweepGradient(_) => todo!(),
+            Paint::SweepGradient(sg) => {
+                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                write_gradient(gradient_props, transform);
+            }
             Paint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
@@ -368,7 +382,10 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let (gradient_props, transform) = rg.gradient_properties(path.bounds());
                 write_gradient(gradient_props, transform);
             }
-            Paint::SweepGradient(_) => todo!(),
+            Paint::SweepGradient(sg) => {
+                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                write_gradient(gradient_props, transform);
+            }
             Paint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
@@ -594,7 +611,10 @@ mod tests {
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
-    use crate::paint::{LinearGradient, Paint, Pattern, SpreadMethod, Stop, StopOffset};
+    use crate::paint::{
+        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, StopOffset,
+        SweepGradient,
+    };
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
@@ -762,24 +782,24 @@ mod tests {
         write("nested_opacity", &finished);
     }
 
-    fn gradient(spread_method: SpreadMethod, name: &str) {
+    fn sweep_gradient(spread_method: SpreadMethod, name: &str) {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.fill_path(
-            dummy_path(100.0),
-            Transform::from_scale(1.0, 1.0).try_into().unwrap(),
+            dummy_path(160.0),
+            Transform::from_translate(0.0, 0.0).try_into().unwrap(),
             Fill {
-                paint: Paint::LinearGradient(LinearGradient {
-                    x1: FiniteF32::new(40.0).unwrap(),
-                    y1: Default::default(),
-                    x2: FiniteF32::new(60.0).unwrap(),
-                    y2: Default::default(),
+                paint: Paint::SweepGradient(SweepGradient {
+                    cx: FiniteF32::new(80.0).unwrap(),
+                    cy: FiniteF32::new(80.0).unwrap(),
+                    start_angle: FiniteF32::new(0.0).unwrap(),
+                    end_angle: FiniteF32::new(360.0).unwrap(),
                     transform: TransformWrapper(
-                        Transform::from_translate(0.0, 30.0)
-                            .pre_concat(Transform::from_scale(0.5, 0.5))
-                            .pre_concat(Transform::from_rotate_at(45.0, 90.0, 90.0)),
+                        // Transform::from_scale(0.5, 0.5),
+                        // ), // Transform::from_scale(0.5, 0.5),
+                        Transform::from_scale(1.0, -1.0),
                     ),
-                    spread_method: spread_method,
+                    spread_method,
                     stops: vec![
                         Stop {
                             offset: NormalizedF32::new(0.0).unwrap(),
@@ -787,7 +807,7 @@ mod tests {
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.5).unwrap(),
+                            offset: NormalizedF32::new(0.4).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
                             opacity: NormalizedF32::ONE,
                         },
@@ -810,22 +830,150 @@ mod tests {
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
 
-        write(&format!("gradient_{}", name), &finished);
+        write(&format!("sweep_gradient_{}", name), &finished);
     }
 
     #[test]
-    fn gradient_reflect() {
-        gradient(SpreadMethod::Reflect, "reflect");
+    fn sweep_gradient_reflect() {
+        sweep_gradient(SpreadMethod::Reflect, "reflect");
     }
 
     #[test]
-    fn gradient_repeat() {
-        gradient(SpreadMethod::Repeat, "repeat");
+    fn sweep_gradient_repeat() {
+        sweep_gradient(SpreadMethod::Repeat, "repeat");
     }
 
     #[test]
-    fn gradient_pad() {
-        gradient(SpreadMethod::Pad, "pad");
+    fn sweep_gradient_pad() {
+        sweep_gradient(SpreadMethod::Pad, "pad");
+    }
+
+    fn linear_gradient(spread_method: SpreadMethod, name: &str) {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.fill_path(
+            dummy_path(160.0),
+            Transform::from_translate(0.0, 0.0).try_into().unwrap(),
+            Fill {
+                paint: Paint::LinearGradient(LinearGradient {
+                    x1: FiniteF32::new(0.3 * 160.0).unwrap(),
+                    y1: FiniteF32::new(0.6 * 160.0).unwrap(),
+                    x2: FiniteF32::new(0.1 * 160.0).unwrap(),
+                    y2: FiniteF32::new(0.3 * 160.0).unwrap(),
+                    transform: TransformWrapper(
+                        Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                    ), // Transform::from_scale(0.5, 0.5),
+                    // Transform::identity()
+                    spread_method,
+                    stops: vec![
+                        Stop {
+                            offset: NormalizedF32::new(0.2).unwrap(),
+                            color: Color::new_rgb(255, 0, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(0.4).unwrap(),
+                            color: Color::new_rgb(0, 255, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(0.7).unwrap(),
+                            color: Color::new_rgb(0, 0, 255),
+                            opacity: NormalizedF32::ONE,
+                        },
+                    ],
+                }),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write(&format!("linear_gradient_{}", name), &finished);
+    }
+
+    #[test]
+    fn linear_gradient_reflect() {
+        linear_gradient(SpreadMethod::Reflect, "reflect");
+    }
+
+    #[test]
+    fn linear_gradient_repeat() {
+        linear_gradient(SpreadMethod::Repeat, "repeat");
+    }
+
+    #[test]
+    fn linear_gradient_pad() {
+        linear_gradient(SpreadMethod::Pad, "pad");
+    }
+
+    fn radial_gradient(spread_method: SpreadMethod, name: &str) {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        canvas.fill_path(
+            dummy_path(160.0),
+            Transform::from_translate(0.0, 0.0).try_into().unwrap(),
+            Fill {
+                paint: Paint::RadialGradient(RadialGradient {
+                    cx: FiniteF32::new(80.0).unwrap(),
+                    cy: FiniteF32::new(80.0).unwrap(),
+                    cr: FiniteF32::new(0.0).unwrap(),
+                    fx: FiniteF32::new(100.0).unwrap(),
+                    fy: FiniteF32::new(100.0).unwrap(),
+                    fr: FiniteF32::new(50.0).unwrap(),
+                    transform: TransformWrapper(
+                        Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                        // Transform::from_scale(0.5, 0.5),
+                        // Transform::identity(),
+                    ),
+                    spread_method,
+                    stops: vec![
+                        Stop {
+                            offset: NormalizedF32::new(0.2).unwrap(),
+                            color: Color::new_rgb(255, 0, 0),
+                            opacity: NormalizedF32::ONE,
+                        },
+                        Stop {
+                            offset: NormalizedF32::new(0.7).unwrap(),
+                            color: Color::new_rgb(0, 0, 255),
+                            opacity: NormalizedF32::ONE,
+                        },
+                    ],
+                }),
+                opacity: NormalizedF32::ONE,
+                ..Fill::default()
+            },
+        );
+
+        let serialize_settings = SerializeSettings {
+            serialize_dependencies: true,
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write(&format!("radial_gradient_{}", name), &finished);
+    }
+
+    #[test]
+    fn radial_gradient_reflect() {
+        crate::canvas::tests::radial_gradient(SpreadMethod::Reflect, "reflect");
+    }
+
+    #[test]
+    fn radial_gradient_repeat() {
+        crate::canvas::tests::radial_gradient(SpreadMethod::Repeat, "repeat");
+    }
+
+    #[test]
+    fn radial_gradient_pad() {
+        crate::canvas::tests::radial_gradient(SpreadMethod::Pad, "pad");
     }
 
     #[test]
