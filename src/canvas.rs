@@ -18,6 +18,125 @@ use pdf_writer::{Chunk, Content, Finish, Pdf, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
+macro_rules! canvas_impl {
+    ($type:ident $(<$($lifetime:tt),+>)?) => {
+        impl $(<$($lifetime),+>)? $type $(<$($lifetime),+>)? {
+
+            pub(crate) fn transform(&mut self, transform: Transform) {
+                self.byte_code
+                    .push(Instruction::Transform(TransformWrapper(transform)));
+            }
+
+            pub fn masked(&mut self, mask: Mask) -> Masked {
+                Masked::new(&mut self.byte_code, mask, self.size)
+            }
+
+            pub fn stroke_path(
+                &mut self,
+                path: Path,
+                transform: tiny_skia_path::Transform,
+                stroke: Stroke,
+            ) {
+                self.byte_code.push(Instruction::Push);
+                self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
+                self.byte_code.push(Instruction::StrokePath(Box::new((path.into(), stroke,
+                ))));
+                self.byte_code.push(Instruction::Pop)
+            }
+
+            pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
+                self.byte_code.push(Instruction::Push);
+                self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
+                self.byte_code.push(Instruction::FillPath(Box::new((
+                    path.into(),
+                    fill,
+                ))));
+                self.byte_code.push(Instruction::Pop)
+            }
+
+            pub fn push_layer(&mut self) {
+                self.byte_code.push(Instruction::Push);
+            }
+
+            // pub fn blend_mode(&mut self, blend_mode: BlendMode) {
+            //     self.byte_code.push(Instruction::BlendMode(blend_mode));
+            // }
+
+            pub fn pop_layer(&mut self) {
+                self.byte_code.push(Instruction::Pop);
+            }
+
+            // pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
+            //     self.byte_code
+            //         .push(Instruction::ClipPath(Box::new((path.into(), clip_rule))));
+            // }
+
+            pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
+                self.byte_code.push(Instruction::Push);
+                self.byte_code.push(Instruction::Transform(TransformWrapper(transform)));
+                self.byte_code.push(Instruction::DrawImage(Box::new((
+                    image,
+                    size,
+                ))));
+                self.byte_code.push(Instruction::Pop)
+            }
+
+            // pub fn draw_canvas(
+            //     &mut self,
+            //     canvas: Canvas,
+            //     transform: Transform,
+            //     composite_mode: BlendMode,
+            //     opacity: NormalizedF32,
+            //     isolated: bool,
+            //     mask: Option<Mask>,
+            // ) {
+            //     self.byte_code.push(Instruction::DrawCanvas(Box::new((
+            //         Arc::new(canvas),
+            //         TransformWrapper(transform),
+            //         composite_mode,
+            //         opacity,
+            //         isolated,
+            //         mask,
+            //     ))));
+            // }
+        }
+    };
+}
+
+// Apply the macro for Canvas and Test
+canvas_impl!(Canvas);
+canvas_impl!(Masked<'a>);
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Masked<'a> {
+    pub(crate) parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    pub(crate) size: Size,
+}
+
+impl<'a> Masked<'a> {
+    pub fn new(parent_byte_code: &'a mut ByteCode, mask: Mask, size: Size) -> Self {
+        parent_byte_code.push(Instruction::PushMasked(mask));
+
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            size
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Masked<'_> {
+    fn drop(&mut self) {
+        self.parent_byte_code.extend(&self.byte_code);
+        self.parent_byte_code.push(Instruction::Pop);
+    }
+}
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Canvas {
     pub(crate) byte_code: ByteCode,
@@ -30,76 +149,6 @@ impl Canvas {
             byte_code: ByteCode::new(),
             size,
         }
-    }
-
-    pub(crate) fn transform(&mut self, transform: Transform) {
-        self.byte_code
-            .push(Instruction::Transform(TransformWrapper(transform)));
-    }
-
-    pub fn stroke_path(
-        &mut self,
-        path: Path,
-        transform: tiny_skia_path::Transform,
-        stroke: Stroke,
-    ) {
-        self.byte_code.push(Instruction::StrokePath(Box::new((
-            path.into(),
-            TransformWrapper(transform),
-            stroke,
-        ))));
-    }
-
-    pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
-        self.byte_code.push(Instruction::FillPath(Box::new((
-            path.into(),
-            TransformWrapper(transform),
-            fill,
-        ))));
-    }
-
-    pub fn push_layer(&mut self) {
-        self.byte_code.push(Instruction::PushLayer);
-    }
-
-    pub fn blend_mode(&mut self, blend_mode: BlendMode) {
-        self.byte_code.push(Instruction::BlendMode(blend_mode));
-    }
-
-    pub fn pop_layer(&mut self) {
-        self.byte_code.push(Instruction::PopLayer);
-    }
-
-    pub fn set_clip_path(&mut self, path: Path, clip_rule: FillRule) {
-        self.byte_code
-            .push(Instruction::ClipPath(Box::new((path.into(), clip_rule))));
-    }
-
-    pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
-        self.byte_code.push(Instruction::DrawImage(Box::new((
-            image,
-            size,
-            TransformWrapper(transform),
-        ))))
-    }
-
-    pub fn draw_canvas(
-        &mut self,
-        canvas: Canvas,
-        transform: Transform,
-        composite_mode: BlendMode,
-        opacity: NormalizedF32,
-        isolated: bool,
-        mask: Option<Mask>,
-    ) {
-        self.byte_code.push(Instruction::DrawCanvas(Box::new((
-            Arc::new(canvas),
-            TransformWrapper(transform),
-            composite_mode,
-            opacity,
-            isolated,
-            mask,
-        ))));
     }
 }
 
@@ -127,32 +176,33 @@ impl<'a> CanvasPdfSerializer<'a> {
     pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
         for op in instructions {
             match op {
-                Instruction::PushLayer => self.save_state(),
-                Instruction::PopLayer => self.restore_state(),
+                Instruction::Push => self.save_state(),
+                Instruction::Pop => self.restore_state(),
                 Instruction::BlendMode(bm) => self.set_blend_mode(*bm),
                 Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
-                    self.stroke_path(&stroke_data.0 .0, &stroke_data.1 .0, &stroke_data.2)
+                    self.stroke_path(&stroke_data.0.0, &stroke_data.1)
                 }
                 Instruction::FillPath(fill_data) => {
-                    self.fill_path(&fill_data.0 .0, &fill_data.1 .0, &fill_data.2);
+                    self.fill_path(&fill_data.0.0, &fill_data.1);
                 }
                 Instruction::DrawImage(image_data) => {
-                    self.draw_image(image_data.0.clone(), image_data.1, &image_data.2 .0)
+                    self.draw_image(image_data.0.clone(), image_data.1)
                 }
-                Instruction::DrawCanvas(canvas_data) => {
-                    self.draw_canvas(
-                        canvas_data.0.clone(),
-                        &canvas_data.1 .0,
-                        canvas_data.2,
-                        canvas_data.3,
-                        canvas_data.4,
-                        canvas_data.5.clone(),
-                    );
-                }
-                Instruction::ClipPath(clip_data) => {
-                    self.set_clip_path(&clip_data.0 .0, &clip_data.1)
-                }
+                _ => todo!()
+                // Instruction::DrawCanvas(canvas_data) => {
+                //     self.draw_canvas(
+                //         canvas_data.0.clone(),
+                //         &canvas_data.1 .0,
+                //         canvas_data.2,
+                //         canvas_data.3,
+                //         canvas_data.4,
+                //         canvas_data.5.clone(),
+                //     );
+                // }
+                // Instruction::ClipPath(clip_data) => {
+                //     self.set_clip_path(&clip_data.0 .0, &clip_data.1)
+                // }
             }
         }
     }
@@ -237,12 +287,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn fill_path(&mut self, path: &Path, transform: &Transform, fill: &Fill) {
-        self.save_state();
-        self.transform(transform);
-
+    pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
+
+        self.save_state();
 
         self.set_fill_opacity(fill.opacity);
 
@@ -329,13 +378,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.end_path();
     }
 
-    pub fn stroke_path(&mut self, path: &Path, transform: &Transform, stroke: &Stroke) {
-        let path_bbox = path.bounds().transform(*transform).unwrap();
-        self.bbox.expand(&path_bbox);
+    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+        self.bbox
+            .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
         self.save_state();
-        self.transform(transform);
-
         self.set_stroke_opacity(stroke.opacity);
 
         let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
@@ -437,19 +484,20 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
-    pub fn draw_image(&mut self, image: Image, size: Size, transform: &Transform) {
+    pub fn draw_image(&mut self, image: Image, size: Size) {
+        // TODO: Expand bbox
         let image_name = self
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::Image(image)));
         // Apply user-supplied transform and scale the image from 1x1 to the actual dimensions.
-        let transform = transform.pre_concat(Transform::from_row(
+        let transform = Transform::from_row(
             size.width(),
             0.0,
             0.0,
             -size.height(),
             0.0,
             size.height(),
-        ));
+        );
         self.save_state();
         self.transform(&transform);
         self.content.x_object(image_name.to_pdf_name());

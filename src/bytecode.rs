@@ -9,24 +9,18 @@ use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Instruction {
-    PushLayer,
-    PopLayer,
     BlendMode(BlendMode),
     Transform(TransformWrapper),
-    ClipPath(Box<(PathWrapper, FillRule)>),
-    StrokePath(Box<(PathWrapper, TransformWrapper, Stroke)>),
-    DrawImage(Box<(Image, Size, TransformWrapper)>),
-    FillPath(Box<(PathWrapper, TransformWrapper, Fill)>),
-    DrawCanvas(
-        Box<(
-            Arc<Canvas>,
-            TransformWrapper,
-            BlendMode,
-            NormalizedF32,
-            bool,
-            Option<Mask>,
-        )>,
-    ),
+    StrokePath(Box<(PathWrapper, Stroke)>),
+    DrawImage(Box<(Image, Size)>),
+    FillPath(Box<(PathWrapper, Fill)>),
+    Push,
+    PushClip(Box<(PathWrapper, FillRule)>),
+    PushBlend(BlendMode),
+    PushMasked(Mask),
+    Pop,
+    PushIsolated,
+    DrawCanvas(Arc<Canvas>),
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -39,6 +33,10 @@ impl ByteCode {
 
     pub fn push(&mut self, op: Instruction) {
         self.0.push(op);
+    }
+
+    pub fn extend(&mut self, other: &ByteCode) {
+        self.0.extend(other.instructions().iter().cloned());
     }
 
     pub fn instructions(&self) -> &[Instruction] {
