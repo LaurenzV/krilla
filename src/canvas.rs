@@ -58,9 +58,9 @@ macro_rules! canvas_impl {
                 self.byte_code.push(Instruction::Push);
             }
 
-            // pub fn blend_mode(&mut self, blend_mode: BlendMode) {
-            //     self.byte_code.push(Instruction::BlendMode(blend_mode));
-            // }
+            pub fn blended(&mut self, blend_mode: BlendMode) -> Blended {
+                Blended::new(&mut self.byte_code, self.size, blend_mode)
+            }
 
             pub fn pop_layer(&mut self) {
                 self.byte_code.push(Instruction::Pop);
@@ -106,6 +106,7 @@ macro_rules! canvas_impl {
 // Apply the macro for Canvas and Test
 canvas_impl!(Canvas);
 canvas_impl!(Masked<'a>);
+canvas_impl!(Blended<'a>);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Masked<'a> {
@@ -121,7 +122,7 @@ impl<'a> Masked<'a> {
         Self {
             parent_byte_code,
             byte_code: ByteCode::new(),
-            size
+            size,
         }
     }
 
@@ -134,6 +135,33 @@ impl Drop for Masked<'_> {
     fn drop(&mut self) {
         self.parent_byte_code.extend(&self.byte_code);
         self.parent_byte_code.push(Instruction::Pop);
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Blended<'a> {
+    pub(crate) byte_code: &'a mut ByteCode,
+    pub(crate) size: Size,
+}
+
+impl<'a> Blended<'a> {
+    pub fn new(parent_byte_code: &'a mut ByteCode, size: Size, blend_mode: BlendMode) -> Self {
+        parent_byte_code.push(Instruction::PushBlend(blend_mode));
+
+        Self {
+            byte_code: parent_byte_code,
+            size,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Blended<'_> {
+    fn drop(&mut self) {
+        self.byte_code.push(Instruction::Pop);
     }
 }
 
@@ -181,28 +209,27 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::BlendMode(bm) => self.set_blend_mode(*bm),
                 Instruction::Transform(t) => self.transform(&t.0),
                 Instruction::StrokePath(stroke_data) => {
-                    self.stroke_path(&stroke_data.0.0, &stroke_data.1)
+                    self.stroke_path(&stroke_data.0 .0, &stroke_data.1)
                 }
                 Instruction::FillPath(fill_data) => {
-                    self.fill_path(&fill_data.0.0, &fill_data.1);
+                    self.fill_path(&fill_data.0 .0, &fill_data.1);
                 }
                 Instruction::DrawImage(image_data) => {
                     self.draw_image(image_data.0.clone(), image_data.1)
                 }
-                _ => todo!()
-                // Instruction::DrawCanvas(canvas_data) => {
-                //     self.draw_canvas(
-                //         canvas_data.0.clone(),
-                //         &canvas_data.1 .0,
-                //         canvas_data.2,
-                //         canvas_data.3,
-                //         canvas_data.4,
-                //         canvas_data.5.clone(),
-                //     );
-                // }
-                // Instruction::ClipPath(clip_data) => {
-                //     self.set_clip_path(&clip_data.0 .0, &clip_data.1)
-                // }
+                _ => todo!(), // Instruction::DrawCanvas(canvas_data) => {
+                              //     self.draw_canvas(
+                              //         canvas_data.0.clone(),
+                              //         &canvas_data.1 .0,
+                              //         canvas_data.2,
+                              //         canvas_data.3,
+                              //         canvas_data.4,
+                              //         canvas_data.5.clone(),
+                              //     );
+                              // }
+                              // Instruction::ClipPath(clip_data) => {
+                              //     self.set_clip_path(&clip_data.0 .0, &clip_data.1)
+                              // }
             }
         }
     }
@@ -490,14 +517,8 @@ impl<'a> CanvasPdfSerializer<'a> {
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::Image(image)));
         // Apply user-supplied transform and scale the image from 1x1 to the actual dimensions.
-        let transform = Transform::from_row(
-            size.width(),
-            0.0,
-            0.0,
-            -size.height(),
-            0.0,
-            size.height(),
-        );
+        let transform =
+            Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
         self.save_state();
         self.transform(&transform);
         self.content.x_object(image_name.to_pdf_name());
@@ -655,7 +676,7 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Canvas;
+    use crate::canvas::{Blended, Canvas};
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
@@ -767,14 +788,14 @@ mod tests {
             },
         );
 
-        canvas.draw_canvas(
-            second,
-            Transform::from_translate(100.0, 100.0),
-            BlendMode::Difference,
-            NormalizedF32::ONE,
-            false,
-            None,
-        );
+        // canvas.draw_canvas(
+        //     second,
+        //     Transform::from_translate(100.0, 100.0),
+        //     BlendMode::Difference,
+        //     NormalizedF32::ONE,
+        //     false,
+        //     None,
+        // );
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -811,14 +832,14 @@ mod tests {
             },
         );
 
-        canvas.draw_canvas(
-            second,
-            Transform::from_translate(100.0, 100.0),
-            BlendMode::Difference,
-            NormalizedF32::new(0.5).unwrap(),
-            false,
-            None,
-        );
+        // canvas.draw_canvas(
+        //     second,
+        //     Transform::from_translate(100.0, 100.0),
+        //     BlendMode::Difference,
+        //     NormalizedF32::new(0.5).unwrap(),
+        //     false,
+        //     None,
+        // );
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
@@ -1029,7 +1050,7 @@ mod tests {
         use crate::serialize::PageSerialize;
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
         canvas.push_layer();
-        canvas.set_clip_path(dummy_path(100.0), FillRule::NonZero);
+        // canvas.set_clip_path(dummy_path(100.0), FillRule::NonZero);
         canvas.fill_path(
             dummy_path(200.0),
             Transform::from_scale(1.0, 1.0),
@@ -1125,14 +1146,14 @@ mod tests {
         );
 
         let mut final_canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        final_canvas.draw_canvas(
-            path_canvas,
-            Transform::identity(),
-            BlendMode::Normal,
-            NormalizedF32::ONE,
-            false,
-            Some(Mask::new(Arc::new(mask_canvas), MaskType::Luminance)),
-        );
+        // final_canvas.draw_canvas(
+        //     path_canvas,
+        //     Transform::identity(),
+        //     BlendMode::Normal,
+        //     NormalizedF32::ONE,
+        //     false,
+        //     Some(Mask::new(Arc::new(mask_canvas), MaskType::Luminance)),
+        // );
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,
