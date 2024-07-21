@@ -18,4 +18,4 @@ pub use color::*;
 pub use object::mask::MaskType;
 
 pub use path::*;
-pub use tiny_skia_path::*;
+pub use tiny_skia_path::{Size, Transform};
