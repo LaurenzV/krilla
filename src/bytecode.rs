@@ -14,7 +14,7 @@ pub enum Instruction {
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
-    Clipped(Box<(PathWrapper, FillRule, ByteCode)>),
+    Clipped(Box<(Vec<PathWrapper>, FillRule, ByteCode)>),
     Masked(Box<(Mask, ByteCode)>),
     Opacified(Box<(NormalizedF32, ByteCode)>),
 }

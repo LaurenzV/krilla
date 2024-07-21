@@ -376,7 +376,7 @@ mod tests {
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
 
-        let glyphs = (15u16..=15).collect::<Vec<_>>();
+        let glyphs = (0u16..=220).collect::<Vec<_>>();
         // let glyphs = vec![2268];
 
         let num_glyphs = glyphs.len();

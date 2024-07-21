@@ -210,13 +210,11 @@ impl<'a> Clipped<'a> {
 
 impl Drop for Clipped<'_> {
     fn drop(&mut self) {
-        for path in &self.paths {
-            self.parent_byte_code.push(Instruction::Clipped(Box::new((
-                path.clone(),
-                self.fill_rule,
-                self.byte_code.clone(),
-            ))));
-        }
+        self.parent_byte_code.push(Instruction::Clipped(Box::new((
+            self.paths.clone(),
+            self.fill_rule,
+            self.byte_code.clone(),
+        ))));
     }
 }
 
@@ -339,7 +337,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                     self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
                 }
                 Instruction::Clipped(clip_data) => {
-                    self.draw_clipped(&clip_data.0 .0, &clip_data.1, clip_data.2.instructions())
+                    self.draw_clipped(clip_data.0.as_slice(), &clip_data.1, clip_data.2.instructions())
                 }
                 Instruction::Opacified(opacity_data) => {
                     self.draw_opacified(opacity_data.0, opacity_data.1.instructions())
@@ -654,12 +652,14 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn draw_clipped(
         &mut self,
-        clip_path: &Path,
+        clip_paths: &[PathWrapper],
         fill_rule: &FillRule,
         instructions: &[Instruction],
     ) {
         self.save_state();
-        self.set_clip_path(clip_path, fill_rule);
+        for clip_path in clip_paths {
+            self.set_clip_path(&clip_path.0, fill_rule);
+        }
         self.serialize_instructions(instructions);
         self.restore_state();
     }
