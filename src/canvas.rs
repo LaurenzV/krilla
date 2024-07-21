@@ -48,6 +48,10 @@ macro_rules! canvas_impl {
                 Blended::new(&mut self.byte_code, blend_mode)
             }
 
+            pub fn opacified(&mut self, opacity: NormalizedF32) -> Opacified {
+                Opacified::new(&mut self.byte_code, opacity)
+            }
+
             pub fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
                 Clipped::new(&mut self.byte_code, path, clip_rule)
             }
@@ -73,6 +77,7 @@ canvas_impl!(Masked<'a>);
 canvas_impl!(Blended<'a>);
 canvas_impl!(Clipped<'a>);
 canvas_impl!(Transformed<'a>);
+canvas_impl!(Opacified<'a>);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Masked<'a> {
@@ -130,6 +135,40 @@ impl Drop for Blended<'_> {
         if self.blend_mode != BlendMode::Normal {
             self.parent_byte_code.push(Instruction::Blended(Box::new((
                 self.blend_mode,
+                self.byte_code.clone(),
+            ))))
+        } else {
+            self.parent_byte_code.extend(&self.byte_code)
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct Opacified<'a> {
+    parent_byte_code: &'a mut ByteCode,
+    pub(crate) byte_code: ByteCode,
+    opacity: NormalizedF32,
+}
+
+impl<'a> Opacified<'a> {
+    pub fn new(parent_byte_code: &'a mut ByteCode, opacity: NormalizedF32) -> Self {
+        Self {
+            parent_byte_code,
+            byte_code: ByteCode::new(),
+            opacity,
+        }
+    }
+
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for Opacified<'_> {
+    fn drop(&mut self) {
+        if self.opacity != NormalizedF32::ONE {
+            self.parent_byte_code.push(Instruction::Opacified(Box::new((
+                self.opacity,
                 self.byte_code.clone(),
             ))))
         } else {
@@ -291,6 +330,9 @@ impl<'a> CanvasPdfSerializer<'a> {
                 }
                 Instruction::Clipped(clip_data) => {
                     self.draw_clipped(&clip_data.0 .0, &clip_data.1, clip_data.2.instructions())
+                }
+                Instruction::Opacified(opacity_data) => {
+                    self.draw_opacified(opacity_data.0, opacity_data.1.instructions())
                 }
                 _ => todo!(), // Instruction::DrawCanvas(canvas_data) => {
                               //     self.draw_canvas(
@@ -612,6 +654,13 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
+    pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
+        self.save_state();
+        self.set_base_opacity(opacity);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
     pub fn draw_masked(&mut self, mask: Mask, instructions: &[Instruction]) {
         self.save_state();
         self.set_mask(mask);
@@ -887,8 +936,9 @@ mod tests {
             },
         );
 
-        let mut second = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        second.fill_path(
+        let mut translated = canvas.transformed(Transform::from_translate(100.0, 100.0));
+        let mut opacified = translated.opacified(NormalizedF32::new(0.5).unwrap());
+        opacified.fill_path(
             dummy_path(100.0),
             Transform::identity(),
             Fill {
@@ -898,14 +948,8 @@ mod tests {
             },
         );
 
-        // canvas.draw_canvas(
-        //     second,
-        //     Transform::from_translate(100.0, 100.0),
-        //     BlendMode::Difference,
-        //     NormalizedF32::new(0.5).unwrap(),
-        //     false,
-        //     None,
-        // );
+        opacified.finish();
+        translated.finish();
 
         let serialize_settings = SerializeSettings {
             serialize_dependencies: true,

@@ -4,8 +4,7 @@ use crate::object::mask::Mask;
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
 use pdf_writer::types::BlendMode;
-use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Size};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Instruction {
@@ -17,6 +16,7 @@ pub enum Instruction {
     FillPath(Box<(PathWrapper, Fill)>),
     Clipped(Box<(PathWrapper, FillRule, ByteCode)>),
     Masked(Box<(Mask, ByteCode)>),
+    Opacified(Box<(NormalizedF32, ByteCode)>),
 }
 
 // TODO: Make cheap to clone?
