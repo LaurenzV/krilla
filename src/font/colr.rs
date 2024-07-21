@@ -1,5 +1,6 @@
 use crate::canvas::Canvas;
 use crate::color::Color;
+use crate::font::OutlineBuilder;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
@@ -11,36 +12,6 @@ use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
-
-struct GlyphBuilder(PathBuilder);
-
-impl GlyphBuilder {
-    pub fn finish(self) -> Option<Path> {
-        self.0.finish()
-    }
-}
-
-impl OutlinePen for GlyphBuilder {
-    fn move_to(&mut self, x: f32, y: f32) {
-        self.0.move_to(x, y);
-    }
-
-    fn line_to(&mut self, x: f32, y: f32) {
-        self.0.line_to(x, y);
-    }
-
-    fn quad_to(&mut self, cx0: f32, cy0: f32, x: f32, y: f32) {
-        self.0.quad_to(cx0, cy0, x, y);
-    }
-
-    fn curve_to(&mut self, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x: f32, y: f32) {
-        self.0.cubic_to(cx0, cy0, cx1, cy1, x, y);
-    }
-
-    fn close(&mut self) {
-        self.0.close()
-    }
-}
 
 struct ColrCanvas<'a> {
     font: &'a FontRef<'a>,
@@ -144,7 +115,7 @@ impl ColorPainter for ColrCanvas<'_> {
     fn push_clip_glyph(&mut self, glyph_id: GlyphId) {
         let mut old = self.clips.last().unwrap().clone();
 
-        let mut glyph_builder = GlyphBuilder(PathBuilder::new());
+        let mut glyph_builder = OutlineBuilder(PathBuilder::new());
         let outline_glyphs = self.font.outline_glyphs();
         let outline_glyph = outline_glyphs.get(glyph_id).unwrap();
         outline_glyph
@@ -342,7 +313,7 @@ impl ColorPainter for ColrCanvas<'_> {
 #[cfg(test)]
 mod tests {
     use crate::canvas::Canvas;
-    use crate::colr::ColrCanvas;
+    use crate::font::colr::ColrCanvas;
     use crate::serialize::{PageSerialize, SerializeSettings};
     use skrifa::prelude::LocationRef;
     use skrifa::{FontRef, GlyphId, MetadataProvider};
@@ -427,6 +398,6 @@ mod tests {
         }
 
         let pdf = parent_canvas.serialize(SerializeSettings::default());
-        let _ = std::fs::write("out.pdf", pdf.finish());
+        let _ = std::fs::write("out/colr.pdf", pdf.finish());
     }
 }
