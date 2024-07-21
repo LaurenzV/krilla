@@ -1,3 +1,4 @@
+use crate::bytecode::ByteCode;
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, SerializerContext};
@@ -7,7 +8,7 @@ use std::sync::Arc;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    canvas: Arc<Canvas>,
+    byte_code: Arc<ByteCode>,
     isolated: bool,
     transparency_group_color_space: bool,
 }
@@ -16,9 +17,13 @@ struct Repr {
 pub struct XObject(Arc<Repr>);
 
 impl XObject {
-    pub fn new(canvas: Arc<Canvas>, isolated: bool, transparency_group_color_space: bool) -> Self {
+    pub fn new(
+        byte_code: Arc<ByteCode>,
+        isolated: bool,
+        transparency_group_color_space: bool,
+    ) -> Self {
         XObject(Arc::new(Repr {
-            canvas,
+            byte_code,
             isolated,
             transparency_group_color_space,
         }))
@@ -35,7 +40,7 @@ impl Object for XObject {
         let mut resource_dictionary = ResourceDictionary::new();
         let (content_stream, bbox) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_instructions(self.0.canvas.byte_code.instructions());
+            serializer.serialize_instructions(self.0.byte_code.instructions());
             serializer.finish()
         };
 

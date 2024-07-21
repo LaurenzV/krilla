@@ -4,12 +4,13 @@ use crate::object::mask::Mask;
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
 use pdf_writer::types::BlendMode;
+use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Size};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Instruction {
     Transformed(Box<(TransformWrapper, ByteCode)>),
-    Isolated(Box<ByteCode>),
+    Isolated(Arc<ByteCode>),
     Blended(Box<(BlendMode, ByteCode)>),
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),

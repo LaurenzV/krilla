@@ -60,6 +60,10 @@ macro_rules! canvas_impl {
                 Clipped::new(&mut self.byte_code, vec![path], clip_rule)
             }
 
+            pub fn isolated(&mut self) -> Isolated {
+                Isolated::new(&mut self.byte_code)
+            }
+
             pub fn transformed(&mut self, transform: Transform) -> Transformed {
                 Transformed::new(&mut self.byte_code, transform)
             }
@@ -86,6 +90,7 @@ canvas_impl!(Blended<'a>);
 canvas_impl!(Clipped<'a>);
 canvas_impl!(Transformed<'a>);
 canvas_impl!(Opacified<'a>);
+canvas_impl!(Isolated<'a>);
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Masked<'a> {
@@ -197,7 +202,10 @@ impl<'a> Clipped<'a> {
     pub fn new(parent_byte_code: &'a mut ByteCode, paths: Vec<Path>, fill_rule: FillRule) -> Self {
         Self {
             parent_byte_code,
-            paths: paths.into_iter().map(|p| PathWrapper(p)).collect::<Vec<_>>(),
+            paths: paths
+                .into_iter()
+                .map(|p| PathWrapper(p))
+                .collect::<Vec<_>>(),
             byte_code: ByteCode::new(),
             fill_rule,
         }
@@ -275,7 +283,7 @@ impl<'a> Isolated<'a> {
 impl Drop for Isolated<'_> {
     fn drop(&mut self) {
         self.parent_byte_code
-            .push(Instruction::Isolated(Box::new(self.byte_code.clone())))
+            .push(Instruction::Isolated(Arc::new(self.byte_code.clone())))
     }
 }
 
@@ -336,25 +344,17 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::Masked(mask_data) => {
                     self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
                 }
-                Instruction::Clipped(clip_data) => {
-                    self.draw_clipped(clip_data.0.as_slice(), &clip_data.1, clip_data.2.instructions())
-                }
+                Instruction::Clipped(clip_data) => self.draw_clipped(
+                    clip_data.0.as_slice(),
+                    &clip_data.1,
+                    clip_data.2.instructions(),
+                ),
                 Instruction::Opacified(opacity_data) => {
                     self.draw_opacified(opacity_data.0, opacity_data.1.instructions())
                 }
-                _ => todo!(), // Instruction::DrawCanvas(canvas_data) => {
-                              //     self.draw_canvas(
-                              //         canvas_data.0.clone(),
-                              //         &canvas_data.1 .0,
-                              //         canvas_data.2,
-                              //         canvas_data.3,
-                              //         canvas_data.4,
-                              //         canvas_data.5.clone(),
-                              //     );
-                              // }
-                              // Instruction::ClipPath(clip_data) => {
-                              //     self.set_clip_path(&clip_data.0 .0, &clip_data.1)
-                              // }
+                Instruction::Isolated(isolated_data) => {
+                    self.draw_isolated(isolated_data.clone());
+                }
             }
         }
     }
@@ -676,6 +676,18 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.set_mask(mask);
         self.serialize_instructions(instructions);
         self.restore_state();
+    }
+
+    pub fn draw_isolated(&mut self, byte_code: Arc<ByteCode>) {
+        let x_object = XObject::new(
+            byte_code,
+            true,
+            self.graphics_states.cur().ext_g_state().has_mask(),
+        );
+        let name = self
+            .resource_dictionary
+            .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+        self.content.x_object(name.to_pdf_name());
     }
 
     pub fn draw_image(&mut self, image: Image, size: Size) {

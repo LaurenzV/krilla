@@ -1,10 +1,10 @@
-use pdf_writer::Finish;
 use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
+use pdf_writer::Finish;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::prelude::LocationRef;
@@ -286,7 +286,8 @@ impl ColorPainter for ColrCanvas<'_> {
         } {
             let mut canvas = self.canvases.last_mut().unwrap();
 
-            let mut clipped = canvas.clipped_many(self.clips.last().unwrap().clone(), FillRule::NonZero);
+            let mut clipped =
+                canvas.clipped_many(self.clips.last().unwrap().clone(), FillRule::NonZero);
 
             let mut path_builder = PathBuilder::new();
             path_builder.move_to(0.0, 0.0);
@@ -295,11 +296,7 @@ impl ColorPainter for ColrCanvas<'_> {
             path_builder.line_to(0.0, self.size as f32);
             path_builder.close();
 
-            clipped.fill_path(
-                path_builder.finish().unwrap(),
-                Transform::identity(),
-                fill,
-            );
+            clipped.fill_path(path_builder.finish().unwrap(), Transform::identity(), fill);
 
             clipped.finish();
         }
@@ -336,8 +333,9 @@ impl ColorPainter for ColrCanvas<'_> {
 
         let mut canvas = self.canvases.last_mut().unwrap();
         let mut blended = canvas.blended(self.blend_modes.pop().unwrap());
-        blended.draw_canvas(draw_canvas);
-
+        let mut isolated = blended.isolated();
+        isolated.draw_canvas(draw_canvas);
+        isolated.finish();
         blended.finish();
     }
 }
@@ -414,7 +412,18 @@ mod tests {
                 )
             }
 
-            let mut transformed = parent_canvas.transformed(get_transform(cur_point, size, num_cols, units_per_em).pre_concat(tiny_skia_path::Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, units_per_em as f32)));
+            let mut transformed = parent_canvas.transformed(
+                get_transform(cur_point, size, num_cols, units_per_em).pre_concat(
+                    tiny_skia_path::Transform::from_row(
+                        1.0,
+                        0.0,
+                        0.0,
+                        -1.0,
+                        0.0,
+                        units_per_em as f32,
+                    ),
+                ),
+            );
             transformed.draw_canvas(canvas);
             transformed.finish();
 

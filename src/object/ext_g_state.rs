@@ -45,6 +45,10 @@ impl ExtGState {
         self
     }
 
+    pub fn has_mask(&self) -> bool {
+        self.0.mask.is_some()
+    }
+
     pub fn combine(&mut self, other: &ExtGState) {
         if let Some(stroking_alpha) = other.0.stroking_alpha {
             Arc::make_mut(&mut self.0).stroking_alpha = Some(stroking_alpha);
