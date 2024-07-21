@@ -47,26 +47,27 @@ impl ShadingFunction {
     }
 
     fn serialize_axial_radial_shading(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mut bbox = self.0.properties.bbox;
-
         let function_ref = select_axial_radial_function(&self.0.properties, sc);
         let cs_ref = sc.srgb();
 
         let mut shading = sc.chunk_mut().function_shading(root_ref);
         if self.0.properties.shading_type == FunctionShadingType::Radial {
             shading.shading_type(FunctionShadingType::Radial);
-        }   else {
+        } else {
             shading.shading_type(FunctionShadingType::Axial);
         }
         shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
         shading.function(function_ref);
-
-        shading.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
         if self.0.properties.shading_type == FunctionShadingType::Radial {
-            shading.coords([self.0.properties.max.get(), 0.0, self.0.properties.fr.get(), self.0.properties.min.get(), 0.0, self.0.properties.cr.get(), ]);
-        }   else {
-            shading.coords([self.0.properties.min.get(), 0.0, self.0.properties.max.get(), 0.0]);
+            shading.coords(self.0.properties.coords.unwrap().map(|n| n.get()));
+        } else {
+            shading.coords([
+                self.0.properties.min.get(),
+                0.0,
+                self.0.properties.max.get(),
+                0.0,
+            ]);
         }
         shading.extend([true, true]);
         shading.finish();
@@ -75,12 +76,14 @@ impl ShadingFunction {
 
 impl Object for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        if self.0.properties.gradient_type == GradientType::Sweep || (self.0.properties.spread_method != SpreadMethod::Pad && self.0.properties.gradient_type != GradientType::Radial) {
+        if self.0.properties.gradient_type == GradientType::Sweep
+            || (self.0.properties.spread_method != SpreadMethod::Pad
+                && self.0.properties.gradient_type != GradientType::Radial)
+        {
             self.serialize_postscript_shading(sc, root_ref);
-        }   else {
+        } else {
             self.serialize_axial_radial_shading(sc, root_ref);
         }
-
     }
 
     fn is_cached(&self) -> bool {
@@ -103,7 +106,7 @@ fn select_axial_radial_function(
     } else {
         serialize_stitching(&properties.stops, sc)
     }
-    }
+}
 
 fn select_postscript_function(
     properties: &GradientProperties,
@@ -116,7 +119,7 @@ fn select_postscript_function(
         serialize_linear_postscript(properties, sc, bbox)
     } else if properties.gradient_type == GradientType::Sweep {
         serialize_sweep_postscript(properties, sc, bbox)
-    }   else {
+    } else {
         serialize_radial_postscript(properties, sc, bbox)
     }
 }
@@ -136,7 +139,7 @@ fn serialize_radial_postscript(
     let start_code = [
         "{".to_string(),
         // Stack: x y
-        "80 exch 80 sub dup mul 3 1 roll sub dup mul add sqrt 120 div 0 0".to_string()
+        "80 exch 80 sub dup mul 3 1 roll sub dup mul add sqrt 120 div 0 0".to_string(),
     ];
 
     let end_code = ["}".to_string()];
@@ -330,7 +333,13 @@ fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
 fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
     let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
         if min == max {
-            return format!("pop {}", c0.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" "));
+            return format!(
+                "pop {}",
+                c0.iter()
+                    .map(|n| n.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            );
         }
 
         debug_assert_eq!(c0.len(), c1.len());

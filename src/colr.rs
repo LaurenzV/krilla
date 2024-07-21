@@ -87,22 +87,28 @@ impl ColrCanvas<'_> {
                 .unwrap()
                 .unwrap()[palette_index as usize];
 
-            (Color::new_rgb(color.red, color.green, color.blue), NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap())
+            (
+                Color::new_rgb(color.red, color.green, color.blue),
+                NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
+            )
         } else {
             (Color::new_rgb(0, 0, 0), NormalizedF32::new(alpha).unwrap())
         }
     }
 
     fn stops(&self, stops: &[ColorStop]) -> Vec<Stop> {
-        stops.iter().map(|s| {
-            let (color, alpha) = self.palette_index_to_color(s.palette_index, s.alpha);
+        stops
+            .iter()
+            .map(|s| {
+                let (color, alpha) = self.palette_index_to_color(s.palette_index, s.alpha);
 
-            Stop {
-                offset: NormalizedF32::new(s.offset).unwrap(),
-                color,
-                opacity: alpha,
-            }
-        }).collect::<Vec<_>>()
+                Stop {
+                    offset: NormalizedF32::new(s.offset).unwrap(),
+                    color,
+                    opacity: alpha,
+                }
+            })
+            .collect::<Vec<_>>()
     }
 }
 
@@ -116,7 +122,7 @@ impl ExtendExt for skrifa::color::Extend {
             skrifa::color::Extend::Pad => SpreadMethod::Pad,
             skrifa::color::Extend::Repeat => SpreadMethod::Repeat,
             skrifa::color::Extend::Reflect => SpreadMethod::Reflect,
-            skrifa::color::Extend::Unknown => SpreadMethod::Pad
+            skrifa::color::Extend::Unknown => SpreadMethod::Pad,
         }
     }
 }
@@ -190,7 +196,6 @@ impl ColorPainter for ColrCanvas<'_> {
     }
 
     fn fill(&mut self, brush: Brush<'_>) {
-
         if let Some(fill) = match brush {
             Brush::Solid {
                 palette_index,
@@ -203,7 +208,12 @@ impl ColorPainter for ColrCanvas<'_> {
                     rule: Default::default(),
                 })
             }
-            Brush::LinearGradient { p0, p1, color_stops, extend } => {
+            Brush::LinearGradient {
+                p0,
+                p1,
+                color_stops,
+                extend,
+            } => {
                 let linear = LinearGradient {
                     x1: FiniteF32::new(p0.x).unwrap(),
                     y1: FiniteF32::new(p0.y).unwrap(),
@@ -219,15 +229,22 @@ impl ColorPainter for ColrCanvas<'_> {
                     opacity: NormalizedF32::ONE,
                     rule: Default::default(),
                 })
-            },
-            Brush::RadialGradient { c0, r0, c1, r1, color_stops, extend } => {
+            }
+            Brush::RadialGradient {
+                c0,
+                r0,
+                c1,
+                r1,
+                color_stops,
+                extend,
+            } => {
                 let radial = RadialGradient {
-                    cx: FiniteF32::new(c0.x).unwrap(),
-                    cy: FiniteF32::new(c0.y).unwrap(),
-                    cr: FiniteF32::new(r0).unwrap(),
-                    fx: FiniteF32::new(c1.x).unwrap(),
-                    fy: FiniteF32::new(c1.y).unwrap(),
-                    fr: FiniteF32::new(r1).unwrap(),
+                    fx: FiniteF32::new(c0.x).unwrap(),
+                    fy: FiniteF32::new(c0.y).unwrap(),
+                    fr: FiniteF32::new(r0).unwrap(),
+                    cx: FiniteF32::new(c1.x).unwrap(),
+                    cy: FiniteF32::new(c1.y).unwrap(),
+                    cr: FiniteF32::new(r1).unwrap(),
                     stops: self.stops(color_stops),
                     spread_method: extend.to_spread_method(),
                     transform: TransformWrapper(crate::Transform::identity()),
@@ -238,11 +255,22 @@ impl ColorPainter for ColrCanvas<'_> {
                     opacity: NormalizedF32::ONE,
                     rule: Default::default(),
                 })
-            },
-            Brush::SweepGradient { c0,  start_angle, end_angle, color_stops, extend} => {
-                if start_angle == end_angle && (matches!(extend, skrifa::color::Extend::Reflect | skrifa::color::Extend::Repeat)) {
+            }
+            Brush::SweepGradient {
+                c0,
+                start_angle,
+                end_angle,
+                color_stops,
+                extend,
+            } => {
+                if start_angle == end_angle
+                    && (matches!(
+                        extend,
+                        skrifa::color::Extend::Reflect | skrifa::color::Extend::Repeat
+                    ))
+                {
                     None
-                }   else {
+                } else {
                     let sweep = SweepGradient {
                         cx: FiniteF32::new(c0.x).unwrap(),
                         cy: FiniteF32::new(c0.y).unwrap(),
@@ -260,7 +288,7 @@ impl ColorPainter for ColrCanvas<'_> {
                         rule: Default::default(),
                     })
                 }
-            },
+            }
         } {
             self.canvases.last_mut().unwrap().push_layer();
 

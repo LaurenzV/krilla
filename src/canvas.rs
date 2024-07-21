@@ -611,7 +611,10 @@ mod tests {
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
-    use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, StopOffset, SweepGradient};
+    use crate::paint::{
+        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, StopOffset,
+        SweepGradient,
+    };
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
@@ -926,8 +929,8 @@ mod tests {
                     fr: FiniteF32::new(80.0).unwrap(),
                     transform: TransformWrapper(
                         // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
-                     // Transform::from_scale(0.5, 0.5),
-                    Transform::identity()
+                        // Transform::from_scale(0.5, 0.5),
+                        Transform::identity(),
                     ),
                     spread_method,
                     stops: vec![
