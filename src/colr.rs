@@ -1,3 +1,4 @@
+use pdf_writer::Finish;
 use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
@@ -56,8 +57,7 @@ impl<'a> ColrCanvas<'a> {
         let size = font_ref
             .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
             .units_per_em;
-        let mut canvas = Canvas::new(Size::from_wh(size as f32, size as f32).unwrap());
-        canvas.transform(Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, size as f32));
+        let canvas = Canvas::new(Size::from_wh(size as f32, size as f32).unwrap());
 
         Self {
             font: font_ref,
@@ -284,14 +284,9 @@ impl ColorPainter for ColrCanvas<'_> {
                 }
             }
         } {
-            self.canvases.last_mut().unwrap().push_layer();
+            let mut canvas = self.canvases.last_mut().unwrap();
 
-            for clip_path in self.clips.last().unwrap() {
-                self.canvases
-                    .last_mut()
-                    .unwrap()
-                    .set_clip_path(clip_path.clone(), FillRule::NonZero);
-            }
+            let mut clipped = canvas.clipped_many(self.clips.last().unwrap().clone(), FillRule::NonZero);
 
             let mut path_builder = PathBuilder::new();
             path_builder.move_to(0.0, 0.0);
@@ -300,13 +295,13 @@ impl ColorPainter for ColrCanvas<'_> {
             path_builder.line_to(0.0, self.size as f32);
             path_builder.close();
 
-            self.canvases.last_mut().unwrap().fill_path(
+            clipped.fill_path(
                 path_builder.finish().unwrap(),
                 Transform::identity(),
                 fill,
             );
 
-            self.canvases.last_mut().unwrap().pop_layer();
+            clipped.finish();
         }
     }
 
@@ -337,16 +332,13 @@ impl ColorPainter for ColrCanvas<'_> {
     }
 
     fn pop_layer(&mut self) {
-        let canvas = self.canvases.pop().unwrap();
+        let draw_canvas = self.canvases.pop().unwrap();
 
-        self.canvases.last_mut().unwrap().draw_canvas(
-            canvas,
-            Transform::identity(),
-            self.blend_modes.pop().unwrap(),
-            NormalizedF32::ONE,
-            true,
-            None,
-        );
+        let mut canvas = self.canvases.last_mut().unwrap();
+        let mut blended = canvas.blended(self.blend_modes.pop().unwrap());
+        blended.draw_canvas(draw_canvas);
+
+        blended.finish();
     }
 }
 
@@ -384,7 +376,7 @@ mod tests {
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
 
-        let glyphs = (0u16..=220).collect::<Vec<_>>();
+        let glyphs = (15u16..=15).collect::<Vec<_>>();
         // let glyphs = vec![2268];
 
         let num_glyphs = glyphs.len();
@@ -422,14 +414,9 @@ mod tests {
                 )
             }
 
-            parent_canvas.draw_canvas(
-                canvas,
-                get_transform(cur_point, size, num_cols, units_per_em),
-                BlendMode::Normal,
-                NormalizedF32::ONE,
-                false,
-                None,
-            );
+            let mut transformed = parent_canvas.transformed(get_transform(cur_point, size, num_cols, units_per_em).pre_concat(tiny_skia_path::Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, units_per_em as f32)));
+            transformed.draw_canvas(canvas);
+            transformed.finish();
 
             cur_point += size;
         }

@@ -52,8 +52,12 @@ macro_rules! canvas_impl {
                 Opacified::new(&mut self.byte_code, opacity)
             }
 
+            pub fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped {
+                Clipped::new(&mut self.byte_code, paths, clip_rule)
+            }
+
             pub fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
-                Clipped::new(&mut self.byte_code, path, clip_rule)
+                Clipped::new(&mut self.byte_code, vec![path], clip_rule)
             }
 
             pub fn transformed(&mut self, transform: Transform) -> Transformed {
@@ -66,6 +70,10 @@ macro_rules! canvas_impl {
                     image,
                     size,
                 ))));
+            }
+
+            pub fn draw_canvas(&mut self, canvas: Canvas) {
+                self.byte_code.extend(&canvas.byte_code);
             }
         }
     };
@@ -181,15 +189,15 @@ impl Drop for Opacified<'_> {
 pub struct Clipped<'a> {
     parent_byte_code: &'a mut ByteCode,
     pub(crate) byte_code: ByteCode,
-    path: PathWrapper,
+    paths: Vec<PathWrapper>,
     fill_rule: FillRule,
 }
 
 impl<'a> Clipped<'a> {
-    pub fn new(parent_byte_code: &'a mut ByteCode, path: Path, fill_rule: FillRule) -> Self {
+    pub fn new(parent_byte_code: &'a mut ByteCode, paths: Vec<Path>, fill_rule: FillRule) -> Self {
         Self {
             parent_byte_code,
-            path: PathWrapper(path),
+            paths: paths.into_iter().map(|p| PathWrapper(p)).collect::<Vec<_>>(),
             byte_code: ByteCode::new(),
             fill_rule,
         }
@@ -202,11 +210,13 @@ impl<'a> Clipped<'a> {
 
 impl Drop for Clipped<'_> {
     fn drop(&mut self) {
-        self.parent_byte_code.push(Instruction::Clipped(Box::new((
-            self.path.clone(),
-            self.fill_rule,
-            self.byte_code.clone(),
-        ))));
+        for path in &self.paths {
+            self.parent_byte_code.push(Instruction::Clipped(Box::new((
+                path.clone(),
+                self.fill_rule,
+                self.byte_code.clone(),
+            ))));
+        }
     }
 }
 
