@@ -5,12 +5,14 @@ use crate::serialize::{Object, SerializerContext};
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
+use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     byte_code: Arc<ByteCode>,
     isolated: bool,
     transparency_group_color_space: bool,
+    custom_bbox: Option<Rect>,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -21,11 +23,13 @@ impl XObject {
         byte_code: Arc<ByteCode>,
         isolated: bool,
         transparency_group_color_space: bool,
+        custom_bbox: Option<Rect>,
     ) -> Self {
         XObject(Arc::new(Repr {
             byte_code,
             isolated,
             transparency_group_color_space,
+            custom_bbox,
         }))
     }
 }
@@ -46,7 +50,7 @@ impl Object for XObject {
 
         let mut x_object = chunk.form_xobject(root_ref, &content_stream);
         resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
-        x_object.bbox(bbox.to_pdf_rect());
+        x_object.bbox(self.0.custom_bbox.unwrap_or(bbox).to_pdf_rect());
 
         if self.0.isolated || self.0.transparency_group_color_space {
             let mut group = x_object.group();

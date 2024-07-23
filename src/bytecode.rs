@@ -15,7 +15,7 @@ pub enum Instruction {
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
-    Shaded(Box<(ShadingFunction, ByteCode)>),
+    Shaded(Box<ShadingFunction>),
     Clipped(Box<(Vec<PathWrapper>, FillRule, ByteCode)>),
     Masked(Box<(Mask, ByteCode)>),
     Opacified(Box<(NormalizedF32, ByteCode)>),
@@ -23,7 +23,7 @@ pub enum Instruction {
 
 // TODO: Make cheap to clone?
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ByteCode(Vec<Instruction>);
+pub struct ByteCode(pub(crate) Vec<Instruction>);
 
 impl ByteCode {
     pub fn new() -> Self {

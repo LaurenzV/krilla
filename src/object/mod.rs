@@ -4,6 +4,5 @@ pub mod image;
 pub mod mask;
 pub mod shading_function;
 pub mod shading_pattern;
-mod shading_softmask;
 pub mod tiling_pattern;
 pub mod xobject;

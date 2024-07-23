@@ -343,9 +343,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::Masked(mask_data) => {
                     self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
                 }
-                Instruction::Shaded(shade_data) => {
-                    self.draw_shaded(shade_data.0.clone(), shade_data.1.instructions())
-                }
+                Instruction::Shaded(shade_data) => self.draw_shading(&shade_data),
                 Instruction::Clipped(clip_data) => self.draw_clipped(
                     clip_data.0.as_slice(),
                     &clip_data.1,
@@ -398,12 +396,6 @@ impl<'a> CanvasPdfSerializer<'a> {
     pub fn set_mask(&mut self, mask: Mask) {
         let state = ExtGState::new().mask(mask);
         self.graphics_states.combine(&state);
-
-        self.bbox.expand(
-            &self
-                .graphics_states
-                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
-        );
 
         let ext = self
             .resource_dictionary
@@ -687,19 +679,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
-    pub fn draw_shaded(&mut self, shading: ShadingFunction, instructions: &[Instruction]) {
-        self.save_state();
-        self.bbox.expand(
-            &self
-                .graphics_states
-                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
-        );
+    pub fn draw_shading(&mut self, shading: &ShadingFunction) {
         let sh = self
             .resource_dictionary
-            .register_resource(Resource::Shading(shading));
+            .register_resource(Resource::Shading(shading.clone()));
         self.content.shading(sh.to_pdf_name());
-        self.serialize_instructions(instructions);
-        self.restore_state();
     }
 
     pub fn draw_masked(&mut self, mask: Mask, instructions: &[Instruction]) {
@@ -714,6 +698,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             byte_code,
             true,
             self.graphics_states.cur().ext_g_state().has_mask(),
+            None,
         );
         // TODO: Expand bbox
         let name = self

@@ -1,14 +1,17 @@
-use crate::bytecode::ByteCode;
-use crate::canvas::Canvas;
+use crate::bytecode::{ByteCode, Instruction};
+use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, SerializerContext};
+use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
+use tiny_skia_path::Rect;
 
 #[derive(PartialEq, Eq, Debug, Hash)]
 struct Repr {
     byte_code: Arc<ByteCode>,
     mask_type: MaskType,
+    custom_bbox: Option<Rect>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
@@ -19,7 +22,39 @@ impl Mask {
         Self(Arc::new(Repr {
             byte_code,
             mask_type,
+            custom_bbox: None,
         }))
+    }
+
+    pub fn new_from_shading(
+        gradient_properties: GradientProperties,
+        shading_transform: TransformWrapper,
+        bbox: Rect,
+    ) -> Option<Self> {
+        match &gradient_properties {
+            GradientProperties::RadialAxialGradient(rag) => {
+                if rag.stops.iter().all(|s| s.opacity.get() == 1.0) {
+                    return None;
+                }
+            }
+            GradientProperties::PostScriptGradient(psg) => {
+                if psg.stops.iter().all(|s| s.opacity.get() == 1.0) {
+                    return None;
+                }
+            }
+        }
+
+        let shading_function = ShadingFunction::new(gradient_properties, true);
+        let byte_code = ByteCode(vec![Instruction::Transformed(Box::new((
+            shading_transform,
+            ByteCode(vec![Instruction::Shaded(Box::new(shading_function))]),
+        )))]);
+
+        Some(Self(Arc::new(Repr {
+            byte_code: Arc::new(byte_code),
+            mask_type: MaskType::Luminosity,
+            custom_bbox: Some(bbox),
+        })))
     }
 }
 
@@ -40,7 +75,12 @@ impl MaskType {
 
 impl Object for Mask {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let x_ref = sc.add(XObject::new(self.0.byte_code.clone(), false, true));
+        let x_ref = sc.add(XObject::new(
+            self.0.byte_code.clone(),
+            false,
+            true,
+            self.0.custom_bbox,
+        ));
 
         let mut dict = sc.chunk_mut().indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
