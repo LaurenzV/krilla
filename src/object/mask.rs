@@ -1,3 +1,4 @@
+use crate::bytecode::ByteCode;
 use crate::canvas::Canvas;
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, SerializerContext};
@@ -6,7 +7,7 @@ use std::sync::Arc;
 
 #[derive(PartialEq, Eq, Debug, Hash)]
 struct Repr {
-    canvas: Arc<Canvas>,
+    byte_code: Arc<ByteCode>,
     mask_type: MaskType,
 }
 
@@ -14,8 +15,11 @@ struct Repr {
 pub struct Mask(Arc<Repr>);
 
 impl Mask {
-    pub fn new(canvas: Arc<Canvas>, mask_type: MaskType) -> Self {
-        Self(Arc::new(Repr { canvas, mask_type }))
+    pub fn new(byte_code: Arc<ByteCode>, mask_type: MaskType) -> Self {
+        Self(Arc::new(Repr {
+            byte_code,
+            mask_type,
+        }))
     }
 }
 
@@ -36,11 +40,7 @@ impl MaskType {
 
 impl Object for Mask {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let x_ref = sc.add(XObject::new(
-            Arc::new(self.0.canvas.byte_code.clone()),
-            false,
-            true,
-        ));
+        let x_ref = sc.add(XObject::new(self.0.byte_code.clone(), false, true));
 
         let mut dict = sc.chunk_mut().indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));

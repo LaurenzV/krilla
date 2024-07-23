@@ -1288,7 +1288,10 @@ mod tests {
         );
 
         let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
-        let mut masked = canvas.masked(Mask::new(Arc::new(mask_canvas), MaskType::Luminosity));
+        let mut masked = canvas.masked(Mask::new(
+            Arc::new(mask_canvas.byte_code),
+            MaskType::Luminosity,
+        ));
         masked.fill_path(
             dummy_path(200.0),
             Transform::identity().try_into().unwrap(),
