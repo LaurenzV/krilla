@@ -185,7 +185,7 @@ impl ColorPainter for ColrCanvas<'_> {
                     y2: FiniteF32::new(p1.y).unwrap(),
                     stops: self.stops(color_stops),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(crate::Transform::identity()),
+                    transform: TransformWrapper(*self.transforms.last().unwrap()),
                 };
 
                 Some(Fill {
@@ -211,7 +211,7 @@ impl ColorPainter for ColrCanvas<'_> {
                     cr: FiniteF32::new(r1).unwrap(),
                     stops: self.stops(color_stops),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(crate::Transform::identity()),
+                    transform: TransformWrapper(*self.transforms.last().unwrap()),
                 };
 
                 Some(Fill {
@@ -243,7 +243,7 @@ impl ColorPainter for ColrCanvas<'_> {
                         stops: self.stops(color_stops),
                         spread_method: extend.to_spread_method(),
                         // COLR gradients run in the different direction
-                        transform: TransformWrapper(crate::Transform::from_scale(1.0, -1.0)),
+                        transform: TransformWrapper(*self.transforms.last().unwrap()),
                     };
 
                     Some(Fill {
@@ -335,14 +335,12 @@ mod tests {
         let font_data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
-        // let font_data =
-        //     std::fs::read("/Library/Fonts/seguiemj.ttf")
-        //         .unwrap();
+        let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
 
         let glyphs = (0u16..=220).collect::<Vec<_>>();
-        // let glyphs = vec![2268];
+        let glyphs = vec![2808,2284,2285,2324,2283,2286,2339,2312,2788,2280,2288,2310,2315,2787,2321,2326,2693,2696,2785,2814,2807,3746,3017,3018,2325,3751,3016,3754,2323,2322,2815,2783,3015,3025,2282,2694,3231,3750,2289,2299,2336,3883,2314,2316,2319,2320,3749,3027,2306,2307,2308,2317,2305,2302,2313,2318,2290,2303,2298,2287,2309,2311,3013,2304,2301,2300,2812,2276,1797,1798,3875,1999,2784,1786,1787,1788,1795,1796,2697,2329,2327,2328,2330,2331,2332,2335,2334,2333,2394,2395,2396,1203,2711,2224,3973,2236,1209,2677,2685,3979,2771,3755,2777,2699,2705,1185,1191,1173,2230,1179,3869,3797,1215,1221,3967,1197,2717,2723,1227,2415,1233,3803,2828,3785,3791,3761,3773,2729,3815,3809,2457,3985,1842,2834,2000];
 
         let num_glyphs = glyphs.len();
 
@@ -398,6 +396,8 @@ mod tests {
         }
 
         let pdf = parent_canvas.serialize(SerializeSettings::default());
-        let _ = std::fs::write("out/colr.pdf", pdf.finish());
+        let finished = pdf.finish();
+        let _ = std::fs::write("out/colr.pdf", &finished);
+        let _ = std::fs::write("out/colr.txt", &finished);
     }
 }

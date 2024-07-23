@@ -12,10 +12,10 @@ use crate::paint::Paint;
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Content, Finish, Pdf};
+use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
@@ -783,7 +783,12 @@ impl PageSerialize for Canvas {
 
             serializer.finish()
         };
-        chunk.stream(content_ref, &content_stream);
+
+        let deflated = deflate(&content_stream);
+
+        let mut stream = chunk.stream(content_ref, &deflated);
+        stream.filter(Filter::FlateDecode);
+        stream.finish();
 
         let mut page = chunk.page(page_ref);
         resource_dictionary.to_pdf_resources(&mut sc, &mut page.resources());
