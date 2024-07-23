@@ -9,21 +9,21 @@ use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum GradientType {
     Sweep,
     Linear,
     Radial,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct RadialAxialGradient {
     pub coords: Vec<FiniteF32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct PostScriptGradient {
     pub min: FiniteF32,
     pub max: FiniteF32,
@@ -33,7 +33,7 @@ pub struct PostScriptGradient {
     pub gradient_type: GradientType,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum GradientProperties {
     RadialAxialGradient(RadialAxialGradient),
     PostScriptGradient(PostScriptGradient),
@@ -524,7 +524,6 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         }
 
         debug_assert_eq!(c0.len(), c1.len());
-        debug_assert!(c0.len() > 1);
 
         let mut snippets = vec![
             // Normalize the x coordinate to be between 0 and 1.

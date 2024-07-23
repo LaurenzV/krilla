@@ -457,6 +457,9 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
+            let shading_mask =
+                Mask::new_from_shading(gradient_props.clone(), transform, path.bounds());
+
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
                 TransformWrapper(
@@ -471,6 +474,17 @@ impl<'a> CanvasPdfSerializer<'a> {
                 .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
                     shading_pattern,
                 )));
+
+            if let Some(shading_mask) = shading_mask {
+                // TODO: use set_mask instead?
+                let state = ExtGState::new().mask(shading_mask);
+
+                let ext = self
+                    .resource_dictionary
+                    .register_resource(Resource::ExtGState(state));
+                self.content.set_parameters(ext.to_pdf_name());
+            }
+
             self.content
                 .set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             self.content
@@ -1020,7 +1034,7 @@ mod tests {
                         Stop {
                             offset: NormalizedF32::new(0.0).unwrap(),
                             color: Color::new_rgb(255, 0, 0),
-                            opacity: NormalizedF32::ONE,
+                            opacity: NormalizedF32::new(0.7).unwrap(),
                         },
                         Stop {
                             offset: NormalizedF32::new(0.4).unwrap(),
@@ -1030,7 +1044,7 @@ mod tests {
                         Stop {
                             offset: NormalizedF32::new(1.0).unwrap(),
                             color: Color::new_rgb(0, 0, 255),
-                            opacity: NormalizedF32::ONE,
+                            opacity: NormalizedF32::new(0.5).unwrap(),
                         },
                     ],
                 }),
@@ -1091,7 +1105,7 @@ mod tests {
                         Stop {
                             offset: NormalizedF32::new(0.4).unwrap(),
                             color: Color::new_rgb(0, 255, 0),
-                            opacity: NormalizedF32::ONE,
+                            opacity: NormalizedF32::new(0.5).unwrap(),
                         },
                         Stop {
                             offset: NormalizedF32::new(0.8).unwrap(),

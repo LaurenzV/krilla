@@ -15,6 +15,7 @@ pub enum Instruction {
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
+    // TODO: Remove?
     Shaded(Box<ShadingFunction>),
     Clipped(Box<(Vec<PathWrapper>, FillRule, ByteCode)>),
     Masked(Box<(Mask, ByteCode)>),
