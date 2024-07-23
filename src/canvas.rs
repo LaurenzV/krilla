@@ -399,6 +399,12 @@ impl<'a> CanvasPdfSerializer<'a> {
         let state = ExtGState::new().mask(mask);
         self.graphics_states.combine(&state);
 
+        self.bbox.expand(
+            &self
+                .graphics_states
+                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+        );
+
         let ext = self
             .resource_dictionary
             .register_resource(Resource::ExtGState(state));
@@ -683,6 +689,11 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn draw_shaded(&mut self, shading: ShadingFunction, instructions: &[Instruction]) {
         self.save_state();
+        self.bbox.expand(
+            &self
+                .graphics_states
+                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+        );
         let sh = self
             .resource_dictionary
             .register_resource(Resource::Shading(shading));
@@ -704,6 +715,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             true,
             self.graphics_states.cur().ext_g_state().has_mask(),
         );
+        // TODO: Expand bbox
         let name = self
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
