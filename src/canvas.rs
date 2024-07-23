@@ -176,20 +176,39 @@ impl Drop for Blended<'_> {
                     ))));
                 }
                 BlendMode::DestinationIn => {
-                    // let mask = Mask::new(
-                    //     Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
-                    //     Luminosity,
-                    // );
-                    //
-                    // let instruction =
-                    //     Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
-                    //
-                    // self.parent_byte_code.0 = vec![instruction];
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
+                        Luminosity,
+                    );
+
+                    let instruction =
+                        Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
+
+                    self.parent_byte_code.0 = vec![instruction];
                 }
                 BlendMode::SourceOut => {}
                 BlendMode::DestinationOut => {}
-                BlendMode::SourceAtop => {}
-                BlendMode::DestinationAtop => {}
+                BlendMode::SourceAtop => {
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(&self.parent_byte_code.0.clone(), false))),
+                        Luminosity,
+                    );
+
+                    let instruction =
+                        Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                    self.parent_byte_code.push(instruction);
+                }
+                BlendMode::DestinationAtop => {
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
+                        Luminosity,
+                    );
+
+                    let instruction =
+                        Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
+                    self.parent_byte_code.0 = self.byte_code.0.clone();
+                    self.parent_byte_code.push(instruction);
+                }
                 BlendMode::Xor => {}
                 BlendMode::Plus => {}
                 // All other blend modes will be translate into their respective PDF blend mode.
