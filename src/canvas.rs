@@ -458,8 +458,12 @@ impl<'a> CanvasPdfSerializer<'a> {
                                   transform: TransformWrapper| {
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
-                TransformWrapper(self.graphics_states.cur().transform()),
-                transform,
+                TransformWrapper(
+                    self.graphics_states
+                        .cur()
+                        .transform()
+                        .pre_concat(transform.0),
+                ),
             );
             let color_space = self
                 .resource_dictionary
@@ -549,8 +553,12 @@ impl<'a> CanvasPdfSerializer<'a> {
             let transform = pattern_transform(transform);
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
-                TransformWrapper(self.graphics_states.cur().transform()),
-                transform,
+                TransformWrapper(
+                    self.graphics_states
+                        .cur()
+                        .transform()
+                        .pre_concat(transform.0),
+                ),
             );
             let color_space = self
                 .resource_dictionary
