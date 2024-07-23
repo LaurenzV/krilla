@@ -1,94 +1,162 @@
 use crate::color::PdfColorExt;
-use crate::paint::{GradientProperties, GradientType, SpreadMethod, Stop};
+use crate::paint::{SpreadMethod, Stop};
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
+use crate::util::RectExt;
+use crate::{LinearGradient, RadialGradient, SweepGradient};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Rect};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub enum GradientType {
+    Sweep,
+    Linear,
+    Radial,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct RadialAxialGradient {
+    pub coords: Vec<FiniteF32>,
+    pub shading_type: FunctionShadingType,
+    pub stops: Vec<Stop>,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub struct PostScriptGradient {
+    pub min: FiniteF32,
+    pub max: FiniteF32,
+    pub stops: Vec<Stop>,
+    pub domain: Rect,
+    pub spread_method: SpreadMethod,
+    pub gradient_type: GradientType,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub enum GradientProperties {
+    RadialAxialGradient(RadialAxialGradient),
+    PostScriptGradient(PostScriptGradient),
+}
+
+pub trait GradientPropertiesExt {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper);
+}
+
+fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
+    // We need to make sure the shading covers the whole bbox of the object after
+    // the transform as been applied. In order to know that, we need to calculate the
+    // resulting bbox from the inverted transform.
+    bbox.expand(&bbox.transform(shading_transform.invert().unwrap()).unwrap());
+    bbox
+}
+
+fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
+    let dist = start.distance(end);
+
+    let dx = end.x - start.x;
+    let dy = end.y - start.y;
+    let angle = dy.atan2(dx).to_degrees();
+
+    (
+        Transform::from_rotate_at(angle, start.x, start.y),
+        start.x,
+        start.x + dist,
+    )
+}
+
+impl GradientPropertiesExt for LinearGradient {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        if self.spread_method == SpreadMethod::Pad {
+            (
+                GradientProperties::RadialAxialGradient(RadialAxialGradient {
+                    coords: vec![self.x1, self.y1, self.x2, self.y2],
+                    shading_type: FunctionShadingType::Axial,
+                    stops: Vec::from(self.stops.clone()),
+                }),
+                self.transform,
+            )
+        } else {
+            let (ts, min, max) = get_point_ts(
+                Point::from_xy(self.x1.get(), self.y1.get()),
+                Point::from_xy(self.x2.get(), self.y2.get()),
+            );
+            (
+                GradientProperties::PostScriptGradient(PostScriptGradient {
+                    min: FiniteF32::new(min).unwrap(),
+                    max: FiniteF32::new(max).unwrap(),
+                    stops: Vec::from(self.stops.clone()),
+                    domain: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
+                    spread_method: self.spread_method,
+                    gradient_type: GradientType::Linear,
+                }),
+                TransformWrapper(self.transform.0.post_concat(ts)),
+            )
+        }
+    }
+}
+
+impl GradientPropertiesExt for SweepGradient {
+    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+        let min = self.start_angle;
+        let max = self.end_angle;
+
+        let transform = self
+            .transform
+            .0
+            .post_concat(Transform::from_translate(self.cx.get(), self.cy.get()));
+
+        (
+            GradientProperties::PostScriptGradient(PostScriptGradient {
+                min,
+                max,
+                stops: Vec::from(self.stops.clone()),
+                domain: get_expanded_bbox(bbox, transform),
+                spread_method: self.spread_method,
+                gradient_type: GradientType::Sweep,
+            }),
+            TransformWrapper(transform),
+        )
+    }
+}
+
+impl GradientPropertiesExt for RadialGradient {
+    fn gradient_properties(&self, _: Rect) -> (GradientProperties, TransformWrapper) {
+        // TODO: Support other spread methods
+        (
+            GradientProperties::RadialAxialGradient(RadialAxialGradient {
+                coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
+                shading_type: FunctionShadingType::Radial,
+                stops: Vec::from(self.stops.clone()),
+            }),
+            self.transform,
+        )
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     pub(crate) properties: GradientProperties,
-    shading_transform: TransformWrapper,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingFunction(Arc<Repr>);
 
 impl ShadingFunction {
-    pub fn new(properties: GradientProperties, shading_transform: TransformWrapper) -> Self {
-        Self(Arc::new(Repr {
-            properties,
-            shading_transform,
-        }))
-    }
-
-    pub fn shading_transform(&self) -> TransformWrapper {
-        self.0.shading_transform
-    }
-
-    fn serialize_postscript_shading(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let bbox = self.0.properties.bbox;
-
-        let function_ref = select_postscript_function(&self.0.properties, sc, &bbox);
-        let cs_ref = sc.srgb();
-
-        let mut shading = sc.chunk_mut().function_shading(root_ref);
-        // TODO: Readd axial/radial shading.
-        shading.shading_type(FunctionShadingType::Function);
-        shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
-
-        shading.function(function_ref);
-
-        shading.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
-        shading.finish();
-    }
-
-    fn serialize_axial_radial_shading(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let function_ref = select_axial_radial_function(&self.0.properties, sc);
-        let cs_ref = sc.srgb();
-
-        let mut shading = sc.chunk_mut().function_shading(root_ref);
-        if self.0.properties.shading_type == FunctionShadingType::Radial {
-            shading.shading_type(FunctionShadingType::Radial);
-        } else {
-            shading.shading_type(FunctionShadingType::Axial);
-        }
-        shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
-
-        shading.function(function_ref);
-        if self.0.properties.shading_type == FunctionShadingType::Radial {
-            shading.coords(
-                self.0
-                    .properties
-                    .coords
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .map(|n| n.get()),
-            );
-        } else {
-            shading.coords([
-                self.0.properties.min.get(),
-                0.0,
-                self.0.properties.max.get(),
-                0.0,
-            ]);
-        }
-        shading.extend([true, true]);
-        shading.finish();
+    pub fn new(properties: GradientProperties) -> Self {
+        Self(Arc::new(Repr { properties }))
     }
 }
 
 impl Object for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        if self.0.properties.gradient_type == GradientType::Sweep
-            || self.0.properties.gradient_type == GradientType::Linear
-        {
-            self.serialize_postscript_shading(sc, root_ref);
-        } else {
-            self.serialize_axial_radial_shading(sc, root_ref);
+        match &self.0.properties {
+            GradientProperties::RadialAxialGradient(rag) => {
+                serialize_axial_radial_shading(sc, root_ref, rag)
+            }
+            GradientProperties::PostScriptGradient(psg) => {
+                serialize_postscript_shading(sc, root_ref, psg)
+            }
         }
     }
 
@@ -97,34 +165,91 @@ impl Object for ShadingFunction {
     }
 }
 
+fn serialize_postscript_shading(
+    sc: &mut SerializerContext,
+    root_ref: Ref,
+    post_script_gradient: &PostScriptGradient,
+) {
+    let domain = post_script_gradient.domain;
+
+    let function_ref = select_postscript_function(post_script_gradient, sc);
+    let cs_ref = sc.srgb();
+
+    let mut shading = sc.chunk_mut().function_shading(root_ref);
+    // TODO: Readd axial/radial shading.
+    shading.shading_type(FunctionShadingType::Function);
+    shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
+
+    shading.function(function_ref);
+
+    shading.domain([domain.left(), domain.right(), domain.top(), domain.bottom()]);
+    shading.finish();
+}
+
+fn serialize_axial_radial_shading(
+    sc: &mut SerializerContext,
+    root_ref: Ref,
+    radial_axial_gradient: &RadialAxialGradient,
+) {
+    let function_ref = select_axial_radial_function(radial_axial_gradient, sc);
+    let cs_ref = sc.srgb();
+
+    let mut shading = sc.chunk_mut().function_shading(root_ref);
+    if radial_axial_gradient.shading_type == FunctionShadingType::Radial {
+        shading.shading_type(FunctionShadingType::Radial);
+    } else {
+        shading.shading_type(FunctionShadingType::Axial);
+    }
+    shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
+
+    shading.function(function_ref);
+    shading.coords(radial_axial_gradient.coords.iter().map(|n| n.get()));
+    shading.extend([true, true]);
+    shading.finish();
+}
+
 fn select_axial_radial_function(
-    properties: &GradientProperties,
+    properties: &RadialAxialGradient,
     sc: &mut SerializerContext,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
-    if properties.stops.len() == 2 {
+    let mut stops = properties.stops.clone();
+
+    if let Some(first) = stops.first() {
+        if first.offset != 0.0 {
+            let mut new_stop = *first;
+            new_stop.offset = NormalizedF32::ZERO;
+            stops.insert(0, new_stop);
+        }
+    }
+
+    if let Some(last) = stops.last() {
+        if last.offset != 1.0 {
+            let mut new_stop = *last;
+            new_stop.offset = NormalizedF32::ONE;
+            stops.push(new_stop);
+        }
+    }
+
+    if stops.len() == 2 {
         serialize_exponential(
-            &properties.stops[0].color.to_normalized_pdf_components(),
-            &properties.stops[1].color.to_normalized_pdf_components(),
+            &stops[0].color.to_normalized_pdf_components(),
+            &stops[1].color.to_normalized_pdf_components(),
             sc,
         )
     } else {
-        serialize_stitching(&properties.stops, sc)
+        serialize_stitching(&stops, sc)
     }
 }
 
-fn select_postscript_function(
-    properties: &GradientProperties,
-    sc: &mut SerializerContext,
-    bbox: &Rect,
-) -> Ref {
+fn select_postscript_function(properties: &PostScriptGradient, sc: &mut SerializerContext) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
     if properties.gradient_type == GradientType::Linear {
-        serialize_linear_postscript(properties, sc, bbox)
+        serialize_linear_postscript(properties, sc)
     } else if properties.gradient_type == GradientType::Sweep {
-        serialize_sweep_postscript(properties, sc, bbox)
+        serialize_sweep_postscript(properties, sc)
     } else {
         todo!();
         // serialize_radial_postscript(properties, sc, bbox)
@@ -162,11 +287,7 @@ fn select_postscript_function(
 // root_ref
 // }
 
-fn serialize_sweep_postscript(
-    properties: &GradientProperties,
-    sc: &mut SerializerContext,
-    bbox: &Rect,
-) -> Ref {
+fn serialize_sweep_postscript(properties: &PostScriptGradient, sc: &mut SerializerContext) -> Ref {
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min.get();
@@ -189,22 +310,23 @@ fn serialize_sweep_postscript(
     let mut code = Vec::new();
     code.extend(start_code);
     code.push(encode_spread_method(min, max, properties.spread_method));
-    code.push(encode_stops(&properties.stops, min, max));
+    code.push(encode_postscript_stops(&properties.stops, min, max));
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
     let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
-    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
+    postscript_function.domain([
+        properties.domain.left(),
+        properties.domain.right(),
+        properties.domain.top(),
+        properties.domain.bottom(),
+    ]);
     postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
 
     root_ref
 }
 
-fn serialize_linear_postscript(
-    properties: &GradientProperties,
-    sc: &mut SerializerContext,
-    bbox: &Rect,
-) -> Ref {
+fn serialize_linear_postscript(properties: &PostScriptGradient, sc: &mut SerializerContext) -> Ref {
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min.get();
@@ -224,12 +346,17 @@ fn serialize_linear_postscript(
     let mut code = Vec::new();
     code.extend(start_code);
     code.push(encode_spread_method(min, max, properties.spread_method));
-    code.push(encode_stops(&properties.stops, min, max));
+    code.push(encode_postscript_stops(&properties.stops, min, max));
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
     let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
-    postscript_function.domain([bbox.left(), bbox.right(), bbox.top(), bbox.bottom()]);
+    postscript_function.domain([
+        properties.domain.left(),
+        properties.domain.right(),
+        properties.domain.top(),
+        properties.domain.bottom(),
+    ]);
     postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
 
     root_ref
@@ -315,7 +442,7 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 /// Postscript code that, given an x coordinate between the min and max
 /// of a gradient, returns the interpolated color value depending on where it
 /// lies within the stops.
-fn encode_stops(stops: &[Stop], min: f32, max: f32) -> String {
+fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32) -> String {
     // Our algorithm requires the stops to be padded.
     let mut stops = stops.iter().cloned().collect::<Vec<_>>();
 

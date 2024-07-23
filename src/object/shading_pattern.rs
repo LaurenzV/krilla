@@ -1,5 +1,4 @@
-use crate::object::shading_function::ShadingFunction;
-use crate::paint::GradientProperties;
+use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
@@ -9,6 +8,7 @@ use std::sync::Arc;
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     shading_function: ShadingFunction,
+    shading_transform: TransformWrapper,
     ctm: TransformWrapper,
 }
 
@@ -19,11 +19,12 @@ impl ShadingPattern {
     pub fn new(
         gradient_properties: GradientProperties,
         ctm: TransformWrapper,
-        pattern_transform: TransformWrapper,
+        shading_transform: TransformWrapper,
     ) -> Self {
         Self(Arc::new(Repr {
             // CTM doesn't need to be included to calculate the domain of the shading function
-            shading_function: ShadingFunction::new(gradient_properties, pattern_transform),
+            shading_function: ShadingFunction::new(gradient_properties),
+            shading_transform,
             ctm,
         }))
     }
@@ -38,7 +39,7 @@ impl Object for ShadingPattern {
             self.0
                 .ctm
                 .0
-                .pre_concat(self.0.shading_function.shading_transform().0)
+                .pre_concat(self.0.shading_transform.0)
                 .to_pdf_transform(),
         );
     }

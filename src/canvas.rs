@@ -4,10 +4,11 @@ use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
+use crate::object::shading_function::{GradientProperties, GradientPropertiesExt};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
-use crate::paint::{GradientProperties, GradientPropertiesExt, Paint};
+use crate::paint::Paint;
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
@@ -990,7 +991,7 @@ mod tests {
                     cx: FiniteF32::new(80.0).unwrap(),
                     cy: FiniteF32::new(80.0).unwrap(),
                     start_angle: FiniteF32::new(0.0).unwrap(),
-                    end_angle: FiniteF32::new(360.0).unwrap(),
+                    end_angle: FiniteF32::new(90.0).unwrap(),
                     transform: TransformWrapper(
                         // Transform::from_scale(0.5, 0.5),
                         // ), // Transform::from_scale(0.5, 0.5),
@@ -1053,12 +1054,13 @@ mod tests {
             Transform::from_translate(0.0, 0.0).try_into().unwrap(),
             Fill {
                 paint: Paint::LinearGradient(LinearGradient {
-                    x1: FiniteF32::new(0.3 * 160.0).unwrap(),
+                    x1: FiniteF32::new(0.1 * 160.0).unwrap(),
                     y1: FiniteF32::new(0.6 * 160.0).unwrap(),
-                    x2: FiniteF32::new(0.1 * 160.0).unwrap(),
-                    y2: FiniteF32::new(0.3 * 160.0).unwrap(),
+                    x2: FiniteF32::new(0.3 * 160.0).unwrap(),
+                    y2: FiniteF32::new(0.6 * 160.0).unwrap(),
                     transform: TransformWrapper(
-                        Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                        Transform::identity(), // Transform::from_scale(0.5, 0.5),
+                                               // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
                     ), // Transform::from_scale(0.5, 0.5),
                     // Transform::identity()
                     spread_method,
@@ -1074,7 +1076,7 @@ mod tests {
                             opacity: NormalizedF32::ONE,
                         },
                         Stop {
-                            offset: NormalizedF32::new(0.7).unwrap(),
+                            offset: NormalizedF32::new(0.8).unwrap(),
                             color: Color::new_rgb(0, 0, 255),
                             opacity: NormalizedF32::ONE,
                         },
@@ -1120,14 +1122,14 @@ mod tests {
                 paint: Paint::RadialGradient(RadialGradient {
                     cx: FiniteF32::new(80.0).unwrap(),
                     cy: FiniteF32::new(80.0).unwrap(),
-                    cr: FiniteF32::new(0.0).unwrap(),
-                    fx: FiniteF32::new(100.0).unwrap(),
-                    fy: FiniteF32::new(100.0).unwrap(),
-                    fr: FiniteF32::new(50.0).unwrap(),
+                    cr: FiniteF32::new(80.0).unwrap(),
+                    fx: FiniteF32::new(80.0).unwrap(),
+                    fy: FiniteF32::new(80.0).unwrap(),
+                    fr: FiniteF32::new(0.0).unwrap(),
                     transform: TransformWrapper(
-                        Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
+                        // Transform::from_scale(0.5, 0.5).pre_concat(Transform::from_rotate(45.0)),
                         // Transform::from_scale(0.5, 0.5),
-                        // Transform::identity(),
+                        Transform::identity(),
                     ),
                     spread_method,
                     stops: vec![
