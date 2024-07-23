@@ -4,7 +4,7 @@ use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
-use crate::object::shading_function::{GradientProperties, GradientPropertiesExt};
+use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
@@ -343,6 +343,9 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::Masked(mask_data) => {
                     self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
                 }
+                Instruction::Shaded(shade_data) => {
+                    self.draw_shaded(shade_data.0.clone(), shade_data.1.instructions())
+                }
                 Instruction::Clipped(clip_data) => self.draw_clipped(
                     clip_data.0.as_slice(),
                     &clip_data.1,
@@ -674,6 +677,16 @@ impl<'a> CanvasPdfSerializer<'a> {
     pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
         self.save_state();
         self.set_base_opacity(opacity);
+        self.serialize_instructions(instructions);
+        self.restore_state();
+    }
+
+    pub fn draw_shaded(&mut self, shading: ShadingFunction, instructions: &[Instruction]) {
+        self.save_state();
+        let sh = self
+            .resource_dictionary
+            .register_resource(Resource::Shading(shading));
+        self.content.shading(sh.to_pdf_name());
         self.serialize_instructions(instructions);
         self.restore_state();
     }

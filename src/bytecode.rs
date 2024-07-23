@@ -1,5 +1,6 @@
 use crate::object::image::Image;
 use crate::object::mask::Mask;
+use crate::object::shading_function::ShadingFunction;
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule, PathWrapper, Stroke};
 use pdf_writer::types::BlendMode;
@@ -14,6 +15,7 @@ pub enum Instruction {
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
+    Shaded(Box<(ShadingFunction, ByteCode)>),
     Clipped(Box<(Vec<PathWrapper>, FillRule, ByteCode)>),
     Masked(Box<(Mask, ByteCode)>),
     Opacified(Box<(NormalizedF32, ByteCode)>),

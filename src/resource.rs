@@ -1,6 +1,7 @@
 use crate::object::color_space::ColorSpace;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
+use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
@@ -37,12 +38,23 @@ impl ResourceTrait for ColorSpace {
     }
 }
 
+impl ResourceTrait for ShadingFunction {
+    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+        resources.shadings()
+    }
+
+    fn get_prefix() -> &'static str {
+        "s"
+    }
+}
+
 #[derive(Hash, Clone, Eq, PartialEq)]
 pub enum Resource {
     XObject(XObjectResource),
     Pattern(PatternResource),
     ExtGState(ExtGState),
     ColorSpace(ColorSpace),
+    Shading(ShadingFunction),
 }
 
 impl Object for Resource {
@@ -52,6 +64,7 @@ impl Object for Resource {
             Resource::Pattern(p) => p.serialize_into(sc, root_ref),
             Resource::ExtGState(e) => e.serialize_into(sc, root_ref),
             Resource::ColorSpace(x) => x.serialize_into(sc, root_ref),
+            Resource::Shading(s) => s.serialize_into(sc, root_ref),
         }
     }
 
@@ -61,6 +74,7 @@ impl Object for Resource {
             Resource::Pattern(p) => p.is_cached(),
             Resource::ExtGState(e) => e.is_cached(),
             Resource::ColorSpace(x) => x.is_cached(),
+            Resource::Shading(s) => s.is_cached(),
         }
     }
 }
@@ -135,6 +149,7 @@ pub struct ResourceDictionary {
     pub ext_g_states: ResourceMapper<ExtGState>,
     pub patterns: ResourceMapper<PatternResource>,
     pub x_objects: ResourceMapper<XObjectResource>,
+    pub shadings: ResourceMapper<ShadingFunction>,
 }
 
 impl ResourceDictionary {
@@ -144,6 +159,7 @@ impl ResourceDictionary {
             ext_g_states: ResourceMapper::new(),
             patterns: ResourceMapper::new(),
             x_objects: ResourceMapper::new(),
+            shadings: ResourceMapper::new(),
         }
     }
 
@@ -163,12 +179,17 @@ impl ResourceDictionary {
         self.x_objects.remap_with_name(x_object)
     }
 
+    fn register_shading(&mut self, shading: ShadingFunction) -> String {
+        self.shadings.remap_with_name(shading)
+    }
+
     pub fn register_resource(&mut self, resource: Resource) -> String {
         match resource {
             Resource::XObject(x) => self.register_x_object(x),
             Resource::Pattern(p) => self.register_pattern(p),
             Resource::ExtGState(e) => self.register_ext_g_state(e),
             Resource::ColorSpace(c) => self.register_color_space(c),
+            Resource::Shading(s) => self.register_shading(s),
         }
     }
 
@@ -177,6 +198,7 @@ impl ResourceDictionary {
         write_resource_type(sc, resources, &self.ext_g_states);
         write_resource_type(sc, resources, &self.patterns);
         write_resource_type(sc, resources, &self.x_objects);
+        write_resource_type(sc, resources, &self.shadings);
     }
 }
 
