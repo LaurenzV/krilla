@@ -1,10 +1,10 @@
+use crate::blend_mode::BlendMode;
 use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::font::OutlineBuilder;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
-use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::prelude::LocationRef;
@@ -274,7 +274,7 @@ impl ColorPainter for ColrCanvas<'_> {
 
     fn push_layer(&mut self, composite_mode: CompositeMode) {
         let mode = match composite_mode {
-            CompositeMode::SrcOver => BlendMode::Normal,
+            CompositeMode::SrcOver => BlendMode::SourceOver,
             CompositeMode::Screen => BlendMode::Screen,
             CompositeMode::Overlay => BlendMode::Overlay,
             CompositeMode::Darken => BlendMode::Darken,
@@ -291,7 +291,7 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::HslColor => BlendMode::Color,
             CompositeMode::HslLuminosity => BlendMode::Luminosity,
             CompositeMode::HslSaturation => BlendMode::Saturation,
-            _ => BlendMode::Normal,
+            _ => BlendMode::SourceOver,
         };
         let canvas = Canvas::new(Size::from_wh(self.size as f32, self.size as f32).unwrap());
         self.blend_modes.push(mode);

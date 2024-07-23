@@ -1,9 +1,9 @@
+use crate::blend_mode::BlendMode;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::transform::TransformWrapper;
 use crate::{Color, Fill, FillRule, Paint, PathWrapper, Stroke};
-use pdf_writer::types::BlendMode;
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Size};
 

@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod blend_mode;
 pub mod bytecode;
 pub mod canvas;
 pub mod color;

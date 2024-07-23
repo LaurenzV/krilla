@@ -1,3 +1,4 @@
+use crate::blend_mode::BlendMode;
 use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::graphics_state::GraphicsStates;
@@ -14,7 +15,6 @@ use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
-use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
@@ -146,7 +146,7 @@ impl<'a> Blended<'a> {
 
 impl Drop for Blended<'_> {
     fn drop(&mut self) {
-        if self.blend_mode != BlendMode::Normal {
+        if self.blend_mode != BlendMode::SourceOver {
             self.parent_byte_code.push(Instruction::Blended(Box::new((
                 self.blend_mode,
                 self.byte_code.clone(),
@@ -427,8 +427,8 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
-        if blend_mode != BlendMode::Normal {
+    pub fn set_pdf_blend_mode(&mut self, blend_mode: pdf_writer::types::BlendMode) {
+        if blend_mode != pdf_writer::types::BlendMode::Normal {
             let state = ExtGState::new().blend_mode(blend_mode);
             self.graphics_states.combine(&state);
 
@@ -660,8 +660,13 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn draw_blended(&mut self, blend_mode: BlendMode, instructions: &[Instruction]) {
         self.save_state();
-        self.set_blend_mode(blend_mode);
-        self.serialize_instructions(instructions);
+        if let Ok(blend_mode) = blend_mode.try_into() {
+            // These are the blend modes that are available natively in PDF.
+            self.set_pdf_blend_mode(blend_mode);
+            self.serialize_instructions(instructions);
+        } else {
+            todo!();
+        }
         self.restore_state();
     }
 
@@ -854,6 +859,7 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 
 #[cfg(test)]
 mod tests {
+    use crate::blend_mode::BlendMode;
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::object::image::Image;
@@ -864,7 +870,6 @@ mod tests {
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
-    use pdf_writer::types::BlendMode;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
