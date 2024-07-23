@@ -11,6 +11,7 @@ use tiny_skia_path::{NormalizedF32, Size};
 pub enum Instruction {
     Transformed(Box<(TransformWrapper, ByteCode)>),
     Isolated(Arc<ByteCode>),
+    // TODO: Replace with PDF blend mode
     Blended(Box<(BlendMode, ByteCode)>),
     StrokePath(Box<(PathWrapper, Stroke)>),
     DrawImage(Box<(Image, Size)>),
@@ -80,12 +81,18 @@ pub fn into_composited(instructions: &[Instruction], black: bool) -> Vec<Instruc
                     rule: f.1.rule,
                 };
 
-                new_instructions.push(Instruction::FillPath(Box::new((f.0.clone(), fill))))
+                new_instructions.push(Instruction::FillPath(Box::new((f.0.clone(), fill))));
+            }
+            Instruction::Clipped(c) => {
+                new_instructions.push(Instruction::Clipped(Box::new((
+                    c.0.clone(),
+                    c.1.clone(),
+                    ByteCode(into_composited(&c.2 .0, black)),
+                ))));
             }
             // TODO: Add
             Instruction::DrawImage(_) => {}
             Instruction::Shaded(_) => {}
-            Instruction::Clipped(_) => {}
             Instruction::Masked(_) => {}
             Instruction::Opacified(_) => {}
         }
