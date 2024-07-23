@@ -23,7 +23,7 @@ impl ShadingPattern {
     ) -> Self {
         Self(Arc::new(Repr {
             // CTM doesn't need to be included to calculate the domain of the shading function
-            shading_function: ShadingFunction::new(gradient_properties),
+            shading_function: ShadingFunction::new(gradient_properties, false),
             shading_transform,
             ctm,
         }))

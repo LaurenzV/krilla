@@ -136,15 +136,19 @@ impl GradientPropertiesExt for RadialGradient {
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    pub(crate) properties: GradientProperties,
+    pub properties: GradientProperties,
+    pub use_opacities: bool,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingFunction(Arc<Repr>);
 
 impl ShadingFunction {
-    pub fn new(properties: GradientProperties) -> Self {
-        Self(Arc::new(Repr { properties }))
+    pub fn new(properties: GradientProperties, use_opacities: bool) -> Self {
+        Self(Arc::new(Repr {
+            properties,
+            use_opacities,
+        }))
     }
 }
 
@@ -152,10 +156,10 @@ impl Object for ShadingFunction {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         match &self.0.properties {
             GradientProperties::RadialAxialGradient(rag) => {
-                serialize_axial_radial_shading(sc, root_ref, rag)
+                serialize_axial_radial_shading(sc, root_ref, rag, self.0.use_opacities)
             }
             GradientProperties::PostScriptGradient(psg) => {
-                serialize_postscript_shading(sc, root_ref, psg)
+                serialize_postscript_shading(sc, root_ref, psg, self.0.use_opacities)
             }
         }
     }
@@ -169,14 +173,18 @@ fn serialize_postscript_shading(
     sc: &mut SerializerContext,
     root_ref: Ref,
     post_script_gradient: &PostScriptGradient,
+    use_opacities: bool,
 ) {
     let domain = post_script_gradient.domain;
 
-    let function_ref = select_postscript_function(post_script_gradient, sc);
-    let cs_ref = sc.srgb();
+    let function_ref = select_postscript_function(post_script_gradient, sc, use_opacities);
+    let cs_ref = if use_opacities {
+        sc.d65_gray()
+    } else {
+        sc.srgb()
+    };
 
     let mut shading = sc.chunk_mut().function_shading(root_ref);
-    // TODO: Readd axial/radial shading.
     shading.shading_type(FunctionShadingType::Function);
     shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
@@ -190,9 +198,14 @@ fn serialize_axial_radial_shading(
     sc: &mut SerializerContext,
     root_ref: Ref,
     radial_axial_gradient: &RadialAxialGradient,
+    use_opacities: bool,
 ) {
-    let function_ref = select_axial_radial_function(radial_axial_gradient, sc);
-    let cs_ref = sc.srgb();
+    let function_ref = select_axial_radial_function(radial_axial_gradient, sc, use_opacities);
+    let cs_ref = if use_opacities {
+        sc.d65_gray()
+    } else {
+        sc.srgb()
+    };
 
     let mut shading = sc.chunk_mut().function_shading(root_ref);
     if radial_axial_gradient.shading_type == FunctionShadingType::Radial {
@@ -211,6 +224,7 @@ fn serialize_axial_radial_shading(
 fn select_axial_radial_function(
     properties: &RadialAxialGradient,
     sc: &mut SerializerContext,
+    use_opacities: bool,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
@@ -233,23 +247,31 @@ fn select_axial_radial_function(
     }
 
     if stops.len() == 2 {
-        serialize_exponential(
-            &stops[0].color.to_normalized_pdf_components(),
-            &stops[1].color.to_normalized_pdf_components(),
-            sc,
-        )
+        if use_opacities {
+            serialize_exponential(&[stops[0].opacity], &[stops[1].opacity], sc)
+        } else {
+            serialize_exponential(
+                &stops[0].color.to_normalized_pdf_components(),
+                &stops[1].color.to_normalized_pdf_components(),
+                sc,
+            )
+        }
     } else {
-        serialize_stitching(&stops, sc)
+        serialize_stitching(&stops, sc, use_opacities)
     }
 }
 
-fn select_postscript_function(properties: &PostScriptGradient, sc: &mut SerializerContext) -> Ref {
+fn select_postscript_function(
+    properties: &PostScriptGradient,
+    sc: &mut SerializerContext,
+    use_opacities: bool,
+) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
     if properties.gradient_type == GradientType::Linear {
-        serialize_linear_postscript(properties, sc)
+        serialize_linear_postscript(properties, sc, use_opacities)
     } else if properties.gradient_type == GradientType::Sweep {
-        serialize_sweep_postscript(properties, sc)
+        serialize_sweep_postscript(properties, sc, use_opacities)
     } else {
         todo!();
         // serialize_radial_postscript(properties, sc, bbox)
@@ -287,7 +309,11 @@ fn select_postscript_function(properties: &PostScriptGradient, sc: &mut Serializ
 // root_ref
 // }
 
-fn serialize_sweep_postscript(properties: &PostScriptGradient, sc: &mut SerializerContext) -> Ref {
+fn serialize_sweep_postscript(
+    properties: &PostScriptGradient,
+    sc: &mut SerializerContext,
+    use_opacities: bool,
+) -> Ref {
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min.get();
@@ -310,7 +336,12 @@ fn serialize_sweep_postscript(properties: &PostScriptGradient, sc: &mut Serializ
     let mut code = Vec::new();
     code.extend(start_code);
     code.push(encode_spread_method(min, max, properties.spread_method));
-    code.push(encode_postscript_stops(&properties.stops, min, max));
+    code.push(encode_postscript_stops(
+        &properties.stops,
+        min,
+        max,
+        use_opacities,
+    ));
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
@@ -321,12 +352,21 @@ fn serialize_sweep_postscript(properties: &PostScriptGradient, sc: &mut Serializ
         properties.domain.top(),
         properties.domain.bottom(),
     ]);
-    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+
+    if use_opacities {
+        postscript_function.range([0.0, 1.0]);
+    } else {
+        postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+    }
 
     root_ref
 }
 
-fn serialize_linear_postscript(properties: &PostScriptGradient, sc: &mut SerializerContext) -> Ref {
+fn serialize_linear_postscript(
+    properties: &PostScriptGradient,
+    sc: &mut SerializerContext,
+    use_opacities: bool,
+) -> Ref {
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min.get();
@@ -346,7 +386,12 @@ fn serialize_linear_postscript(properties: &PostScriptGradient, sc: &mut Seriali
     let mut code = Vec::new();
     code.extend(start_code);
     code.push(encode_spread_method(min, max, properties.spread_method));
-    code.push(encode_postscript_stops(&properties.stops, min, max));
+    code.push(encode_postscript_stops(
+        &properties.stops,
+        min,
+        max,
+        use_opacities,
+    ));
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
@@ -357,7 +402,12 @@ fn serialize_linear_postscript(properties: &PostScriptGradient, sc: &mut Seriali
         properties.domain.top(),
         properties.domain.bottom(),
     ]);
-    postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+
+    if use_opacities {
+        postscript_function.range([0.0, 1.0]);
+    } else {
+        postscript_function.range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0]);
+    }
 
     root_ref
 }
@@ -442,7 +492,7 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 /// Postscript code that, given an x coordinate between the min and max
 /// of a gradient, returns the interpolated color value depending on where it
 /// lies within the stops.
-fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32) -> String {
+fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32, use_opacities: bool) -> String {
     // Our algorithm requires the stops to be padded.
     let mut stops = stops.iter().cloned().collect::<Vec<_>>();
 
@@ -458,10 +508,10 @@ fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32) -> String {
         stops.push(last);
     }
 
-    encode_stops_impl(&stops, min, max)
+    encode_stops_impl(&stops, min, max, use_opacities)
 }
 
-fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
+fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) -> String {
     let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
         if min == max {
             return format!(
@@ -497,33 +547,49 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32) -> String {
     };
 
     return if stops.len() == 1 {
-        stops[0]
-            .color
-            .to_pdf_components()
-            .iter()
-            .map(|n| n.to_string())
-            .collect::<Vec<_>>()
-            .join(" ")
+        if use_opacities {
+            stops[0].opacity.to_string()
+        } else {
+            stops[0]
+                .color
+                .to_pdf_components()
+                .iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
     } else {
         let length = max - min;
         let stops_min = min + length * stops[0].offset.get();
         let stops_max = min + length * stops[1].offset.get();
         // Write the if conditions to find the corresponding set of two stops.
-        format!(
-            "dup {} le {{{}}} {{{}}} ifelse",
-            stops_max,
+
+        let encoded_stops = if use_opacities {
+            encode_two_stops(
+                &[stops[0].opacity.get()],
+                &[stops[1].opacity.get()],
+                stops_min,
+                stops_max,
+            )
+        } else {
             encode_two_stops(
                 &stops[0].color.to_pdf_components(),
                 &stops[1].color.to_pdf_components(),
                 stops_min,
                 stops_max,
-            ),
-            encode_stops_impl(&stops[1..], min, max)
+            )
+        };
+
+        format!(
+            "dup {} le {{{}}} {{{}}} ifelse",
+            stops_max,
+            encoded_stops,
+            encode_stops_impl(&stops[1..], min, max, use_opacities)
         )
     };
 }
 
-fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
+fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext, use_opacities: bool) -> Ref {
     let root_ref = sc.new_ref();
     let mut functions = vec![];
     let mut bounds = vec![];
@@ -534,8 +600,14 @@ fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext) -> Ref {
         let (first, second) = (&window[0], &window[1]);
         bounds.push(second.offset.get());
 
-        let c0_components = first.color.to_normalized_pdf_components();
-        let c1_components = second.color.to_normalized_pdf_components();
+        let (c0_components, c1_components) = if use_opacities {
+            (vec![first.opacity], vec![second.opacity])
+        } else {
+            (
+                first.color.to_normalized_pdf_components(),
+                second.color.to_normalized_pdf_components(),
+            )
+        };
         debug_assert!(c0_components.len() == c1_components.len());
         count = c0_components.len();
 
