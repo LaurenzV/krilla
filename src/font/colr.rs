@@ -1,5 +1,5 @@
 use crate::blend_mode::BlendMode;
-use crate::canvas::Canvas;
+use crate::canvas::{Canvas, Surface};
 use crate::color::Color;
 use crate::font::OutlineBuilder;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
@@ -320,7 +320,7 @@ impl ColorPainter for ColrCanvas<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Canvas;
+    use crate::canvas::{Canvas, Surface};
     use crate::font::colr::ColrCanvas;
     use crate::serialize::{PageSerialize, SerializeSettings};
     use skrifa::prelude::LocationRef;

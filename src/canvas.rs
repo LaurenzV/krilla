@@ -20,15 +20,29 @@ use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathSegment, Rect, Size, Transform};
 
+pub trait Surface {
+    fn masked(&mut self, mask: Mask) -> Masked;
+    fn stroke_path(&mut self, path: Path, transform: tiny_skia_path::Transform, stroke: Stroke);
+    fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill);
+    fn blended(&mut self, blend_mode: BlendMode) -> Blended;
+    fn opacified(&mut self, opacity: NormalizedF32) -> Opacified;
+    fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped;
+    fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped;
+    fn isolated(&mut self) -> Isolated;
+    fn transformed(&mut self, transform: Transform) -> Transformed;
+    fn draw_image(&mut self, image: Image, size: Size, transform: Transform);
+    fn draw_canvas(&mut self, canvas: Canvas);
+}
+
 macro_rules! canvas_impl {
     ($type:ident $(<$($lifetime:tt),+>)?) => {
-        impl $(<$($lifetime),+>)? $type $(<$($lifetime),+>)? {
+        impl$(<$($lifetime),+>)? Surface for $type $(<$($lifetime),+>)? {
 
-            pub fn masked(&mut self, mask: Mask) -> Masked {
+            fn masked(&mut self, mask: Mask) -> Masked {
                 Masked::new(&mut self.byte_code, mask)
             }
 
-            pub fn stroke_path(
+            fn stroke_path(
                 &mut self,
                 path: Path,
                 transform: tiny_skia_path::Transform,
@@ -38,7 +52,7 @@ macro_rules! canvas_impl {
                 transformed.byte_code.push(Instruction::StrokePath(Box::new((path.into(), stroke))));
             }
 
-            pub fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
+            fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
                 let mut transformed = self.transformed(transform);
                 transformed.byte_code.push(Instruction::FillPath(Box::new((
                     path.into(),
@@ -46,31 +60,31 @@ macro_rules! canvas_impl {
                 ))));
             }
 
-            pub fn blended(&mut self, blend_mode: BlendMode) -> Blended {
+            fn blended(&mut self, blend_mode: BlendMode) -> Blended {
                 Blended::new(&mut self.byte_code, blend_mode)
             }
 
-            pub fn opacified(&mut self, opacity: NormalizedF32) -> Opacified {
+            fn opacified(&mut self, opacity: NormalizedF32) -> Opacified {
                 Opacified::new(&mut self.byte_code, opacity)
             }
 
-            pub fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped {
+            fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped {
                 Clipped::new(&mut self.byte_code, paths, clip_rule)
             }
 
-            pub fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
+            fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
                 Clipped::new(&mut self.byte_code, vec![path], clip_rule)
             }
 
-            pub fn isolated(&mut self) -> Isolated {
+            fn isolated(&mut self) -> Isolated {
                 Isolated::new(&mut self.byte_code)
             }
 
-            pub fn transformed(&mut self, transform: Transform) -> Transformed {
+            fn transformed(&mut self, transform: Transform) -> Transformed {
                 Transformed::new(&mut self.byte_code, transform)
             }
 
-            pub fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
+            fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
                 let mut transformed = self.transformed(transform);
                 transformed.byte_code.push(Instruction::DrawImage(Box::new((
                     image,
@@ -78,7 +92,7 @@ macro_rules! canvas_impl {
                 ))));
             }
 
-            pub fn draw_canvas(&mut self, canvas: Canvas) {
+            fn draw_canvas(&mut self, canvas: Canvas) {
                 self.byte_code.extend(&canvas.byte_code);
             }
         }
@@ -954,7 +968,7 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 #[cfg(test)]
 mod tests {
     use crate::blend_mode::BlendMode;
-    use crate::canvas::Canvas;
+    use crate::canvas::{Canvas, Surface};
     use crate::color::Color;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
