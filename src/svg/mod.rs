@@ -18,7 +18,7 @@ mod tests {
 
     #[test]
     pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/painting/context/with-gradient-in-use.svg").unwrap();
+        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/painting/context/with-gradient-and-gradient-transform.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
         let canvas = render(&tree);
         let finished = canvas.serialize(SerializeSettings::default()).finish();

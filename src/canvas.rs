@@ -685,8 +685,6 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
-            let transform = pattern_transform(transform);
-
             let shading_mask =
                 Mask::new_from_shading(gradient_props.clone(), transform, stroke_bbox);
 
