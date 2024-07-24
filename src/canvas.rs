@@ -468,7 +468,6 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-
     pub fn transform(&mut self, transform: &tiny_skia_path::Transform) {
         if !transform.is_identity() {
             self.graphics_states.transform(*transform);
@@ -811,11 +810,17 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
-        let ext_state = ExtGState::new().stroking_alpha(opacity).non_stroking_alpha(opacity);
-        let ext_state_name = self.resource_dictionary.register_resource(Resource::ExtGState(ext_state));
+        let ext_state = ExtGState::new()
+            .stroking_alpha(opacity)
+            .non_stroking_alpha(opacity);
+        let ext_state_name = self
+            .resource_dictionary
+            .register_resource(Resource::ExtGState(ext_state));
 
         let x_object = XObject::new(Arc::new(ByteCode(instructions.to_vec())), true, false, None);
-        let x_object_name = self.resource_dictionary.register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+        let x_object_name = self
+            .resource_dictionary
+            .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
         self.save_state();
         self.content.set_parameters(ext_state_name.to_pdf_name());
         self.content.x_object(x_object_name.to_pdf_name());
