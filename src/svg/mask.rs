@@ -22,16 +22,16 @@ pub fn get_mask(mask: &usvg::Mask) -> Mask {
             let mut path_builder = PathBuilder::new();
             let rect = mask.rect();
             path_builder.move_to(rect.left(), rect.top());
-            path_builder.move_to(rect.right(), rect.top());
-            path_builder.move_to(rect.right(), rect.bottom());
-            path_builder.move_to(rect.left(), rect.bottom());
+            path_builder.line_to(rect.right(), rect.top());
+            path_builder.line_to(rect.right(), rect.bottom());
+            path_builder.line_to(rect.left(), rect.bottom());
             path_builder.close();
             path_builder.finish().unwrap()
         };
 
-        // let mut clipped = masked.clipped(clip_path, FillRule::NonZero);
-        group::render(mask.root(), masked);
-        // clipped.finish();
+        let mut clipped = masked.clipped(clip_path, FillRule::NonZero);
+        group::render(mask.root(), &mut clipped);
+        clipped.finish();
         masked.finish();
     }
 
