@@ -4,7 +4,7 @@ use pdf_writer::Finish;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
 pub enum SvgClipPath {
-    SimpleClip(Path, FillRule),
+    SimpleClip(Vec<(Path, FillRule)>),
 }
 
 pub fn get_clip_path(_: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClipPath {
@@ -38,14 +38,14 @@ pub fn get_clip_path(_: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClipPath
         || (clip_rules.iter().all(|f| *f == usvg::FillRule::EvenOdd)
         && clip_rules.len() == 1))
     {
-        let (path, rule) = create_simple_clip_path(
+        let clips = create_simple_clip_path(
             clip_path,
             clip_rules
                 .first()
                 .copied()
                 .unwrap_or(usvg::FillRule::NonZero),
         );
-        SvgClipPath::SimpleClip(path, rule)
+        SvgClipPath::SimpleClip(clips)
     } else {
         todo!()
     }
@@ -54,9 +54,10 @@ pub fn get_clip_path(_: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClipPath
 fn create_simple_clip_path(
     clip_path: &usvg::ClipPath,
     clip_rule: usvg::FillRule,
-) -> (Path, FillRule) {
+) -> Vec<(Path, FillRule)> {
+    let mut clips = vec![];
     if let Some(clip_path) = clip_path.clip_path() {
-        create_simple_clip_path(clip_path, clip_rule);
+        clips.extend(create_simple_clip_path(clip_path, clip_rule));
     }
 
     // Just a dummy operation, so that in case the clip path only has hidden children the clip
@@ -67,10 +68,11 @@ fn create_simple_clip_path(
     let base_transform = clip_path.transform();
     extend_segments_from_group(clip_path.root(), &base_transform, &mut path_builder);
 
-    (
+    clips.push((
         path_builder.finish().unwrap(),
         convert_fill_rule(&clip_rule),
-    )
+    ));
+    clips
 }
 
 fn extend_segments_from_group(

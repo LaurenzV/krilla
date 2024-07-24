@@ -31,7 +31,7 @@ pub fn clipped(group: &usvg::Group, surface: &mut dyn Surface) {
     let clipped = if let Some(clip_path) = group.clip_path() {
         let converted = get_clip_path(group, clip_path);
         match converted {
-            SvgClipPath::SimpleClip(path, rule) => &mut surface.clipped(path, rule),
+            SvgClipPath::SimpleClip(rules) => &mut surface.clipped_many(rules),
         }
     } else {
         surface
