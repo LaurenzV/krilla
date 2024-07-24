@@ -253,7 +253,7 @@ impl Drop for Blended<'_> {
                     .parent_byte_code
                     .push_blended(self.blend_mode, self.byte_code.clone()),
             }
-        } else {
+        }  else {
             self.parent_byte_code.extend(&self.byte_code)
         }
     }
@@ -764,6 +764,8 @@ impl<'a> CanvasPdfSerializer<'a> {
             self.set_pdf_blend_mode(blend_mode);
             self.serialize_bytecode(byte_code);
             self.restore_state();
+        }   else {
+            self.serialize_bytecode(byte_code);
         }
     }
 

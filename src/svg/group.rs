@@ -24,18 +24,18 @@ where
     }
 
     let transform = transform.pre_concat(group.transform());
-    let mut opacified = surface.opacified(group.opacity());
-    let mut blended = opacified.blended(convert_blend_mode(&group.blend_mode()));
+    let mut blended = surface.blended(convert_blend_mode(&group.blend_mode()));
+    let mut opacified = blended.opacified(group.opacity());
 
     for child in group.children() {
         match child {
-            Node::Group(g) => render(g, &transform, &mut blended),
-            Node::Path(p) => path::render(p, &transform, &mut blended),
+            Node::Group(g) => render(g, &transform, &mut opacified),
+            Node::Path(p) => path::render(p, &transform, &mut opacified),
             Node::Image(i) => unimplemented!(),
             Node::Text(t) => unimplemented!(),
         }
     }
 
-    blended.finish();
     opacified.finish();
+    blended.finish();
 }
