@@ -13,7 +13,7 @@ use crate::paint::Paint;
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::MaskType::Luminosity;
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
@@ -666,8 +666,9 @@ impl<'a> CanvasPdfSerializer<'a> {
             return;
         }
 
+        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
         self.bbox
-            .expand(&self.graphics_states.transform_bbox(path.bounds()));
+            .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
         self.save_state();
         self.set_stroke_opacity(stroke.opacity);
@@ -683,6 +684,10 @@ impl<'a> CanvasPdfSerializer<'a> {
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
             let transform = pattern_transform(transform);
+
+            let shading_mask =
+                Mask::new_from_shading(gradient_props.clone(), transform, stroke_bbox);
+
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
                 TransformWrapper(
@@ -697,6 +702,17 @@ impl<'a> CanvasPdfSerializer<'a> {
                 .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
                     shading_pattern,
                 )));
+
+            if let Some(shading_mask) = shading_mask {
+                // TODO: use set_mask instead?
+                let state = ExtGState::new().mask(shading_mask);
+
+                let ext = self
+                    .resource_dictionary
+                    .register_resource(Resource::ExtGState(state));
+                self.content.set_parameters(ext.to_pdf_name());
+            }
+
             self.content
                 .set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             self.content
@@ -713,15 +729,15 @@ impl<'a> CanvasPdfSerializer<'a> {
                 self.content.set_stroke_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = lg.gradient_properties(stroke_bbox);
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = rg.gradient_properties(stroke_bbox);
                 write_gradient(gradient_props, transform);
             }
             Paint::SweepGradient(sg) => {
-                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = sg.gradient_properties(stroke_bbox);
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {

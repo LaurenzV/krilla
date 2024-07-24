@@ -1,4 +1,4 @@
-use crate::{LineCap, LineJoin};
+use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use tiny_skia_path::Rect;
@@ -78,4 +78,14 @@ impl RectExt for Rect {
             self.y() + self.height(),
         )
     }
+}
+
+pub fn calculate_stroke_bbox(stroke: &Stroke, path: &tiny_skia_path::Path) -> Option<Rect> {
+    let stroke = stroke.to_tiny_skia();
+
+    if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
+        return stroked_path.compute_tight_bounds();
+    }
+
+    None
 }

@@ -47,6 +47,32 @@ pub struct Stroke {
     pub dash: Option<StrokeDash>,
 }
 
+impl Stroke {
+    pub fn to_tiny_skia(&self) -> tiny_skia_path::Stroke {
+        let mut stroke = tiny_skia_path::Stroke {
+            width: self.width.get(),
+            miter_limit: self.miter_limit.get(),
+            line_cap: match self.line_cap {
+                LineCap::Butt => tiny_skia_path::LineCap::Butt,
+                LineCap::Round => tiny_skia_path::LineCap::Round,
+                LineCap::Square => tiny_skia_path::LineCap::Square,
+            },
+            line_join: match self.line_join {
+                LineJoin::Miter => tiny_skia_path::LineJoin::Miter,
+                LineJoin::Round => tiny_skia_path::LineJoin::Round,
+                LineJoin::Bevel => tiny_skia_path::LineJoin::Bevel,
+            },
+            dash: None,
+        };
+
+        if let Some(ref stroke_dash) = self.dash {
+            stroke.dash = tiny_skia_path::StrokeDash::new(stroke_dash.array.iter().map(|n| n.get()).collect::<Vec<_>>(), stroke_dash.offset.get());
+        }
+
+        stroke
+    }
+}
+
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
