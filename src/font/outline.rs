@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Canvas;
+    use crate::canvas::{Canvas, Surface};
     use crate::font::OutlineBuilder;
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::Fill;
