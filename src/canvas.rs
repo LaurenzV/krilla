@@ -549,6 +549,10 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
+        if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
+            return;
+        }
+
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
@@ -658,6 +662,10 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
+            return;
+        }
+
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
