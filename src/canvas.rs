@@ -1,4 +1,5 @@
-use crate::bytecode::{ByteCode, Instruction};
+use crate::blend_mode::BlendMode;
+use crate::bytecode::{into_composited, ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -13,11 +14,11 @@ use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectReso
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
-use pdf_writer::types::BlendMode;
+use crate::MaskType::Luminosity;
+use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathSegment, Rect, Size, Transform};
 
 macro_rules! canvas_impl {
     ($type:ident $(<$($lifetime:tt),+>)?) => {
@@ -146,11 +147,105 @@ impl<'a> Blended<'a> {
 
 impl Drop for Blended<'_> {
     fn drop(&mut self) {
-        if self.blend_mode != BlendMode::Normal {
-            self.parent_byte_code.push(Instruction::Blended(Box::new((
-                self.blend_mode,
-                self.byte_code.clone(),
-            ))))
+        // TODO: Make code more efficient
+        if self.blend_mode != BlendMode::SourceOver {
+            match self.blend_mode {
+                BlendMode::Clear => {
+                    self.parent_byte_code.0 = vec![];
+                }
+                BlendMode::Source => {
+                    self.parent_byte_code.0 = self.byte_code.0.clone();
+                }
+                BlendMode::Destination => {}
+                BlendMode::DestinationOver => {
+                    let mut instructions = self.byte_code.0.clone();
+                    instructions.extend(self.parent_byte_code.0.clone());
+                    self.parent_byte_code.0 = instructions;
+                }
+                BlendMode::SourceIn => {
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(
+                            &self.parent_byte_code.0.clone(),
+                            false,
+                        ))),
+                        Luminosity,
+                    );
+                    self.parent_byte_code.0 = vec![];
+                    self.parent_byte_code.push(Instruction::Masked(Box::new((
+                        mask,
+                        self.byte_code.clone(),
+                    ))));
+                }
+                BlendMode::DestinationIn => {
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
+                        Luminosity,
+                    );
+
+                    let instruction =
+                        Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
+
+                    self.parent_byte_code.0 = vec![instruction];
+                }
+                BlendMode::SourceOut => {
+                    // TODO: Don't hardcode
+                    let mut builder = PathBuilder::new();
+                    builder.move_to(0.0, 0.0);
+                    builder.line_to(2000.0, 0.0);
+                    builder.line_to(2000.0, 2000.0);
+                    builder.line_to(0.0, 2000.0);
+                    builder.close();
+
+                    let path = builder.finish().unwrap();
+
+                    let mut mask_instructions = vec![Instruction::FillPath(Box::new((
+                        PathWrapper(path),
+                        Fill {
+                            paint: Paint::Color(Color::white()),
+                            opacity: NormalizedF32::ONE,
+                            rule: Default::default(),
+                        },
+                    )))];
+                    mask_instructions
+                        .extend(into_composited(&self.parent_byte_code.0.clone(), true));
+
+                    let mask = Mask::new(Arc::new(ByteCode(mask_instructions)), Luminosity);
+
+                    let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                    self.parent_byte_code.0 = vec![instruction];
+                }
+                BlendMode::DestinationOut => {}
+                BlendMode::SourceAtop => {
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(
+                            &self.parent_byte_code.0.clone(),
+                            false,
+                        ))),
+                        Luminosity,
+                    );
+
+                    let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                    self.parent_byte_code.push(instruction);
+                }
+                BlendMode::DestinationAtop => {
+                    let mask = Mask::new(
+                        Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
+                        Luminosity,
+                    );
+
+                    let instruction =
+                        Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
+                    self.parent_byte_code.0 = self.byte_code.0.clone();
+                    self.parent_byte_code.push(instruction);
+                }
+                BlendMode::Xor => {}
+                BlendMode::Plus => {}
+                // All other blend modes will be translate into their respective PDF blend mode.
+                _ => self.parent_byte_code.push(Instruction::Blended(Box::new((
+                    self.blend_mode,
+                    self.byte_code.clone(),
+                )))),
+            }
         } else {
             self.parent_byte_code.extend(&self.byte_code)
         }
@@ -427,8 +522,8 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
-        if blend_mode != BlendMode::Normal {
+    pub fn set_pdf_blend_mode(&mut self, blend_mode: pdf_writer::types::BlendMode) {
+        if blend_mode != pdf_writer::types::BlendMode::Normal {
             let state = ExtGState::new().blend_mode(blend_mode);
             self.graphics_states.combine(&state);
 
@@ -659,10 +754,14 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn draw_blended(&mut self, blend_mode: BlendMode, instructions: &[Instruction]) {
-        self.save_state();
-        self.set_blend_mode(blend_mode);
-        self.serialize_instructions(instructions);
-        self.restore_state();
+        if let Ok(blend_mode) = blend_mode.try_into() {
+            self.save_state();
+            // These are the blend modes that are available natively in PDF. All other blend
+            // modes have already been resolved during bytecode conversion
+            self.set_pdf_blend_mode(blend_mode);
+            self.serialize_instructions(instructions);
+            self.restore_state();
+        }
     }
 
     pub fn draw_transformed(&mut self, transform: Transform, instructions: &[Instruction]) {
@@ -854,6 +953,7 @@ fn draw_path(path_data: impl Iterator<Item = PathSegment>, content: &mut Content
 
 #[cfg(test)]
 mod tests {
+    use crate::blend_mode::BlendMode;
     use crate::canvas::Canvas;
     use crate::color::Color;
     use crate::object::image::Image;
@@ -864,7 +964,6 @@ mod tests {
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
-    use pdf_writer::types::BlendMode;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
