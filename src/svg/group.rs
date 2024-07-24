@@ -1,7 +1,7 @@
-use usvg::Node;
 use crate::canvas::Surface;
 use crate::svg::path;
 use crate::svg::util::convert_blend_mode;
+use usvg::Node;
 
 pub fn render<T>(group: &usvg::Group, transform: &usvg::Transform, surface: &mut T)
 where
@@ -32,7 +32,7 @@ where
             Node::Group(g) => render(g, &transform, &mut blended),
             Node::Path(p) => path::render(p, &transform, &mut blended),
             Node::Image(i) => unimplemented!(),
-            Node::Text(t) => unimplemented!()
+            Node::Text(t) => unimplemented!(),
         }
     }
 

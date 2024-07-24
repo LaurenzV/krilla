@@ -1,11 +1,11 @@
+use crate::blend_mode::BlendMode;
 use crate::transform::TransformWrapper;
 use crate::{
     Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, RadialGradient, SpreadMethod,
     Stop, Stroke, StrokeDash,
 };
 use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
-use usvg::{NonZeroPositiveF32};
-use crate::blend_mode::BlendMode;
+use usvg::NonZeroPositiveF32;
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {
     Transform {

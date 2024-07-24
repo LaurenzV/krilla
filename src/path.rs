@@ -66,7 +66,14 @@ impl Stroke {
         };
 
         if let Some(ref stroke_dash) = self.dash {
-            stroke.dash = tiny_skia_path::StrokeDash::new(stroke_dash.array.iter().map(|n| n.get()).collect::<Vec<_>>(), stroke_dash.offset.get());
+            stroke.dash = tiny_skia_path::StrokeDash::new(
+                stroke_dash
+                    .array
+                    .iter()
+                    .map(|n| n.get())
+                    .collect::<Vec<_>>(),
+                stroke_dash.offset.get(),
+            );
         }
 
         stroke

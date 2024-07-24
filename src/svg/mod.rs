@@ -1,9 +1,9 @@
-use tiny_skia_path::Transform;
 use crate::canvas::Canvas;
+use tiny_skia_path::Transform;
 
+mod group;
 mod path;
 mod util;
-mod group;
 
 pub fn render(tree: &usvg::Tree) -> Canvas {
     let mut canvas = Canvas::new(tree.size());
@@ -18,7 +18,7 @@ mod tests {
 
     #[test]
     pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/custom/paint-servers/linearGradient/linear-gradient-14.svg").unwrap();
+        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/painting/context/with-gradient-in-use.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
         let canvas = render(&tree);
         let finished = canvas.serialize(SerializeSettings::default()).finish();

@@ -13,7 +13,9 @@ use crate::paint::Paint;
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{
+    calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
+};
 use crate::MaskType::Luminosity;
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
@@ -921,11 +923,15 @@ impl PageSerialize for Canvas {
             serializer.finish()
         };
 
-        let deflated = deflate(&content_stream);
+        if serialize_settings.compress {
+            let deflated = deflate(&content_stream);
 
-        let mut stream = chunk.stream(content_ref, &deflated);
-        stream.filter(Filter::FlateDecode);
-        stream.finish();
+            let mut stream = chunk.stream(content_ref, &deflated);
+            stream.filter(Filter::FlateDecode);
+            stream.finish();
+        } else {
+            chunk.stream(content_ref, &content_stream);
+        }
 
         let mut page = chunk.page(page_ref);
         resource_dictionary.to_pdf_resources(&mut sc, &mut page.resources());
@@ -1025,9 +1031,7 @@ mod tests {
             Stroke::default(),
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = canvas.serialize(serialize_settings);
         write("pattern", &chunk.as_bytes());
@@ -1043,9 +1047,7 @@ mod tests {
             Stroke::default(),
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1066,9 +1068,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1105,9 +1105,7 @@ mod tests {
         transformed.finish();
         blended.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1144,9 +1142,7 @@ mod tests {
         opacified.finish();
         translated.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1195,9 +1191,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1261,9 +1255,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1324,9 +1316,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1368,9 +1358,7 @@ mod tests {
 
         clipped.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1415,9 +1403,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1457,9 +1443,7 @@ mod tests {
 
         masked.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1479,9 +1463,7 @@ mod tests {
             Transform::from_translate(20.0, 20.0),
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
