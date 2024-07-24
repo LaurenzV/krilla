@@ -15,10 +15,10 @@ use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::MaskType::Luminosity;
-use crate::{Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
+use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathSegment, Rect, Size, Transform};
 
 macro_rules! canvas_impl {
     ($type:ident $(<$($lifetime:tt),+>)?) => {
@@ -147,6 +147,7 @@ impl<'a> Blended<'a> {
 
 impl Drop for Blended<'_> {
     fn drop(&mut self) {
+        // TODO: Make code more efficient
         if self.blend_mode != BlendMode::SourceOver {
             match self.blend_mode {
                 BlendMode::Clear => {
@@ -186,16 +187,44 @@ impl Drop for Blended<'_> {
 
                     self.parent_byte_code.0 = vec![instruction];
                 }
-                BlendMode::SourceOut => {}
+                BlendMode::SourceOut => {
+                    // TODO: Don't hardcode
+                    let mut builder = PathBuilder::new();
+                    builder.move_to(0.0, 0.0);
+                    builder.line_to(2000.0, 0.0);
+                    builder.line_to(2000.0, 2000.0);
+                    builder.line_to(0.0, 2000.0);
+                    builder.close();
+
+                    let path = builder.finish().unwrap();
+
+                    let mut mask_instructions = vec![Instruction::FillPath(Box::new((
+                        PathWrapper(path),
+                        Fill {
+                            paint: Paint::Color(Color::white()),
+                            opacity: NormalizedF32::ONE,
+                            rule: Default::default(),
+                        },
+                    )))];
+                    mask_instructions
+                        .extend(into_composited(&self.parent_byte_code.0.clone(), true));
+
+                    let mask = Mask::new(Arc::new(ByteCode(mask_instructions)), Luminosity);
+
+                    let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                    self.parent_byte_code.0 = vec![instruction];
+                }
                 BlendMode::DestinationOut => {}
                 BlendMode::SourceAtop => {
                     let mask = Mask::new(
-                        Arc::new(ByteCode(into_composited(&self.parent_byte_code.0.clone(), false))),
+                        Arc::new(ByteCode(into_composited(
+                            &self.parent_byte_code.0.clone(),
+                            false,
+                        ))),
                         Luminosity,
                     );
 
-                    let instruction =
-                        Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                    let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
                     self.parent_byte_code.push(instruction);
                 }
                 BlendMode::DestinationAtop => {
