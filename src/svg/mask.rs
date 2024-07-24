@@ -2,6 +2,7 @@ use crate::canvas::{Canvas, Surface};
 use crate::object::mask::Mask;
 use crate::svg::group;
 use crate::svg::util::convert_mask_type;
+use crate::util::RectExt;
 use crate::FillRule;
 use pdf_writer::Finish;
 use std::sync::Arc;
@@ -18,16 +19,7 @@ pub fn get_mask(mask: &usvg::Mask) -> Mask {
             &mut canvas
         };
 
-        let clip_path = {
-            let mut path_builder = PathBuilder::new();
-            let rect = mask.rect();
-            path_builder.move_to(rect.left(), rect.top());
-            path_builder.line_to(rect.right(), rect.top());
-            path_builder.line_to(rect.right(), rect.bottom());
-            path_builder.line_to(rect.left(), rect.bottom());
-            path_builder.close();
-            path_builder.finish().unwrap()
-        };
+        let clip_path = mask.rect().to_rect().to_clip_path();
 
         let mut clipped = masked.clipped(clip_path, FillRule::NonZero);
         group::render(mask.root(), &mut clipped);

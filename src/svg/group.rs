@@ -1,9 +1,14 @@
 use crate::canvas::Surface;
+use crate::object::image::Image;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
-use crate::svg::path;
 use crate::svg::util::{convert_blend_mode, convert_transform};
-use usvg::Node;
+use crate::svg::{group, path};
+use crate::util::RectExt;
+use crate::FillRule;
+use image::ImageFormat;
+use tiny_skia_path::{Rect, Size, Transform};
+use usvg::{ImageKind, Node};
 
 pub fn render(group: &usvg::Group, surface: &mut dyn Surface) {
     if !group.filters().is_empty() {
@@ -56,7 +61,38 @@ pub fn blended_and_opacified(group: &usvg::Group, surface: &mut dyn Surface) {
         match child {
             Node::Group(g) => render(g, &mut opacified),
             Node::Path(p) => path::render(p, &mut opacified),
-            Node::Image(i) => unimplemented!(),
+            Node::Image(i) => match i.kind() {
+                ImageKind::JPEG(d) => {
+                    let dynamic_image =
+                        image::load_from_memory_with_format(d.as_slice(), ImageFormat::Jpeg)
+                            .unwrap();
+                    let image = Image::new(&dynamic_image);
+                    opacified.draw_image(image, i.size(), Transform::default());
+                }
+                ImageKind::PNG(d) => {
+                    let dynamic_image =
+                        image::load_from_memory_with_format(d.as_slice(), ImageFormat::Png)
+                            .unwrap();
+                    let image = Image::new(&dynamic_image);
+                    opacified.draw_image(image, i.size(), Transform::default());
+                }
+                ImageKind::GIF(d) => {
+                    let dynamic_image =
+                        image::load_from_memory_with_format(d.as_slice(), ImageFormat::Gif)
+                            .unwrap();
+                    let image = Image::new(&dynamic_image);
+                    opacified.draw_image(image, i.size(), Transform::default());
+                }
+                ImageKind::SVG(t) => {
+                    let mut clipped = opacified.clipped(
+                        Rect::from_xywh(0.0, 0.0, t.size().width(), t.size().height())
+                            .unwrap()
+                            .to_clip_path(),
+                        FillRule::NonZero,
+                    );
+                    render(t.root(), &mut clipped);
+                }
+            },
             Node::Text(t) => unimplemented!(),
         }
     }

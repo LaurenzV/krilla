@@ -1,7 +1,7 @@
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Path, PathBuilder, Rect};
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;
@@ -59,6 +59,7 @@ impl LineJoinExt for LineJoin {
 pub trait RectExt {
     fn expand(&mut self, other: &Rect);
     fn to_pdf_rect(&self) -> pdf_writer::Rect;
+    fn to_clip_path(&self) -> Path;
 }
 
 impl RectExt for Rect {
@@ -77,6 +78,16 @@ impl RectExt for Rect {
             self.x() + self.width(),
             self.y() + self.height(),
         )
+    }
+
+    fn to_clip_path(&self) -> Path {
+        let mut path_builder = PathBuilder::new();
+        path_builder.move_to(self.left(), self.top());
+        path_builder.line_to(self.right(), self.top());
+        path_builder.line_to(self.right(), self.bottom());
+        path_builder.line_to(self.left(), self.bottom());
+        path_builder.close();
+        path_builder.finish().unwrap()
     }
 }
 
