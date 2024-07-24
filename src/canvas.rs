@@ -816,7 +816,11 @@ impl<'a> CanvasPdfSerializer<'a> {
     pub fn draw_masked(&mut self, mask: Mask, byte_code: &ByteCode) {
         self.save_state();
         self.set_mask(mask);
-        self.serialize_bytecode(byte_code);
+        let x_object = XObject::new(Arc::new(byte_code.clone()), false, true, None);
+        let name = self
+            .resource_dictionary
+            .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+        self.content.x_object(name.to_pdf_name());
         self.restore_state();
     }
 
