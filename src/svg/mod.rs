@@ -2,7 +2,9 @@ use crate::canvas::Canvas;
 use tiny_skia_path::Transform;
 
 mod clip_path;
+mod filter;
 mod group;
+mod image;
 mod mask;
 mod path;
 mod util;

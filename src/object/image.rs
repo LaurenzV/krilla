@@ -31,6 +31,10 @@ impl Image {
             size,
         }))
     }
+
+    pub fn size(&self) -> Size {
+        self.0.size
+    }
 }
 
 impl Object for Image {
