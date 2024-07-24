@@ -1,15 +1,15 @@
-use std::sync::Arc;
-use crate::svg::util::{convert_fill_rule, convert_transform};
-use crate::{FillRule, MaskType};
-use pdf_writer::Finish;
-use tiny_skia_path::{Path, PathBuilder, PathSegment, Size, Transform};
 use crate::canvas::{Canvas, Surface};
 use crate::object::mask::Mask;
 use crate::svg::group;
+use crate::svg::util::{convert_fill_rule, convert_transform};
+use crate::{FillRule, MaskType};
+use pdf_writer::Finish;
+use std::sync::Arc;
+use tiny_skia_path::{Path, PathBuilder, PathSegment, Size, Transform};
 
 pub enum SvgClipPath {
     SimpleClip(Vec<(Path, FillRule)>),
-    ComplexClip(Mask)
+    ComplexClip(Mask),
 }
 
 pub fn get_clip_path(group: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClipPath {
@@ -171,22 +171,20 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
     clip_rules
 }
 
-fn create_complex_clip_path(
-    parent: &usvg::Group,
-    clip_path: &usvg::ClipPath,
-) -> Mask {
+fn create_complex_clip_path(parent: &usvg::Group, clip_path: &usvg::ClipPath) -> Mask {
     // Dummy size. TODO: Improve?
     let mut canvas = Canvas::new(Size::from_wh(1.0, 1.0).unwrap());
 
     {
-
-        let mut clipped: &mut dyn Surface = if let Some(clip_path) = clip_path.clip_path()
-            .map(|c| get_clip_path(parent, clip_path)) {
+        let mut clipped: &mut dyn Surface = if let Some(clip_path) = clip_path
+            .clip_path()
+            .map(|c| get_clip_path(parent, clip_path))
+        {
             match clip_path {
                 SvgClipPath::SimpleClip(sc) => &mut canvas.clipped_many(sc),
-                SvgClipPath::ComplexClip(cc) => &mut canvas.masked(cc)
+                SvgClipPath::ComplexClip(cc) => &mut canvas.masked(cc),
             }
-        }   else {
+        } else {
             &mut canvas
         };
 

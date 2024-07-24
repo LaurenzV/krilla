@@ -1,5 +1,6 @@
 use crate::canvas::Surface;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
+use crate::svg::mask::get_mask;
 use crate::svg::path;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 use usvg::Node;
@@ -32,7 +33,7 @@ pub fn clipped(group: &usvg::Group, surface: &mut dyn Surface) {
         let converted = get_clip_path(group, clip_path);
         match converted {
             SvgClipPath::SimpleClip(rules) => &mut surface.clipped_many(rules),
-            SvgClipPath::ComplexClip(mask) => &mut surface.masked(mask)
+            SvgClipPath::ComplexClip(mask) => &mut surface.masked(mask),
         }
     } else {
         surface
@@ -42,11 +43,13 @@ pub fn clipped(group: &usvg::Group, surface: &mut dyn Surface) {
 }
 
 pub fn blended_and_opacified(group: &usvg::Group, surface: &mut dyn Surface) {
-    if group.mask().is_some() {
-        unimplemented!();
-    }
+    let masked = if let Some(mask) = group.mask() {
+        &mut surface.masked(get_mask(mask))
+    } else {
+        surface
+    };
 
-    let mut blended = surface.blended(convert_blend_mode(&group.blend_mode()));
+    let mut blended = masked.blended(convert_blend_mode(&group.blend_mode()));
     let mut opacified = blended.opacified(group.opacity());
 
     for child in group.children() {

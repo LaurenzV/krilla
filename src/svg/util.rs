@@ -3,8 +3,8 @@ use crate::canvas::Canvas;
 use crate::svg::group;
 use crate::transform::TransformWrapper;
 use crate::{
-    Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, Pattern, RadialGradient,
-    SpreadMethod, Stop, Stroke, StrokeDash,
+    Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern,
+    RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Size, Transform};
@@ -157,5 +157,12 @@ pub fn convert_blend_mode(blend_mode: &usvg::BlendMode) -> BlendMode {
         usvg::BlendMode::Saturation => BlendMode::Saturation,
         usvg::BlendMode::Color => BlendMode::Color,
         usvg::BlendMode::Luminosity => BlendMode::Luminosity,
+    }
+}
+
+pub fn convert_mask_type(mask_type: &usvg::MaskType) -> MaskType {
+    match mask_type {
+        usvg::MaskType::Luminance => MaskType::Luminosity,
+        usvg::MaskType::Alpha => MaskType::Alpha,
     }
 }

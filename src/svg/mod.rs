@@ -3,6 +3,7 @@ use tiny_skia_path::Transform;
 
 mod clip_path;
 mod group;
+mod mask;
 mod path;
 mod util;
 
