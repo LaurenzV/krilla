@@ -11,7 +11,7 @@ pub mod paint;
 pub mod path;
 pub mod resource;
 pub mod serialize;
-mod svg;
+pub mod svg;
 pub mod transform;
 pub mod util;
 

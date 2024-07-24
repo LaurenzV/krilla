@@ -4,7 +4,8 @@ use crate::{
     Stop, Stroke, StrokeDash,
 };
 use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
-use usvg::NonZeroPositiveF32;
+use usvg::{NonZeroPositiveF32};
+use crate::blend_mode::BlendMode;
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {
     Transform {
@@ -123,5 +124,26 @@ pub fn convert_stroke(stroke: &usvg::Stroke) -> Stroke {
         line_join: convert_line_join(&stroke.linejoin()),
         opacity: stroke.opacity(),
         dash,
+    }
+}
+
+pub fn convert_blend_mode(blend_mode: &usvg::BlendMode) -> BlendMode {
+    match blend_mode {
+        usvg::BlendMode::Normal => BlendMode::SourceOver,
+        usvg::BlendMode::Multiply => BlendMode::Multiply,
+        usvg::BlendMode::Screen => BlendMode::Screen,
+        usvg::BlendMode::Overlay => BlendMode::Overlay,
+        usvg::BlendMode::Darken => BlendMode::Darken,
+        usvg::BlendMode::Lighten => BlendMode::Lighten,
+        usvg::BlendMode::ColorDodge => BlendMode::ColorDodge,
+        usvg::BlendMode::ColorBurn => BlendMode::ColorBurn,
+        usvg::BlendMode::HardLight => BlendMode::HardLight,
+        usvg::BlendMode::SoftLight => BlendMode::SoftLight,
+        usvg::BlendMode::Difference => BlendMode::Difference,
+        usvg::BlendMode::Exclusion => BlendMode::Exclusion,
+        usvg::BlendMode::Hue => BlendMode::Hue,
+        usvg::BlendMode::Saturation => BlendMode::Saturation,
+        usvg::BlendMode::Color => BlendMode::Color,
+        usvg::BlendMode::Luminosity => BlendMode::Luminosity,
     }
 }
