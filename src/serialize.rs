@@ -9,12 +9,14 @@ use siphasher::sip128::{Hasher128, SipHasher13};
 #[derive(Copy, Clone)]
 pub struct SerializeSettings {
     pub serialize_dependencies: bool,
+    pub compress: bool,
 }
 
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
             serialize_dependencies: false,
+            compress: false,
         }
     }
 }

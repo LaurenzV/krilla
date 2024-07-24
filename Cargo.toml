@@ -11,4 +11,8 @@ pdf-writer = {path = "../pdf-writer"}
 siphasher = "1.0.1"
 skrifa = "0.19.3"
 tiny-skia-path = {path = "../tiny-skia/path"}
+usvg = "0.42.0"
+
+[patch.crates-io]
+tiny-skia-path = {path = "../tiny-skia/path"}
 

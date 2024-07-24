@@ -13,7 +13,9 @@ use crate::paint::Paint;
 use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{
+    calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
+};
 use crate::MaskType::Luminosity;
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
@@ -417,7 +419,6 @@ pub struct CanvasPdfSerializer<'a> {
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
-    base_opacity: NormalizedF32,
 }
 
 impl<'a> CanvasPdfSerializer<'a> {
@@ -427,7 +428,6 @@ impl<'a> CanvasPdfSerializer<'a> {
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
-            base_opacity: NormalizedF32::new(1.0).unwrap(),
         }
     }
 
@@ -468,18 +468,6 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn set_base_opacity(&mut self, alpha: NormalizedF32) {
-        if alpha.get() != 1.0 {
-            self.base_opacity = self.base_opacity * alpha;
-            // fill/stroke opacities are always set locally when drawing a path,
-            // so here it will always be None, thus we can just apply it directly.
-            let state = ExtGState::new()
-                .stroking_alpha(alpha)
-                .non_stroking_alpha(alpha);
-            self.graphics_states.combine(&state);
-        }
-    }
-
     pub fn transform(&mut self, transform: &tiny_skia_path::Transform) {
         if !transform.is_identity() {
             self.graphics_states.transform(*transform);
@@ -514,7 +502,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new().non_stroking_alpha(alpha * self.base_opacity);
+            let state = ExtGState::new().non_stroking_alpha(alpha);
             self.graphics_states.combine(&state);
 
             let ext = self
@@ -526,7 +514,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new().stroking_alpha(alpha * self.base_opacity);
+            let state = ExtGState::new().stroking_alpha(alpha);
             self.graphics_states.combine(&state);
 
             let ext = self
@@ -549,6 +537,10 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
+        if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
+            return;
+        }
+
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
@@ -658,8 +650,13 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
+            return;
+        }
+
+        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
         self.bbox
-            .expand(&self.graphics_states.transform_bbox(path.bounds()));
+            .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
         self.save_state();
         self.set_stroke_opacity(stroke.opacity);
@@ -674,7 +671,9 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
-            let transform = pattern_transform(transform);
+            let shading_mask =
+                Mask::new_from_shading(gradient_props.clone(), transform, stroke_bbox);
+
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
                 TransformWrapper(
@@ -689,6 +688,17 @@ impl<'a> CanvasPdfSerializer<'a> {
                 .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
                     shading_pattern,
                 )));
+
+            if let Some(shading_mask) = shading_mask {
+                // TODO: use set_mask instead?
+                let state = ExtGState::new().mask(shading_mask);
+
+                let ext = self
+                    .resource_dictionary
+                    .register_resource(Resource::ExtGState(state));
+                self.content.set_parameters(ext.to_pdf_name());
+            }
+
             self.content
                 .set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             self.content
@@ -705,15 +715,15 @@ impl<'a> CanvasPdfSerializer<'a> {
                 self.content.set_stroke_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = lg.gradient_properties(stroke_bbox);
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = rg.gradient_properties(stroke_bbox);
                 write_gradient(gradient_props, transform);
             }
             Paint::SweepGradient(sg) => {
-                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = sg.gradient_properties(stroke_bbox);
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -800,9 +810,20 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
+        let ext_state = ExtGState::new()
+            .stroking_alpha(opacity)
+            .non_stroking_alpha(opacity);
+        let ext_state_name = self
+            .resource_dictionary
+            .register_resource(Resource::ExtGState(ext_state));
+
+        let x_object = XObject::new(Arc::new(ByteCode(instructions.to_vec())), true, false, None);
+        let x_object_name = self
+            .resource_dictionary
+            .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
         self.save_state();
-        self.set_base_opacity(opacity);
-        self.serialize_instructions(instructions);
+        self.content.set_parameters(ext_state_name.to_pdf_name());
+        self.content.x_object(x_object_name.to_pdf_name());
         self.restore_state();
     }
 
@@ -897,11 +918,15 @@ impl PageSerialize for Canvas {
             serializer.finish()
         };
 
-        let deflated = deflate(&content_stream);
+        if serialize_settings.compress {
+            let deflated = deflate(&content_stream);
 
-        let mut stream = chunk.stream(content_ref, &deflated);
-        stream.filter(Filter::FlateDecode);
-        stream.finish();
+            let mut stream = chunk.stream(content_ref, &deflated);
+            stream.filter(Filter::FlateDecode);
+            stream.finish();
+        } else {
+            chunk.stream(content_ref, &content_stream);
+        }
 
         let mut page = chunk.page(page_ref);
         resource_dictionary.to_pdf_resources(&mut sc, &mut page.resources());
@@ -1001,9 +1026,7 @@ mod tests {
             Stroke::default(),
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = canvas.serialize(serialize_settings);
         write("pattern", &chunk.as_bytes());
@@ -1019,9 +1042,7 @@ mod tests {
             Stroke::default(),
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1042,9 +1063,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1081,9 +1100,7 @@ mod tests {
         transformed.finish();
         blended.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1120,9 +1137,7 @@ mod tests {
         opacified.finish();
         translated.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1171,9 +1186,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1237,9 +1250,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1300,9 +1311,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1344,9 +1353,7 @@ mod tests {
 
         clipped.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1391,9 +1398,7 @@ mod tests {
             },
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1433,9 +1438,7 @@ mod tests {
 
         masked.finish();
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
@@ -1455,9 +1458,7 @@ mod tests {
             Transform::from_translate(20.0, 20.0),
         );
 
-        let serialize_settings = SerializeSettings {
-            serialize_dependencies: true,
-        };
+        let serialize_settings = SerializeSettings::default();
 
         let chunk = PageSerialize::serialize(canvas, serialize_settings);
         let finished = chunk.finish();
