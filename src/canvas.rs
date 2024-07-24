@@ -419,7 +419,6 @@ pub struct CanvasPdfSerializer<'a> {
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
-    base_opacity: NormalizedF32,
 }
 
 impl<'a> CanvasPdfSerializer<'a> {
@@ -429,7 +428,6 @@ impl<'a> CanvasPdfSerializer<'a> {
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
-            base_opacity: NormalizedF32::new(1.0).unwrap(),
         }
     }
 
@@ -470,17 +468,6 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn set_base_opacity(&mut self, alpha: NormalizedF32) {
-        if alpha.get() != 1.0 {
-            self.base_opacity = self.base_opacity * alpha;
-            // fill/stroke opacities are always set locally when drawing a path,
-            // so here it will always be None, thus we can just apply it directly.
-            let state = ExtGState::new()
-                .stroking_alpha(alpha)
-                .non_stroking_alpha(alpha);
-            self.graphics_states.combine(&state);
-        }
-    }
 
     pub fn transform(&mut self, transform: &tiny_skia_path::Transform) {
         if !transform.is_identity() {
@@ -516,7 +503,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new().non_stroking_alpha(alpha * self.base_opacity);
+            let state = ExtGState::new().non_stroking_alpha(alpha);
             self.graphics_states.combine(&state);
 
             let ext = self
@@ -528,7 +515,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
     pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
         if alpha.get() != 1.0 {
-            let state = ExtGState::new().stroking_alpha(alpha * self.base_opacity);
+            let state = ExtGState::new().stroking_alpha(alpha);
             self.graphics_states.combine(&state);
 
             let ext = self
@@ -824,9 +811,14 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
+        let ext_state = ExtGState::new().stroking_alpha(opacity).non_stroking_alpha(opacity);
+        let ext_state_name = self.resource_dictionary.register_resource(Resource::ExtGState(ext_state));
+
+        let x_object = XObject::new(Arc::new(ByteCode(instructions.to_vec())), true, false, None);
+        let x_object_name = self.resource_dictionary.register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
         self.save_state();
-        self.set_base_opacity(opacity);
-        self.serialize_instructions(instructions);
+        self.content.set_parameters(ext_state_name.to_pdf_name());
+        self.content.x_object(x_object_name.to_pdf_name());
         self.restore_state();
     }
 
