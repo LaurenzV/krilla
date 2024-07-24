@@ -2,9 +2,7 @@ use crate::canvas::Surface;
 use crate::svg::util::{convert_fill, convert_stroke, convert_transform};
 use usvg::PaintOrder;
 
-pub fn render<T>(path: &usvg::Path, transform: &usvg::Transform, surface: &mut T)
-where
-    T: Surface,
+pub fn render(path: &usvg::Path, transform: &usvg::Transform, surface: &mut dyn Surface)
 {
     if !path.is_visible() {
         return;
@@ -22,9 +20,7 @@ where
     }
 }
 
-pub fn fill_path<T>(path: &usvg::Path, transform: &usvg::Transform, surface: &mut T)
-where
-    T: Surface,
+pub fn fill_path(path: &usvg::Path, transform: &usvg::Transform, surface: &mut dyn Surface)
 {
     if let Some(fill) = path.fill() {
         surface.fill_path(
@@ -35,9 +31,7 @@ where
     }
 }
 
-pub fn stroke_path<T>(path: &usvg::Path, transform: &usvg::Transform, surface: &mut T)
-where
-    T: Surface,
+pub fn stroke_path(path: &usvg::Path, transform: &usvg::Transform, surface: &mut dyn Surface)
 {
     if let Some(stroke) = path.stroke() {
         surface.stroke_path(

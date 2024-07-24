@@ -3,17 +3,16 @@ use crate::svg::path;
 use crate::svg::util::convert_blend_mode;
 use usvg::Node;
 
-pub fn render<T>(group: &usvg::Group, transform: &usvg::Transform, surface: &mut T)
-where
-    T: Surface,
-{
+pub fn render(group: &usvg::Group, transform: &usvg::Transform, surface: &mut dyn Surface) {
     if !group.filters().is_empty() {
         unimplemented!();
     }
 
-    if group.isolate() {
-        unimplemented!();
-    }
+    let isolated: &mut dyn Surface = if group.isolate() {
+        &mut surface.isolated()
+    }   else {
+        surface
+    };
 
     if group.mask().is_some() {
         unimplemented!();
@@ -24,7 +23,7 @@ where
     }
 
     let transform = transform.pre_concat(group.transform());
-    let mut blended = surface.blended(convert_blend_mode(&group.blend_mode()));
+    let mut blended = isolated.blended(convert_blend_mode(&group.blend_mode()));
     let mut opacified = blended.opacified(group.opacity());
 
     for child in group.children() {
