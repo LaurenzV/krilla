@@ -28,7 +28,7 @@ pub trait Surface {
     fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill);
     fn blended(&mut self, blend_mode: BlendMode) -> Blended;
     fn opacified(&mut self, opacity: NormalizedF32) -> Opacified;
-    fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped;
+    fn clipped_many(&mut self, paths: Vec<(Path, FillRule)>) -> Clipped;
     fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped;
     fn isolated(&mut self) -> Isolated;
     fn transformed(&mut self, transform: Transform) -> Transformed;
@@ -67,12 +67,12 @@ macro_rules! canvas_impl {
                 Opacified::new(&mut self.byte_code, opacity)
             }
 
-            fn clipped_many(&mut self, paths: Vec<Path>, clip_rule: FillRule) -> Clipped {
-                Clipped::new(&mut self.byte_code, paths, clip_rule)
+            fn clipped_many(&mut self, paths: Vec<(Path, FillRule)>) -> Clipped {
+                Clipped::new(&mut self.byte_code, paths)
             }
 
             fn clipped(&mut self, path: Path, clip_rule: FillRule) -> Clipped {
-                Clipped::new(&mut self.byte_code, vec![path], clip_rule)
+                Clipped::new(&mut self.byte_code, vec![(path, clip_rule)])
             }
 
             fn isolated(&mut self) -> Isolated {
@@ -295,20 +295,18 @@ impl Drop for Opacified<'_> {
 pub struct Clipped<'a> {
     parent_byte_code: &'a mut ByteCode,
     pub(crate) byte_code: ByteCode,
-    paths: Vec<PathWrapper>,
-    fill_rule: FillRule,
+    paths: Vec<(PathWrapper, FillRule)>,
 }
 
 impl<'a> Clipped<'a> {
-    pub fn new(parent_byte_code: &'a mut ByteCode, paths: Vec<Path>, fill_rule: FillRule) -> Self {
+    pub fn new(parent_byte_code: &'a mut ByteCode, paths: Vec<(Path, FillRule)>) -> Self {
         Self {
             parent_byte_code,
             paths: paths
                 .into_iter()
-                .map(|p| PathWrapper(p))
+                .map(|p| (PathWrapper(p.0), p.1))
                 .collect::<Vec<_>>(),
             byte_code: ByteCode::new(),
-            fill_rule,
         }
     }
 
@@ -319,11 +317,8 @@ impl<'a> Clipped<'a> {
 
 impl Drop for Clipped<'_> {
     fn drop(&mut self) {
-        self.parent_byte_code.push_clipped(
-            self.paths.clone(),
-            self.fill_rule,
-            self.byte_code.clone(),
-        );
+        self.parent_byte_code
+            .push_clipped(self.paths.clone(), self.byte_code.clone());
     }
 }
 
@@ -439,7 +434,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 }
                 Instruction::DrawShade(shade_data) => self.draw_shading(&shade_data),
                 Instruction::Clipped(clip_data) => {
-                    self.draw_clipped(clip_data.0.as_slice(), &clip_data.1, &clip_data.2)
+                    self.draw_clipped(clip_data.0.as_slice(), &clip_data.1)
                 }
                 Instruction::Opacified(opacity_data) => {
                     self.draw_opacified(opacity_data.0, opacity_data.1.clone())
@@ -784,14 +779,9 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
-    pub fn draw_clipped(
-        &mut self,
-        clip_paths: &[PathWrapper],
-        fill_rule: &FillRule,
-        byte_code: &ByteCode,
-    ) {
+    pub fn draw_clipped(&mut self, clip_paths: &[(PathWrapper, FillRule)], byte_code: &ByteCode) {
         self.save_state();
-        for clip_path in clip_paths {
+        for (clip_path, fill_rule) in clip_paths {
             self.set_clip_path(&clip_path.0, fill_rule);
         }
         self.serialize_bytecode(byte_code);

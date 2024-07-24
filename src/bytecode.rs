@@ -19,7 +19,7 @@ pub enum Instruction {
     FillPath(Box<(PathWrapper, Fill)>),
     DrawShade(Box<ShadingFunction>),
     // TODO: Remove vec?
-    Clipped(Box<(Vec<PathWrapper>, FillRule, ByteCode)>),
+    Clipped(Box<(Vec<(PathWrapper, FillRule)>, ByteCode)>),
     Masked(Box<(Mask, ByteCode)>),
     Opacified(Box<(NormalizedF32, ByteCode)>),
 }
@@ -75,9 +75,9 @@ impl ByteCode {
         self.push(Instruction::DrawImage(Box::new((image, size))));
     }
 
-    pub fn push_clipped(&mut self, clips: Vec<PathWrapper>, rule: FillRule, byte_code: ByteCode) {
+    pub fn push_clipped(&mut self, clips: Vec<(PathWrapper, FillRule)>, byte_code: ByteCode) {
         self.bbox.expand(&byte_code.bbox);
-        self.push(Instruction::Clipped(Box::new((clips, rule, byte_code))));
+        self.push(Instruction::Clipped(Box::new((clips, byte_code))));
     }
 
     pub fn push_masked(&mut self, mask: Mask, byte_code: ByteCode) {

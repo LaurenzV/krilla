@@ -256,8 +256,14 @@ impl ColorPainter for ColrCanvas<'_> {
         } {
             let canvas = self.canvases.last_mut().unwrap();
 
-            let mut clipped =
-                canvas.clipped_many(self.clips.last().unwrap().clone(), FillRule::NonZero);
+            let mut clipped = canvas.clipped_many(
+                self.clips
+                    .last()
+                    .unwrap()
+                    .iter()
+                    .map(|p| (p.clone(), FillRule::NonZero))
+                    .collect::<Vec<_>>(),
+            );
 
             let mut path_builder = PathBuilder::new();
             path_builder.move_to(0.0, 0.0);
