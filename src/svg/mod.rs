@@ -1,13 +1,14 @@
 use crate::canvas::Canvas;
 use tiny_skia_path::Transform;
 
+mod clip_path;
 mod group;
 mod path;
 mod util;
 
 pub fn render(tree: &usvg::Tree) -> Canvas {
     let mut canvas = Canvas::new(tree.size());
-    group::render(tree.root(), &Transform::identity(), &mut canvas);
+    group::render(tree.root(), &mut canvas);
     canvas
 }
 

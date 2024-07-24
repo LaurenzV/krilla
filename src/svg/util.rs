@@ -71,7 +71,7 @@ pub fn convert_paint(paint: &usvg::Paint) -> Paint {
         usvg::Paint::Pattern(pat) => {
             let mut canvas =
                 Canvas::new(Size::from_wh(pat.rect().width(), pat.rect().height()).unwrap());
-            group::render(pat.root(), &Transform::identity(), &mut canvas);
+            group::render(pat.root(), &mut canvas);
             Paint::Pattern(Arc::new(Pattern {
                 canvas: Arc::new(canvas),
                 transform: TransformWrapper(
