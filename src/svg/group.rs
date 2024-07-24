@@ -28,10 +28,11 @@ pub fn transformed(group: &usvg::Group, surface: &mut dyn Surface) {
 }
 
 pub fn clipped(group: &usvg::Group, surface: &mut dyn Surface) {
-    let clipped = if let Some(clip_path) = group.clip_path() {
+    let clipped: &mut dyn Surface = if let Some(clip_path) = group.clip_path() {
         let converted = get_clip_path(group, clip_path);
         match converted {
             SvgClipPath::SimpleClip(rules) => &mut surface.clipped_many(rules),
+            SvgClipPath::ComplexClip(mask) => &mut surface.masked(mask)
         }
     } else {
         surface
