@@ -1,5 +1,5 @@
 use crate::blend_mode::BlendMode;
-use crate::bytecode::{into_composited, ByteCode, Instruction};
+use crate::bytecode::{ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -51,15 +51,12 @@ macro_rules! canvas_impl {
                 stroke: Stroke,
             ) {
                 let mut transformed = self.transformed(transform);
-                transformed.byte_code.push(Instruction::StrokePath(Box::new((path.into(), stroke))));
+                transformed.byte_code.push_stroke_path(path.into(), stroke);
             }
 
             fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
                 let mut transformed = self.transformed(transform);
-                transformed.byte_code.push(Instruction::FillPath(Box::new((
-                    path.into(),
-                    fill,
-                ))));
+                transformed.byte_code.push_fill_path(path.into(), fill);
             }
 
             fn blended(&mut self, blend_mode: BlendMode) -> Blended {
@@ -88,10 +85,7 @@ macro_rules! canvas_impl {
 
             fn draw_image(&mut self, image: Image, size: Size, transform: Transform) {
                 let mut transformed = self.transformed(transform);
-                transformed.byte_code.push(Instruction::DrawImage(Box::new((
-                    image,
-                    size,
-                ))));
+                transformed.byte_code.push_image(image, size);
             }
 
             fn draw_canvas(&mut self, canvas: Canvas) {
@@ -133,10 +127,8 @@ impl<'a> Masked<'a> {
 
 impl Drop for Masked<'_> {
     fn drop(&mut self) {
-        self.parent_byte_code.push(Instruction::Masked(Box::new((
-            self.mask.clone(),
-            self.byte_code.clone(),
-        ))))
+        self.parent_byte_code
+            .push_masked(self.mask.clone(), self.byte_code.clone())
     }
 }
 
@@ -166,101 +158,100 @@ impl Drop for Blended<'_> {
         // TODO: Make code more efficient
         if self.blend_mode != BlendMode::SourceOver {
             match self.blend_mode {
-                BlendMode::Clear => {
-                    self.parent_byte_code.0 = vec![];
-                }
-                BlendMode::Source => {
-                    self.parent_byte_code.0 = self.byte_code.0.clone();
-                }
-                BlendMode::Destination => {}
-                BlendMode::DestinationOver => {
-                    let mut instructions = self.byte_code.0.clone();
-                    instructions.extend(self.parent_byte_code.0.clone());
-                    self.parent_byte_code.0 = instructions;
-                }
-                BlendMode::SourceIn => {
-                    let mask = Mask::new(
-                        Arc::new(ByteCode(into_composited(
-                            &self.parent_byte_code.0.clone(),
-                            false,
-                        ))),
-                        Luminosity,
-                    );
-                    self.parent_byte_code.0 = vec![];
-                    self.parent_byte_code.push(Instruction::Masked(Box::new((
-                        mask,
-                        self.byte_code.clone(),
-                    ))));
-                }
-                BlendMode::DestinationIn => {
-                    let mask = Mask::new(
-                        Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
-                        Luminosity,
-                    );
-
-                    let instruction =
-                        Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
-
-                    self.parent_byte_code.0 = vec![instruction];
-                }
-                BlendMode::SourceOut => {
-                    // TODO: Don't hardcode
-                    let mut builder = PathBuilder::new();
-                    builder.move_to(0.0, 0.0);
-                    builder.line_to(2000.0, 0.0);
-                    builder.line_to(2000.0, 2000.0);
-                    builder.line_to(0.0, 2000.0);
-                    builder.close();
-
-                    let path = builder.finish().unwrap();
-
-                    let mut mask_instructions = vec![Instruction::FillPath(Box::new((
-                        PathWrapper(path),
-                        Fill {
-                            paint: Paint::Color(Color::white()),
-                            opacity: NormalizedF32::ONE,
-                            rule: Default::default(),
-                        },
-                    )))];
-                    mask_instructions
-                        .extend(into_composited(&self.parent_byte_code.0.clone(), true));
-
-                    let mask = Mask::new(Arc::new(ByteCode(mask_instructions)), Luminosity);
-
-                    let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
-                    self.parent_byte_code.0 = vec![instruction];
-                }
-                BlendMode::DestinationOut => {}
-                BlendMode::SourceAtop => {
-                    let mask = Mask::new(
-                        Arc::new(ByteCode(into_composited(
-                            &self.parent_byte_code.0.clone(),
-                            false,
-                        ))),
-                        Luminosity,
-                    );
-
-                    let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
-                    self.parent_byte_code.push(instruction);
-                }
-                BlendMode::DestinationAtop => {
-                    let mask = Mask::new(
-                        Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
-                        Luminosity,
-                    );
-
-                    let instruction =
-                        Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
-                    self.parent_byte_code.0 = self.byte_code.0.clone();
-                    self.parent_byte_code.push(instruction);
-                }
-                BlendMode::Xor => {}
-                BlendMode::Plus => {}
+                // BlendMode::Clear => {
+                //     self.parent_byte_code.0 = vec![];
+                // }
+                // BlendMode::Source => {
+                //     self.parent_byte_code.0 = self.byte_code.0.clone();
+                // }
+                // BlendMode::Destination => {}
+                // BlendMode::DestinationOver => {
+                //     let mut instructions = self.byte_code.0.clone();
+                //     instructions.extend(self.parent_byte_code.0.clone());
+                //     self.parent_byte_code.0 = instructions;
+                // }
+                // BlendMode::SourceIn => {
+                //     let mask = Mask::new(
+                //         Arc::new(ByteCode(into_composited(
+                //             &self.parent_byte_code.0.clone(),
+                //             false,
+                //         ))),
+                //         Luminosity,
+                //     );
+                //     self.parent_byte_code.0 = vec![];
+                //     self.parent_byte_code.push(Instruction::Masked(Box::new((
+                //         mask,
+                //         self.byte_code.clone(),
+                //     ))));
+                // }
+                // BlendMode::DestinationIn => {
+                //     let mask = Mask::new(
+                //         Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
+                //         Luminosity,
+                //     );
+                //
+                //     let instruction =
+                //         Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
+                //
+                //     self.parent_byte_code.0 = vec![instruction];
+                // }
+                // BlendMode::SourceOut => {
+                //     // TODO: Don't hardcode
+                //     let mut builder = PathBuilder::new();
+                //     builder.move_to(0.0, 0.0);
+                //     builder.line_to(2000.0, 0.0);
+                //     builder.line_to(2000.0, 2000.0);
+                //     builder.line_to(0.0, 2000.0);
+                //     builder.close();
+                //
+                //     let path = builder.finish().unwrap();
+                //
+                //     let mut mask_instructions = vec![Instruction::FillPath(Box::new((
+                //         PathWrapper(path),
+                //         Fill {
+                //             paint: Paint::Color(Color::white()),
+                //             opacity: NormalizedF32::ONE,
+                //             rule: Default::default(),
+                //         },
+                //     )))];
+                //     mask_instructions
+                //         .extend(into_composited(&self.parent_byte_code.0.clone(), true));
+                //
+                //     let mask = Mask::new(Arc::new(ByteCode(mask_instructions)), Luminosity);
+                //
+                //     let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                //     self.parent_byte_code.0 = vec![instruction];
+                // }
+                // BlendMode::DestinationOut => {}
+                // BlendMode::SourceAtop => {
+                //     let mask = Mask::new(
+                //         Arc::new(ByteCode(into_composited(
+                //             &self.parent_byte_code.0.clone(),
+                //             false,
+                //         ))),
+                //         Luminosity,
+                //     );
+                //
+                //     let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
+                //     self.parent_byte_code.push(instruction);
+                // }
+                // BlendMode::DestinationAtop => {
+                //     let mask = Mask::new(
+                //         Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
+                //         Luminosity,
+                //     );
+                //
+                //     let instruction =
+                //         Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
+                //     self.parent_byte_code.0 = self.byte_code.0.clone();
+                //     self.parent_byte_code.push(instruction);
+                // }
+                // BlendMode::Xor => {}
+                // BlendMode::Plus => {}
                 // All other blend modes will be translate into their respective PDF blend mode.
-                _ => self.parent_byte_code.push(Instruction::Blended(Box::new((
-                    self.blend_mode,
-                    self.byte_code.clone(),
-                )))),
+                _ => self
+                    .parent_byte_code
+                    .push_blended(self.blend_mode, self.byte_code.clone()),
             }
         } else {
             self.parent_byte_code.extend(&self.byte_code)
@@ -292,10 +283,8 @@ impl<'a> Opacified<'a> {
 impl Drop for Opacified<'_> {
     fn drop(&mut self) {
         if self.opacity != NormalizedF32::ONE {
-            self.parent_byte_code.push(Instruction::Opacified(Box::new((
-                self.opacity,
-                self.byte_code.clone(),
-            ))))
+            self.parent_byte_code
+                .push_opacified(self.opacity, self.byte_code.clone())
         } else {
             self.parent_byte_code.extend(&self.byte_code)
         }
@@ -330,11 +319,11 @@ impl<'a> Clipped<'a> {
 
 impl Drop for Clipped<'_> {
     fn drop(&mut self) {
-        self.parent_byte_code.push(Instruction::Clipped(Box::new((
+        self.parent_byte_code.push_clipped(
             self.paths.clone(),
             self.fill_rule,
             self.byte_code.clone(),
-        ))));
+        );
     }
 }
 
@@ -363,10 +352,7 @@ impl Drop for Transformed<'_> {
     fn drop(&mut self) {
         if self.transform.0 != Transform::identity() {
             self.parent_byte_code
-                .push(Instruction::Transformed(Box::new((
-                    self.transform,
-                    self.byte_code.clone(),
-                ))))
+                .push_transformed(self.transform, self.byte_code.clone())
         } else {
             self.parent_byte_code.extend(&self.byte_code);
         }
@@ -394,8 +380,7 @@ impl<'a> Isolated<'a> {
 
 impl Drop for Isolated<'_> {
     fn drop(&mut self) {
-        self.parent_byte_code
-            .push(Instruction::Isolated(Arc::new(self.byte_code.clone())))
+        self.parent_byte_code.push_isolated(self.byte_code.clone())
     }
 }
 
@@ -431,8 +416,10 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn serialize_instructions(&mut self, instructions: &[Instruction]) {
-        for op in instructions {
+    pub fn serialize_bytecode(&mut self, bytecode: &ByteCode) {
+        self.bbox.expand(&bytecode.bbox());
+
+        for op in bytecode.instructions() {
             match op {
                 Instruction::StrokePath(stroke_data) => {
                     self.stroke_path(&stroke_data.0 .0, &stroke_data.1)
@@ -443,23 +430,19 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::DrawImage(image_data) => {
                     self.draw_image(image_data.0.clone(), image_data.1)
                 }
-                Instruction::Blended(blend_data) => {
-                    self.draw_blended(blend_data.0, blend_data.1.instructions())
-                }
+                Instruction::Blended(blend_data) => self.draw_blended(blend_data.0, &blend_data.1),
                 Instruction::Transformed(transform_data) => {
-                    self.draw_transformed(transform_data.0 .0, transform_data.1.instructions())
+                    self.draw_transformed(transform_data.0 .0, &transform_data.1)
                 }
                 Instruction::Masked(mask_data) => {
-                    self.draw_masked(mask_data.0.clone(), mask_data.1.instructions())
+                    self.draw_masked(mask_data.0.clone(), &mask_data.1)
                 }
-                Instruction::Shaded(shade_data) => self.draw_shading(&shade_data),
-                Instruction::Clipped(clip_data) => self.draw_clipped(
-                    clip_data.0.as_slice(),
-                    &clip_data.1,
-                    clip_data.2.instructions(),
-                ),
+                Instruction::DrawShade(shade_data) => self.draw_shading(&shade_data),
+                Instruction::Clipped(clip_data) => {
+                    self.draw_clipped(clip_data.0.as_slice(), &clip_data.1, &clip_data.2)
+                }
                 Instruction::Opacified(opacity_data) => {
-                    self.draw_opacified(opacity_data.0, opacity_data.1.instructions())
+                    self.draw_opacified(opacity_data.0, opacity_data.1.clone())
                 }
                 Instruction::Isolated(isolated_data) => {
                     self.draw_isolated(isolated_data.clone());
@@ -540,9 +523,6 @@ impl<'a> CanvasPdfSerializer<'a> {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
-
-        self.bbox
-            .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
         self.save_state();
 
@@ -654,9 +634,8 @@ impl<'a> CanvasPdfSerializer<'a> {
             return;
         }
 
+        // TODO: can this be removed?
         let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
-        self.bbox
-            .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
         self.save_state();
         self.set_stroke_opacity(stroke.opacity);
@@ -777,21 +756,21 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.restore_state();
     }
 
-    pub fn draw_blended(&mut self, blend_mode: BlendMode, instructions: &[Instruction]) {
+    pub fn draw_blended(&mut self, blend_mode: BlendMode, byte_code: &ByteCode) {
         if let Ok(blend_mode) = blend_mode.try_into() {
             self.save_state();
             // These are the blend modes that are available natively in PDF. All other blend
             // modes have already been resolved during bytecode conversion
             self.set_pdf_blend_mode(blend_mode);
-            self.serialize_instructions(instructions);
+            self.serialize_bytecode(byte_code);
             self.restore_state();
         }
     }
 
-    pub fn draw_transformed(&mut self, transform: Transform, instructions: &[Instruction]) {
+    pub fn draw_transformed(&mut self, transform: Transform, byte_code: &ByteCode) {
         self.save_state();
         self.transform(&transform);
-        self.serialize_instructions(instructions);
+        self.serialize_bytecode(byte_code);
         self.restore_state();
     }
 
@@ -799,17 +778,17 @@ impl<'a> CanvasPdfSerializer<'a> {
         &mut self,
         clip_paths: &[PathWrapper],
         fill_rule: &FillRule,
-        instructions: &[Instruction],
+        byte_code: &ByteCode,
     ) {
         self.save_state();
         for clip_path in clip_paths {
             self.set_clip_path(&clip_path.0, fill_rule);
         }
-        self.serialize_instructions(instructions);
+        self.serialize_bytecode(byte_code);
         self.restore_state();
     }
 
-    pub fn draw_opacified(&mut self, opacity: NormalizedF32, instructions: &[Instruction]) {
+    pub fn draw_opacified(&mut self, opacity: NormalizedF32, byte_code: ByteCode) {
         let ext_state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
@@ -817,7 +796,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             .resource_dictionary
             .register_resource(Resource::ExtGState(ext_state));
 
-        let x_object = XObject::new(Arc::new(ByteCode(instructions.to_vec())), true, false, None);
+        let x_object = XObject::new(Arc::new(byte_code), true, false, None);
         let x_object_name = self
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
@@ -834,10 +813,10 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.shading(sh.to_pdf_name());
     }
 
-    pub fn draw_masked(&mut self, mask: Mask, instructions: &[Instruction]) {
+    pub fn draw_masked(&mut self, mask: Mask, byte_code: &ByteCode) {
         self.save_state();
         self.set_mask(mask);
-        self.serialize_instructions(instructions);
+        self.serialize_bytecode(byte_code);
         self.restore_state();
     }
 
@@ -848,7 +827,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             self.graphics_states.cur().ext_g_state().has_mask(),
             None,
         );
-        // TODO: Expand bbox
+
         let name = self
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
@@ -856,7 +835,6 @@ impl<'a> CanvasPdfSerializer<'a> {
     }
 
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        // TODO: Expand bbox
         let image_name = self
             .resource_dictionary
             .register_resource(Resource::XObject(XObjectResource::Image(image)));
@@ -904,7 +882,6 @@ impl PageSerialize for Canvas {
         let mut resource_dictionary = ResourceDictionary::new();
         let (content_stream, _) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            // TODO: Update bbox?
             serializer.transform(&Transform::from_row(
                 1.0,
                 0.0,
@@ -913,7 +890,7 @@ impl PageSerialize for Canvas {
                 0.0,
                 self.size.height(),
             ));
-            serializer.serialize_instructions(self.byte_code.instructions());
+            serializer.serialize_bytecode(&self.byte_code);
 
             serializer.finish()
         };

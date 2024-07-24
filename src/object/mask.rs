@@ -45,16 +45,21 @@ impl Mask {
         }
 
         let shading_function = ShadingFunction::new(gradient_properties, true);
-        let byte_code = ByteCode(vec![Instruction::Transformed(Box::new((
-            shading_transform,
-            ByteCode(vec![Instruction::Shaded(Box::new(shading_function))]),
-        )))]);
+        let mut shade_byte_code = ByteCode::new();
+        shade_byte_code.push_shade(shading_function);
+
+        let mut transformed_byte_code = ByteCode::new();
+        transformed_byte_code.push_transformed(shading_transform, shade_byte_code);
 
         Some(Self(Arc::new(Repr {
-            byte_code: Arc::new(byte_code),
+            byte_code: Arc::new(transformed_byte_code),
             mask_type: MaskType::Luminosity,
             custom_bbox: Some(bbox),
         })))
+    }
+
+    pub fn custom_bbox(&self) -> Option<Rect> {
+        self.0.custom_bbox
     }
 }
 

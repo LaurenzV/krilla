@@ -30,7 +30,7 @@ impl Object for TilingPattern {
         let mut resource_dictionary = ResourceDictionary::new();
         let (content_stream, _) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_instructions(self.0.canvas.byte_code.instructions());
+            serializer.serialize_bytecode(&self.0.canvas.byte_code);
             serializer.finish()
         };
 
