@@ -18,7 +18,7 @@ mod tests {
 
     #[test]
     pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/painting/mix-blend-mode/opacity-on-element.svg").unwrap();
+        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/painting/stroke-opacity/with-pattern.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
         let canvas = render(&tree);
         let finished = canvas.serialize(SerializeSettings::default()).finish();

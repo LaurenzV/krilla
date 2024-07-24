@@ -1,10 +1,13 @@
 use crate::blend_mode::BlendMode;
+use crate::canvas::Canvas;
+use crate::svg::group;
 use crate::transform::TransformWrapper;
 use crate::{
-    Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, RadialGradient, SpreadMethod,
-    Stop, Stroke, StrokeDash,
+    Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, Pattern, RadialGradient,
+    SpreadMethod, Stop, Stroke, StrokeDash,
 };
-use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
+use std::sync::Arc;
+use tiny_skia_path::{FiniteF32, NormalizedF32, Size, Transform};
 use usvg::NonZeroPositiveF32;
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {
@@ -66,7 +69,16 @@ pub fn convert_paint(paint: &usvg::Paint) -> Paint {
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
-            todo!()
+            let mut canvas =
+                Canvas::new(Size::from_wh(pat.rect().width(), pat.rect().height()).unwrap());
+            group::render(pat.root(), &Transform::identity(), &mut canvas);
+            Paint::Pattern(Arc::new(Pattern {
+                canvas: Arc::new(canvas),
+                transform: TransformWrapper(
+                    pat.transform()
+                        .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
+                ),
+            }))
         }
     }
 }

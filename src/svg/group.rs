@@ -10,7 +10,7 @@ pub fn render(group: &usvg::Group, transform: &usvg::Transform, surface: &mut dy
 
     let isolated: &mut dyn Surface = if group.isolate() {
         &mut surface.isolated()
-    }   else {
+    } else {
         surface
     };
 

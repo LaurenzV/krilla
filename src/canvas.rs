@@ -253,7 +253,7 @@ impl Drop for Blended<'_> {
                     .parent_byte_code
                     .push_blended(self.blend_mode, self.byte_code.clone()),
             }
-        }  else {
+        } else {
             self.parent_byte_code.extend(&self.byte_code)
         }
     }
@@ -526,7 +526,11 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         self.save_state();
 
-        self.set_fill_opacity(fill.opacity);
+        // PDF viewers don't show patterns with fill/stroke opacities consistently.
+        // Because of this, the opacity is accounted for in the pattern itself.
+        if !matches!(fill.paint, Paint::Pattern(_)) {
+            self.set_fill_opacity(fill.opacity);
+        }
 
         let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
             TransformWrapper(
@@ -601,7 +605,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let color_space = self
                     .resource_dictionary
                     .register_resource(Resource::Pattern(PatternResource::TilingPattern(
-                        TilingPattern::new(pat.canvas.clone(), pat.transform),
+                        TilingPattern::new(pat.canvas.clone(), pat.transform, fill.opacity),
                     )));
                 self.content
                     .set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
@@ -638,7 +642,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
 
         self.save_state();
-        self.set_stroke_opacity(stroke.opacity);
+
+        // See comment in `fill_path`
+        if !matches!(stroke.paint, Paint::Pattern(_)) {
+            self.set_stroke_opacity(stroke.opacity);
+        }
 
         let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
             TransformWrapper(
@@ -714,7 +722,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let color_space = self
                     .resource_dictionary
                     .register_resource(Resource::Pattern(PatternResource::TilingPattern(
-                        TilingPattern::new(pat.canvas.clone(), pat.transform),
+                        TilingPattern::new(pat.canvas.clone(), pat.transform, stroke.opacity),
                     )));
 
                 self.content
@@ -764,7 +772,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             self.set_pdf_blend_mode(blend_mode);
             self.serialize_bytecode(byte_code);
             self.restore_state();
-        }   else {
+        } else {
             self.serialize_bytecode(byte_code);
         }
     }

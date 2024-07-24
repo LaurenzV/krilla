@@ -1,24 +1,36 @@
+use crate::bytecode::ByteCode;
 use crate::canvas::{Canvas, CanvasPdfSerializer};
-use crate::resource::ResourceDictionary;
+use crate::object::xobject::XObject;
+use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::TransformExt;
+use crate::util::{NameExt, TransformExt};
 use pdf_writer::types::{PaintType, TilingType};
-use pdf_writer::{Chunk, Finish, Ref};
+use pdf_writer::{Chunk, Content, Finish, Ref};
 use std::sync::Arc;
+use usvg::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     canvas: Arc<Canvas>,
     transform: TransformWrapper,
+    base_opacity: NormalizedF32,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct TilingPattern(Arc<Repr>);
 
 impl TilingPattern {
-    pub fn new(canvas: Arc<Canvas>, transform: TransformWrapper) -> Self {
-        Self(Arc::new(Repr { canvas, transform }))
+    pub fn new(
+        canvas: Arc<Canvas>,
+        transform: TransformWrapper,
+        base_opacity: NormalizedF32,
+    ) -> Self {
+        Self(Arc::new(Repr {
+            canvas,
+            transform,
+            base_opacity,
+        }))
     }
 }
 
@@ -28,10 +40,28 @@ impl Object for TilingPattern {
         // TODO: Deduplicate.
 
         let mut resource_dictionary = ResourceDictionary::new();
-        let (content_stream, _) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
-            serializer.serialize_bytecode(&self.0.canvas.byte_code);
-            serializer.finish()
+
+        // stroke/fill opacity doesn't work consistently across different viewers for patterns,
+        // so instead we simulate it ourselves.
+        let content_stream = if self.0.base_opacity == NormalizedF32::ONE {
+            let (content_stream, _) = {
+                let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
+                serializer.serialize_bytecode(&self.0.canvas.byte_code);
+                serializer.finish()
+            };
+            content_stream
+        } else {
+            let mut byte_code = ByteCode::new();
+            byte_code.push_opacified(self.0.base_opacity, self.0.canvas.byte_code.clone());
+
+            let x_object = XObject::new(Arc::new(byte_code), false, false, None);
+            let mut content = Content::new();
+            content.x_object(
+                resource_dictionary
+                    .register_resource(Resource::XObject(XObjectResource::XObject(x_object)))
+                    .to_pdf_name(),
+            );
+            content.finish()
         };
 
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, &content_stream);
