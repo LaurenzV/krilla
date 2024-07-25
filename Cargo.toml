@@ -12,9 +12,9 @@ resvg = "0.42.0"
 siphasher = "1.0.1"
 skrifa = "0.19.3"
 tiny-skia = "0.11.4"
-tiny-skia-path = {path = "../tiny-skia/path"}
+tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
 usvg = "0.42.0"
 
 [patch.crates-io]
-tiny-skia-path = {path = "../tiny-skia/path"}
+tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
 
