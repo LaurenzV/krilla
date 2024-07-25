@@ -17,7 +17,7 @@ use crate::util::{
     calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
 };
 use crate::MaskType::Luminosity;
-use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
+use crate::{Color, Fill, FillRule, LineCap, LineJoin, MaskType, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathSegment, Rect, Size, Transform};
@@ -247,7 +247,34 @@ impl Drop for Blended<'_> {
                     self.parent_byte_code.extend(&self.byte_code.clone());
                     self.parent_byte_code.push_masked(mask, byte_code)
                 }
-                // BlendMode::Xor => {}
+                BlendMode::Xor => {
+                    let mask = Mask::new(
+                        Arc::new(into_composited(&self.parent_byte_code.clone(), false)),
+                        Luminosity,
+                    );
+
+                    let mut overlapped_byte_code = ByteCode::new();
+                    overlapped_byte_code.push_masked(mask, into_composited(&self.byte_code, true));
+
+                    let mut bbox = self.parent_byte_code.bbox();
+                    bbox.expand(&self.byte_code.bbox());
+
+                    let mut mask_code = ByteCode::new();
+                    mask_code.push_fill_path(
+                        PathWrapper(bbox.to_clip_path()),
+                        Fill {
+                            paint: Paint::Color(Color::white()),
+                            ..Fill::default()
+                        },
+                    );
+                    mask_code.extend(&overlapped_byte_code);
+                    let mask = Mask::new(Arc::new(mask_code), Luminosity);
+
+                    let mut combined = std::mem::replace(self.parent_byte_code, ByteCode::new());
+                    combined.extend(&self.byte_code);
+
+                    self.parent_byte_code.push_masked(mask, combined);
+                }
                 // BlendMode::Plus => {}
                 // All other blend modes will be translate into their respective PDF blend mode.
                 _ => self
