@@ -1,6 +1,12 @@
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
+use siphasher::sip128::{Hasher128, SipHasher13};
+use std::any::Any;
+use std::fmt;
+use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
+use std::ops::{Deref, DerefMut};
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {
@@ -99,4 +105,66 @@ pub fn calculate_stroke_bbox(stroke: &Stroke, path: &tiny_skia_path::Path) -> Op
     }
 
     None
+}
+
+pub struct Prehashed<T: ?Sized> {
+    hash: u128,
+    value: T,
+}
+
+impl<T: Hash + 'static> Prehashed<T> {
+    #[inline]
+    pub fn new(value: T) -> Self {
+        let hash = hash_item(&value);
+        Self { hash, value }
+    }
+}
+
+impl<T: Hash + ?Sized + 'static> Eq for Prehashed<T> {}
+
+impl<T: Hash + ?Sized + 'static> PartialEq for Prehashed<T> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.hash == other.hash
+    }
+}
+
+impl<T: ?Sized> Deref for Prehashed<T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<T: Hash + Clone + 'static> Clone for Prehashed<T> {
+    fn clone(&self) -> Self {
+        Self {
+            hash: self.hash,
+            value: self.value.clone(),
+        }
+    }
+}
+
+impl<T: Debug> Debug for Prehashed<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+impl<T: Hash + ?Sized + 'static> Hash for Prehashed<T> {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_u128(self.hash);
+    }
+}
+
+fn hash_item<T: Hash + ?Sized + 'static>(item: &T) -> u128 {
+    // Also hash the TypeId because the type might be converted
+    // through an unsized coercion.
+    let mut state = SipHasher13::new();
+    item.type_id().hash(&mut state);
+    item.hash(&mut state);
+    state.finish128().as_u128()
 }

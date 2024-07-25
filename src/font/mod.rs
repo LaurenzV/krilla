@@ -1,11 +1,12 @@
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use skrifa::Tag;
 use skrifa::outline::OutlinePen;
-use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
 use skrifa::raw::traversal::SomeArray;
 use skrifa::raw::types::Offset32;
+use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
+use skrifa::Tag;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder};
+use crate::util::Prehashed;
 
 mod colr;
 mod outline;
@@ -44,15 +45,14 @@ impl OutlinePen for OutlineBuilder {
     }
 }
 
-// TODO: Make prehashed
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Repr {
     data: Arc<Vec<u8>>,
-    records: BTreeMap<Tag, (usize, usize)>
+    records: BTreeMap<Tag, (usize, usize)>,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Font(Arc<Repr>);
+pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
     pub fn new(data: Arc<Vec<u8>>) -> Option<Self> {
@@ -66,10 +66,7 @@ impl Font {
             records.insert(record.tag.get(), (start, start + len));
         }
 
-        Some(Self(Arc::new(Repr {
-            data,
-            records
-        })))
+        Some(Self(Arc::new(Prehashed::new(Repr { data, records }))))
     }
 }
 
@@ -83,7 +80,7 @@ pub struct FontTables<'a>(&'a Font);
 
 impl<'a> TableProvider<'a> for FontTables<'a> {
     fn data_for_tag(&self, tag: Tag) -> Option<FontData<'a>> {
-        let (start, end) = self.0.0.records.get(&tag)?;
-        Some(FontData::new(self.0.0.data.as_slice().get(*start..*end)?))
+        let (start, end) = self.0 .0.records.get(&tag)?;
+        Some(FontData::new(self.0 .0.data.as_slice().get(*start..*end)?))
     }
 }
