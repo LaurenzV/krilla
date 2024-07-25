@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn try_it() {
-        let font_data = std::fs::read("/Users/lstampfl/Downloads/NotoSans-Regular.ttf").unwrap();
+        let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
 
