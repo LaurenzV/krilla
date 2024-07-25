@@ -1,3 +1,4 @@
+use crate::util::Prehashed;
 use skrifa::outline::OutlinePen;
 use skrifa::raw::traversal::SomeArray;
 use skrifa::raw::types::Offset32;
@@ -6,7 +7,6 @@ use skrifa::Tag;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder};
-use crate::util::Prehashed;
 
 mod colr;
 mod outline;

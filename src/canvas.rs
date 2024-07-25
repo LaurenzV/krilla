@@ -1,5 +1,5 @@
 use crate::blend_mode::BlendMode;
-use crate::bytecode::{ByteCode, Instruction};
+use crate::bytecode::{into_composited, ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -158,43 +158,35 @@ impl Drop for Blended<'_> {
         // TODO: Make code more efficient
         if self.blend_mode != BlendMode::SourceOver {
             match self.blend_mode {
-                // BlendMode::Clear => {
-                //     self.parent_byte_code.0 = vec![];
-                // }
-                // BlendMode::Source => {
-                //     self.parent_byte_code.0 = self.byte_code.0.clone();
-                // }
-                // BlendMode::Destination => {}
-                // BlendMode::DestinationOver => {
-                //     let mut instructions = self.byte_code.0.clone();
-                //     instructions.extend(self.parent_byte_code.0.clone());
-                //     self.parent_byte_code.0 = instructions;
-                // }
-                // BlendMode::SourceIn => {
-                //     let mask = Mask::new(
-                //         Arc::new(ByteCode(into_composited(
-                //             &self.parent_byte_code.0.clone(),
-                //             false,
-                //         ))),
-                //         Luminosity,
-                //     );
-                //     self.parent_byte_code.0 = vec![];
-                //     self.parent_byte_code.push(Instruction::Masked(Box::new((
-                //         mask,
-                //         self.byte_code.clone(),
-                //     ))));
-                // }
-                // BlendMode::DestinationIn => {
-                //     let mask = Mask::new(
-                //         Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
-                //         Luminosity,
-                //     );
-                //
-                //     let instruction =
-                //         Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
-                //
-                //     self.parent_byte_code.0 = vec![instruction];
-                // }
+                BlendMode::Clear => {
+                    self.parent_byte_code.clear();
+                }
+                BlendMode::Source => {
+                    self.parent_byte_code.clear();
+                    self.parent_byte_code.extend(&self.byte_code);
+                }
+                BlendMode::Destination => {}
+                BlendMode::DestinationOver => {
+                    std::mem::swap(self.parent_byte_code, &mut self.byte_code);
+                    self.parent_byte_code.extend(&self.byte_code);
+                }
+                BlendMode::SourceIn => {
+                    let mut byte_code = ByteCode::new();
+                    std::mem::swap(self.parent_byte_code, &mut byte_code);
+                    let mask = Mask::new(Arc::new(into_composited(&byte_code, false)), Luminosity);
+                    self.parent_byte_code
+                        .push_masked(mask, self.byte_code.clone());
+                }
+                BlendMode::DestinationIn => {
+                    let mut byte_code = ByteCode::new();
+                    std::mem::swap(self.parent_byte_code, &mut byte_code);
+
+                    let mask = Mask::new(
+                        Arc::new(into_composited(&self.byte_code, false)),
+                        Luminosity,
+                    );
+                    self.parent_byte_code.push_masked(mask, byte_code);
+                }
                 // BlendMode::SourceOut => {
                 //     // TODO: Don't hardcode
                 //     let mut builder = PathBuilder::new();

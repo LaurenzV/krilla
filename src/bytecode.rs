@@ -39,6 +39,10 @@ impl ByteCode {
         }
     }
 
+    pub fn clear(&mut self) {
+        *self = ByteCode::new()
+    }
+
     pub fn push_transformed(&mut self, transform: TransformWrapper, bytecode: ByteCode) {
         self.bbox
             .expand(&bytecode.bbox.transform(transform.0).unwrap());
@@ -114,61 +118,57 @@ impl ByteCode {
     }
 }
 
-// pub fn into_composited(instructions: &[Instruction], black: bool) -> Vec<Instruction> {
-//     let mut new_instructions = vec![];
-//
-//     let paint = if black {
-//         Paint::Color(Color::black())
-//     } else {
-//         Paint::Color(Color::white())
-//     };
-//
-//     for instruction in instructions {
-//         match instruction {
-//             Instruction::Transformed(t) => {
-//                 new_instructions.push(Instruction::Transformed(t.clone()))
-//             }
-//             Instruction::Isolated(i) => new_instructions.extend(into_composited(&i.0, black)),
-//             Instruction::Blended(b) => new_instructions.extend(into_composited(&b.1 .0, black)),
-//             Instruction::StrokePath(s) => {
-//                 let stroke = Stroke {
-//                     paint: paint.clone(),
-//                     width: s.1.width,
-//                     miter_limit: s.1.miter_limit,
-//                     line_cap: s.1.line_cap,
-//                     line_join: s.1.line_join,
-//                     opacity: s.1.opacity,
-//                     dash: s.1.dash.clone(),
-//                 };
-//
-//                 new_instructions.push(Instruction::StrokePath(Box::new((s.0.clone(), stroke))));
-//             }
-//             Instruction::FillPath(f) => {
-//                 let fill = Fill {
-//                     paint: paint.clone(),
-//                     opacity: f.1.opacity,
-//                     rule: f.1.rule,
-//                 };
-//
-//                 new_instructions.push(Instruction::FillPath(Box::new((f.0.clone(), fill))));
-//             }
-//             Instruction::Clipped(c) => {
-//                 new_instructions.push(Instruction::Clipped(Box::new((
-//                     c.0.clone(),
-//                     c.1.clone(),
-//                     ByteCode(into_composited(&c.2 .0, black)),
-//                 ))));
-//             }
-//             // TODO: Add
-//             Instruction::DrawImage(_) => {}
-//             Instruction::DrawShade(_) => {}
-//             Instruction::Masked(_) => {}
-//             Instruction::Opacified(_) => {}
-//         }
-//     }
-//
-//     new_instructions
-// }
+pub fn into_composited(byte_code: &ByteCode, black: bool) -> ByteCode {
+    let mut new_byte_code = ByteCode::new();
+
+    let paint = if black {
+        Paint::Color(Color::black())
+    } else {
+        Paint::Color(Color::white())
+    };
+
+    for instruction in &byte_code.instructions {
+        match instruction {
+            Instruction::Transformed(t) => {
+                new_byte_code.push_transformed(t.0, t.1.clone());
+            }
+            Instruction::Isolated(i) => new_byte_code.extend(&into_composited(&i, black)),
+            Instruction::Blended(b) => new_byte_code.extend(&into_composited(&b.1, black)),
+            Instruction::StrokePath(s) => {
+                let stroke = Stroke {
+                    paint: paint.clone(),
+                    width: s.1.width,
+                    miter_limit: s.1.miter_limit,
+                    line_cap: s.1.line_cap,
+                    line_join: s.1.line_join,
+                    opacity: s.1.opacity,
+                    dash: s.1.dash.clone(),
+                };
+
+                new_byte_code.push_stroke_path(s.0.clone(), stroke);
+            }
+            Instruction::FillPath(f) => {
+                let fill = Fill {
+                    paint: paint.clone(),
+                    opacity: f.1.opacity,
+                    rule: f.1.rule,
+                };
+
+                new_byte_code.push_fill_path(f.0.clone(), fill);
+            }
+            Instruction::Clipped(c) => {
+                new_byte_code.push_clipped(c.0.clone(), into_composited(&c.1, black));
+            }
+            // TODO: Add
+            Instruction::DrawImage(_) => {}
+            Instruction::DrawShade(_) => {}
+            Instruction::Masked(_) => {}
+            Instruction::Opacified(_) => {}
+        }
+    }
+
+    new_byte_code
+}
 
 pub fn calculate_stroke_bbox(stroke: &Stroke, path: &tiny_skia_path::Path) -> Option<Rect> {
     let stroke = stroke.to_tiny_skia();
