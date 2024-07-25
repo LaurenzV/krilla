@@ -7,6 +7,7 @@ mod group;
 mod image;
 mod mask;
 mod path;
+mod text;
 mod util;
 
 pub fn render(tree: &usvg::Tree) -> Canvas {
