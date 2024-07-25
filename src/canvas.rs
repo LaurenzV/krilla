@@ -187,57 +187,66 @@ impl Drop for Blended<'_> {
                     );
                     self.parent_byte_code.push_masked(mask, byte_code);
                 }
-                // BlendMode::SourceOut => {
-                //     // TODO: Don't hardcode
-                //     let mut builder = PathBuilder::new();
-                //     builder.move_to(0.0, 0.0);
-                //     builder.line_to(2000.0, 0.0);
-                //     builder.line_to(2000.0, 2000.0);
-                //     builder.line_to(0.0, 2000.0);
-                //     builder.close();
-                //
-                //     let path = builder.finish().unwrap();
-                //
-                //     let mut mask_instructions = vec![Instruction::FillPath(Box::new((
-                //         PathWrapper(path),
-                //         Fill {
-                //             paint: Paint::Color(Color::white()),
-                //             opacity: NormalizedF32::ONE,
-                //             rule: Default::default(),
-                //         },
-                //     )))];
-                //     mask_instructions
-                //         .extend(into_composited(&self.parent_byte_code.0.clone(), true));
-                //
-                //     let mask = Mask::new(Arc::new(ByteCode(mask_instructions)), Luminosity);
-                //
-                //     let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
-                //     self.parent_byte_code.0 = vec![instruction];
-                // }
-                // BlendMode::DestinationOut => {}
-                // BlendMode::SourceAtop => {
-                //     let mask = Mask::new(
-                //         Arc::new(ByteCode(into_composited(
-                //             &self.parent_byte_code.0.clone(),
-                //             false,
-                //         ))),
-                //         Luminosity,
-                //     );
-                //
-                //     let instruction = Instruction::Masked(Box::new((mask, self.byte_code.clone())));
-                //     self.parent_byte_code.push(instruction);
-                // }
-                // BlendMode::DestinationAtop => {
-                //     let mask = Mask::new(
-                //         Arc::new(ByteCode(into_composited(&self.byte_code.0.clone(), false))),
-                //         Luminosity,
-                //     );
-                //
-                //     let instruction =
-                //         Instruction::Masked(Box::new((mask, self.parent_byte_code.clone())));
-                //     self.parent_byte_code.0 = self.byte_code.0.clone();
-                //     self.parent_byte_code.push(instruction);
-                // }
+                BlendMode::SourceOut => {
+                    let path = self.byte_code.bbox().to_clip_path();
+
+                    let mut temp_code = ByteCode::new();
+                    std::mem::swap(self.parent_byte_code, &mut temp_code);
+
+                    let mut mask_code = ByteCode::new();
+                    mask_code.push_fill_path(
+                        PathWrapper(path),
+                        Fill {
+                            paint: Paint::Color(Color::white()),
+                            ..Fill::default()
+                        },
+                    );
+                    mask_code.extend(&into_composited(&temp_code, true));
+
+                    let mask = Mask::new(Arc::new(mask_code), Luminosity);
+                    self.parent_byte_code
+                        .push_masked(mask, self.byte_code.clone());
+                }
+                BlendMode::DestinationOut => {
+                    let path = self.parent_byte_code.bbox().to_clip_path();
+
+                    let mut temp_code = ByteCode::new();
+                    std::mem::swap(self.parent_byte_code, &mut temp_code);
+
+                    let mut mask_code = ByteCode::new();
+                    mask_code.push_fill_path(
+                        PathWrapper(path),
+                        Fill {
+                            paint: Paint::Color(Color::white()),
+                            ..Fill::default()
+                        },
+                    );
+                    mask_code.extend(&into_composited(&self.byte_code, true));
+
+                    let mask = Mask::new(Arc::new(mask_code), Luminosity);
+                    self.parent_byte_code.push_masked(mask, temp_code);
+                }
+                BlendMode::SourceAtop => {
+                    let mask = Mask::new(
+                        Arc::new(into_composited(&self.parent_byte_code.clone(), false)),
+                        Luminosity,
+                    );
+
+                    self.parent_byte_code
+                        .push_masked(mask, self.byte_code.clone());
+                }
+                BlendMode::DestinationAtop => {
+                    let mask = Mask::new(
+                        Arc::new(into_composited(&self.byte_code.clone(), false)),
+                        Luminosity,
+                    );
+
+                    let mut byte_code = ByteCode::new();
+                    std::mem::swap(self.parent_byte_code, &mut byte_code);
+
+                    self.parent_byte_code.extend(&self.byte_code.clone());
+                    self.parent_byte_code.push_masked(mask, byte_code)
+                }
                 // BlendMode::Xor => {}
                 // BlendMode::Plus => {}
                 // All other blend modes will be translate into their respective PDF blend mode.

@@ -305,7 +305,10 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::DestIn => BlendMode::DestinationIn,
             CompositeMode::SrcIn => BlendMode::SourceIn,
             CompositeMode::SrcOut => BlendMode::SourceOut,
-            _ => BlendMode::SourceOver,
+            CompositeMode::DestOut => BlendMode::DestinationOut,
+            CompositeMode::Xor => BlendMode::Xor,
+            CompositeMode::Plus => BlendMode::Plus,
+            CompositeMode::Unknown => BlendMode::SourceOver,
         };
         let canvas = Canvas::new(Size::from_wh(self.size as f32, self.size as f32).unwrap());
         self.blend_modes.push(mode);
