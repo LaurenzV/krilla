@@ -1,12 +1,14 @@
 use crate::blend_mode::BlendMode;
+use crate::font::Font;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use crate::{blend_mode, Color, Fill, FillRule, Paint, PathWrapper, Stroke};
+use skrifa::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Rect, Size};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Instruction {
@@ -15,6 +17,7 @@ pub enum Instruction {
     // TODO: Replace with PDF blend mode
     Blended(Box<(BlendMode, ByteCode)>),
     StrokePath(Box<(PathWrapper, Stroke)>),
+    DrawGlyph(Box<(GlyphId, Font, FiniteF32)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
     DrawShade(Box<ShadingFunction>),
@@ -68,6 +71,22 @@ impl ByteCode {
     pub fn push_fill_path(&mut self, path: PathWrapper, fill: Fill) {
         self.bbox.expand(&path.0.bounds());
         self.push(Instruction::FillPath(Box::new((path, fill))));
+    }
+
+    pub fn push_draw_glyph(&mut self, glyph_id: GlyphId, font: Font, size: FiniteF32) {
+        let bbox = font
+            .bbox()
+            .transform(Transform::from_scale(
+                size.get() / font.units_per_em() as f32,
+                size.get() / font.units_per_em() as f32,
+            ))
+            .unwrap();
+        self.bbox.expand(&bbox);
+        self.push(Instruction::DrawGlyph(Box::new((
+            glyph_id,
+            font.clone(),
+            size,
+        ))));
     }
 
     pub fn push_shade(&mut self, shade: ShadingFunction) {
@@ -164,6 +183,7 @@ pub fn into_composited(byte_code: &ByteCode, black: bool) -> ByteCode {
             Instruction::DrawShade(_) => {}
             Instruction::Masked(_) => {}
             Instruction::Opacified(_) => {}
+            Instruction::DrawGlyph(_) => {}
         }
     }
 

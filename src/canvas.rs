@@ -471,6 +471,7 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::Isolated(isolated_data) => {
                     self.draw_isolated(isolated_data.clone());
                 }
+                Instruction::DrawGlyph(_) => todo!(),
             }
         }
     }
