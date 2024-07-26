@@ -64,18 +64,6 @@ impl TryInto<pdf_writer::types::BlendMode> for BlendMode {
     fn try_into(self) -> Result<pdf_writer::types::BlendMode, Self::Error> {
         match self {
             BlendMode::SourceOver => Ok(pdf_writer::types::BlendMode::Normal),
-            // BlendMode::Clear => {}
-            // BlendMode::Source => {}
-            // BlendMode::Destination => {}
-            // BlendMode::DestinationOver => {}
-            // BlendMode::SourceIn => {}
-            // BlendMode::DestinationIn => {}
-            // BlendMode::SourceOut => {}
-            // BlendMode::DestinationOut => {}
-            // BlendMode::SourceAtop => {}
-            // BlendMode::DestinationAtop => {}
-            // BlendMode::Xor => {}
-            // BlendMode::Plus => {}
             BlendMode::Screen => Ok(pdf_writer::types::BlendMode::Screen),
             BlendMode::Overlay => Ok(pdf_writer::types::BlendMode::Overlay),
             BlendMode::Darken => Ok(pdf_writer::types::BlendMode::Darken),
