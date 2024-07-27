@@ -6,7 +6,7 @@ use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, Sw
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
-use skrifa::outline::{DrawSettings, OutlinePen};
+use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;

@@ -17,10 +17,10 @@ use crate::util::{
     calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
 };
 use crate::MaskType::Luminosity;
-use crate::{Color, Fill, FillRule, LineCap, LineJoin, MaskType, PathWrapper, Stroke};
+use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
 pub trait Surface {
     fn masked(&mut self, mask: Mask) -> Masked;

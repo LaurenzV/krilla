@@ -1,10 +1,8 @@
 use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::transform::TransformWrapper;
-use crate::util::RectExt;
-use pdf_writer::types::FunctionShadingType;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {

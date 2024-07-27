@@ -176,7 +176,7 @@ fn create_complex_clip_path(parent: &usvg::Group, clip_path: &usvg::ClipPath) ->
     let mut canvas = Canvas::new(Size::from_wh(1.0, 1.0).unwrap());
 
     {
-        let mut clipped: &mut dyn Surface = if let Some(clip_path) = clip_path
+        let clipped: &mut dyn Surface = if let Some(clip_path) = clip_path
             .clip_path()
             .map(|c| get_clip_path(parent, clip_path))
         {

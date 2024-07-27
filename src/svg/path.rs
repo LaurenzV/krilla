@@ -1,5 +1,5 @@
 use crate::canvas::Surface;
-use crate::svg::util::{convert_fill, convert_stroke, convert_transform};
+use crate::svg::util::{convert_fill, convert_stroke};
 use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 

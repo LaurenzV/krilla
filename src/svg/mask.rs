@@ -6,7 +6,7 @@ use crate::util::RectExt;
 use crate::FillRule;
 use pdf_writer::Finish;
 use std::sync::Arc;
-use tiny_skia_path::{PathBuilder, Size};
+use tiny_skia_path::Size;
 
 pub fn get_mask(mask: &usvg::Mask) -> Mask {
     // Dummy size. TODO: Improve?

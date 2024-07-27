@@ -6,7 +6,7 @@ use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
 pub fn deflate(data: &[u8]) -> Vec<u8> {

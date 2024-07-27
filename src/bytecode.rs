@@ -5,7 +5,7 @@ use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
-use crate::{blend_mode, Color, Fill, FillRule, Paint, PathWrapper, Stroke};
+use crate::{Color, Fill, FillRule, Paint, PathWrapper, Stroke};
 use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Rect, Size, Transform};

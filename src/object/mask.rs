@@ -1,4 +1,4 @@
-use crate::bytecode::{ByteCode, Instruction};
+use crate::bytecode::ByteCode;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, SerializerContext};

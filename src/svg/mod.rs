@@ -1,5 +1,4 @@
 use crate::canvas::Canvas;
-use tiny_skia_path::Transform;
 
 mod clip_path;
 mod filter;
