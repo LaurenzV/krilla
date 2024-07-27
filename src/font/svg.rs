@@ -12,8 +12,8 @@ mod tests {
     use tiny_skia_path::{Size, Transform};
     use usvg::roxmltree;
 
-    fn single_glyph(font_ref: &FontRef, glyph: GlyphId) -> Canvas {
-        let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
+    fn single_glyph(font_ref: &FontRef, location_ref: LocationRef, glyph: GlyphId) -> Canvas {
+        let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
         let svg_table = font_ref.svg().unwrap();
 
         if let Ok(Some(svg_data)) = svg_table.glyph_data(glyph) {
@@ -61,6 +61,12 @@ mod tests {
 
         let glyphs = (0..font_ref.maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
 
-        draw(&font_ref, &glyphs, "svg_twitter", single_glyph);
+        draw(
+            &font_ref,
+            LocationRef::default(),
+            &glyphs,
+            "svg_twitter",
+            single_glyph,
+        );
     }
 }

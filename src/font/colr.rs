@@ -336,19 +336,19 @@ mod tests {
     use skrifa::prelude::LocationRef;
     use skrifa::{FontRef, GlyphId, MetadataProvider};
 
-    fn single_glyph(font_ref: &FontRef, glyph: GlyphId) -> Canvas {
+    fn single_glyph(font_ref: &FontRef, location_ref: LocationRef, glyph: GlyphId) -> Canvas {
         let mut colr_canvas = ColrCanvas::new(&font_ref);
 
         let colr_glyphs = font_ref.color_glyphs();
         if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-            let _ = colr_glyph.paint(LocationRef::default(), &mut colr_canvas);
+            let _ = colr_glyph.paint(location_ref, &mut colr_canvas);
         }
         let canvas = colr_canvas.canvases.last().unwrap().clone();
         canvas
     }
 
     fn draw_colr(font_ref: &FontRef, glyphs: &[u32], name: &str) {
-        draw(font_ref, glyphs, name, single_glyph);
+        draw(font_ref, LocationRef::default(), glyphs, name, single_glyph);
     }
 
     #[test]

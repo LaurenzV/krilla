@@ -10,14 +10,14 @@ mod tests {
     use skrifa::{FontRef, GlyphId, MetadataProvider};
     use tiny_skia_path::{Size, Transform};
 
-    fn single_glyph(font_ref: &FontRef, glyph: GlyphId) -> Canvas {
+    fn single_glyph(font_ref: &FontRef, location_ref: LocationRef, glyph: GlyphId) -> Canvas {
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
         let outline_glyphs = font_ref.outline_glyphs();
         let mut outline_builder = OutlineBuilder::new();
 
         if let Some(outline_glyph) = outline_glyphs.get(glyph) {
             let _ = outline_glyph.draw(
-                DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()),
+                DrawSettings::unhinted(skrifa::instance::Size::unscaled(), location_ref),
                 &mut outline_builder,
             );
         }
@@ -35,11 +35,20 @@ mod tests {
 
     #[test]
     fn outline_noto_sans() {
-        let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
+        let font_data =
+            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
 
         let glyphs = (0..font_ref.maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
 
-        draw(&font_ref, &glyphs, "outline_noto_sans", single_glyph);
+        let location = font_ref.axes().location([("wght", 50.0)]);
+
+        draw(
+            &font_ref,
+            (&location).into(),
+            &glyphs,
+            "outline_noto_sans",
+            single_glyph,
+        );
     }
 }
