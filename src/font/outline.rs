@@ -10,7 +10,11 @@ mod tests {
     use skrifa::{FontRef, GlyphId, MetadataProvider};
     use tiny_skia_path::{Size, Transform};
 
-    fn single_glyph(font_ref: &FontRef, location_ref: LocationRef, glyph: GlyphId) -> Canvas {
+    fn single_glyph(
+        font_ref: &FontRef,
+        location_ref: LocationRef,
+        glyph: GlyphId,
+    ) -> Option<Canvas> {
         let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
         let outline_glyphs = font_ref.outline_glyphs();
         let mut outline_builder = OutlineBuilder::new();
@@ -20,6 +24,8 @@ mod tests {
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), location_ref),
                 &mut outline_builder,
             );
+        } else {
+            return None;
         }
 
         let mut canvas = Canvas::new(
@@ -30,7 +36,7 @@ mod tests {
             canvas.fill_path(path, Transform::identity(), Fill::default());
         }
 
-        canvas
+        Some(canvas)
     }
 
     #[test]

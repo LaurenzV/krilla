@@ -134,13 +134,13 @@ fn draw(
     location_ref: LocationRef,
     glyphs: &[u32],
     name: &str,
-    single_glyph: impl Fn(&FontRef, LocationRef, GlyphId) -> Canvas,
+    single_glyph: impl Fn(&FontRef, LocationRef, GlyphId) -> Option<Canvas>,
 ) {
     let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
     let num_glyphs = glyphs.len();
     let width = 2000;
 
-    let size = 150u32;
+    let size = 40u32;
     let num_cols = width / size;
     let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
     let units_per_em = metrics.units_per_em as f32;
@@ -149,7 +149,9 @@ fn draw(
     let mut parent_canvas = Canvas::new(crate::Size::from_wh(width as f32, height as f32).unwrap());
 
     for i in glyphs.iter().copied() {
-        let canvas = single_glyph(&font_ref, location_ref, GlyphId::new(i));
+        let Some(canvas) = single_glyph(&font_ref, location_ref, GlyphId::new(i)) else {
+            continue;
+        };
 
         fn get_transform(
             cur_point: u32,
