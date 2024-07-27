@@ -347,18 +347,83 @@ mod tests {
         canvas
     }
 
+    fn draw(font_ref: &FontRef, glyphs: &[u32], name: &str) {
+        let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
+        let num_glyphs = glyphs.len();
+        let width = 2000;
+
+        let size = 150u32;
+        let num_cols = width / size;
+        let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
+        let units_per_em = metrics.units_per_em as f32;
+        let mut cur_point = 0;
+
+        let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
+
+        for i in glyphs.iter().copied() {
+            let canvas = single_glyph(&font_ref, GlyphId::new(i));
+
+            fn get_transform(
+                cur_point: u32,
+                size: u32,
+                num_cols: u32,
+                units_per_em: f32,
+            ) -> crate::Transform {
+                let el = cur_point / size;
+                let col = el % num_cols;
+                let row = el / num_cols;
+
+                crate::Transform::from_row(
+                    (1.0 / units_per_em) * size as f32,
+                    0.0,
+                    0.0,
+                    (1.0 / units_per_em) * size as f32,
+                    col as f32 * size as f32,
+                    row as f32 * size as f32,
+                )
+            }
+
+            let mut transformed = parent_canvas.transformed(
+                get_transform(cur_point, size, num_cols, units_per_em).pre_concat(
+                    tiny_skia_path::Transform::from_row(
+                        1.0,
+                        0.0,
+                        0.0,
+                        -1.0,
+                        0.0,
+                        units_per_em as f32,
+                    ),
+                ),
+            );
+            transformed.draw_canvas(canvas);
+            transformed.finish();
+
+            cur_point += size;
+        }
+
+        let pdf = parent_canvas.serialize(SerializeSettings::default());
+        let finished = pdf.finish();
+        let _ = std::fs::write(format!("out/{}.pdf", name), &finished);
+        let _ = std::fs::write(format!("out/{}.txt", name), &finished);
+    }
+
     #[test]
-    fn colr() {
+    fn colr_test() {
         let font_data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
-        let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-        let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
-        let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
 
         let glyphs = (0..=220).collect::<Vec<_>>();
-        // Noto Color Emoji
+
+        draw(&font_ref, &glyphs, "colr_test");
+    }
+
+    #[test]
+    fn noto_color() {
+        let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
+        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
+
         let glyphs = vec![
             2397, 2400, 2401, 2398, 2403, 2402, 3616, 2399, 2600, 2463, 2464, 2406, 2407, 2404,
             2591, 2410, 2571, 2421, 2420, 2083, 2423, 2422, 2593, 2408, 2424, 2425, 2572, 2426,
@@ -434,7 +499,14 @@ mod tests {
             3734, 3760, 2674, 2654, 3725, 3603, 2529, 3595, 3814, 3761, 3815, 3399, 3762, 3558,
         ];
 
-        // Segoe UI Color Emoji
+        draw(&font_ref, &glyphs, "colr_noto");
+    }
+
+    #[test]
+    fn segoe_emoji() {
+        let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
+        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
+
         let glyphs = [
             2268, 2271, 2272, 2269, 2274, 2273, 2270, 2786, 3014, 3026, 3884, 2278, 2275, 2337,
             2338, 2277, 2280, 2281, 3012, 2292, 2291, 2293, 2294, 2279, 2295, 2297, 2296, 2810,
@@ -474,62 +546,6 @@ mod tests {
             1062, 1064, 1066, 1067, 1065, 1976, 1051, 3934, 2155, 2156, 2637, 2154, 3933, 2648,
         ];
 
-        let num_glyphs = glyphs.len();
-
-        let width = 2000;
-
-        let size = 150u32;
-        let num_cols = width / size;
-        let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
-        let units_per_em = metrics.units_per_em as f32;
-        let mut cur_point = 0;
-
-        let mut parent_canvas = Canvas::new(Size::from_wh(width as f32, height as f32).unwrap());
-
-        for i in glyphs.iter().copied() {
-            let canvas = single_glyph(&font_ref, GlyphId::new(i));
-
-            fn get_transform(
-                cur_point: u32,
-                size: u32,
-                num_cols: u32,
-                units_per_em: f32,
-            ) -> crate::Transform {
-                let el = cur_point / size;
-                let col = el % num_cols;
-                let row = el / num_cols;
-
-                crate::Transform::from_row(
-                    (1.0 / units_per_em) * size as f32,
-                    0.0,
-                    0.0,
-                    (1.0 / units_per_em) * size as f32,
-                    col as f32 * size as f32,
-                    row as f32 * size as f32,
-                )
-            }
-
-            let mut transformed = parent_canvas.transformed(
-                get_transform(cur_point, size, num_cols, units_per_em).pre_concat(
-                    tiny_skia_path::Transform::from_row(
-                        1.0,
-                        0.0,
-                        0.0,
-                        -1.0,
-                        0.0,
-                        units_per_em as f32,
-                    ),
-                ),
-            );
-            transformed.draw_canvas(canvas);
-            transformed.finish();
-
-            cur_point += size;
-        }
-
-        let pdf = parent_canvas.serialize(SerializeSettings::default());
-        let finished = pdf.finish();
-        let _ = std::fs::write("out/colr.pdf", &finished);
-        let _ = std::fs::write("out/colr.txt", &finished);
+        draw(&font_ref, &glyphs, "colr_segoe");
     }
 }
