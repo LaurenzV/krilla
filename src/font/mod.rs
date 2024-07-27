@@ -13,6 +13,7 @@ use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
 
 mod colr;
 mod outline;
+mod svg;
 
 struct OutlineBuilder(PathBuilder);
 

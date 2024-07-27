@@ -124,9 +124,8 @@ checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 
 [[package]]
 name = "font-types"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f0189ccb084f77c5523e08288d418cbaa09c451a08515678a0aa265df9a8b60"
+version = "0.5.5"
+source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "bytemuck",
 ]
@@ -198,6 +197,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "029d73f573d8e8d63e6d5020011d3255b28c3ba85d6cf870a07184ed23de9284"
 
 [[package]]
+name = "int-set"
+version = "0.1.0"
+source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
+dependencies = [
+ "font-types",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -213,6 +220,7 @@ checksum = "f5d4a7da358eff58addd2877a45865158f0d78c911d43a5784ceb7bbf52833b0"
 name = "krilla"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "image",
  "miniz_oxide",
  "once_cell",
@@ -342,12 +350,12 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c141b9980e1150201b2a3a32879001c8f975fe313ec3df5471a9b5c79a880cd"
+version = "0.19.3"
+source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "bytemuck",
  "font-types",
+ "int-set",
 ]
 
 [[package]]
@@ -432,9 +440,8 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 
 [[package]]
 name = "skrifa"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abea4738067b1e628c6ce28b2c216c19e9ea95715cdb332680e821c3bec2ef23"
+version = "0.19.3"
+source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "bytemuck",
  "read-fonts",
