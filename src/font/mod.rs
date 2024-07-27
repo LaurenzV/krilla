@@ -1,9 +1,11 @@
+use crate::canvas::{Canvas, Surface};
+use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::util::Prehashed;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::Offset32;
 use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
-use skrifa::{MetadataProvider, Tag};
+use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, Rect};

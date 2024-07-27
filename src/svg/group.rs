@@ -54,11 +54,15 @@ pub fn blended_and_opacified(group: &usvg::Group, surface: &mut dyn Surface) {
     let mut opacified = blended.opacified(group.opacity());
 
     for child in group.children() {
-        match child {
-            Node::Group(g) => render(g, &mut opacified),
-            Node::Path(p) => path::render(p, &mut opacified),
-            Node::Image(i) => image::render(i, &mut opacified),
-            Node::Text(t) => unimplemented!(),
-        }
+        render_node(child, &mut opacified);
+    }
+}
+
+pub fn render_node(node: &Node, surface: &mut dyn Surface) {
+    match node {
+        Node::Group(g) => render(g, surface),
+        Node::Path(p) => path::render(p, surface),
+        Node::Image(i) => image::render(i, surface),
+        Node::Text(t) => unimplemented!(),
     }
 }
