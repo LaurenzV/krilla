@@ -1,10 +1,12 @@
+use crate::canvas::{Canvas, Surface};
+use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::util::Prehashed;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::traversal::SomeArray;
 use skrifa::raw::types::{BoundingBox, Offset32};
 use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
-use skrifa::{MetadataProvider, Tag};
+use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
@@ -124,4 +126,63 @@ impl<'a> TableProvider<'a> for FontTables<'a> {
         let (start, end) = self.0.records.get(&tag)?;
         Some(FontData::new(self.0.data.as_slice().get(*start..*end)?))
     }
+}
+
+#[cfg(test)]
+fn draw(
+    font_ref: &FontRef,
+    glyphs: &[u32],
+    name: &str,
+    single_glyph: impl Fn(&FontRef, GlyphId) -> Canvas,
+) {
+    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), LocationRef::default());
+    let num_glyphs = glyphs.len();
+    let width = 2000;
+
+    let size = 150u32;
+    let num_cols = width / size;
+    let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
+    let units_per_em = metrics.units_per_em as f32;
+    let mut cur_point = 0;
+
+    let mut parent_canvas = Canvas::new(crate::Size::from_wh(width as f32, height as f32).unwrap());
+
+    for i in glyphs.iter().copied() {
+        let canvas = single_glyph(&font_ref, GlyphId::new(i));
+
+        fn get_transform(
+            cur_point: u32,
+            size: u32,
+            num_cols: u32,
+            units_per_em: f32,
+        ) -> crate::Transform {
+            let el = cur_point / size;
+            let col = el % num_cols;
+            let row = el / num_cols;
+
+            crate::Transform::from_row(
+                (1.0 / units_per_em) * size as f32,
+                0.0,
+                0.0,
+                (1.0 / units_per_em) * size as f32,
+                col as f32 * size as f32,
+                row as f32 * size as f32,
+            )
+        }
+
+        let mut transformed = parent_canvas.transformed(
+            get_transform(cur_point, size, num_cols, units_per_em).pre_concat(
+                tiny_skia_path::Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, units_per_em as f32),
+            ),
+        );
+        transformed.draw_canvas(canvas);
+        transformed.finish();
+
+        cur_point += size;
+    }
+
+    let pdf = parent_canvas.serialize(SerializeSettings::default());
+    let finished = pdf.finish();
+    let _ = std::fs::write(format!("out/{}.pdf", name), &finished);
+    let _ = std::fs::write(format!("out/{}.txt", name), &finished);
 }
