@@ -91,12 +91,21 @@ impl SerializerContext {
         }
     }
 
-    pub fn get_font(&mut self, font: Font, glyph: GlyphId) -> (usize, u8) {
+    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (Ref, u8) {
         let font_mapper = self
             .fonts
             .entry(font.clone())
-            .or_insert_with(|| FontMapper::new(font));
-        font_mapper.add_glyph(glyph)
+            .or_insert_with(|| FontMapper::new(font.clone()));
+        let (index, glyph_id) = font_mapper.add_glyph(glyph);
+        let ref_ = if let Some(ref_) = self.font_refs.get(&((font.clone(), index))) {
+            *ref_
+        } else {
+            let ref_ = self.new_ref();
+            self.font_refs.insert((font.clone(), index), ref_);
+            ref_
+        };
+
+        (ref_, glyph_id)
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
