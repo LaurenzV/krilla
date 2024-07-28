@@ -12,9 +12,11 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
     let location_ref = font.location_ref();
 
     let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
-    let svg_table = font_ref.svg().unwrap();
 
-    if let Ok(Some(svg_data)) = svg_table.glyph_data(glyph) {
+    if let Ok(Some(svg_data)) = font_ref
+        .svg()
+        .and_then(|svg_table| svg_table.glyph_data(glyph))
+    {
         let mut data = svg_data.get();
 
         let mut decoded = vec![];
@@ -47,10 +49,10 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
         );
         transformed.draw_canvas(svg_canvas);
         transformed.finish();
-        Some(canvas)
-    } else {
-        return None;
-    }
+        return Some(canvas);
+    };
+
+    return None;
 }
 
 #[cfg(test)]

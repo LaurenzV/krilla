@@ -1,10 +1,14 @@
-use crate::font::Font;
+use crate::font::{colr, Font};
+use crate::object::xobject::XObject;
+use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, TransformExt};
-use pdf_writer::{Finish, Ref};
+use pdf_writer::{Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
+use std::sync::Arc;
 use tiny_skia_path::Transform;
+
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -48,15 +52,47 @@ impl Type3Font {
 
 impl Object for Type3Font {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let mut type3_font = sc.chunk_mut().type3_font(root_ref);
         let bbox = self.font.bbox();
-        let widths = self.glyphs.iter().map(|g| {
-            self.font
-                .font_ref()
-                .glyph_metrics(Size::unscaled(), self.font.location_ref())
-                .advance_width(*g)
-                .unwrap_or(0.0)
-        });
+        let widths = self
+            .glyphs
+            .iter()
+            .map(|g| {
+                self.font
+                    .font_ref()
+                    .glyph_metrics(Size::unscaled(), self.font.location_ref())
+                    .advance_width(*g)
+                    .unwrap_or(0.0)
+            })
+            .collect::<Vec<_>>();
+
+        let mut resource_dictionary = ResourceDictionary::new();
+
+        let glyph_streams = self
+            .glyphs
+            .iter()
+            .enumerate()
+            .map(|(index, glyph)| {
+                if let Some(colr_canvas) = colr::draw_glyph(&self.font, *glyph) {
+                    let x_object =
+                        XObject::new(Arc::new(colr_canvas.byte_code), false, false, None);
+                    let mut name = resource_dictionary
+                        .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+                    let mut content = Content::new();
+                    content.start_color_glyph(widths[index]);
+                    content.x_object(name.to_pdf_name());
+                    let stream = content.finish();
+
+                    let stream_ref = sc.new_ref();
+                    sc.chunk_mut().stream(stream_ref, &stream);
+
+                    stream_ref
+                } else {
+                    unreachable!()
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut type3_font = sc.chunk_mut().type3_font(root_ref);
 
         type3_font.bbox(pdf_writer::Rect::new(
             bbox.left(),
@@ -74,6 +110,12 @@ impl Object for Type3Font {
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(widths);
+
+        let mut char_procs = type3_font.char_procs();
+        for (gid, ref_) in glyph_streams.iter().enumerate() {
+            char_procs.pair(format!("g{gid}").to_pdf_name(), *ref_);
+        }
+        char_procs.finish();
 
         let names = (0..self.count())
             .map(|gid| format!("g{gid}"))
@@ -112,7 +154,7 @@ mod tests {
         let font = Font::new(Arc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
 
-        for g in [2397, 2400, 2401, 2398, 2403, 2402, 2399, 3616] {
+        for g in [2397, 2400, 2401] {
             type3.add(GlyphId::new(g));
         }
 

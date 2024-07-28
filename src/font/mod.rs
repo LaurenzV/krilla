@@ -1,17 +1,19 @@
+use crate::canvas::{Canvas, Surface};
+use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::Offset32;
 use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
-use skrifa::{MetadataProvider, Tag};
+use skrifa::{GlyphId, MetadataProvider, Tag};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
-mod colr;
-mod outline;
-mod svg;
+pub mod colr;
+pub mod outline;
+pub mod svg;
 
 struct OutlineBuilder(PathBuilder);
 
