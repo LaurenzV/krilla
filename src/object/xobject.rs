@@ -43,7 +43,7 @@ impl Object for XObject {
         // TODO: Deduplicate
         let mut resource_dictionary = ResourceDictionary::new();
         let (content_stream, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary, sc);
             serializer.serialize_bytecode(&self.0.byte_code);
             serializer.finish()
         };

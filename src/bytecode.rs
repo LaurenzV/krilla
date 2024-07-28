@@ -17,7 +17,7 @@ pub enum Instruction {
     // TODO: Replace with PDF blend mode
     Blended(Box<(BlendMode, ByteCode)>),
     StrokePath(Box<(PathWrapper, Stroke)>),
-    DrawGlyph(Box<(GlyphId, Font, FiniteF32)>),
+    DrawGlyph(Box<(GlyphId, Font, FiniteF32, TransformWrapper)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
     DrawShade(Box<ShadingFunction>),
@@ -73,19 +73,26 @@ impl ByteCode {
         self.push(Instruction::FillPath(Box::new((path, fill))));
     }
 
-    pub fn push_draw_glyph(&mut self, glyph_id: GlyphId, font: Font, size: FiniteF32) {
+    pub fn push_draw_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: TransformWrapper,
+    ) {
         let bbox = font
             .bbox()
-            .transform(Transform::from_scale(
+            .transform(transform.0.pre_concat(Transform::from_scale(
                 size.get() / font.units_per_em() as f32,
                 size.get() / font.units_per_em() as f32,
-            ))
+            )))
             .unwrap();
         self.bbox.expand(&bbox);
         self.push(Instruction::DrawGlyph(Box::new((
             glyph_id,
             font.clone(),
             size,
+            transform,
         ))));
     }
 

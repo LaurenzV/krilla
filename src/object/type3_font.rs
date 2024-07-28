@@ -84,7 +84,7 @@ impl Object for Type3Font {
 
                     let (content_stream, bbox) = {
                         let mut serializer =
-                            CanvasPdfSerializer::new_with(&mut resource_dictionary, content);
+                            CanvasPdfSerializer::new_with(&mut resource_dictionary, sc, content);
                         serializer.serialize_bytecode(&colr_canvas.byte_code);
                         serializer.finish()
                     };

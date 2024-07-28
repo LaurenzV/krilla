@@ -1,6 +1,7 @@
 use crate::blend_mode::BlendMode;
 use crate::bytecode::{into_composited, ByteCode, Instruction};
 use crate::color::PdfColorExt;
+use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -10,7 +11,9 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::Paint;
-use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
+use crate::resource::{
+    FontResource, PatternResource, Resource, ResourceDictionary, XObjectResource,
+};
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{
@@ -18,9 +21,10 @@ use crate::util::{
 };
 use crate::MaskType::Luminosity;
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
-use pdf_writer::{Chunk, Content, Filter, Finish, Pdf};
+use pdf_writer::{Chunk, Content, Filter, Finish, Pdf, Str};
+use skrifa::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
 pub trait Surface {
     fn masked(&mut self, mask: Mask) -> Masked;
@@ -427,24 +431,34 @@ impl Canvas {
 
 pub struct CanvasPdfSerializer<'a> {
     resource_dictionary: &'a mut ResourceDictionary,
+    serializer_context: &'a mut SerializerContext,
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
 }
 
 impl<'a> CanvasPdfSerializer<'a> {
-    pub fn new(resource_dictionary: &'a mut ResourceDictionary) -> Self {
+    pub fn new(
+        resource_dictionary: &'a mut ResourceDictionary,
+        serializer_context: &'a mut SerializerContext,
+    ) -> Self {
         Self {
             resource_dictionary,
+            serializer_context,
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
         }
     }
 
-    pub fn new_with(resource_dictionary: &'a mut ResourceDictionary, content: Content) -> Self {
+    pub fn new_with(
+        resource_dictionary: &'a mut ResourceDictionary,
+        serializer_context: &'a mut SerializerContext,
+        content: Content,
+    ) -> Self {
         Self {
             resource_dictionary,
+            serializer_context,
             content,
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
@@ -667,6 +681,24 @@ impl<'a> CanvasPdfSerializer<'a> {
         };
 
         self.content.end_path();
+    }
+
+    pub fn draw_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: TransformWrapper,
+    ) {
+        let (font_ref, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
+        let font_name = self
+            .resource_dictionary
+            .register_resource(Resource::Font(FontResource::new(font_ref)));
+        self.content.begin_text();
+        self.content.set_text_matrix(transform.0.to_pdf_transform());
+        self.content.set_font(font_name.to_pdf_name(), size.get());
+        self.content.show(Str(&[gid]));
+        self.content.end_text();
     }
 
     pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
@@ -926,7 +958,7 @@ impl PageSerialize for Canvas {
 
         let mut resource_dictionary = ResourceDictionary::new();
         let (content_stream, _) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
+            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary, &mut sc);
             serializer.transform(&Transform::from_row(
                 1.0,
                 0.0,

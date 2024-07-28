@@ -45,7 +45,7 @@ impl Object for TilingPattern {
         // so instead we simulate it ourselves.
         let content_stream = if self.0.base_opacity == NormalizedF32::ONE {
             let (content_stream, _) = {
-                let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary);
+                let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary, sc);
                 serializer.serialize_bytecode(&self.0.canvas.byte_code);
                 serializer.finish()
             };
