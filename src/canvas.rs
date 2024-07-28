@@ -957,11 +957,13 @@ impl PageSerialize for Canvas {
         page.parent(page_tree_ref);
         page.contents(content_ref);
         page.finish();
+        // sc.write_fonts();
+        let cached_chunk = sc.finish();
 
         let mut pdf = Pdf::new();
         pdf.catalog(catalog_ref).pages(page_tree_ref);
         pdf.extend(&chunk);
-        pdf.extend(sc.chunk());
+        pdf.extend(&cached_chunk);
 
         pdf
     }

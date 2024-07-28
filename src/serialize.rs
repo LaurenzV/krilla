@@ -26,13 +26,6 @@ impl Default for SerializeSettings {
 
 pub trait Object: Sized + Hash + Clone + 'static {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref);
-
-    fn serialize(self, serialize_settings: SerializeSettings) -> (Chunk, Ref) {
-        let mut sc = SerializerContext::new(serialize_settings);
-        let root_ref = sc.new_ref();
-        self.serialize_into(&mut sc, root_ref);
-        (sc.finish(), root_ref)
-    }
 }
 
 pub trait RegisterableObject: Object {}
@@ -117,8 +110,17 @@ impl SerializerContext {
     }
 
     // TODO: Somehow make sure that the caller has to call this, so that the fonts are always written.
+    pub fn write_fonts(&mut self) {
+        // TODO: Make more efficient
+        for (font, font_mapper) in self.fonts.clone() {
+            for (index, mapper) in font_mapper.fonts.iter().enumerate() {
+                let ref_ = self.font_refs.remove(&(font.clone(), index)).unwrap();
+                mapper.clone().serialize_into(self, ref_);
+            }
+        }
+    }
+
     pub fn finish(self) -> Chunk {
-        // TODO: Write fonts
         self.chunk
     }
 }
@@ -134,6 +136,7 @@ fn hash_item<T: Hash + ?Sized + 'static>(item: &T) -> u128 {
     state.finish128().as_u128()
 }
 
+#[derive(Clone)]
 pub struct FontMapper {
     font: Font,
     fonts: Vec<Type3Font>,

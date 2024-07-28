@@ -161,6 +161,8 @@ mod tests {
         let root_ref = serializer_context.new_ref();
         type3.serialize_into(&mut serializer_context, root_ref);
 
+        // No need to write fonts here.
+
         let chunk = serializer_context.chunk();
         std::fs::write("out.txt", chunk.as_bytes());
     }
