@@ -1,6 +1,5 @@
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::deflate;
-use crate::Color;
 use once_cell::sync::Lazy;
 use pdf_writer::{Finish, Name, Ref};
 
