@@ -2,12 +2,12 @@ use crate::font::{colr, Font};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
-use crate::util::{NameExt, TransformExt};
+use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
 use std::sync::Arc;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{Rect, Transform};
 use crate::canvas::CanvasPdfSerializer;
 
 // TODO: Add FontDescriptor, required for Tagged PDF
@@ -67,6 +67,7 @@ impl Object for Type3Font {
             .collect::<Vec<_>>();
 
         let mut resource_dictionary = ResourceDictionary::new();
+        let mut global_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
         let glyph_streams = self
             .glyphs
@@ -77,11 +78,12 @@ impl Object for Type3Font {
                     let mut content = Content::new();
                     content.start_color_glyph(widths[index]);
 
-                    let (content_stream, _) = {
+                    let (content_stream, bbox) = {
                         let mut serializer = CanvasPdfSerializer::new_with(&mut resource_dictionary, content);
                         serializer.serialize_bytecode(&colr_canvas.byte_code);
                         serializer.finish()
                     };
+                    global_bbox.expand(&bbox);
 
                     let stream_ref = sc.new_ref();
                     sc.chunk_mut().stream(stream_ref, &content_stream);
@@ -97,12 +99,7 @@ impl Object for Type3Font {
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(sc, &mut type3_font.resources());
 
-        type3_font.bbox(pdf_writer::Rect::new(
-            bbox.left(),
-            bbox.top(),
-            bbox.right(),
-            bbox.bottom(),
-        ));
+        type3_font.bbox(global_bbox.to_pdf_rect());
         type3_font.matrix(
             Transform::from_scale(
                 1.0 / (self.font.units_per_em() as f32),
@@ -147,18 +144,17 @@ mod tests {
     use crate::font::Font;
     use crate::object::type3_font::Type3Font;
     use crate::serialize::{Object, SerializeSettings, SerializerContext};
-    use pdf_writer::Ref;
     use skrifa::instance::Location;
     use skrifa::GlyphId;
     use std::sync::Arc;
 
     #[test]
     fn basic_type3() {
-        let data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
+        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf").unwrap();
         let font = Font::new(Arc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
 
-        for g in [2397, 2400, 2401] {
+        for g in [10, 11, 12] {
             type3.add(GlyphId::new(g));
         }
 
