@@ -5,7 +5,7 @@ use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
 use pdf_writer::writers::Resources;
 use pdf_writer::{Dict, Finish, Ref};
@@ -67,17 +67,9 @@ impl Object for Resource {
             Resource::Shading(s) => s.serialize_into(sc, root_ref),
         }
     }
-
-    fn is_cached(&self) -> bool {
-        match self {
-            Resource::XObject(x) => x.is_cached(),
-            Resource::Pattern(p) => p.is_cached(),
-            Resource::ExtGState(e) => e.is_cached(),
-            Resource::ColorSpace(x) => x.is_cached(),
-            Resource::Shading(s) => s.is_cached(),
-        }
-    }
 }
+
+impl RegisterableObject for Resource {}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum XObjectResource {
@@ -102,14 +94,9 @@ impl Object for XObjectResource {
             XObjectResource::Image(i) => i.serialize_into(sc, root_ref),
         }
     }
-
-    fn is_cached(&self) -> bool {
-        match self {
-            XObjectResource::XObject(x) => x.is_cached(),
-            XObjectResource::Image(i) => i.is_cached(),
-        }
-    }
 }
+
+impl RegisterableObject for XObjectResource {}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PatternResource {
@@ -134,14 +121,9 @@ impl Object for PatternResource {
             PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
         }
     }
-
-    fn is_cached(&self) -> bool {
-        match self {
-            PatternResource::ShadingPattern(sp) => sp.is_cached(),
-            PatternResource::TilingPattern(tp) => tp.is_cached(),
-        }
-    }
 }
+
+impl RegisterableObject for PatternResource {}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ResourceDictionary {
@@ -207,7 +189,7 @@ fn write_resource_type<T>(
     resources: &mut pdf_writer::writers::Resources,
     resource_mapper: &ResourceMapper<T>,
 ) where
-    T: Hash + Eq + ResourceTrait + Debug,
+    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject,
 {
     if resource_mapper.len() > 0 {
         let mut dict = T::get_dict(resources);

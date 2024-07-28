@@ -1,7 +1,7 @@
 use crate::bytecode::ByteCode;
 use crate::canvas::CanvasPdfSerializer;
 use crate::resource::ResourceDictionary;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -72,8 +72,6 @@ impl Object for XObject {
 
         sc.chunk_mut().extend(&chunk);
     }
-
-    fn is_cached(&self) -> bool {
-        false
-    }
 }
+
+impl RegisterableObject for XObject {}

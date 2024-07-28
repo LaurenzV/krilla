@@ -1,14 +1,12 @@
+use crate::canvas::CanvasPdfSerializer;
 use crate::font::{colr, Font};
-use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
-use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};
-use crate::canvas::CanvasPdfSerializer;
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
@@ -53,7 +51,6 @@ impl Type3Font {
 
 impl Object for Type3Font {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let bbox = self.font.bbox();
         let widths = self
             .glyphs
             .iter()
@@ -79,7 +76,8 @@ impl Object for Type3Font {
                     content.start_color_glyph(widths[index]);
 
                     let (content_stream, bbox) = {
-                        let mut serializer = CanvasPdfSerializer::new_with(&mut resource_dictionary, content);
+                        let mut serializer =
+                            CanvasPdfSerializer::new_with(&mut resource_dictionary, content);
                         serializer.serialize_bytecode(&colr_canvas.byte_code);
                         serializer.finish()
                     };
@@ -126,16 +124,8 @@ impl Object for Type3Font {
             .differences()
             .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
 
-
         type3_font.finish();
         sc.chunk_mut().extend(&chunk);
-    }
-
-    fn is_cached(&self) -> bool {
-        // In comparison to other PDF objects in krilla, fonts are actually mutated during the
-        // serialization process, so we can't leverage the normal caching process. Instead, caching
-        // is being taken care of separately, so we don't need it here.
-        false
     }
 }
 
@@ -150,7 +140,9 @@ mod tests {
 
     #[test]
     fn basic_type3() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf").unwrap();
+        let data =
+            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
+                .unwrap();
         let font = Font::new(Arc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
 

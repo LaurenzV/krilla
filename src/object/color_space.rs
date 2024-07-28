@@ -1,5 +1,6 @@
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::deflate;
+use crate::Color;
 use once_cell::sync::Lazy;
 use pdf_writer::{Finish, Name, Ref};
 
@@ -46,8 +47,6 @@ impl Object for ColorSpace {
             }
         }
     }
-
-    fn is_cached(&self) -> bool {
-        true
-    }
 }
+
+impl RegisterableObject for ColorSpace {}

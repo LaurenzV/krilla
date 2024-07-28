@@ -1,7 +1,7 @@
 use crate::bytecode::ByteCode;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
@@ -92,8 +92,6 @@ impl Object for Mask {
         dict.pair(Name(b"S"), self.0.mask_type.to_name());
         dict.pair(Name(b"G"), x_ref);
     }
-
-    fn is_cached(&self) -> bool {
-        false
-    }
 }
+
+impl RegisterableObject for Mask {}

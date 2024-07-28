@@ -2,7 +2,7 @@ use crate::bytecode::ByteCode;
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionary, XObjectResource};
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{NameExt, TransformExt};
 use pdf_writer::types::{PaintType, TilingType};
@@ -86,8 +86,6 @@ impl Object for TilingPattern {
 
         sc.chunk_mut().extend(&chunk);
     }
-
-    fn is_cached(&self) -> bool {
-        true
-    }
 }
+
+impl RegisterableObject for TilingPattern {}

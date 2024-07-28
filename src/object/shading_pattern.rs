@@ -1,5 +1,5 @@
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::{Name, Ref};
@@ -34,8 +34,6 @@ impl Object for ShadingPattern {
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.0.to_pdf_transform());
     }
-
-    fn is_cached(&self) -> bool {
-        true
-    }
 }
+
+impl RegisterableObject for ShadingPattern {}

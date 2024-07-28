@@ -1,6 +1,6 @@
 use crate::color::PdfColorExt;
 use crate::paint::{SpreadMethod, Stop};
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use crate::{LinearGradient, RadialGradient, SweepGradient};
@@ -163,11 +163,9 @@ impl Object for ShadingFunction {
             }
         }
     }
-
-    fn is_cached(&self) -> bool {
-        true
-    }
 }
+
+impl RegisterableObject for ShadingFunction {}
 
 fn serialize_postscript_shading(
     sc: &mut SerializerContext,

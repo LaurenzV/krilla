@@ -1,4 +1,4 @@
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
@@ -76,11 +76,9 @@ impl Object for Image {
 
         sc.chunk_mut().extend(&chunk);
     }
-
-    fn is_cached(&self) -> bool {
-        true
-    }
 }
+
+impl RegisterableObject for Image {}
 
 fn calculate_bits_per_component(color_type: ColorType) -> i32 {
     (color_type.bits_per_pixel() / color_type.channel_count() as u16) as i32

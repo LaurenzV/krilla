@@ -1,5 +1,5 @@
 use crate::object::mask::Mask;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
@@ -91,8 +91,6 @@ impl Object for ExtGState {
 
         ext_st.finish();
     }
-
-    fn is_cached(&self) -> bool {
-        true
-    }
 }
+
+impl RegisterableObject for ExtGState {}
