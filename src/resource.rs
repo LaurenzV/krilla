@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::ColorSpace;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -12,6 +13,7 @@ use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::Arc;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -55,6 +57,7 @@ pub enum Resource {
     ExtGState(ExtGState),
     ColorSpace(ColorSpace),
     Shading(ShadingFunction),
+    Font(FontResource),
 }
 
 impl Object for Resource {
@@ -65,6 +68,7 @@ impl Object for Resource {
             Resource::ExtGState(e) => e.serialize_into(sc, root_ref),
             Resource::ColorSpace(x) => x.serialize_into(sc, root_ref),
             Resource::Shading(s) => s.serialize_into(sc, root_ref),
+            Resource::Font(f) => f.serialize_into(sc, root_ref),
         }
     }
 }
@@ -132,6 +136,7 @@ pub struct ResourceDictionary {
     pub patterns: ResourceMapper<PatternResource>,
     pub x_objects: ResourceMapper<XObjectResource>,
     pub shadings: ResourceMapper<ShadingFunction>,
+    pub fonts: ResourceMapper<FontResource>,
 }
 
 impl ResourceDictionary {
@@ -142,6 +147,7 @@ impl ResourceDictionary {
             patterns: ResourceMapper::new(),
             x_objects: ResourceMapper::new(),
             shadings: ResourceMapper::new(),
+            fonts: ResourceMapper::new(),
         }
     }
 
@@ -165,6 +171,10 @@ impl ResourceDictionary {
         self.shadings.remap_with_name(shading)
     }
 
+    fn register_font(&mut self, font: FontResource) -> String {
+        self.fonts.remap_with_name(font)
+    }
+
     pub fn register_resource(&mut self, resource: Resource) -> String {
         match resource {
             Resource::XObject(x) => self.register_x_object(x),
@@ -172,6 +182,7 @@ impl ResourceDictionary {
             Resource::ExtGState(e) => self.register_ext_g_state(e),
             Resource::ColorSpace(c) => self.register_color_space(c),
             Resource::Shading(s) => self.register_shading(s),
+            Resource::Font(f) => self.register_font(f),
         }
     }
 
@@ -181,6 +192,7 @@ impl ResourceDictionary {
         write_resource_type(sc, resources, &self.patterns);
         write_resource_type(sc, resources, &self.x_objects);
         write_resource_type(sc, resources, &self.shadings);
+        write_resource_type(sc, resources, &self.fonts);
     }
 }
 
@@ -262,6 +274,39 @@ where
 }
 
 pub type ResourceNumber = u32;
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+struct FontResourceRepr {
+    font: Font,
+    index: usize,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct FontResource(Arc<FontResourceRepr>);
+
+impl FontResource {
+    pub fn new(font: Font, index: usize) -> Self {
+        Self(Arc::new(FontResourceRepr { font, index }))
+    }
+}
+
+impl Object for FontResource {
+    fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
+        // Fonts are written manually by the serializer in the end, so this is a no-op.
+    }
+}
+
+impl RegisterableObject for FontResource {}
+
+impl ResourceTrait for FontResource {
+    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+        resources.fonts()
+    }
+
+    fn get_prefix() -> &'static str {
+        "f"
+    }
+}
 
 // TODO: Re-enable
 // #[cfg(test)]
