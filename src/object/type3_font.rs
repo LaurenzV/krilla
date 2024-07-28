@@ -3,11 +3,12 @@ use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, TransformExt};
-use pdf_writer::{Content, Finish, Ref};
+use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
 use std::sync::Arc;
 use tiny_skia_path::Transform;
+use crate::canvas::CanvasPdfSerializer;
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
@@ -73,17 +74,17 @@ impl Object for Type3Font {
             .enumerate()
             .map(|(index, glyph)| {
                 if let Some(colr_canvas) = colr::draw_glyph(&self.font, *glyph) {
-                    let x_object =
-                        XObject::new(Arc::new(colr_canvas.byte_code), false, false, None);
-                    let mut name = resource_dictionary
-                        .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
                     let mut content = Content::new();
                     content.start_color_glyph(widths[index]);
-                    content.x_object(name.to_pdf_name());
-                    let stream = content.finish();
+
+                    let (content_stream, _) = {
+                        let mut serializer = CanvasPdfSerializer::new_with(&mut resource_dictionary, content);
+                        serializer.serialize_bytecode(&colr_canvas.byte_code);
+                        serializer.finish()
+                    };
 
                     let stream_ref = sc.new_ref();
-                    sc.chunk_mut().stream(stream_ref, &stream);
+                    sc.chunk_mut().stream(stream_ref, &content_stream);
 
                     stream_ref
                 } else {
@@ -92,7 +93,9 @@ impl Object for Type3Font {
             })
             .collect::<Vec<_>>();
 
-        let mut type3_font = sc.chunk_mut().type3_font(root_ref);
+        let mut chunk = Chunk::new();
+        let mut type3_font = chunk.type3_font(root_ref);
+        resource_dictionary.to_pdf_resources(sc, &mut type3_font.resources());
 
         type3_font.bbox(pdf_writer::Rect::new(
             bbox.left(),
@@ -126,8 +129,9 @@ impl Object for Type3Font {
             .differences()
             .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
 
+
         type3_font.finish();
-        // todo!()
+        sc.chunk_mut().extend(&chunk);
     }
 
     fn is_cached(&self) -> bool {
@@ -159,7 +163,8 @@ mod tests {
         }
 
         let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-        type3.serialize_into(&mut serializer_context, Ref::new(1));
+        let root_ref = serializer_context.new_ref();
+        type3.serialize_into(&mut serializer_context, root_ref);
 
         let chunk = serializer_context.chunk();
         std::fs::write("out.txt", chunk.as_bytes());
