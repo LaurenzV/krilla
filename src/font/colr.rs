@@ -1,7 +1,7 @@
 use crate::blend_mode::BlendMode;
 use crate::canvas::{Canvas, Surface};
 use crate::color::Color;
-use crate::font::OutlineBuilder;
+use crate::font::{Font, FontTables, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
@@ -10,11 +10,25 @@ use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
+pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
+    let font_ref = font.font_ref();
+    let mut colr_canvas = ColrCanvas::new(&font_ref);
+
+    let colr_glyphs = font.font_ref().color_glyphs();
+    if let Some(colr_glyph) = colr_glyphs.get(glyph) {
+        let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
+    } else {
+        return None;
+    }
+    let canvas = colr_canvas.canvases.last().unwrap().clone();
+    Some(canvas)
+}
+
 struct ColrCanvas<'a> {
-    font: &'a FontRef<'a>,
+    font: &'a FontTables<'a>,
     clips: Vec<Vec<Path>>,
     transforms: Vec<Transform>,
     canvases: Vec<Canvas>,
@@ -23,7 +37,7 @@ struct ColrCanvas<'a> {
 }
 
 impl<'a> ColrCanvas<'a> {
-    pub fn new(font_ref: &'a FontRef<'a>) -> Self {
+    pub fn new(font_ref: &'a FontTables<'a>) -> Self {
         let size = font_ref
             .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
             .units_per_em;
@@ -329,33 +343,17 @@ impl ColorPainter for ColrCanvas<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::{Canvas, Surface};
-    use crate::font::colr::ColrCanvas;
-    use crate::font::draw;
-    use crate::serialize::{PageSerialize, SerializeSettings};
-    use skrifa::prelude::LocationRef;
-    use skrifa::raw::TableProvider;
-    use skrifa::{FontRef, GlyphId, MetadataProvider};
+    use crate::font::colr::draw_glyph;
+    use crate::font::{draw, Font};
 
-    fn single_glyph(
-        font_ref: &FontRef,
-        location_ref: LocationRef,
-        glyph: GlyphId,
-    ) -> Option<Canvas> {
-        let mut colr_canvas = ColrCanvas::new(&font_ref);
+    use skrifa::instance::Location;
 
-        let colr_glyphs = font_ref.color_glyphs();
-        if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-            let _ = colr_glyph.paint(location_ref, &mut colr_canvas);
-        } else {
-            return None;
-        }
-        let canvas = colr_canvas.canvases.last().unwrap().clone();
-        Some(canvas)
-    }
+    use skrifa::FontRef;
+    use std::sync::Arc;
 
-    fn draw_colr(font_ref: &FontRef, glyphs: &[u32], name: &str) {
-        draw(font_ref, LocationRef::default(), glyphs, name, single_glyph);
+    fn draw_colr(data: Arc<Vec<u8>>, location: Location, glyphs: &[u32], name: &str) {
+        let font = Font::new(data, location).unwrap();
+        draw(&font, glyphs, name, draw_glyph);
     }
 
     #[test]
@@ -363,11 +361,15 @@ mod tests {
         let font_data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
-        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
 
         let glyphs = (0..=220).collect::<Vec<_>>();
 
-        draw_colr(&font_ref, &glyphs, "colr_test");
+        draw_colr(
+            Arc::new(font_data),
+            Location::default(),
+            &glyphs,
+            "colr_test",
+        );
     }
 
     #[test]
@@ -378,17 +380,26 @@ mod tests {
         let glyphs = (2100..2400).collect::<Vec<_>>();
         // let glyphs = (0..font_ref.maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
 
-        draw_colr(&font_ref, &glyphs, "colr_noto");
+        draw_colr(
+            Arc::new(font_data),
+            Location::default(),
+            &glyphs,
+            "colr_noto",
+        );
     }
 
     #[test]
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
 
         let glyphs = (2100..2400).collect::<Vec<_>>();
         // let glyphs = (0..=5000).collect::<Vec<_>>();
 
-        draw_colr(&font_ref, &glyphs, "colr_segoe");
+        draw_colr(
+            Arc::new(font_data),
+            Location::default(),
+            &glyphs,
+            "colr_segoe",
+        );
     }
 }

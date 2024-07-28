@@ -442,6 +442,15 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
+    pub fn new_with(resource_dictionary: &'a mut ResourceDictionary, content: Content) -> Self {
+        Self {
+            resource_dictionary,
+            content,
+            graphics_states: GraphicsStates::new(),
+            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
+        }
+    }
+
     pub fn serialize_bytecode(&mut self, bytecode: &ByteCode) {
         self.bbox.expand(&bytecode.bbox());
 

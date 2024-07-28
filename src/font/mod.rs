@@ -1,18 +1,19 @@
 use crate::canvas::{Canvas, Surface};
 use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::util::Prehashed;
+use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::Offset32;
 use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
-use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
+use skrifa::{GlyphId, MetadataProvider, Tag};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
-mod colr;
-mod outline;
-mod svg;
+pub mod colr;
+pub mod outline;
+pub mod svg;
 
 struct OutlineBuilder(PathBuilder);
 
@@ -57,7 +58,9 @@ struct FontWrapper {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Repr {
     font_wrapper: FontWrapper,
+    location: Location,
     units_per_em: u16,
+    // Note that the bbox only applied to non-variable font settings
     global_bbox: Rect,
 }
 
@@ -65,7 +68,7 @@ pub struct Repr {
 pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
-    pub fn new(data: Arc<Vec<u8>>) -> Option<Self> {
+    pub fn new(data: Arc<Vec<u8>>, location: Location) -> Option<Self> {
         let mut records = BTreeMap::new();
         let font_data = FontData::new(data.as_slice());
         let table_directory = TableDirectory::read(font_data).ok()?;
@@ -77,9 +80,7 @@ impl Font {
         }
 
         let font_wrapper = FontWrapper { data, records };
-        let metrics = font_wrapper
-            .tables()
-            .metrics(Size::unscaled(), LocationRef::default());
+        let metrics = font_wrapper.tables().metrics(Size::unscaled(), &location);
         let units_per_em = metrics.units_per_em;
         let global_bbox = metrics
             .bounds
@@ -95,6 +96,7 @@ impl Font {
             font_wrapper,
             units_per_em,
             global_bbox,
+            location,
         })));
 
         Some(font_wrapper)
@@ -110,6 +112,10 @@ impl Font {
 
     pub fn bbox(&self) -> Rect {
         self.0.global_bbox
+    }
+
+    pub fn location_ref<'a>(&'a self) -> LocationRef<'a> {
+        (&self.0.location).into()
     }
 }
 
@@ -130,13 +136,14 @@ impl<'a> TableProvider<'a> for FontTables<'a> {
 
 #[cfg(test)]
 fn draw(
-    font_ref: &FontRef,
-    location_ref: LocationRef,
+    font: &Font,
     glyphs: &[u32],
     name: &str,
-    single_glyph: impl Fn(&FontRef, LocationRef, GlyphId) -> Option<Canvas>,
+    single_glyph: impl Fn(&Font, GlyphId) -> Option<Canvas>,
 ) {
-    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
+    let metrics = font
+        .font_ref()
+        .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
     let num_glyphs = glyphs.len();
     let width = 2000;
 
@@ -149,7 +156,7 @@ fn draw(
     let mut parent_canvas = Canvas::new(crate::Size::from_wh(width as f32, height as f32).unwrap());
 
     for i in glyphs.iter().copied() {
-        let Some(canvas) = single_glyph(&font_ref, location_ref, GlyphId::new(i)) else {
+        let Some(canvas) = single_glyph(&font, GlyphId::new(i)) else {
             continue;
         };
 
