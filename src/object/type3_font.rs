@@ -76,9 +76,12 @@ impl Object for Type3Font {
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(widths);
 
-        let names = (0..self.count()).map(|gid| format!("g{gid}")).collect::<Vec<_>>();
+        let names = (0..self.count())
+            .map(|gid| format!("g{gid}"))
+            .collect::<Vec<_>>();
 
-        type3_font.encoding_custom()
+        type3_font
+            .encoding_custom()
             .differences()
             .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
 
@@ -98,11 +101,11 @@ impl Object for Type3Font {
 mod tests {
     use crate::font::Font;
     use crate::object::type3_font::Type3Font;
-    use skrifa::instance::Location;
-    use std::sync::Arc;
+    use crate::serialize::{Object, SerializeSettings, SerializerContext};
     use pdf_writer::{Finish, Ref};
+    use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use crate::serialize::{Object, SerializerContext, SerializeSettings};
+    use std::sync::Arc;
 
     #[test]
     fn basic_type3() {
@@ -110,7 +113,7 @@ mod tests {
         let font = Font::new(Arc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
 
-        for g in [2397,2400,2401,2398,2403,2402,2399,3616] {
+        for g in [2397, 2400, 2401, 2398, 2403, 2402, 2399, 3616] {
             type3.add(GlyphId::new(g));
         }
 

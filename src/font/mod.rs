@@ -136,13 +136,14 @@ impl<'a> TableProvider<'a> for FontTables<'a> {
 
 #[cfg(test)]
 fn draw(
-    font_ref: &FontRef,
-    location_ref: LocationRef,
+    font: &Font,
     glyphs: &[u32],
     name: &str,
-    single_glyph: impl Fn(&FontRef, LocationRef, GlyphId) -> Option<Canvas>,
+    single_glyph: impl Fn(&Font, GlyphId) -> Option<Canvas>,
 ) {
-    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
+    let metrics = font
+        .font_ref()
+        .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
     let num_glyphs = glyphs.len();
     let width = 2000;
 
@@ -155,7 +156,7 @@ fn draw(
     let mut parent_canvas = Canvas::new(crate::Size::from_wh(width as f32, height as f32).unwrap());
 
     for i in glyphs.iter().copied() {
-        let Some(canvas) = single_glyph(&font_ref, location_ref, GlyphId::new(i)) else {
+        let Some(canvas) = single_glyph(&font, GlyphId::new(i)) else {
             continue;
         };
 
