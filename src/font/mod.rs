@@ -113,6 +113,10 @@ impl Font {
     pub fn bbox(&self) -> Rect {
         self.0.global_bbox
     }
+
+    pub fn location_ref<'a>(&'a self) -> LocationRef<'a> {
+        (&self.0.location).into()
+    }
 }
 
 impl FontWrapper {
