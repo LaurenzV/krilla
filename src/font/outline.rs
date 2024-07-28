@@ -33,16 +33,14 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::{Canvas, Surface};
+
     use crate::font::outline::draw_glyph;
-    use crate::font::{draw, Font, OutlineBuilder};
-    use crate::serialize::{PageSerialize, SerializeSettings};
-    use crate::Fill;
+    use crate::font::{draw, Font};
+
     use skrifa::instance::Location;
-    use skrifa::outline::DrawSettings;
-    use skrifa::prelude::LocationRef;
+
     use skrifa::raw::TableProvider;
-    use skrifa::{FontRef, GlyphId, MetadataProvider};
+
     use std::sync::Arc;
 
     #[test]

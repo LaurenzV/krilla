@@ -1,11 +1,10 @@
 use crate::font::Font;
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, TransformExt};
-use pdf_writer::{Finish, Name, Ref};
+use pdf_writer::{Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
-use std::collections::BTreeSet;
-use tiny_skia_path::{FiniteF32, Transform};
+use tiny_skia_path::Transform;
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -102,7 +101,7 @@ mod tests {
     use crate::font::Font;
     use crate::object::type3_font::Type3Font;
     use crate::serialize::{Object, SerializeSettings, SerializerContext};
-    use pdf_writer::{Finish, Ref};
+    use pdf_writer::Ref;
     use skrifa::instance::Location;
     use skrifa::GlyphId;
     use std::sync::Arc;

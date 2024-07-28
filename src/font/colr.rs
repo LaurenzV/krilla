@@ -10,7 +10,7 @@ use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
@@ -343,11 +343,11 @@ impl ColorPainter for ColrCanvas<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::colr::{draw_glyph, ColrCanvas};
+    use crate::font::colr::draw_glyph;
     use crate::font::{draw, Font};
-    use crate::serialize::PageSerialize;
+
     use skrifa::instance::Location;
-    use skrifa::raw::TableProvider;
+
     use skrifa::FontRef;
     use std::sync::Arc;
 
