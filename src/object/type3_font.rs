@@ -1,5 +1,5 @@
 use crate::canvas::CanvasPdfSerializer;
-use crate::font::{colr, Font};
+use crate::font::{colr, outline, Font};
 use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, RectExt, TransformExt};
@@ -78,25 +78,25 @@ impl Object for Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph)| {
-                if let Some(colr_canvas) = colr::draw_glyph(&self.font, *glyph) {
-                    let mut content = Content::new();
-                    content.start_color_glyph(widths[index]);
+                let canvas = colr::draw_glyph(&self.font, *glyph)
+                    .or_else(|| outline::draw_glyph(&self.font, *glyph))
+                    .unwrap();
 
-                    let (content_stream, bbox) = {
-                        let mut serializer =
-                            CanvasPdfSerializer::new_with(&mut resource_dictionary, sc, content);
-                        serializer.serialize_bytecode(&colr_canvas.byte_code);
-                        serializer.finish()
-                    };
-                    global_bbox.expand(&bbox);
+                let mut content = Content::new();
+                content.start_color_glyph(widths[index]);
 
-                    let stream_ref = sc.new_ref();
-                    sc.chunk_mut().stream(stream_ref, &content_stream);
+                let (content_stream, bbox) = {
+                    let mut serializer =
+                        CanvasPdfSerializer::new_with(&mut resource_dictionary, sc, content);
+                    serializer.serialize_bytecode(&canvas.byte_code);
+                    serializer.finish()
+                };
+                global_bbox.expand(&bbox);
 
-                    stream_ref
-                } else {
-                    unreachable!()
-                }
+                let stream_ref = sc.new_ref();
+                sc.chunk_mut().stream(stream_ref, &content_stream);
+
+                stream_ref
             })
             .collect::<Vec<_>>();
 

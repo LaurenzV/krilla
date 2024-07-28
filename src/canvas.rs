@@ -37,6 +37,13 @@ pub trait Surface {
     fn isolated(&mut self) -> Isolated;
     fn transformed(&mut self, transform: Transform) -> Transformed;
     fn draw_image(&mut self, image: Image, size: Size, transform: Transform);
+    fn draw_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: TransformWrapper,
+    );
     fn draw_canvas(&mut self, canvas: Canvas);
 }
 
@@ -56,6 +63,16 @@ macro_rules! canvas_impl {
             ) {
                 let mut transformed = self.transformed(transform);
                 transformed.byte_code.push_stroke_path(path.into(), stroke);
+            }
+
+            fn draw_glyph(
+                &mut self,
+                glyph_id: GlyphId,
+                font: Font,
+                size: FiniteF32,
+                transform: TransformWrapper,
+            ) {
+                self.byte_code.push_draw_glyph(glyph_id, font, size, transform);
             }
 
             fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
@@ -496,7 +513,14 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::Isolated(isolated_data) => {
                     self.draw_isolated(isolated_data.clone());
                 }
-                Instruction::DrawGlyph(_) => todo!(),
+                Instruction::DrawGlyph(glyph_data) => {
+                    self.draw_glyph(
+                        glyph_data.0,
+                        glyph_data.1.clone(),
+                        glyph_data.2,
+                        glyph_data.3,
+                    );
+                }
             }
         }
     }
@@ -690,10 +714,10 @@ impl<'a> CanvasPdfSerializer<'a> {
         size: FiniteF32,
         transform: TransformWrapper,
     ) {
-        let (font_ref, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
+        let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
         let font_name = self
             .resource_dictionary
-            .register_resource(Resource::Font(FontResource::new(font_ref)));
+            .register_resource(Resource::Font(font_resource));
         self.content.begin_text();
         self.content.set_text_matrix(transform.0.to_pdf_transform());
         self.content.set_font(font_name.to_pdf_name(), size.get());
@@ -989,7 +1013,7 @@ impl PageSerialize for Canvas {
         page.parent(page_tree_ref);
         page.contents(content_ref);
         page.finish();
-        // sc.write_fonts();
+        sc.write_fonts();
         let cached_chunk = sc.finish();
 
         let mut pdf = Pdf::new();
@@ -1051,6 +1075,7 @@ mod tests {
     use crate::blend_mode::BlendMode;
     use crate::canvas::{Canvas, Surface};
     use crate::color::Color;
+    use crate::font::Font;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
     use crate::paint::{
@@ -1059,6 +1084,8 @@ mod tests {
     use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::transform::TransformWrapper;
     use crate::{Fill, FillRule, Stroke};
+    use skrifa::instance::Location;
+    use skrifa::GlyphId;
     use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
@@ -1520,6 +1547,31 @@ mod tests {
         let finished = chunk.finish();
 
         write("png_image", &finished);
+    }
+
+    #[test]
+    fn glyph() {
+        use crate::serialize::PageSerialize;
+        let mut canvas = Canvas::new(Size::from_wh(200.0, 200.0).unwrap());
+        let font_data =
+            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
+        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
+        canvas.draw_glyph(
+            GlyphId::new(32),
+            font,
+            FiniteF32::new(20.0).unwrap(),
+            TransformWrapper(Transform::from_translate(30.0, 30.0)),
+        );
+
+        let serialize_settings = SerializeSettings {
+            compress: false,
+            ..SerializeSettings::default()
+        };
+
+        let chunk = PageSerialize::serialize(canvas, serialize_settings);
+        let finished = chunk.finish();
+
+        write("glyph", &finished);
     }
 
     fn write(name: &str, data: &[u8]) {

@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::ColorSpace;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -12,6 +13,7 @@ use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::Arc;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -273,12 +275,18 @@ where
 
 pub type ResourceNumber = u32;
 
+#[derive(Debug, Hash, Eq, PartialEq)]
+struct FontResourceRepr {
+    font: Font,
+    index: usize,
+}
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct FontResource(Ref);
+pub struct FontResource(Arc<FontResourceRepr>);
 
 impl FontResource {
-    pub fn new(ref_: Ref) -> Self {
-        Self(ref_)
+    pub fn new(font: Font, index: usize) -> Self {
+        Self(Arc::new(FontResourceRepr { font, index }))
     }
 }
 

@@ -6,6 +6,7 @@ use std::hash::Hash;
 
 use crate::font::Font;
 use crate::object::type3_font::Type3Font;
+use crate::resource::FontResource;
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::GlyphId;
 
@@ -36,7 +37,6 @@ pub trait PageSerialize: Sized {
 
 pub struct SerializerContext {
     fonts: HashMap<Font, FontMapper>,
-    font_refs: HashMap<(Font, usize), Ref>,
     cached_mappings: HashMap<u128, Ref>,
     chunk: Chunk,
     cur_ref: Ref,
@@ -48,7 +48,6 @@ impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         Self {
             cached_mappings: HashMap::new(),
-            font_refs: HashMap::new(),
             chunk: Chunk::new(),
             cur_ref: Ref::new(1),
             fonts: HashMap::new(),
@@ -84,21 +83,14 @@ impl SerializerContext {
         }
     }
 
-    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (Ref, u8) {
+    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, u8) {
         let font_mapper = self
             .fonts
             .entry(font.clone())
             .or_insert_with(|| FontMapper::new(font.clone()));
         let (index, glyph_id) = font_mapper.add_glyph(glyph);
-        let ref_ = if let Some(ref_) = self.font_refs.get(&((font.clone(), index))) {
-            *ref_
-        } else {
-            let ref_ = self.new_ref();
-            self.font_refs.insert((font.clone(), index), ref_);
-            ref_
-        };
 
-        (ref_, glyph_id)
+        (FontResource::new(font.clone(), index), glyph_id)
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
@@ -114,7 +106,7 @@ impl SerializerContext {
         // TODO: Make more efficient
         for (font, font_mapper) in self.fonts.clone() {
             for (index, mapper) in font_mapper.fonts.iter().enumerate() {
-                let ref_ = self.font_refs.remove(&(font.clone(), index)).unwrap();
+                let ref_ = self.add(FontResource::new(font.clone(), index));
                 mapper.clone().serialize_into(self, ref_);
             }
         }
