@@ -1,7 +1,7 @@
 use crate::font::Font;
 use crate::serialize::{Object, SerializerContext};
-use crate::util::TransformExt;
-use pdf_writer::Ref;
+use crate::util::{NameExt, TransformExt};
+use pdf_writer::{Finish, Name, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
 use std::collections::BTreeSet;
@@ -23,7 +23,11 @@ impl Type3Font {
     }
 
     pub fn is_full(&self) -> bool {
-        self.glyphs.len() == 256
+        self.count() == 256
+    }
+
+    pub fn count(&self) -> u16 {
+        u16::try_from(self.glyphs.len()).unwrap()
     }
 
     pub fn add(&mut self, glyph_id: GlyphId) -> u8 {
@@ -71,7 +75,15 @@ impl Object for Type3Font {
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(widths);
-        todo!()
+
+        let names = (0..self.count()).map(|gid| format!("g{gid}")).collect::<Vec<_>>();
+
+        type3_font.encoding_custom()
+            .differences()
+            .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
+
+        type3_font.finish();
+        // todo!()
     }
 
     fn is_cached(&self) -> bool {
@@ -88,10 +100,24 @@ mod tests {
     use crate::object::type3_font::Type3Font;
     use skrifa::instance::Location;
     use std::sync::Arc;
+    use pdf_writer::{Finish, Ref};
+    use skrifa::GlyphId;
+    use crate::serialize::{Object, SerializerContext, SerializeSettings};
 
+    #[test]
     fn basic_type3() {
         let data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
         let font = Font::new(Arc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
+
+        for g in [2397,2400,2401,2398,2403,2402,2399,3616] {
+            type3.add(GlyphId::new(g));
+        }
+
+        let mut serializer_context = SerializerContext::new(SerializeSettings::default());
+        type3.serialize_into(&mut serializer_context, Ref::new(1));
+
+        let chunk = serializer_context.chunk();
+        std::fs::write("out.txt", chunk.as_bytes());
     }
 }
