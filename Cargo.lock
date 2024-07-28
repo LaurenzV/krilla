@@ -125,7 +125,6 @@ checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 [[package]]
 name = "font-types"
 version = "0.5.5"
-source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "bytemuck",
 ]
@@ -199,7 +198,6 @@ checksum = "029d73f573d8e8d63e6d5020011d3255b28c3ba85d6cf870a07184ed23de9284"
 [[package]]
 name = "int-set"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "font-types",
 ]
@@ -351,7 +349,6 @@ dependencies = [
 [[package]]
 name = "read-fonts"
 version = "0.19.3"
-source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "bytemuck",
  "font-types",
@@ -441,7 +438,6 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 [[package]]
 name = "skrifa"
 version = "0.19.3"
-source = "git+https://github.com/LaurenzV/fontations?rev=34c958a#34c958a1e500acc460627186c2464b029814a84f"
 dependencies = [
  "bytemuck",
  "read-fonts",

@@ -1,6 +1,7 @@
 use crate::canvas::{Canvas, Surface};
 use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::util::Prehashed;
+use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::Offset32;
@@ -57,7 +58,9 @@ struct FontWrapper {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Repr {
     font_wrapper: FontWrapper,
+    location: Location,
     units_per_em: u16,
+    // Note that the bbox only applied to non-variable font settings
     global_bbox: Rect,
 }
 
@@ -65,7 +68,7 @@ pub struct Repr {
 pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
-    pub fn new(data: Arc<Vec<u8>>) -> Option<Self> {
+    pub fn new(data: Arc<Vec<u8>>, location: Location) -> Option<Self> {
         let mut records = BTreeMap::new();
         let font_data = FontData::new(data.as_slice());
         let table_directory = TableDirectory::read(font_data).ok()?;
@@ -77,9 +80,7 @@ impl Font {
         }
 
         let font_wrapper = FontWrapper { data, records };
-        let metrics = font_wrapper
-            .tables()
-            .metrics(Size::unscaled(), LocationRef::default());
+        let metrics = font_wrapper.tables().metrics(Size::unscaled(), &location);
         let units_per_em = metrics.units_per_em;
         let global_bbox = metrics
             .bounds
@@ -95,6 +96,7 @@ impl Font {
             font_wrapper,
             units_per_em,
             global_bbox,
+            location,
         })));
 
         Some(font_wrapper)
