@@ -1556,8 +1556,17 @@ mod tests {
         let font_data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
         let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
+        canvas.fill_path(
+            dummy_path(30.0),
+            Transform::from_translate(30.0, 30.0),
+            Fill {
+                paint: Paint::Color(Color::new_rgb(255, 0, 0)),
+                opacity: NormalizedF32::ONE,
+                rule: FillRule::default(),
+            },
+        );
         canvas.draw_glyph(
-            GlyphId::new(32),
+            GlyphId::new(36),
             font,
             FiniteF32::new(20.0).unwrap(),
             TransformWrapper(Transform::from_translate(30.0, 30.0)),

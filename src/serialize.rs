@@ -20,7 +20,7 @@ impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
             serialize_dependencies: false,
-            compress: true,
+            compress: false,
         }
     }
 }

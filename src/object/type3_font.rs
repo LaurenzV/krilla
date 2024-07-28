@@ -1,12 +1,16 @@
+use crate::bytecode::ByteCode;
 use crate::canvas::CanvasPdfSerializer;
-use crate::font::{colr, outline, Font};
-use crate::resource::ResourceDictionary;
+use crate::font::{colr, outline, svg, Font};
+use crate::object::xobject::XObject;
+use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
+use crate::transform::TransformWrapper;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
 use std::collections::BTreeSet;
+use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};
 
 // TODO: Add FontDescriptor, required for Tagged PDF
@@ -79,22 +83,25 @@ impl Object for Type3Font {
             .enumerate()
             .map(|(index, glyph)| {
                 let canvas = colr::draw_glyph(&self.font, *glyph)
+                    .or_else(|| svg::draw_glyph(&self.font, *glyph))
                     .or_else(|| outline::draw_glyph(&self.font, *glyph))
                     .unwrap();
 
                 let mut content = Content::new();
                 content.start_color_glyph(widths[index]);
+                content.transform(
+                    Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, 0.0).to_pdf_transform(),
+                );
 
-                let (content_stream, bbox) = {
-                    let mut serializer =
-                        CanvasPdfSerializer::new_with(&mut resource_dictionary, sc, content);
-                    serializer.serialize_bytecode(&canvas.byte_code);
-                    serializer.finish()
-                };
-                global_bbox.expand(&bbox);
+                let x_object = XObject::new(Arc::new(canvas.byte_code), false, false, None);
+                let x_name = resource_dictionary
+                    .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+                content.x_object(x_name.to_pdf_name());
+
+                let stream = content.finish();
 
                 let stream_ref = sc.new_ref();
-                sc.chunk_mut().stream(stream_ref, &content_stream);
+                sc.chunk_mut().stream(stream_ref, &stream);
 
                 stream_ref
             })

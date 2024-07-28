@@ -1,5 +1,6 @@
 use crate::canvas::{Canvas, Surface};
 use crate::serialize::{PageSerialize, SerializeSettings};
+use crate::transform::TransformWrapper;
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
@@ -9,7 +10,7 @@ use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
 use skrifa::{GlyphId, MetadataProvider, Tag};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use tiny_skia_path::{Path, PathBuilder, Rect};
+use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 
 pub mod colr;
 pub mod outline;
@@ -143,9 +144,9 @@ fn draw(
 ) {
     let metrics = font
         .font_ref()
-        .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
+        .metrics(Size::unscaled(), font.location_ref());
     let num_glyphs = glyphs.len();
-    let width = 2000;
+    let width = 400;
 
     let size = 40u32;
     let num_cols = width / size;
@@ -160,32 +161,29 @@ fn draw(
             continue;
         };
 
-        fn get_transform(
-            cur_point: u32,
-            size: u32,
-            num_cols: u32,
-            units_per_em: f32,
-        ) -> crate::Transform {
+        fn get_transform(cur_point: u32, size: u32, num_cols: u32, units_per_em: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;
             let row = el / num_cols;
 
-            crate::Transform::from_row(
-                (1.0 / units_per_em) * size as f32,
+            Transform::from_row(
+                1.0,
                 0.0,
                 0.0,
-                (1.0 / units_per_em) * size as f32,
+                1.0,
                 col as f32 * size as f32,
                 row as f32 * size as f32,
             )
         }
 
-        let mut transformed = parent_canvas.transformed(
-            get_transform(cur_point, size, num_cols, units_per_em).pre_concat(
-                tiny_skia_path::Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, units_per_em as f32),
-            ),
+        let mut transformed =
+            parent_canvas.transformed(get_transform(cur_point, size, num_cols, units_per_em));
+        transformed.draw_glyph(
+            GlyphId::new(i),
+            font.clone(),
+            FiniteF32::new(size as f32).unwrap(),
+            TransformWrapper(Transform::from_translate(0.0, size as f32)),
         );
-        transformed.draw_canvas(canvas);
         transformed.finish();
 
         cur_point += size;
