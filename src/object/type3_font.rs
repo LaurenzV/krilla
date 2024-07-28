@@ -1,11 +1,12 @@
 use crate::canvas::CanvasPdfSerializer;
 use crate::font::{colr, Font};
-use crate::resource::{Resource, ResourceDictionary, XObjectResource};
+use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
+use std::collections::BTreeSet;
 use tiny_skia_path::{Rect, Transform};
 
 // TODO: Add FontDescriptor, required for Tagged PDF
@@ -14,6 +15,7 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
+    glyph_set: BTreeSet<GlyphId>,
 }
 
 impl Type3Font {
@@ -21,6 +23,7 @@ impl Type3Font {
         Self {
             font,
             glyphs: Vec::new(),
+            glyph_set: BTreeSet::new(),
         }
     }
 
@@ -30,6 +33,10 @@ impl Type3Font {
 
     pub fn count(&self) -> u16 {
         u16::try_from(self.glyphs.len()).unwrap()
+    }
+
+    pub fn covers(&self, glyph: GlyphId) -> bool {
+        self.glyph_set.contains(&glyph)
     }
 
     pub fn add(&mut self, glyph_id: GlyphId) -> u8 {
