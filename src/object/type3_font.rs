@@ -1,3 +1,4 @@
+use crate::canvas::Canvas;
 use crate::font::{bitmap, colr, outline, svg, Font};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionary, XObjectResource};
@@ -16,6 +17,7 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
+    glyph_canvases: Vec<Canvas>,
     glyph_set: BTreeSet<GlyphId>,
 }
 
@@ -24,6 +26,7 @@ impl Type3Font {
         Self {
             font,
             glyphs: Vec::new(),
+            glyph_canvases: Vec::new(),
             glyph_set: BTreeSet::new(),
         }
     }
@@ -52,13 +55,20 @@ impl Type3Font {
             assert!(self.glyphs.len() < 256);
 
             self.glyphs.push(glyph_id);
+            self.glyph_canvases.push(
+                colr::draw_glyph(&self.font, glyph_id)
+                    .or_else(|| svg::draw_glyph(&self.font, glyph_id))
+                    .or_else(|| bitmap::draw_glyph(&self.font, glyph_id))
+                    .or_else(|| outline::draw_glyph(&self.font, glyph_id))
+                    .unwrap(),
+            );
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
 }
 
 impl Object for Type3Font {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(mut self, sc: &mut SerializerContext, root_ref: Ref) {
         let widths = self
             .glyphs
             .iter()
@@ -79,11 +89,7 @@ impl Object for Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph)| {
-                let canvas = colr::draw_glyph(&self.font, *glyph)
-                    .or_else(|| svg::draw_glyph(&self.font, *glyph))
-                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph))
-                    .or_else(|| outline::draw_glyph(&self.font, *glyph))
-                    .unwrap();
+                let canvas = std::mem::take(&mut self.glyph_canvases[index]);
 
                 let mut content = Content::new();
                 content.start_color_glyph(widths[index]);

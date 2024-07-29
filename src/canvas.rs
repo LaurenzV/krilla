@@ -437,6 +437,15 @@ pub struct Canvas {
     pub(crate) size: Size,
 }
 
+impl Default for Canvas {
+    fn default() -> Self {
+        Self {
+            byte_code: ByteCode::default(),
+            size: Size::from_wh(1.0, 1.0).unwrap(),
+        }
+    }
+}
+
 impl Canvas {
     pub fn new(size: Size) -> Self {
         Self {

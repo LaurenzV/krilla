@@ -34,12 +34,18 @@ pub struct ByteCode {
     bbox: Rect,
 }
 
-impl ByteCode {
-    pub fn new() -> Self {
+impl Default for ByteCode {
+    fn default() -> Self {
         Self {
             instructions: Vec::with_capacity(10),
             bbox: Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
         }
+    }
+}
+
+impl ByteCode {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn clear(&mut self) {
