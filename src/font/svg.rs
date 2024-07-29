@@ -42,14 +42,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
             svg::render_tree(&tree)
         };
 
-        let mut canvas = Canvas::new(svg_canvas.size);
-        let mut transformed = canvas.transformed(
-            Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, metrics.units_per_em as f32)
-                .pre_concat(Transform::from_translate(0.0, metrics.units_per_em as f32)),
-        );
-        transformed.draw_canvas(svg_canvas);
-        transformed.finish();
-        return Some(canvas);
+        return Some(svg_canvas);
     };
 
     return None;

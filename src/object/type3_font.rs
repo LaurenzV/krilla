@@ -87,9 +87,6 @@ impl Object for Type3Font {
 
                 let mut content = Content::new();
                 content.start_color_glyph(widths[index]);
-                content.transform(
-                    Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, 0.0).to_pdf_transform(),
-                );
 
                 let x_object = XObject::new(Arc::new(canvas.byte_code), false, false, None);
                 let x_name = resource_dictionary

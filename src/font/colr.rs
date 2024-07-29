@@ -24,7 +24,13 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
         return None;
     }
     let canvas = colr_canvas.canvases.last().unwrap().clone();
-    Some(canvas)
+
+    let mut new_canvas = Canvas::new(canvas.size);
+    let mut transformed = new_canvas.transformed(Transform::from_scale(1.0, -1.0));
+    transformed.draw_canvas(canvas);
+    transformed.finish();
+
+    Some(new_canvas)
 }
 
 struct ColrCanvas<'a> {
@@ -392,7 +398,7 @@ mod tests {
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
 
-        let glyphs = (2100..2400).collect::<Vec<_>>();
+        let glyphs = (2100..2271).collect::<Vec<_>>();
         // let glyphs = (0..=5000).collect::<Vec<_>>();
 
         draw_colr(

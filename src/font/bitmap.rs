@@ -34,7 +34,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
                 canvas.draw_image(
                     Image::new(&dynamic_image),
                     size,
-                    Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, height),
+                    Transform::from_translate(0.0, -height),
                 );
                 return Some(canvas);
             }

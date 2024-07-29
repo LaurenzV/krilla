@@ -25,7 +25,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
     );
 
     if let Some(path) = outline_builder.finish() {
-        canvas.fill_path(path, Transform::identity(), Fill::default());
+        canvas.fill_path(path, Transform::from_scale(1.0, -1.0), Fill::default());
     }
 
     Some(canvas)
