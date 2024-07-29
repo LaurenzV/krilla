@@ -21,6 +21,7 @@ use crate::util::{
 };
 use crate::MaskType::Luminosity;
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, PathWrapper, Stroke};
+use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Chunk, Content, Filter, Finish, Pdf, Str};
 use skrifa::GlyphId;
 use std::sync::Arc;
@@ -826,6 +827,8 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.begin_text();
         let mut transform = transform.0;
         self.content.set_font(font_name.to_pdf_name(), size.get());
+        self.content
+            .set_text_rendering_mode(TextRenderingMode::Fill);
         match gid {
             PDFGlyph::ColorGlyph(gid) => {
                 self.content.set_text_matrix(transform.to_pdf_transform());
