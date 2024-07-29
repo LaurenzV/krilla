@@ -37,12 +37,13 @@ pub trait Surface {
     fn isolated(&mut self) -> Isolated;
     fn transformed(&mut self, transform: Transform) -> Transformed;
     fn draw_image(&mut self, image: Image, size: Size, transform: Transform);
-    fn draw_glyph(
+    fn fill_glyph(
         &mut self,
         glyph_id: GlyphId,
         font: Font,
         size: FiniteF32,
         transform: TransformWrapper,
+        fill: Fill,
     );
     fn draw_canvas(&mut self, canvas: Canvas);
 }
@@ -65,14 +66,15 @@ macro_rules! canvas_impl {
                 transformed.byte_code.push_stroke_path(path.into(), stroke);
             }
 
-            fn draw_glyph(
+            fn fill_glyph(
                 &mut self,
                 glyph_id: GlyphId,
                 font: Font,
                 size: FiniteF32,
                 transform: TransformWrapper,
+                fill: Fill
             ) {
-                self.byte_code.push_draw_glyph(glyph_id, font, size, transform);
+                self.byte_code.push_fill_glyph(glyph_id, font, size, transform, fill);
             }
 
             fn fill_path(&mut self, path: Path, transform: tiny_skia_path::Transform, fill: Fill) {
@@ -522,12 +524,13 @@ impl<'a> CanvasPdfSerializer<'a> {
                 Instruction::Isolated(isolated_data) => {
                     self.draw_isolated(isolated_data.clone());
                 }
-                Instruction::DrawGlyph(glyph_data) => {
-                    self.draw_glyph(
+                Instruction::FillGlyph(glyph_data) => {
+                    self.fill_glyph(
                         glyph_data.0,
                         glyph_data.1.clone(),
                         glyph_data.2,
                         glyph_data.3,
+                        &glyph_data.4,
                     );
                 }
             }
@@ -805,17 +808,21 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.end_path();
     }
 
-    pub fn draw_glyph(
+    pub fn fill_glyph(
         &mut self,
         glyph_id: GlyphId,
         font: Font,
         size: FiniteF32,
         transform: TransformWrapper,
+        fill: &Fill,
     ) {
         let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
         let font_name = self
             .resource_dictionary
             .register_resource(Resource::Font(font_resource));
+        self.save_state();
+        // TODO: Figure out proper bbox
+        self.set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
         self.content.begin_text();
         let mut transform = transform.0;
         self.content.set_font(font_name.to_pdf_name(), size.get());
@@ -832,6 +839,7 @@ impl<'a> CanvasPdfSerializer<'a> {
             }
         }
         self.content.end_text();
+        self.restore_state();
     }
 
     pub fn draw_blended(&mut self, blend_mode: BlendMode, byte_code: &ByteCode) {
@@ -1543,7 +1551,7 @@ mod tests {
                 rule: FillRule::default(),
             },
         );
-        canvas.draw_glyph(
+        canvas.fill_glyph(
             GlyphId::new(36),
             font,
             FiniteF32::new(20.0).unwrap(),

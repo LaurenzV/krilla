@@ -17,7 +17,7 @@ pub enum Instruction {
     // TODO: Replace with PDF blend mode
     Blended(Box<(BlendMode, ByteCode)>),
     StrokePath(Box<(PathWrapper, Stroke)>),
-    DrawGlyph(Box<(GlyphId, Font, FiniteF32, TransformWrapper)>),
+    FillGlyph(Box<(GlyphId, Font, FiniteF32, TransformWrapper, Fill)>),
     DrawImage(Box<(Image, Size)>),
     FillPath(Box<(PathWrapper, Fill)>),
     DrawShade(Box<ShadingFunction>),
@@ -79,13 +79,15 @@ impl ByteCode {
         self.push(Instruction::FillPath(Box::new((path, fill))));
     }
 
-    pub fn push_draw_glyph(
+    pub fn push_fill_glyph(
         &mut self,
         glyph_id: GlyphId,
         font: Font,
         size: FiniteF32,
         transform: TransformWrapper,
+        fill: Fill,
     ) {
+        // TODO: bbox not necessarily correct?
         let bbox = font
             .bbox()
             .transform(transform.0.pre_concat(Transform::from_scale(
@@ -94,11 +96,12 @@ impl ByteCode {
             )))
             .unwrap();
         self.bbox.expand(&bbox);
-        self.push(Instruction::DrawGlyph(Box::new((
+        self.push(Instruction::FillGlyph(Box::new((
             glyph_id,
             font.clone(),
             size,
             transform,
+            fill,
         ))));
     }
 
@@ -196,7 +199,7 @@ pub fn into_composited(byte_code: &ByteCode, black: bool) -> ByteCode {
             Instruction::DrawShade(_) => {}
             Instruction::Masked(_) => {}
             Instruction::Opacified(_) => {}
-            Instruction::DrawGlyph(_) => {}
+            Instruction::FillGlyph(_) => {}
         }
     }
 

@@ -2,6 +2,7 @@ use crate::canvas::{Canvas, Surface};
 use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::transform::TransformWrapper;
 use crate::util::Prehashed;
+use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -222,11 +223,12 @@ fn draw(
 
         let mut transformed =
             parent_canvas.transformed(get_transform(cur_point, size, num_cols, units_per_em));
-        transformed.draw_glyph(
+        transformed.fill_glyph(
             GlyphId::new(i),
             font.clone(),
             FiniteF32::new(size as f32).unwrap(),
             TransformWrapper(Transform::from_translate(0.0, size as f32)),
+            Fill::default(),
         );
         transformed.finish();
 
