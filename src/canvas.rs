@@ -602,13 +602,14 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    fn set_fill_properties(&mut self, bounds: Rect, fill: &Fill) {
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(fill.paint, Paint::Pattern(_)) {
-            self.set_fill_opacity(fill.opacity);
-        }
-
+    fn set_fill_stroke_properties(
+        &mut self,
+        bounds: Rect,
+        paint: &Paint,
+        opacity: NormalizedF32,
+        mut set_pattern_fn: impl FnMut(&mut Content, String),
+        mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
+    ) {
         let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
             TransformWrapper(
                 transform
@@ -646,19 +647,15 @@ impl<'a> CanvasPdfSerializer<'a> {
                 self.content.set_parameters(ext.to_pdf_name());
             }
 
-            self.content
-                .set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
-            self.content
-                .set_fill_pattern(None, color_space.to_pdf_name());
+            set_pattern_fn(&mut self.content, color_space);
         };
 
-        match &fill.paint {
+        match paint {
             Paint::Color(c) => {
                 let color_space = self
                     .resource_dictionary
                     .register_resource(Resource::ColorSpace(c.get_pdf_color_space()));
-                self.content.set_fill_color_space(color_space.to_pdf_name());
-                self.content.set_fill_color(c.to_pdf_components());
+                set_solid_fn(&mut self.content, color_space, c);
             }
             Paint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.gradient_properties(bounds);
@@ -681,14 +678,37 @@ impl<'a> CanvasPdfSerializer<'a> {
                 let color_space = self
                     .resource_dictionary
                     .register_resource(Resource::Pattern(PatternResource::TilingPattern(
-                        TilingPattern::new(pat.canvas.clone(), pat.transform, fill.opacity),
+                        TilingPattern::new(pat.canvas.clone(), pat.transform, opacity),
                     )));
-                self.content
-                    .set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
-                self.content
-                    .set_fill_pattern(None, color_space.to_pdf_name());
+                set_pattern_fn(&mut self.content, color_space);
             }
         }
+    }
+
+    fn set_fill_properties(&mut self, bounds: Rect, fill: &Fill) {
+        // PDF viewers don't show patterns with fill/stroke opacities consistently.
+        // Because of this, the opacity is accounted for in the pattern itself.
+        if !matches!(fill.paint, Paint::Pattern(_)) {
+            self.set_fill_opacity(fill.opacity);
+        }
+
+        fn set_pattern_fn(content: &mut Content, color_space: String) {
+            content.set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
+            content.set_fill_pattern(None, color_space.to_pdf_name());
+        }
+
+        fn set_solid_fn(content: &mut Content, color_space: String, color: &Color) {
+            content.set_fill_color_space(color_space.to_pdf_name());
+            content.set_fill_color(color.to_pdf_components());
+        }
+
+        self.set_fill_stroke_properties(
+            bounds,
+            &fill.paint,
+            fill.opacity,
+            set_pattern_fn,
+            set_solid_fn,
+        );
     }
 
     pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
@@ -704,6 +724,72 @@ impl<'a> CanvasPdfSerializer<'a> {
             FillRule::NonZero => self.content.fill_nonzero(),
             FillRule::EvenOdd => self.content.fill_even_odd(),
         };
+
+        self.restore_state();
+    }
+
+    fn set_stroke_properties(&mut self, bounds: Rect, stroke: &Stroke) {
+        // See comment in `set_fill_properties`
+        if !matches!(stroke.paint, Paint::Pattern(_)) {
+            self.set_stroke_opacity(stroke.opacity);
+        }
+
+        fn set_pattern_fn(content: &mut Content, color_space: String) {
+            content.set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
+            content.set_stroke_pattern(None, color_space.to_pdf_name());
+        }
+
+        fn set_solid_fn(content: &mut Content, color_space: String, color: &Color) {
+            content.set_stroke_color_space(color_space.to_pdf_name());
+            content.set_stroke_color(color.to_pdf_components());
+        }
+
+        self.set_fill_stroke_properties(
+            bounds,
+            &stroke.paint,
+            stroke.opacity,
+            set_pattern_fn,
+            set_solid_fn,
+        );
+
+        // Only write if they don't correspond to the default values as defined in the
+        // PDF specification.
+        if stroke.width.get() != 1.0 {
+            self.content.set_line_width(stroke.width.get());
+        }
+
+        if stroke.miter_limit.get() != 10.0 {
+            self.content.set_miter_limit(stroke.miter_limit.get());
+        }
+
+        if stroke.line_cap != LineCap::Butt {
+            self.content.set_line_cap(stroke.line_cap.to_pdf_line_cap());
+        }
+
+        if stroke.line_join != LineJoin::Miter {
+            self.content
+                .set_line_join(stroke.line_join.to_pdf_line_join());
+        }
+
+        if let Some(stroke_dash) = &stroke.dash {
+            self.content.set_dash_pattern(
+                stroke_dash.array.iter().map(|n| n.get()),
+                stroke_dash.offset.get(),
+            );
+        }
+    }
+
+    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
+            return;
+        }
+
+        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
+
+        self.save_state();
+        self.set_stroke_properties(stroke_bbox, stroke);
+        draw_path(path.segments(), &mut self.content);
+        self.content.stroke();
 
         self.restore_state();
     }
@@ -746,139 +832,6 @@ impl<'a> CanvasPdfSerializer<'a> {
             }
         }
         self.content.end_text();
-    }
-
-    fn set_stroke_properties(&mut self, bounds: Rect, stroke: &Stroke) {
-        // See comment in `set_fill_properties`
-        if !matches!(stroke.paint, Paint::Pattern(_)) {
-            self.set_stroke_opacity(stroke.opacity);
-        }
-
-        let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
-            TransformWrapper(
-                transform
-                    .0
-                    .post_concat(self.graphics_states.cur().transform()),
-            )
-        };
-
-        let mut write_gradient = |gradient_props: GradientProperties,
-                                  transform: TransformWrapper| {
-            let shading_mask =
-                Mask::new_from_shading(gradient_props.clone(), transform, bounds);
-
-            let shading_pattern = ShadingPattern::new(
-                gradient_props,
-                TransformWrapper(
-                    self.graphics_states
-                        .cur()
-                        .transform()
-                        .pre_concat(transform.0),
-                ),
-            );
-            let color_space = self
-                .resource_dictionary
-                .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
-                    shading_pattern,
-                )));
-
-            if let Some(shading_mask) = shading_mask {
-                // TODO: use set_mask instead?
-                let state = ExtGState::new().mask(shading_mask);
-
-                let ext = self
-                    .resource_dictionary
-                    .register_resource(Resource::ExtGState(state));
-                self.content.set_parameters(ext.to_pdf_name());
-            }
-
-            self.content
-                .set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
-            self.content
-                .set_stroke_pattern(None, color_space.to_pdf_name());
-        };
-
-        match &stroke.paint {
-            Paint::Color(c) => {
-                let color_space = self
-                    .resource_dictionary
-                    .register_resource(Resource::ColorSpace(c.get_pdf_color_space()));
-                self.content
-                    .set_stroke_color_space(color_space.to_pdf_name());
-                self.content.set_stroke_color(c.to_pdf_components());
-            }
-            Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties(bounds);
-                write_gradient(gradient_props, transform);
-            }
-            Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties(bounds);
-                write_gradient(gradient_props, transform);
-            }
-            Paint::SweepGradient(sg) => {
-                let (gradient_props, transform) = sg.gradient_properties(bounds);
-                write_gradient(gradient_props, transform);
-            }
-            Paint::Pattern(pat) => {
-                let mut pat = pat.clone();
-                let transform = pat.transform;
-
-                Arc::make_mut(&mut pat).transform = pattern_transform(transform);
-
-                let color_space = self
-                    .resource_dictionary
-                    .register_resource(Resource::Pattern(PatternResource::TilingPattern(
-                        TilingPattern::new(pat.canvas.clone(), pat.transform, stroke.opacity),
-                    )));
-
-                self.content
-                    .set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
-                self.content
-                    .set_stroke_pattern(None, color_space.to_pdf_name());
-            }
-        }
-
-        // Only write if they don't correspond to the default values as defined in the
-        // PDF specification.
-        if stroke.width.get() != 1.0 {
-            self.content.set_line_width(stroke.width.get());
-        }
-
-        if stroke.miter_limit.get() != 10.0 {
-            self.content.set_miter_limit(stroke.miter_limit.get());
-        }
-
-        if stroke.line_cap != LineCap::Butt {
-            self.content.set_line_cap(stroke.line_cap.to_pdf_line_cap());
-        }
-
-        if stroke.line_join != LineJoin::Miter {
-            self.content
-                .set_line_join(stroke.line_join.to_pdf_line_join());
-        }
-
-        if let Some(stroke_dash) = &stroke.dash {
-            self.content.set_dash_pattern(
-                stroke_dash.array.iter().map(|n| n.get()),
-                stroke_dash.offset.get(),
-            );
-        }
-    }
-
-    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
-        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
-            return;
-        }
-
-        // TODO: can this be removed?
-        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
-
-        self.save_state();
-        self.set_stroke_properties(stroke_bbox, stroke);
-        draw_path(path.segments(), &mut self.content);
-        self.content.stroke();
-
-        self.restore_state();
     }
 
     pub fn draw_blended(&mut self, blend_mode: BlendMode, byte_code: &ByteCode) {
