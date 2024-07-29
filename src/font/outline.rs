@@ -50,7 +50,7 @@ mod tests {
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
         let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (36..37).collect::<Vec<_>>();
+        let glyphs = (36..100).collect::<Vec<_>>();
 
         draw(&font, &glyphs, "outline_noto_sans", draw_glyph);
     }

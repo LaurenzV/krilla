@@ -728,13 +728,16 @@ impl<'a> CanvasPdfSerializer<'a> {
             .resource_dictionary
             .register_resource(Resource::Font(font_resource));
         self.content.begin_text();
-        self.content.set_text_matrix(transform.0.to_pdf_transform());
+        let mut transform = transform.0;
         self.content.set_font(font_name.to_pdf_name(), size.get());
         match gid {
             PDFGlyph::ColorGlyph(gid) => {
+                self.content.set_text_matrix(transform.to_pdf_transform());
                 self.content.show(Str(&[gid]));
             }
             PDFGlyph::CID(cid) => {
+                transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
+                self.content.set_text_matrix(transform.to_pdf_transform());
                 self.content
                     .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
             }
