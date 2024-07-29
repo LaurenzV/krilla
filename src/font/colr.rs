@@ -1,7 +1,7 @@
 use crate::blend_mode::BlendMode;
 use crate::canvas::{Canvas, Surface};
 use crate::color::Color;
-use crate::font::{Font, FontTables, OutlineBuilder};
+use crate::font::{Font, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
@@ -10,7 +10,7 @@ use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
@@ -28,7 +28,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
 }
 
 struct ColrCanvas<'a> {
-    font: &'a FontTables<'a>,
+    font: &'a FontRef<'a>,
     clips: Vec<Vec<Path>>,
     transforms: Vec<Transform>,
     canvases: Vec<Canvas>,
@@ -37,7 +37,7 @@ struct ColrCanvas<'a> {
 }
 
 impl<'a> ColrCanvas<'a> {
-    pub fn new(font_ref: &'a FontTables<'a>) -> Self {
+    pub fn new(font_ref: &'a FontRef<'a>) -> Self {
         let size = font_ref
             .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
             .units_per_em;

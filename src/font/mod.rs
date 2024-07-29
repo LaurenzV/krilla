@@ -7,11 +7,13 @@ use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::Offset32;
 use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
-use skrifa::{GlyphId, MetadataProvider, Tag};
+use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 
+pub mod bitmap;
 pub mod colr;
 pub mod outline;
 pub mod svg;
@@ -53,10 +55,9 @@ impl OutlinePen for OutlineBuilder {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct FontWrapper {
     data: Arc<Vec<u8>>,
-    records: BTreeMap<Tag, (usize, usize)>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
     font_wrapper: FontWrapper,
     location: Location,
@@ -70,17 +71,7 @@ pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
     pub fn new(data: Arc<Vec<u8>>, location: Location) -> Option<Self> {
-        let mut records = BTreeMap::new();
-        let font_data = FontData::new(data.as_slice());
-        let table_directory = TableDirectory::read(font_data).ok()?;
-
-        for record in table_directory.table_records() {
-            let start = Offset32::new(record.offset()).non_null()?;
-            let len = record.length() as usize;
-            records.insert(record.tag.get(), (start, start + len));
-        }
-
-        let font_wrapper = FontWrapper { data, records };
+        let font_wrapper = FontWrapper { data };
         let metrics = font_wrapper.tables().metrics(Size::unscaled(), &location);
         let units_per_em = metrics.units_per_em;
         let global_bbox = metrics
@@ -103,8 +94,8 @@ impl Font {
         Some(font_wrapper)
     }
 
-    pub fn font_ref(&self) -> FontTables {
-        self.0.font_wrapper.tables()
+    pub fn font_ref(&self) -> FontRef {
+        FontRef::from_index(self.0.font_wrapper.data.as_slice(), 0).unwrap()
     }
 
     pub fn units_per_em(&self) -> u16 {
@@ -121,17 +112,8 @@ impl Font {
 }
 
 impl FontWrapper {
-    pub fn tables(&self) -> FontTables {
-        FontTables(self)
-    }
-}
-
-pub struct FontTables<'a>(&'a FontWrapper);
-
-impl<'a> TableProvider<'a> for FontTables<'a> {
-    fn data_for_tag(&self, tag: Tag) -> Option<FontData<'a>> {
-        let (start, end) = self.0.records.get(&tag)?;
-        Some(FontData::new(self.0.data.as_slice().get(*start..*end)?))
+    pub fn tables(&self) -> FontRef {
+        FontRef::from_index(&self.data, 0).unwrap()
     }
 }
 
@@ -157,10 +139,6 @@ fn draw(
     let mut parent_canvas = Canvas::new(crate::Size::from_wh(width as f32, height as f32).unwrap());
 
     for i in glyphs.iter().copied() {
-        let Some(canvas) = single_glyph(&font, GlyphId::new(i)) else {
-            continue;
-        };
-
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, units_per_em: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;

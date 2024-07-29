@@ -1,10 +1,7 @@
-use crate::bytecode::ByteCode;
-use crate::canvas::CanvasPdfSerializer;
-use crate::font::{colr, outline, svg, Font};
+use crate::font::{bitmap, colr, outline, svg, Font};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionary, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
-use crate::transform::TransformWrapper;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
@@ -84,6 +81,7 @@ impl Object for Type3Font {
             .map(|(index, glyph)| {
                 let canvas = colr::draw_glyph(&self.font, *glyph)
                     .or_else(|| svg::draw_glyph(&self.font, *glyph))
+                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph))
                     .or_else(|| outline::draw_glyph(&self.font, *glyph))
                     .unwrap();
 
