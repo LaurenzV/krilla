@@ -219,6 +219,7 @@ dependencies = [
  "resvg",
  "siphasher",
  "skrifa",
+ "subsetter",
  "tiny-skia",
  "tiny-skia-path",
  "usvg",
@@ -458,6 +459,10 @@ checksum = "6637bab7722d379c8b41ba849228d680cc12d0a45ba1fa2b48f2a30577a06731"
 dependencies = [
  "float-cmp",
 ]
+
+[[package]]
+name = "subsetter"
+version = "0.11.0"
 
 [[package]]
 name = "svgtypes"

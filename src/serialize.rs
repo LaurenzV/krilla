@@ -119,11 +119,11 @@ impl SerializerContext {
 
 /// Hash the item.
 #[inline]
-fn hash_item<T: Hash + ?Sized + 'static>(item: &T) -> u128 {
+pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
     // Also hash the TypeId because the type might be converted
     // through an unsized coercion.
     let mut state = SipHasher13::new();
-    item.type_id().hash(&mut state);
+    // TODO: Hash type ID too, like in Typst?
     item.hash(&mut state);
     state.finish128().as_u128()
 }

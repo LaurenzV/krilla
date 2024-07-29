@@ -5,10 +5,8 @@ use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
-use skrifa::raw::types::Offset32;
-use skrifa::raw::{FontData, FontRead, Offset, TableDirectory, TableProvider};
-use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
-use std::collections::BTreeMap;
+use skrifa::raw::{FontRead, Offset, TableProvider};
+use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::ops::Deref;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
@@ -64,6 +62,13 @@ pub struct Repr {
     units_per_em: u16,
     // Note that the bbox only applied to non-variable font settings
     global_bbox: Rect,
+    has_color_table: bool,
+    ascent: FiniteF32,
+    descent: FiniteF32,
+    cap_height: Option<FiniteF32>,
+    is_monospaced: bool,
+    italic_angle: FiniteF32,
+    weight: FiniteF32,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -72,7 +77,14 @@ pub struct Font(Arc<Prehashed<Repr>>);
 impl Font {
     pub fn new(data: Arc<Vec<u8>>, location: Location) -> Option<Self> {
         let font_wrapper = FontWrapper { data };
-        let metrics = font_wrapper.tables().metrics(Size::unscaled(), &location);
+        let font_ref = font_wrapper.tables();
+        let metrics = font_ref.metrics(Size::unscaled(), &location);
+        let ascent = FiniteF32::new(metrics.ascent).unwrap();
+        let descent = FiniteF32::new(metrics.descent).unwrap();
+        let is_monospaced = metrics.is_monospace;
+        let cap_height = metrics.cap_height.map(|n| FiniteF32::new(n).unwrap());
+        let italic_angle = FiniteF32::new(metrics.italic_angle).unwrap();
+        let weight = FiniteF32::new(font_ref.attributes().weight.value()).unwrap();
         let units_per_em = metrics.units_per_em;
         let global_bbox = metrics
             .bounds
@@ -84,14 +96,58 @@ impl Font {
                 units_per_em as f32,
             )?);
 
+        let has_color_table = font_ref.svg().is_ok()
+            || font_ref.colr().is_ok()
+            || font_ref.sbix().is_ok()
+            || font_ref.cff2().is_ok();
+
         let font_wrapper = Self(Arc::new(Prehashed::new(Repr {
             font_wrapper,
             units_per_em,
+            ascent,
+            cap_height,
+            descent,
+            is_monospaced,
+            weight,
+            italic_angle,
             global_bbox,
+            has_color_table,
             location,
         })));
 
         Some(font_wrapper)
+    }
+
+    pub fn cap_height(&self) -> Option<f32> {
+        self.0.cap_height.map(|n| n.get())
+    }
+
+    pub fn ascent(&self) -> f32 {
+        self.0.ascent.get()
+    }
+
+    pub fn weight(&self) -> f32 {
+        self.0.weight.get()
+    }
+
+    pub fn descent(&self) -> f32 {
+        self.0.descent.get()
+    }
+
+    pub fn is_monospaced(&self) -> bool {
+        self.0.is_monospaced
+    }
+
+    pub fn italic_angle(&self) -> f32 {
+        self.0.italic_angle.get()
+    }
+
+    pub fn glyph_advance(&self, glyph_id: GlyphId) -> Option<f32> {
+        let location_ref = &self.0.location;
+        let g_metrics = self
+            .font_ref()
+            .glyph_metrics(Size::unscaled(), location_ref);
+        g_metrics.advance_width(glyph_id)
     }
 
     pub fn font_ref(&self) -> FontRef {
@@ -106,8 +162,12 @@ impl Font {
         self.0.global_bbox
     }
 
-    pub fn location_ref<'a>(&'a self) -> LocationRef<'a> {
+    pub fn location_ref(&self) -> LocationRef {
         (&self.0.location).into()
+    }
+
+    pub fn has_color_table(&self) -> bool {
+        self.0.has_color_table
     }
 }
 
