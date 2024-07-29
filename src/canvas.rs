@@ -748,17 +748,8 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.end_text();
     }
 
-    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
-        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
-            return;
-        }
-
-        // TODO: can this be removed?
-        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
-
-        self.save_state();
-
-        // See comment in `fill_path`
+    fn set_stroke_properties(&mut self, bounds: Rect, stroke: &Stroke) {
+        // See comment in `set_fill_properties`
         if !matches!(stroke.paint, Paint::Pattern(_)) {
             self.set_stroke_opacity(stroke.opacity);
         }
@@ -774,7 +765,7 @@ impl<'a> CanvasPdfSerializer<'a> {
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
             let shading_mask =
-                Mask::new_from_shading(gradient_props.clone(), transform, stroke_bbox);
+                Mask::new_from_shading(gradient_props.clone(), transform, bounds);
 
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
@@ -817,15 +808,15 @@ impl<'a> CanvasPdfSerializer<'a> {
                 self.content.set_stroke_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties(stroke_bbox);
+                let (gradient_props, transform) = lg.gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties(stroke_bbox);
+                let (gradient_props, transform) = rg.gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::SweepGradient(sg) => {
-                let (gradient_props, transform) = sg.gradient_properties(stroke_bbox);
+                let (gradient_props, transform) = sg.gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -872,7 +863,18 @@ impl<'a> CanvasPdfSerializer<'a> {
                 stroke_dash.offset.get(),
             );
         }
+    }
 
+    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
+            return;
+        }
+
+        // TODO: can this be removed?
+        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
+
+        self.save_state();
+        self.set_stroke_properties(stroke_bbox, stroke);
         draw_path(path.segments(), &mut self.content);
         self.content.stroke();
 
