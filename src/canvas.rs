@@ -734,6 +734,10 @@ impl<'a> CanvasPdfSerializer<'a> {
             PDFGlyph::ColorGlyph(gid) => {
                 self.content.show(Str(&[gid]));
             }
+            PDFGlyph::CID(cid) => {
+                self.content
+                    .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
+            }
         }
         self.content.end_text();
     }

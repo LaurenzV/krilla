@@ -43,13 +43,14 @@ mod tests {
 
     use std::sync::Arc;
 
+    // This will not use Type3
     #[test]
     fn outline_noto_sans() {
         let font_data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
         let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (0..font.font_ref().maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
+        let glyphs = (36..37).collect::<Vec<_>>();
 
         draw(&font, &glyphs, "outline_noto_sans", draw_glyph);
     }

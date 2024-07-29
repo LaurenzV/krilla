@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::font::Font;
+use crate::object::cid_font::CIDFont;
 use crate::object::type3_font::Type3Font;
 use crate::resource::FontResource;
 use siphasher::sip128::{Hasher128, SipHasher13};
@@ -36,7 +37,7 @@ pub trait PageSerialize: Sized {
 }
 
 pub struct SerializerContext {
-    fonts: HashMap<Font, FontMapper>,
+    fonts: HashMap<Font, FontContainer>,
     cached_mappings: HashMap<u128, Ref>,
     chunk: Chunk,
     cur_ref: Ref,
@@ -46,6 +47,7 @@ pub struct SerializerContext {
 
 pub enum PDFGlyph {
     ColorGlyph(u8),
+    CID(u16),
 }
 
 impl SerializerContext {
@@ -88,16 +90,31 @@ impl SerializerContext {
     }
 
     pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, PDFGlyph) {
-        let font_mapper = self
-            .fonts
-            .entry(font.clone())
-            .or_insert_with(|| FontMapper::new(font.clone()));
-        let (index, glyph_id) = font_mapper.add_glyph(glyph);
+        let font_container = self.fonts.entry(font.clone()).or_insert_with(|| {
+            if font.is_type3_font() {
+                FontContainer::Type3(Type3FontMapper::new(font.clone()))
+            } else {
+                FontContainer::CIDFont(CIDFont::new(font.clone()))
+            }
+        });
 
-        (
-            FontResource::new(font.clone(), index),
-            PDFGlyph::ColorGlyph(glyph_id),
-        )
+        match font_container {
+            FontContainer::Type3(font_mapper) => {
+                let (index, glyph_id) = font_mapper.add_glyph(glyph);
+
+                (
+                    FontResource::new(font.clone(), index),
+                    PDFGlyph::ColorGlyph(glyph_id),
+                )
+            }
+            FontContainer::CIDFont(cid) => {
+                let new_gid = cid.remap(glyph);
+                (
+                    FontResource::new(font.clone(), 0),
+                    PDFGlyph::CID(new_gid.to_u32() as u16),
+                )
+            }
+        }
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
@@ -111,10 +128,18 @@ impl SerializerContext {
     // TODO: Somehow make sure that the caller has to call this, so that the fonts are always written.
     pub fn write_fonts(&mut self) {
         // TODO: Make more efficient
-        for (font, font_mapper) in self.fonts.clone() {
-            for (index, mapper) in font_mapper.fonts.iter().enumerate() {
-                let ref_ = self.add(FontResource::new(font.clone(), index));
-                mapper.clone().serialize_into(self, ref_);
+        for (font, font_container) in self.fonts.clone() {
+            match font_container {
+                FontContainer::Type3(font_mapper) => {
+                    for (index, mapper) in font_mapper.fonts.iter().enumerate() {
+                        let ref_ = self.add(FontResource::new(font.clone(), index));
+                        mapper.clone().serialize_into(self, ref_);
+                    }
+                }
+                FontContainer::CIDFont(cid_font) => {
+                    let ref_ = self.add(FontResource::new(font.clone(), 0));
+                    cid_font.serialize_into(self, ref_);
+                }
             }
         }
     }
@@ -136,13 +161,19 @@ pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
 }
 
 #[derive(Clone)]
-pub struct FontMapper {
+enum FontContainer {
+    Type3(Type3FontMapper),
+    CIDFont(CIDFont),
+}
+
+#[derive(Clone)]
+pub struct Type3FontMapper {
     font: Font,
     fonts: Vec<Type3Font>,
 }
 
-impl FontMapper {
-    pub fn new(font: Font) -> FontMapper {
+impl Type3FontMapper {
+    pub fn new(font: Font) -> Type3FontMapper {
         Self {
             font,
             fonts: Vec::new(),
@@ -150,7 +181,7 @@ impl FontMapper {
     }
 }
 
-impl FontMapper {
+impl Type3FontMapper {
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {
         if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
             return (index, self.fonts[index].add(glyph_id));

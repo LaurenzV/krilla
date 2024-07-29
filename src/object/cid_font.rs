@@ -8,12 +8,24 @@ use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::{FontRef, GlyphId, Tag};
 use subsetter::GlyphRemapper;
-use usvg::fontdb;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct CIDFont {
     font: Font,
     glyph_remapper: GlyphRemapper,
+}
+
+impl CIDFont {
+    pub fn new(font: Font) -> Self {
+        Self {
+            font,
+            glyph_remapper: GlyphRemapper::new(),
+        }
+    }
+
+    pub fn remap(&mut self, glyph_id: GlyphId) -> GlyphId {
+        GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32)
+    }
 }
 
 impl Object for CIDFont {
@@ -23,7 +35,7 @@ impl Object for CIDFont {
 
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
-        let cmap_ref = sc.new_ref();
+        // let cmap_ref = sc.new_ref();
         let data_ref = sc.new_ref();
 
         let glyph_remapper = &self.glyph_remapper;
@@ -45,7 +57,8 @@ impl Object for CIDFont {
             .base_font(Name(base_font_type0.as_bytes()))
             .encoding_predefined(Name(b"Identity-H"))
             .descendant_font(cid_ref)
-            .to_unicode(cmap_ref);
+            // .to_unicode(cmap_ref)
+        ;
 
         // Write the CID font referencing the font descriptor.
         let mut cid = sc.chunk_mut().cid_font(cid_ref);
