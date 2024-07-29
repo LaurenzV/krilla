@@ -14,7 +14,7 @@ use crate::paint::Paint;
 use crate::resource::{
     FontResource, PatternResource, Resource, ResourceDictionary, XObjectResource,
 };
-use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
+use crate::serialize::{PDFGlyph, PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{
     calculate_stroke_bbox, deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
@@ -721,7 +721,11 @@ impl<'a> CanvasPdfSerializer<'a> {
         self.content.begin_text();
         self.content.set_text_matrix(transform.0.to_pdf_transform());
         self.content.set_font(font_name.to_pdf_name(), size.get());
-        self.content.show(Str(&[gid]));
+        match gid {
+            PDFGlyph::ColorGlyph(gid) => {
+                self.content.show(Str(&[gid]));
+            }
+        }
         self.content.end_text();
     }
 

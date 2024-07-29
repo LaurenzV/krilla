@@ -44,6 +44,10 @@ pub struct SerializerContext {
     fonts_written: bool,
 }
 
+pub enum PDFGlyph {
+    ColorGlyph(u8),
+}
+
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         Self {
@@ -83,14 +87,17 @@ impl SerializerContext {
         }
     }
 
-    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, u8) {
+    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, PDFGlyph) {
         let font_mapper = self
             .fonts
             .entry(font.clone())
             .or_insert_with(|| FontMapper::new(font.clone()));
         let (index, glyph_id) = font_mapper.add_glyph(glyph);
 
-        (FontResource::new(font.clone(), index), glyph_id)
+        (
+            FontResource::new(font.clone(), index),
+            PDFGlyph::ColorGlyph(glyph_id),
+        )
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
