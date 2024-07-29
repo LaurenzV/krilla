@@ -602,13 +602,7 @@ impl<'a> CanvasPdfSerializer<'a> {
         }
     }
 
-    pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
-        if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
-            return;
-        }
-
-        self.save_state();
-
+    fn set_fill_properties(&mut self, bounds: Rect, fill: &Fill) {
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
         if !matches!(fill.paint, Paint::Pattern(_)) {
@@ -625,8 +619,7 @@ impl<'a> CanvasPdfSerializer<'a> {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
-            let shading_mask =
-                Mask::new_from_shading(gradient_props.clone(), transform, path.bounds());
+            let shading_mask = Mask::new_from_shading(gradient_props.clone(), transform, bounds);
 
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
@@ -668,15 +661,15 @@ impl<'a> CanvasPdfSerializer<'a> {
                 self.content.set_fill_color(c.to_pdf_components());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = lg.gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = rg.gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::SweepGradient(sg) => {
-                let (gradient_props, transform) = sg.gradient_properties(path.bounds());
+                let (gradient_props, transform) = sg.gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -696,12 +689,22 @@ impl<'a> CanvasPdfSerializer<'a> {
                     .set_fill_pattern(None, color_space.to_pdf_name());
             }
         }
+    }
 
+    pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
+        if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
+            return;
+        }
+
+        self.save_state();
+        self.set_fill_properties(path.bounds(), fill);
         draw_path(path.segments(), &mut self.content);
+
         match fill.rule {
             FillRule::NonZero => self.content.fill_nonzero(),
             FillRule::EvenOdd => self.content.fill_even_odd(),
         };
+
         self.restore_state();
     }
 
