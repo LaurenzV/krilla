@@ -2,6 +2,7 @@ use crate::bytecode::ByteCode;
 use crate::canvas::CanvasPdfSerializer;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -20,7 +21,7 @@ pub struct XObject(Arc<Repr>);
 
 impl XObject {
     pub fn new(
-        byte_code: Arc<ByteCode>,
+        stream: Stream,
         isolated: bool,
         transparency_group_color_space: bool,
         custom_bbox: Option<Rect>,
