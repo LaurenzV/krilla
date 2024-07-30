@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 // use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -39,16 +41,16 @@ impl Stream {
     }
 }
 
-pub struct StreamBuilder<'a> {
+pub struct StreamBuilder {
     rd_builder: ResourceDictionaryBuilder,
-    serializer_context: &'a mut SerializerContext,
+    serializer_context: Rc<RefCell<SerializerContext>>,
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
 }
 
-impl<'a> StreamBuilder<'a> {
-    pub fn new(serializer_context: &'a mut SerializerContext) -> Self {
+impl StreamBuilder {
+    pub fn new(serializer_context: Rc<RefCell<SerializerContext>>) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             serializer_context,
@@ -58,7 +60,10 @@ impl<'a> StreamBuilder<'a> {
         }
     }
 
-    pub(crate) fn new_flipped(serializer_context: &'a mut SerializerContext, size: Size) -> Self {
+    pub(crate) fn new_flipped(
+        serializer_context: Rc<RefCell<SerializerContext>>,
+        size: Size,
+    ) -> Self {
         let mut builder = Self::new(serializer_context);
         builder.concat_transform(&Transform::from_row(
             1.0,
@@ -71,8 +76,8 @@ impl<'a> StreamBuilder<'a> {
         builder
     }
 
-    pub fn serializer_context(&mut self) -> &mut SerializerContext {
-        &mut self.serializer_context
+    pub fn serializer_context(&mut self) -> Rc<RefCell<SerializerContext>> {
+        self.serializer_context.clone()
     }
 
     pub fn finish(self) -> Stream {
@@ -81,10 +86,6 @@ impl<'a> StreamBuilder<'a> {
             bbox: self.bbox,
             resource_dictionary: self.rd_builder.finish(),
         }
-    }
-
-    pub fn sub_builder(&'a mut self) -> StreamBuilder<'a> {
-        StreamBuilder::new(&mut self.serializer_context)
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {

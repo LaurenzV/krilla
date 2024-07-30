@@ -4,6 +4,8 @@ use crate::stream::StreamBuilder;
 use crate::svg::group;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::{FillRule, MaskType};
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
@@ -15,7 +17,7 @@ pub enum SvgClipPath {
 pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    serializer_context: &mut SerializerContext,
+    serializer_context: Rc<RefCell<SerializerContext>>,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
     // SVGs can be much more complex than in PDF. In SVG, clip paths can have transforms, as well as
@@ -182,7 +184,7 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
 fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    serializer_context: &mut SerializerContext,
+    serializer_context: Rc<RefCell<SerializerContext>>,
 ) -> Mask {
     let mut stream_builder = StreamBuilder::new(serializer_context);
 

@@ -7,6 +7,8 @@ use crate::{
     RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use pdf_writer::types::BlendMode;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 use usvg::NonZeroPositiveF32;
@@ -38,7 +40,10 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop {
     }
 }
 
-pub fn convert_paint(paint: &usvg::Paint, serializer_context: &mut SerializerContext) -> Paint {
+pub fn convert_paint(
+    paint: &usvg::Paint,
+    serializer_context: Rc<RefCell<SerializerContext>>,
+) -> Paint {
     match paint {
         usvg::Paint::Color(c) => Paint::Color(Color::new_rgb(c.red, c.green, c.blue)),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
@@ -111,7 +116,7 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
     }
 }
 
-pub fn convert_fill(fill: &usvg::Fill, serializer_context: &mut SerializerContext) -> Fill {
+pub fn convert_fill(fill: &usvg::Fill, serializer_context: Rc<RefCell<SerializerContext>>) -> Fill {
     Fill {
         paint: convert_paint(fill.paint(), serializer_context),
         opacity: fill.opacity(),
@@ -119,7 +124,10 @@ pub fn convert_fill(fill: &usvg::Fill, serializer_context: &mut SerializerContex
     }
 }
 
-pub fn convert_stroke(stroke: &usvg::Stroke, serializer_context: &mut SerializerContext) -> Stroke {
+pub fn convert_stroke(
+    stroke: &usvg::Stroke,
+    serializer_context: Rc<RefCell<SerializerContext>>,
+) -> Stroke {
     let dash = if let Some(dash_array) = stroke.dasharray() {
         Some(StrokeDash {
             offset: FiniteF32::new(stroke.dashoffset()).unwrap(),

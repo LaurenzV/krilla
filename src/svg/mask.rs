@@ -5,9 +5,11 @@ use crate::svg::group;
 use crate::svg::util::convert_mask_type;
 use crate::util::RectExt;
 use crate::FillRule;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 
-pub fn get_mask(mask: &usvg::Mask, serializer_context: &mut SerializerContext) -> Mask {
+pub fn get_mask(mask: &usvg::Mask, serializer_context: Rc<RefCell<SerializerContext>>) -> Mask {
     // Dummy size. TODO: Improve?
     let mut stream_builder = StreamBuilder::new(serializer_context);
 

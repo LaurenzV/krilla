@@ -2,24 +2,28 @@ use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::util::{deflate, RectExt};
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
+use std::cell::RefCell;
+use std::rc::Rc;
 use tiny_skia_path::Size;
 
 pub struct Page {
     pub size: Size,
-    serializer_context: SerializerContext,
+    serializer_context: Rc<RefCell<SerializerContext>>,
 }
 
 impl Page {
     pub fn new(size: Size) -> Self {
         Self {
             size,
-            serializer_context: SerializerContext::new(SerializeSettings::default()),
+            serializer_context: Rc::new(RefCell::new(SerializerContext::new(
+                SerializeSettings::default(),
+            ))),
         }
     }
 
-    pub fn builder(&mut self) -> StreamBuilder {
+    pub fn builder(&self) -> StreamBuilder {
         let size = self.size;
-        StreamBuilder::new_flipped(&mut self.serializer_context, size)
+        StreamBuilder::new_flipped(self.serializer_context.clone(), size)
     }
 }
 

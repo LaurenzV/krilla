@@ -4,6 +4,8 @@ use crate::serialize::{Object, RegisterableObject, SerializeSettings, Serializer
 use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
@@ -49,7 +51,7 @@ impl Mask {
         let shading_stream = {
             // TODO: Inspect
             let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-            let mut builder = StreamBuilder::new(&mut serializer_context);
+            let mut builder = StreamBuilder::new(Rc::new(RefCell::new(serializer_context)));
             builder.concat_transform(&shading_transform.0);
             builder.draw_shading(&shading_function);
             builder.finish()

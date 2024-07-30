@@ -1,9 +1,11 @@
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::FiniteF32;
 use usvg::NormalizedF32;
@@ -49,7 +51,8 @@ impl Object for TilingPattern {
             self.0.stream.clone()
         } else {
             let stream = {
-                let mut builder = StreamBuilder::new(sc);
+                let serializer_context = SerializerContext::new(SerializeSettings::default());
+                let mut builder = StreamBuilder::new(Rc::new(RefCell::new(serializer_context)));
                 builder.draw_opacified(self.0.base_opacity, self.0.stream.clone());
                 builder.finish()
             };
