@@ -354,9 +354,9 @@ mod tests {
     use skrifa::instance::Location;
 
     use skrifa::FontRef;
-    use std::sync::Arc;
+    use std::sync::Rc;
 
-    fn draw_colr(data: Arc<Vec<u8>>, location: Location, glyphs: &[u32], name: &str) {
+    fn draw_colr(data: Rc<Vec<u8>>, location: Location, glyphs: &[u32], name: &str) {
         let font = Font::new(data, location).unwrap();
         draw(&font, glyphs, name, draw_glyph);
     }
@@ -370,7 +370,7 @@ mod tests {
         let glyphs = (0..=220).collect::<Vec<_>>();
 
         draw_colr(
-            Arc::new(font_data),
+            Rc::new(font_data),
             Location::default(),
             &glyphs,
             "colr_test",
@@ -386,7 +386,7 @@ mod tests {
         // let glyphs = (0..font_ref.maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
 
         draw_colr(
-            Arc::new(font_data),
+            Rc::new(font_data),
             Location::default(),
             &glyphs,
             "colr_noto",
@@ -401,7 +401,7 @@ mod tests {
         // let glyphs = (0..=5000).collect::<Vec<_>>();
 
         draw_colr(
-            Arc::new(font_data),
+            Rc::new(font_data),
             Location::default(),
             &glyphs,
             "colr_segoe",

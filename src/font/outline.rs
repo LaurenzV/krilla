@@ -40,13 +40,13 @@ mod tests {
 
     use skrifa::raw::TableProvider;
 
-    use std::sync::Arc;
+    use std::rc::Rc;
 
     // This will not use Type3
     #[test]
     fn outline_noto_sans() {
         let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
+        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
         let glyphs = (0..1000).collect::<Vec<_>>();
 

@@ -50,12 +50,12 @@ mod tests {
     use skrifa::raw::TableProvider;
 
     use crate::font::bitmap::draw_glyph;
-    use std::sync::Arc;
+    use std::rc::Rc;
 
     #[test]
     fn sbix_apple_color() {
         let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
+        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
         let glyphs = (90..=300).collect::<Vec<_>>();
 
