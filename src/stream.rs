@@ -258,6 +258,7 @@ impl<'a> StreamBuilder<'a> {
         let transform =
             Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
         self.concat_transform(&transform);
+        self.bbox.expand(&self.graphics_states.transform_bbox(size.to_rect(0.0, 0.0).unwrap()));
 
         self.apply_isolated_op(move |sb| {
             let image_name = sb
