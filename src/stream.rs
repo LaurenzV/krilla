@@ -195,14 +195,14 @@ impl<'a> StreamBuilder<'a> {
         })
     }
 
-    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Stream) {
+    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
         self.apply_isolated_op(move |sb| {
             let ext_state = ExtGState::new()
                 .stroking_alpha(opacity)
                 .non_stroking_alpha(opacity);
             sb.graphics_states.combine(&ext_state);
 
-            let x_object = XObject::new(Arc::new(stream), true, false, None);
+            let x_object = XObject::new(stream, true, false, None);
             let x_object_name = sb
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
@@ -358,6 +358,8 @@ impl<'a> StreamBuilder<'a> {
                         pat.canvas.clone(),
                         pat.transform,
                         opacity,
+                        pat.width,
+                        pat.height,
                     )),
                 ));
                 set_pattern_fn(&mut self.content, color_space);
