@@ -2,9 +2,9 @@ use crate::stream::StreamBuilder;
 use usvg::Node;
 
 mod clip_path;
-// mod filter;
+mod filter;
 mod group;
-// mod image;
+mod image;
 mod mask;
 // mod path;
 // mod text;

@@ -3,15 +3,16 @@ use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 // use crate::svg::{filter, image, path};
+use crate::svg::filter;
 use pdf_writer::Finish;
 use std::sync::Arc;
 use usvg::{Node, NormalizedF32};
 
 pub fn render(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
-    // if !group.filters().is_empty() {
-    //     filter::render(group, surface);
-    //     return;
-    // }
+    if !group.filters().is_empty() {
+        filter::render(group, stream_builder);
+        return;
+    }
 
     isolated(group, stream_builder);
 }
