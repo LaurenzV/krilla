@@ -12,7 +12,7 @@ use std::rc::Rc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 
 pub mod bitmap;
-// pub mod colr;
+pub mod colr;
 pub mod outline;
 pub mod svg;
 

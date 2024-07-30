@@ -1,8 +1,10 @@
 use crate::color::Color;
 use crate::font::{Font, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
+use crate::stream::StreamBuilder;
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
+use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
@@ -10,49 +12,45 @@ use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
-use crate::stream::StreamBuilder;
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
-    let mut colr_canvas = ColrCanvas::new(&font_ref);
 
     let colr_glyphs = font.font_ref().color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
+        stream_builder.save_graphics_state();
+        stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
+        let mut colr_canvas = ColrCanvas::new(&font_ref, stream_builder);
         let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
+        stream_builder.restore_graphics_state();
+        return Some(());
     } else {
         return None;
     }
-    let canvas = colr_canvas.canvases.last().unwrap().clone();
-
-    let mut new_canvas = Canvas::new(canvas.size);
-    let mut transformed = new_canvas.transformed(Transform::from_scale(1.0, -1.0));
-    transformed.draw_canvas(canvas);
-    transformed.finish();
-
-    Some(new_canvas)
 }
 
 struct ColrCanvas<'a> {
     font: &'a FontRef<'a>,
     clips: Vec<Vec<Path>>,
+    parent_stream: &'a mut StreamBuilder,
     transforms: Vec<Transform>,
-    canvases: Vec<Canvas>,
+    streams: Vec<StreamBuilder>,
     blend_modes: Vec<BlendMode>,
     size: u16,
 }
 
 impl<'a> ColrCanvas<'a> {
-    pub fn new(font_ref: &'a FontRef<'a>) -> Self {
+    pub fn new(font_ref: &'a FontRef<'a>, parent_stream: &'a mut StreamBuilder) -> Self {
         let size = font_ref
             .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
             .units_per_em;
-        let canvas = Canvas::new(Size::from_wh(size as f32, size as f32).unwrap());
 
         Self {
             font: font_ref,
+            parent_stream,
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
-            canvases: vec![canvas],
+            streams: vec![],
             blend_modes: vec![],
             size,
         }
@@ -273,7 +271,11 @@ impl ColorPainter for ColrCanvas<'_> {
                 }
             }
         } {
-            let canvas = self.canvases.last_mut().unwrap();
+            let stream = if let Some(stream) = self.streams.last_mut() {
+                stream
+            } else {
+                &mut self.parent_stream
+            };
 
             // The proper implementation would be to apply all clip paths and then draw the
             // whole "visible" area with the fill. However, this seems to produce artifacts in
@@ -289,17 +291,21 @@ impl ColorPainter for ColrCanvas<'_> {
 
             let filled = clips.split_off(clips.len() - 1);
 
-            let mut clipped = canvas.clipped_many(clips);
+            for (path, rule) in &clips {
+                stream.push_clip_path(path, rule);
+            }
 
-            clipped.fill_path(filled[0].0.clone(), Transform::identity(), fill);
+            stream.draw_fill_path(&filled[0].0, &fill);
 
-            clipped.finish();
+            for _ in clips {
+                stream.pop_clip_path();
+            }
         }
     }
 
     fn push_layer(&mut self, composite_mode: CompositeMode) {
         let mode = match composite_mode {
-            CompositeMode::SrcOver => BlendMode::SourceOver,
+            CompositeMode::SrcOver => BlendMode::Normal,
             CompositeMode::Screen => BlendMode::Screen,
             CompositeMode::Overlay => BlendMode::Overlay,
             CompositeMode::Darken => BlendMode::Darken,
@@ -312,37 +318,29 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::Exclusion => BlendMode::Exclusion,
             CompositeMode::Multiply => BlendMode::Multiply,
             CompositeMode::HslHue => BlendMode::Hue,
-            CompositeMode::SrcAtop => BlendMode::SourceAtop,
-            CompositeMode::DestAtop => BlendMode::DestinationAtop,
             CompositeMode::HslColor => BlendMode::Color,
             CompositeMode::HslLuminosity => BlendMode::Luminosity,
             CompositeMode::HslSaturation => BlendMode::Saturation,
-            CompositeMode::Clear => BlendMode::Clear,
-            CompositeMode::Src => BlendMode::Source,
-            CompositeMode::Dest => BlendMode::Destination,
-            CompositeMode::DestOver => BlendMode::DestinationOver,
-            CompositeMode::DestIn => BlendMode::DestinationIn,
-            CompositeMode::SrcIn => BlendMode::SourceIn,
-            CompositeMode::SrcOut => BlendMode::SourceOut,
-            CompositeMode::DestOut => BlendMode::DestinationOut,
-            CompositeMode::Xor => BlendMode::Xor,
-            CompositeMode::Plus => BlendMode::Plus,
-            CompositeMode::Unknown => BlendMode::SourceOver,
+            _ => BlendMode::Normal,
         };
-        let canvas = Canvas::new(Size::from_wh(self.size as f32, self.size as f32).unwrap());
+        let stream_builder = StreamBuilder::new(self.parent_stream.serializer_context());
         self.blend_modes.push(mode);
-        self.canvases.push(canvas);
+        self.streams.push(stream_builder);
     }
 
     fn pop_layer(&mut self) {
-        let draw_canvas = self.canvases.pop().unwrap();
+        let source_stream = self.streams.pop().unwrap().finish();
 
-        let canvas = self.canvases.last_mut().unwrap();
-        let mut blended = canvas.blended(self.blend_modes.pop().unwrap());
-        let mut isolated = blended.isolated();
-        isolated.draw_canvas(draw_canvas);
-        isolated.finish();
-        blended.finish();
+        let target_stream = if let Some(stream) = self.streams.last_mut() {
+            stream
+        } else {
+            &mut self.parent_stream
+        };
+
+        target_stream.save_graphics_state();
+        target_stream.set_blend_mode(self.blend_modes.pop().unwrap());
+        target_stream.draw_isolated(source_stream);
+        target_stream.restore_graphics_state();
     }
 }
 
@@ -354,7 +352,7 @@ mod tests {
     use skrifa::instance::Location;
 
     use skrifa::FontRef;
-    use std::sync::Rc;
+    use std::rc::Rc;
 
     fn draw_colr(data: Rc<Vec<u8>>, location: Location, glyphs: &[u32], name: &str) {
         let font = Font::new(data, location).unwrap();
