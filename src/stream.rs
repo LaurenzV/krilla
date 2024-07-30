@@ -271,10 +271,12 @@ impl<'a> StreamBuilder<'a> {
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        let sh = self
-            .rd_builder
-            .register_resource(Resource::Shading(shading.clone()));
-        self.content.shading(sh.to_pdf_name());
+        self.apply_isolated_op(move |sb| {
+            let sh = sb
+                .rd_builder
+                .register_resource(Resource::Shading(shading.clone()));
+            sb.content.shading(sh.to_pdf_name());
+        })
     }
 
     fn set_fill_opacity(&mut self, alpha: NormalizedF32) {

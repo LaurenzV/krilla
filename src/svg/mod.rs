@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/painting/fill-opacity/50percent.svg").unwrap();
+        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/paint-servers/stop-opacity/simple-case.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
         let mut page = Page::new(tree.size());
         let mut stream_builder = page.builder();
