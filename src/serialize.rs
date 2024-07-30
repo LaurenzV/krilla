@@ -4,7 +4,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::font::Font;
+// use crate::font::Font;
 use crate::object::cid_font::CIDFont;
 use crate::object::type3_font::Type3Font;
 use crate::resource::FontResource;
@@ -38,7 +38,7 @@ pub trait PageSerialize: Sized {
 }
 
 pub struct SerializerContext {
-    fonts: HashMap<Font, FontContainer>,
+    // fonts: HashMap<Font, FontContainer>,
     cached_mappings: HashMap<u128, Ref>,
     chunk: Chunk,
     cur_ref: Ref,
@@ -57,7 +57,7 @@ impl SerializerContext {
             cached_mappings: HashMap::new(),
             chunk: Chunk::new(),
             cur_ref: Ref::new(1),
-            fonts: HashMap::new(),
+            // fonts: HashMap::new(),
             serialize_settings,
             fonts_written: false,
         }
@@ -90,33 +90,33 @@ impl SerializerContext {
         }
     }
 
-    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, PDFGlyph) {
-        let font_container = self.fonts.entry(font.clone()).or_insert_with(|| {
-            if font.is_type3_font() {
-                FontContainer::Type3(Type3FontMapper::new(font.clone()))
-            } else {
-                FontContainer::CIDFont(CIDFont::new(font.clone()))
-            }
-        });
-
-        match font_container {
-            FontContainer::Type3(font_mapper) => {
-                let (index, glyph_id) = font_mapper.add_glyph(glyph);
-
-                (
-                    FontResource::new(font.clone(), index),
-                    PDFGlyph::ColorGlyph(glyph_id),
-                )
-            }
-            FontContainer::CIDFont(cid) => {
-                let new_gid = cid.remap(glyph);
-                (
-                    FontResource::new(font.clone(), 0),
-                    PDFGlyph::CID(new_gid.to_u32() as u16),
-                )
-            }
-        }
-    }
+    // pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, PDFGlyph) {
+    //     let font_container = self.fonts.entry(font.clone()).or_insert_with(|| {
+    //         if font.is_type3_font() {
+    //             FontContainer::Type3(Type3FontMapper::new(font.clone()))
+    //         } else {
+    //             FontContainer::CIDFont(CIDFont::new(font.clone()))
+    //         }
+    //     });
+    //
+    //     match font_container {
+    //         FontContainer::Type3(font_mapper) => {
+    //             let (index, glyph_id) = font_mapper.add_glyph(glyph);
+    //
+    //             (
+    //                 FontResource::new(font.clone(), index),
+    //                 PDFGlyph::ColorGlyph(glyph_id),
+    //             )
+    //         }
+    //         FontContainer::CIDFont(cid) => {
+    //             let new_gid = cid.remap(glyph);
+    //             (
+    //                 FontResource::new(font.clone(), 0),
+    //                 PDFGlyph::CID(new_gid.to_u32() as u16),
+    //             )
+    //         }
+    //     }
+    // }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
         &mut self.chunk
@@ -127,23 +127,23 @@ impl SerializerContext {
     }
 
     // TODO: Somehow make sure that the caller has to call this, so that the fonts are always written.
-    pub fn write_fonts(&mut self) {
-        // TODO: Make more efficient
-        for (font, font_container) in self.fonts.clone() {
-            match font_container {
-                FontContainer::Type3(font_mapper) => {
-                    for (index, mapper) in font_mapper.fonts.iter().enumerate() {
-                        let ref_ = self.add(FontResource::new(font.clone(), index));
-                        mapper.clone().serialize_into(self, ref_);
-                    }
-                }
-                FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.add(FontResource::new(font.clone(), 0));
-                    cid_font.serialize_into(self, ref_);
-                }
-            }
-        }
-    }
+    // pub fn write_fonts(&mut self) {
+    //     // TODO: Make more efficient
+    //     for (font, font_container) in self.fonts.clone() {
+    //         match font_container {
+    //             FontContainer::Type3(font_mapper) => {
+    //                 for (index, mapper) in font_mapper.fonts.iter().enumerate() {
+    //                     let ref_ = self.add(FontResource::new(font.clone(), index));
+    //                     mapper.clone().serialize_into(self, ref_);
+    //                 }
+    //             }
+    //             FontContainer::CIDFont(cid_font) => {
+    //                 let ref_ = self.add(FontResource::new(font.clone(), 0));
+    //                 cid_font.serialize_into(self, ref_);
+    //             }
+    //         }
+    //     }
+    // }
 
     pub fn finish(self) -> Chunk {
         self.chunk
@@ -161,49 +161,49 @@ pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
     state.finish128().as_u128()
 }
 
-#[derive(Clone)]
-enum FontContainer {
-    Type3(Type3FontMapper),
-    CIDFont(CIDFont),
-}
-
-#[derive(Clone)]
-pub struct Type3FontMapper {
-    font: Font,
-    fonts: Vec<Type3Font>,
-}
-
-impl Type3FontMapper {
-    pub fn new(font: Font) -> Type3FontMapper {
-        Self {
-            font,
-            fonts: Vec::new(),
-        }
-    }
-}
-
-impl Type3FontMapper {
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {
-        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
-            return (index, self.fonts[index].add(glyph_id));
-        }
-
-        let glyph_id = if let Some(last_font) = self.fonts.last_mut() {
-            if last_font.is_full() {
-                let mut font = Type3Font::new(self.font.clone());
-                let gid = font.add(glyph_id);
-                self.fonts.push(font);
-                gid
-            } else {
-                last_font.add(glyph_id)
-            }
-        } else {
-            let mut font = Type3Font::new(self.font.clone());
-            let gid = font.add(glyph_id);
-            self.fonts.push(font);
-            gid
-        };
-
-        (self.fonts.len() - 1, glyph_id)
-    }
-}
+// #[derive(Clone)]
+// enum FontContainer {
+//     Type3(Type3FontMapper),
+//     CIDFont(CIDFont),
+// }
+//
+// #[derive(Clone)]
+// pub struct Type3FontMapper {
+//     font: Font,
+//     fonts: Vec<Type3Font>,
+// }
+//
+// impl Type3FontMapper {
+//     pub fn new(font: Font) -> Type3FontMapper {
+//         Self {
+//             font,
+//             fonts: Vec::new(),
+//         }
+//     }
+// }
+//
+// impl Type3FontMapper {
+//     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {
+//         if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
+//             return (index, self.fonts[index].add(glyph_id));
+//         }
+//
+//         let glyph_id = if let Some(last_font) = self.fonts.last_mut() {
+//             if last_font.is_full() {
+//                 let mut font = Type3Font::new(self.font.clone());
+//                 let gid = font.add(glyph_id);
+//                 self.fonts.push(font);
+//                 gid
+//             } else {
+//                 last_font.add(glyph_id)
+//             }
+//         } else {
+//             let mut font = Type3Font::new(self.font.clone());
+//             let gid = font.add(glyph_id);
+//             self.fonts.push(font);
+//             gid
+//         };
+//
+//         (self.fonts.len() - 1, glyph_id)
+//     }
+// }

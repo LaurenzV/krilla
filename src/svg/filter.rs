@@ -1,9 +1,10 @@
 use crate::canvas::Surface;
 use crate::object::image::Image;
+use crate::stream::StreamBuilder;
 use image::ImageFormat;
 use tiny_skia_path::{Size, Transform};
 
-pub fn render(group: &usvg::Group, surface: &mut dyn Surface) {
+pub fn render(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
     let layer_bbox = group
         .layer_bounding_box()
         .transform(group.transform())

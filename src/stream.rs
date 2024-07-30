@@ -1,4 +1,4 @@
-use crate::font::Font;
+// use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -58,6 +58,10 @@ impl<'a> StreamBuilder<'a> {
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
         }
+    }
+
+    pub fn serializer_context(&mut self) -> &mut SerializerContext {
+        &mut self.serializer_context
     }
 
     pub fn finish(self) -> Stream {
@@ -138,41 +142,41 @@ impl<'a> StreamBuilder<'a> {
         self.content_restore_state();
     }
 
-    pub fn draw_fill_glyph(
-        &mut self,
-        glyph_id: GlyphId,
-        font: Font,
-        size: FiniteF32,
-        transform: &Transform,
-        fill: &Fill,
-    ) {
-        let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
-        let font_name = self
-            .rd_builder
-            .register_resource(Resource::Font(font_resource));
-
-        self.apply_isolated_op(|sb| {
-            // TODO: Figure out proper bbox
-            sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
-
-            sb.content.begin_text();
-            sb.content.set_font(font_name.to_pdf_name(), size.get());
-            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
-            match gid {
-                PDFGlyph::ColorGlyph(gid) => {
-                    sb.content.set_text_matrix(transform.to_pdf_transform());
-                    sb.content.show(Str(&[gid]));
-                }
-                PDFGlyph::CID(cid) => {
-                    let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
-                    sb.content.set_text_matrix(transform.to_pdf_transform());
-                    sb.content
-                        .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
-                }
-            }
-            sb.content.end_text();
-        })
-    }
+    // pub fn draw_fill_glyph(
+    //     &mut self,
+    //     glyph_id: GlyphId,
+    //     font: Font,
+    //     size: FiniteF32,
+    //     transform: &Transform,
+    //     fill: &Fill,
+    // ) {
+    //     let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
+    //     let font_name = self
+    //         .rd_builder
+    //         .register_resource(Resource::Font(font_resource));
+    //
+    //     self.apply_isolated_op(|sb| {
+    //         // TODO: Figure out proper bbox
+    //         sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
+    //
+    //         sb.content.begin_text();
+    //         sb.content.set_font(font_name.to_pdf_name(), size.get());
+    //         sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+    //         match gid {
+    //             PDFGlyph::ColorGlyph(gid) => {
+    //                 sb.content.set_text_matrix(transform.to_pdf_transform());
+    //                 sb.content.show(Str(&[gid]));
+    //             }
+    //             PDFGlyph::CID(cid) => {
+    //                 let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
+    //                 sb.content.set_text_matrix(transform.to_pdf_transform());
+    //                 sb.content
+    //                     .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
+    //             }
+    //         }
+    //         sb.content.end_text();
+    //     })
+    // }
 
     pub fn draw_masked(&mut self, mask: Mask, stream: Arc<Stream>) {
         self.apply_isolated_op(move |sb| {

@@ -1,9 +1,10 @@
 use crate::canvas::Surface;
+use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill, convert_stroke};
 use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
-pub fn render(path: &usvg::Path, surface: &mut dyn Surface) {
+pub fn render(path: &usvg::Path, stream_builder: &mut StreamBuilder) {
     if !path.is_visible() {
         return;
     }

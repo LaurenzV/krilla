@@ -1,5 +1,6 @@
 use crate::canvas::Surface;
 use crate::object::image::Image;
+use crate::stream::StreamBuilder;
 use crate::svg::group;
 use crate::util::RectExt;
 use crate::FillRule;
@@ -7,7 +8,7 @@ use image::ImageFormat;
 use tiny_skia_path::{Rect, Transform};
 use usvg::ImageKind;
 
-pub fn render(image: &usvg::Image, surface: &mut dyn Surface) {
+pub fn render(image: &usvg::Image, stream_builder: &mut StreamBuilder) {
     if !image.is_visible() {
         return;
     }

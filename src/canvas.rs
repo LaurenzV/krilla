@@ -82,11 +82,7 @@ mod tests {
         let stream = {
             let mut serializer_context = SerializerContext::new(SerializeSettings::default());
             let mut stream_builder = StreamBuilder::new(&mut serializer_context);
-            stream_builder.stroke_path(
-                dummy_path(100.0),
-                Transform::from_scale(2.0, 2.0),
-                Stroke::default(),
-            );
+            stream_builder.draw_stroke_path(&dummy_path(100.0), &Stroke::default());
             stream_builder.finish()
         };
 
