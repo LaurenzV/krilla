@@ -186,10 +186,12 @@ impl<'a> StreamBuilder<'a> {
     }
 
     pub fn draw_shading(&mut self, shading: &ShadingFunction) {
-        let sh = self
-            .resource_dictionary
-            .register_resource(Resource::Shading(shading.clone()));
-        self.content.shading(sh.to_pdf_name());
+        self.apply_isolated_op(|sb| {
+            let sh = sb
+                .resource_dictionary
+                .register_resource(Resource::Shading(shading.clone()));
+            sb.content.shading(sh.to_pdf_name());
+        })
     }
 
     pub fn draw_isolated(&mut self, stream: Stream) {

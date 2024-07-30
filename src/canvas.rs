@@ -1,5 +1,4 @@
 use crate::blend_mode::BlendMode;
-use crate::bytecode::{into_composited, ByteCode, Instruction};
 use crate::color::PdfColorExt;
 use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
