@@ -107,7 +107,7 @@ impl StreamBuilder {
         }
     }
 
-    pub fn draw_fill_path(&mut self, path: &Path, fill: &Fill) {
+    pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -136,7 +136,7 @@ impl StreamBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn draw_stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }

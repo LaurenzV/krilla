@@ -22,13 +22,13 @@ pub fn render(path: &usvg::Path, stream_builder: &mut StreamBuilder) {
 pub fn fill_path(path: &usvg::Path, stream_builder: &mut StreamBuilder) {
     if let Some(fill) = path.fill() {
         let fill = convert_fill(fill, stream_builder.serializer_context());
-        stream_builder.draw_fill_path(&path.data(), &fill);
+        stream_builder.fill_path(&path.data(), &fill);
     }
 }
 
 pub fn stroke_path(path: &usvg::Path, stream_builder: &mut StreamBuilder) {
     if let Some(stroke) = path.stroke() {
         let stroke = convert_stroke(stroke, stream_builder.serializer_context());
-        stream_builder.draw_stroke_path(&path.data(), &stroke);
+        stream_builder.stroke_path(&path.data(), &stroke);
     }
 }

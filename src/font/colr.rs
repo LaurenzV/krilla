@@ -289,7 +289,7 @@ impl ColorPainter for ColrCanvas<'_> {
                 stream.push_clip_path(path, rule);
             }
 
-            stream.draw_fill_path(&filled[0].0, &fill);
+            stream.fill_path(&filled[0].0, &fill);
 
             for _ in clips {
                 stream.pop_clip_path();

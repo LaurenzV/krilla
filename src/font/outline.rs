@@ -20,7 +20,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
     if let Some(path) = outline_builder.finish() {
         stream_builder.save_graphics_state();
         stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
-        stream_builder.draw_fill_path(&path, &Fill::default());
+        stream_builder.fill_path(&path, &Fill::default());
         stream_builder.restore_graphics_state();
 
         return Some(());
