@@ -186,15 +186,6 @@ impl ResourceDictionaryBuilder {
         }
     }
 
-    pub fn to_pdf_resources(&self, sc: &mut SerializerContext, resources: &mut Resources) {
-        write_resource_type(sc, resources, &self.color_spaces);
-        write_resource_type(sc, resources, &self.ext_g_states);
-        write_resource_type(sc, resources, &self.patterns);
-        write_resource_type(sc, resources, &self.x_objects);
-        write_resource_type(sc, resources, &self.shadings);
-        write_resource_type(sc, resources, &self.fonts);
-    }
-
     pub fn finish(self) -> ResourceDictionary {
         ResourceDictionary {
             color_spaces: self.color_spaces.to_resource_list(),
@@ -204,24 +195,6 @@ impl ResourceDictionaryBuilder {
             shadings: self.shadings.to_resource_list(),
             fonts: self.fonts.to_resource_list(),
         }
-    }
-}
-
-fn write_resource_type<T>(
-    sc: &mut SerializerContext,
-    resources: &mut pdf_writer::writers::Resources,
-    resource_mapper: &ResourceMapper<T>,
-) where
-    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject,
-{
-    if resource_mapper.len() > 0 {
-        let mut dict = T::get_dict(resources);
-
-        for (name, entry) in resource_mapper.get_entries() {
-            dict.pair(name.to_pdf_name(), sc.add(entry.clone()));
-        }
-
-        dict.finish();
     }
 }
 
@@ -235,6 +208,35 @@ pub struct ResourceDictionary {
     pub fonts: ResourceList<FontResource>,
 }
 
+impl ResourceDictionary {
+    pub fn to_pdf_resources(&self, sc: &mut SerializerContext, resources: &mut Resources) {
+        write_resource_type(sc, resources, &self.color_spaces);
+        write_resource_type(sc, resources, &self.ext_g_states);
+        write_resource_type(sc, resources, &self.patterns);
+        write_resource_type(sc, resources, &self.x_objects);
+        write_resource_type(sc, resources, &self.shadings);
+        write_resource_type(sc, resources, &self.fonts);
+    }
+}
+
+fn write_resource_type<T>(
+    sc: &mut SerializerContext,
+    resources: &mut Resources,
+    resource_list: &ResourceList<T>,
+) where
+    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject,
+{
+    if resource_list.len() > 0 {
+        let mut dict = T::get_dict(resources);
+
+        for (name, entry) in resource_list.get_entries() {
+            dict.pair(name.to_pdf_name(), sc.add(entry.clone()));
+        }
+
+        dict.finish();
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct ResourceList<V>
 where
@@ -243,10 +245,30 @@ where
     entries: Vec<V>,
 }
 
+impl<T> ResourceList<T>
+where
+    T: Hash + Eq + Clone + ResourceTrait + Debug,
+{
+    pub fn len(&self) -> u32 {
+        self.entries.len() as u32
+    }
+
+    fn name_from_number(num: ResourceNumber) -> String {
+        format!("{}{}", T::get_prefix(), num)
+    }
+
+    pub fn get_entries(&self) -> impl Iterator<Item = (String, T)> + '_ {
+        self.entries
+            .iter()
+            .enumerate()
+            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r.clone()))
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct ResourceMapper<V>
 where
-    V: Hash + Eq + PartialEq + Debug,
+    V: Hash + Eq + PartialEq + Debug + ResourceTrait,
 {
     forward: Vec<V>,
     backward: HashMap<V, ResourceNumber>,
@@ -267,10 +289,6 @@ where
         self.backward.get(&resource).copied()
     }
 
-    pub fn get_with_name(&self, resource: V) -> Option<String> {
-        self.get(resource).map(|u| Self::name_from_number(u))
-    }
-
     pub fn remap(&mut self, resource: V) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
@@ -286,19 +304,9 @@ where
         Self::name_from_number(self.remap(resource))
     }
 
+    // TODO: Deduplicate
     fn name_from_number(num: ResourceNumber) -> String {
         format!("{}{}", V::get_prefix(), num)
-    }
-
-    pub fn len(&self) -> u32 {
-        self.forward.len() as u32
-    }
-
-    pub fn get_entries(&self) -> impl Iterator<Item = (String, V)> + '_ {
-        self.forward
-            .iter()
-            .enumerate()
-            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r.clone()))
     }
 
     pub fn to_resource_list(self) -> ResourceList<V> {
@@ -342,25 +350,3 @@ impl ResourceTrait for FontResource {
         "f"
     }
 }
-
-// TODO: Re-enable
-// #[cfg(test)]
-// mod tests {
-//     use crate::resource::{CsResourceMapper, PdfColorSpace};
-//     use crate::serialize::Object;
-//
-//     #[test]
-//     fn test_cs_resource_mapper() {
-//         let mut mapper = CsResourceMapper::new();
-//         assert_eq!(mapper.remap(PdfColorSpace::SRGB), 0);
-//         assert_eq!(mapper.remap(PdfColorSpace::D65Gray), 1);
-//         assert_eq!(mapper.remap(PdfColorSpace::SRGB), 0);
-//         assert_eq!(
-//             mapper.remap_with_name(PdfColorSpace::SRGB),
-//             String::from("C0")
-//         );
-//         let items = mapper.get_entries().collect::<Vec<_>>();
-//         assert_eq!(items[0], (String::from("C0"), PdfColorSpace::SRGB));
-//         assert_eq!(items[1], (String::from("C1"), PdfColorSpace::D65Gray));
-//     }
-// }

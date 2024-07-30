@@ -1,5 +1,3 @@
-use crate::bytecode::ByteCode;
-use crate::canvas::CanvasPdfSerializer;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
@@ -10,7 +8,7 @@ use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    byte_code: Arc<ByteCode>,
+    stream: Arc<Stream>,
     isolated: bool,
     transparency_group_color_space: bool,
     custom_bbox: Option<Rect>,
@@ -21,13 +19,13 @@ pub struct XObject(Arc<Repr>);
 
 impl XObject {
     pub fn new(
-        stream: Stream,
+        stream: Arc<Stream>,
         isolated: bool,
         transparency_group_color_space: bool,
         custom_bbox: Option<Rect>,
     ) -> Self {
         XObject(Arc::new(Repr {
-            byte_code,
+            stream,
             isolated,
             transparency_group_color_space,
             custom_bbox,
@@ -40,18 +38,17 @@ impl Object for XObject {
         let srgb_ref = sc.srgb();
 
         let mut chunk = Chunk::new();
-
-        // TODO: Deduplicate
-        let mut resource_dictionary = ResourceDictionaryBuilder::new();
-        let (content_stream, bbox) = {
-            let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary, sc);
-            serializer.serialize_bytecode(&self.0.byte_code);
-            serializer.finish()
-        };
-
-        let mut x_object = chunk.form_xobject(root_ref, &content_stream);
-        resource_dictionary.to_pdf_resources(sc, &mut x_object.resources());
-        x_object.bbox(self.0.custom_bbox.unwrap_or(bbox).to_pdf_rect());
+        let mut x_object = chunk.form_xobject(root_ref, &self.0.stream.content());
+        self.0
+            .stream
+            .resource_dictionary()
+            .to_pdf_resources(sc, &mut x_object.resources());
+        x_object.bbox(
+            self.0
+                .custom_bbox
+                .unwrap_or(self.0.stream.bbox())
+                .to_pdf_rect(),
+        );
 
         if self.0.isolated || self.0.transparency_group_color_space {
             let mut group = x_object.group();

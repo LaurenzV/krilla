@@ -28,6 +28,20 @@ pub struct Stream {
     resource_dictionary: ResourceDictionary,
 }
 
+impl Stream {
+    pub fn content(&self) -> &[u8] {
+        self.content.as_slice()
+    }
+
+    pub fn bbox(&self) -> Rect {
+        self.bbox
+    }
+
+    pub fn resource_dictionary(&self) -> &ResourceDictionary {
+        &self.resource_dictionary
+    }
+}
+
 pub struct StreamBuilder<'a> {
     rd_builder: ResourceDictionaryBuilder,
     serializer_context: &'a mut SerializerContext,
@@ -188,7 +202,7 @@ impl<'a> StreamBuilder<'a> {
                 .non_stroking_alpha(opacity);
             sb.graphics_states.combine(&ext_state);
 
-            let x_object = XObject::new(stream, true, false, None);
+            let x_object = XObject::new(Arc::new(stream), true, false, None);
             let x_object_name = sb
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
@@ -207,7 +221,7 @@ impl<'a> StreamBuilder<'a> {
 
     pub fn draw_isolated(&mut self, stream: Stream) {
         self.apply_isolated_op(|sb| {
-            let x_object = XObject::new(stream, true, false, None);
+            let x_object = XObject::new(Arc::new(stream), true, false, None);
             let x_object_name = sb
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
