@@ -1,11 +1,11 @@
-use crate::canvas::{Canvas, Surface};
 use crate::font::{Font, OutlineBuilder};
+use crate::stream::StreamBuilder;
 use crate::Fill;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) {
     let font_ref = font.font_ref();
     let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
     let outline_glyphs = font_ref.outline_glyphs();
@@ -16,19 +16,14 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
             DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),
             &mut outline_builder,
         );
-    } else {
-        return None;
     }
-
-    let mut canvas = Canvas::new(
-        Size::from_wh(metrics.units_per_em as f32, metrics.units_per_em as f32).unwrap(),
-    );
 
     if let Some(path) = outline_builder.finish() {
-        canvas.fill_path(path, Transform::from_scale(1.0, -1.0), Fill::default());
+        stream_builder.save_graphics_state();
+        stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
+        stream_builder.draw_fill_path(&path, &Fill::default());
+        stream_builder.restore_graphics_state();
     }
-
-    Some(canvas)
 }
 
 #[cfg(test)]
@@ -50,7 +45,7 @@ mod tests {
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
         let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (36..100).collect::<Vec<_>>();
+        let glyphs = (0..100).collect::<Vec<_>>();
 
         draw(&font, &glyphs, "outline_noto_sans", draw_glyph);
     }
