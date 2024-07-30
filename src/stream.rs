@@ -197,42 +197,40 @@ impl<'a> StreamBuilder<'a> {
     //     })
     // }
 
-    pub fn draw_masked(&mut self, mask: Mask, stream: Arc<Stream>) {
+    pub(crate) fn draw_xobject(&mut self, x_object: XObject, state: &ExtGState) {
+        self.graphics_states.save_state();
+        self.graphics_states.combine(state);
+
+        self.bbox.expand(&x_object.bbox());
+
         self.apply_isolated_op(move |sb| {
-            let state = ExtGState::new().mask(mask);
-            sb.graphics_states.combine(&state);
-
-            let x_object = XObject::new(stream, false, true, None);
-            let x_object_name = sb
-                .rd_builder
-                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-            sb.content.x_object(x_object_name.to_pdf_name());
-        })
-    }
-
-    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
-        self.apply_isolated_op(move |sb| {
-            let ext_state = ExtGState::new()
-                .stroking_alpha(opacity)
-                .non_stroking_alpha(opacity);
-            sb.graphics_states.combine(&ext_state);
-
-            let x_object = XObject::new(stream, true, false, None);
-            let x_object_name = sb
-                .rd_builder
-                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-            sb.content.x_object(x_object_name.to_pdf_name());
-        })
-    }
-
-    pub fn draw_isolated(&mut self, stream: Stream) {
-        self.apply_isolated_op(|sb| {
-            let x_object = XObject::new(Arc::new(stream), true, false, None);
             let x_object_name = sb
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
             sb.content.x_object(x_object_name.to_pdf_name());
         });
+
+        self.graphics_states.restore_state();
+    }
+
+    pub fn draw_masked(&mut self, mask: Mask, stream: Arc<Stream>) {
+        let state = ExtGState::new().mask(mask);
+        let x_object = XObject::new(stream, false, true, None);
+        self.draw_xobject(x_object, &state);
+    }
+
+    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
+        let state = ExtGState::new()
+            .stroking_alpha(opacity)
+            .non_stroking_alpha(opacity);
+        let x_object = XObject::new(stream, true, false, None);
+        self.draw_xobject(x_object, &state);
+    }
+
+    pub fn draw_isolated(&mut self, stream: Stream) {
+        let state = ExtGState::new();
+        let x_object = XObject::new(Arc::new(stream), true, false, None);
+        self.draw_xobject(x_object, &state);
     }
 
     pub fn draw_image(&mut self, image: Image, size: Size) {
@@ -254,12 +252,10 @@ impl<'a> StreamBuilder<'a> {
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        self.apply_isolated_op(|sb| {
-            let sh = sb
-                .rd_builder
-                .register_resource(Resource::Shading(shading.clone()));
-            sb.content.shading(sh.to_pdf_name());
-        })
+        let sh = self
+            .rd_builder
+            .register_resource(Resource::Shading(shading.clone()));
+        self.content.shading(sh.to_pdf_name());
     }
 
     fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
@@ -279,8 +275,8 @@ impl<'a> StreamBuilder<'a> {
     fn apply_isolated_op(&mut self, op: impl FnOnce(&mut Self)) {
         self.save_graphics_state();
         self.content_save_state();
-        self.content_set_ext_state();
         self.content_set_transform();
+        self.content_set_ext_state();
 
         op(self);
 
@@ -298,10 +294,13 @@ impl<'a> StreamBuilder<'a> {
 
     fn content_set_ext_state(&mut self) {
         let state = self.graphics_states.cur().ext_g_state().clone();
-        let ext = self
-            .rd_builder
-            .register_resource(Resource::ExtGState(state));
-        self.content.set_parameters(ext.to_pdf_name());
+
+        if !state.empty() {
+            let ext = self
+                .rd_builder
+                .register_resource(Resource::ExtGState(state));
+            self.content.set_parameters(ext.to_pdf_name());
+        }
     }
 
     fn content_set_transform(&mut self) {

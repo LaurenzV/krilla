@@ -30,6 +30,10 @@ impl XObject {
             custom_bbox,
         }))
     }
+
+    pub fn bbox(&self) -> Rect {
+        self.0.custom_bbox.unwrap_or(self.0.stream.bbox())
+    }
 }
 
 impl Object for XObject {

@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     pub fn svg() {
-        let data = std::fs::read("//Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/masking/clip-rule/clip-rule=evenodd.svg").unwrap();
+        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/masking/clipPath/overlapped-shapes-with-evenodd.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
         let mut page = Page::new(tree.size());
         let mut stream_builder = page.builder();
