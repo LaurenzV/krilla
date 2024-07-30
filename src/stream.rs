@@ -1,4 +1,3 @@
-use crate::blend_mode::BlendMode;
 use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -81,25 +80,6 @@ impl<'a> StreamBuilder<'a> {
         self.graphics_states.restore_state();
     }
 
-    pub fn set_mask(&mut self, mask: Mask) {
-        let state = ExtGState::new().mask(mask);
-        self.graphics_states.combine(&state);
-    }
-
-    pub fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
-        if alpha.get() != 1.0 {
-            let state = ExtGState::new().non_stroking_alpha(alpha);
-            self.graphics_states.combine(&state);
-        }
-    }
-
-    pub fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
-        if alpha.get() != 1.0 {
-            let state = ExtGState::new().stroking_alpha(alpha);
-            self.graphics_states.combine(&state);
-        }
-    }
-
     pub fn set_blend_mode(&mut self, blend_mode: pdf_writer::types::BlendMode) {
         if blend_mode != pdf_writer::types::BlendMode::Normal {
             let state = ExtGState::new().blend_mode(blend_mode);
@@ -163,7 +143,7 @@ impl<'a> StreamBuilder<'a> {
         glyph_id: GlyphId,
         font: Font,
         size: FiniteF32,
-        transform: TransformWrapper,
+        transform: &Transform,
         fill: &Fill,
     ) {
         let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
@@ -176,7 +156,6 @@ impl<'a> StreamBuilder<'a> {
             sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
 
             sb.content.begin_text();
-            let mut transform = transform.0;
             sb.content.set_font(font_name.to_pdf_name(), size.get());
             sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
             match gid {
@@ -185,13 +164,26 @@ impl<'a> StreamBuilder<'a> {
                     sb.content.show(Str(&[gid]));
                 }
                 PDFGlyph::CID(cid) => {
-                    transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
+                    let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
                     sb.content.set_text_matrix(transform.to_pdf_transform());
                     sb.content
                         .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
                 }
             }
             sb.content.end_text();
+        })
+    }
+
+    pub fn draw_masked(&mut self, mask: Mask, stream: Arc<Stream>) {
+        self.apply_isolated_op(move |sb| {
+            let state = ExtGState::new().mask(mask);
+            sb.graphics_states.combine(&state);
+
+            let x_object = XObject::new(stream, false, true, None);
+            let x_object_name = sb
+                .rd_builder
+                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+            sb.content.x_object(x_object_name.to_pdf_name());
         })
     }
 
@@ -207,15 +199,6 @@ impl<'a> StreamBuilder<'a> {
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
             sb.content.x_object(x_object_name.to_pdf_name());
-        })
-    }
-
-    pub fn draw_shading(&mut self, shading: &ShadingFunction) {
-        self.apply_isolated_op(|sb| {
-            let sh = sb
-                .rd_builder
-                .register_resource(Resource::Shading(shading.clone()));
-            sb.content.shading(sh.to_pdf_name());
         })
     }
 
@@ -245,6 +228,29 @@ impl<'a> StreamBuilder<'a> {
         });
 
         self.restore_graphics_state();
+    }
+
+    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
+        self.apply_isolated_op(|sb| {
+            let sh = sb
+                .rd_builder
+                .register_resource(Resource::Shading(shading.clone()));
+            sb.content.shading(sh.to_pdf_name());
+        })
+    }
+
+    fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
+        if alpha.get() != 1.0 {
+            let state = ExtGState::new().non_stroking_alpha(alpha);
+            self.graphics_states.combine(&state);
+        }
+    }
+
+    fn set_stroke_opacity(&mut self, alpha: NormalizedF32) {
+        if alpha.get() != 1.0 {
+            let state = ExtGState::new().stroking_alpha(alpha);
+            self.graphics_states.combine(&state);
+        }
     }
 
     fn apply_isolated_op(&mut self, mut op: impl FnOnce(&mut Self)) {

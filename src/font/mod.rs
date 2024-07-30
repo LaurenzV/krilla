@@ -1,4 +1,3 @@
-use crate::canvas::{Canvas, Surface};
 use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::transform::TransformWrapper;
 use crate::util::Prehashed;

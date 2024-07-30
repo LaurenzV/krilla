@@ -10,6 +10,7 @@ use crate::object::type3_font::Type3Font;
 use crate::resource::FontResource;
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::GlyphId;
+use tiny_skia_path::Size;
 
 #[derive(Copy, Clone)]
 pub struct SerializeSettings {
@@ -33,7 +34,7 @@ pub trait Object: Sized + Hash + Clone + 'static {
 pub trait RegisterableObject: Object {}
 
 pub trait PageSerialize: Sized {
-    fn serialize(self, serialize_settings: SerializeSettings) -> Pdf;
+    fn serialize(self, serialize_settings: SerializeSettings, size: Size) -> Pdf;
 }
 
 pub struct SerializerContext {
