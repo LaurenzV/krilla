@@ -1,13 +1,11 @@
 use crate::object::mask::Mask;
-use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::svg::group;
-use crate::svg::group::masked;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::{FillRule, MaskType};
-use pdf_writer::Finish;
 use std::sync::Arc;
-use tiny_skia_path::{Path, PathBuilder, PathSegment, Size, Transform};
+use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
 pub enum SvgClipPath {
     SimpleClip(Vec<(Path, FillRule)>),
@@ -190,7 +188,7 @@ fn create_complex_clip_path(
 
     if let Some(svg_clip_path) = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, clip_path, stream_builder.serializer_context()))
+        .map(|c| get_clip_path(parent, c, stream_builder.serializer_context()))
     {
         match svg_clip_path {
             SvgClipPath::SimpleClip(rules) => {

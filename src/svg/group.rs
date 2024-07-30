@@ -3,9 +3,7 @@ use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 // use crate::svg::{filter, image, path};
-use crate::serialize::SerializerContext;
 use crate::svg::{filter, image, path};
-use pdf_writer::Finish;
 use std::sync::Arc;
 use usvg::{Node, NormalizedF32};
 
@@ -103,6 +101,6 @@ pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
         Node::Group(g) => render(g, stream_builder),
         Node::Path(p) => path::render(p, stream_builder),
         Node::Image(i) => image::render(i, stream_builder),
-        Node::Text(t) => unimplemented!(),
+        Node::Text(_) => unimplemented!(),
     }
 }

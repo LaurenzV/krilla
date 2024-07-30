@@ -3,7 +3,7 @@ use crate::object::xobject::XObject;
 use crate::serialize::{Object, RegisterableObject, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
-use pdf_writer::{Finish, Name, Ref};
+use pdf_writer::{Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 

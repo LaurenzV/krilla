@@ -1,11 +1,10 @@
 use crate::object::mask::Mask;
-use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::svg::group;
 use crate::svg::util::convert_mask_type;
 use crate::util::RectExt;
 use crate::FillRule;
-use pdf_writer::Finish;
 use std::sync::Arc;
 
 pub fn get_mask(mask: &usvg::Mask, serializer_context: &mut SerializerContext) -> Mask {

@@ -1,4 +1,3 @@
-use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;

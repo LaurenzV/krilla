@@ -8,7 +8,7 @@ use crate::{
 };
 use pdf_writer::types::BlendMode;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 use usvg::NonZeroPositiveF32;
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {

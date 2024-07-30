@@ -30,7 +30,7 @@ mod tests {
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
         let mut serializer_context = SerializerContext::new(SerializeSettings::default());
         let mut stream_builder = StreamBuilder::new(&mut serializer_context);
-        let canvas = render_tree(&tree, &mut stream_builder);
+        render_tree(&tree, &mut stream_builder);
         let stream = stream_builder.finish();
         let finished = stream
             .serialize(SerializeSettings::default(), tree.size())

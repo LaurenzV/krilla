@@ -10,15 +10,13 @@ use crate::object::xobject::XObject;
 use crate::resource::{
     PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource,
 };
-use crate::serialize::{PDFGlyph, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PathWrapper, PdfColorExt, Stroke};
-use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Str};
-use skrifa::GlyphId;
+use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
+use pdf_writer::Content;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Stream {
@@ -261,7 +259,7 @@ impl<'a> StreamBuilder<'a> {
         }
     }
 
-    fn apply_isolated_op(&mut self, mut op: impl FnOnce(&mut Self)) {
+    fn apply_isolated_op(&mut self, op: impl FnOnce(&mut Self)) {
         self.save_graphics_state();
         self.content_save_state();
         self.content_set_ext_state();

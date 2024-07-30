@@ -1,6 +1,5 @@
 use crate::object::color_space::ColorSpace;
 use pdf_writer::{Chunk, Pdf, Ref};
-use std::any::Any;
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -9,7 +8,6 @@ use std::hash::Hash;
 // use crate::object::type3_font::Type3Font;
 // use crate::resource::FontResource;
 use siphasher::sip128::{Hasher128, SipHasher13};
-use skrifa::GlyphId;
 use tiny_skia_path::Size;
 
 #[derive(Copy, Clone)]

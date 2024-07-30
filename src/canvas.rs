@@ -1,8 +1,6 @@
-use crate::color::PdfColorExt;
-use crate::object::shading_function::GradientPropertiesExt;
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::Stream;
-use crate::util::{deflate, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{deflate, RectExt};
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
 use tiny_skia_path::Size;
 
@@ -50,21 +48,19 @@ impl PageSerialize for Stream {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::Color;
+    
     // use crate::font::Font;
-    use crate::object::image::Image;
-    use crate::object::mask::{Mask, MaskType};
-    use crate::paint::{
-        LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop, SweepGradient,
-    };
+    
+    
+    
     use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-    use crate::stream::{Stream, StreamBuilder};
-    use crate::transform::TransformWrapper;
-    use crate::{Fill, FillRule, Stroke};
-    use skrifa::instance::Location;
-    use skrifa::GlyphId;
-    use std::sync::Arc;
-    use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
+    use crate::stream::StreamBuilder;
+    
+    use crate::Stroke;
+    
+    
+    
+    use tiny_skia_path::{Path, PathBuilder, Size};
 
     fn dummy_path(w: f32) -> Path {
         let mut builder = PathBuilder::new();

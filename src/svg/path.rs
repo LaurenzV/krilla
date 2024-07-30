@@ -1,4 +1,3 @@
-use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill, convert_stroke};
 use usvg::PaintOrder;
