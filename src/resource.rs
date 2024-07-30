@@ -130,7 +130,7 @@ impl Object for PatternResource {
 impl RegisterableObject for PatternResource {}
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ResourceDictionary {
+pub struct ResourceDictionaryBuilder {
     pub color_spaces: ResourceMapper<ColorSpace>,
     pub ext_g_states: ResourceMapper<ExtGState>,
     pub patterns: ResourceMapper<PatternResource>,
@@ -139,7 +139,7 @@ pub struct ResourceDictionary {
     pub fonts: ResourceMapper<FontResource>,
 }
 
-impl ResourceDictionary {
+impl ResourceDictionaryBuilder {
     pub fn new() -> Self {
         Self {
             color_spaces: ResourceMapper::new(),
@@ -194,6 +194,17 @@ impl ResourceDictionary {
         write_resource_type(sc, resources, &self.shadings);
         write_resource_type(sc, resources, &self.fonts);
     }
+
+    pub fn finish(self) -> ResourceDictionary {
+        ResourceDictionary {
+            color_spaces: self.color_spaces.to_resource_list(),
+            ext_g_states: self.ext_g_states.to_resource_list(),
+            patterns: self.patterns.to_resource_list(),
+            x_objects: self.x_objects.to_resource_list(),
+            shadings: self.shadings.to_resource_list(),
+            fonts: self.fonts.to_resource_list(),
+        }
+    }
 }
 
 fn write_resource_type<T>(
@@ -212,6 +223,24 @@ fn write_resource_type<T>(
 
         dict.finish();
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub struct ResourceDictionary {
+    pub color_spaces: ResourceList<ColorSpace>,
+    pub ext_g_states: ResourceList<ExtGState>,
+    pub patterns: ResourceList<PatternResource>,
+    pub x_objects: ResourceList<XObjectResource>,
+    pub shadings: ResourceList<ShadingFunction>,
+    pub fonts: ResourceList<FontResource>,
+}
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub struct ResourceList<V>
+where
+    V: Hash + Eq + PartialEq + Debug,
+{
+    entries: Vec<V>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -270,6 +299,12 @@ where
             .iter()
             .enumerate()
             .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r.clone()))
+    }
+
+    pub fn to_resource_list(self) -> ResourceList<V> {
+        ResourceList {
+            entries: self.forward,
+        }
     }
 }
 

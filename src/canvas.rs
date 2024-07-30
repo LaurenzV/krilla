@@ -11,7 +11,7 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::Paint;
 use crate::resource::{
-    FontResource, PatternResource, Resource, ResourceDictionary, XObjectResource,
+    FontResource, PatternResource, Resource, ResourceDictionaryBuilder, XObjectResource,
 };
 use crate::serialize::{PDFGlyph, PageSerialize, SerializeSettings, SerializerContext};
 use crate::transform::TransformWrapper;
@@ -488,7 +488,7 @@ impl PageSerialize for Canvas {
         let mut chunk = Chunk::new();
         chunk.pages(page_tree_ref).count(1).kids([page_ref]);
 
-        let mut resource_dictionary = ResourceDictionary::new();
+        let mut resource_dictionary = ResourceDictionaryBuilder::new();
         let (content_stream, _) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary, &mut sc);
             serializer.transform(&Transform::from_row(

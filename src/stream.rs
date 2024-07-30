@@ -8,7 +8,9 @@ use crate::object::shading_function::{GradientProperties, GradientPropertiesExt,
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
-use crate::resource::{PatternResource, Resource, ResourceDictionary, XObjectResource};
+use crate::resource::{
+    PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource,
+};
 use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -19,14 +21,15 @@ use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Stream {
     content: Vec<u8>,
     bbox: Rect,
+    resource_dictionary: ResourceDictionary,
 }
 
 pub struct StreamBuilder<'a> {
-    resource_dictionary: ResourceDictionary,
+    rd_builder: ResourceDictionaryBuilder,
     serializer_context: &'a mut SerializerContext,
     content: Content,
     graphics_states: GraphicsStates,
@@ -36,7 +39,7 @@ pub struct StreamBuilder<'a> {
 impl<'a> StreamBuilder<'a> {
     pub fn new(serializer_context: &'a mut SerializerContext) -> Self {
         Self {
-            resource_dictionary: ResourceDictionary::new(),
+            rd_builder: ResourceDictionaryBuilder::new(),
             serializer_context,
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
@@ -44,7 +47,15 @@ impl<'a> StreamBuilder<'a> {
         }
     }
 
-    pub fn concat_transform(&mut self, transform: &tiny_skia_path::Transform) {
+    pub fn finish(self) -> Stream {
+        Stream {
+            content: self.content.finish(),
+            bbox: self.bbox,
+            resource_dictionary: self.rd_builder.finish(),
+        }
+    }
+
+    pub fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
     }
 
@@ -143,7 +154,7 @@ impl<'a> StreamBuilder<'a> {
     ) {
         let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
         let font_name = self
-            .resource_dictionary
+            .rd_builder
             .register_resource(Resource::Font(font_resource));
 
         self.apply_isolated_op(|sb| {
@@ -179,7 +190,7 @@ impl<'a> StreamBuilder<'a> {
 
             let x_object = XObject::new(stream, true, false, None);
             let x_object_name = sb
-                .resource_dictionary
+                .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
             sb.content.x_object(x_object_name.to_pdf_name());
         })
@@ -188,7 +199,7 @@ impl<'a> StreamBuilder<'a> {
     pub fn draw_shading(&mut self, shading: &ShadingFunction) {
         self.apply_isolated_op(|sb| {
             let sh = sb
-                .resource_dictionary
+                .rd_builder
                 .register_resource(Resource::Shading(shading.clone()));
             sb.content.shading(sh.to_pdf_name());
         })
@@ -198,7 +209,7 @@ impl<'a> StreamBuilder<'a> {
         self.apply_isolated_op(|sb| {
             let x_object = XObject::new(stream, true, false, None);
             let x_object_name = sb
-                .resource_dictionary
+                .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
             sb.content.x_object(x_object_name.to_pdf_name());
         });
@@ -213,7 +224,7 @@ impl<'a> StreamBuilder<'a> {
 
         self.apply_isolated_op(move |sb| {
             let image_name = sb
-                .resource_dictionary
+                .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::Image(image)));
 
             sb.content.x_object(image_name.to_pdf_name());
@@ -245,7 +256,7 @@ impl<'a> StreamBuilder<'a> {
     fn content_set_ext_state(&mut self) {
         let state = self.graphics_states.cur().ext_g_state().clone();
         let ext = self
-            .resource_dictionary
+            .rd_builder
             .register_resource(Resource::ExtGState(state));
         self.content.set_parameters(ext.to_pdf_name());
     }
@@ -287,17 +298,15 @@ impl<'a> StreamBuilder<'a> {
                         .pre_concat(transform.0),
                 ),
             );
-            let color_space = self
-                .resource_dictionary
-                .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
-                    shading_pattern,
-                )));
+            let color_space = self.rd_builder.register_resource(Resource::Pattern(
+                PatternResource::ShadingPattern(shading_pattern),
+            ));
 
             if let Some(shading_mask) = shading_mask {
                 let state = ExtGState::new().mask(shading_mask);
 
                 let ext = self
-                    .resource_dictionary
+                    .rd_builder
                     .register_resource(Resource::ExtGState(state));
                 self.content.set_parameters(ext.to_pdf_name());
             }
@@ -308,7 +317,7 @@ impl<'a> StreamBuilder<'a> {
         match paint {
             Paint::Color(c) => {
                 let color_space = self
-                    .resource_dictionary
+                    .rd_builder
                     .register_resource(Resource::ColorSpace(c.get_pdf_color_space()));
                 set_solid_fn(&mut self.content, color_space, c);
             }
@@ -330,11 +339,13 @@ impl<'a> StreamBuilder<'a> {
 
                 Arc::make_mut(&mut pat).transform = pattern_transform(transform);
 
-                let color_space = self
-                    .resource_dictionary
-                    .register_resource(Resource::Pattern(PatternResource::TilingPattern(
-                        TilingPattern::new(pat.canvas.clone(), pat.transform, opacity),
-                    )));
+                let color_space = self.rd_builder.register_resource(Resource::Pattern(
+                    PatternResource::TilingPattern(TilingPattern::new(
+                        pat.canvas.clone(),
+                        pat.transform,
+                        opacity,
+                    )),
+                ));
                 set_pattern_fn(&mut self.content, color_space);
             }
         }

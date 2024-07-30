@@ -1,7 +1,7 @@
 use crate::canvas::Canvas;
 use crate::font::{bitmap, colr, outline, svg, Font};
 use crate::object::xobject::XObject;
-use crate::resource::{Resource, ResourceDictionary, XObjectResource};
+use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
@@ -81,7 +81,7 @@ impl Object for Type3Font {
             })
             .collect::<Vec<_>>();
 
-        let mut resource_dictionary = ResourceDictionary::new();
+        let mut resource_dictionary = ResourceDictionaryBuilder::new();
         let mut global_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
         let glyph_streams = self

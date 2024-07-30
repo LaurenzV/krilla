@@ -1,6 +1,6 @@
 use crate::bytecode::ByteCode;
 use crate::canvas::CanvasPdfSerializer;
-use crate::resource::ResourceDictionary;
+use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
@@ -42,7 +42,7 @@ impl Object for XObject {
         let mut chunk = Chunk::new();
 
         // TODO: Deduplicate
-        let mut resource_dictionary = ResourceDictionary::new();
+        let mut resource_dictionary = ResourceDictionaryBuilder::new();
         let (content_stream, bbox) = {
             let mut serializer = CanvasPdfSerializer::new(&mut resource_dictionary, sc);
             serializer.serialize_bytecode(&self.0.byte_code);

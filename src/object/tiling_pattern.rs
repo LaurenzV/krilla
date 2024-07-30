@@ -1,7 +1,7 @@
 use crate::bytecode::ByteCode;
 use crate::canvas::{Canvas, CanvasPdfSerializer};
 use crate::object::xobject::XObject;
-use crate::resource::{Resource, ResourceDictionary, XObjectResource};
+use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{NameExt, TransformExt};
@@ -39,7 +39,7 @@ impl Object for TilingPattern {
         let mut chunk = Chunk::new();
         // TODO: Deduplicate.
 
-        let mut resource_dictionary = ResourceDictionary::new();
+        let mut resource_dictionary = ResourceDictionaryBuilder::new();
 
         // stroke/fill opacity doesn't work consistently across different viewers for patterns,
         // so instead we simulate it ourselves.
