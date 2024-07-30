@@ -41,11 +41,10 @@ mod tests {
     // This will not use Type3
     #[test]
     fn outline_noto_sans() {
-        let font_data =
-            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/NotoSans.ttf").unwrap();
+        let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
         let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (0..100).collect::<Vec<_>>();
+        let glyphs = (0..1000).collect::<Vec<_>>();
 
         draw(&font, &glyphs, "outline_noto_sans", draw_glyph);
     }

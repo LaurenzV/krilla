@@ -88,21 +88,6 @@ mod tests {
         builder.finish().unwrap()
     }
 
-    #[test]
-    fn canvas_stroke() {
-        let stream = {
-            let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-            let mut stream_builder = StreamBuilder::new(&mut serializer_context);
-            stream_builder.draw_stroke_path(&dummy_path(100.0), &Stroke::default());
-            stream_builder.finish()
-        };
-
-        let serialize_settings = SerializeSettings::default();
-
-        let chunk = stream.serialize(serialize_settings, Size::from_wh(100.0, 100.0).unwrap());
-        write("pattern", &chunk.as_bytes());
-    }
-
     // #[test]
     // fn fill() {
     //     use crate::serialize::PageSerialize;

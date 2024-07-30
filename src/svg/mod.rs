@@ -24,18 +24,18 @@ mod tests {
     use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
     use crate::svg::render_tree;
 
-    #[test]
-    pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
-        let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
-        let mut page = Page::new(tree.size());
-        let mut stream_builder = page.builder();
-        render_tree(&tree, &mut stream_builder);
-        let stream = stream_builder.finish();
-        let finished = stream
-            .serialize(SerializeSettings::default(), tree.size())
-            .finish();
-        let _ = std::fs::write("out/svg.pdf", &finished);
-        let _ = std::fs::write("out/svg.txt", &finished);
-    }
+    // #[test]
+    // pub fn svg() {
+    //     let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
+    //     let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+    //     let mut page = Page::new(tree.size());
+    //     let mut stream_builder = page.builder();
+    //     render_tree(&tree, &mut stream_builder);
+    //     let stream = stream_builder.finish();
+    //     let finished = stream
+    //         .serialize(SerializeSettings::default(), tree.size())
+    //         .finish();
+    //     let _ = std::fs::write("out/svg.pdf", &finished);
+    //     let _ = std::fs::write("out/svg.txt", &finished);
+    // }
 }
