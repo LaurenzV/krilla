@@ -357,7 +357,12 @@ impl StreamBuilder {
 
         let mut write_gradient = |gradient_props: GradientProperties,
                                   transform: TransformWrapper| {
-            let shading_mask = Mask::new_from_shading(gradient_props.clone(), transform, bounds);
+            let shading_mask = Mask::new_from_shading(
+                gradient_props.clone(),
+                transform,
+                bounds,
+                self.serializer_context.clone(),
+            );
 
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
@@ -416,6 +421,7 @@ impl StreamBuilder {
                         opacity,
                         pat.width,
                         pat.height,
+                        self.serializer_context.clone(),
                     )),
                 ));
                 set_pattern_fn(&mut self.content, color_space);

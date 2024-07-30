@@ -32,6 +32,7 @@ impl Mask {
         gradient_properties: GradientProperties,
         shading_transform: TransformWrapper,
         bbox: Rect,
+        serializer_context: Rc<RefCell<SerializerContext>>,
     ) -> Option<Self> {
         match &gradient_properties {
             GradientProperties::RadialAxialGradient(rag) => {
@@ -49,9 +50,7 @@ impl Mask {
         let shading_function = ShadingFunction::new(gradient_properties, true);
 
         let shading_stream = {
-            // TODO: Inspect
-            let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-            let mut builder = StreamBuilder::new(Rc::new(RefCell::new(serializer_context)));
+            let mut builder = StreamBuilder::new(serializer_context);
             builder.concat_transform(&shading_transform.0);
             builder.draw_shading(&shading_function);
             builder.finish()

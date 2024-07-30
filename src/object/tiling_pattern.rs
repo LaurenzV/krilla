@@ -29,9 +29,24 @@ impl TilingPattern {
         base_opacity: NormalizedF32,
         width: FiniteF32,
         height: FiniteF32,
+        serializer_context: Rc<RefCell<SerializerContext>>,
     ) -> Self {
+        // stroke/fill opacity doesn't work consistently across different viewers for patterns,
+        // so instead we simulate it ourselves.
+        let pattern_stream = if base_opacity == NormalizedF32::ONE {
+            stream
+        } else {
+            let stream = {
+                let mut builder = StreamBuilder::new(serializer_context);
+                builder.draw_opacified(base_opacity, stream.clone());
+                builder.finish()
+            };
+
+            Arc::new(stream)
+        };
+
         Self(Arc::new(Repr {
-            stream,
+            stream: pattern_stream,
             transform,
             base_opacity,
             width,
@@ -43,25 +58,10 @@ impl TilingPattern {
 impl Object for TilingPattern {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
-        // TODO: Deduplicate.
 
-        // stroke/fill opacity doesn't work consistently across different viewers for patterns,
-        // so instead we simulate it ourselves.
-        let stream = if self.0.base_opacity == NormalizedF32::ONE {
-            self.0.stream.clone()
-        } else {
-            let stream = {
-                let serializer_context = SerializerContext::new(SerializeSettings::default());
-                let mut builder = StreamBuilder::new(Rc::new(RefCell::new(serializer_context)));
-                builder.draw_opacified(self.0.base_opacity, self.0.stream.clone());
-                builder.finish()
-            };
-
-            Arc::new(stream)
-        };
-
-        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &stream.content());
-        stream
+        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &self.0.stream.content());
+        self.0
+            .stream
             .resource_dictionary()
             .to_pdf_resources(sc, &mut tiling_pattern.resources());
 
