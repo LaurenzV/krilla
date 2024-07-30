@@ -5,7 +5,7 @@ use pdf_writer::{Chunk, Filter, Finish, Pdf};
 use tiny_skia_path::Size;
 
 pub struct Page {
-    size: Size,
+    pub size: Size,
     serializer_context: SerializerContext,
 }
 

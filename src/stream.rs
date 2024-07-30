@@ -162,7 +162,12 @@ impl<'a> StreamBuilder<'a> {
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.content_save_state();
-        self.content_draw_path(path.clone().transform(self.graphics_states.cur().transform()).unwrap().segments());
+        self.content_draw_path(
+            path.clone()
+                .transform(self.graphics_states.cur().transform())
+                .unwrap()
+                .segments(),
+        );
 
         match clip_rule {
             FillRule::NonZero => self.content.clip_nonzero(),
@@ -254,7 +259,11 @@ impl<'a> StreamBuilder<'a> {
         let transform =
             Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
         self.concat_transform(&transform);
-        self.bbox.expand(&self.graphics_states.transform_bbox(size.to_rect(0.0, 0.0).unwrap()));
+        self.bbox.expand(
+            &self
+                .graphics_states
+                .transform_bbox(size.to_rect(0.0, 0.0).unwrap()),
+        );
 
         self.apply_isolated_op(move |sb| {
             let image_name = sb

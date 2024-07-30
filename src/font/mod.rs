@@ -1,7 +1,8 @@
+use crate::canvas::Page;
 use crate::serialize::{PageSerialize, SerializeSettings};
+use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use crate::util::Prehashed;
-use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -11,9 +12,9 @@ use std::ops::Deref;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 
-pub mod bitmap;
-pub mod colr;
-pub mod outline;
+// pub mod bitmap;
+// pub mod colr;
+// pub mod outline;
 pub mod svg;
 
 struct OutlineBuilder(PathBuilder);
@@ -188,7 +189,7 @@ fn draw(
     font: &Font,
     glyphs: &[u32],
     name: &str,
-    single_glyph: impl Fn(&Font, GlyphId) -> Option<Canvas>,
+    single_glyph: impl Fn(&Font, GlyphId, &mut StreamBuilder),
 ) {
     let metrics = font
         .font_ref()
@@ -202,7 +203,9 @@ fn draw(
     let units_per_em = metrics.units_per_em as f32;
     let mut cur_point = 0;
 
-    let mut parent_canvas = Canvas::new(crate::Size::from_wh(width as f32, height as f32).unwrap());
+    let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
+    let mut page = Page::new(page_size);
+    let mut builder = page.builder();
 
     for i in glyphs.iter().copied() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, units_per_em: f32) -> Transform {
@@ -216,25 +219,25 @@ fn draw(
                 0.0,
                 1.0,
                 col as f32 * size as f32,
-                row as f32 * size as f32,
+                (row + 1) as f32 * size as f32,
             )
+            .pre_concat(Transform::from_scale(
+                size as f32 / units_per_em,
+                size as f32 / units_per_em,
+            ))
         }
 
-        let mut transformed =
-            parent_canvas.transformed(get_transform(cur_point, size, num_cols, units_per_em));
-        transformed.fill_glyph(
-            GlyphId::new(i),
-            font.clone(),
-            FiniteF32::new(size as f32).unwrap(),
-            TransformWrapper(Transform::from_translate(0.0, size as f32)),
-            Fill::default(),
-        );
-        transformed.finish();
+        builder.save_graphics_state();
+        builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
+        single_glyph(&font, GlyphId::new(i), &mut builder);
+        builder.restore_graphics_state();
 
         cur_point += size;
     }
 
-    let pdf = parent_canvas.serialize(SerializeSettings::default());
+    let stream = builder.finish();
+
+    let pdf = stream.serialize(SerializeSettings::default(), page_size);
     let finished = pdf.finish();
     let _ = std::fs::write(format!("out/{}.pdf", name), &finished);
     let _ = std::fs::write(format!("out/{}.txt", name), &finished);

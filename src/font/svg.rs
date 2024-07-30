@@ -1,5 +1,5 @@
-use crate::canvas::{Canvas, Surface};
 use crate::font::Font;
+use crate::stream::StreamBuilder;
 use crate::svg;
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
@@ -7,11 +7,11 @@ use std::io::Read;
 use tiny_skia_path::Transform;
 use usvg::roxmltree;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) {
     let font_ref = font.font_ref();
     let location_ref = font.location_ref();
 
-    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
+    // let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
 
     if let Ok(Some(svg_data)) = font_ref
         .svg()
@@ -34,18 +34,14 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
         // Parse SVG.
         let opts = usvg::Options::default();
         let tree = usvg::Tree::from_xmltree(&document, &opts).unwrap();
-        let svg_canvas = if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
-            svg::render_node(&node)
+        if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
+            svg::render_node(&node, builder)
         } else {
             // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
             // usvg. So in this case, we simply draw the whole document.
-            svg::render_tree(&tree)
+            svg::render_tree(&tree, builder)
         };
-
-        return Some(svg_canvas);
     };
-
-    return None;
 }
 
 #[cfg(test)]

@@ -2,7 +2,7 @@
 
 pub mod canvas;
 pub mod color;
-// pub mod font;
+pub mod font;
 mod graphics_state;
 mod object;
 pub mod paint;
