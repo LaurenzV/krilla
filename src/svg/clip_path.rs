@@ -210,7 +210,7 @@ fn create_complex_clip_path(
                 stream_builder.draw_masked(mask, Arc::new(sub_stream));
             }
         }
-    }   else {
+    } else {
         transformed(clip_path, &mut stream_builder);
     }
 

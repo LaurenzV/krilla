@@ -114,6 +114,14 @@ impl<'a> StreamBuilder<'a> {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
+        self.graphics_states.save_state();
+
+        // PDF viewers don't show patterns with fill/stroke opacities consistently.
+        // Because of this, the opacity is accounted for in the pattern itself.
+        if !matches!(fill.paint, Paint::Pattern(_)) {
+            self.set_fill_opacity(fill.opacity);
+        }
+
         self.apply_isolated_op(|sb| {
             sb.content_set_fill_properties(path.bounds(), fill);
             sb.content_draw_path(path.segments());
@@ -123,6 +131,8 @@ impl<'a> StreamBuilder<'a> {
                 FillRule::EvenOdd => sb.content.fill_even_odd(),
             };
         });
+
+        self.graphics_states.restore_state();
     }
 
     pub fn draw_stroke_path(&mut self, path: &Path, stroke: &Stroke) {
@@ -134,11 +144,20 @@ impl<'a> StreamBuilder<'a> {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
+        self.graphics_states.save_state();
+
+        // See comment in `set_fill_properties`
+        if !matches!(stroke.paint, Paint::Pattern(_)) {
+            self.set_stroke_opacity(stroke.opacity);
+        }
+
         self.apply_isolated_op(|sb| {
             sb.content_set_stroke_properties(stroke_bbox, stroke);
             sb.content_draw_path(path.segments());
             sb.content.stroke();
         });
+
+        self.graphics_states.restore_state()
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
@@ -396,12 +415,6 @@ impl<'a> StreamBuilder<'a> {
     }
 
     fn content_set_fill_properties(&mut self, bounds: Rect, fill: &Fill) {
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(fill.paint, Paint::Pattern(_)) {
-            self.set_fill_opacity(fill.opacity);
-        }
-
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_fill_pattern(None, color_space.to_pdf_name());
@@ -422,11 +435,6 @@ impl<'a> StreamBuilder<'a> {
     }
 
     fn content_set_stroke_properties(&mut self, bounds: Rect, stroke: &Stroke) {
-        // See comment in `set_fill_properties`
-        if !matches!(stroke.paint, Paint::Pattern(_)) {
-            self.set_stroke_opacity(stroke.opacity);
-        }
-
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_stroke_pattern(None, color_space.to_pdf_name());
