@@ -6,7 +6,7 @@ mod filter;
 mod group;
 mod image;
 mod mask;
-// mod path;
+mod path;
 // mod text;
 mod util;
 

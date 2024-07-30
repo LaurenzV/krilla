@@ -3,7 +3,8 @@ use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 // use crate::svg::{filter, image, path};
-use crate::svg::filter;
+use crate::serialize::SerializerContext;
+use crate::svg::{filter, image, path};
 use pdf_writer::Finish;
 use std::sync::Arc;
 use usvg::{Node, NormalizedF32};
@@ -100,10 +101,8 @@ pub fn blended_and_opacified(group: &usvg::Group, stream_builder: &mut StreamBui
 pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
     match node {
         Node::Group(g) => render(g, stream_builder),
-        // Node::Path(p) => path::render(p, stream_builder),
-        Node::Path(p) => unimplemented!(),
-        // Node::Image(i) => image::render(i, stream_builder),
-        Node::Image(i) => unimplemented!(),
+        Node::Path(p) => path::render(p, stream_builder),
+        Node::Image(i) => image::render(i, stream_builder),
         Node::Text(t) => unimplemented!(),
     }
 }
