@@ -11,7 +11,7 @@ use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
@@ -36,15 +36,10 @@ struct ColrCanvas<'a> {
     transforms: Vec<Transform>,
     streams: Vec<StreamBuilder>,
     blend_modes: Vec<BlendMode>,
-    size: u16,
 }
 
 impl<'a> ColrCanvas<'a> {
     pub fn new(font_ref: &'a FontRef<'a>, parent_stream: &'a mut StreamBuilder) -> Self {
-        let size = font_ref
-            .metrics(skrifa::instance::Size::unscaled(), LocationRef::default())
-            .units_per_em;
-
         Self {
             font: font_ref,
             parent_stream,
@@ -52,7 +47,6 @@ impl<'a> ColrCanvas<'a> {
             clips: vec![vec![]],
             streams: vec![],
             blend_modes: vec![],
-            size,
         }
     }
 }

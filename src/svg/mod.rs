@@ -20,9 +20,9 @@ pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Page;
-    use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-    use crate::svg::render_tree;
+    
+    
+    
 
     // #[test]
     // pub fn svg() {

@@ -1,15 +1,11 @@
-use crate::canvas::Page;
-use crate::serialize::{PageSerialize, SerializeSettings};
-use crate::stream::{Stream, StreamBuilder};
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
-use skrifa::raw::{FontRead, Offset, TableProvider};
+use skrifa::raw::{TableProvider};
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use std::ops::Deref;
 use std::rc::Rc;
-use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
+use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
 
 pub mod bitmap;
 pub mod colr;
@@ -188,8 +184,12 @@ fn draw(
     font: &Font,
     glyphs: &[u32],
     name: &str,
-    single_glyph: impl Fn(&Font, GlyphId, &mut StreamBuilder) -> Option<()>,
+    single_glyph: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
 ) {
+    use crate::canvas::Page;
+    use crate::Transform;
+    use crate::serialize::{PageSerialize, SerializeSettings};
+
     let metrics = font
         .font_ref()
         .metrics(Size::unscaled(), font.location_ref());
@@ -203,7 +203,7 @@ fn draw(
     let mut cur_point = 0;
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut page = Page::new(page_size);
+    let page = Page::new(page_size);
     let mut builder = page.builder();
 
     for i in glyphs.iter().copied() {

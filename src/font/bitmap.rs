@@ -47,7 +47,7 @@ mod tests {
 
     use skrifa::instance::Location;
 
-    use skrifa::raw::TableProvider;
+    
 
     use crate::font::bitmap::draw_glyph;
     use std::rc::Rc;

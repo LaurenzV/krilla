@@ -2,16 +2,12 @@ use crate::font::Font;
 use crate::stream::StreamBuilder;
 use crate::svg;
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::{GlyphId};
 use std::io::Read;
-use tiny_skia_path::Transform;
 use usvg::roxmltree;
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
-    let location_ref = font.location_ref();
-
-    // let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), location_ref);
 
     if let Ok(Some(svg_data)) = font_ref
         .svg()

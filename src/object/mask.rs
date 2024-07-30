@@ -1,6 +1,6 @@
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, RegisterableObject, SerializeSettings, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};

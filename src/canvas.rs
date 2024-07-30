@@ -74,12 +74,12 @@ mod tests {
 
     // use crate::font::Font;
 
-    use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-    use crate::stream::StreamBuilder;
+    
+    
 
-    use crate::Stroke;
+    
 
-    use tiny_skia_path::{Path, PathBuilder, Size};
+    use tiny_skia_path::{Path, PathBuilder};
 
     fn dummy_path(w: f32) -> Path {
         let mut builder = PathBuilder::new();

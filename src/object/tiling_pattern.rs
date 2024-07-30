@@ -1,4 +1,4 @@
-use crate::serialize::{Object, RegisterableObject, SerializeSettings, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;

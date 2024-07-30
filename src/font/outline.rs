@@ -3,11 +3,10 @@ use crate::stream::StreamBuilder;
 use crate::Fill;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
-use tiny_skia_path::{Size, Transform};
+use tiny_skia_path::{Transform};
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
-    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
     let outline_glyphs = font_ref.outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
@@ -38,7 +37,7 @@ mod tests {
 
     use skrifa::instance::Location;
 
-    use skrifa::raw::TableProvider;
+    
 
     use std::rc::Rc;
 
