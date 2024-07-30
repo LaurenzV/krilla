@@ -5,7 +5,7 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
     let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
 
@@ -31,9 +31,13 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
                 stream_builder.concat_transform(&Transform::from_translate(0.0, -height));
                 stream_builder.draw_image(Image::new(&dynamic_image), size);
                 stream_builder.restore_graphics_state();
+
+                return Some(());
             }
         }
     }
+
+    None
 }
 
 #[cfg(test)]

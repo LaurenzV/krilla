@@ -5,7 +5,7 @@ use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
     let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
     let outline_glyphs = font_ref.outline_glyphs();
@@ -23,7 +23,11 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
         stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
         stream_builder.draw_fill_path(&path, &Fill::default());
         stream_builder.restore_graphics_state();
+
+        return Some(());
     }
+
+    None
 }
 
 #[cfg(test)]

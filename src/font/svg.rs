@@ -7,7 +7,7 @@ use std::io::Read;
 use tiny_skia_path::Transform;
 use usvg::roxmltree;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
     let location_ref = font.location_ref();
 
@@ -41,7 +41,11 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) {
             // usvg. So in this case, we simply draw the whole document.
             svg::render_tree(&tree, builder)
         };
+
+        return Some(());
     };
+
+    None
 }
 
 #[cfg(test)]

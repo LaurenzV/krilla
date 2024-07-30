@@ -1,5 +1,3 @@
-use crate::blend_mode::BlendMode;
-use crate::canvas::{Canvas, Surface};
 use crate::color::Color;
 use crate::font::{Font, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
@@ -12,8 +10,9 @@ use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Size, Transform};
+use crate::stream::StreamBuilder;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId) -> Option<Canvas> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
     let font_ref = font.font_ref();
     let mut colr_canvas = ColrCanvas::new(&font_ref);
 

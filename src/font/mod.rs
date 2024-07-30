@@ -1,7 +1,6 @@
 use crate::canvas::Page;
 use crate::serialize::{PageSerialize, SerializeSettings};
 use crate::stream::{Stream, StreamBuilder};
-use crate::transform::TransformWrapper;
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
@@ -189,7 +188,7 @@ fn draw(
     font: &Font,
     glyphs: &[u32],
     name: &str,
-    single_glyph: impl Fn(&Font, GlyphId, &mut StreamBuilder),
+    single_glyph: impl Fn(&Font, GlyphId, &mut StreamBuilder) -> Option<()>,
 ) {
     let metrics = font
         .font_ref()
@@ -229,10 +228,12 @@ fn draw(
 
         builder.save_graphics_state();
         builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        single_glyph(&font, GlyphId::new(i), &mut builder);
+        let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         builder.restore_graphics_state();
 
-        cur_point += size;
+        if res.is_some() {
+            cur_point += size;
+        }
     }
 
     let stream = builder.finish();
