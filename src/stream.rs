@@ -58,6 +58,12 @@ impl<'a> StreamBuilder<'a> {
         }
     }
 
+    pub(crate) fn new_flipped(serializer_context: &'a mut SerializerContext, size: Size) -> Self {
+        let mut builder = Self::new(serializer_context);
+        builder.concat_transform(&Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, size.height()));
+        builder
+    }
+
     pub fn serializer_context(&mut self) -> &mut SerializerContext {
         &mut self.serializer_context
     }
