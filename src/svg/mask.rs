@@ -11,12 +11,12 @@ pub fn get_mask(mask: &usvg::Mask, serializer_context: &mut SerializerContext) -
     // Dummy size. TODO: Improve?
     let mut stream_builder = StreamBuilder::new(serializer_context);
 
-    if let Some(mask) = mask.mask() {
+    if let Some(sub_usvg_mask) = mask.mask() {
+        let sub_mask = get_mask(sub_usvg_mask, stream_builder.serializer_context());
         let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
         remaining(mask, &mut sub_stream_builder);
         let sub_stream = sub_stream_builder.finish();
-        let mask = get_mask(mask, stream_builder.serializer_context());
-        stream_builder.draw_masked(mask, Arc::new(sub_stream));
+        stream_builder.draw_masked(sub_mask, Arc::new(sub_stream));
     } else {
         remaining(mask, &mut stream_builder);
     };
