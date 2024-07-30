@@ -7,12 +7,12 @@ edition = "2021"
 image = { version = "0.25.1", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 miniz_oxide = "0.7.4"
 once_cell = "1.19.0"
-pdf-writer = {path = "../pdf-writer"}
+pdf-writer = "0.10.0"
 resvg = "0.42.0"
 siphasher = "1.0.1"
-skrifa = {path = "../fontations/skrifa"}
+skrifa = {git="https://github.com/LaurenzV/fontations", rev="0ed7955"}
 tiny-skia = "0.11.4"
-subsetter = {path = "../subsetter"}
+subsetter = {git="https://github.com/LaurenzV/subsetter", rev="c178d05"}
 tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
 usvg = "0.42.0"
 flate2 = "1.0.30"

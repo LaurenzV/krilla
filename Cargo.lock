@@ -125,6 +125,7 @@ checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 [[package]]
 name = "font-types"
 version = "0.6.0"
+source = "git+https://github.com/LaurenzV/fontations?rev=0ed7955#0ed7955144921786be33b38b0c4530f8c4c8a316"
 dependencies = [
  "bytemuck",
 ]
@@ -290,6 +291,8 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 [[package]]
 name = "pdf-writer"
 version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af6a7882fda7808481d43c51cadfc3ec934c6af72612a1fe6985ce329a2f0469"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",
@@ -343,6 +346,7 @@ dependencies = [
 [[package]]
 name = "read-fonts"
 version = "0.20.0"
+source = "git+https://github.com/LaurenzV/fontations?rev=0ed7955#0ed7955144921786be33b38b0c4530f8c4c8a316"
 dependencies = [
  "bytemuck",
  "font-types",
@@ -431,6 +435,7 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 [[package]]
 name = "skrifa"
 version = "0.20.0"
+source = "git+https://github.com/LaurenzV/fontations?rev=0ed7955#0ed7955144921786be33b38b0c4530f8c4c8a316"
 dependencies = [
  "bytemuck",
  "read-fonts",
@@ -463,6 +468,7 @@ dependencies = [
 [[package]]
 name = "subsetter"
 version = "0.11.0"
+source = "git+https://github.com/LaurenzV/subsetter?rev=c178d05#c178d05c64f151df9166761d7b6b07bd25aa8716"
 
 [[package]]
 name = "svgtypes"
