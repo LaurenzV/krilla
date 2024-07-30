@@ -72,6 +72,10 @@ impl<'a> StreamBuilder<'a> {
         }
     }
 
+    pub fn sub_builder(&'a mut self) -> StreamBuilder<'a> {
+        StreamBuilder::new(&mut self.serializer_context)
+    }
+
     pub fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
     }
@@ -365,7 +369,7 @@ impl<'a> StreamBuilder<'a> {
 
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
-                        pat.canvas.clone(),
+                        pat.stream.clone(),
                         pat.transform,
                         opacity,
                         pat.width,

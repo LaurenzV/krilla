@@ -37,7 +37,7 @@ pub fn transformed(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
 
 pub fn clipped(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
     if let Some(clip_path) = group.clip_path() {
-        let converted = get_clip_path(group, clip_path);
+        let converted = get_clip_path(group, clip_path, stream_builder.serializer_context());
         // TODO: Improve and deduplicate
         match converted {
             SvgClipPath::SimpleClip(rules) => {
@@ -69,7 +69,8 @@ pub fn masked(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
         let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
         blended_and_opacified(group, &mut sub_stream_builder);
         let sub_stream = sub_stream_builder.finish();
-        stream_builder.draw_masked(get_mask(mask), Arc::new(sub_stream));
+        let mask = get_mask(mask, stream_builder.serializer_context());
+        stream_builder.draw_masked(mask, Arc::new(sub_stream));
     } else {
         blended_and_opacified(group, stream_builder);
     }

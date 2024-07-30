@@ -1,4 +1,3 @@
-use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::stream::Stream;
 use crate::transform::TransformWrapper;
@@ -67,7 +66,7 @@ pub struct SweepGradient {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Pattern {
-    pub(crate) canvas: Arc<Stream>,
+    pub(crate) stream: Arc<Stream>,
     pub(crate) transform: TransformWrapper,
     pub(crate) width: FiniteF32,
     pub(crate) height: FiniteF32,

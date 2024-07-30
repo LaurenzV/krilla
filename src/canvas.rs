@@ -36,7 +36,7 @@ impl PageSerialize for Stream {
         page.parent(page_tree_ref);
         page.contents(content_ref);
         page.finish();
-        sc.write_fonts();
+        // sc.write_fonts();
         let cached_chunk = sc.finish();
 
         let mut pdf = Pdf::new();
@@ -51,7 +51,7 @@ impl PageSerialize for Stream {
 #[cfg(test)]
 mod tests {
     use crate::color::Color;
-    use crate::font::Font;
+    // use crate::font::Font;
     use crate::object::image::Image;
     use crate::object::mask::{Mask, MaskType};
     use crate::paint::{

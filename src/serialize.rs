@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 // use crate::font::Font;
-use crate::object::cid_font::CIDFont;
-use crate::object::type3_font::Type3Font;
-use crate::resource::FontResource;
+// use crate::object::cid_font::CIDFont;
+// use crate::object::type3_font::Type3Font;
+// use crate::resource::FontResource;
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::GlyphId;
 use tiny_skia_path::Size;

@@ -14,7 +14,11 @@ pub enum SvgClipPath {
     ComplexClip(Mask),
 }
 
-pub fn get_clip_path(group: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClipPath {
+pub fn get_clip_path(
+    group: &usvg::Group,
+    clip_path: &usvg::ClipPath,
+    serializer_context: &mut SerializerContext,
+) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
     // SVGs can be much more complex than in PDF. In SVG, clip paths can have transforms, as well as
     // nested clip paths. The objects inside of the clip path can have transforms as well, making it
@@ -54,7 +58,11 @@ pub fn get_clip_path(group: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClip
         );
         SvgClipPath::SimpleClip(clips)
     } else {
-        SvgClipPath::ComplexClip(create_complex_clip_path(group, clip_path))
+        SvgClipPath::ComplexClip(create_complex_clip_path(
+            group,
+            clip_path,
+            serializer_context,
+        ))
     }
 }
 
@@ -173,13 +181,16 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
     clip_rules
 }
 
-fn create_complex_clip_path(parent: &usvg::Group, clip_path: &usvg::ClipPath) -> Mask {
-    let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-    let mut stream_builder = StreamBuilder::new(&mut serializer_context);
+fn create_complex_clip_path(
+    parent: &usvg::Group,
+    clip_path: &usvg::ClipPath,
+    serializer_context: &mut SerializerContext,
+) -> Mask {
+    let mut stream_builder = StreamBuilder::new(serializer_context);
 
     if let Some(svg_clip_path) = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, clip_path))
+        .map(|c| get_clip_path(parent, clip_path, stream_builder.serializer_context()))
     {
         match svg_clip_path {
             SvgClipPath::SimpleClip(rules) => {

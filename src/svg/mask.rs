@@ -8,16 +8,16 @@ use crate::FillRule;
 use pdf_writer::Finish;
 use std::sync::Arc;
 
-pub fn get_mask(mask: &usvg::Mask) -> Mask {
+pub fn get_mask(mask: &usvg::Mask, serializer_context: &mut SerializerContext) -> Mask {
     // Dummy size. TODO: Improve?
-    let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-    let mut stream_builder = StreamBuilder::new(&mut serializer_context);
+    let mut stream_builder = StreamBuilder::new(serializer_context);
 
     if let Some(mask) = mask.mask() {
         let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
         remaining(mask, &mut sub_stream_builder);
         let sub_stream = sub_stream_builder.finish();
-        stream_builder.draw_masked(get_mask(mask), Arc::new(sub_stream));
+        let mask = get_mask(mask, stream_builder.serializer_context());
+        stream_builder.draw_masked(mask, Arc::new(sub_stream));
     } else {
         remaining(mask, &mut stream_builder);
     };
