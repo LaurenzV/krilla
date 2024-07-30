@@ -27,6 +27,10 @@ impl GraphicsState {
         self.ctm = TransformWrapper(self.ctm.0.pre_concat(transform));
     }
 
+    pub fn reset_transform(&mut self) {
+        self.ctm = TransformWrapper(Transform::identity());
+    }
+
     pub fn transform(&self) -> Transform {
         self.ctm.0
     }

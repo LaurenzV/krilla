@@ -20,16 +20,16 @@ pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
 
 #[cfg(test)]
 mod tests {
+    use crate::canvas::Page;
     use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-    use crate::stream::StreamBuilder;
     use crate::svg::render_tree;
 
     #[test]
     pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
+        let data = std::fs::read("//Users/lstampfl/Programming/GitHub/svg2pdf/tests/svg/resvg/masking/clip-rule/clip-rule=evenodd.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
-        let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-        let mut stream_builder = StreamBuilder::new(&mut serializer_context);
+        let mut page = Page::new(tree.size());
+        let mut stream_builder = page.builder();
         render_tree(&tree, &mut stream_builder);
         let stream = stream_builder.finish();
         let finished = stream

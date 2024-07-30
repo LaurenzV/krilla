@@ -60,7 +60,14 @@ impl<'a> StreamBuilder<'a> {
 
     pub(crate) fn new_flipped(serializer_context: &'a mut SerializerContext, size: Size) -> Self {
         let mut builder = Self::new(serializer_context);
-        builder.concat_transform(&Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, size.height()));
+        builder.concat_transform(&Transform::from_row(
+            1.0,
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            size.height(),
+        ));
         builder
     }
 
@@ -136,6 +143,9 @@ impl<'a> StreamBuilder<'a> {
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.content_save_state();
+        self.content_set_transform();
+        self.graphics_states.save_state();
+        self.graphics_states.cur_mut().reset_transform();
         self.content_draw_path(path.segments());
 
         match clip_rule {
@@ -147,6 +157,7 @@ impl<'a> StreamBuilder<'a> {
     }
 
     pub fn pop_clip_path(&mut self) {
+        self.graphics_states.restore_state();
         self.content_restore_state();
     }
 
