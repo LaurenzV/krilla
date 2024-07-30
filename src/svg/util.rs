@@ -1,13 +1,14 @@
-use crate::blend_mode::BlendMode;
-use crate::canvas::Canvas;
+use crate::serialize::SerializerContext;
+use crate::stream::StreamBuilder;
 use crate::svg::group;
 use crate::transform::TransformWrapper;
 use crate::{
     Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern,
     RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash,
 };
+use pdf_writer::types::BlendMode;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 use usvg::NonZeroPositiveF32;
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {
@@ -37,7 +38,7 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop {
     }
 }
 
-pub fn convert_paint(paint: &usvg::Paint) -> Paint {
+pub fn convert_paint(paint: &usvg::Paint, serializer_context: &mut SerializerContext) -> Paint {
     match paint {
         usvg::Paint::Color(c) => Paint::Color(Color::new_rgb(c.red, c.green, c.blue)),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
@@ -69,15 +70,18 @@ pub fn convert_paint(paint: &usvg::Paint) -> Paint {
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
-            let mut canvas =
-                Canvas::new(Size::from_wh(pat.rect().width(), pat.rect().height()).unwrap());
-            group::render(pat.root(), &mut canvas);
+            let mut stream_builder = StreamBuilder::new(serializer_context);
+            group::render(pat.root(), &mut stream_builder);
+            let stream = stream_builder.finish();
+
             Paint::Pattern(Arc::new(Pattern {
-                canvas: Arc::new(canvas),
+                stream: Arc::new(stream),
                 transform: TransformWrapper(
                     pat.transform()
                         .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
                 ),
+                width: FiniteF32::new(pat.rect().width()).unwrap(),
+                height: FiniteF32::new(pat.rect().height()).unwrap(),
             }))
         }
     }
@@ -107,15 +111,15 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
     }
 }
 
-pub fn convert_fill(fill: &usvg::Fill) -> Fill {
+pub fn convert_fill(fill: &usvg::Fill, serializer_context: &mut SerializerContext) -> Fill {
     Fill {
-        paint: convert_paint(fill.paint()),
+        paint: convert_paint(fill.paint(), serializer_context),
         opacity: fill.opacity(),
         rule: convert_fill_rule(&fill.rule()),
     }
 }
 
-pub fn convert_stroke(stroke: &usvg::Stroke) -> Stroke {
+pub fn convert_stroke(stroke: &usvg::Stroke, serializer_context: &mut SerializerContext) -> Stroke {
     let dash = if let Some(dash_array) = stroke.dasharray() {
         Some(StrokeDash {
             offset: FiniteF32::new(stroke.dashoffset()).unwrap(),
@@ -129,7 +133,7 @@ pub fn convert_stroke(stroke: &usvg::Stroke) -> Stroke {
     };
 
     Stroke {
-        paint: convert_paint(stroke.paint()),
+        paint: convert_paint(stroke.paint(), serializer_context),
         width: stroke.width(),
         miter_limit: NonZeroPositiveF32::new(stroke.miterlimit().get()).unwrap(),
         line_cap: convert_line_cap(&stroke.linecap()),
@@ -141,7 +145,7 @@ pub fn convert_stroke(stroke: &usvg::Stroke) -> Stroke {
 
 pub fn convert_blend_mode(blend_mode: &usvg::BlendMode) -> BlendMode {
     match blend_mode {
-        usvg::BlendMode::Normal => BlendMode::SourceOver,
+        usvg::BlendMode::Normal => BlendMode::Normal,
         usvg::BlendMode::Multiply => BlendMode::Multiply,
         usvg::BlendMode::Screen => BlendMode::Screen,
         usvg::BlendMode::Overlay => BlendMode::Overlay,

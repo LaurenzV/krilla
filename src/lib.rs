@@ -1,16 +1,15 @@
 #![forbid(unsafe_code)]
 
-mod blend_mode;
-pub mod bytecode;
 pub mod canvas;
 pub mod color;
-pub mod font;
+// pub mod font;
 mod graphics_state;
 mod object;
 pub mod paint;
 pub mod path;
 pub mod resource;
 pub mod serialize;
+pub mod stream;
 pub mod svg;
 pub mod transform;
 pub mod util;

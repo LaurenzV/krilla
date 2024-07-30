@@ -1,7 +1,7 @@
-use crate::bytecode::ByteCode;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializeSettings, SerializerContext};
+use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
@@ -9,7 +9,7 @@ use tiny_skia_path::Rect;
 
 #[derive(PartialEq, Eq, Debug, Hash)]
 struct Repr {
-    byte_code: Arc<ByteCode>,
+    stream: Arc<Stream>,
     mask_type: MaskType,
     custom_bbox: Option<Rect>,
 }
@@ -18,9 +18,9 @@ struct Repr {
 pub struct Mask(Arc<Repr>);
 
 impl Mask {
-    pub fn new(byte_code: Arc<ByteCode>, mask_type: MaskType) -> Self {
+    pub fn new(stream: Arc<Stream>, mask_type: MaskType) -> Self {
         Self(Arc::new(Repr {
-            byte_code,
+            stream,
             mask_type,
             custom_bbox: None,
         }))
@@ -45,14 +45,18 @@ impl Mask {
         }
 
         let shading_function = ShadingFunction::new(gradient_properties, true);
-        let mut shade_byte_code = ByteCode::new();
-        shade_byte_code.push_shade(shading_function);
 
-        let mut transformed_byte_code = ByteCode::new();
-        transformed_byte_code.push_transformed(shading_transform, shade_byte_code);
+        let shading_stream = {
+            // TODO: Inspect
+            let mut serializer_context = SerializerContext::new(SerializeSettings::default());
+            let mut builder = StreamBuilder::new(&mut serializer_context);
+            builder.concat_transform(&shading_transform.0);
+            builder.draw_shading(&shading_function);
+            builder.finish()
+        };
 
         Some(Self(Arc::new(Repr {
-            byte_code: Arc::new(transformed_byte_code),
+            stream: Arc::new(shading_stream),
             mask_type: MaskType::Luminosity,
             custom_bbox: Some(bbox),
         })))
@@ -81,7 +85,7 @@ impl MaskType {
 impl Object for Mask {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let x_ref = sc.add(XObject::new(
-            self.0.byte_code.clone(),
+            self.0.stream.clone(),
             false,
             true,
             self.0.custom_bbox,

@@ -45,6 +45,13 @@ impl ExtGState {
         self
     }
 
+    pub fn empty(&self) -> bool {
+        self.0.mask.is_none()
+            && self.0.stroking_alpha.is_none()
+            && self.0.non_stroking_alpha.is_none()
+            && self.0.blend_mode.is_none()
+    }
+
     pub fn has_mask(&self) -> bool {
         self.0.mask.is_some()
     }

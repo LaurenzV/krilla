@@ -1,18 +1,22 @@
-use crate::canvas::{Canvas, Surface};
 use crate::object::mask::Mask;
+use crate::serialize::SerializerContext;
+use crate::stream::StreamBuilder;
 use crate::svg::group;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::{FillRule, MaskType};
-use pdf_writer::Finish;
 use std::sync::Arc;
-use tiny_skia_path::{Path, PathBuilder, PathSegment, Size, Transform};
+use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
 pub enum SvgClipPath {
     SimpleClip(Vec<(Path, FillRule)>),
     ComplexClip(Mask),
 }
 
-pub fn get_clip_path(group: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClipPath {
+pub fn get_clip_path(
+    group: &usvg::Group,
+    clip_path: &usvg::ClipPath,
+    serializer_context: &mut SerializerContext,
+) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
     // SVGs can be much more complex than in PDF. In SVG, clip paths can have transforms, as well as
     // nested clip paths. The objects inside of the clip path can have transforms as well, making it
@@ -52,7 +56,11 @@ pub fn get_clip_path(group: &usvg::Group, clip_path: &usvg::ClipPath) -> SvgClip
         );
         SvgClipPath::SimpleClip(clips)
     } else {
-        SvgClipPath::ComplexClip(create_complex_clip_path(group, clip_path))
+        SvgClipPath::ComplexClip(create_complex_clip_path(
+            group,
+            clip_path,
+            serializer_context,
+        ))
     }
 }
 
@@ -171,28 +179,49 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
     clip_rules
 }
 
-fn create_complex_clip_path(parent: &usvg::Group, clip_path: &usvg::ClipPath) -> Mask {
-    // Dummy size. TODO: Improve?
-    let mut canvas = Canvas::new(Size::from_wh(1.0, 1.0).unwrap());
+fn create_complex_clip_path(
+    parent: &usvg::Group,
+    clip_path: &usvg::ClipPath,
+    serializer_context: &mut SerializerContext,
+) -> Mask {
+    let mut stream_builder = StreamBuilder::new(serializer_context);
 
+    if let Some(svg_clip_path) = clip_path
+        .clip_path()
+        .map(|c| get_clip_path(parent, c, stream_builder.serializer_context()))
     {
-        let clipped: &mut dyn Surface = if let Some(clip_path) = clip_path
-            .clip_path()
-            .map(|c| get_clip_path(parent, clip_path))
-        {
-            match clip_path {
-                SvgClipPath::SimpleClip(sc) => &mut canvas.clipped_many(sc),
-                SvgClipPath::ComplexClip(cc) => &mut canvas.masked(cc),
-            }
-        } else {
-            &mut canvas
-        };
+        match svg_clip_path {
+            SvgClipPath::SimpleClip(rules) => {
+                for rule in &rules {
+                    stream_builder.push_clip_path(&rule.0, &rule.1);
+                }
 
-        let mut transformed = clipped.transformed(convert_transform(&clip_path.transform()));
-        group::render(clip_path.root(), &mut transformed);
-        transformed.finish();
-        clipped.finish();
+                transformed(clip_path, &mut stream_builder);
+
+                for _ in rules {
+                    stream_builder.pop_clip_path();
+                }
+            }
+            SvgClipPath::ComplexClip(mask) => {
+                let mut sub_stream_builder =
+                    StreamBuilder::new(stream_builder.serializer_context());
+                transformed(clip_path, &mut sub_stream_builder);
+                let sub_stream = sub_stream_builder.finish();
+                stream_builder.draw_masked(mask, Arc::new(sub_stream));
+            }
+        }
+    } else {
+        transformed(clip_path, &mut stream_builder);
     }
 
-    Mask::new(Arc::new(canvas.byte_code.clone()), MaskType::Alpha)
+    let stream = stream_builder.finish();
+
+    Mask::new(Arc::new(stream), MaskType::Alpha)
+}
+
+fn transformed(clip_path: &usvg::ClipPath, stream_builder: &mut StreamBuilder) {
+    stream_builder.save_graphics_state();
+    stream_builder.concat_transform(&convert_transform(&clip_path.transform()));
+    group::render(clip_path.root(), stream_builder);
+    stream_builder.restore_graphics_state();
 }

@@ -1,5 +1,4 @@
-use crate::canvas::Canvas;
-use tiny_skia_path::Size;
+use crate::stream::StreamBuilder;
 use usvg::Node;
 
 mod clip_path;
@@ -8,34 +7,34 @@ mod group;
 mod image;
 mod mask;
 mod path;
-mod text;
+// mod text;
 mod util;
 
-pub fn render_tree(tree: &usvg::Tree) -> Canvas {
-    let mut canvas = Canvas::new(tree.size());
-    group::render(tree.root(), &mut canvas);
-    canvas
+pub fn render_tree(tree: &usvg::Tree, stream_builder: &mut StreamBuilder) {
+    group::render(tree.root(), stream_builder);
 }
 
-pub fn render_node(node: &Node) -> Canvas {
-    let mut canvas = Canvas::new(
-        Size::from_wh(node.bounding_box().width(), node.bounding_box().height()).unwrap(),
-    );
-    group::render_node(node, &mut canvas);
-    canvas
+pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
+    group::render_node(node, stream_builder);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::serialize::{PageSerialize, SerializeSettings};
+    use crate::canvas::Page;
+    use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
     use crate::svg::render_tree;
 
     #[test]
     pub fn svg() {
         let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
-        let canvas = render_tree(&tree);
-        let finished = canvas.serialize(SerializeSettings::default()).finish();
+        let mut page = Page::new(tree.size());
+        let mut stream_builder = page.builder();
+        render_tree(&tree, &mut stream_builder);
+        let stream = stream_builder.finish();
+        let finished = stream
+            .serialize(SerializeSettings::default(), tree.size())
+            .finish();
         let _ = std::fs::write("out/svg.pdf", &finished);
         let _ = std::fs::write("out/svg.txt", &finished);
     }
