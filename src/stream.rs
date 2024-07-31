@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 // use crate::font::Font;
-use crate::font::Font;
+use crate::font::{Font, Glyph};
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -187,13 +187,13 @@ impl StreamBuilder {
 
     pub fn invisible_glyph(
         &mut self,
-        glyph_id: GlyphId,
+        glyph: Glyph,
         font: Font,
         size: FiniteF32,
         transform: &Transform,
     ) {
         self.fill_stroke_glyph(
-            glyph_id,
+            glyph,
             font,
             size,
             transform,
@@ -204,7 +204,7 @@ impl StreamBuilder {
 
     pub fn fill_glyph(
         &mut self,
-        glyph_id: GlyphId,
+        glyph: Glyph,
         font: Font,
         size: FiniteF32,
         transform: &Transform,
@@ -219,7 +219,7 @@ impl StreamBuilder {
         }
 
         self.fill_stroke_glyph(
-            glyph_id,
+            glyph,
             font,
             size,
             transform,
@@ -232,7 +232,7 @@ impl StreamBuilder {
 
     pub fn stroke_glyph(
         &mut self,
-        glyph_id: GlyphId,
+        glyph_id: Glyph,
         font: Font,
         size: FiniteF32,
         transform: &Transform,
@@ -265,7 +265,7 @@ impl StreamBuilder {
 
     fn fill_stroke_glyph(
         &mut self,
-        glyph_id: GlyphId,
+        glyph: Glyph,
         font: Font,
         size: FiniteF32,
         transform: &Transform,
@@ -275,7 +275,7 @@ impl StreamBuilder {
         let (font_resource, gid) = self
             .serializer_context
             .borrow_mut()
-            .map_glyph(font.clone(), glyph_id);
+            .map_glyph(font.clone(), glyph);
         let font_name = self
             .rd_builder
             .register_resource(Resource::Font(font_resource));

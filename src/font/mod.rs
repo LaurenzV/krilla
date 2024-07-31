@@ -13,6 +13,17 @@ pub mod colr;
 pub mod outline;
 pub mod svg;
 
+pub struct Glyph {
+    pub glyph_id: GlyphId,
+    pub string: Option<String>,
+}
+
+impl Glyph {
+    pub fn new(glyph_id: GlyphId, string: Option<String>) -> Self {
+        Self { glyph_id, string }
+    }
+}
+
 struct OutlineBuilder(PathBuilder);
 
 impl OutlineBuilder {
@@ -230,7 +241,7 @@ fn draw(
         builder.save_graphics_state();
         builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         builder.fill_glyph(
-            GlyphId::new(i),
+            Glyph::new(GlyphId::new(i), None),
             font.clone(),
             FiniteF32::new(size as f32).unwrap(),
             &Transform::identity(),

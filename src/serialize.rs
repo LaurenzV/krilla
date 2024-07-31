@@ -1,4 +1,4 @@
-use crate::font::Font;
+use crate::font::{Font, Glyph};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::ColorSpace;
 use crate::object::type3_font::Type3Font;
@@ -91,7 +91,7 @@ impl SerializerContext {
         }
     }
 
-    pub fn map_glyph(&mut self, font: Font, glyph: GlyphId) -> (FontResource, PDFGlyph) {
+    pub fn map_glyph(&mut self, font: Font, glyph: Glyph) -> (FontResource, PDFGlyph) {
         let font_container = self.fonts.entry(font.clone()).or_insert_with(|| {
             if font.is_type3_font() {
                 FontContainer::Type3(Type3FontMapper::new(font.clone()))
@@ -110,7 +110,7 @@ impl SerializerContext {
                 )
             }
             FontContainer::CIDFont(cid) => {
-                let new_gid = cid.remap(glyph);
+                let new_gid = cid.remap(glyph.glyph_id);
                 (
                     FontResource::new(font.clone(), 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
@@ -188,23 +188,23 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {
-        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
-            return (index, self.fonts[index].add(glyph_id));
+    pub fn add_glyph(&mut self, glyph: Glyph) -> (usize, u8) {
+        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph.glyph_id)) {
+            return (index, self.fonts[index].add(&glyph));
         }
 
         let glyph_id = if let Some(last_font) = self.fonts.last_mut() {
             if last_font.is_full() {
                 let mut font = Type3Font::new(self.font.clone());
-                let gid = font.add(glyph_id);
+                let gid = font.add(&glyph);
                 self.fonts.push(font);
                 gid
             } else {
-                last_font.add(glyph_id)
+                last_font.add(&glyph)
             }
         } else {
             let mut font = Type3Font::new(self.font.clone());
-            let gid = font.add(glyph_id);
+            let gid = font.add(&glyph);
             self.fonts.push(font);
             gid
         };

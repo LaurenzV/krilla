@@ -1,4 +1,4 @@
-use crate::font::{bitmap, colr, outline, svg, Font};
+use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
@@ -19,6 +19,7 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
+    strings: Vec<Option<String>>,
     glyph_set: BTreeSet<GlyphId>,
 }
 
@@ -27,6 +28,7 @@ impl Type3Font {
         Self {
             font,
             glyphs: Vec::new(),
+            strings: Vec::new(),
             glyph_set: BTreeSet::new(),
         }
     }
@@ -43,18 +45,21 @@ impl Type3Font {
         self.glyph_set.contains(&glyph)
     }
 
-    pub fn add(&mut self, glyph_id: GlyphId) -> u8 {
+    pub fn add(&mut self, glyph: &Glyph) -> u8 {
         if let Some(pos) = self
             .glyphs
             .iter()
-            .position(|g| *g == glyph_id)
+            .position(|g| *g == glyph.glyph_id)
             .and_then(|n| u8::try_from(n).ok())
         {
+            if self.strings[pos as usize].is_none() {
+                self.strings[pos as usize] = glyph.string.clone();
+            }
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyphs.push(glyph_id);
+            self.glyphs.push(glyph.glyph_id);
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -145,7 +150,7 @@ impl Type3Font {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::Font;
+    use crate::font::{Font, Glyph};
     use crate::object::type3_font::Type3Font;
     use crate::serialize::{Object, SerializeSettings, SerializerContext};
     use skrifa::instance::Location;
@@ -162,7 +167,7 @@ mod tests {
         let mut type3 = Type3Font::new(font);
 
         for g in [10, 11, 12] {
-            type3.add(GlyphId::new(g));
+            type3.add(&Glyph::new(GlyphId::new(g), None));
         }
 
         let mut serializer_context = Rc::new(RefCell::new(SerializerContext::new(
