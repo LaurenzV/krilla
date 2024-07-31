@@ -86,7 +86,12 @@ fn create_simple_clip_path(
     extend_segments_from_group(clip_path.root(), &base_transform, &mut path_builder);
 
     clips.push((
-        path_builder.finish().unwrap(),
+        path_builder.finish().unwrap_or_else(|| {
+            let mut builder = PathBuilder::new();
+            builder.move_to(0.0, 0.0);
+            builder.line_to(0.0, 0.0);
+            builder.finish().unwrap()
+        }),
         convert_fill_rule(&clip_rule),
     ));
     clips

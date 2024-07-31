@@ -98,7 +98,12 @@ pub fn render(
                         &stroke,
                     );
                 }
-                (None, None) => todo!(),
+                (None, None) => stream_builder.invisible_glyph(
+                    GlyphId::new(glyph.id.0 as u32),
+                    font,
+                    FiniteF32::new(span.font_size.get()).unwrap(),
+                    &convert_transform(&transform),
+                ),
             }
         }
 

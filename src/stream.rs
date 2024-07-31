@@ -185,6 +185,23 @@ impl StreamBuilder {
         self.content_restore_state();
     }
 
+    pub fn invisible_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+    ) {
+        self.fill_stroke_glyph(
+            glyph_id,
+            font,
+            size,
+            transform,
+            TextRenderingMode::Invisible,
+            |sb| {},
+        );
+    }
+
     pub fn fill_glyph(
         &mut self,
         glyph_id: GlyphId,
@@ -193,6 +210,14 @@ impl StreamBuilder {
         transform: &Transform,
         fill: &Fill,
     ) {
+        self.graphics_states.save_state();
+
+        // PDF viewers don't show patterns with fill/stroke opacities consistently.
+        // Because of this, the opacity is accounted for in the pattern itself.
+        if !matches!(fill.paint, Paint::Pattern(_)) {
+            self.set_fill_opacity(fill.opacity);
+        }
+
         self.fill_stroke_glyph(
             glyph_id,
             font,
@@ -201,6 +226,8 @@ impl StreamBuilder {
             TextRenderingMode::Fill,
             |sb| sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill),
         );
+
+        self.graphics_states.restore_state();
     }
 
     pub fn stroke_glyph(
@@ -211,6 +238,14 @@ impl StreamBuilder {
         transform: &Transform,
         stroke: &Stroke,
     ) {
+        self.graphics_states.save_state();
+
+        // PDF viewers don't show patterns with fill/stroke opacities consistently.
+        // Because of this, the opacity is accounted for in the pattern itself.
+        if !matches!(stroke.paint, Paint::Pattern(_)) {
+            self.set_stroke_opacity(stroke.opacity);
+        }
+
         self.fill_stroke_glyph(
             glyph_id,
             font,
@@ -224,6 +259,8 @@ impl StreamBuilder {
                 )
             },
         );
+
+        self.graphics_states.restore_state();
     }
 
     fn fill_stroke_glyph(

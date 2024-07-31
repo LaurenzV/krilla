@@ -68,7 +68,7 @@ fn get_context_from_node(
                     let font = render_context.fonts.entry(g.font).or_insert_with(|| {
                         fontdb
                             .with_face_data(g.font, |data, face_index| {
-                                // TODO: Avoid allocation somehow?
+                                // TODO: Avoid vector allocation somehow?
                                 let font =
                                     Font::new(Rc::new(data.to_vec()), Location::default()).unwrap();
                                 SvgFont {
