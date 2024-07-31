@@ -1,10 +1,11 @@
 use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
+use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
-use pdf_writer::types::{SystemInfo, UnicodeCmap};
+use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
@@ -85,7 +86,7 @@ impl Type3Font {
             .collect::<Vec<_>>();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
-        let mut global_bbox = self.font.bbox();
+        let mut bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
         let glyph_streams = self
             .glyphs
@@ -104,6 +105,7 @@ impl Type3Font {
                 content.start_color_glyph(widths[index]);
 
                 let x_object = XObject::new(Arc::new(stream), false, false, None);
+                bbox.expand(&x_object.bbox());
                 let x_name = rd_builder
                     .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
                 content.x_object(x_name.to_pdf_name());
@@ -119,13 +121,49 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
+        let descriptor_ref = sc.borrow_mut().new_ref();
         let cmap_ref = sc.borrow_mut().new_ref();
 
         let mut chunk = Chunk::new();
+
+        let font_ref = self.font.font_ref();
+        let postscript_name = find_name(&font_ref);
+
+        let mut flags = FontFlags::empty();
+        flags.set(
+            FontFlags::SERIF,
+            postscript_name
+                .clone()
+                .map(|n| n.contains("Serif"))
+                .unwrap_or(false),
+        );
+        flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
+        flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
+        flags.insert(FontFlags::SYMBOLIC);
+        flags.insert(FontFlags::SMALL_CAP);
+
+        let italic_angle = self.font.italic_angle();
+        let ascender = self.font.ascent();
+        let descender = self.font.descent();
+
+        // Write the font descriptor (contains metrics about the font).
+        let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
+        font_descriptor
+            .name(Name(
+                postscript_name.unwrap_or("unknown".to_string()).as_bytes(),
+            ))
+            .flags(flags)
+            .bbox(bbox.to_pdf_rect())
+            .italic_angle(italic_angle)
+            .ascent(ascender)
+            .descent(descender);
+
+        font_descriptor.finish();
+
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(&mut sc.borrow_mut(), &mut type3_font.resources());
 
-        type3_font.bbox(global_bbox.to_pdf_rect());
+        type3_font.bbox(bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
@@ -137,6 +175,7 @@ impl Type3Font {
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(widths);
+        type3_font.font_descriptor(descriptor_ref);
 
         let mut char_procs = type3_font.char_procs();
         for (gid, ref_) in glyph_streams.iter().enumerate() {
