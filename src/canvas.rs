@@ -74,11 +74,6 @@ mod tests {
 
     // use crate::font::Font;
 
-    
-    
-
-    
-
     use tiny_skia_path::{Path, PathBuilder};
 
     fn dummy_path(w: f32) -> Path {

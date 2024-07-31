@@ -1,13 +1,15 @@
-use crate::canvas::Canvas;
 use crate::font::{bitmap, colr, outline, svg, Font};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
+use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::{Chunk, Content, Finish, Ref};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
+use std::cell::RefCell;
 use std::collections::BTreeSet;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};
 
@@ -17,7 +19,6 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
-    glyph_canvases: Vec<Canvas>,
     glyph_set: BTreeSet<GlyphId>,
 }
 
@@ -26,7 +27,6 @@ impl Type3Font {
         Self {
             font,
             glyphs: Vec::new(),
-            glyph_canvases: Vec::new(),
             glyph_set: BTreeSet::new(),
         }
     }
@@ -55,20 +55,11 @@ impl Type3Font {
             assert!(self.glyphs.len() < 256);
 
             self.glyphs.push(glyph_id);
-            self.glyph_canvases.push(
-                colr::draw_glyph(&self.font, glyph_id)
-                    .or_else(|| svg::draw_glyph(&self.font, glyph_id))
-                    .or_else(|| bitmap::draw_glyph(&self.font, glyph_id))
-                    .or_else(|| outline::draw_glyph(&self.font, glyph_id))
-                    .unwrap(),
-            );
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
-}
 
-impl Object for Type3Font {
-    fn serialize_into(mut self, sc: &mut SerializerContext, root_ref: Ref) {
+    pub fn serialize_into(mut self, sc: Rc<RefCell<SerializerContext>>, root_ref: Ref) {
         let widths = self
             .glyphs
             .iter()
@@ -81,36 +72,45 @@ impl Object for Type3Font {
             })
             .collect::<Vec<_>>();
 
-        let mut resource_dictionary = ResourceDictionaryBuilder::new();
-        let mut global_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
+        let mut rd_builder = ResourceDictionaryBuilder::new();
+        let mut global_bbox = self.font.bbox();
 
         let glyph_streams = self
             .glyphs
             .iter()
             .enumerate()
-            .map(|(index, glyph)| {
-                let canvas = std::mem::take(&mut self.glyph_canvases[index]);
+            .map(|(index, glyph_id)| {
+                let mut stream_builder = StreamBuilder::new(sc.clone());
+                colr::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
+                    .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
+                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
+                    .or_else(|| outline::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
+                    .unwrap();
+
+                let stream = stream_builder.finish();
 
                 let mut content = Content::new();
                 content.start_color_glyph(widths[index]);
 
-                let x_object = XObject::new(Arc::new(canvas.byte_code), false, false, None);
-                let x_name = resource_dictionary
+                let x_object = XObject::new(Arc::new(stream), false, false, None);
+                let x_name = rd_builder
                     .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
                 content.x_object(x_name.to_pdf_name());
 
                 let stream = content.finish();
 
-                let stream_ref = sc.new_ref();
-                sc.chunk_mut().stream(stream_ref, &stream);
+                let stream_ref = sc.borrow_mut().new_ref();
+                sc.borrow_mut().chunk_mut().stream(stream_ref, &stream);
 
                 stream_ref
             })
             .collect::<Vec<_>>();
 
+        let resource_dictionary = rd_builder.finish();
+
         let mut chunk = Chunk::new();
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(sc, &mut type3_font.resources());
+        resource_dictionary.to_pdf_resources(&mut sc.borrow_mut(), &mut type3_font.resources());
 
         type3_font.bbox(global_bbox.to_pdf_rect());
         type3_font.matrix(
@@ -140,7 +140,7 @@ impl Object for Type3Font {
             .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
 
         type3_font.finish();
-        sc.chunk_mut().extend(&chunk);
+        sc.borrow_mut().chunk_mut().extend(&chunk);
     }
 }
 
@@ -151,27 +151,31 @@ mod tests {
     use crate::serialize::{Object, SerializeSettings, SerializerContext};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use std::sync::Arc;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[test]
     fn basic_type3() {
         let data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
-        let font = Font::new(Arc::new(data), Location::default()).unwrap();
+        let font = Font::new(Rc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
 
         for g in [10, 11, 12] {
             type3.add(GlyphId::new(g));
         }
 
-        let mut serializer_context = SerializerContext::new(SerializeSettings::default());
-        let root_ref = serializer_context.new_ref();
-        type3.serialize_into(&mut serializer_context, root_ref);
+        let mut serializer_context = Rc::new(RefCell::new(SerializerContext::new(
+            SerializeSettings::default(),
+        )));
+        let root_ref = serializer_context.borrow_mut().new_ref();
+        type3.serialize_into(serializer_context.clone(), root_ref);
 
         // No need to write fonts here.
 
-        let chunk = serializer_context.chunk();
+        let borrowed = serializer_context.borrow();
+        let chunk = borrowed.chunk();
         std::fs::write("out.txt", chunk.as_bytes());
     }
 }

@@ -20,9 +20,6 @@ pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
 
 #[cfg(test)]
 mod tests {
-    
-    
-    
 
     // #[test]
     // pub fn svg() {

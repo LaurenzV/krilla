@@ -2,7 +2,7 @@ use crate::font::Font;
 use crate::stream::StreamBuilder;
 use crate::svg;
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId};
+use skrifa::GlyphId;
 use std::io::Read;
 use usvg::roxmltree;
 

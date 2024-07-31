@@ -2,7 +2,7 @@ use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
-use skrifa::raw::{TableProvider};
+use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::rc::Rc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
@@ -187,8 +187,8 @@ fn draw(
     single_glyph: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
 ) {
     use crate::canvas::Page;
-    use crate::Transform;
     use crate::serialize::{PageSerialize, SerializeSettings};
+    use crate::Transform;
 
     let metrics = font
         .font_ref()
