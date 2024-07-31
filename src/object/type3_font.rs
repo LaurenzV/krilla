@@ -143,8 +143,8 @@ impl Type3Font {
         flags.insert(FontFlags::SMALL_CAP);
 
         let italic_angle = self.font.italic_angle();
-        let ascender = self.font.ascent();
-        let descender = self.font.descent();
+        let ascender = bbox.bottom();
+        let descender = bbox.top();
 
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
