@@ -8,7 +8,7 @@ use tiny_skia_path::Size;
 
 pub struct Page {
     pub size: Size,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    pub serializer_context: Rc<RefCell<SerializerContext>>,
 }
 
 impl Page {
@@ -25,12 +25,14 @@ impl Page {
         let size = self.size;
         StreamBuilder::new_flipped(self.serializer_context.clone(), size)
     }
+
+    pub fn finish(self) -> SerializerContext {
+        Rc::try_unwrap(self.serializer_context).unwrap().into_inner()
+    }
 }
 
 impl PageSerialize for Stream {
-    fn serialize(self, serialize_settings: SerializeSettings, size: Size) -> Pdf {
-        let mut sc = SerializerContext::new(serialize_settings);
-
+    fn serialize(self, mut sc: SerializerContext, size: Size) -> Pdf {
         let catalog_ref = sc.new_ref();
         let page_tree_ref = sc.new_ref();
         let page_ref = sc.new_ref();
@@ -39,7 +41,7 @@ impl PageSerialize for Stream {
         let mut chunk = Chunk::new();
         chunk.pages(page_tree_ref).count(1).kids([page_ref]);
 
-        if serialize_settings.compress {
+        if sc.serialize_settings.compress {
             let deflated = deflate(self.content());
 
             let mut stream = chunk.stream(content_ref, &deflated);

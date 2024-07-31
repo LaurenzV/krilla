@@ -84,8 +84,7 @@ impl Type3Font {
                 colr::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
                     .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
                     .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
-                    .or_else(|| outline::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
-                    .unwrap();
+                    .or_else(|| outline::draw_glyph(&self.font, *glyph_id, &mut stream_builder));
 
                 let stream = stream_builder.finish();
 

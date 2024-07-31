@@ -34,7 +34,7 @@ pub trait Object: Sized + Hash + Clone + 'static {
 pub trait RegisterableObject: Object {}
 
 pub trait PageSerialize: Sized {
-    fn serialize(self, serialize_settings: SerializeSettings, size: Size) -> Pdf;
+    fn serialize(self, sc: SerializerContext, size: Size) -> Pdf;
 }
 
 #[derive(Debug)]

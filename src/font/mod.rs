@@ -219,7 +219,7 @@ fn draw(
                 0.0,
                 1.0,
                 col as f32 * size as f32,
-                (row) as f32 * size as f32,
+                (row + 1) as f32 * size as f32,
             )
             // .pre_concat(Transform::from_scale(
             //     size as f32 / units_per_em,
@@ -243,8 +243,9 @@ fn draw(
     }
 
     let stream = builder.finish();
+    let sc = page.finish();
 
-    let pdf = stream.serialize(SerializeSettings::default(), page_size);
+    let pdf = stream.serialize(sc, page_size);
     let finished = pdf.finish();
     let _ = std::fs::write(format!("out/{}.pdf", name), &finished);
     let _ = std::fs::write(format!("out/{}.txt", name), &finished);
