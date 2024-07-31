@@ -31,7 +31,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) -> O
         let opts = usvg::Options::default();
         let tree = usvg::Tree::from_xmltree(&document, &opts).unwrap();
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
-            svg::render_node(&node, builder)
+            svg::render_node(&node, tree.fontdb().clone(), builder)
         } else {
             // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
             // usvg. So in this case, we simply draw the whole document.

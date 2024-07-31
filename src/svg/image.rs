@@ -1,13 +1,17 @@
 use crate::object::image::Image;
 use crate::stream::StreamBuilder;
-use crate::svg::group;
+use crate::svg::{group, FontContext};
 use crate::util::RectExt;
 use crate::FillRule;
 use image::ImageFormat;
 use tiny_skia_path::Rect;
 use usvg::ImageKind;
 
-pub fn render(image: &usvg::Image, stream_builder: &mut StreamBuilder) {
+pub fn render(
+    image: &usvg::Image,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     if !image.is_visible() {
         return;
     }
@@ -38,7 +42,7 @@ pub fn render(image: &usvg::Image, stream_builder: &mut StreamBuilder) {
                     .to_clip_path(),
                 &FillRule::NonZero,
             );
-            group::render(t.root(), stream_builder);
+            group::render(t.root(), stream_builder, font_context);
             stream_builder.pop_clip_path();
         }
     }

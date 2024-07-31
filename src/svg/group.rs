@@ -3,41 +3,62 @@ use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 // use crate::svg::{filter, image, path};
-use crate::svg::{filter, image, path};
+use crate::svg::{filter, image, path, text, FontContext};
 use std::sync::Arc;
 use usvg::{Node, NormalizedF32};
 
-pub fn render(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn render(
+    group: &usvg::Group,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     if !group.filters().is_empty() {
         filter::render(group, stream_builder);
         return;
     }
 
-    isolated(group, stream_builder);
+    isolated(group, stream_builder, font_context);
 }
 
-pub fn isolated(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn isolated(
+    group: &usvg::Group,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     if group.isolate() {
         let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
-        transformed(group, &mut sub_stream_builder);
+        transformed(group, &mut sub_stream_builder, font_context);
         let sub_stream = sub_stream_builder.finish();
 
         stream_builder.draw_isolated(sub_stream);
     } else {
-        transformed(group, stream_builder);
+        transformed(group, stream_builder, font_context);
     }
 }
 
-pub fn transformed(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn transformed(
+    group: &usvg::Group,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     stream_builder.save_graphics_state();
     stream_builder.concat_transform(&convert_transform(&group.transform()));
-    clipped(group, stream_builder);
+    clipped(group, stream_builder, font_context);
     stream_builder.restore_graphics_state();
 }
 
-pub fn clipped(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn clipped(
+    group: &usvg::Group,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     if let Some(clip_path) = group.clip_path() {
-        let converted = get_clip_path(group, clip_path, stream_builder.serializer_context());
+        let converted = get_clip_path(
+            group,
+            clip_path,
+            stream_builder.serializer_context(),
+            font_context,
+        );
         // TODO: Improve and deduplicate
         match converted {
             SvgClipPath::SimpleClip(rules) => {
@@ -45,7 +66,7 @@ pub fn clipped(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
                     stream_builder.push_clip_path(&rule.0, &rule.1);
                 }
 
-                masked(group, stream_builder);
+                masked(group, stream_builder, font_context);
 
                 for _ in rules {
                     stream_builder.pop_clip_path();
@@ -54,40 +75,48 @@ pub fn clipped(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
             SvgClipPath::ComplexClip(mask) => {
                 let mut sub_stream_builder =
                     StreamBuilder::new(stream_builder.serializer_context());
-                masked(group, &mut sub_stream_builder);
+                masked(group, &mut sub_stream_builder, font_context);
                 let sub_stream = sub_stream_builder.finish();
                 stream_builder.draw_masked(mask, Arc::new(sub_stream));
             }
         }
     } else {
-        masked(group, stream_builder);
+        masked(group, stream_builder, font_context);
     };
 }
 
-pub fn masked(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn masked(
+    group: &usvg::Group,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     if let Some(mask) = group.mask() {
         let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
-        blended_and_opacified(group, &mut sub_stream_builder);
+        blended_and_opacified(group, &mut sub_stream_builder, font_context);
         let sub_stream = sub_stream_builder.finish();
-        let mask = get_mask(mask, stream_builder.serializer_context());
+        let mask = get_mask(mask, stream_builder.serializer_context(), font_context);
         stream_builder.draw_masked(mask, Arc::new(sub_stream));
     } else {
-        blended_and_opacified(group, stream_builder);
+        blended_and_opacified(group, stream_builder, font_context);
     }
 }
 
-pub fn blended_and_opacified(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn blended_and_opacified(
+    group: &usvg::Group,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     stream_builder.save_graphics_state();
     stream_builder.set_blend_mode(convert_blend_mode(&group.blend_mode()));
 
     if group.opacity() == NormalizedF32::ONE {
         for child in group.children() {
-            render_node(child, stream_builder);
+            render_node(child, stream_builder, font_context);
         }
     } else {
         let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
         for child in group.children() {
-            render_node(child, &mut sub_stream_builder);
+            render_node(child, &mut sub_stream_builder, font_context);
         }
         let sub_stream = sub_stream_builder.finish();
         stream_builder.draw_opacified(group.opacity(), Arc::new(sub_stream));
@@ -96,11 +125,15 @@ pub fn blended_and_opacified(group: &usvg::Group, stream_builder: &mut StreamBui
     stream_builder.restore_graphics_state();
 }
 
-pub fn render_node(node: &Node, stream_builder: &mut StreamBuilder) {
+pub fn render_node(
+    node: &Node,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     match node {
-        Node::Group(g) => render(g, stream_builder),
-        Node::Path(p) => path::render(p, stream_builder),
-        Node::Image(i) => image::render(i, stream_builder),
-        Node::Text(_) => unimplemented!(),
+        Node::Group(g) => render(g, stream_builder, font_context),
+        Node::Path(p) => path::render(p, stream_builder, font_context),
+        Node::Image(i) => image::render(i, stream_builder, font_context),
+        Node::Text(t) => text::render(t, stream_builder, font_context),
     }
 }

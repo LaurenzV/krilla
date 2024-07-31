@@ -1,8 +1,8 @@
 use crate::object::mask::Mask;
 use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
-use crate::svg::group;
 use crate::svg::util::{convert_fill_rule, convert_transform};
+use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -18,6 +18,7 @@ pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
     serializer_context: Rc<RefCell<SerializerContext>>,
+    font_context: &mut FontContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
     // SVGs can be much more complex than in PDF. In SVG, clip paths can have transforms, as well as
@@ -62,6 +63,7 @@ pub fn get_clip_path(
             group,
             clip_path,
             serializer_context,
+            font_context,
         ))
     }
 }
@@ -185,12 +187,13 @@ fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
     serializer_context: Rc<RefCell<SerializerContext>>,
+    font_context: &mut FontContext,
 ) -> Mask {
     let mut stream_builder = StreamBuilder::new(serializer_context);
 
     if let Some(svg_clip_path) = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, c, stream_builder.serializer_context()))
+        .map(|c| get_clip_path(parent, c, stream_builder.serializer_context(), font_context))
     {
         match svg_clip_path {
             SvgClipPath::SimpleClip(rules) => {
@@ -198,7 +201,7 @@ fn create_complex_clip_path(
                     stream_builder.push_clip_path(&rule.0, &rule.1);
                 }
 
-                transformed(clip_path, &mut stream_builder);
+                transformed(clip_path, &mut stream_builder, font_context);
 
                 for _ in rules {
                     stream_builder.pop_clip_path();
@@ -207,13 +210,13 @@ fn create_complex_clip_path(
             SvgClipPath::ComplexClip(mask) => {
                 let mut sub_stream_builder =
                     StreamBuilder::new(stream_builder.serializer_context());
-                transformed(clip_path, &mut sub_stream_builder);
+                transformed(clip_path, &mut sub_stream_builder, font_context);
                 let sub_stream = sub_stream_builder.finish();
                 stream_builder.draw_masked(mask, Arc::new(sub_stream));
             }
         }
     } else {
-        transformed(clip_path, &mut stream_builder);
+        transformed(clip_path, &mut stream_builder, font_context);
     }
 
     let stream = stream_builder.finish();
@@ -221,9 +224,13 @@ fn create_complex_clip_path(
     Mask::new(Arc::new(stream), MaskType::Alpha)
 }
 
-fn transformed(clip_path: &usvg::ClipPath, stream_builder: &mut StreamBuilder) {
+fn transformed(
+    clip_path: &usvg::ClipPath,
+    stream_builder: &mut StreamBuilder,
+    font_context: &mut FontContext,
+) {
     stream_builder.save_graphics_state();
     stream_builder.concat_transform(&convert_transform(&clip_path.transform()));
-    group::render(clip_path.root(), stream_builder);
+    group::render(clip_path.root(), stream_builder, font_context);
     stream_builder.restore_graphics_state();
 }
