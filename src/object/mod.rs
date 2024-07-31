@@ -1,4 +1,4 @@
-// pub mod cid_font;
+pub mod cid_font;
 pub mod color_space;
 pub mod ext_g_state;
 pub mod image;
