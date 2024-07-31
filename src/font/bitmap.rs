@@ -17,7 +17,6 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
             .filter_map(|s| Some((s.clone()?, s?.glyph_data(glyph).ok()??)))
             .last()
         {
-            // TODO: Apply the "magic shift"
             let upem = metrics.units_per_em as f32;
             let ppem = strike.ppem() as f32;
 
@@ -28,7 +27,17 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
                 let height = dynamic_image.height() as f32 * size_factor;
                 let size = Size::from_wh(width, height).unwrap();
                 stream_builder.save_graphics_state();
-                stream_builder.concat_transform(&Transform::from_translate(0.0, -height));
+                stream_builder.concat_transform(
+                    &Transform::from_translate(0.0, -height)
+                        // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
+                        // doesn't seem to be coming from the font and most likely is somehow hardcoded. On Windows,
+                        // this shift will not be applied. However, if this shift is not applied the emojis are a bit
+                        // too high up when being together with other text, so we try to imitate this.
+                        // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
+                        // We approximate this vertical shift that seems to be produced by it.
+                        // This value seems to be pretty close to what is happening on MacOS.
+                        .pre_concat(Transform::from_translate(0.0, 0.128 * upem)),
+                );
                 stream_builder.draw_image(Image::new(&dynamic_image), size);
                 stream_builder.restore_graphics_state();
 
