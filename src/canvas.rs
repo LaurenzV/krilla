@@ -27,7 +27,9 @@ impl Page {
     }
 
     pub fn finish(self) -> SerializerContext {
-        Rc::try_unwrap(self.serializer_context).unwrap().into_inner()
+        Rc::try_unwrap(self.serializer_context)
+            .unwrap()
+            .into_inner()
     }
 }
 

@@ -193,6 +193,48 @@ impl StreamBuilder {
         transform: &Transform,
         fill: &Fill,
     ) {
+        self.fill_stroke_glyph(
+            glyph_id,
+            font,
+            size,
+            transform,
+            TextRenderingMode::Fill,
+            |sb| sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill),
+        );
+    }
+
+    pub fn stroke_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+        stroke: &Stroke,
+    ) {
+        self.fill_stroke_glyph(
+            glyph_id,
+            font,
+            size,
+            transform,
+            TextRenderingMode::Stroke,
+            |sb| {
+                sb.content_set_stroke_properties(
+                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                    stroke,
+                )
+            },
+        );
+    }
+
+    fn fill_stroke_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+        text_rendering_mode: TextRenderingMode,
+        mut action: impl FnMut(&mut StreamBuilder),
+    ) {
         let (font_resource, gid) = self
             .serializer_context
             .borrow_mut()
@@ -203,11 +245,10 @@ impl StreamBuilder {
 
         self.apply_isolated_op(|sb| {
             // TODO: Figure out proper bbox
-            sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
-
+            action(sb);
             sb.content.begin_text();
             sb.content.set_font(font_name.to_pdf_name(), size.get());
-            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+            sb.content.set_text_rendering_mode(text_rendering_mode);
             match gid {
                 PDFGlyph::ColorGlyph(gid) => {
                     sb.content.set_text_matrix(transform.to_pdf_transform());
