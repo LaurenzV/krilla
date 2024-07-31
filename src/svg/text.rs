@@ -49,7 +49,7 @@ pub fn render(
 
             let mut fill_op = |sb: &mut StreamBuilder, fill: &Fill| {
                 sb.fill_glyph(
-                    Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
+                    Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font.clone(),
                     FiniteF32::new(span.font_size.get()).unwrap(),
                     &convert_transform(&transform),
@@ -59,7 +59,7 @@ pub fn render(
 
             let mut stroke_op = |sb: &mut StreamBuilder, stroke: &Stroke| {
                 sb.stroke_glyph(
-                    Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
+                    Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font.clone(),
                     FiniteF32::new(span.font_size.get()).unwrap(),
                     &convert_transform(&transform),
@@ -85,7 +85,7 @@ pub fn render(
                     stroke_op(stream_builder, &stroke);
                 }
                 (None, None) => stream_builder.invisible_glyph(
-                    Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
+                    Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font,
                     FiniteF32::new(span.font_size.get()).unwrap(),
                     &convert_transform(&transform),

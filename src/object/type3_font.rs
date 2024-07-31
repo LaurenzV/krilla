@@ -4,7 +4,8 @@ use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
-use pdf_writer::{Chunk, Content, Finish, Ref};
+use pdf_writer::types::{SystemInfo, UnicodeCmap};
+use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
 use std::cell::RefCell;
@@ -19,9 +20,16 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
-    strings: Vec<Option<String>>,
+    strings: Vec<String>,
     glyph_set: BTreeSet<GlyphId>,
 }
+
+const CMAP_NAME: Name = Name(b"Custom");
+const SYSTEM_INFO: SystemInfo = SystemInfo {
+    registry: Str(b"Adobe"),
+    ordering: Str(b"Identity"),
+    supplement: 0,
+};
 
 impl Type3Font {
     pub fn new(font: Font) -> Self {
@@ -52,14 +60,13 @@ impl Type3Font {
             .position(|g| *g == glyph.glyph_id)
             .and_then(|n| u8::try_from(n).ok())
         {
-            if self.strings[pos as usize].is_none() {
-                self.strings[pos as usize] = glyph.string.clone();
-            }
+            self.strings[pos as usize] = glyph.string.clone();
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);
 
             self.glyphs.push(glyph.glyph_id);
+            self.strings.push(glyph.string.clone());
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -112,11 +119,14 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
+        let cmap_ref = sc.borrow_mut().new_ref();
+
         let mut chunk = Chunk::new();
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(&mut sc.borrow_mut(), &mut type3_font.resources());
 
         type3_font.bbox(global_bbox.to_pdf_rect());
+        type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
                 1.0 / (self.font.units_per_em() as f32),
@@ -144,6 +154,19 @@ impl Type3Font {
             .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
 
         type3_font.finish();
+
+        let cmap = {
+            let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
+            for (g, text) in self.strings.iter().enumerate() {
+                if !text.is_empty() {
+                    cmap.pair_with_multiple(g as u8, text.chars());
+                }
+            }
+
+            cmap
+        };
+        chunk.cmap(cmap_ref, &cmap.finish());
+
         sc.borrow_mut().chunk_mut().extend(&chunk);
     }
 }
@@ -167,7 +190,7 @@ mod tests {
         let mut type3 = Type3Font::new(font);
 
         for g in [10, 11, 12] {
-            type3.add(&Glyph::new(GlyphId::new(g), None));
+            type3.add(&Glyph::new(GlyphId::new(g), "".to_string()));
         }
 
         let mut serializer_context = Rc::new(RefCell::new(SerializerContext::new(

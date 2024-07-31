@@ -49,6 +49,7 @@ mod tests {
     use crate::font::svg::draw_glyph;
     use crate::font::{draw, Font};
     use skrifa::instance::Location;
+    use skrifa::raw::TableProvider;
     use std::rc::Rc;
 
     #[test]
@@ -56,9 +57,6 @@ mod tests {
         let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (2000..2500).collect::<Vec<_>>();
-        // let glyphs = (0..font_ref.maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
-
-        draw(&font, &glyphs, "svg_twitter", draw_glyph);
+        draw(&font, None, "svg_twitter", draw_glyph);
     }
 }

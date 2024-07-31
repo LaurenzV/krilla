@@ -15,11 +15,11 @@ pub mod svg;
 
 pub struct Glyph {
     pub glyph_id: GlyphId,
-    pub string: Option<String>,
+    pub string: String,
 }
 
 impl Glyph {
-    pub fn new(glyph_id: GlyphId, string: Option<String>) -> Self {
+    pub fn new(glyph_id: GlyphId, string: String) -> Self {
         Self { glyph_id, string }
     }
 }
@@ -194,13 +194,28 @@ impl FontWrapper {
 #[cfg(test)]
 fn draw(
     font: &Font,
-    glyphs: &[u32],
+    glyphs: Option<Vec<(GlyphId, String)>>,
     name: &str,
     single_glyph: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
 ) {
     use crate::canvas::Page;
-    use crate::serialize::{PageSerialize, SerializeSettings};
+    use crate::serialize::PageSerialize;
     use crate::Transform;
+
+    let glyphs = glyphs.unwrap_or_else(|| {
+        let file =
+            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/src/font/emojis.txt").unwrap();
+        let file = std::str::from_utf8(&file).unwrap();
+        file.chars()
+            .filter_map(|c| {
+                font.font_ref()
+                    .cmap()
+                    .unwrap()
+                    .map_codepoint(c)
+                    .map(|g| (g, c.to_string()))
+            })
+            .collect::<Vec<_>>()
+    });
 
     let metrics = font
         .font_ref()
@@ -218,7 +233,7 @@ fn draw(
     let page = Page::new(page_size);
     let mut builder = page.builder();
 
-    for i in glyphs.iter().copied() {
+    for (i, text) in glyphs.iter().cloned() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, units_per_em: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;
@@ -241,7 +256,7 @@ fn draw(
         builder.save_graphics_state();
         builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         builder.fill_glyph(
-            Glyph::new(GlyphId::new(i), None),
+            Glyph::new(i, text),
             font.clone(),
             FiniteF32::new(size as f32).unwrap(),
             &Transform::identity(),

@@ -345,13 +345,8 @@ mod tests {
 
     use skrifa::instance::Location;
 
-    use skrifa::FontRef;
+    use skrifa::{FontRef, GlyphId};
     use std::rc::Rc;
-
-    fn draw_colr(data: Rc<Vec<u8>>, location: Location, glyphs: &[u32], name: &str) {
-        let font = Font::new(data, location).unwrap();
-        draw(&font, glyphs, name, draw_glyph);
-    }
 
     #[test]
     fn colr_test() {
@@ -359,14 +354,12 @@ mod tests {
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
 
-        let glyphs = (0..=220).collect::<Vec<_>>();
+        let glyphs = (0..=220)
+            .map(|n| (GlyphId::new(n), "".to_string()))
+            .collect::<Vec<_>>();
+        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw_colr(
-            Rc::new(font_data),
-            Location::default(),
-            &glyphs,
-            "colr_test",
-        );
+        draw(&font, Some(glyphs), "colr_test", draw_glyph);
     }
 
     #[test]
@@ -374,29 +367,17 @@ mod tests {
         let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
         let font_ref = FontRef::from_index(&font_data, 0).unwrap();
 
-        let glyphs = (2100..2400).collect::<Vec<_>>();
-        // let glyphs = (0..font_ref.maxp().unwrap().num_glyphs() as u32).collect::<Vec<_>>();
+        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw_colr(
-            Rc::new(font_data),
-            Location::default(),
-            &glyphs,
-            "colr_noto",
-        );
+        draw(&font, None, "colr_noto", draw_glyph);
     }
 
     #[test]
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
+        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
+        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (2100..2271).collect::<Vec<_>>();
-        // let glyphs = (0..=5000).collect::<Vec<_>>();
-
-        draw_colr(
-            Rc::new(font_data),
-            Location::default(),
-            &glyphs,
-            "colr_segoe",
-        );
+        draw(&font, None, "colr_segoe", draw_glyph);
     }
 }

@@ -64,8 +64,6 @@ mod tests {
         let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        let glyphs = (90..=300).collect::<Vec<_>>();
-
-        draw(&font, &glyphs, "sbix_apple_color", draw_glyph);
+        draw(&font, None, "sbix_apple_color", draw_glyph);
     }
 }
