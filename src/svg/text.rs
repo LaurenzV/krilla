@@ -2,6 +2,7 @@ use crate::font::Glyph;
 use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill, convert_stroke, convert_transform};
 use crate::svg::{path, FontContext};
+use crate::{Fill, Stroke};
 use skrifa::GlyphId;
 use tiny_skia_path::{FiniteF32, Transform};
 use usvg::PaintOrder;
@@ -46,58 +47,42 @@ pub fn render(
                 font.units_per_em() as f32 / span.font_size.get(),
             ));
 
+            let mut fill_op = |sb: &mut StreamBuilder, fill: &Fill| {
+                sb.fill_glyph(
+                    Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
+                    font.clone(),
+                    FiniteF32::new(span.font_size.get()).unwrap(),
+                    &convert_transform(&transform),
+                    &fill,
+                );
+            };
+
+            let mut stroke_op = |sb: &mut StreamBuilder, stroke: &Stroke| {
+                sb.stroke_glyph(
+                    Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
+                    font.clone(),
+                    FiniteF32::new(span.font_size.get()).unwrap(),
+                    &convert_transform(&transform),
+                    &stroke,
+                );
+            };
+
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
                     PaintOrder::FillAndStroke => {
-                        stream_builder.fill_glyph(
-                            Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
-                            font.clone(),
-                            FiniteF32::new(span.font_size.get()).unwrap(),
-                            &convert_transform(&transform),
-                            &fill,
-                        );
-                        stream_builder.stroke_glyph(
-                            Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
-                            font,
-                            FiniteF32::new(span.font_size.get()).unwrap(),
-                            &convert_transform(&transform),
-                            &stroke,
-                        );
+                        fill_op(stream_builder, &fill);
+                        stroke_op(stream_builder, &stroke);
                     }
                     PaintOrder::StrokeAndFill => {
-                        stream_builder.stroke_glyph(
-                            Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
-                            font.clone(),
-                            FiniteF32::new(span.font_size.get()).unwrap(),
-                            &convert_transform(&transform),
-                            &stroke,
-                        );
-                        stream_builder.fill_glyph(
-                            Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
-                            font,
-                            FiniteF32::new(span.font_size.get()).unwrap(),
-                            &convert_transform(&transform),
-                            &fill,
-                        );
+                        stroke_op(stream_builder, &stroke);
+                        fill_op(stream_builder, &fill);
                     }
                 },
                 (Some(fill), None) => {
-                    stream_builder.fill_glyph(
-                        Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
-                        font,
-                        FiniteF32::new(span.font_size.get()).unwrap(),
-                        &convert_transform(&transform),
-                        &fill,
-                    );
+                    fill_op(stream_builder, &fill);
                 }
                 (None, Some(stroke)) => {
-                    stream_builder.stroke_glyph(
-                        Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
-                        font,
-                        FiniteF32::new(span.font_size.get()).unwrap(),
-                        &convert_transform(&transform),
-                        &stroke,
-                    );
+                    stroke_op(stream_builder, &stroke);
                 }
                 (None, None) => stream_builder.invisible_glyph(
                     Glyph::new(GlyphId::new(glyph.id.0 as u32), Some(glyph.text.clone())),
