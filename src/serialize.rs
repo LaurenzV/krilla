@@ -43,7 +43,7 @@ pub struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     chunk: Chunk,
     cur_ref: Ref,
-    serialize_settings: SerializeSettings,
+    pub serialize_settings: SerializeSettings,
     fonts_written: bool,
 }
 

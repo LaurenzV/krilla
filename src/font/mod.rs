@@ -1,4 +1,5 @@
 use crate::util::Prehashed;
+use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -218,22 +219,27 @@ fn draw(
                 0.0,
                 1.0,
                 col as f32 * size as f32,
-                (row + 1) as f32 * size as f32,
+                (row) as f32 * size as f32,
             )
-            .pre_concat(Transform::from_scale(
-                size as f32 / units_per_em,
-                size as f32 / units_per_em,
-            ))
+            // .pre_concat(Transform::from_scale(
+            //     size as f32 / units_per_em,
+            //     size as f32 / units_per_em,
+            // ))
         }
 
         builder.save_graphics_state();
         builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        let res = single_glyph(&font, GlyphId::new(i), &mut builder);
+        builder.fill_glyph(
+            GlyphId::new(i),
+            font.clone(),
+            FiniteF32::new(size as f32).unwrap(),
+            &Transform::identity(),
+            &Fill::default(),
+        );
+        // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         builder.restore_graphics_state();
 
-        if res.is_some() {
-            cur_point += size;
-        }
+        cur_point += size;
     }
 
     let stream = builder.finish();

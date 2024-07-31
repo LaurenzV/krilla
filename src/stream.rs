@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 // use crate::font::Font;
+use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -12,13 +13,15 @@ use crate::object::xobject::XObject;
 use crate::resource::{
     PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource,
 };
-use crate::serialize::SerializerContext;
+use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
-use pdf_writer::Content;
+use pdf_writer::types::TextRenderingMode;
+use pdf_writer::{Content, Str};
+use skrifa::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Stream {
@@ -182,41 +185,44 @@ impl StreamBuilder {
         self.content_restore_state();
     }
 
-    // pub fn draw_fill_glyph(
-    //     &mut self,
-    //     glyph_id: GlyphId,
-    //     font: Font,
-    //     size: FiniteF32,
-    //     transform: &Transform,
-    //     fill: &Fill,
-    // ) {
-    //     let (font_resource, gid) = self.serializer_context.map_glyph(font.clone(), glyph_id);
-    //     let font_name = self
-    //         .rd_builder
-    //         .register_resource(Resource::Font(font_resource));
-    //
-    //     self.apply_isolated_op(|sb| {
-    //         // TODO: Figure out proper bbox
-    //         sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
-    //
-    //         sb.content.begin_text();
-    //         sb.content.set_font(font_name.to_pdf_name(), size.get());
-    //         sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
-    //         match gid {
-    //             PDFGlyph::ColorGlyph(gid) => {
-    //                 sb.content.set_text_matrix(transform.to_pdf_transform());
-    //                 sb.content.show(Str(&[gid]));
-    //             }
-    //             PDFGlyph::CID(cid) => {
-    //                 let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
-    //                 sb.content.set_text_matrix(transform.to_pdf_transform());
-    //                 sb.content
-    //                     .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
-    //             }
-    //         }
-    //         sb.content.end_text();
-    //     })
-    // }
+    pub fn fill_glyph(
+        &mut self,
+        glyph_id: GlyphId,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+        fill: &Fill,
+    ) {
+        let (font_resource, gid) = self
+            .serializer_context
+            .borrow_mut()
+            .map_glyph(font.clone(), glyph_id);
+        let font_name = self
+            .rd_builder
+            .register_resource(Resource::Font(font_resource));
+
+        self.apply_isolated_op(|sb| {
+            // TODO: Figure out proper bbox
+            sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill);
+
+            sb.content.begin_text();
+            sb.content.set_font(font_name.to_pdf_name(), size.get());
+            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+            match gid {
+                PDFGlyph::ColorGlyph(gid) => {
+                    sb.content.set_text_matrix(transform.to_pdf_transform());
+                    sb.content.show(Str(&[gid]));
+                }
+                PDFGlyph::CID(cid) => {
+                    let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
+                    sb.content.set_text_matrix(transform.to_pdf_transform());
+                    sb.content
+                        .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
+                }
+            }
+            sb.content.end_text();
+        })
+    }
 
     pub(crate) fn draw_xobject(&mut self, x_object: XObject, state: &ExtGState) {
         self.graphics_states.save_state();

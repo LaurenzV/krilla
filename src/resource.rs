@@ -336,7 +336,7 @@ impl FontResource {
 impl Object for FontResource {
     fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
         // Fonts are written manually by the serializer in the end, so this should never be called.
-        unreachable!()
+        // unreachable!()
     }
 }
 
