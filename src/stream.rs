@@ -115,6 +115,10 @@ impl StreamBuilder {
     }
 
     pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
+        self.fill_path_impl(path, fill, false);
+    }
+
+    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: &Fill, no_fill: bool) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -131,7 +135,9 @@ impl StreamBuilder {
         }
 
         self.apply_isolated_op(|sb| {
-            sb.content_set_fill_properties(path.bounds(), fill);
+            if !no_fill {
+                sb.content_set_fill_properties(path.bounds(), fill);
+            }
             sb.content_draw_path(path.segments());
 
             match fill.rule {

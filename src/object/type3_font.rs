@@ -94,23 +94,44 @@ impl Type3Font {
             .enumerate()
             .map(|(index, glyph_id)| {
                 let mut stream_builder = StreamBuilder::new(sc.clone());
+                let mut is_outline = false;
+
                 colr::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
                     .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
                     .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
-                    .or_else(|| outline::draw_glyph(&self.font, *glyph_id, &mut stream_builder));
+                    .or_else(|| {
+                        is_outline = true;
+                        outline::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
+                    });
 
                 let stream = stream_builder.finish();
-
                 let mut content = Content::new();
-                content.start_color_glyph(widths[index]);
 
-                let x_object = XObject::new(Arc::new(stream), false, false, None);
-                bbox.expand(&x_object.bbox());
-                let x_name = rd_builder
-                    .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-                content.x_object(x_name.to_pdf_name());
+                let stream = if is_outline {
+                    let bbox = stream.bbox();
+                    content.start_shape_glyph(
+                        widths[index],
+                        bbox.left(),
+                        bbox.top(),
+                        bbox.right(),
+                        bbox.bottom(),
+                    );
 
-                let stream = content.finish();
+                    // TODO: Find a type-safe way of doing this.
+                    let mut final_stream = content.finish();
+                    final_stream.push(b'\n');
+                    final_stream.extend(stream.content());
+                    final_stream
+                } else {
+                    content.start_color_glyph(widths[index]);
+                    let x_object = XObject::new(Arc::new(stream), false, false, None);
+                    bbox.expand(&x_object.bbox());
+                    let x_name = rd_builder
+                        .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+                    content.x_object(x_name.to_pdf_name());
+
+                    content.finish()
+                };
 
                 let stream_ref = sc.borrow_mut().new_ref();
                 sc.borrow_mut().chunk_mut().stream(stream_ref, &stream);
