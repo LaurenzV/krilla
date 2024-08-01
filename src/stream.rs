@@ -347,7 +347,7 @@ impl StreamBuilder {
         self.bbox.expand(
             &self
                 .graphics_states
-                .transform_bbox(size.to_rect(0.0, 0.0).unwrap()),
+                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
         );
 
         self.apply_isolated_op(move |sb| {
