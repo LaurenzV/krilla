@@ -11,6 +11,7 @@ use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
 pub mod bitmap;
 pub mod colr;
 pub mod outline;
+mod parley;
 pub mod svg;
 
 pub struct Glyph {

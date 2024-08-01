@@ -17,8 +17,12 @@ use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
+use parley::layout::PositionedLayoutItem;
+use parley::Layout;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Str};
+use skrifa::instance::Location;
+use skrifa::raw::collections::int_set::Domain;
 use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
@@ -200,6 +204,53 @@ impl StreamBuilder {
             TextRenderingMode::Invisible,
             |sb| {},
         );
+    }
+
+    pub fn draw_parley(&mut self, layout: &Layout<Color>, text: &str) {
+        for line in layout.lines() {
+            for item in line.items() {
+                match item {
+                    PositionedLayoutItem::GlyphRun(glyph_run) => {
+                        let style = glyph_run.style();
+                        let run = glyph_run.run();
+                        let mut run_x = glyph_run.offset();
+                        let run_y = glyph_run.baseline();
+                        let font = run.font();
+                        let font_size = run.font_size();
+
+                        let krilla_font =
+                            Font::new(Rc::new(font.data.data().to_vec()), Location::default())
+                                .unwrap();
+
+                        for cluster in run.visual_clusters() {
+                            let text = &text[cluster.text_range()];
+
+                            for glyph in cluster.glyphs() {
+                                let glyph_x = run_x + glyph.x;
+                                let glyph_y = run_y - glyph.y;
+
+                                run_x += glyph.advance;
+
+                                self.fill_glyph(
+                                    Glyph {
+                                        glyph_id: GlyphId::new(glyph.id.to_u32()),
+                                        string: text.to_string(),
+                                    },
+                                    krilla_font.clone(),
+                                    FiniteF32::new(font_size).unwrap(),
+                                    &Transform::from_translate(glyph_x, glyph_y),
+                                    &Fill {
+                                        paint: Paint::Color(style.brush),
+                                        ..Default::default()
+                                    },
+                                );
+                            }
+                        }
+                    }
+                    PositionedLayoutItem::InlineBox(_) => {}
+                }
+            }
+        }
     }
 
     pub fn fill_glyph(

@@ -19,6 +19,12 @@ pub enum Color {
     Grey(Grey),
 }
 
+impl Default for Color {
+    fn default() -> Self {
+        Color::black()
+    }
+}
+
 impl Color {
     pub fn new_rgb(red: u8, green: u8, blue: u8) -> Self {
         Self::Rgb(Rgb { red, green, blue })
