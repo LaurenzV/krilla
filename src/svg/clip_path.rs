@@ -17,7 +17,7 @@ pub enum SvgClipPath {
 pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
@@ -62,7 +62,7 @@ pub fn get_clip_path(
         SvgClipPath::ComplexClip(create_complex_clip_path(
             group,
             clip_path,
-            serializer_context,
+            sub_builder,
             font_context,
         ))
     }
@@ -191,40 +191,37 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
 fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    mut sub_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> Mask {
-    let mut stream_builder = StreamBuilder::new(serializer_context);
-
     if let Some(svg_clip_path) = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, c, stream_builder.serializer_context(), font_context))
+        .map(|c| get_clip_path(parent, c, sub_builder.sub_builder(), font_context))
     {
         match svg_clip_path {
             SvgClipPath::SimpleClip(rules) => {
                 for rule in &rules {
-                    stream_builder.push_clip_path(&rule.0, &rule.1);
+                    sub_builder.push_clip_path(&rule.0, &rule.1);
                 }
 
-                transformed(clip_path, &mut stream_builder, font_context);
+                transformed(clip_path, &mut sub_builder, font_context);
 
                 for _ in rules {
-                    stream_builder.pop_clip_path();
+                    sub_builder.pop_clip_path();
                 }
             }
             SvgClipPath::ComplexClip(mask) => {
-                let mut sub_stream_builder =
-                    StreamBuilder::new(stream_builder.serializer_context());
-                transformed(clip_path, &mut sub_stream_builder, font_context);
-                let sub_stream = sub_stream_builder.finish();
-                stream_builder.draw_masked(mask, Arc::new(sub_stream));
+                let mut sub_mask_builder = sub_builder.sub_builder();
+                transformed(clip_path, &mut sub_mask_builder, font_context);
+                let sub_stream = sub_mask_builder.finish();
+                sub_builder.draw_masked(mask, Arc::new(sub_stream));
             }
         }
     } else {
-        transformed(clip_path, &mut stream_builder, font_context);
+        transformed(clip_path, &mut sub_builder, font_context);
     }
 
-    let stream = stream_builder.finish();
+    let stream = sub_builder.finish();
 
     Mask::new(Arc::new(stream), MaskType::Alpha)
 }

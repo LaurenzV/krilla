@@ -317,7 +317,7 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        let stream_builder = StreamBuilder::new(self.parent_stream.serializer_context());
+        let stream_builder = self.parent_stream.sub_builder();
         self.blend_modes.push(mode);
         self.streams.push(stream_builder);
     }

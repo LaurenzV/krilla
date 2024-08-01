@@ -30,7 +30,7 @@ pub fn fill_path(
     font_context: &mut FontContext,
 ) {
     if let Some(fill) = path.fill() {
-        let fill = convert_fill(fill, stream_builder.serializer_context(), font_context);
+        let fill = convert_fill(fill, stream_builder.sub_builder(), font_context);
         stream_builder.fill_path(&path.data(), &fill);
     }
 }
@@ -41,7 +41,7 @@ pub fn stroke_path(
     font_context: &mut FontContext,
 ) {
     if let Some(stroke) = path.stroke() {
-        let stroke = convert_stroke(stroke, stream_builder.serializer_context(), font_context);
+        let stroke = convert_stroke(stroke, stream_builder.sub_builder(), font_context);
         stream_builder.stroke_path(&path.data(), &stroke);
     }
 }

@@ -83,8 +83,8 @@ impl StreamBuilder {
         builder
     }
 
-    pub fn serializer_context(&mut self) -> Rc<RefCell<SerializerContext>> {
-        self.serializer_context.clone()
+    pub fn sub_builder(&mut self) -> StreamBuilder {
+        StreamBuilder::new(self.serializer_context.clone())
     }
 
     pub fn finish(self) -> Stream {

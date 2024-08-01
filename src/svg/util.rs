@@ -43,7 +43,7 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop {
 
 pub fn convert_paint(
     paint: &usvg::Paint,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    mut sub_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> Paint {
     match paint {
@@ -77,9 +77,8 @@ pub fn convert_paint(
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
-            let mut stream_builder = StreamBuilder::new(serializer_context);
-            group::render(pat.root(), &mut stream_builder, font_context);
-            let stream = stream_builder.finish();
+            group::render(pat.root(), &mut sub_builder, font_context);
+            let stream = sub_builder.finish();
 
             Paint::Pattern(Arc::new(Pattern {
                 stream: Arc::new(stream),
@@ -120,11 +119,11 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
 
 pub fn convert_fill(
     fill: &usvg::Fill,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> Fill {
     Fill {
-        paint: convert_paint(fill.paint(), serializer_context, font_context),
+        paint: convert_paint(fill.paint(), sub_builder, font_context),
         opacity: fill.opacity(),
         rule: convert_fill_rule(&fill.rule()),
     }
@@ -132,7 +131,7 @@ pub fn convert_fill(
 
 pub fn convert_stroke(
     stroke: &usvg::Stroke,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> Stroke {
     let dash = if let Some(dash_array) = stroke.dasharray() {
@@ -148,7 +147,7 @@ pub fn convert_stroke(
     };
 
     Stroke {
-        paint: convert_paint(stroke.paint(), serializer_context, font_context),
+        paint: convert_paint(stroke.paint(), sub_builder, font_context),
         width: stroke.width(),
         miter_limit: NonZeroPositiveF32::new(stroke.miterlimit().get()).unwrap(),
         line_cap: convert_line_cap(&stroke.linecap()),

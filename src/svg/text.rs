@@ -27,20 +27,14 @@ pub fn render(
 
         for glyph in &span.positioned_glyphs {
             let font = font_context.fonts.get(&glyph.font).unwrap().font.clone();
-            let fill = span.fill.as_ref().map(|f| {
-                convert_fill(
-                    &f,
-                    stream_builder.serializer_context().clone(),
-                    font_context,
-                )
-            });
-            let stroke = span.stroke.as_ref().map(|s| {
-                convert_stroke(
-                    &s,
-                    stream_builder.serializer_context().clone(),
-                    font_context,
-                )
-            });
+            let fill = span
+                .fill
+                .as_ref()
+                .map(|f| convert_fill(&f, stream_builder.sub_builder(), font_context));
+            let stroke = span
+                .stroke
+                .as_ref()
+                .map(|s| convert_stroke(&s, stream_builder.sub_builder(), font_context));
 
             let transform = glyph.transform().pre_concat(Transform::from_scale(
                 font.units_per_em() as f32 / span.font_size.get(),

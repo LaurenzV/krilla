@@ -26,9 +26,9 @@ pub fn isolated(
     font_context: &mut FontContext,
 ) {
     if group.isolate() {
-        let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
-        transformed(group, &mut sub_stream_builder, font_context);
-        let sub_stream = sub_stream_builder.finish();
+        let mut sub_builder = stream_builder.sub_builder();
+        transformed(group, &mut sub_builder, font_context);
+        let sub_stream = sub_builder.finish();
 
         stream_builder.draw_isolated(sub_stream);
     } else {
@@ -53,12 +53,7 @@ pub fn clipped(
     font_context: &mut FontContext,
 ) {
     if let Some(clip_path) = group.clip_path() {
-        let converted = get_clip_path(
-            group,
-            clip_path,
-            stream_builder.serializer_context(),
-            font_context,
-        );
+        let converted = get_clip_path(group, clip_path, stream_builder.sub_builder(), font_context);
         // TODO: Improve and deduplicate
         match converted {
             SvgClipPath::SimpleClip(rules) => {
@@ -73,10 +68,9 @@ pub fn clipped(
                 }
             }
             SvgClipPath::ComplexClip(mask) => {
-                let mut sub_stream_builder =
-                    StreamBuilder::new(stream_builder.serializer_context());
-                masked(group, &mut sub_stream_builder, font_context);
-                let sub_stream = sub_stream_builder.finish();
+                let mut sub_mask_builder = stream_builder.sub_builder();
+                masked(group, &mut sub_mask_builder, font_context);
+                let sub_stream = sub_mask_builder.finish();
                 stream_builder.draw_masked(mask, Arc::new(sub_stream));
             }
         }
@@ -91,10 +85,10 @@ pub fn masked(
     font_context: &mut FontContext,
 ) {
     if let Some(mask) = group.mask() {
-        let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
-        blended_and_opacified(group, &mut sub_stream_builder, font_context);
-        let sub_stream = sub_stream_builder.finish();
-        let mask = get_mask(mask, stream_builder.serializer_context(), font_context);
+        let mut sub_mask_builder = stream_builder.sub_builder();
+        blended_and_opacified(group, &mut sub_mask_builder, font_context);
+        let sub_stream = sub_mask_builder.finish();
+        let mask = get_mask(mask, stream_builder.sub_builder(), font_context);
         stream_builder.draw_masked(mask, Arc::new(sub_stream));
     } else {
         blended_and_opacified(group, stream_builder, font_context);
@@ -114,11 +108,11 @@ pub fn blended_and_opacified(
             render_node(child, stream_builder, font_context);
         }
     } else {
-        let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
+        let mut sub_builder = stream_builder.sub_builder();
         for child in group.children() {
-            render_node(child, &mut sub_stream_builder, font_context);
+            render_node(child, &mut sub_builder, font_context);
         }
-        let sub_stream = sub_stream_builder.finish();
+        let sub_stream = sub_builder.finish();
         stream_builder.draw_opacified(group.opacity(), Arc::new(sub_stream));
     }
 

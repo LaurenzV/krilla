@@ -11,27 +11,20 @@ use std::sync::Arc;
 
 pub fn get_mask(
     mask: &usvg::Mask,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    mut sub_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> Mask {
-    // Dummy size. TODO: Improve?
-    let mut stream_builder = StreamBuilder::new(serializer_context);
-
     if let Some(sub_usvg_mask) = mask.mask() {
-        let sub_mask = get_mask(
-            sub_usvg_mask,
-            stream_builder.serializer_context(),
-            font_context,
-        );
-        let mut sub_stream_builder = StreamBuilder::new(stream_builder.serializer_context());
-        remaining(mask, &mut sub_stream_builder, font_context);
-        let sub_stream = sub_stream_builder.finish();
-        stream_builder.draw_masked(sub_mask, Arc::new(sub_stream));
+        let sub_mask = get_mask(sub_usvg_mask, sub_builder.sub_builder(), font_context);
+        let mut sub_mask_builder = sub_builder.sub_builder();
+        remaining(mask, &mut sub_mask_builder, font_context);
+        let sub_stream = sub_mask_builder.finish();
+        sub_builder.draw_masked(sub_mask, Arc::new(sub_stream));
     } else {
-        remaining(mask, &mut stream_builder, font_context);
+        remaining(mask, &mut sub_builder, font_context);
     };
 
-    let stream = stream_builder.finish();
+    let stream = sub_builder.finish();
 
     Mask::new(Arc::new(stream), convert_mask_type(&mask.kind()))
 }
