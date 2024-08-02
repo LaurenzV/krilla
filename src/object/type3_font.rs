@@ -1,5 +1,5 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{bitmap, colr, outline, Font, Glyph};
+use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -95,7 +95,7 @@ impl Type3Font {
                 let mut is_outline = false;
 
                 colr::draw_glyph(self.font.clone(), *glyph_id, &mut canvas_builder)
-                    // .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
+                    .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
                     .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
                     .or_else(|| {
                         is_outline = true;

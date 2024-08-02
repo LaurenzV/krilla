@@ -115,7 +115,7 @@ impl<'a> CanvasBuilder<'a> {
         }
     }
 
-    pub fn sub_canvas(&'a mut self) -> Self {
+    pub fn sub_canvas(&mut self) -> CanvasBuilder {
         CanvasBuilder::new(&mut self.sc)
     }
 

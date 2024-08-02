@@ -1,4 +1,4 @@
-use crate::stream::StreamBuilder;
+use crate::canvas::CanvasBuilder;
 use crate::svg::{group, FontContext};
 use crate::transform::TransformWrapper;
 use crate::{
@@ -39,7 +39,7 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop {
 
 pub fn convert_paint(
     paint: &usvg::Paint,
-    mut sub_builder: StreamBuilder,
+    mut sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
 ) -> Paint {
     match paint {
@@ -115,7 +115,7 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
 
 pub fn convert_fill(
     fill: &usvg::Fill,
-    sub_builder: StreamBuilder,
+    sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
 ) -> Fill {
     Fill {
@@ -127,7 +127,7 @@ pub fn convert_fill(
 
 pub fn convert_stroke(
     stroke: &usvg::Stroke,
-    sub_builder: StreamBuilder,
+    sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
 ) -> Stroke {
     let dash = if let Some(dash_array) = stroke.dasharray() {
