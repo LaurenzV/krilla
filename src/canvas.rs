@@ -262,18 +262,18 @@ impl<'a> CanvasBuilder<'a> {
 
 #[cfg(test)]
 mod tests {
-    use tiny_skia_path::{Path, PathBuilder};
+    // use tiny_skia_path::{Path, PathBuilder};
 
-    fn dummy_path(w: f32) -> Path {
-        let mut builder = PathBuilder::new();
-        builder.move_to(0.0, 0.0);
-        builder.line_to(w, 0.0);
-        builder.line_to(w, w);
-        builder.line_to(0.0, w);
-        builder.close();
-
-        builder.finish().unwrap()
-    }
+    // fn dummy_path(w: f32) -> Path {
+    //     let mut builder = PathBuilder::new();
+    //     builder.move_to(0.0, 0.0);
+    //     builder.line_to(w, 0.0);
+    //     builder.line_to(w, w);
+    //     builder.line_to(0.0, w);
+    //     builder.close();
+    //
+    //     builder.finish().unwrap()
+    // }
 
     // #[test]
     // fn fill() {
@@ -726,8 +726,8 @@ mod tests {
     //     write("glyph", &finished);
     // }
 
-    fn write(name: &str, data: &[u8]) {
-        let _ = std::fs::write(format!("out/{name}.txt"), &data);
-        let _ = std::fs::write(format!("out/{name}.pdf"), &data);
-    }
+    // fn write(name: &str, data: &[u8]) {
+    //     let _ = std::fs::write(format!("out/{name}.txt"), &data);
+    //     let _ = std::fs::write(format!("out/{name}.pdf"), &data);
+    // }
 }

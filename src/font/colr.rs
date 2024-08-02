@@ -37,7 +37,6 @@ struct ColrCanvas<'a, 'b, 'c> {
     clips: Vec<Vec<Path>>,
     canvas_builder: &'b mut CanvasBuilder<'a>,
     transforms: Vec<Transform>,
-    blend_modes: Vec<BlendMode>,
 }
 
 impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
@@ -47,7 +46,6 @@ impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
             canvas_builder,
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
-            blend_modes: vec![],
         }
     }
 }

@@ -41,7 +41,6 @@ pub struct SerializerContext {
     chunk: Chunk,
     cur_ref: Ref,
     pub serialize_settings: SerializeSettings,
-    fonts_written: bool,
 }
 
 pub enum PDFGlyph {
@@ -57,7 +56,6 @@ impl SerializerContext {
             cur_ref: Ref::new(1),
             fonts: HashMap::new(),
             serialize_settings,
-            fonts_written: false,
         }
     }
 

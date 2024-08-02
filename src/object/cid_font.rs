@@ -206,7 +206,7 @@ where
     }
 }
 
-const CMAP_NAME: Name = Name(b"Custom");
+// const CMAP_NAME: Name = Name(b"Custom");
 const SYSTEM_INFO: SystemInfo = SystemInfo {
     registry: Str(b"Adobe"),
     ordering: Str(b"Identity"),

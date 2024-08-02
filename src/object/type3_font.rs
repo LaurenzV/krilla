@@ -257,6 +257,6 @@ mod tests {
         // No need to write fonts here.
 
         let chunk = sc.chunk();
-        std::fs::write("out.txt", chunk.as_bytes());
+        let _ = std::fs::write("out.txt", chunk.as_bytes());
     }
 }
