@@ -1,35 +1,38 @@
+use crate::font::{Font, Glyph};
+use crate::object::image::Image;
+use crate::object::mask::Mask;
+use crate::object::shading_function::ShadingFunction;
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::util::{deflate, RectExt};
+use crate::{Color, Fill, FillRule, Stroke};
+use parley::Layout;
+use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
-use std::cell::RefCell;
-use std::rc::Rc;
-use tiny_skia_path::Size;
+use std::sync::Arc;
+use tiny_skia_path::{FiniteF32, Path, Size, Transform};
+use usvg::NormalizedF32;
 
 pub struct Page {
     pub size: Size,
-    pub serializer_context: Rc<RefCell<SerializerContext>>,
+    pub serializer_context: SerializerContext,
 }
 
 impl Page {
     pub fn new(size: Size) -> Self {
         Self {
             size,
-            serializer_context: Rc::new(RefCell::new(SerializerContext::new(
-                SerializeSettings::default(),
-            ))),
+            serializer_context: SerializerContext::new(SerializeSettings::default()),
         }
     }
 
-    pub fn builder(&self) -> StreamBuilder {
+    pub fn builder(&mut self) -> CanvasBuilder {
         let size = self.size;
-        StreamBuilder::new_flipped(self.serializer_context.clone(), size)
+        CanvasBuilder::new_flipped(&mut self.serializer_context, size)
     }
 
     pub fn finish(self) -> SerializerContext {
-        Rc::try_unwrap(self.serializer_context)
-            .unwrap()
-            .into_inner()
+        self.serializer_context
     }
 }
 
@@ -72,23 +75,205 @@ impl PageSerialize for Stream {
     }
 }
 
+pub struct CanvasBuilder<'a> {
+    sc: &'a mut SerializerContext,
+    root_builder: StreamBuilder,
+    sub_builders: Vec<StreamBuilder>,
+    masks: Vec<Mask>,
+    opacities: Vec<NormalizedF32>,
+}
+
+impl<'a> CanvasBuilder<'a> {
+    pub fn new(sc: &'a mut SerializerContext) -> Self {
+        Self {
+            sc,
+            root_builder: StreamBuilder::new(),
+            sub_builders: Vec::new(),
+            masks: Vec::new(),
+            opacities: Vec::new(),
+        }
+    }
+
+    pub fn new_flipped(sc: &'a mut SerializerContext, size: Size) -> Self {
+        let mut root_builder = StreamBuilder::new();
+        // Invert the y-axis.
+        root_builder.concat_transform(&Transform::from_row(
+            1.0,
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            size.height(),
+        ));
+
+        Self {
+            sc,
+            root_builder,
+            sub_builders: Vec::new(),
+            masks: Vec::new(),
+            opacities: Vec::new(),
+        }
+    }
+
+    pub fn sub_canvas(&mut self) -> CanvasBuilder {
+        CanvasBuilder::new(&mut self.sc)
+    }
+
+    pub fn push_transform(&mut self, transform: &Transform) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .concat_transform(transform);
+    }
+
+    pub fn pop_transform(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
+    }
+
+    pub fn push_blend_mode(&mut self, blend_mode: BlendMode) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .set_blend_mode(blend_mode);
+    }
+
+    pub fn pop_blend_mode(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
+    }
+
+    pub fn fill_path<'b>(&'b mut self, path: &Path, fill: &Fill) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path(path, fill, self.sc);
+    }
+
+    pub fn stroke_path<'b>(&'b mut self, path: &Path, stroke: &Stroke) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .stroke_path(path, stroke, self.sc);
+    }
+
+    pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .push_clip_path(path, clip_rule);
+    }
+
+    pub fn pop_clip_path(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path();
+    }
+
+    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: &Fill, no_fill: bool) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path_impl(path, fill, self.sc, no_fill)
+    }
+
+    pub fn invisible_glyph(
+        &mut self,
+        glyph: Glyph,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+    ) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .invisible_glyph(glyph, font, size, transform, self.sc);
+    }
+
+    pub fn draw_string(&mut self, layout: &Layout<Color>, text: &str) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_string(layout, text, self.sc);
+    }
+
+    pub fn fill_glyph<'b>(
+        &'b mut self,
+        glyph: Glyph,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+        fill: &Fill,
+    ) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_glyph(glyph, font, size, transform, fill, self.sc);
+    }
+
+    pub fn stroke_glyph<'b>(
+        &'b mut self,
+        glyph_id: Glyph,
+        font: Font,
+        size: FiniteF32,
+        transform: &Transform,
+        stroke: &Stroke,
+    ) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .stroke_glyph(glyph_id, font, size, transform, stroke, self.sc);
+    }
+
+    fn cur_builder<'b>(
+        root_builder: &'b mut StreamBuilder,
+        sub_builders: &'b mut [StreamBuilder],
+    ) -> &'b mut StreamBuilder {
+        sub_builders.last_mut().unwrap_or(root_builder)
+    }
+
+    pub fn push_mask(&mut self, mask: Mask) {
+        self.sub_builders.push(StreamBuilder::new());
+        self.masks.push(mask);
+    }
+
+    pub fn pop_mask(&mut self) {
+        let stream = self.sub_builders.pop().unwrap().finish();
+        let mask = self.masks.pop().unwrap();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_masked(mask, stream);
+    }
+
+    pub fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_opacified(opacity, stream)
+    }
+
+    pub fn push_opacified(&mut self, opacity: NormalizedF32) {
+        self.sub_builders.push(StreamBuilder::new());
+        self.opacities.push(opacity);
+    }
+
+    pub fn pop_opacified(&mut self) {
+        let stream = self.sub_builders.pop().unwrap().finish();
+        let opacity = self.opacities.pop().unwrap();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_opacified(opacity, Arc::new(stream));
+    }
+
+    pub fn push_isolated(&mut self) {
+        self.sub_builders.push(StreamBuilder::new());
+    }
+
+    pub fn pop_isolated(&mut self) {
+        let stream = self.sub_builders.pop().unwrap().finish();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_isolated(stream);
+    }
+
+    pub fn draw_image(&mut self, image: Image, size: Size) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
+    }
+
+    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
+    }
+
+    pub fn finish(self) -> Stream {
+        self.root_builder.finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    // use tiny_skia_path::{Path, PathBuilder};
 
-    // use crate::font::Font;
-
-    use tiny_skia_path::{Path, PathBuilder};
-
-    fn dummy_path(w: f32) -> Path {
-        let mut builder = PathBuilder::new();
-        builder.move_to(0.0, 0.0);
-        builder.line_to(w, 0.0);
-        builder.line_to(w, w);
-        builder.line_to(0.0, w);
-        builder.close();
-
-        builder.finish().unwrap()
-    }
+    // fn dummy_path(w: f32) -> Path {
+    //     let mut builder = PathBuilder::new();
+    //     builder.move_to(0.0, 0.0);
+    //     builder.line_to(w, 0.0);
+    //     builder.line_to(w, w);
+    //     builder.line_to(0.0, w);
+    //     builder.close();
+    //
+    //     builder.finish().unwrap()
+    // }
 
     // #[test]
     // fn fill() {
@@ -541,8 +726,8 @@ mod tests {
     //     write("glyph", &finished);
     // }
 
-    fn write(name: &str, data: &[u8]) {
-        let _ = std::fs::write(format!("out/{name}.txt"), &data);
-        let _ = std::fs::write(format!("out/{name}.pdf"), &data);
-    }
+    // fn write(name: &str, data: &[u8]) {
+    //     let _ = std::fs::write(format!("out/{name}.txt"), &data);
+    //     let _ = std::fs::write(format!("out/{name}.pdf"), &data);
+    // }
 }

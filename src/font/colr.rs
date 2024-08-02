@@ -1,7 +1,7 @@
+use crate::canvas::CanvasBuilder;
 use crate::color::Color;
 use crate::font::{Font, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
-use crate::stream::StreamBuilder;
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
@@ -13,45 +13,44 @@ use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
+pub fn draw_glyph<'a, 'b>(
+    font: Font,
+    glyph: GlyphId,
+    canvas_builder: &'b mut CanvasBuilder<'a>,
+) -> Option<()> {
     let font_ref = font.font_ref();
 
     let colr_glyphs = font.font_ref().color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-        stream_builder.save_graphics_state();
-        stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
-        let mut colr_canvas = ColrCanvas::new(&font_ref, stream_builder);
+        canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
+        let mut colr_canvas = ColrCanvas::new(font_ref, canvas_builder);
         let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
-        stream_builder.restore_graphics_state();
+        canvas_builder.pop_transform();
         return Some(());
     } else {
         return None;
     }
 }
 
-struct ColrCanvas<'a> {
-    font: &'a FontRef<'a>,
+struct ColrCanvas<'a, 'b, 'c> {
+    font: FontRef<'c>,
     clips: Vec<Vec<Path>>,
-    parent_stream: &'a mut StreamBuilder,
+    canvas_builder: &'b mut CanvasBuilder<'a>,
     transforms: Vec<Transform>,
-    streams: Vec<StreamBuilder>,
-    blend_modes: Vec<BlendMode>,
 }
 
-impl<'a> ColrCanvas<'a> {
-    pub fn new(font_ref: &'a FontRef<'a>, parent_stream: &'a mut StreamBuilder) -> Self {
+impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
+    pub fn new(font_ref: FontRef<'c>, canvas_builder: &'b mut CanvasBuilder<'a>) -> Self {
         Self {
             font: font_ref,
-            parent_stream,
+            canvas_builder,
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
-            streams: vec![],
-            blend_modes: vec![],
         }
     }
 }
 
-impl ColrCanvas<'_> {
+impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
     fn palette_index_to_color(&self, palette_index: u16, alpha: f32) -> (Color, NormalizedF32) {
         if palette_index != u16::MAX {
             let color = self
@@ -102,7 +101,7 @@ impl ExtendExt for skrifa::color::Extend {
     }
 }
 
-impl ColorPainter for ColrCanvas<'_> {
+impl<'a, 'b, 'c> ColorPainter for ColrCanvas<'a, 'b, 'c> {
     fn push_transform(&mut self, transform: skrifa::color::Transform) {
         let new_transform = self
             .transforms
@@ -265,12 +264,6 @@ impl ColorPainter for ColrCanvas<'_> {
                 }
             }
         } {
-            let stream = if let Some(stream) = self.streams.last_mut() {
-                stream
-            } else {
-                &mut self.parent_stream
-            };
-
             // The proper implementation would be to apply all clip paths and then draw the
             // whole "visible" area with the fill. However, this seems to produce artifacts in
             // Google Chrome when zooming. So instead, what we do is that we apply all clip paths except
@@ -286,13 +279,13 @@ impl ColorPainter for ColrCanvas<'_> {
             let filled = clips.split_off(clips.len() - 1);
 
             for (path, rule) in &clips {
-                stream.push_clip_path(path, rule);
+                self.canvas_builder.push_clip_path(path, rule);
             }
 
-            stream.fill_path(&filled[0].0, &fill);
+            self.canvas_builder.fill_path(&filled[0].0, &fill);
 
             for _ in clips {
-                stream.pop_clip_path();
+                self.canvas_builder.pop_clip_path();
             }
         }
     }
@@ -317,35 +310,23 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        let stream_builder = self.parent_stream.sub_builder();
-        self.blend_modes.push(mode);
-        self.streams.push(stream_builder);
+        self.canvas_builder.push_isolated();
+        self.canvas_builder.push_blend_mode(mode);
     }
 
     fn pop_layer(&mut self) {
-        let source_stream = self.streams.pop().unwrap().finish();
-
-        let target_stream = if let Some(stream) = self.streams.last_mut() {
-            stream
-        } else {
-            &mut self.parent_stream
-        };
-
-        target_stream.save_graphics_state();
-        target_stream.set_blend_mode(self.blend_modes.pop().unwrap());
-        target_stream.draw_isolated(source_stream);
-        target_stream.restore_graphics_state();
+        self.canvas_builder.pop_blend_mode();
+        self.canvas_builder.pop_isolated();
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::font::colr::draw_glyph;
     use crate::font::{draw, Font};
 
     use skrifa::instance::Location;
 
-    use skrifa::{FontRef, GlyphId};
+    use skrifa::GlyphId;
     use std::rc::Rc;
 
     #[test]
@@ -359,25 +340,23 @@ mod tests {
             .collect::<Vec<_>>();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, Some(glyphs), "colr_test", draw_glyph);
+        draw(&font, Some(glyphs), "colr_test");
     }
 
     #[test]
     fn noto_color() {
         let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
 
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "colr_noto", draw_glyph);
+        draw(&font, None, "colr_noto");
     }
 
     #[test]
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "colr_segoe", draw_glyph);
+        draw(&font, None, "colr_segoe");
     }
 }

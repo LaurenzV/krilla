@@ -1,133 +1,97 @@
-use crate::stream::StreamBuilder;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 // use crate::svg::{filter, image, path};
+use crate::canvas::CanvasBuilder;
 use crate::svg::{filter, image, path, text, FontContext};
-use std::sync::Arc;
 use usvg::{Node, NormalizedF32};
 
 pub fn render(
     group: &usvg::Group,
-    stream_builder: &mut StreamBuilder,
+    canvas_builder: &mut CanvasBuilder,
     font_context: &mut FontContext,
 ) {
     if !group.filters().is_empty() {
-        filter::render(group, stream_builder);
+        filter::render(group, canvas_builder);
         return;
     }
 
-    isolated(group, stream_builder, font_context);
-}
-
-pub fn isolated(
-    group: &usvg::Group,
-    stream_builder: &mut StreamBuilder,
-    font_context: &mut FontContext,
-) {
     if group.isolate() {
-        let mut sub_builder = stream_builder.sub_builder();
-        transformed(group, &mut sub_builder, font_context);
-        let sub_stream = sub_builder.finish();
-
-        stream_builder.draw_isolated(sub_stream);
-    } else {
-        transformed(group, stream_builder, font_context);
+        canvas_builder.push_isolated();
     }
-}
 
-pub fn transformed(
-    group: &usvg::Group,
-    stream_builder: &mut StreamBuilder,
-    font_context: &mut FontContext,
-) {
-    stream_builder.save_graphics_state();
-    stream_builder.concat_transform(&convert_transform(&group.transform()));
-    clipped(group, stream_builder, font_context);
-    stream_builder.restore_graphics_state();
-}
+    canvas_builder.push_transform(&convert_transform(&group.transform()));
 
-pub fn clipped(
-    group: &usvg::Group,
-    stream_builder: &mut StreamBuilder,
-    font_context: &mut FontContext,
-) {
-    if let Some(clip_path) = group.clip_path() {
-        let converted = get_clip_path(group, clip_path, stream_builder.sub_builder(), font_context);
-        // TODO: Improve and deduplicate
-        match converted {
+    let svg_clip = group
+        .clip_path()
+        .map(|c| get_clip_path(group, c, canvas_builder.sub_canvas(), font_context));
+
+    if let Some(ref svg_clip) = svg_clip {
+        match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
-                for rule in &rules {
-                    stream_builder.push_clip_path(&rule.0, &rule.1);
-                }
-
-                masked(group, stream_builder, font_context);
-
-                for _ in rules {
-                    stream_builder.pop_clip_path();
+                for rule in rules {
+                    canvas_builder.push_clip_path(&rule.0, &rule.1);
                 }
             }
-            SvgClipPath::ComplexClip(mask) => {
-                let mut sub_mask_builder = stream_builder.sub_builder();
-                masked(group, &mut sub_mask_builder, font_context);
-                let sub_stream = sub_mask_builder.finish();
-                stream_builder.draw_masked(mask, Arc::new(sub_stream));
-            }
+            SvgClipPath::ComplexClip(mask) => canvas_builder.push_mask(mask.clone()),
         }
-    } else {
-        masked(group, stream_builder, font_context);
-    };
-}
+    }
 
-pub fn masked(
-    group: &usvg::Group,
-    stream_builder: &mut StreamBuilder,
-    font_context: &mut FontContext,
-) {
     if let Some(mask) = group.mask() {
-        let mut sub_mask_builder = stream_builder.sub_builder();
-        blended_and_opacified(group, &mut sub_mask_builder, font_context);
-        let sub_stream = sub_mask_builder.finish();
-        let mask = get_mask(mask, stream_builder.sub_builder(), font_context);
-        stream_builder.draw_masked(mask, Arc::new(sub_stream));
-    } else {
-        blended_and_opacified(group, stream_builder, font_context);
-    }
-}
-
-pub fn blended_and_opacified(
-    group: &usvg::Group,
-    stream_builder: &mut StreamBuilder,
-    font_context: &mut FontContext,
-) {
-    stream_builder.save_graphics_state();
-    stream_builder.set_blend_mode(convert_blend_mode(&group.blend_mode()));
-
-    if group.opacity() == NormalizedF32::ONE {
-        for child in group.children() {
-            render_node(child, stream_builder, font_context);
-        }
-    } else {
-        let mut sub_builder = stream_builder.sub_builder();
-        for child in group.children() {
-            render_node(child, &mut sub_builder, font_context);
-        }
-        let sub_stream = sub_builder.finish();
-        stream_builder.draw_opacified(group.opacity(), Arc::new(sub_stream));
+        let mask = get_mask(mask, canvas_builder.sub_canvas(), font_context);
+        canvas_builder.push_mask(mask);
     }
 
-    stream_builder.restore_graphics_state();
+    canvas_builder.push_blend_mode(convert_blend_mode(&group.blend_mode()));
+
+    // TODO: OPtimize alpha = 1 case.
+    if group.opacity() != NormalizedF32::ONE {
+        canvas_builder.push_opacified(group.opacity());
+    }
+
+    for child in group.children() {
+        render_node(child, canvas_builder, font_context);
+    }
+
+    if group.opacity() != NormalizedF32::ONE {
+        canvas_builder.pop_opacified();
+    }
+
+    canvas_builder.pop_blend_mode();
+
+    if group.mask().is_some() {
+        canvas_builder.pop_mask();
+    }
+
+    if let Some(svg_clip) = svg_clip {
+        match svg_clip {
+            SvgClipPath::SimpleClip(rules) => {
+                for _ in &rules {
+                    canvas_builder.pop_clip_path();
+                }
+            }
+            SvgClipPath::ComplexClip(_) => {
+                canvas_builder.pop_mask();
+            }
+        }
+    }
+
+    canvas_builder.pop_transform();
+
+    if group.isolate() {
+        canvas_builder.pop_isolated();
+    }
 }
 
 pub fn render_node(
     node: &Node,
-    stream_builder: &mut StreamBuilder,
+    canvas_builder: &mut CanvasBuilder,
     font_context: &mut FontContext,
 ) {
     match node {
-        Node::Group(g) => render(g, stream_builder, font_context),
-        Node::Path(p) => path::render(p, stream_builder, font_context),
-        Node::Image(i) => image::render(i, stream_builder, font_context),
-        Node::Text(t) => text::render(t, stream_builder, font_context),
+        Node::Group(g) => render(g, canvas_builder, font_context),
+        Node::Path(p) => path::render(p, canvas_builder, font_context),
+        Node::Image(i) => image::render(i, canvas_builder, font_context),
+        Node::Text(t) => text::render(t, canvas_builder, font_context),
     }
 }

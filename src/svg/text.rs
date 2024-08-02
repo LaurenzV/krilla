@@ -1,5 +1,5 @@
+use crate::canvas::CanvasBuilder;
 use crate::font::Glyph;
-use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill, convert_stroke, convert_transform};
 use crate::svg::{path, FontContext};
 use crate::{Fill, Stroke};
@@ -9,7 +9,7 @@ use usvg::PaintOrder;
 
 pub fn render(
     text: &usvg::Text,
-    stream_builder: &mut StreamBuilder,
+    canvas_builder: &mut CanvasBuilder,
     font_context: &mut FontContext,
 ) {
     for span in text.layouted() {
@@ -18,11 +18,11 @@ pub fn render(
         }
 
         if let Some(overline) = &span.overline {
-            path::render(overline, stream_builder, font_context);
+            path::render(overline, canvas_builder, font_context);
         }
 
         if let Some(underline) = &span.underline {
-            path::render(underline, stream_builder, font_context);
+            path::render(underline, canvas_builder, font_context);
         }
 
         for glyph in &span.positioned_glyphs {
@@ -30,18 +30,18 @@ pub fn render(
             let fill = span
                 .fill
                 .as_ref()
-                .map(|f| convert_fill(&f, stream_builder.sub_builder(), font_context));
+                .map(|f| convert_fill(&f, canvas_builder.sub_canvas(), font_context));
             let stroke = span
                 .stroke
                 .as_ref()
-                .map(|s| convert_stroke(&s, stream_builder.sub_builder(), font_context));
+                .map(|s| convert_stroke(&s, canvas_builder.sub_canvas(), font_context));
 
             let transform = glyph.transform().pre_concat(Transform::from_scale(
                 font.units_per_em() as f32 / span.font_size.get(),
                 font.units_per_em() as f32 / span.font_size.get(),
             ));
 
-            let mut fill_op = |sb: &mut StreamBuilder, fill: &Fill| {
+            let fill_op = |sb: &mut CanvasBuilder, fill: &Fill| {
                 sb.fill_glyph(
                     Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font.clone(),
@@ -51,7 +51,7 @@ pub fn render(
                 );
             };
 
-            let mut stroke_op = |sb: &mut StreamBuilder, stroke: &Stroke| {
+            let stroke_op = |sb: &mut CanvasBuilder, stroke: &Stroke| {
                 sb.stroke_glyph(
                     Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font.clone(),
@@ -64,21 +64,21 @@ pub fn render(
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
                     PaintOrder::FillAndStroke => {
-                        fill_op(stream_builder, &fill);
-                        stroke_op(stream_builder, &stroke);
+                        fill_op(canvas_builder, &fill);
+                        stroke_op(canvas_builder, &stroke);
                     }
                     PaintOrder::StrokeAndFill => {
-                        stroke_op(stream_builder, &stroke);
-                        fill_op(stream_builder, &fill);
+                        stroke_op(canvas_builder, &stroke);
+                        fill_op(canvas_builder, &fill);
                     }
                 },
                 (Some(fill), None) => {
-                    fill_op(stream_builder, &fill);
+                    fill_op(canvas_builder, &fill);
                 }
                 (None, Some(stroke)) => {
-                    stroke_op(stream_builder, &stroke);
+                    stroke_op(canvas_builder, &stroke);
                 }
-                (None, None) => stream_builder.invisible_glyph(
+                (None, None) => canvas_builder.invisible_glyph(
                     Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font,
                     FiniteF32::new(span.font_size.get()).unwrap(),
@@ -88,7 +88,7 @@ pub fn render(
         }
 
         if let Some(line_through) = &span.line_through {
-            path::render(line_through, stream_builder, font_context);
+            path::render(line_through, canvas_builder, font_context);
         }
     }
 }

@@ -6,7 +6,7 @@ use pdf_writer::{Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::{FontRef, GlyphId, Tag};
+use skrifa::{FontRef, GlyphId};
 use subsetter::GlyphRemapper;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -206,7 +206,7 @@ where
     }
 }
 
-const CMAP_NAME: Name = Name(b"Custom");
+// const CMAP_NAME: Name = Name(b"Custom");
 const SYSTEM_INFO: SystemInfo = SystemInfo {
     registry: Str(b"Adobe"),
     ordering: Str(b"Identity"),

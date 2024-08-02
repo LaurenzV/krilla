@@ -640,8 +640,10 @@ dependencies = [
 [[package]]
 name = "resvg"
 version = "0.42.0"
+source = "git+https://github.com/RazrFalcon/resvg?rev=546df09#546df09f78ef45bbbc209fee606ef9bd2a6b1668"
 dependencies = [
  "gif",
+ "image-webp",
  "log",
  "pico-args",
  "rgb",
@@ -945,6 +947,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 [[package]]
 name = "usvg"
 version = "0.42.0"
+source = "git+https://github.com/RazrFalcon/resvg?rev=546df09#546df09f78ef45bbbc209fee606ef9bd2a6b1668"
 dependencies = [
  "base64",
  "data-url",

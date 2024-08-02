@@ -1,9 +1,9 @@
+use crate::canvas::CanvasBuilder;
 use crate::object::image::Image;
-use crate::stream::StreamBuilder;
 use image::ImageFormat;
 use tiny_skia_path::{Size, Transform};
 
-pub fn render(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
+pub fn render(group: &usvg::Group, canvas_builder: &mut CanvasBuilder) {
     let layer_bbox = group
         .layer_bounding_box()
         .transform(group.transform())
@@ -44,11 +44,10 @@ pub fn render(group: &usvg::Group, stream_builder: &mut StreamBuilder) {
     // TODO: Optimize, don't re-encode
     let image =
         Image::new(&image::load_from_memory_with_format(&encoded_image, ImageFormat::Png).unwrap());
-    stream_builder.save_graphics_state();
-    stream_builder.concat_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
-    stream_builder.draw_image(
+    canvas_builder.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
+    canvas_builder.draw_image(
         image,
         Size::from_wh(layer_bbox.width(), layer_bbox.height()).unwrap(),
     );
-    stream_builder.restore_graphics_state();
+    canvas_builder.pop_transform();
 }

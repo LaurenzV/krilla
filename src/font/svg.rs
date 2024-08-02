@@ -1,12 +1,12 @@
+use crate::canvas::CanvasBuilder;
 use crate::font::Font;
-use crate::stream::StreamBuilder;
 use crate::svg;
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
 use std::io::Read;
 use usvg::roxmltree;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) -> Option<()> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut CanvasBuilder) -> Option<()> {
     let font_ref = font.font_ref();
 
     if let Ok(Some(svg_data)) = font_ref
@@ -46,10 +46,8 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) -> O
 
 #[cfg(test)]
 mod tests {
-    use crate::font::svg::draw_glyph;
     use crate::font::{draw, Font};
     use skrifa::instance::Location;
-    use skrifa::raw::TableProvider;
     use std::rc::Rc;
 
     #[test]
@@ -57,6 +55,6 @@ mod tests {
         let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "svg_twitter", draw_glyph);
+        draw(&font, None, "svg_twitter");
     }
 }

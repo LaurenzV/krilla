@@ -1,5 +1,4 @@
 use crate::util::Prehashed;
-use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -193,12 +192,7 @@ impl FontWrapper {
 }
 
 #[cfg(test)]
-fn draw(
-    font: &Font,
-    glyphs: Option<Vec<(GlyphId, String)>>,
-    name: &str,
-    single_glyph: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
-) {
+fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     use crate::canvas::Page;
     use crate::serialize::PageSerialize;
     use crate::Transform;
@@ -231,11 +225,11 @@ fn draw(
     let mut cur_point = 0;
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let page = Page::new(page_size);
+    let mut page = Page::new(page_size);
     let mut builder = page.builder();
 
     for (i, text) in glyphs.iter().cloned() {
-        fn get_transform(cur_point: u32, size: u32, num_cols: u32, units_per_em: f32) -> Transform {
+        fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;
             let row = el / num_cols;
@@ -254,17 +248,16 @@ fn draw(
             // ))
         }
 
-        builder.save_graphics_state();
-        builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
+        builder.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         builder.fill_glyph(
             Glyph::new(i, text),
             font.clone(),
             FiniteF32::new(size as f32).unwrap(),
             &Transform::identity(),
-            &Fill::default(),
+            &crate::Fill::default(),
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
-        builder.restore_graphics_state();
+        builder.pop_transform();
 
         cur_point += size;
     }

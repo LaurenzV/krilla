@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-// use crate::font::Font;
 use crate::font::{Font, Glyph};
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -24,6 +21,7 @@ use pdf_writer::{Content, Str};
 use skrifa::instance::Location;
 use skrifa::raw::collections::int_set::Domain;
 use skrifa::GlyphId;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
@@ -50,41 +48,19 @@ impl Stream {
 
 pub struct StreamBuilder {
     rd_builder: ResourceDictionaryBuilder,
-    serializer_context: Rc<RefCell<SerializerContext>>,
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
 }
 
 impl StreamBuilder {
-    pub fn new(serializer_context: Rc<RefCell<SerializerContext>>) -> Self {
+    pub fn new() -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
-            serializer_context,
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
             bbox: Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
         }
-    }
-
-    pub(crate) fn new_flipped(
-        serializer_context: Rc<RefCell<SerializerContext>>,
-        size: Size,
-    ) -> Self {
-        let mut builder = Self::new(serializer_context);
-        builder.concat_transform(&Transform::from_row(
-            1.0,
-            0.0,
-            0.0,
-            -1.0,
-            0.0,
-            size.height(),
-        ));
-        builder
-    }
-
-    pub fn sub_builder(&mut self) -> StreamBuilder {
-        StreamBuilder::new(self.serializer_context.clone())
     }
 
     pub fn finish(self) -> Stream {
@@ -114,11 +90,22 @@ impl StreamBuilder {
         }
     }
 
-    pub fn fill_path(&mut self, path: &Path, fill: &Fill) {
-        self.fill_path_impl(path, fill, false);
+    pub fn fill_path(
+        &mut self,
+        path: &Path,
+        fill: &Fill,
+        serializer_context: &mut SerializerContext,
+    ) {
+        self.fill_path_impl(path, fill, serializer_context, false);
     }
 
-    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: &Fill, no_fill: bool) {
+    pub(crate) fn fill_path_impl(
+        &mut self,
+        path: &Path,
+        fill: &Fill,
+        serializer_context: &mut SerializerContext,
+        no_fill: bool,
+    ) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -136,7 +123,7 @@ impl StreamBuilder {
 
         self.apply_isolated_op(|sb| {
             if !no_fill {
-                sb.content_set_fill_properties(path.bounds(), fill);
+                sb.content_set_fill_properties(path.bounds(), fill, serializer_context);
             }
             sb.content_draw_path(path.segments());
 
@@ -149,7 +136,12 @@ impl StreamBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_path(&mut self, path: &Path, stroke: &Stroke) {
+    pub fn stroke_path(
+        &mut self,
+        path: &Path,
+        stroke: &Stroke,
+        serializer_context: &mut SerializerContext,
+    ) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
@@ -166,7 +158,7 @@ impl StreamBuilder {
         }
 
         self.apply_isolated_op(|sb| {
-            sb.content_set_stroke_properties(stroke_bbox, stroke);
+            sb.content_set_stroke_properties(stroke_bbox, stroke, serializer_context);
             sb.content_draw_path(path.segments());
             sb.content.stroke();
         });
@@ -201,6 +193,7 @@ impl StreamBuilder {
         font: Font,
         size: FiniteF32,
         transform: &Transform,
+        serializer_context: &mut SerializerContext,
     ) {
         self.fill_stroke_glyph(
             glyph,
@@ -208,11 +201,17 @@ impl StreamBuilder {
             size,
             transform,
             TextRenderingMode::Invisible,
-            |sb| {},
+            |_, _| {},
+            serializer_context,
         );
     }
 
-    pub fn draw_parley(&mut self, layout: &Layout<Color>, text: &str) {
+    pub fn draw_string(
+        &mut self,
+        layout: &Layout<Color>,
+        text: &str,
+        serializer_context: &mut SerializerContext,
+    ) {
         for line in layout.lines() {
             for item in line.items() {
                 match item {
@@ -249,6 +248,7 @@ impl StreamBuilder {
                                         paint: Paint::Color(style.brush),
                                         ..Default::default()
                                     },
+                                    serializer_context,
                                 );
                             }
                         }
@@ -266,6 +266,7 @@ impl StreamBuilder {
         size: FiniteF32,
         transform: &Transform,
         fill: &Fill,
+        serializer_context: &mut SerializerContext,
     ) {
         self.graphics_states.save_state();
 
@@ -281,7 +282,14 @@ impl StreamBuilder {
             size,
             transform,
             TextRenderingMode::Fill,
-            |sb| sb.content_set_fill_properties(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(), fill),
+            |sb, sc| {
+                sb.content_set_fill_properties(
+                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                    fill,
+                    sc,
+                )
+            },
+            serializer_context,
         );
 
         self.graphics_states.restore_state();
@@ -294,6 +302,7 @@ impl StreamBuilder {
         size: FiniteF32,
         transform: &Transform,
         stroke: &Stroke,
+        serializer_context: &mut SerializerContext,
     ) {
         self.graphics_states.save_state();
 
@@ -309,12 +318,14 @@ impl StreamBuilder {
             size,
             transform,
             TextRenderingMode::Stroke,
-            |sb| {
+            |sb, sc| {
                 sb.content_set_stroke_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     stroke,
+                    sc,
                 )
             },
+            serializer_context,
         );
 
         self.graphics_states.restore_state();
@@ -327,19 +338,17 @@ impl StreamBuilder {
         size: FiniteF32,
         transform: &Transform,
         text_rendering_mode: TextRenderingMode,
-        mut action: impl FnMut(&mut StreamBuilder),
+        mut action: impl FnMut(&mut StreamBuilder, &mut SerializerContext),
+        serializer_context: &mut SerializerContext,
     ) {
-        let (font_resource, gid) = self
-            .serializer_context
-            .borrow_mut()
-            .map_glyph(font.clone(), glyph);
+        let (font_resource, gid) = serializer_context.map_glyph(font.clone(), glyph);
         let font_name = self
             .rd_builder
             .register_resource(Resource::Font(font_resource));
 
         self.apply_isolated_op(|sb| {
             // TODO: Figure out proper bbox
-            action(sb);
+            action(sb, serializer_context);
             sb.content.begin_text();
             sb.content.set_font(font_name.to_pdf_name(), size.get());
             sb.content.set_text_rendering_mode(text_rendering_mode);
@@ -375,9 +384,9 @@ impl StreamBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn draw_masked(&mut self, mask: Mask, stream: Arc<Stream>) {
+    pub fn draw_masked(&mut self, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask);
-        let x_object = XObject::new(stream, false, true, None);
+        let x_object = XObject::new(Arc::new(stream), false, true, None);
         self.draw_xobject(x_object, &state);
     }
 
@@ -485,6 +494,7 @@ impl StreamBuilder {
         bounds: Rect,
         paint: &Paint,
         opacity: NormalizedF32,
+        serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
     ) {
@@ -502,7 +512,7 @@ impl StreamBuilder {
                 gradient_props.clone(),
                 transform,
                 bounds,
-                self.serializer_context.clone(),
+                serializer_context,
             );
 
             let shading_pattern = ShadingPattern::new(
@@ -562,7 +572,7 @@ impl StreamBuilder {
                         opacity,
                         pat.width,
                         pat.height,
-                        self.serializer_context.clone(),
+                        serializer_context,
                     )),
                 ));
                 set_pattern_fn(&mut self.content, color_space);
@@ -570,7 +580,12 @@ impl StreamBuilder {
         }
     }
 
-    fn content_set_fill_properties(&mut self, bounds: Rect, fill: &Fill) {
+    fn content_set_fill_properties(
+        &mut self,
+        bounds: Rect,
+        fill: &Fill,
+        serializer_context: &mut SerializerContext,
+    ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_fill_pattern(None, color_space.to_pdf_name());
@@ -585,12 +600,18 @@ impl StreamBuilder {
             bounds,
             &fill.paint,
             fill.opacity,
+            serializer_context,
             set_pattern_fn,
             set_solid_fn,
         );
     }
 
-    fn content_set_stroke_properties(&mut self, bounds: Rect, stroke: &Stroke) {
+    fn content_set_stroke_properties(
+        &mut self,
+        bounds: Rect,
+        stroke: &Stroke,
+        serializer_context: &mut SerializerContext,
+    ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_stroke_pattern(None, color_space.to_pdf_name());
@@ -605,6 +626,7 @@ impl StreamBuilder {
             bounds,
             &stroke.paint,
             stroke.opacity,
+            serializer_context,
             set_pattern_fn,
             set_solid_fn,
         );

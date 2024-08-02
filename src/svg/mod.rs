@@ -1,5 +1,5 @@
+use crate::canvas::CanvasBuilder;
 use crate::font::Font;
-use crate::stream::StreamBuilder;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashMap};
@@ -34,16 +34,16 @@ impl FontContext {
     }
 }
 
-pub fn render_tree(tree: &usvg::Tree, stream_builder: &mut StreamBuilder) {
+pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut CanvasBuilder) {
     let mut fc = FontContext::new();
     get_context_from_group(tree.fontdb().clone(), tree.root(), &mut fc);
-    group::render(tree.root(), stream_builder, &mut fc);
+    group::render(tree.root(), canvas_builder, &mut fc);
 }
 
-pub fn render_node(node: &Node, fontdb: Arc<fontdb::Database>, stream_builder: &mut StreamBuilder) {
+pub fn render_node(node: &Node, fontdb: Arc<fontdb::Database>, canvas_builder: &mut CanvasBuilder) {
     let mut fc = FontContext::new();
     get_context_from_node(fontdb, node, &mut fc);
-    group::render_node(node, stream_builder, &mut fc);
+    group::render_node(node, canvas_builder, &mut fc);
 }
 
 fn get_context_from_group(
@@ -67,7 +67,7 @@ fn get_context_from_node(
                 for g in &span.positioned_glyphs {
                     let font = render_context.fonts.entry(g.font).or_insert_with(|| {
                         fontdb
-                            .with_face_data(g.font, |data, face_index| {
+                            .with_face_data(g.font, |data, _| {
                                 // TODO: Avoid vector allocation somehow?
                                 let font =
                                     Font::new(Rc::new(data.to_vec()), Location::default()).unwrap();
@@ -98,36 +98,36 @@ fn get_context_from_node(
     node.subroots(|subroot| get_context_from_group(fontdb.clone(), subroot, render_context));
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::canvas::Page;
-    use crate::serialize::PageSerialize;
-    use crate::svg::render_tree;
-    use std::sync::Arc;
-    use usvg::fontdb;
-
-    #[test]
-    pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
-        let mut db = fontdb::Database::new();
-        db.load_system_fonts();
-
-        let tree = usvg::Tree::from_data(
-            &data,
-            &usvg::Options {
-                fontdb: Arc::new(db),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        let mut page = Page::new(tree.size());
-        let mut stream_builder = page.builder();
-        render_tree(&tree, &mut stream_builder);
-        let stream = stream_builder.finish();
-        let serializer_context = page.finish();
-        let finished = stream.serialize(serializer_context, tree.size()).finish();
-        let _ = std::fs::write("out/svg.pdf", &finished);
-        let _ = std::fs::write("out/svg.txt", &finished);
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::canvas::Page;
+//     use crate::serialize::PageSerialize;
+//     use crate::svg::render_tree;
+//     use std::sync::Arc;
+//     use usvg::fontdb;
+//
+//     #[test]
+//     pub fn svg() {
+//         let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
+//         let mut db = fontdb::Database::new();
+//         db.load_system_fonts();
+//
+//         let tree = usvg::Tree::from_data(
+//             &data,
+//             &usvg::Options {
+//                 fontdb: Arc::new(db),
+//                 ..Default::default()
+//             },
+//         )
+//         .unwrap();
+//
+//         let mut page = Page::new(tree.size());
+//         let mut stream_builder = page.builder();
+//         render_tree(&tree, &mut stream_builder);
+//         let stream = stream_builder.finish();
+//         let serializer_context = page.finish();
+//         let finished = stream.serialize(serializer_context, tree.size()).finish();
+//         let _ = std::fs::write("out/svg.pdf", &finished);
+//         let _ = std::fs::write("out/svg.txt", &finished);
+//     }
+// }

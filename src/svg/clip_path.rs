@@ -1,11 +1,8 @@
+use crate::canvas::CanvasBuilder;
 use crate::object::mask::Mask;
-use crate::serialize::SerializerContext;
-use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
@@ -17,7 +14,7 @@ pub enum SvgClipPath {
 pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    sub_builder: StreamBuilder,
+    canvas_builder: CanvasBuilder,
     font_context: &mut FontContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
@@ -62,7 +59,7 @@ pub fn get_clip_path(
         SvgClipPath::ComplexClip(create_complex_clip_path(
             group,
             clip_path,
-            sub_builder,
+            canvas_builder,
             font_context,
         ))
     }
@@ -191,48 +188,42 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
 fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    mut sub_builder: StreamBuilder,
+    mut canvas_builder: CanvasBuilder,
     font_context: &mut FontContext,
 ) -> Mask {
-    if let Some(svg_clip_path) = clip_path
+    let svg_clip = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, c, sub_builder.sub_builder(), font_context))
-    {
-        match svg_clip_path {
+        .map(|c| get_clip_path(parent, c, canvas_builder.sub_canvas(), font_context));
+
+    if let Some(ref svg_clip) = svg_clip {
+        match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
-                for rule in &rules {
-                    sub_builder.push_clip_path(&rule.0, &rule.1);
-                }
-
-                transformed(clip_path, &mut sub_builder, font_context);
-
-                for _ in rules {
-                    sub_builder.pop_clip_path();
+                for rule in rules {
+                    canvas_builder.push_clip_path(&rule.0, &rule.1);
                 }
             }
-            SvgClipPath::ComplexClip(mask) => {
-                let mut sub_mask_builder = sub_builder.sub_builder();
-                transformed(clip_path, &mut sub_mask_builder, font_context);
-                let sub_stream = sub_mask_builder.finish();
-                sub_builder.draw_masked(mask, Arc::new(sub_stream));
-            }
+            SvgClipPath::ComplexClip(mask) => canvas_builder.push_mask(mask.clone()),
         }
-    } else {
-        transformed(clip_path, &mut sub_builder, font_context);
     }
 
-    let stream = sub_builder.finish();
+    canvas_builder.push_transform(&convert_transform(&clip_path.transform()));
+    group::render(clip_path.root(), &mut canvas_builder, font_context);
+    canvas_builder.pop_transform();
+
+    if let Some(svg_clip) = svg_clip {
+        match svg_clip {
+            SvgClipPath::SimpleClip(rules) => {
+                for _ in &rules {
+                    canvas_builder.pop_clip_path();
+                }
+            }
+            SvgClipPath::ComplexClip(_) => {
+                canvas_builder.pop_mask();
+            }
+        }
+    }
+
+    let stream = canvas_builder.finish();
 
     Mask::new(Arc::new(stream), MaskType::Alpha)
-}
-
-fn transformed(
-    clip_path: &usvg::ClipPath,
-    stream_builder: &mut StreamBuilder,
-    font_context: &mut FontContext,
-) {
-    stream_builder.save_graphics_state();
-    stream_builder.concat_transform(&convert_transform(&clip_path.transform()));
-    group::render(clip_path.root(), stream_builder, font_context);
-    stream_builder.restore_graphics_state();
 }

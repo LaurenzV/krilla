@@ -1,11 +1,11 @@
+use crate::canvas::CanvasBuilder;
 use crate::font::{Font, OutlineBuilder};
-use crate::stream::StreamBuilder;
 use crate::Fill;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
     let font_ref = font.font_ref();
     let outline_glyphs = font_ref.outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
@@ -18,10 +18,9 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
     }
 
     if let Some(path) = outline_builder.finish() {
-        stream_builder.save_graphics_state();
-        stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
-        stream_builder.fill_path_impl(&path, &Fill::default(), true);
-        stream_builder.restore_graphics_state();
+        canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
+        canvas_builder.fill_path_impl(&path, &Fill::default(), true);
+        canvas_builder.pop_transform();
 
         return Some(());
     }
@@ -32,12 +31,10 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
 #[cfg(test)]
 mod tests {
 
-    use crate::font::outline::draw_glyph;
     use crate::font::{draw, Font};
 
     use skrifa::instance::Location;
 
-    use skrifa::raw::TableProvider;
     use skrifa::GlyphId;
     use std::rc::Rc;
 
@@ -51,6 +48,6 @@ mod tests {
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
 
-        draw(&font, Some(glyphs), "outline_noto_sans", draw_glyph);
+        draw(&font, Some(glyphs), "outline_noto_sans");
     }
 }
