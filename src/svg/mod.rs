@@ -98,36 +98,36 @@ fn get_context_from_node(
     node.subroots(|subroot| get_context_from_group(fontdb.clone(), subroot, render_context));
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::canvas::Page;
-    use crate::serialize::PageSerialize;
-    use crate::svg::render_tree;
-    use std::sync::Arc;
-    use usvg::fontdb;
-
-    #[test]
-    pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
-        let mut db = fontdb::Database::new();
-        db.load_system_fonts();
-
-        let tree = usvg::Tree::from_data(
-            &data,
-            &usvg::Options {
-                fontdb: Arc::new(db),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        let mut page = Page::new(tree.size());
-        let mut stream_builder = page.builder();
-        render_tree(&tree, &mut stream_builder);
-        let stream = stream_builder.finish();
-        let serializer_context = page.finish();
-        let finished = stream.serialize(serializer_context, tree.size()).finish();
-        let _ = std::fs::write("out/svg.pdf", &finished);
-        let _ = std::fs::write("out/svg.txt", &finished);
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::canvas::Page;
+//     use crate::serialize::PageSerialize;
+//     use crate::svg::render_tree;
+//     use std::sync::Arc;
+//     use usvg::fontdb;
+//
+//     #[test]
+//     pub fn svg() {
+//         let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
+//         let mut db = fontdb::Database::new();
+//         db.load_system_fonts();
+//
+//         let tree = usvg::Tree::from_data(
+//             &data,
+//             &usvg::Options {
+//                 fontdb: Arc::new(db),
+//                 ..Default::default()
+//             },
+//         )
+//         .unwrap();
+//
+//         let mut page = Page::new(tree.size());
+//         let mut stream_builder = page.builder();
+//         render_tree(&tree, &mut stream_builder);
+//         let stream = stream_builder.finish();
+//         let serializer_context = page.finish();
+//         let finished = stream.serialize(serializer_context, tree.size()).finish();
+//         let _ = std::fs::write("out/svg.pdf", &finished);
+//         let _ = std::fs::write("out/svg.txt", &finished);
+//     }
+// }

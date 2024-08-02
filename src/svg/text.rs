@@ -41,7 +41,7 @@ pub fn render(
                 font.units_per_em() as f32 / span.font_size.get(),
             ));
 
-            let mut fill_op = |sb: &mut StreamBuilder, fill: &Fill| {
+            let fill_op = |sb: &mut StreamBuilder, fill: &Fill| {
                 sb.fill_glyph(
                     Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font.clone(),
@@ -51,7 +51,7 @@ pub fn render(
                 );
             };
 
-            let mut stroke_op = |sb: &mut StreamBuilder, stroke: &Stroke| {
+            let stroke_op = |sb: &mut StreamBuilder, stroke: &Stroke| {
                 sb.stroke_glyph(
                     Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
                     font.clone(),

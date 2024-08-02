@@ -45,5 +45,6 @@ pub fn render(
             group::render(t.root(), stream_builder, font_context);
             stream_builder.pop_clip_path();
         }
+        _ => unimplemented!(),
     }
 }
