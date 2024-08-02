@@ -46,7 +46,6 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut StreamBuilder) -> O
 
 #[cfg(test)]
 mod tests {
-    use crate::font::svg::draw_glyph;
     use crate::font::{draw, Font};
     use skrifa::instance::Location;
     use std::rc::Rc;
@@ -56,6 +55,6 @@ mod tests {
         let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "svg_twitter", draw_glyph);
+        draw(&font, None, "svg_twitter");
     }
 }

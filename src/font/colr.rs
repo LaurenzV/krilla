@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use crate::color::Color;
 use crate::font::{Font, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
@@ -13,15 +14,16 @@ use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
+pub fn draw_glyph<'a>(font: Font, glyph: GlyphId, stream_builder: RefCell<StreamBuilder<'a>>) -> Option<()> {
     let font_ref = font.font_ref();
 
     let colr_glyphs = font.font_ref().color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-        stream_builder.save_graphics_state();
-        stream_builder.concat_transform(&Transform::from_scale(1.0, -1.0));
-        let mut colr_canvas = ColrCanvas::new(&font_ref, stream_builder);
+        stream_builder.borrow_mut().save_graphics_state();
+        stream_builder.borrow_mut().concat_transform(&Transform::from_scale(1.0, -1.0));
+        let mut colr_canvas = ColrCanvas::new(font_ref, stream_builder);
         let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
+        let mut stream_builder = colr_canvas.finish();
         stream_builder.restore_graphics_state();
         return Some(());
     } else {
@@ -30,16 +32,16 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
 }
 
 struct ColrCanvas<'a> {
-    font: &'a FontRef<'a>,
+    font: FontRef<'a>,
     clips: Vec<Vec<Path>>,
-    parent_stream: &'a mut StreamBuilder,
+    parent_stream: RefCell<StreamBuilder<'a>>,
     transforms: Vec<Transform>,
-    streams: Vec<StreamBuilder>,
+    streams: Vec<RefCell<StreamBuilder<'a>>>,
     blend_modes: Vec<BlendMode>,
 }
 
 impl<'a> ColrCanvas<'a> {
-    pub fn new(font_ref: &'a FontRef<'a>, parent_stream: &'a mut StreamBuilder) -> Self {
+    pub fn new(font_ref: FontRef<'a>, parent_stream: RefCell<StreamBuilder<'a>>) -> Self {
         Self {
             font: font_ref,
             parent_stream,
@@ -51,7 +53,7 @@ impl<'a> ColrCanvas<'a> {
     }
 }
 
-impl ColrCanvas<'_> {
+impl<'a> ColrCanvas<'a> {
     fn palette_index_to_color(&self, palette_index: u16, alpha: f32) -> (Color, NormalizedF32) {
         if palette_index != u16::MAX {
             let color = self
@@ -85,6 +87,10 @@ impl ColrCanvas<'_> {
             })
             .collect::<Vec<_>>()
     }
+
+    fn finish(self) -> StreamBuilder<'a> {
+        self.parent_stream.into_inner()
+    }
 }
 
 trait ExtendExt {
@@ -102,7 +108,7 @@ impl ExtendExt for skrifa::color::Extend {
     }
 }
 
-impl ColorPainter for ColrCanvas<'_> {
+impl<'a> ColorPainter for ColrCanvas<'a> {
     fn push_transform(&mut self, transform: skrifa::color::Transform) {
         let new_transform = self
             .transforms
@@ -265,10 +271,10 @@ impl ColorPainter for ColrCanvas<'_> {
                 }
             }
         } {
-            let stream = if let Some(stream) = self.streams.last_mut() {
-                stream
+            let stream = if let Some(stream) = self.streams.last() {
+                &mut stream.borrow_mut()
             } else {
-                &mut self.parent_stream
+                &mut self.parent_stream.borrow_mut()
             };
 
             // The proper implementation would be to apply all clip paths and then draw the
@@ -297,7 +303,7 @@ impl ColorPainter for ColrCanvas<'_> {
         }
     }
 
-    fn push_layer(&mut self, composite_mode: CompositeMode) {
+    fn push_layer(&'a mut self, composite_mode: CompositeMode) {
         let mode = match composite_mode {
             CompositeMode::SrcOver => BlendMode::Normal,
             CompositeMode::Screen => BlendMode::Screen,
@@ -317,18 +323,18 @@ impl ColorPainter for ColrCanvas<'_> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        let stream_builder = self.parent_stream.sub_builder();
+        let stream_builder = self.parent_stream.borrow_mut().sub_builder();
         self.blend_modes.push(mode);
-        self.streams.push(stream_builder);
+        self.streams.push(RefCell::new(stream_builder));
     }
 
     fn pop_layer(&mut self) {
-        let source_stream = self.streams.pop().unwrap().finish();
+        let source_stream = self.streams.pop().unwrap().into_inner().finish();
 
         let target_stream = if let Some(stream) = self.streams.last_mut() {
-            stream
+            &mut stream.borrow_mut()
         } else {
-            &mut self.parent_stream
+            &mut self.parent_stream.borrow_mut()
         };
 
         target_stream.save_graphics_state();
@@ -340,12 +346,11 @@ impl ColorPainter for ColrCanvas<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::colr::draw_glyph;
     use crate::font::{draw, Font};
 
     use skrifa::instance::Location;
 
-    use skrifa::{FontRef, GlyphId};
+    use skrifa::{GlyphId};
     use std::rc::Rc;
 
     #[test]
@@ -359,7 +364,7 @@ mod tests {
             .collect::<Vec<_>>();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, Some(glyphs), "colr_test", draw_glyph);
+        draw(&font, Some(glyphs), "colr_test");
     }
 
     #[test]
@@ -368,7 +373,7 @@ mod tests {
 
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "colr_noto", draw_glyph);
+        draw(&font, None, "colr_noto");
     }
 
     #[test]
@@ -376,6 +381,6 @@ mod tests {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "colr_segoe", draw_glyph);
+        draw(&font, None, "colr_segoe");
     }
 }

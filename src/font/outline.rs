@@ -32,7 +32,6 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
 #[cfg(test)]
 mod tests {
 
-    use crate::font::outline::draw_glyph;
     use crate::font::{draw, Font};
 
     use skrifa::instance::Location;
@@ -50,6 +49,6 @@ mod tests {
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
 
-        draw(&font, Some(glyphs), "outline_noto_sans", draw_glyph);
+        draw(&font, Some(glyphs), "outline_noto_sans");
     }
 }

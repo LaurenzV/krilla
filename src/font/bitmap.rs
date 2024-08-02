@@ -55,8 +55,6 @@ mod tests {
     use crate::font::{draw, Font};
 
     use skrifa::instance::Location;
-
-    use crate::font::bitmap::draw_glyph;
     use std::rc::Rc;
 
     #[test]
@@ -64,6 +62,6 @@ mod tests {
         let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "sbix_apple_color", draw_glyph);
+        draw(&font, None, "sbix_apple_color");
     }
 }

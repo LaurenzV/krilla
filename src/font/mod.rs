@@ -165,7 +165,7 @@ impl Font {
         g_metrics.advance_width(glyph_id)
     }
 
-    pub fn font_ref(&self) -> FontRef {
+    pub fn font_ref<'a>(&self) -> FontRef<'a> {
         FontRef::from_index(self.0.font_wrapper.data.as_slice(), 0).unwrap()
     }
 
@@ -197,7 +197,6 @@ fn draw(
     font: &Font,
     glyphs: Option<Vec<(GlyphId, String)>>,
     name: &str,
-    _: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
 ) {
     use crate::canvas::Page;
     use crate::serialize::PageSerialize;
