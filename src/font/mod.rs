@@ -1,5 +1,4 @@
 use crate::util::Prehashed;
-use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -255,7 +254,7 @@ fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
             font.clone(),
             FiniteF32::new(size as f32).unwrap(),
             &Transform::identity(),
-            &Fill::default(),
+            &crate::Fill::default(),
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         builder.pop_transform();

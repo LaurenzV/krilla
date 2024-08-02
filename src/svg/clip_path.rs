@@ -1,6 +1,5 @@
 use crate::canvas::CanvasBuilder;
 use crate::object::mask::Mask;
-use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
