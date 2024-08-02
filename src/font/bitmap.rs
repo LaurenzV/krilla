@@ -1,11 +1,11 @@
+use crate::canvas::CanvasBuilder;
 use crate::font::Font;
 use crate::object::image::Image;
-use crate::stream::StreamBuilder;
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilder) -> Option<()> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
     let font_ref = font.font_ref();
     let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
 
@@ -26,8 +26,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
                 let width = dynamic_image.width() as f32 * size_factor;
                 let height = dynamic_image.height() as f32 * size_factor;
                 let size = Size::from_wh(width, height).unwrap();
-                stream_builder.save_graphics_state();
-                stream_builder.concat_transform(
+                canvas_builder.push_transform(
                     &Transform::from_translate(0.0, -height)
                         // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
                         // doesn't seem to be coming from the font and most likely is somehow hardcoded. On Windows,
@@ -38,8 +37,8 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, stream_builder: &mut StreamBuilde
                         // This value seems to be pretty close to what is happening on MacOS.
                         .pre_concat(Transform::from_translate(0.0, 0.128 * upem)),
                 );
-                stream_builder.draw_image(Image::new(&dynamic_image), size);
-                stream_builder.restore_graphics_state();
+                canvas_builder.draw_image(Image::new(&dynamic_image), size);
+                canvas_builder.pop_transform();
 
                 return Some(());
             }

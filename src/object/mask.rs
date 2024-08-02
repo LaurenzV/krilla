@@ -1,7 +1,8 @@
+use crate::canvas::CanvasBuilder;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
-use crate::stream::{Stream, StreamBuilder};
+use crate::stream::Stream;
 use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};
 use std::sync::Arc;
@@ -48,9 +49,10 @@ impl Mask {
         let shading_function = ShadingFunction::new(gradient_properties, true);
 
         let shading_stream = {
-            let mut builder = StreamBuilder::new(serializer_context);
-            builder.concat_transform(&shading_transform.0);
+            let mut builder = CanvasBuilder::new(serializer_context);
+            builder.push_transform(&shading_transform.0);
             builder.draw_shading(&shading_function);
+            builder.pop_transform();
             builder.finish()
         };
 

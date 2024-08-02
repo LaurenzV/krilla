@@ -12,7 +12,7 @@ pub mod bitmap;
 pub mod colr;
 pub mod outline;
 mod parley;
-pub mod svg;
+// pub mod svg;
 
 pub struct Glyph {
     pub glyph_id: GlyphId,
@@ -165,7 +165,7 @@ impl Font {
         g_metrics.advance_width(glyph_id)
     }
 
-    pub fn font_ref<'a>(&self) -> FontRef<'a> {
+    pub fn font_ref(&self) -> FontRef {
         FontRef::from_index(self.0.font_wrapper.data.as_slice(), 0).unwrap()
     }
 
@@ -193,11 +193,7 @@ impl FontWrapper {
 }
 
 #[cfg(test)]
-fn draw(
-    font: &Font,
-    glyphs: Option<Vec<(GlyphId, String)>>,
-    name: &str,
-) {
+fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     use crate::canvas::Page;
     use crate::serialize::PageSerialize;
     use crate::Transform;
@@ -253,8 +249,7 @@ fn draw(
             // ))
         }
 
-        builder.save_graphics_state();
-        builder.concat_transform(&get_transform(cur_point, size, num_cols, units_per_em));
+        builder.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         builder.fill_glyph(
             Glyph::new(i, text),
             font.clone(),
@@ -263,7 +258,7 @@ fn draw(
             &Fill::default(),
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
-        builder.restore_graphics_state();
+        builder.pop_transform();
 
         cur_point += size;
     }

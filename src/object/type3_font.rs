@@ -1,9 +1,9 @@
-use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
+use crate::canvas::CanvasBuilder;
+use crate::font::{bitmap, colr, outline, Font, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
-use crate::serialize::{SerializerContext};
-use crate::stream::StreamBuilder;
+use crate::serialize::SerializerContext;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
@@ -91,18 +91,18 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph_id)| {
-                let mut stream_builder = StreamBuilder::new(sc);
+                let mut canvas_builder = CanvasBuilder::new(sc);
                 let mut is_outline = false;
 
-                colr::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
-                    .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
-                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
+                colr::draw_glyph(self.font.clone(), *glyph_id, &mut canvas_builder)
+                    // .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut stream_builder))
+                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
                     .or_else(|| {
                         is_outline = true;
-                        outline::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
+                        outline::draw_glyph(&self.font, *glyph_id, &mut canvas_builder)
                     });
 
-                let stream = stream_builder.finish();
+                let stream = canvas_builder.finish();
                 let mut content = Content::new();
 
                 let stream = if is_outline {
@@ -250,9 +250,7 @@ mod tests {
             type3.add(&Glyph::new(GlyphId::new(g), "".to_string()));
         }
 
-        let mut sc = SerializerContext::new(
-            SerializeSettings::default(),
-        );
+        let mut sc = SerializerContext::new(SerializeSettings::default());
         let root_ref = sc.new_ref();
         type3.serialize_into(&mut sc, root_ref);
 

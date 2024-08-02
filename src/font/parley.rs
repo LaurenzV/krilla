@@ -67,7 +67,7 @@ mod tests {
         let mut page = Page::new(page_size);
         let mut builder = page.builder();
 
-        builder.draw_parley(&layout, &text);
+        builder.draw_string(&layout, &text);
 
         let stream = builder.finish();
         let sc = page.finish();

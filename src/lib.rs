@@ -10,7 +10,7 @@ pub mod path;
 pub mod resource;
 pub mod serialize;
 pub mod stream;
-pub mod svg;
+// pub mod svg;
 pub mod transform;
 pub mod util;
 
