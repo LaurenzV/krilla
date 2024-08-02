@@ -5,11 +5,8 @@ use crate::object::type3_font::Type3Font;
 use crate::resource::FontResource;
 use pdf_writer::{Chunk, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
-use skrifa::GlyphId;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::rc::Rc;
 use tiny_skia_path::Size;
 
 #[derive(Copy, Clone, Debug)]
@@ -127,31 +124,29 @@ impl SerializerContext {
         &self.chunk
     }
 
-    fn write_fonts(sc: Rc<RefCell<SerializerContext>>) {
+    fn write_fonts(sc: &mut SerializerContext) {
         // TODO: Make more efficient
-        let fonts = sc.borrow().fonts.clone();
+        let fonts = sc.fonts.clone();
         for (font, font_container) in fonts {
             match font_container {
                 FontContainer::Type3(font_mapper) => {
                     for (index, mapper) in font_mapper.fonts.iter().enumerate() {
-                        let ref_ = sc.borrow_mut().add(FontResource::new(font.clone(), index));
-                        mapper.clone().serialize_into(sc.clone(), ref_);
+                        let ref_ = sc.add(FontResource::new(font.clone(), index));
+                        mapper.clone().serialize_into(sc, ref_);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = sc.borrow_mut().add(FontResource::new(font.clone(), 0));
-                    cid_font.serialize_into(&mut sc.borrow_mut(), ref_);
+                    let ref_ = sc.add(FontResource::new(font.clone(), 0));
+                    cid_font.serialize_into(sc, ref_);
                 }
             }
         }
     }
 
     // Always needs to be called.
-    pub fn finish(self) -> Chunk {
-        // let chunk = self.chunk.clone();
-        let celled = Rc::new(RefCell::new(self));
-        Self::write_fonts(celled.clone());
-        Rc::try_unwrap(celled).unwrap().into_inner().chunk
+    pub fn finish(mut self) -> Chunk {
+        Self::write_fonts(&mut self);
+        self.chunk
     }
 }
 

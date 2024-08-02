@@ -1,5 +1,3 @@
-use crate::font::Font;
-use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::svg::{group, FontContext};
 use crate::transform::TransformWrapper;
@@ -8,8 +6,6 @@ use crate::{
     RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use pdf_writer::types::BlendMode;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 use usvg::NonZeroPositiveF32;

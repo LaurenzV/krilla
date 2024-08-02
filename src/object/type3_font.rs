@@ -2,16 +2,14 @@ use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::prelude::Size;
 use skrifa::{GlyphId, MetadataProvider};
-use std::cell::RefCell;
 use std::collections::BTreeSet;
-use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};
 
@@ -72,7 +70,7 @@ impl Type3Font {
         }
     }
 
-    pub fn serialize_into(mut self, sc: Rc<RefCell<SerializerContext>>, root_ref: Ref) {
+    pub fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
         let widths = self
             .glyphs
             .iter()
@@ -93,7 +91,7 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph_id)| {
-                let mut stream_builder = StreamBuilder::new(sc.clone());
+                let mut stream_builder = StreamBuilder::new(sc);
                 let mut is_outline = false;
 
                 colr::draw_glyph(&self.font, *glyph_id, &mut stream_builder)
@@ -133,8 +131,8 @@ impl Type3Font {
                     content.finish()
                 };
 
-                let stream_ref = sc.borrow_mut().new_ref();
-                sc.borrow_mut().chunk_mut().stream(stream_ref, &stream);
+                let stream_ref = sc.new_ref();
+                sc.chunk_mut().stream(stream_ref, &stream);
 
                 stream_ref
             })
@@ -142,8 +140,8 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        let descriptor_ref = sc.borrow_mut().new_ref();
-        let cmap_ref = sc.borrow_mut().new_ref();
+        let descriptor_ref = sc.new_ref();
+        let cmap_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
 
@@ -182,7 +180,7 @@ impl Type3Font {
         font_descriptor.finish();
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(&mut sc.borrow_mut(), &mut type3_font.resources());
+        resource_dictionary.to_pdf_resources(sc, &mut type3_font.resources());
 
         type3_font.bbox(bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
@@ -227,7 +225,7 @@ impl Type3Font {
         };
         chunk.cmap(cmap_ref, &cmap.finish());
 
-        sc.borrow_mut().chunk_mut().extend(&chunk);
+        sc.chunk_mut().extend(&chunk);
     }
 }
 
@@ -235,10 +233,9 @@ impl Type3Font {
 mod tests {
     use crate::font::{Font, Glyph};
     use crate::object::type3_font::Type3Font;
-    use crate::serialize::{Object, SerializeSettings, SerializerContext};
+    use crate::serialize::{SerializeSettings, SerializerContext};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use std::cell::RefCell;
     use std::rc::Rc;
 
     #[test]
@@ -253,16 +250,15 @@ mod tests {
             type3.add(&Glyph::new(GlyphId::new(g), "".to_string()));
         }
 
-        let mut serializer_context = Rc::new(RefCell::new(SerializerContext::new(
+        let mut sc = SerializerContext::new(
             SerializeSettings::default(),
-        )));
-        let root_ref = serializer_context.borrow_mut().new_ref();
-        type3.serialize_into(serializer_context.clone(), root_ref);
+        );
+        let root_ref = sc.new_ref();
+        type3.serialize_into(&mut sc, root_ref);
 
         // No need to write fonts here.
 
-        let borrowed = serializer_context.borrow();
-        let chunk = borrowed.chunk();
+        let chunk = sc.chunk();
         std::fs::write("out.txt", chunk.as_bytes());
     }
 }

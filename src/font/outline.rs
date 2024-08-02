@@ -37,7 +37,6 @@ mod tests {
 
     use skrifa::instance::Location;
 
-    use skrifa::raw::TableProvider;
     use skrifa::GlyphId;
     use std::rc::Rc;
 

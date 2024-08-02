@@ -365,7 +365,6 @@ mod tests {
     #[test]
     fn noto_color() {
         let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
 
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
@@ -375,7 +374,6 @@ mod tests {
     #[test]
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-        let font_ref = FontRef::from_index(&font_data, 0).unwrap();
         let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
 
         draw(&font, None, "colr_segoe", draw_glyph);

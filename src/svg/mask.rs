@@ -1,17 +1,14 @@
 use crate::object::mask::Mask;
-use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::svg::util::convert_mask_type;
 use crate::svg::{group, FontContext};
 use crate::util::RectExt;
 use crate::FillRule;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
-pub fn get_mask(
+pub fn get_mask<'a>(
     mask: &usvg::Mask,
-    mut sub_builder: StreamBuilder,
+    mut sub_builder: StreamBuilder<'a>,
     font_context: &mut FontContext,
 ) -> Mask {
     if let Some(sub_usvg_mask) = mask.mask() {

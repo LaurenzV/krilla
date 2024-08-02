@@ -197,7 +197,7 @@ fn draw(
     font: &Font,
     glyphs: Option<Vec<(GlyphId, String)>>,
     name: &str,
-    single_glyph: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
+    _: impl Fn(&Font, GlyphId, &mut crate::stream::StreamBuilder) -> Option<()>,
 ) {
     use crate::canvas::Page;
     use crate::serialize::PageSerialize;
@@ -231,11 +231,11 @@ fn draw(
     let mut cur_point = 0;
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let page = Page::new(page_size);
+    let mut page = Page::new(page_size);
     let mut builder = page.builder();
 
     for (i, text) in glyphs.iter().cloned() {
-        fn get_transform(cur_point: u32, size: u32, num_cols: u32, units_per_em: f32) -> Transform {
+        fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;
             let row = el / num_cols;

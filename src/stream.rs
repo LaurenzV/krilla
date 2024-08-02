@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::rc::Rc;
-// use crate::font::Font;
 use crate::font::{Font, Glyph};
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -48,16 +46,16 @@ impl Stream {
     }
 }
 
-pub struct StreamBuilder {
+pub struct StreamBuilder<'a> {
     rd_builder: ResourceDictionaryBuilder,
-    serializer_context: Rc<RefCell<SerializerContext>>,
+    serializer_context: &'a mut SerializerContext,
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
 }
 
-impl StreamBuilder {
-    pub fn new(serializer_context: Rc<RefCell<SerializerContext>>) -> Self {
+impl<'a> StreamBuilder<'a> {
+    pub fn new(serializer_context: &'a mut SerializerContext) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             serializer_context,
@@ -68,7 +66,7 @@ impl StreamBuilder {
     }
 
     pub(crate) fn new_flipped(
-        serializer_context: Rc<RefCell<SerializerContext>>,
+        serializer_context: &'a mut SerializerContext,
         size: Size,
     ) -> Self {
         let mut builder = Self::new(serializer_context);
@@ -84,7 +82,7 @@ impl StreamBuilder {
     }
 
     pub fn sub_builder(&mut self) -> StreamBuilder {
-        StreamBuilder::new(self.serializer_context.clone())
+        StreamBuilder::new(&mut self.serializer_context)
     }
 
     pub fn finish(self) -> Stream {
@@ -208,7 +206,7 @@ impl StreamBuilder {
             size,
             transform,
             TextRenderingMode::Invisible,
-            |sb| {},
+            |_| {},
         );
     }
 
@@ -331,7 +329,6 @@ impl StreamBuilder {
     ) {
         let (font_resource, gid) = self
             .serializer_context
-            .borrow_mut()
             .map_glyph(font.clone(), glyph);
         let font_name = self
             .rd_builder
@@ -502,7 +499,7 @@ impl StreamBuilder {
                 gradient_props.clone(),
                 transform,
                 bounds,
-                self.serializer_context.clone(),
+                &mut self.serializer_context,
             );
 
             let shading_pattern = ShadingPattern::new(
@@ -562,7 +559,7 @@ impl StreamBuilder {
                         opacity,
                         pat.width,
                         pat.height,
-                        self.serializer_context.clone(),
+                        &mut self.serializer_context,
                     )),
                 ));
                 set_pattern_fn(&mut self.content, color_space);

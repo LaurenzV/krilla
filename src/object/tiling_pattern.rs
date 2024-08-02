@@ -4,8 +4,6 @@ use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::FiniteF32;
 use usvg::NormalizedF32;
@@ -29,7 +27,7 @@ impl TilingPattern {
         base_opacity: NormalizedF32,
         width: FiniteF32,
         height: FiniteF32,
-        serializer_context: Rc<RefCell<SerializerContext>>,
+        serializer_context: &mut SerializerContext,
     ) -> Self {
         // stroke/fill opacity doesn't work consistently across different viewers for patterns,
         // so instead we simulate it ourselves.

@@ -1,11 +1,8 @@
 use crate::object::mask::Mask;
-use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 

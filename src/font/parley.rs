@@ -5,7 +5,6 @@ mod tests {
     use crate::Color;
     use parley::layout::Alignment;
     use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
-    use parley::swash::scale::ScaleContext;
     use parley::{FontContext, Layout, LayoutContext};
 
     #[test]
@@ -30,7 +29,6 @@ mod tests {
         // and provide caches and scratch space to avoid allocations
         let mut font_cx = FontContext::default();
         let mut layout_cx = LayoutContext::new();
-        let mut scale_cx = ScaleContext::new();
 
         // Create a RangedBuilder
         let mut builder = layout_cx.ranged_builder(&mut font_cx, &text, display_scale);
@@ -66,7 +64,7 @@ mod tests {
         layout.align(max_advance, Alignment::Start);
 
         let page_size = tiny_skia_path::Size::from_wh(200.0, 200.0).unwrap();
-        let page = Page::new(page_size);
+        let mut page = Page::new(page_size);
         let mut builder = page.builder();
 
         builder.draw_parley(&layout, &text);

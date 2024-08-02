@@ -49,7 +49,6 @@ mod tests {
     use crate::font::svg::draw_glyph;
     use crate::font::{draw, Font};
     use skrifa::instance::Location;
-    use skrifa::raw::TableProvider;
     use std::rc::Rc;
 
     #[test]

@@ -4,8 +4,6 @@ use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::transform::TransformWrapper;
 use pdf_writer::{Name, Ref};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
@@ -32,7 +30,7 @@ impl Mask {
         gradient_properties: GradientProperties,
         shading_transform: TransformWrapper,
         bbox: Rect,
-        serializer_context: Rc<RefCell<SerializerContext>>,
+        serializer_context: &mut SerializerContext,
     ) -> Option<Self> {
         match &gradient_properties {
             GradientProperties::RadialAxialGradient(rag) => {
