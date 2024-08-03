@@ -16,8 +16,10 @@ subsetter = {git="https://github.com/LaurenzV/subsetter", rev="c178d05"}
 tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
 usvg = {git = "https://github.com/RazrFalcon/resvg", rev="546df09"}
 flate2 = "1.0.30"
-parley = {git = "https://github.com/linebender/parley", rev="9af2072"}
 
 [patch.crates-io]
 tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
+
+[dev-dependencies]
+cosmic-text = "0.12.1"
 

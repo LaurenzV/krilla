@@ -54,12 +54,12 @@ mod tests {
     use crate::font::{draw, Font};
 
     use skrifa::instance::Location;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn sbix_apple_color() {
         let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
-        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
+        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
         draw(&font, None, "sbix_apple_color");
     }

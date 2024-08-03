@@ -48,12 +48,13 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, builder: &mut CanvasBuilder) -> O
 mod tests {
     use crate::font::{draw, Font};
     use skrifa::instance::Location;
-    use std::rc::Rc;
+
+    use std::sync::Arc;
 
     #[test]
     fn svg_twitter() {
         let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
-        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
+        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
         draw(&font, None, "svg_twitter");
     }

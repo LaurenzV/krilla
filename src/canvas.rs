@@ -5,8 +5,7 @@ use crate::object::shading_function::ShadingFunction;
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::util::{deflate, RectExt};
-use crate::{Color, Fill, FillRule, Stroke};
-use parley::Layout;
+use crate::{Fill, FillRule, Stroke};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
 use std::sync::Arc;
@@ -172,11 +171,6 @@ impl<'a> CanvasBuilder<'a> {
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .invisible_glyph(glyph, font, size, transform, self.sc);
-    }
-
-    pub fn draw_string(&mut self, layout: &Layout<Color>, text: &str) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .draw_string(layout, text, self.sc);
     }
 
     pub fn fill_glyph<'b>(

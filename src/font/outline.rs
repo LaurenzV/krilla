@@ -36,13 +36,14 @@ mod tests {
     use skrifa::instance::Location;
 
     use skrifa::GlyphId;
-    use std::rc::Rc;
+
+    use std::sync::Arc;
 
     // This will not use Type3
     #[test]
     fn outline_noto_sans() {
         let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
-        let font = Font::new(Rc::new(font_data), Location::default()).unwrap();
+        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
         let glyphs = (0..1000)
             .map(|n| (GlyphId::new(n), "".to_string()))

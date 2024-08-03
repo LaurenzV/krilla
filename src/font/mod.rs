@@ -4,13 +4,13 @@ use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use std::rc::Rc;
+use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
 
 pub mod bitmap;
 pub mod colr;
+mod cosmic_text;
 pub mod outline;
-mod parley;
 pub mod svg;
 
 pub struct Glyph {
@@ -60,7 +60,7 @@ impl OutlinePen for OutlineBuilder {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct FontWrapper {
-    data: Rc<Vec<u8>>,
+    data: Arc<Vec<u8>>,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -80,10 +80,10 @@ pub struct Repr {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Font(Rc<Prehashed<Repr>>);
+pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
-    pub fn new(data: Rc<Vec<u8>>, location: Location) -> Option<Self> {
+    pub fn new(data: Arc<Vec<u8>>, location: Location) -> Option<Self> {
         let font_wrapper = FontWrapper { data };
         let font_ref = font_wrapper.tables();
         let metrics = font_ref.metrics(Size::unscaled(), &location);
@@ -115,7 +115,7 @@ impl Font {
             || font_ref.sbix().is_ok()
             || font_ref.cff2().is_ok();
 
-        let font_wrapper = Self(Rc::new(Prehashed::new(Repr {
+        let font_wrapper = Self(Arc::new(Prehashed::new(Repr {
             font_wrapper,
             units_per_em,
             ascent,

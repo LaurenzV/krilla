@@ -3,7 +3,6 @@ use crate::font::Font;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
 use std::sync::Arc;
 use usvg::{fontdb, Group, ImageKind, Node};
 
@@ -69,8 +68,8 @@ fn get_context_from_node(
                         fontdb
                             .with_face_data(g.font, |data, _| {
                                 // TODO: Avoid vector allocation somehow?
-                                let font =
-                                    Font::new(Rc::new(data.to_vec()), Location::default()).unwrap();
+                                let font = Font::new(Arc::new(data.to_vec()), Location::default())
+                                    .unwrap();
                                 SvgFont {
                                     font,
                                     glyph_sets: BTreeMap::new(),

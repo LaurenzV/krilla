@@ -236,14 +236,15 @@ mod tests {
     use crate::serialize::{SerializeSettings, SerializerContext};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use std::rc::Rc;
+
+    use std::sync::Arc;
 
     #[test]
     fn basic_type3() {
         let data =
             std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
                 .unwrap();
-        let font = Font::new(Rc::new(data), Location::default()).unwrap();
+        let font = Font::new(Arc::new(data), Location::default()).unwrap();
         let mut type3 = Type3Font::new(font);
 
         for g in [10, 11, 12] {
