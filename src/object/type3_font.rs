@@ -174,12 +174,12 @@ impl Type3Font {
                 .map(|n| n.contains("Serif"))
                 .unwrap_or(false),
         );
-        flags.set(FontFlags::FIXED_PITCH, self.font_info.is_monospaced());
-        flags.set(FontFlags::ITALIC, self.font_info.italic_angle() != 0.0);
+        flags.set(FontFlags::FIXED_PITCH, font_info.is_monospaced());
+        flags.set(FontFlags::ITALIC, font_info.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
-        let italic_angle = self.font_info.italic_angle();
+        let italic_angle = font_info.italic_angle();
         let ascender = bbox.bottom();
         let descender = bbox.top();
 
@@ -204,8 +204,8 @@ impl Type3Font {
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
-                1.0 / (self.font_info.units_per_em() as f32),
-                1.0 / (self.font_info.units_per_em() as f32),
+                1.0 / (font_info.units_per_em() as f32),
+                1.0 / (font_info.units_per_em() as f32),
             )
             .to_pdf_transform(),
         );
@@ -220,7 +220,7 @@ impl Type3Font {
         }
         char_procs.finish();
 
-        let names = (0..self.count())
+        let names = (0..self.glyphs.len() as u16)
             .map(|gid| format!("g{gid}"))
             .collect::<Vec<_>>();
 

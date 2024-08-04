@@ -174,7 +174,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
 
     let mut fontdb = Database::new();
     let cloned = font_data.clone();
-    let font_ref = FontRef::new(&cloned).unwrap();
+    let font_ref = FontRef::from_index(&cloned, 0).unwrap();
     let id = fontdb.load_font_source(Source::Binary(font_data))[0];
 
     let glyphs = glyphs.unwrap_or_else(|| {

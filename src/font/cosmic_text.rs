@@ -46,7 +46,7 @@ mod tests {
 
         let pdf = stream.serialize(sc, font_system.db(), page_size);
         let finished = pdf.finish();
-        let _ = std::fs::write(format!("out/parley.pdf"), &finished);
-        let _ = std::fs::write(format!("out/parley.txt"), &finished);
+        let _ = std::fs::write(format!("out/cosmic_text.pdf"), &finished);
+        let _ = std::fs::write(format!("out/cosmic_text.txt"), &finished);
     }
 }
