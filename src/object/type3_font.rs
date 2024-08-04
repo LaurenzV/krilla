@@ -5,6 +5,7 @@ use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
 use crate::util::{NameExt, RectExt, TransformExt};
+use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::prelude::Size;
@@ -15,7 +16,7 @@ use tiny_skia_path::{Rect, Transform};
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Type3Font {
     font_info: Arc<FontInfo>,
     glyphs: Vec<GlyphId>,
@@ -96,10 +97,13 @@ impl Type3Font {
 
                 colr::draw_glyph(font_ref, font_info.as_ref(), *glyph_id, &mut canvas_builder)
                     .or_else(|| {
+                        // SVG fonts must not have any text So we can just use a dummy database here.
+                        let mut db = Database::new();
                         svg::draw_glyph(
                             font_ref,
                             font_info.as_ref(),
                             *glyph_id,
+                            &mut db,
                             &mut canvas_builder,
                         )
                     })

@@ -95,7 +95,7 @@ impl SerializerContext {
     pub fn map_glyph(
         &mut self,
         font_id: ID,
-        fontdb: &Database,
+        fontdb: &mut Database,
         glyph: Glyph,
     ) -> (FontResource, PDFGlyph) {
         let font_container = self.fonts.entry(font_id).or_insert_with(|| {
@@ -143,7 +143,7 @@ impl SerializerContext {
 
     fn write_fonts(sc: &mut SerializerContext, fontdb: &Database) {
         // TODO: Make more efficient
-        let fonts = sc.fonts.clone();
+        let fonts = std::mem::take(&mut sc.fonts);
         for (font_id, font_container) in fonts {
             fontdb
                 .with_face_data(font_id, |data, index| {
@@ -151,9 +151,9 @@ impl SerializerContext {
 
                     match font_container {
                         FontContainer::Type3(font_mapper) => {
-                            for (index, mapper) in font_mapper.fonts.iter().enumerate() {
+                            for (index, mapper) in font_mapper.fonts.into_iter().enumerate() {
                                 let ref_ = sc.add(FontResource::new(font_id, index));
-                                mapper.clone().serialize_into(sc, &font_ref, ref_);
+                                mapper.serialize_into(sc, &font_ref, ref_);
                             }
                         }
                         FontContainer::CIDFont(cid_font) => {
@@ -184,13 +184,13 @@ pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
     state.finish128().as_u128()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 enum FontContainer {
     Type3(Type3FontMapper),
     CIDFont(CIDFont),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Type3FontMapper {
     font_info: Arc<FontInfo>,
     fonts: Vec<Type3Font>,
