@@ -1,4 +1,4 @@
-use crate::util::Prehashed;
+use fontdb::{Database, Source};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -58,17 +58,12 @@ impl OutlinePen for OutlineBuilder {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-struct FontWrapper {
-    data: Arc<Vec<u8>>,
-}
-
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub struct Repr {
-    font_wrapper: FontWrapper,
+pub struct FontInfo {
+    index: u32,
     location: Location,
+    checksum: u32,
     units_per_em: u16,
-    // Note that the bbox only applied to non-variable font settings
     global_bbox: Rect,
     is_type3_font: bool,
     ascent: FiniteF32,
@@ -79,13 +74,12 @@ pub struct Repr {
     weight: FiniteF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Font(Arc<Prehashed<Repr>>);
+impl FontInfo {
+    pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
+        let font_ref = FontRef::from_index(data, index).ok()?;
 
-impl Font {
-    pub fn new(data: Arc<Vec<u8>>, location: Location) -> Option<Self> {
-        let font_wrapper = FontWrapper { data };
-        let font_ref = font_wrapper.tables();
+        let checksum = font_ref.head().unwrap().checksum_adjustment();
+
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
         let descent = FiniteF32::new(metrics.descent).unwrap();
@@ -115,8 +109,9 @@ impl Font {
             || font_ref.sbix().is_ok()
             || font_ref.cff2().is_ok();
 
-        let font_wrapper = Self(Arc::new(Prehashed::new(Repr {
-            font_wrapper,
+        Some(FontInfo {
+            index,
+            checksum,
             units_per_em,
             ascent,
             cap_height,
@@ -127,75 +122,60 @@ impl Font {
             global_bbox,
             is_type3_font,
             location,
-        })));
-
-        Some(font_wrapper)
+        })
     }
 
     pub fn cap_height(&self) -> Option<f32> {
-        self.0.cap_height.map(|n| n.get())
+        self.cap_height.map(|n| n.get())
     }
 
     pub fn ascent(&self) -> f32 {
-        self.0.ascent.get()
+        self.ascent.get()
     }
 
     pub fn weight(&self) -> f32 {
-        self.0.weight.get()
+        self.weight.get()
     }
 
     pub fn descent(&self) -> f32 {
-        self.0.descent.get()
+        self.descent.get()
     }
 
     pub fn is_monospaced(&self) -> bool {
-        self.0.is_monospaced
+        self.is_monospaced
     }
 
     pub fn italic_angle(&self) -> f32 {
-        self.0.italic_angle.get()
-    }
-
-    pub fn glyph_advance(&self, glyph_id: GlyphId) -> Option<f32> {
-        let location_ref = &self.0.location;
-        let g_metrics = self
-            .font_ref()
-            .glyph_metrics(Size::unscaled(), location_ref);
-        g_metrics.advance_width(glyph_id)
-    }
-
-    pub fn font_ref(&self) -> FontRef {
-        FontRef::from_index(self.0.font_wrapper.data.as_slice(), 0).unwrap()
+        self.italic_angle.get()
     }
 
     pub fn units_per_em(&self) -> u16 {
-        self.0.units_per_em
+        self.units_per_em
     }
 
     pub fn bbox(&self) -> Rect {
-        self.0.global_bbox
+        self.global_bbox
     }
 
     pub fn location_ref(&self) -> LocationRef {
-        (&self.0.location).into()
+        (&self.location).into()
     }
 
     pub fn is_type3_font(&self) -> bool {
-        self.0.is_type3_font
-    }
-}
-
-impl FontWrapper {
-    pub fn tables(&self) -> FontRef {
-        FontRef::from_index(&self.data, 0).unwrap()
+        self.is_type3_font
     }
 }
 
 #[cfg(test)]
-fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
+fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     use crate::canvas::Page;
     use crate::serialize::PageSerialize;
     use crate::Transform;
+
+    let mut fontdb = Database::new();
+    let cloned = font_data.clone();
+    let font_ref = FontRef::new(&cloned).unwrap();
+    let id = fontdb.load_font_source(Source::Binary(font_data))[0];
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file =
@@ -203,7 +183,7 @@ fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
         let file = std::str::from_utf8(&file).unwrap();
         file.chars()
             .filter_map(|c| {
-                font.font_ref()
+                font_ref
                     .cmap()
                     .unwrap()
                     .map_codepoint(c)
@@ -212,9 +192,7 @@ fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
             .collect::<Vec<_>>()
     });
 
-    let metrics = font
-        .font_ref()
-        .metrics(Size::unscaled(), font.location_ref());
+    let metrics = font_ref.metrics(Size::unscaled(), LocationRef::default());
     let num_glyphs = glyphs.len();
     let width = 400;
 
@@ -251,7 +229,8 @@ fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
         builder.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         builder.fill_glyph(
             Glyph::new(i, text),
-            font.clone(),
+            id,
+            &mut fontdb,
             FiniteF32::new(size as f32).unwrap(),
             &Transform::identity(),
             &crate::Fill::default(),
@@ -265,7 +244,7 @@ fn draw(font: &Font, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     let stream = builder.finish();
     let sc = page.finish();
 
-    let pdf = stream.serialize(sc, page_size);
+    let pdf = stream.serialize(sc, &fontdb, page_size);
     let finished = pdf.finish();
     let _ = std::fs::write(format!("out/{}.pdf", name), &finished);
     let _ = std::fs::write(format!("out/{}.txt", name), &finished);

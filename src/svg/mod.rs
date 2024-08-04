@@ -1,5 +1,4 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::Font;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashMap};

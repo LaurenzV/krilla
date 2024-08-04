@@ -1,13 +1,17 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::Font;
+use crate::font::FontInfo;
 use crate::object::image::Image;
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider, Tag};
+use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
-    let font_ref = font.font_ref();
-    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
+pub fn draw_glyph(
+    font_ref: &FontRef,
+    font_info: &FontInfo,
+    glyph: GlyphId,
+    canvas_builder: &mut CanvasBuilder,
+) -> Option<()> {
+    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font_info.location_ref());
 
     if let Ok(table) = font_ref.sbix() {
         if let Some((strike, data)) = table
@@ -51,16 +55,14 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilde
 #[cfg(test)]
 mod tests {
 
-    use crate::font::{draw, Font};
+    use crate::font::draw;
 
-    use skrifa::instance::Location;
     use std::sync::Arc;
 
     #[test]
     fn sbix_apple_color() {
         let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, None, "sbix_apple_color");
+        draw(Arc::new(font_data), None, "sbix_apple_color");
     }
 }

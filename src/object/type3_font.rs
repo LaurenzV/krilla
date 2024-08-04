@@ -1,5 +1,5 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
+use crate::font::{bitmap, colr, outline, svg, FontInfo, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -8,7 +8,7 @@ use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::prelude::Size;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};
@@ -17,7 +17,7 @@ use tiny_skia_path::{Rect, Transform};
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Type3Font {
-    font: Font,
+    font_info: Arc<FontInfo>,
     glyphs: Vec<GlyphId>,
     strings: Vec<String>,
     glyph_set: BTreeSet<GlyphId>,
@@ -31,9 +31,9 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
 };
 
 impl Type3Font {
-    pub fn new(font: Font) -> Self {
+    pub fn new(font_info: Arc<FontInfo>) -> Self {
         Self {
-            font,
+            font_info,
             glyphs: Vec::new(),
             strings: Vec::new(),
             glyph_set: BTreeSet::new(),
@@ -70,14 +70,14 @@ impl Type3Font {
         }
     }
 
-    pub fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {
+        let font_info = self.font_info;
         let widths = self
             .glyphs
             .iter()
             .map(|g| {
-                self.font
-                    .font_ref()
-                    .glyph_metrics(Size::unscaled(), self.font.location_ref())
+                font_ref
+                    .glyph_metrics(Size::unscaled(), font_info.location_ref())
                     .advance_width(*g)
                     .unwrap_or(0.0)
             })
@@ -94,12 +94,31 @@ impl Type3Font {
                 let mut canvas_builder = CanvasBuilder::new(sc);
                 let mut is_outline = false;
 
-                colr::draw_glyph(self.font.clone(), *glyph_id, &mut canvas_builder)
-                    .or_else(|| svg::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
-                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
+                colr::draw_glyph(font_ref, font_info.as_ref(), *glyph_id, &mut canvas_builder)
+                    .or_else(|| {
+                        svg::draw_glyph(
+                            font_ref,
+                            font_info.as_ref(),
+                            *glyph_id,
+                            &mut canvas_builder,
+                        )
+                    })
+                    .or_else(|| {
+                        bitmap::draw_glyph(
+                            font_ref,
+                            font_info.as_ref(),
+                            *glyph_id,
+                            &mut canvas_builder,
+                        )
+                    })
                     .or_else(|| {
                         is_outline = true;
-                        outline::draw_glyph(&self.font, *glyph_id, &mut canvas_builder)
+                        outline::draw_glyph(
+                            font_ref,
+                            font_info.as_ref(),
+                            *glyph_id,
+                            &mut canvas_builder,
+                        )
                     });
 
                 let stream = canvas_builder.finish();
@@ -145,7 +164,6 @@ impl Type3Font {
 
         let mut chunk = Chunk::new();
 
-        let font_ref = self.font.font_ref();
         let postscript_name = find_name(&font_ref);
 
         let mut flags = FontFlags::empty();
@@ -156,12 +174,12 @@ impl Type3Font {
                 .map(|n| n.contains("Serif"))
                 .unwrap_or(false),
         );
-        flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
-        flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
+        flags.set(FontFlags::FIXED_PITCH, self.font_info.is_monospaced());
+        flags.set(FontFlags::ITALIC, self.font_info.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
-        let italic_angle = self.font.italic_angle();
+        let italic_angle = self.font_info.italic_angle();
         let ascender = bbox.bottom();
         let descender = bbox.top();
 
@@ -186,8 +204,8 @@ impl Type3Font {
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
-                1.0 / (self.font.units_per_em() as f32),
-                1.0 / (self.font.units_per_em() as f32),
+                1.0 / (self.font_info.units_per_em() as f32),
+                1.0 / (self.font_info.units_per_em() as f32),
             )
             .to_pdf_transform(),
         );
@@ -226,38 +244,5 @@ impl Type3Font {
         chunk.cmap(cmap_ref, &cmap.finish());
 
         sc.chunk_mut().extend(&chunk);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::font::{Font, Glyph};
-    use crate::object::type3_font::Type3Font;
-    use crate::serialize::{SerializeSettings, SerializerContext};
-    use skrifa::instance::Location;
-    use skrifa::GlyphId;
-
-    use std::sync::Arc;
-
-    #[test]
-    fn basic_type3() {
-        let data =
-            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
-                .unwrap();
-        let font = Font::new(Arc::new(data), Location::default()).unwrap();
-        let mut type3 = Type3Font::new(font);
-
-        for g in [10, 11, 12] {
-            type3.add(&Glyph::new(GlyphId::new(g), "".to_string()));
-        }
-
-        let mut sc = SerializerContext::new(SerializeSettings::default());
-        let root_ref = sc.new_ref();
-        type3.serialize_into(&mut sc, root_ref);
-
-        // No need to write fonts here.
-
-        let chunk = sc.chunk();
-        let _ = std::fs::write("out.txt", chunk.as_bytes());
     }
 }

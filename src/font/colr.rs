@@ -1,6 +1,6 @@
 use crate::canvas::CanvasBuilder;
 use crate::color::Color;
-use crate::font::{Font, OutlineBuilder};
+use crate::font::{FontInfo, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
@@ -14,17 +14,16 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
 
 pub fn draw_glyph<'a, 'b>(
-    font: Font,
+    font_ref: &'b FontRef,
+    font_info: &FontInfo,
     glyph: GlyphId,
     canvas_builder: &'b mut CanvasBuilder<'a>,
 ) -> Option<()> {
-    let font_ref = font.font_ref();
-
-    let colr_glyphs = font.font_ref().color_glyphs();
+    let colr_glyphs = font_ref.color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
         canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
         let mut colr_canvas = ColrCanvas::new(font_ref, canvas_builder);
-        let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
+        let _ = colr_glyph.paint(font_info.location_ref(), &mut colr_canvas);
         canvas_builder.pop_transform();
         return Some(());
     } else {
@@ -33,14 +32,14 @@ pub fn draw_glyph<'a, 'b>(
 }
 
 struct ColrCanvas<'a, 'b, 'c> {
-    font: FontRef<'c>,
+    font: &'b FontRef<'c>,
     clips: Vec<Vec<Path>>,
     canvas_builder: &'b mut CanvasBuilder<'a>,
     transforms: Vec<Transform>,
 }
 
 impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
-    pub fn new(font_ref: FontRef<'c>, canvas_builder: &'b mut CanvasBuilder<'a>) -> Self {
+    pub fn new(font_ref: &'b FontRef<'c>, canvas_builder: &'b mut CanvasBuilder<'a>) -> Self {
         Self {
             font: font_ref,
             canvas_builder,
@@ -322,9 +321,7 @@ impl<'a, 'b, 'c> ColorPainter for ColrCanvas<'a, 'b, 'c> {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{draw, Font};
-
-    use skrifa::instance::Location;
+    use crate::font::draw;
 
     use skrifa::GlyphId;
 
@@ -339,25 +336,19 @@ mod tests {
         let glyphs = (0..=220)
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
-        draw(&font, Some(glyphs), "colr_test");
+        draw(Arc::new(font_data), Some(glyphs), "colr_test");
     }
 
     #[test]
     fn noto_color() {
         let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
-
-        draw(&font, None, "colr_noto");
+        draw(Arc::new(font_data), None, "colr_noto");
     }
 
     #[test]
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
-
-        draw(&font, None, "colr_segoe");
+        draw(Arc::new(font_data), None, "colr_segoe");
     }
 }

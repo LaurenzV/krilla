@@ -285,6 +285,7 @@ version = "0.1.0"
 dependencies = [
  "cosmic-text",
  "flate2",
+ "fontdb 0.16.2",
  "image",
  "miniz_oxide",
  "once_cell",

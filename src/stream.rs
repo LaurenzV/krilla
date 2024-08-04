@@ -1,4 +1,4 @@
-use crate::font::{Font, Glyph};
+use crate::font::Glyph;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -14,6 +14,7 @@ use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
+use fontdb::{Database, ID};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Str};
 use std::sync::Arc;
@@ -184,14 +185,16 @@ impl StreamBuilder {
     pub fn invisible_glyph(
         &mut self,
         glyph: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
         serializer_context: &mut SerializerContext,
     ) {
         self.fill_stroke_glyph(
             glyph,
-            font,
+            font_id,
+            fontdb,
             size,
             transform,
             TextRenderingMode::Invisible,
@@ -203,7 +206,8 @@ impl StreamBuilder {
     pub fn fill_glyph(
         &mut self,
         glyph: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
         fill: &Fill,
@@ -219,7 +223,8 @@ impl StreamBuilder {
 
         self.fill_stroke_glyph(
             glyph,
-            font,
+            font_id,
+            fontdb,
             size,
             transform,
             TextRenderingMode::Fill,
@@ -239,7 +244,8 @@ impl StreamBuilder {
     pub fn stroke_glyph(
         &mut self,
         glyph_id: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
         stroke: &Stroke,
@@ -255,7 +261,8 @@ impl StreamBuilder {
 
         self.fill_stroke_glyph(
             glyph_id,
-            font,
+            font_id,
+            fontdb,
             size,
             transform,
             TextRenderingMode::Stroke,
@@ -275,14 +282,15 @@ impl StreamBuilder {
     fn fill_stroke_glyph(
         &mut self,
         glyph: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
         text_rendering_mode: TextRenderingMode,
         mut action: impl FnMut(&mut StreamBuilder, &mut SerializerContext),
         serializer_context: &mut SerializerContext,
     ) {
-        let (font_resource, gid) = serializer_context.map_glyph(font.clone(), glyph);
+        let (font_resource, gid) = serializer_context.map_glyph(font_id, fontdb, glyph);
         let font_name = self
             .rd_builder
             .register_resource(Resource::Font(font_resource));

@@ -1,18 +1,22 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{Font, OutlineBuilder};
+use crate::font::{FontInfo, OutlineBuilder};
 use crate::Fill;
 use skrifa::outline::DrawSettings;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
-    let font_ref = font.font_ref();
+pub fn draw_glyph(
+    font_ref: &FontRef,
+    font_info: &FontInfo,
+    glyph: GlyphId,
+    canvas_builder: &mut CanvasBuilder,
+) -> Option<()> {
     let outline_glyphs = font_ref.outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
     if let Some(outline_glyph) = outline_glyphs.get(glyph) {
         let _ = outline_glyph.draw(
-            DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),
+            DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font_info.location_ref()),
             &mut outline_builder,
         );
     }
@@ -31,9 +35,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilde
 #[cfg(test)]
 mod tests {
 
-    use crate::font::{draw, Font};
-
-    use skrifa::instance::Location;
+    use crate::font::draw;
 
     use skrifa::GlyphId;
 
@@ -43,12 +45,11 @@ mod tests {
     #[test]
     fn outline_noto_sans() {
         let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
-        let font = Font::new(Arc::new(font_data), Location::default()).unwrap();
 
         let glyphs = (0..1000)
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
 
-        draw(&font, Some(glyphs), "outline_noto_sans");
+        draw(Arc::new(font_data), Some(glyphs), "outline_noto_sans");
     }
 }
