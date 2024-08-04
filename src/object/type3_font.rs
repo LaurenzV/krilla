@@ -1,5 +1,5 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{bitmap, colr, outline, svg, FontInfo, Glyph};
+use crate::font::{bitmap, colr, outline, svg, FontInfo, Glyph, Font};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -16,9 +16,9 @@ use tiny_skia_path::{Rect, Transform};
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
-#[derive(Debug, Hash, Eq, PartialEq)]
-pub struct Type3Font {
-    font_info: Arc<FontInfo>,
+#[derive(Debug)]
+pub struct Type3Font<'a> {
+    font: Font<'a>,
     glyphs: Vec<GlyphId>,
     strings: Vec<String>,
     glyph_set: BTreeSet<GlyphId>,
@@ -31,10 +31,10 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
     supplement: 0,
 };
 
-impl Type3Font {
-    pub fn new(font_info: Arc<FontInfo>) -> Self {
+impl<'a> Type3Font<'a> {
+    pub fn new(font: Font<'a>) -> Self {
         Self {
-            font_info,
+            font,
             glyphs: Vec::new(),
             strings: Vec::new(),
             glyph_set: BTreeSet::new(),
@@ -72,13 +72,12 @@ impl Type3Font {
     }
 
     pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {
-        let font_info = self.font_info;
         let widths = self
             .glyphs
             .iter()
             .map(|g| {
                 font_ref
-                    .glyph_metrics(Size::unscaled(), font_info.location_ref())
+                    .glyph_metrics(Size::unscaled(), self.font.location_ref())
                     .advance_width(*g)
                     .unwrap_or(0.0)
             })
@@ -95,13 +94,13 @@ impl Type3Font {
                 let mut canvas_builder = CanvasBuilder::new(sc);
                 let mut is_outline = false;
 
-                colr::draw_glyph(font_ref, font_info.as_ref(), *glyph_id, &mut canvas_builder)
+                colr::draw_glyph(self.font.clone(), *glyph_id, &mut canvas_builder)
                     .or_else(|| {
                         // SVG fonts must not have any text So we can just use a dummy database here.
                         let mut db = Database::new();
                         svg::draw_glyph(
                             font_ref,
-                            font_info.as_ref(),
+                            self.font.font_info.as_ref(),
                             *glyph_id,
                             &mut db,
                             &mut canvas_builder,
@@ -109,8 +108,7 @@ impl Type3Font {
                     })
                     .or_else(|| {
                         bitmap::draw_glyph(
-                            font_ref,
-                            font_info.as_ref(),
+                            &self.font,
                             *glyph_id,
                             &mut canvas_builder,
                         )
@@ -118,8 +116,7 @@ impl Type3Font {
                     .or_else(|| {
                         is_outline = true;
                         outline::draw_glyph(
-                            font_ref,
-                            font_info.as_ref(),
+                            &self.font,
                             *glyph_id,
                             &mut canvas_builder,
                         )
@@ -178,12 +175,12 @@ impl Type3Font {
                 .map(|n| n.contains("Serif"))
                 .unwrap_or(false),
         );
-        flags.set(FontFlags::FIXED_PITCH, font_info.is_monospaced());
-        flags.set(FontFlags::ITALIC, font_info.italic_angle() != 0.0);
+        flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
+        flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
-        let italic_angle = font_info.italic_angle();
+        let italic_angle = self.font.italic_angle();
         let ascender = bbox.bottom();
         let descender = bbox.top();
 
@@ -208,8 +205,8 @@ impl Type3Font {
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
-                1.0 / (font_info.units_per_em() as f32),
-                1.0 / (font_info.units_per_em() as f32),
+                1.0 / (self.font.units_per_em() as f32),
+                1.0 / (self.font.units_per_em() as f32),
             )
             .to_pdf_transform(),
         );

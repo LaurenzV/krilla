@@ -1,6 +1,6 @@
 use crate::canvas::CanvasBuilder;
 use crate::color::Color;
-use crate::font::{FontInfo, OutlineBuilder};
+use crate::font::{Font, FontInfo, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
@@ -14,16 +14,15 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
 
 pub fn draw_glyph<'a, 'b>(
-    font_ref: &'b FontRef,
-    font_info: &FontInfo,
+    font: Font<'a>,
     glyph: GlyphId,
     canvas_builder: &'b mut CanvasBuilder<'a>,
 ) -> Option<()> {
-    let colr_glyphs = font_ref.color_glyphs();
+    let colr_glyphs = font.font_ref.color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
         canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
-        let mut colr_canvas = ColrCanvas::new(font_ref, canvas_builder);
-        let _ = colr_glyph.paint(font_info.location_ref(), &mut colr_canvas);
+        let mut colr_canvas = ColrCanvas::new(&font.font_ref, canvas_builder);
+        let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
         canvas_builder.pop_transform();
         return Some(());
     } else {

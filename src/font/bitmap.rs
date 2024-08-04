@@ -1,19 +1,18 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::FontInfo;
+use crate::font::{Font, FontInfo};
 use crate::object::image::Image;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
 
 pub fn draw_glyph(
-    font_ref: &FontRef,
-    font_info: &FontInfo,
+    font: &Font,
     glyph: GlyphId,
     canvas_builder: &mut CanvasBuilder,
 ) -> Option<()> {
-    let metrics = font_ref.metrics(skrifa::instance::Size::unscaled(), font_info.location_ref());
+    let metrics = font.font_ref.metrics(skrifa::instance::Size::unscaled(), font.location_ref());
 
-    if let Ok(table) = font_ref.sbix() {
+    if let Ok(table) = font.font_ref.sbix() {
         if let Some((strike, data)) = table
             .strikes()
             .iter()

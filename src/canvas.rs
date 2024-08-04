@@ -13,12 +13,12 @@ use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, Size, Transform};
 use usvg::NormalizedF32;
 
-pub struct Page {
+pub struct Page<'a> {
     pub size: Size,
     pub serializer_context: SerializerContext,
 }
 
-impl Page {
+impl<'a> Page<'a> {
     pub fn new(size: Size) -> Self {
         Self {
             size,
@@ -26,7 +26,7 @@ impl Page {
         }
     }
 
-    pub fn builder(&mut self) -> CanvasBuilder {
+    pub fn builder(&'a mut self) -> CanvasBuilder<'a> {
         let size = self.size;
         CanvasBuilder::new_flipped(&mut self.serializer_context, size)
     }

@@ -1,5 +1,5 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::FontInfo;
+use crate::font::{Font, FontInfo};
 use fontdb::Database;
 use skrifa::instance::Location;
 use std::collections::HashMap;
@@ -86,11 +86,10 @@ fn get_context_from_node_impl(
                     render_context.fonts.entry(g.font).or_insert_with(|| {
                         let (source, index) = tree_fontdb.face_source(g.font).unwrap();
 
+                        // TODO: Deduplicate fonts
                         let upem = tree_fontdb
                             .with_face_data(g.font, |data, index| {
-                                let font_info =
-                                    FontInfo::new(data, index, Location::default()).unwrap();
-                                font_info.units_per_em()
+                                Font::new(data, index, Location::default()).unwrap().units_per_em()
                             })
                             .unwrap();
 

@@ -1,4 +1,4 @@
-use crate::font::{FontInfo, Glyph};
+use crate::font::{Font, FontInfo, Glyph};
 use crate::serialize::{hash_item, SerializerContext};
 use crate::util::{deflate, RectExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -19,19 +19,19 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
     supplement: 0,
 };
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct CIDFont {
-    font_info: Arc<FontInfo>,
+#[derive(Debug, Clone)]
+pub struct CIDFont<'a> {
+    font: Font<'a>,
     glyph_remapper: GlyphRemapper,
     strings: BTreeMap<GlyphId, String>,
 }
 
-impl CIDFont {
-    pub fn new(font_info: Arc<FontInfo>) -> Self {
+impl<'a> CIDFont<'a> {
+    pub fn new(font: Font<'a>) -> CIDFont<'a> {
         Self {
             glyph_remapper: GlyphRemapper::new(),
             strings: BTreeMap::new(),
-            font_info,
+            font,
         }
     }
 
@@ -47,7 +47,7 @@ impl CIDFont {
         font_ref: &FontRef,
         root_ref: Ref,
     ) {
-        let units_per_em = self.font_info.units_per_em();
+        let units_per_em = self.font.units_per_em();
 
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
@@ -93,7 +93,7 @@ impl CIDFont {
         let mut widths = vec![];
         for old_gid in glyph_remapper.remapped_gids() {
             let width = font_ref
-                .glyph_metrics(Size::unscaled(), self.font_info.location_ref())
+                .glyph_metrics(Size::unscaled(), self.font.location_ref())
                 .advance_width(GlyphId::new(old_gid as u32))
                 .unwrap_or(0.0);
             let units = (width as f64 / units_per_em as f64) * 1000.0;
@@ -117,24 +117,24 @@ impl CIDFont {
 
         let mut flags = FontFlags::empty();
         flags.set(FontFlags::SERIF, postscript_name.contains("Serif"));
-        flags.set(FontFlags::FIXED_PITCH, self.font_info.is_monospaced());
-        flags.set(FontFlags::ITALIC, self.font_info.italic_angle() != 0.0);
+        flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
+        flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
         let convert = |val| (val / units_per_em as f32) * 1000.0;
 
-        let bbox = self.font_info.bbox().to_pdf_rect();
+        let bbox = self.font.bbox().to_pdf_rect();
 
-        let italic_angle = self.font_info.italic_angle();
-        let ascender = convert(self.font_info.ascent());
-        let descender = convert(self.font_info.descent());
+        let italic_angle = self.font.italic_angle();
+        let ascender = convert(self.font.ascent());
+        let descender = convert(self.font.descent());
         let cap_height = self
-            .font_info
+            .font
             .cap_height()
             .map(|h| convert(h))
             .unwrap_or(ascender);
-        let stem_v = 10.0 + 0.244 * (self.font_info.weight() - 50.0);
+        let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
@@ -237,7 +237,8 @@ where
 fn subset_tag(cid_font: &CIDFont) -> String {
     const LEN: usize = 6;
     const BASE: u128 = 26;
-    let mut hash = hash_item(&cid_font);
+    // TODO: FIXME
+    let mut hash = 0;
     let mut letter = [b'A'; LEN];
     for l in letter.iter_mut() {
         *l = b'A' + (hash % BASE) as u8;

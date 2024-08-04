@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use fontdb::{Database, Source};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
@@ -61,7 +62,6 @@ impl OutlinePen for OutlineBuilder {
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct FontInfo {
     index: u32,
-    location: Location,
     checksum: u32,
     units_per_em: u16,
     global_bbox: Rect,
@@ -74,8 +74,22 @@ pub struct FontInfo {
     weight: FiniteF32,
 }
 
-impl FontInfo {
-    pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
+// TODO: Make cheap to clone
+#[derive(Clone)]
+pub struct Font<'a> {
+    pub font_info: Arc<FontInfo>,
+    pub location: Location,
+    pub font_ref: FontRef<'a>
+}
+
+impl Debug for Font<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl<'a> Font<'a> {
+    pub fn new(data: &'a [u8], index: u32, location: Location) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
 
         let checksum = font_ref.head().unwrap().checksum_adjustment();
@@ -109,7 +123,7 @@ impl FontInfo {
             || font_ref.sbix().is_ok()
             || font_ref.cff2().is_ok();
 
-        Some(FontInfo {
+        let font_info = FontInfo {
             index,
             checksum,
             units_per_em,
@@ -121,40 +135,45 @@ impl FontInfo {
             italic_angle,
             global_bbox,
             is_type3_font,
-            location,
+        };
+
+        Some(Font {
+            font_ref,
+            font_info: Arc::new(font_info),
+            location
         })
     }
 
     pub fn cap_height(&self) -> Option<f32> {
-        self.cap_height.map(|n| n.get())
+        self.font_info.cap_height.map(|n| n.get())
     }
 
     pub fn ascent(&self) -> f32 {
-        self.ascent.get()
+        self.font_info.ascent.get()
     }
 
     pub fn weight(&self) -> f32 {
-        self.weight.get()
+        self.font_info.weight.get()
     }
 
     pub fn descent(&self) -> f32 {
-        self.descent.get()
+        self.font_info.descent.get()
     }
 
     pub fn is_monospaced(&self) -> bool {
-        self.is_monospaced
+        self.font_info.is_monospaced
     }
 
     pub fn italic_angle(&self) -> f32 {
-        self.italic_angle.get()
+        self.font_info.italic_angle.get()
     }
 
     pub fn units_per_em(&self) -> u16 {
-        self.units_per_em
+        self.font_info.units_per_em
     }
 
     pub fn bbox(&self) -> Rect {
-        self.global_bbox
+        self.font_info.global_bbox
     }
 
     pub fn location_ref(&self) -> LocationRef {
@@ -162,7 +181,7 @@ impl FontInfo {
     }
 
     pub fn is_type3_font(&self) -> bool {
-        self.is_type3_font
+        self.font_info.is_type3_font
     }
 }
 
