@@ -1,5 +1,3 @@
-#![forbid(unsafe_code)]
-
 pub mod canvas;
 pub mod color;
 pub mod font;

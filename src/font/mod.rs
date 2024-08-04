@@ -4,8 +4,10 @@ use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
+use yoke::{Yoke, Yokeable};
 
 pub mod bitmap;
 pub mod colr;
@@ -61,9 +63,8 @@ impl OutlinePen for OutlineBuilder {
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct FontInfo {
     index: u32,
-    location: Location,
     checksum: u32,
-    units_per_em: u16,
+    pub(crate) units_per_em: u16,
     global_bbox: Rect,
     is_type3_font: bool,
     ascent: FiniteF32,
@@ -74,13 +75,26 @@ pub struct FontInfo {
     weight: FiniteF32,
 }
 
-impl FontInfo {
-    pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
-        let font_ref = FontRef::from_index(data, index).ok()?;
+// TODO: Make cheap to clone
+#[derive(Clone)]
+pub struct Font {
+    pub font_info: Arc<FontInfo>,
+    font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
+    pub location: Location,
+    pub data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+}
 
+impl Debug for Font {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl FontInfo {
+    pub fn new(font_ref: FontRef, index: u32, location: LocationRef) -> Option<Self> {
         let checksum = font_ref.head().unwrap().checksum_adjustment();
 
-        let metrics = font_ref.metrics(Size::unscaled(), &location);
+        let metrics = font_ref.metrics(Size::unscaled(), location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
         let descent = FiniteF32::new(metrics.descent).unwrap();
         let is_monospaced = metrics.is_monospace;
@@ -121,40 +135,71 @@ impl FontInfo {
             italic_angle,
             global_bbox,
             is_type3_font,
+        })
+    }
+}
+
+#[derive(Yokeable, Clone)]
+struct FontRefWrapper<'a> {
+    pub font_ref: FontRef<'a>,
+}
+
+impl Font {
+    pub fn new(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        index: u32,
+        location: Location,
+    ) -> Option<Self> {
+        let font_ref_yoke =
+            Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
+                data.clone(),
+                |data| FontRefWrapper {
+                    font_ref: FontRef::from_index(data.as_ref().as_ref(), 0).unwrap(),
+                },
+            );
+
+        let data_ref = data.as_ref().as_ref();
+        let font_ref = FontRef::from_index(data_ref, index).ok()?;
+        let font_info = FontInfo::new(font_ref.clone(), index, (&location).into())?;
+
+        Some(Font {
+            data: data.clone(),
+            font_ref_yoke,
+            font_info: Arc::new(font_info),
             location,
         })
     }
 
     pub fn cap_height(&self) -> Option<f32> {
-        self.cap_height.map(|n| n.get())
+        self.font_info.cap_height.map(|n| n.get())
     }
 
     pub fn ascent(&self) -> f32 {
-        self.ascent.get()
+        self.font_info.ascent.get()
     }
 
     pub fn weight(&self) -> f32 {
-        self.weight.get()
+        self.font_info.weight.get()
     }
 
     pub fn descent(&self) -> f32 {
-        self.descent.get()
+        self.font_info.descent.get()
     }
 
     pub fn is_monospaced(&self) -> bool {
-        self.is_monospaced
+        self.font_info.is_monospaced
     }
 
     pub fn italic_angle(&self) -> f32 {
-        self.italic_angle.get()
+        self.font_info.italic_angle.get()
     }
 
     pub fn units_per_em(&self) -> u16 {
-        self.units_per_em
+        self.font_info.units_per_em
     }
 
     pub fn bbox(&self) -> Rect {
-        self.global_bbox
+        self.font_info.global_bbox
     }
 
     pub fn location_ref(&self) -> LocationRef {
@@ -162,7 +207,11 @@ impl FontInfo {
     }
 
     pub fn is_type3_font(&self) -> bool {
-        self.is_type3_font
+        self.font_info.is_type3_font
+    }
+
+    pub fn font_ref(&self) -> &FontRef {
+        &self.font_ref_yoke.get().font_ref
     }
 }
 
