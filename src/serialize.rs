@@ -124,7 +124,7 @@ impl SerializerContext {
                 )
             }
             FontContainer::CIDFont(cid) => {
-                let new_gid = cid.remap(glyph.glyph_id);
+                let new_gid = cid.remap(&glyph);
                 (
                     FontResource::new(font_id, 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),

@@ -1,32 +1,44 @@
-use crate::font::FontInfo;
+use crate::font::{FontInfo, Glyph};
 use crate::serialize::{hash_item, SerializerContext};
 use crate::util::{deflate, RectExt};
-use pdf_writer::types::{CidFontType, FontFlags, SystemInfo};
+use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Filter, Finish, Name, Ref, Str};
 use skrifa::prelude::Size;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::{FontRef, GlyphId, MetadataProvider};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use subsetter::GlyphRemapper;
+
+const CMAP_NAME: Name = Name(b"Custom");
+const SYSTEM_INFO: SystemInfo = SystemInfo {
+    registry: Str(b"Adobe"),
+    ordering: Str(b"Identity"),
+    supplement: 0,
+};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct CIDFont {
     font_info: Arc<FontInfo>,
     glyph_remapper: GlyphRemapper,
+    strings: BTreeMap<GlyphId, String>,
 }
 
 impl CIDFont {
     pub fn new(font_info: Arc<FontInfo>) -> Self {
         Self {
             glyph_remapper: GlyphRemapper::new(),
+            strings: BTreeMap::new(),
             font_info,
         }
     }
 
-    pub fn remap(&mut self, glyph_id: GlyphId) -> GlyphId {
-        GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32)
+    pub fn remap(&mut self, glyph: &Glyph) -> GlyphId {
+        let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
+        self.strings.insert(new_id, glyph.string.clone());
+        new_id
     }
 
     pub(crate) fn serialize_into(
@@ -39,7 +51,7 @@ impl CIDFont {
 
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
-        // let cmap_ref = sc.new_ref();
+        let cmap_ref = sc.new_ref();
         let data_ref = sc.new_ref();
 
         let glyph_remapper = &self.glyph_remapper;
@@ -61,8 +73,7 @@ impl CIDFont {
             .base_font(Name(base_font_type0.as_bytes()))
             .encoding_predefined(Name(b"Identity-H"))
             .descendant_font(cid_ref)
-        // .to_unicode(cmap_ref)
-        ;
+            .to_unicode(cmap_ref);
 
         // Write the CID font referencing the font descriptor.
         let mut cid = sc.chunk_mut().cid_font(cid_ref);
@@ -124,6 +135,19 @@ impl CIDFont {
             .map(|h| convert(h))
             .unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font_info.weight() - 50.0);
+
+        let cmap = {
+            let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
+            for (g, text) in self.strings.iter() {
+                if !text.is_empty() {
+                    cmap.pair_with_multiple(g.to_u32() as u16, text.chars());
+                }
+            }
+
+            cmap
+        };
+
+        sc.chunk_mut().cmap(cmap_ref, &cmap.finish());
 
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = sc.chunk_mut().font_descriptor(descriptor_ref);
@@ -209,13 +233,6 @@ where
         Some((key, head))
     }
 }
-
-// const CMAP_NAME: Name = Name(b"Custom");
-const SYSTEM_INFO: SystemInfo = SystemInfo {
-    registry: Str(b"Adobe"),
-    ordering: Str(b"Identity"),
-    supplement: 0,
-};
 
 fn subset_tag(cid_font: &CIDFont) -> String {
     const LEN: usize = 6;

@@ -15,7 +15,7 @@ mod tests {
         let mut buffer = Buffer::new(&mut font_system, metrics);
         buffer.set_size(&mut font_system, Some(200.0), None);
         let attrs = Attrs::new();
-        let text = "Some text here. Let's make it a bit longer so that line wrapping kicks in 😊.\n我也要使用一些中文文字。 And also some اللغة العربية arabic text.\n\nहो। गए, उनका एक समय में ";
+        let text = "Some text here. Let's make it a bit longer so that line wrapping kicks in 😊.\n我也要使用一些中文文字。 And also some اللغة العربية arabic text.\n\nहो। गए, उनका एक समय में\n\n\nz͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢";
         buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut font_system, false);
 
