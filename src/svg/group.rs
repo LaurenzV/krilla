@@ -1,8 +1,7 @@
+use crate::canvas::CanvasBuilder;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
-// use crate::svg::{filter, image, path};
-use crate::canvas::CanvasBuilder;
 use crate::svg::{filter, image, path, text, FontContext};
 use usvg::{Node, NormalizedF32};
 

@@ -15,6 +15,7 @@ pub mod transform;
 pub mod util;
 
 pub use color::*;
+pub use fontdb::*;
 pub use object::mask::MaskType;
 pub use paint::*;
 

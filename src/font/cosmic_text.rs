@@ -1,13 +1,11 @@
 #[cfg(test)]
 mod tests {
     use crate::canvas::Page;
-    use crate::font::{Font, Glyph};
+    use crate::font::Glyph;
     use crate::serialize::PageSerialize;
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
-    use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, Transform};
 
     #[test]
@@ -17,7 +15,7 @@ mod tests {
         let mut buffer = Buffer::new(&mut font_system, metrics);
         buffer.set_size(&mut font_system, Some(200.0), None);
         let attrs = Attrs::new();
-        let text = "Some text here. Let's make it a bit longer so that line wrapping kicks in 😊.\n我也要使用一些中文文字。 And also some اللغة العربية arabic text.\n\n";
+        let text = "Some text here. Let's make it a bit longer so that line wrapping kicks in 😊.\n我也要使用一些中文文字。 And also some اللغة العربية arabic text.\n\nहो। गए, उनका एक समय में ";
         buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut font_system, false);
 
@@ -32,14 +30,10 @@ mod tests {
                 let text = &run.text[glyph.start..glyph.end];
                 let x_offset = glyph.x_offset + glyph.x;
                 let y_offset = y_offset + glyph.y_offset;
-                let font = Font::new(
-                    Arc::new(font_system.get_font(glyph.font_id).unwrap().data().to_vec()),
-                    Location::default(),
-                )
-                .unwrap();
                 builder.fill_glyph(
                     Glyph::new(GlyphId::new(glyph.glyph_id as u32), text.to_string()),
-                    font,
+                    glyph.font_id,
+                    font_system.db_mut(),
                     FiniteF32::new(glyph.font_size).unwrap(),
                     &Transform::from_translate(x_offset, y_offset),
                     &Fill::default(),
@@ -50,9 +44,9 @@ mod tests {
         let stream = builder.finish();
         let sc = page.finish();
 
-        let pdf = stream.serialize(sc, page_size);
+        let pdf = stream.serialize(sc, font_system.db(), page_size);
         let finished = pdf.finish();
-        let _ = std::fs::write(format!("out/parley.pdf"), &finished);
-        let _ = std::fs::write(format!("out/parley.txt"), &finished);
+        let _ = std::fs::write(format!("out/cosmic_text.pdf"), &finished);
+        let _ = std::fs::write(format!("out/cosmic_text.txt"), &finished);
     }
 }

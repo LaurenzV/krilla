@@ -1,4 +1,4 @@
-use crate::font::{Font, Glyph};
+use crate::font::Glyph;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
@@ -6,6 +6,7 @@ use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder};
 use crate::util::{deflate, RectExt};
 use crate::{Fill, FillRule, Stroke};
+use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
 use std::sync::Arc;
@@ -36,7 +37,7 @@ impl Page {
 }
 
 impl PageSerialize for Stream {
-    fn serialize(self, mut sc: SerializerContext, size: Size) -> Pdf {
+    fn serialize(self, mut sc: SerializerContext, fontdb: &Database, size: Size) -> Pdf {
         let catalog_ref = sc.new_ref();
         let page_tree_ref = sc.new_ref();
         let page_ref = sc.new_ref();
@@ -63,7 +64,7 @@ impl PageSerialize for Stream {
         page.parent(page_tree_ref);
         page.contents(content_ref);
         page.finish();
-        let cached_chunk = sc.finish();
+        let cached_chunk = sc.finish(fontdb);
 
         let mut pdf = Pdf::new();
         pdf.catalog(catalog_ref).pages(page_tree_ref);
@@ -165,36 +166,39 @@ impl<'a> CanvasBuilder<'a> {
     pub fn invisible_glyph(
         &mut self,
         glyph: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .invisible_glyph(glyph, font, size, transform, self.sc);
+            .invisible_glyph(glyph, font_id, fontdb, size, transform, self.sc);
     }
 
     pub fn fill_glyph<'b>(
         &'b mut self,
         glyph: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
         fill: &Fill,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyph(glyph, font, size, transform, fill, self.sc);
+            .fill_glyph(glyph, font_id, fontdb, size, transform, fill, self.sc);
     }
 
     pub fn stroke_glyph<'b>(
         &'b mut self,
         glyph_id: Glyph,
-        font: Font,
+        font_id: ID,
+        fontdb: &mut Database,
         size: FiniteF32,
         transform: &Transform,
         stroke: &Stroke,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyph(glyph_id, font, size, transform, stroke, self.sc);
+            .stroke_glyph(glyph_id, font_id, fontdb, size, transform, stroke, self.sc);
     }
 
     fn cur_builder<'b>(

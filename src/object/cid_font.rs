@@ -1,37 +1,41 @@
-use crate::font::Font;
-use crate::serialize::{hash_item, Object, SerializerContext};
+use crate::font::FontInfo;
+use crate::serialize::{hash_item, SerializerContext};
 use crate::util::{deflate, RectExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo};
 use pdf_writer::{Filter, Finish, Name, Ref, Str};
+use skrifa::prelude::Size;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::{FontRef, GlyphId};
+use skrifa::{FontRef, GlyphId, MetadataProvider};
+use std::sync::Arc;
 use subsetter::GlyphRemapper;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct CIDFont {
-    font: Font,
+    font_info: Arc<FontInfo>,
     glyph_remapper: GlyphRemapper,
 }
 
 impl CIDFont {
-    pub fn new(font: Font) -> Self {
+    pub fn new(font_info: Arc<FontInfo>) -> Self {
         Self {
-            font,
             glyph_remapper: GlyphRemapper::new(),
+            font_info,
         }
     }
 
     pub fn remap(&mut self, glyph_id: GlyphId) -> GlyphId {
         GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32)
     }
-}
 
-impl Object for CIDFont {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
-        let font_ref = self.font.font_ref();
-        let units_per_em = self.font.units_per_em();
+    pub(crate) fn serialize_into(
+        self,
+        sc: &mut SerializerContext,
+        font_ref: &FontRef,
+        root_ref: Ref,
+    ) {
+        let units_per_em = self.font_info.units_per_em();
 
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
@@ -57,7 +61,7 @@ impl Object for CIDFont {
             .base_font(Name(base_font_type0.as_bytes()))
             .encoding_predefined(Name(b"Identity-H"))
             .descendant_font(cid_ref)
-            // .to_unicode(cmap_ref)
+        // .to_unicode(cmap_ref)
         ;
 
         // Write the CID font referencing the font descriptor.
@@ -77,9 +81,9 @@ impl Object for CIDFont {
 
         let mut widths = vec![];
         for old_gid in glyph_remapper.remapped_gids() {
-            let width = self
-                .font
-                .glyph_advance(GlyphId::new(old_gid as u32))
+            let width = font_ref
+                .glyph_metrics(Size::unscaled(), self.font_info.location_ref())
+                .advance_width(GlyphId::new(old_gid as u32))
                 .unwrap_or(0.0);
             let units = (width as f64 / units_per_em as f64) * 1000.0;
             widths.push(units as f32);
@@ -102,24 +106,24 @@ impl Object for CIDFont {
 
         let mut flags = FontFlags::empty();
         flags.set(FontFlags::SERIF, postscript_name.contains("Serif"));
-        flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
-        flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
+        flags.set(FontFlags::FIXED_PITCH, self.font_info.is_monospaced());
+        flags.set(FontFlags::ITALIC, self.font_info.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
         let convert = |val| (val / units_per_em as f32) * 1000.0;
 
-        let bbox = self.font.bbox().to_pdf_rect();
+        let bbox = self.font_info.bbox().to_pdf_rect();
 
-        let italic_angle = self.font.italic_angle();
-        let ascender = convert(self.font.ascent());
-        let descender = convert(self.font.descent());
+        let italic_angle = self.font_info.italic_angle();
+        let ascender = convert(self.font_info.ascent());
+        let descender = convert(self.font_info.descent());
         let cap_height = self
-            .font
+            .font_info
             .cap_height()
             .map(|h| convert(h))
             .unwrap_or(ascender);
-        let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
+        let stem_v = 10.0 + 0.244 * (self.font_info.weight() - 50.0);
 
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = sc.chunk_mut().font_descriptor(descriptor_ref);

@@ -1,4 +1,3 @@
-use crate::font::Font;
 use crate::object::color_space::ColorSpace;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
@@ -8,6 +7,7 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
+use fontdb::ID;
 use pdf_writer::writers::Resources;
 use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
@@ -320,7 +320,7 @@ pub type ResourceNumber = u32;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct FontResourceRepr {
-    font: Font,
+    font_id: ID,
     index: usize,
 }
 
@@ -328,8 +328,8 @@ struct FontResourceRepr {
 pub struct FontResource(Rc<FontResourceRepr>);
 
 impl FontResource {
-    pub fn new(font: Font, index: usize) -> Self {
-        Self(Rc::new(FontResourceRepr { font, index }))
+    pub fn new(font_id: ID, index: usize) -> Self {
+        Self(Rc::new(FontResourceRepr { font_id, index }))
     }
 }
 
