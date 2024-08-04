@@ -7,6 +7,7 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
+use yoke::{Yoke, Yokeable};
 
 pub mod bitmap;
 pub mod colr;
@@ -78,6 +79,7 @@ pub struct FontInfo {
 #[derive(Clone)]
 pub struct Font {
     pub font_info: Arc<FontInfo>,
+    font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
     pub location: Location,
     pub data: Arc<dyn AsRef<[u8]> + Send + Sync>,
 }
@@ -137,18 +139,32 @@ impl FontInfo {
     }
 }
 
+#[derive(Yokeable, Clone)]
+struct FontRefWrapper<'a> {
+    pub font_ref: FontRef<'a>,
+}
+
 impl Font {
     pub fn new(
         data: Arc<dyn AsRef<[u8]> + Send + Sync>,
         index: u32,
         location: Location,
     ) -> Option<Self> {
+        let font_ref_yoke =
+            Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
+                data.clone(),
+                |data| FontRefWrapper {
+                    font_ref: FontRef::from_index(data.as_ref().as_ref(), 0).unwrap(),
+                },
+            );
+
         let data_ref = data.as_ref().as_ref();
         let font_ref = FontRef::from_index(data_ref, index).ok()?;
-        let font_info = FontInfo::new(font_ref, index, (&location).into())?;
+        let font_info = FontInfo::new(font_ref.clone(), index, (&location).into())?;
 
         Some(Font {
             data: data.clone(),
+            font_ref_yoke,
             font_info: Arc::new(font_info),
             location,
         })
@@ -194,8 +210,8 @@ impl Font {
         self.font_info.is_type3_font
     }
 
-    pub fn font_ref(&self) -> FontRef {
-        FontRef::from_index(self.data.as_ref().as_ref(), self.font_info.index).unwrap()
+    pub fn font_ref(&self) -> &FontRef {
+        &self.font_ref_yoke.get().font_ref
     }
 }
 

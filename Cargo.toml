@@ -18,6 +18,7 @@ usvg = {git = "https://github.com/LaurenzV/resvg", rev="1c2b6bd0"}
 cosmic-text = {git = "https://github.com/pop-os/cosmic-text", rev = "6f78d23"}
 flate2 = "1.0.30"
 fontdb = "0.20.0"
+yoke = { version = "0.7.4", features = ["derive"] }
 
 [patch.crates-io]
 tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
