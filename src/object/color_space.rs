@@ -13,6 +13,8 @@ pub static GREY_ICC_DEFLATED: Lazy<Vec<u8>> =
 pub enum ColorSpace {
     SRGB,
     D65Gray,
+    DeviceGray,
+    DeviceRgb,
 }
 
 impl Object for ColorSpace {
@@ -44,6 +46,8 @@ impl Object for ColorSpace {
                     .range([0.0, 1.0])
                     .filter(pdf_writer::Filter::FlateDecode);
             }
+            ColorSpace::DeviceGray => unreachable!(),
+            ColorSpace::DeviceRgb => unreachable!(),
         }
     }
 }

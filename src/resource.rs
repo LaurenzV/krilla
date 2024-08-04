@@ -152,7 +152,11 @@ impl ResourceDictionaryBuilder {
     }
 
     fn register_color_space(&mut self, color_space: ColorSpace) -> String {
-        self.color_spaces.remap_with_name(color_space)
+        match color_space {
+            ColorSpace::DeviceRgb => "DeviceRGB".to_string(),
+            ColorSpace::DeviceGray => "DeviceGray".to_string(),
+            _ => self.color_spaces.remap_with_name(color_space),
+        }
     }
 
     fn register_ext_g_state(&mut self, ext_state: ExtGState) -> String {
