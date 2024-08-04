@@ -1,5 +1,5 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{bitmap, colr, outline, svg, FontInfo, Glyph, Font};
+use crate::font::{bitmap, colr, outline, svg, Font, FontInfo, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -17,8 +17,8 @@ use tiny_skia_path::{Rect, Transform};
 // TODO: Add FontDescriptor, required for Tagged PDF
 // TODO: Remove bound on Clone, which (should?) only be needed for cached objects
 #[derive(Debug)]
-pub struct Type3Font<'a> {
-    font: Font<'a>,
+pub struct Type3Font {
+    font: Font,
     glyphs: Vec<GlyphId>,
     strings: Vec<String>,
     glyph_set: BTreeSet<GlyphId>,
@@ -31,8 +31,8 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
     supplement: 0,
 };
 
-impl<'a> Type3Font<'a> {
-    pub fn new(font: Font<'a>) -> Self {
+impl Type3Font {
+    pub fn new(font: Font) -> Self {
         Self {
             font,
             glyphs: Vec::new(),
@@ -106,20 +106,10 @@ impl<'a> Type3Font<'a> {
                             &mut canvas_builder,
                         )
                     })
-                    .or_else(|| {
-                        bitmap::draw_glyph(
-                            &self.font,
-                            *glyph_id,
-                            &mut canvas_builder,
-                        )
-                    })
+                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
                     .or_else(|| {
                         is_outline = true;
-                        outline::draw_glyph(
-                            &self.font,
-                            *glyph_id,
-                            &mut canvas_builder,
-                        )
+                        outline::draw_glyph(&self.font, *glyph_id, &mut canvas_builder)
                     });
 
                 let stream = canvas_builder.finish();

@@ -99,18 +99,15 @@ impl SerializerContext {
         glyph: Glyph,
     ) -> (FontResource, PDFGlyph) {
         let font_container = self.fonts.entry(font_id).or_insert_with(|| {
-            fontdb
-                .with_face_data(font_id, |data, index| {
-                    let font = Font::new(data, index, Location::default()).unwrap();
-                    self.font_info_to_id.insert(font.font_info.clone(), font_id);
+            let (font_ref, index) = unsafe { fontdb.make_shared_face_data(font_id).unwrap() };
+            let font = Font::new(font_ref, index, Location::default()).unwrap();
+            self.font_info_to_id.insert(font.font_info.clone(), font_id);
 
-                    if font.is_type3_font() {
-                        FontContainer::Type3(Type3FontMapper::new(font.clone()))
-                    } else {
-                        FontContainer::CIDFont(CIDFont::new(font.clone()))
-                    }
-                })
-                .unwrap()
+            if font.is_type3_font() {
+                FontContainer::Type3(Type3FontMapper::new(font.clone()))
+            } else {
+                FontContainer::CIDFont(CIDFont::new(font.clone()))
+            }
         });
 
         match font_container {
@@ -184,19 +181,19 @@ pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
 }
 
 #[derive(Debug)]
-enum FontContainer<'a> {
-    Type3(Type3FontMapper<'a>),
-    CIDFont(CIDFont<'a>),
+enum FontContainer {
+    Type3(Type3FontMapper),
+    CIDFont(CIDFont),
 }
 
 #[derive(Debug)]
-pub struct Type3FontMapper<'a> {
-    font: Font<'a>,
-    fonts: Vec<Type3Font<'a>>,
+pub struct Type3FontMapper {
+    font: Font,
+    fonts: Vec<Type3Font>,
 }
 
-impl<'a> Type3FontMapper<'a> {
-    pub fn new(font: Font<'a>) -> Type3FontMapper<'a> {
+impl Type3FontMapper {
+    pub fn new(font: Font) -> Type3FontMapper {
         Self {
             font,
             fonts: Vec::new(),
@@ -204,7 +201,7 @@ impl<'a> Type3FontMapper<'a> {
     }
 }
 
-impl Type3FontMapper<'_> {
+impl Type3FontMapper {
     pub fn add_glyph(&mut self, glyph: Glyph) -> (usize, u8) {
         if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph.glyph_id)) {
             return (index, self.fonts[index].add(&glyph));

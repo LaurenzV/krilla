@@ -20,14 +20,14 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
 };
 
 #[derive(Debug, Clone)]
-pub struct CIDFont<'a> {
-    font: Font<'a>,
+pub struct CIDFont {
+    font: Font,
     glyph_remapper: GlyphRemapper,
     strings: BTreeMap<GlyphId, String>,
 }
 
-impl<'a> CIDFont<'a> {
-    pub fn new(font: Font<'a>) -> CIDFont<'a> {
+impl CIDFont {
+    pub fn new(font: Font) -> CIDFont {
         Self {
             glyph_remapper: GlyphRemapper::new(),
             strings: BTreeMap::new(),

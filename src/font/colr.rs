@@ -14,14 +14,14 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
 
 pub fn draw_glyph<'a, 'b>(
-    font: Font<'a>,
+    font: Font,
     glyph: GlyphId,
     canvas_builder: &'b mut CanvasBuilder<'a>,
 ) -> Option<()> {
-    let colr_glyphs = font.font_ref.color_glyphs();
+    let colr_glyphs = font.font_ref().color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
         canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
-        let mut colr_canvas = ColrCanvas::new(&font.font_ref, canvas_builder);
+        let mut colr_canvas = ColrCanvas::new(font.clone(), canvas_builder);
         let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
         canvas_builder.pop_transform();
         return Some(());
@@ -30,17 +30,17 @@ pub fn draw_glyph<'a, 'b>(
     }
 }
 
-struct ColrCanvas<'a, 'b, 'c> {
-    font: &'b FontRef<'c>,
+struct ColrCanvas<'a, 'b> {
+    font: Font,
     clips: Vec<Vec<Path>>,
     canvas_builder: &'b mut CanvasBuilder<'a>,
     transforms: Vec<Transform>,
 }
 
-impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
-    pub fn new(font_ref: &'b FontRef<'c>, canvas_builder: &'b mut CanvasBuilder<'a>) -> Self {
+impl<'a, 'b> ColrCanvas<'a, 'b> {
+    pub fn new(font: Font, canvas_builder: &'b mut CanvasBuilder<'a>) -> Self {
         Self {
-            font: font_ref,
+            font,
             canvas_builder,
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
@@ -48,11 +48,12 @@ impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
     }
 }
 
-impl<'a, 'b, 'c> ColrCanvas<'a, 'b, 'c> {
+impl<'a, 'b> ColrCanvas<'a, 'b> {
     fn palette_index_to_color(&self, palette_index: u16, alpha: f32) -> (Color, NormalizedF32) {
         if palette_index != u16::MAX {
             let color = self
                 .font
+                .font_ref()
                 .cpal()
                 .unwrap()
                 .color_records_array()
@@ -99,7 +100,7 @@ impl ExtendExt for skrifa::color::Extend {
     }
 }
 
-impl<'a, 'b, 'c> ColorPainter for ColrCanvas<'a, 'b, 'c> {
+impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     fn push_transform(&mut self, transform: skrifa::color::Transform) {
         let new_transform = self
             .transforms
@@ -124,7 +125,7 @@ impl<'a, 'b, 'c> ColorPainter for ColrCanvas<'a, 'b, 'c> {
         let mut old = self.clips.last().unwrap().clone();
 
         let mut glyph_builder = OutlineBuilder(PathBuilder::new());
-        let outline_glyphs = self.font.outline_glyphs();
+        let outline_glyphs = self.font.font_ref().outline_glyphs();
         let outline_glyph = outline_glyphs.get(glyph_id).unwrap();
         outline_glyph
             .draw(

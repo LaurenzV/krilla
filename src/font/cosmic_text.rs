@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use crate::canvas::Page;
     use crate::font::Glyph;
     use crate::serialize::PageSerialize;
@@ -8,6 +7,7 @@ mod tests {
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
     use fontdb::Source;
     use skrifa::GlyphId;
+    use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, Transform};
 
     #[test]

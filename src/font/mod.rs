@@ -1,10 +1,10 @@
-use std::fmt::{Debug, Formatter};
 use fontdb::{Database, Source};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
 
@@ -63,7 +63,7 @@ impl OutlinePen for OutlineBuilder {
 pub struct FontInfo {
     index: u32,
     checksum: u32,
-    units_per_em: u16,
+    pub(crate) units_per_em: u16,
     global_bbox: Rect,
     is_type3_font: bool,
     ascent: FiniteF32,
@@ -76,25 +76,23 @@ pub struct FontInfo {
 
 // TODO: Make cheap to clone
 #[derive(Clone)]
-pub struct Font<'a> {
+pub struct Font {
     pub font_info: Arc<FontInfo>,
     pub location: Location,
-    pub font_ref: FontRef<'a>
+    pub data: Arc<dyn AsRef<[u8]> + Send + Sync>,
 }
 
-impl Debug for Font<'_> {
+impl Debug for Font {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
-impl<'a> Font<'a> {
-    pub fn new(data: &'a [u8], index: u32, location: Location) -> Option<Self> {
-        let font_ref = FontRef::from_index(data, index).ok()?;
-
+impl FontInfo {
+    pub fn new(font_ref: FontRef, index: u32, location: LocationRef) -> Option<Self> {
         let checksum = font_ref.head().unwrap().checksum_adjustment();
 
-        let metrics = font_ref.metrics(Size::unscaled(), &location);
+        let metrics = font_ref.metrics(Size::unscaled(), location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
         let descent = FiniteF32::new(metrics.descent).unwrap();
         let is_monospaced = metrics.is_monospace;
@@ -123,7 +121,7 @@ impl<'a> Font<'a> {
             || font_ref.sbix().is_ok()
             || font_ref.cff2().is_ok();
 
-        let font_info = FontInfo {
+        Some(FontInfo {
             index,
             checksum,
             units_per_em,
@@ -135,12 +133,24 @@ impl<'a> Font<'a> {
             italic_angle,
             global_bbox,
             is_type3_font,
-        };
+        })
+    }
+}
+
+impl Font {
+    pub fn new(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        index: u32,
+        location: Location,
+    ) -> Option<Self> {
+        let data_ref = data.as_ref().as_ref();
+        let font_ref = FontRef::from_index(data_ref, index).ok()?;
+        let font_info = FontInfo::new(font_ref, index, (&location).into())?;
 
         Some(Font {
-            font_ref,
+            data: data.clone(),
             font_info: Arc::new(font_info),
-            location
+            location,
         })
     }
 
@@ -182,6 +192,10 @@ impl<'a> Font<'a> {
 
     pub fn is_type3_font(&self) -> bool {
         self.font_info.is_type3_font
+    }
+
+    pub fn font_ref(&self) -> FontRef {
+        FontRef::from_index(self.data.as_ref().as_ref(), self.font_info.index).unwrap()
     }
 }
 

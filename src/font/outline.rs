@@ -5,12 +5,8 @@ use skrifa::outline::DrawSettings;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
-pub fn draw_glyph(
-    font: &Font,
-    glyph: GlyphId,
-    canvas_builder: &mut CanvasBuilder,
-) -> Option<()> {
-    let outline_glyphs = font.font_ref.outline_glyphs();
+pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
+    let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
     if let Some(outline_glyph) = outline_glyphs.get(glyph) {
