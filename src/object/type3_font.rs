@@ -128,6 +128,9 @@ impl Type3Font {
                     final_stream.extend(stream.content());
                     final_stream
                 } else {
+                    // I considered writing into the stream directly instead of creating an XObject
+                    // and showing that, but it seems like many viewers don't like that, and emojis
+                    // look messed up. Using XObjects seems like the best choice here.
                     content.start_color_glyph(self.widths[index]);
                     let x_object = XObject::new(Arc::new(stream), false, false, None);
                     bbox.expand(&x_object.bbox());
