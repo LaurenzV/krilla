@@ -101,7 +101,9 @@ impl SerializerContext {
         let font_container = self.fonts.entry(font_id).or_insert_with(|| {
             let (font_ref, index) = unsafe { fontdb.make_shared_face_data(font_id).unwrap() };
             let font = Font::new(font_ref, index, Location::default()).unwrap();
-            self.font_info_to_id.insert(font.font_info.clone(), font_id);
+            // TODO: Overthink this, does it really work? Do we need to expose font info directly?
+            self.font_info_to_id
+                .insert(font.font_info().clone(), font_id);
 
             if font.is_type3_font() {
                 FontContainer::Type3(Type3FontMapper::new(font.clone()))

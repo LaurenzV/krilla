@@ -1,5 +1,4 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::FontInfo;
 use crate::svg;
 use fontdb::Database;
 use skrifa::raw::TableProvider;
@@ -9,7 +8,6 @@ use usvg::roxmltree;
 
 pub fn draw_glyph(
     font_ref: &FontRef,
-    _: &FontInfo,
     glyph: GlyphId,
     fontdb: &mut Database,
     builder: &mut CanvasBuilder,

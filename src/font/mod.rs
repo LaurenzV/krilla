@@ -1,3 +1,4 @@
+use crate::util::Prehashed;
 use fontdb::{Database, Source};
 use skrifa::instance::Location;
 use skrifa::metrics::GlyphMetrics;
@@ -6,6 +7,7 @@ use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
 use yoke::{Yoke, Yokeable};
@@ -76,14 +78,26 @@ pub struct FontInfo {
     weight: FiniteF32,
 }
 
-// TODO: Make cheap to clone
-#[derive(Clone)]
-pub struct Font {
-    pub font_info: Arc<FontInfo>,
+struct Repr {
+    font_info: Arc<FontInfo>,
     font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
-    pub location: Location,
-    pub data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    location: Location,
+    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
 }
+
+impl Hash for Repr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Need to include index as well, because ttc fonts with different indices will have
+        // the same underlying bytes, but we distinguish them by their index as well.
+        self.font_info.index.hash(state);
+        self.location.hash(state);
+        self.data.as_ref().as_ref().hash(state);
+    }
+}
+
+// TODO: Make cheap to clone
+#[derive(Clone, Hash, Eq, PartialEq)]
+pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Debug for Font {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -163,56 +177,60 @@ impl Font {
         let font_ref = FontRef::from_index(data_ref, index).ok()?;
         let font_info = FontInfo::new(font_ref.clone(), index, (&location).into())?;
 
-        Some(Font {
+        Some(Font(Arc::new(Prehashed::new(Repr {
             data: data.clone(),
             font_ref_yoke,
             font_info: Arc::new(font_info),
             location,
-        })
+        }))))
+    }
+
+    pub fn font_info(&self) -> Arc<FontInfo> {
+        self.0.font_info.clone()
     }
 
     pub fn cap_height(&self) -> Option<f32> {
-        self.font_info.cap_height.map(|n| n.get())
+        self.0.font_info.cap_height.map(|n| n.get())
     }
 
     pub fn ascent(&self) -> f32 {
-        self.font_info.ascent.get()
+        self.0.font_info.ascent.get()
     }
 
     pub fn weight(&self) -> f32 {
-        self.font_info.weight.get()
+        self.0.font_info.weight.get()
     }
 
     pub fn descent(&self) -> f32 {
-        self.font_info.descent.get()
+        self.0.font_info.descent.get()
     }
 
     pub fn is_monospaced(&self) -> bool {
-        self.font_info.is_monospaced
+        self.0.font_info.is_monospaced
     }
 
     pub fn italic_angle(&self) -> f32 {
-        self.font_info.italic_angle.get()
+        self.0.font_info.italic_angle.get()
     }
 
     pub fn units_per_em(&self) -> u16 {
-        self.font_info.units_per_em
+        self.0.font_info.units_per_em
     }
 
     pub fn bbox(&self) -> Rect {
-        self.font_info.global_bbox
+        self.0.font_info.global_bbox
     }
 
     pub fn location_ref(&self) -> LocationRef {
-        (&self.location).into()
+        (&self.0.location).into()
     }
 
     pub fn is_type3_font(&self) -> bool {
-        self.font_info.is_type3_font
+        self.0.font_info.is_type3_font
     }
 
     pub fn font_ref(&self) -> &FontRef {
-        &self.font_ref_yoke.get().font_ref
+        &self.0.font_ref_yoke.get().font_ref
     }
 
     pub fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {

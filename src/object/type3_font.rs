@@ -95,13 +95,7 @@ impl Type3Font {
                     .or_else(|| {
                         // SVG fonts must not have any text So we can just use a dummy database here.
                         let mut db = Database::new();
-                        svg::draw_glyph(
-                            font_ref,
-                            self.font.font_info.as_ref(),
-                            *glyph_id,
-                            &mut db,
-                            &mut canvas_builder,
-                        )
+                        svg::draw_glyph(font_ref, *glyph_id, &mut db, &mut canvas_builder)
                     })
                     .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
                     .or_else(|| {
