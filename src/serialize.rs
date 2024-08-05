@@ -54,6 +54,15 @@ pub enum PDFGlyph {
     CID(u16),
 }
 
+impl PDFGlyph {
+    pub fn get(&self) -> u16 {
+        match self {
+            PDFGlyph::ColorGlyph(n) => *n as u16,
+            PDFGlyph::CID(n) => *n
+        }
+    }
+}
+
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         Self {

@@ -323,6 +323,8 @@ impl StreamBuilder {
 
             let glyph = glyphs.next().unwrap();
 
+            let actual_advance = glyph.x_advance / glyph.size * 1000.0;
+
             adjustment += glyph.x_offset;
 
             if adjustment != 0.0 {
@@ -343,12 +345,12 @@ impl StreamBuilder {
                 }
             }
 
-            if let Some(advance) = font.advance_width(glyph.glyph_id.to_u32() as u16) {
-                adjustment += glyph.x_advance - advance;
+            if let Some(advance) = font.advance_width(gid.get()).map(|f| font.to_font_units(f)) {
+                adjustment += actual_advance - advance;
             }
 
             adjustment -= glyph.x_offset;
-            *cur_x += cur_size * glyph.x_advance / font.units_per_em() as f32;
+            *cur_x += actual_advance;
         }
 
         if !encoded.is_empty() {
@@ -357,6 +359,8 @@ impl StreamBuilder {
 
         items.finish();
         positioned.finish();
+
+        // panic!()
     }
 
     pub fn encode_glyph_run(
@@ -767,6 +771,7 @@ impl StreamBuilder {
     }
 }
 
+#[derive(Debug)]
 pub struct TestGlyph {
     font_id: ID,
     glyph_id: GlyphId,
