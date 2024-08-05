@@ -84,7 +84,10 @@ impl Type3Font {
     }
 
     pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
-        self.widths.get(glyph_id as usize).copied().map(|n| self.to_font_units(n))
+        self.widths
+            .get(glyph_id as usize)
+            .copied()
+            .map(|n| self.to_font_units(n))
     }
 
     pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {

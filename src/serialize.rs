@@ -3,6 +3,7 @@ use crate::object::cid_font::CIDFont;
 use crate::object::color_space::ColorSpace;
 use crate::object::type3_font::Type3Font;
 use crate::resource::FontResource;
+use crate::stream::PdfFont;
 use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
@@ -12,7 +13,6 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use crate::stream::PdfFont;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
@@ -125,7 +125,7 @@ impl SerializerContext {
             FontContainer::CIDFont(cid) => {
                 let new_gid = cid.remap(&glyph);
                 (
-                    FontResource::new(font_id,  0),
+                    FontResource::new(font_id, 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
                 )
             }
@@ -134,10 +134,8 @@ impl SerializerContext {
 
     pub fn get_pdf_font(&self, font_resource: &FontResource) -> Option<PdfFont> {
         self.fonts.get(&font_resource.font_id).map(|f| match f {
-            FontContainer::Type3(fm) => {
-                PdfFont::Type3(&fm.fonts[font_resource.pdf_index])
-            }
-            FontContainer::CIDFont(cid) => PdfFont::CID(cid)
+            FontContainer::Type3(fm) => PdfFont::Type3(&fm.fonts[font_resource.pdf_index]),
+            FontContainer::CIDFont(cid) => PdfFont::CID(cid),
         })
     }
 
@@ -159,10 +157,8 @@ impl SerializerContext {
 
                     match font_container {
                         FontContainer::Type3(font_mapper) => {
-                            let font_index = font_mapper.index();
                             for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
-                                let ref_ =
-                                    sc.add(FontResource::new(font_id, pdf_index));
+                                let ref_ = sc.add(FontResource::new(font_id, pdf_index));
                                 mapper.serialize_into(sc, &font_ref, ref_);
                             }
                         }

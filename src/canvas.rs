@@ -3,12 +3,13 @@ use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-use crate::stream::{Stream, StreamBuilder};
+use crate::stream::{Stream, StreamBuilder, TestGlyph};
 use crate::util::{deflate, RectExt};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
+use std::iter::Peekable;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, Size, Transform};
 use usvg::NormalizedF32;
@@ -161,6 +162,17 @@ impl<'a> CanvasBuilder<'a> {
     pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: &Fill, no_fill: bool) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path_impl(path, fill, self.sc, no_fill)
+    }
+
+    pub fn encode_glyph_run(
+        &mut self,
+        x: f32,
+        y: f32,
+        fontdb: &mut Database,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+    ) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .encode_glyph_run(x, y, fontdb, self.sc, glyphs)
     }
 
     pub fn invisible_glyph(

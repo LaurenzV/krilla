@@ -330,10 +330,7 @@ pub struct FontResource {
 
 impl FontResource {
     pub fn new(font_id: ID, pdf_index: usize) -> Self {
-        Self {
-            font_id,
-            pdf_index
-        }
+        Self { font_id, pdf_index }
     }
 }
 
