@@ -35,6 +35,10 @@ impl CIDFont {
         }
     }
 
+    pub fn to_font_units(&self, val: f32) -> f32 {
+        val / self.font.units_per_em() as f32 * 100.0
+    }
+
     pub fn remap(&mut self, glyph: &Glyph) -> GlyphId {
         let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
         self.strings.insert(new_id, glyph.string.clone());
@@ -58,8 +62,11 @@ impl CIDFont {
 
         let is_cff = font_ref.cff().is_ok();
 
+        // Subset and write the font's bytes.
+        let subsetted_font = subset_font(font_ref.data().as_bytes(), &glyph_remapper);
+
         let postscript_name = find_name(&font_ref).unwrap_or("unknown".to_string());
-        let subset_tag = subset_tag(&self);
+        let subset_tag = subset_tag(&subsetted_font);
 
         let base_font = format!("{subset_tag}+{postscript_name}");
         let base_font_type0 = if is_cff {
@@ -122,17 +129,15 @@ impl CIDFont {
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
-        let convert = |val| (val / units_per_em as f32) * 1000.0;
-
         let bbox = self.font.bbox().to_pdf_rect();
 
         let italic_angle = self.font.italic_angle();
-        let ascender = convert(self.font.ascent());
-        let descender = convert(self.font.descent());
+        let ascender = self.to_font_units(self.font.ascent());
+        let descender = self.to_font_units(self.font.descent());
         let cap_height = self
             .font
             .cap_height()
-            .map(|h| convert(h))
+            .map(|h| self.to_font_units(h))
             .unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 
@@ -169,10 +174,7 @@ impl CIDFont {
 
         font_descriptor.finish();
 
-        // Subset and write the font's bytes.
-        let data = subset_font(font_ref.data().as_bytes(), &glyph_remapper);
-
-        let mut stream = sc.chunk_mut().stream(data_ref, &data);
+        let mut stream = sc.chunk_mut().stream(data_ref, &subsetted_font);
         stream.filter(Filter::FlateDecode);
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
@@ -234,11 +236,10 @@ where
     }
 }
 
-fn subset_tag(cid_font: &CIDFont) -> String {
+fn subset_tag(subsetted_font: &[u8]) -> String {
     const LEN: usize = 6;
     const BASE: u128 = 26;
-    // TODO: FIXME
-    let mut hash = 0;
+    let mut hash = hash_item(subsetted_font);
     let mut letter = [b'A'; LEN];
     for l in letter.iter_mut() {
         *l = b'A' + (hash % BASE) as u8;
