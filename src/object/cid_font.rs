@@ -3,6 +3,7 @@ use crate::serialize::{hash_item, SerializerContext};
 use crate::util::{deflate, RectExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Filter, Finish, Name, Ref, Str};
+use skrifa::metrics::GlyphMetrics;
 use skrifa::prelude::Size;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
@@ -24,24 +25,38 @@ pub struct CIDFont {
     font: Font,
     glyph_remapper: GlyphRemapper,
     strings: BTreeMap<GlyphId, String>,
+    widths: Vec<f32>,
 }
 
 impl CIDFont {
     pub fn new(font: Font) -> CIDFont {
+        let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
         Self {
             glyph_remapper: GlyphRemapper::new(),
             strings: BTreeMap::new(),
+            widths,
             font,
         }
     }
 
+    pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
+        self.widths.get(glyph_id as usize).copied()
+    }
+
     pub fn to_font_units(&self, val: f32) -> f32 {
-        val / self.font.units_per_em() as f32 * 100.0
+        val / self.font.units_per_em() as f32 * 1000.0
     }
 
     pub fn remap(&mut self, glyph: &Glyph) -> GlyphId {
         let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
+
         self.strings.insert(new_id, glyph.string.clone());
+
+        // This means that the glyph ID has been newly assigned.
+        if new_id.to_u32() > self.widths.len() as u32 {
+            self.widths
+                .push(self.to_font_units(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0)));
+        }
         new_id
     }
 
@@ -51,8 +66,6 @@ impl CIDFont {
         font_ref: &FontRef,
         root_ref: Ref,
     ) {
-        let units_per_em = self.font.units_per_em();
-
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
@@ -97,20 +110,10 @@ impl CIDFont {
             cid.cid_to_gid_map_predefined(Name(b"Identity"));
         }
 
-        let mut widths = vec![];
-        for old_gid in glyph_remapper.remapped_gids() {
-            let width = font_ref
-                .glyph_metrics(Size::unscaled(), self.font.location_ref())
-                .advance_width(GlyphId::new(old_gid as u32))
-                .unwrap_or(0.0);
-            let units = (width as f64 / units_per_em as f64) * 1000.0;
-            widths.push(units as f32);
-        }
-
         // Write all non-zero glyph widths.
         let mut first = 0;
         let mut width_writer = cid.widths();
-        for (w, group) in widths.group_by_key(|&w| w) {
+        for (w, group) in self.widths.group_by_key(|&w| w) {
             let end = first + group.len();
             if w != 0.0 {
                 let last = end - 1;

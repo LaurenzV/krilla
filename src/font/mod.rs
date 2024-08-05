@@ -1,5 +1,6 @@
 use fontdb::{Database, Source};
 use skrifa::instance::Location;
+use skrifa::metrics::GlyphMetrics;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::TableProvider;
@@ -212,6 +213,12 @@ impl Font {
 
     pub fn font_ref(&self) -> &FontRef {
         &self.font_ref_yoke.get().font_ref
+    }
+
+    pub fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
+        self.font_ref()
+            .glyph_metrics(Size::unscaled(), self.location_ref())
+            .advance_width(glyph_id)
     }
 }
 

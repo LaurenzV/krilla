@@ -20,6 +20,7 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
+    widths: Vec<f32>,
     strings: Vec<String>,
     glyph_set: BTreeSet<GlyphId>,
 }
@@ -37,6 +38,7 @@ impl Type3Font {
             font,
             glyphs: Vec::new(),
             strings: Vec::new(),
+            widths: Vec::new(),
             glyph_set: BTreeSet::new(),
         }
     }
@@ -67,22 +69,17 @@ impl Type3Font {
 
             self.glyphs.push(glyph.glyph_id);
             self.strings.push(glyph.string.clone());
+            self.widths
+                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
 
-    pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {
-        let widths = self
-            .glyphs
-            .iter()
-            .map(|g| {
-                font_ref
-                    .glyph_metrics(Size::unscaled(), self.font.location_ref())
-                    .advance_width(*g)
-                    .unwrap_or(0.0)
-            })
-            .collect::<Vec<_>>();
+    pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
+        self.widths.get(glyph_id as usize).copied()
+    }
 
+    pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
@@ -118,7 +115,7 @@ impl Type3Font {
                 let stream = if is_outline {
                     let bbox = stream.bbox();
                     content.start_shape_glyph(
-                        widths[index],
+                        self.widths[index],
                         bbox.left(),
                         bbox.top(),
                         bbox.right(),
@@ -131,7 +128,7 @@ impl Type3Font {
                     final_stream.extend(stream.content());
                     final_stream
                 } else {
-                    content.start_color_glyph(widths[index]);
+                    content.start_color_glyph(self.widths[index]);
                     let x_object = XObject::new(Arc::new(stream), false, false, None);
                     bbox.expand(&x_object.bbox());
                     let x_name = rd_builder
@@ -202,7 +199,7 @@ impl Type3Font {
         );
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
-        type3_font.widths(widths);
+        type3_font.widths(self.widths);
         type3_font.font_descriptor(descriptor_ref);
 
         let mut char_procs = type3_font.char_procs();
