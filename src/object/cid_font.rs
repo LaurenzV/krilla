@@ -43,8 +43,12 @@ impl CIDFont {
         self.font.index()
     }
 
-    pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
-        self.widths.get(glyph_id as usize).copied()
+    pub fn advance_width(&self, glyph_id: u16) -> Option<f32> {
+        self.widths.get(glyph_id as usize).copied().map(|n| self.to_font_units(n))
+    }
+
+    pub fn units_per_em(&self) -> u16 {
+        self.font.units_per_em()
     }
 
     pub fn to_font_units(&self, val: f32) -> f32 {

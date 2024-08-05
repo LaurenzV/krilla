@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::stream::PdfFont;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
@@ -117,18 +118,27 @@ impl SerializerContext {
                 let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph);
 
                 (
-                    FontResource::new(font_id, font_mapper.index(), pdf_index),
+                    FontResource::new(font_id, pdf_index),
                     PDFGlyph::ColorGlyph(glyph_id),
                 )
             }
             FontContainer::CIDFont(cid) => {
                 let new_gid = cid.remap(&glyph);
                 (
-                    FontResource::new(font_id, cid.index(), 0),
+                    FontResource::new(font_id,  0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
                 )
             }
         }
+    }
+
+    pub fn get_pdf_font(&self, font_resource: &FontResource) -> Option<PdfFont> {
+        self.fonts.get(&font_resource.font_id).map(|f| match f {
+            FontContainer::Type3(fm) => {
+                PdfFont::Type3(&fm.fonts[font_resource.pdf_index])
+            }
+            FontContainer::CIDFont(cid) => PdfFont::CID(cid)
+        })
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
@@ -152,12 +162,12 @@ impl SerializerContext {
                             let font_index = font_mapper.index();
                             for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
                                 let ref_ =
-                                    sc.add(FontResource::new(font_id, font_index, pdf_index));
+                                    sc.add(FontResource::new(font_id, pdf_index));
                                 mapper.serialize_into(sc, &font_ref, ref_);
                             }
                         }
                         FontContainer::CIDFont(cid_font) => {
-                            let ref_ = sc.add(FontResource::new(font_id, cid_font.index(), 0));
+                            let ref_ = sc.add(FontResource::new(font_id, 0));
                             cid_font.serialize_into(sc, &font_ref, ref_);
                         }
                     }

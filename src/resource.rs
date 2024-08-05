@@ -322,23 +322,18 @@ where
 
 pub type ResourceNumber = u32;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
-struct FontResourceRepr {
-    font_id: ID,
-    font_index: u32,
-    pdf_index: usize,
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub struct FontResource {
+    pub font_id: ID,
+    pub pdf_index: usize,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct FontResource(Arc<FontResourceRepr>);
-
 impl FontResource {
-    pub fn new(font_id: ID, font_index: u32, pdf_index: usize) -> Self {
-        Self(Arc::new(FontResourceRepr {
+    pub fn new(font_id: ID, pdf_index: usize) -> Self {
+        Self {
             font_id,
-            font_index,
-            pdf_index,
-        }))
+            pdf_index
+        }
     }
 }
 

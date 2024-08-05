@@ -1,3 +1,4 @@
+use std::iter::Peekable;
 use crate::font::Glyph;
 use crate::graphics_state::GraphicsStates;
 use crate::object::ext_g_state::ExtGState;
@@ -7,18 +8,20 @@ use crate::object::shading_function::{GradientProperties, GradientPropertiesExt,
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
-use crate::resource::{
-    PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource,
-};
+use crate::resource::{FontResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Str};
+use pdf_writer::{Content, Finish, Str};
 use std::sync::Arc;
+use pdf_writer::writers::PositionedItems;
+use skrifa::GlyphId;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use crate::object::cid_font::CIDFont;
+use crate::object::type3_font::Type3Font;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Stream {
@@ -277,6 +280,95 @@ impl StreamBuilder {
         );
 
         self.graphics_states.restore_state();
+    }
+
+    fn encode_single(
+        &mut self,
+        cur_x: &mut f32,
+        cur_y: f32,
+        cur_font: FontResource,
+        cur_size: f32,
+        fontdb: &mut Database,
+        sc: &mut SerializerContext,
+        glyphs: &mut Peekable<impl Iterator<Item = PdfGlyph>>
+    ) {
+        let font_name = self
+            .rd_builder
+            .register_resource(Resource::Font(cur_font));
+        self.content.set_font(font_name.to_pdf_name(), cur_size);
+        // TODO: Emojis
+        self.content.set_text_matrix(Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform());
+
+        let mut positioned = self.content.show_positioned();
+        let mut items = positioned.items();
+
+        let mut adjustment = 0.0;
+        let mut encoded = vec![];
+
+        while let Some(glyph) = glyphs.peek() {
+            let (font_resource, gid) = sc.map_glyph(glyph.font_id, fontdb, Glyph::new(glyph.glyph_id, glyph.text.clone()));
+            if font_resource != cur_font || glyph.size != cur_size {
+                return;
+            }
+
+            let font = sc.get_pdf_font(&font_resource).unwrap();
+
+            let glyph = glyphs.next().unwrap();
+
+            adjustment += glyph.x_offset;
+
+            if adjustment != 0.0 {
+                if !encoded.is_empty() {
+                    items.show(Str(&encoded));
+                    encoded.clear();
+                }
+
+                items.adjust(font.to_font_units(-adjustment));
+                adjustment = 0.0;
+            }
+
+            match gid {
+                PDFGlyph::ColorGlyph(cg) => {
+                    encoded.push(cg)
+                }
+                PDFGlyph::CID(cid) => {
+                    encoded.push((cid >> 8) as u8);
+                    encoded.push((cid & 0xff) as u8);
+                }
+            }
+
+            if let Some(advance) = font.advance_width(glyph.glyph_id.to_u32() as u16) {
+                adjustment += glyph.x_advance - advance;
+            }
+
+            adjustment -= glyph.x_offset;
+            *cur_x +=  cur_size * glyph.x_advance / font.units_per_em() as f32;
+        }
+
+        items.finish();
+        positioned.finish();
+    }
+
+    fn encode_glyph_run(
+        &mut self,
+        x: f32,
+        y: f32,
+        fontdb: &mut Database,
+        sc: &mut SerializerContext,
+        mut glyphs: Peekable<impl Iterator<Item = PdfGlyph>>
+    ) {
+        let mut content = Content::new();
+        let mut cur_x = x;
+        let cur_y = y;
+
+        content.begin_text();
+
+        while let Some(glyph) = glyphs.peek() {
+            let (font_resource, _) = sc.map_glyph(glyph.font_id, fontdb, Glyph::new(glyph.glyph_id, glyph.text.clone()));
+            self.encode_single(&mut cur_x, cur_y, font_resource, glyph.size, fontdb, sc, &mut glyphs)
+        }
+
+        content.end_text();
     }
 
     fn fill_stroke_glyph(
@@ -648,5 +740,117 @@ impl StreamBuilder {
                 }
             };
         }
+    }
+}
+
+struct PdfGlyph {
+    font_id: ID,
+    glyph_id: GlyphId,
+    x_advance: f32,
+    x_offset: f32,
+    size: f32,
+    text: String
+}
+
+
+pub enum PdfFont<'a> {
+    Type3(&'a Type3Font),
+    CID(&'a CIDFont)
+}
+
+impl PdfFont<'_> {
+    pub fn to_font_units(&self, val: f32) -> f32 {
+        match self {
+            PdfFont::Type3(t3) => t3.to_font_units(val),
+            PdfFont::CID(cid) => cid.to_font_units(val)
+        }
+    }
+
+    pub fn advance_width(&self, glyph: u16) -> Option<f32> {
+        match self {
+            PdfFont::Type3(t3) => t3.advance_width(glyph as u8),
+            PdfFont::CID(cid) => cid.advance_width(glyph)
+        }
+    }
+
+    pub fn units_per_em(&self) -> u16 {
+        match self {
+            PdfFont::Type3(t3) => t3.units_per_em(),
+            PdfFont::CID(cid) => cid.units_per_em()
+        }
+    }
+}
+
+struct GlyphRun {
+    pub content: Content,
+    pub start_x: f32,
+    pub current_x: f32,
+    pub current_y: f32,
+    pub start_y: f32,
+    pub font_size: f32,
+}
+
+struct CurrentEncoding<'a> {
+    items: PositionedItems<'a>,
+    font_resource: FontResource,
+    font: PdfFont<'a>,
+    is_cid: bool,
+    font_size: f32,
+    start_x: f32,
+    start_y: f32,
+    current_x: f32,
+    current_y: f32,
+    encoded: Vec<u8>,
+}
+
+
+impl GlyphRun {
+    fn new(x: f32,
+           y: f32,
+           font_size: f32,
+           text_rendering_mode: TextRenderingMode
+    ) -> Self {
+        // let (font_resource, gid) = serializer_context.map_glyph(font_id, fontdb, glyph);
+        // let font_name = self
+        //     .rd_builder
+        //     .register_resource(Resource::Font(font_resource));
+        //
+        // self.apply_isolated_op(|sb| {
+        //     // TODO: Figure out proper bbox
+        //     action(sb, serializer_context);
+        //     sb.content.begin_text();
+        //     sb.content.set_text_rendering_mode(text_rendering_mode);
+        //     sb.content.set_font(font_name.to_pdf_name(), size.get());
+        //     match gid {
+        //         PDFGlyph::ColorGlyph(gid) => {
+        //             sb.content.set_text_matrix(transform.to_pdf_transform());
+        //             sb.content.show(Str(&[gid]));
+        //         }
+        //         PDFGlyph::CID(cid) => {
+        //             let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
+        //             sb.content.set_text_matrix(transform.to_pdf_transform());
+        //             sb.content
+        //                 .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
+        //         }
+        //     }
+        //     sb.content.end_text();
+        // })
+        let mut content = Content::new();
+        content.begin_text();
+        content.set_text_rendering_mode(text_rendering_mode);
+
+        GlyphRun {
+            start_x: x,
+            start_y: y,
+            current_x: x,
+            current_y: y,
+            font_size,
+            content
+        }
+    }
+
+    fn finish(mut self) -> Content {
+        self.content.end_text();
+        self.content
     }
 }
