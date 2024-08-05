@@ -350,7 +350,7 @@ impl StreamBuilder {
             }
 
             adjustment -= glyph.x_offset;
-            *cur_x += actual_advance;
+            *cur_x += glyph.x_advance;
         }
 
         if !encoded.is_empty() {
@@ -421,14 +421,16 @@ impl StreamBuilder {
             sb.content.begin_text();
             sb.content.set_font(font_name.to_pdf_name(), size.get());
             sb.content.set_text_rendering_mode(text_rendering_mode);
+            sb.content.set_text_matrix(
+                transform
+                    .pre_concat(Transform::from_scale(1.0, -1.0))
+                    .to_pdf_transform(),
+            );
             match gid {
                 PDFGlyph::ColorGlyph(gid) => {
-                    sb.content.set_text_matrix(transform.to_pdf_transform());
                     sb.content.show(Str(&[gid]));
                 }
                 PDFGlyph::CID(cid) => {
-                    let transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
-                    sb.content.set_text_matrix(transform.to_pdf_transform());
                     sb.content
                         .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
                 }

@@ -58,7 +58,7 @@ impl PDFGlyph {
     pub fn get(&self) -> u16 {
         match self {
             PDFGlyph::ColorGlyph(n) => *n as u16,
-            PDFGlyph::CID(n) => *n
+            PDFGlyph::CID(n) => *n,
         }
     }
 }
