@@ -114,17 +114,17 @@ impl SerializerContext {
 
         match font_container {
             FontContainer::Type3(font_mapper) => {
-                let (index, glyph_id) = font_mapper.add_glyph(glyph);
+                let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph);
 
                 (
-                    FontResource::new(font_id, index),
+                    FontResource::new(font_id, font_mapper.index(), pdf_index),
                     PDFGlyph::ColorGlyph(glyph_id),
                 )
             }
             FontContainer::CIDFont(cid) => {
                 let new_gid = cid.remap(&glyph);
                 (
-                    FontResource::new(font_id, 0),
+                    FontResource::new(font_id, cid.index(), 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
                 )
             }
@@ -149,13 +149,15 @@ impl SerializerContext {
 
                     match font_container {
                         FontContainer::Type3(font_mapper) => {
-                            for (index, mapper) in font_mapper.fonts.into_iter().enumerate() {
-                                let ref_ = sc.add(FontResource::new(font_id, index));
+                            let font_index = font_mapper.index();
+                            for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
+                                let ref_ =
+                                    sc.add(FontResource::new(font_id, font_index, pdf_index));
                                 mapper.serialize_into(sc, &font_ref, ref_);
                             }
                         }
                         FontContainer::CIDFont(cid_font) => {
-                            let ref_ = sc.add(FontResource::new(font_id, 0));
+                            let ref_ = sc.add(FontResource::new(font_id, cid_font.index(), 0));
                             cid_font.serialize_into(sc, &font_ref, ref_);
                         }
                     }
@@ -226,5 +228,9 @@ impl Type3FontMapper {
         };
 
         (self.fonts.len() - 1, glyph_id)
+    }
+
+    pub fn index(&self) -> u32 {
+        self.font.index()
     }
 }

@@ -185,6 +185,10 @@ impl Font {
         }))))
     }
 
+    pub fn index(&self) -> u32 {
+        self.font_info().index
+    }
+
     pub fn font_info(&self) -> Arc<FontInfo> {
         self.0.font_info.clone()
     }

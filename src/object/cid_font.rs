@@ -39,6 +39,10 @@ impl CIDFont {
         }
     }
 
+    pub fn index(&self) -> u32 {
+        self.font.index()
+    }
+
     pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
         self.widths.get(glyph_id as usize).copied()
     }
