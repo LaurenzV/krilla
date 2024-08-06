@@ -189,36 +189,33 @@ impl StreamBuilder {
         self.content_restore_state();
     }
 
-    pub fn invisible_glyph(
+    pub fn invisible_glyph_run(
         &mut self,
-        glyph: Glyph,
-        font_id: ID,
+        x: f32,
+        y: f32,
         fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
-        serializer_context: &mut SerializerContext,
+        sc: &mut SerializerContext,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
-        self.fill_stroke_glyph(
-            glyph,
-            font_id,
+        self.fill_stroke_glyph_run(
+            x,
+            y,
             fontdb,
-            size,
-            transform,
+            sc,
             TextRenderingMode::Invisible,
             |_, _| {},
-            serializer_context,
+            glyphs,
         );
     }
 
-    pub fn fill_glyph(
+    pub fn fill_glyph_run(
         &mut self,
-        glyph: Glyph,
-        font_id: ID,
+        x: f32,
+        y: f32,
         fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
+        sc: &mut SerializerContext,
         fill: &Fill,
-        serializer_context: &mut SerializerContext,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         self.graphics_states.save_state();
 
@@ -228,12 +225,11 @@ impl StreamBuilder {
             self.set_fill_opacity(fill.opacity);
         }
 
-        self.fill_stroke_glyph(
-            glyph,
-            font_id,
+        self.fill_stroke_glyph_run(
+            x,
+            y,
             fontdb,
-            size,
-            transform,
+            sc,
             TextRenderingMode::Fill,
             |sb, sc| {
                 sb.content_set_fill_properties(
@@ -242,21 +238,20 @@ impl StreamBuilder {
                     sc,
                 )
             },
-            serializer_context,
+            glyphs,
         );
 
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_glyph(
+    pub fn stroke_glyph_run(
         &mut self,
-        glyph_id: Glyph,
-        font_id: ID,
+        x: f32,
+        y: f32,
         fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
+        sc: &mut SerializerContext,
         stroke: &Stroke,
-        serializer_context: &mut SerializerContext,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         self.graphics_states.save_state();
 
@@ -266,12 +261,11 @@ impl StreamBuilder {
             self.set_stroke_opacity(stroke.opacity);
         }
 
-        self.fill_stroke_glyph(
-            glyph_id,
-            font_id,
+        self.fill_stroke_glyph_run(
+            x,
+            y,
             fontdb,
-            size,
-            transform,
+            sc,
             TextRenderingMode::Stroke,
             |sb, sc| {
                 sb.content_set_stroke_properties(
@@ -280,7 +274,7 @@ impl StreamBuilder {
                     sc,
                 )
             },
-            serializer_context,
+            glyphs,
         );
 
         self.graphics_states.restore_state();
@@ -298,7 +292,6 @@ impl StreamBuilder {
     ) {
         let font_name = self.rd_builder.register_resource(Resource::Font(cur_font));
         self.content.set_font(font_name.to_pdf_name(), cur_size);
-        // TODO: Emojis
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
@@ -359,24 +352,25 @@ impl StreamBuilder {
 
         items.finish();
         positioned.finish();
-
-        // panic!()
     }
 
-    pub fn encode_glyph_run(
+    fn fill_stroke_glyph_run(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
+        text_rendering_mode: TextRenderingMode,
+        mut action: impl FnMut(&mut StreamBuilder, &mut SerializerContext),
         mut glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         let mut cur_x = x;
         let cur_y = y;
 
         self.apply_isolated_op(|sb| {
+            action(sb, sc);
             sb.content.begin_text();
-            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+            sb.content.set_text_rendering_mode(text_rendering_mode);
 
             while let Some(glyph) = glyphs.peek() {
                 let (font_resource, _) = sc.map_glyph(
@@ -395,46 +389,6 @@ impl StreamBuilder {
                 )
             }
 
-            sb.content.end_text();
-        })
-    }
-
-    fn fill_stroke_glyph(
-        &mut self,
-        glyph: Glyph,
-        font_id: ID,
-        fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
-        text_rendering_mode: TextRenderingMode,
-        mut action: impl FnMut(&mut StreamBuilder, &mut SerializerContext),
-        serializer_context: &mut SerializerContext,
-    ) {
-        let (font_resource, gid) = serializer_context.map_glyph(font_id, fontdb, glyph);
-        let font_name = self
-            .rd_builder
-            .register_resource(Resource::Font(font_resource));
-
-        self.apply_isolated_op(|sb| {
-            // TODO: Figure out proper bbox
-            action(sb, serializer_context);
-            sb.content.begin_text();
-            sb.content.set_font(font_name.to_pdf_name(), size.get());
-            sb.content.set_text_rendering_mode(text_rendering_mode);
-            sb.content.set_text_matrix(
-                transform
-                    .pre_concat(Transform::from_scale(1.0, -1.0))
-                    .to_pdf_transform(),
-            );
-            match gid {
-                PDFGlyph::ColorGlyph(gid) => {
-                    sb.content.show(Str(&[gid]));
-                }
-                PDFGlyph::CID(cid) => {
-                    sb.content
-                        .show(Str(&[(cid >> 8) as u8, (cid & 0xff) as u8]));
-                }
-            }
             sb.content.end_text();
         })
     }

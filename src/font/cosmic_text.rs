@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::canvas::Page;
-    use crate::font::Glyph;
     use crate::serialize::PageSerialize;
     use crate::stream::TestGlyph;
     use crate::Fill;
@@ -9,7 +8,6 @@ mod tests {
     use fontdb::Source;
     use skrifa::GlyphId;
     use std::sync::Arc;
-    use tiny_skia_path::{FiniteF32, Transform};
 
     #[test]
     fn cosmic_text_integration() {
@@ -44,7 +42,7 @@ mod tests {
                     )
                 })
                 .peekable();
-            builder.encode_glyph_run(0.0, y_offset, font_system.db_mut(), iter);
+            builder.fill_glyph_run(0.0, y_offset, font_system.db_mut(), &Fill::default(), iter);
         }
 
         // panic!();
