@@ -3,12 +3,13 @@ use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-use crate::stream::{Stream, StreamBuilder};
+use crate::stream::{Stream, StreamBuilder, TestGlyph};
 use crate::util::{deflate, RectExt};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
+use std::iter::Peekable;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, Size, Transform};
 use usvg::NormalizedF32;
@@ -163,42 +164,39 @@ impl<'a> CanvasBuilder<'a> {
             .fill_path_impl(path, fill, self.sc, no_fill)
     }
 
-    pub fn invisible_glyph(
+    pub fn invisible_glyph_run(
         &mut self,
-        glyph: Glyph,
-        font_id: ID,
+        x: f32,
+        y: f32,
         fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .invisible_glyph(glyph, font_id, fontdb, size, transform, self.sc);
+            .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
     }
 
-    pub fn fill_glyph<'b>(
+    pub fn fill_glyph_run<'b>(
         &'b mut self,
-        glyph: Glyph,
-        font_id: ID,
+        x: f32,
+        y: f32,
         fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
         fill: &Fill,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyph(glyph, font_id, fontdb, size, transform, fill, self.sc);
+            .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
     }
 
-    pub fn stroke_glyph<'b>(
+    pub fn stroke_glyph_run<'b>(
         &'b mut self,
-        glyph_id: Glyph,
-        font_id: ID,
+        x: f32,
+        y: f32,
         fontdb: &mut Database,
-        size: FiniteF32,
-        transform: &Transform,
         stroke: &Stroke,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyph(glyph_id, font_id, fontdb, size, transform, stroke, self.sc);
+            .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
     }
 
     fn cur_builder<'b>(

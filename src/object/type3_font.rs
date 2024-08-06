@@ -43,6 +43,10 @@ impl Type3Font {
         }
     }
 
+    pub fn to_font_units(&self, val: f32) -> f32 {
+        val
+    }
+
     pub fn is_full(&self) -> bool {
         self.count() == 256
     }
@@ -75,8 +79,15 @@ impl Type3Font {
         }
     }
 
+    pub fn units_per_em(&self) -> u16 {
+        self.font.units_per_em()
+    }
+
     pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
-        self.widths.get(glyph_id as usize).copied()
+        self.widths
+            .get(glyph_id as usize)
+            .copied()
+            .map(|n| self.to_font_units(n))
     }
 
     pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {
@@ -89,6 +100,7 @@ impl Type3Font {
             .enumerate()
             .map(|(index, glyph_id)| {
                 let mut canvas_builder = CanvasBuilder::new(sc);
+                canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
                 let mut is_outline = false;
 
                 colr::draw_glyph(self.font.clone(), *glyph_id, &mut canvas_builder)
@@ -103,7 +115,9 @@ impl Type3Font {
                         outline::draw_glyph(&self.font, *glyph_id, &mut canvas_builder)
                     });
 
+                canvas_builder.pop_transform();
                 let stream = canvas_builder.finish();
+
                 let mut content = Content::new();
 
                 let stream = if is_outline {

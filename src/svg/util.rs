@@ -41,6 +41,7 @@ pub fn convert_paint(
     paint: &usvg::Paint,
     mut sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
+    additional_transform: Transform,
 ) -> Paint {
     match paint {
         usvg::Paint::Color(c) => Paint::Color(Color::new_rgb(c.red, c.green, c.blue)),
@@ -49,7 +50,9 @@ pub fn convert_paint(
             y1: FiniteF32::new(lg.y1()).unwrap(),
             x2: FiniteF32::new(lg.x2()).unwrap(),
             y2: FiniteF32::new(lg.y2()).unwrap(),
-            transform: TransformWrapper(convert_transform(&lg.transform())),
+            transform: TransformWrapper(
+                additional_transform.pre_concat(convert_transform(&lg.transform())),
+            ),
             spread_method: convert_spread_mode(&lg.spread_method()),
             stops: lg
                 .stops()
@@ -64,7 +67,9 @@ pub fn convert_paint(
             fx: FiniteF32::new(rg.fx()).unwrap(),
             fy: FiniteF32::new(rg.fy()).unwrap(),
             fr: FiniteF32::new(0.0).unwrap(),
-            transform: TransformWrapper(convert_transform(&rg.transform())),
+            transform: TransformWrapper(
+                additional_transform.pre_concat(convert_transform(&rg.transform())),
+            ),
             spread_method: convert_spread_mode(&rg.spread_method()),
             stops: rg
                 .stops()
@@ -79,7 +84,8 @@ pub fn convert_paint(
             Paint::Pattern(Arc::new(Pattern {
                 stream: Arc::new(stream),
                 transform: TransformWrapper(
-                    pat.transform()
+                    additional_transform
+                        .pre_concat(pat.transform())
                         .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
                 ),
                 width: FiniteF32::new(pat.rect().width()).unwrap(),
@@ -117,9 +123,15 @@ pub fn convert_fill(
     fill: &usvg::Fill,
     sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
+    additional_transform: Transform,
 ) -> Fill {
     Fill {
-        paint: convert_paint(fill.paint(), sub_builder, font_context),
+        paint: convert_paint(
+            fill.paint(),
+            sub_builder,
+            font_context,
+            additional_transform,
+        ),
         opacity: fill.opacity(),
         rule: convert_fill_rule(&fill.rule()),
     }
@@ -129,6 +141,7 @@ pub fn convert_stroke(
     stroke: &usvg::Stroke,
     sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
+    additional_transform: Transform,
 ) -> Stroke {
     let dash = if let Some(dash_array) = stroke.dasharray() {
         Some(StrokeDash {
@@ -143,7 +156,12 @@ pub fn convert_stroke(
     };
 
     Stroke {
-        paint: convert_paint(stroke.paint(), sub_builder, font_context),
+        paint: convert_paint(
+            stroke.paint(),
+            sub_builder,
+            font_context,
+            additional_transform,
+        ),
         width: stroke.width(),
         miter_limit: NonZeroPositiveF32::new(stroke.miterlimit().get()).unwrap(),
         line_cap: convert_line_cap(&stroke.linecap()),

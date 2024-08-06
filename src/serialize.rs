@@ -3,6 +3,7 @@ use crate::object::cid_font::CIDFont;
 use crate::object::color_space::ColorSpace;
 use crate::object::type3_font::Type3Font;
 use crate::resource::FontResource;
+use crate::stream::PdfFont;
 use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
@@ -51,6 +52,15 @@ pub struct SerializerContext {
 pub enum PDFGlyph {
     ColorGlyph(u8),
     CID(u16),
+}
+
+impl PDFGlyph {
+    pub fn get(&self) -> u16 {
+        match self {
+            PDFGlyph::ColorGlyph(n) => *n as u16,
+            PDFGlyph::CID(n) => *n,
+        }
+    }
 }
 
 impl SerializerContext {
@@ -117,18 +127,25 @@ impl SerializerContext {
                 let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph);
 
                 (
-                    FontResource::new(font_id, font_mapper.index(), pdf_index),
+                    FontResource::new(font_id, pdf_index),
                     PDFGlyph::ColorGlyph(glyph_id),
                 )
             }
             FontContainer::CIDFont(cid) => {
                 let new_gid = cid.remap(&glyph);
                 (
-                    FontResource::new(font_id, cid.index(), 0),
+                    FontResource::new(font_id, 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
                 )
             }
         }
+    }
+
+    pub fn get_pdf_font(&self, font_resource: &FontResource) -> Option<PdfFont> {
+        self.fonts.get(&font_resource.font_id).map(|f| match f {
+            FontContainer::Type3(fm) => PdfFont::Type3(&fm.fonts[font_resource.pdf_index]),
+            FontContainer::CIDFont(cid) => PdfFont::CID(cid),
+        })
     }
 
     pub fn chunk_mut(&mut self) -> &mut Chunk {
@@ -149,15 +166,13 @@ impl SerializerContext {
 
                     match font_container {
                         FontContainer::Type3(font_mapper) => {
-                            let font_index = font_mapper.index();
                             for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
-                                let ref_ =
-                                    sc.add(FontResource::new(font_id, font_index, pdf_index));
+                                let ref_ = sc.add(FontResource::new(font_id, pdf_index));
                                 mapper.serialize_into(sc, &font_ref, ref_);
                             }
                         }
                         FontContainer::CIDFont(cid_font) => {
-                            let ref_ = sc.add(FontResource::new(font_id, cid_font.index(), 0));
+                            let ref_ = sc.add(FontResource::new(font_id, 0));
                             cid_font.serialize_into(sc, &font_ref, ref_);
                         }
                     }

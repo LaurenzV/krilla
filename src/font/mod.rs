@@ -1,3 +1,4 @@
+use crate::stream::TestGlyph;
 use crate::util::Prehashed;
 use fontdb::{Database, Source};
 use skrifa::instance::Location;
@@ -305,13 +306,14 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
         }
 
         builder.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        builder.fill_glyph(
-            Glyph::new(i, text),
-            id,
+        builder.fill_glyph_run(
+            0.0,
+            0.0,
             &mut fontdb,
-            FiniteF32::new(size as f32).unwrap(),
-            &Transform::identity(),
             &crate::Fill::default(),
+            [TestGlyph::new(id, i, 0.0, 0.0, size as f32, text)]
+                .into_iter()
+                .peekable(),
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         builder.pop_transform();

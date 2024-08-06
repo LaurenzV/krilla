@@ -1,16 +1,13 @@
-use crate::font::{Font, FontInfo, Glyph};
+use crate::font::{Font, Glyph};
 use crate::serialize::{hash_item, SerializerContext};
 use crate::util::{deflate, RectExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Filter, Finish, Name, Ref, Str};
-use skrifa::metrics::GlyphMetrics;
-use skrifa::prelude::Size;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::collections::BTreeMap;
-use std::sync::Arc;
 use subsetter::GlyphRemapper;
 
 const CMAP_NAME: Name = Name(b"Custom");
@@ -43,8 +40,12 @@ impl CIDFont {
         self.font.index()
     }
 
-    pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
+    pub fn advance_width(&self, glyph_id: u16) -> Option<f32> {
         self.widths.get(glyph_id as usize).copied()
+    }
+
+    pub fn units_per_em(&self) -> u16 {
+        self.font.units_per_em()
     }
 
     pub fn to_font_units(&self, val: f32) -> f32 {
@@ -53,13 +54,12 @@ impl CIDFont {
 
     pub fn remap(&mut self, glyph: &Glyph) -> GlyphId {
         let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
-
         self.strings.insert(new_id, glyph.string.clone());
 
         // This means that the glyph ID has been newly assigned.
-        if new_id.to_u32() > self.widths.len() as u32 {
+        if new_id.to_u32() >= self.widths.len() as u32 {
             self.widths
-                .push(self.to_font_units(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0)));
+                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
         }
         new_id
     }
@@ -121,7 +121,7 @@ impl CIDFont {
             let end = first + group.len();
             if w != 0.0 {
                 let last = end - 1;
-                width_writer.same(first as u16, last as u16, w);
+                width_writer.same(first as u16, last as u16, self.to_font_units(w));
             }
             first = end;
         }

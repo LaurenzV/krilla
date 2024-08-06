@@ -621,7 +621,6 @@ dependencies = [
 [[package]]
 name = "subsetter"
 version = "0.11.0"
-source = "git+https://github.com/LaurenzV/subsetter?rev=c178d05#c178d05c64f151df9166761d7b6b07bd25aa8716"
 
 [[package]]
 name = "svgtypes"

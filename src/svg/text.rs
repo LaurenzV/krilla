@@ -1,5 +1,6 @@
 use crate::canvas::CanvasBuilder;
 use crate::font::Glyph;
+use crate::stream::TestGlyph;
 use crate::svg::util::{convert_fill, convert_stroke, convert_transform};
 use crate::svg::{path, FontContext};
 use crate::{Fill, Stroke};
@@ -27,42 +28,71 @@ pub fn render(
 
         for glyph in &span.positioned_glyphs {
             let (font, upem) = font_context.fonts.get(&glyph.font).copied().unwrap();
-            let fill = span
-                .fill
-                .as_ref()
-                .map(|f| convert_fill(&f, canvas_builder.sub_canvas(), font_context));
-            let stroke = span
-                .stroke
-                .as_ref()
-                .map(|s| convert_stroke(&s, canvas_builder.sub_canvas(), font_context));
 
             let transform = glyph.transform().pre_concat(Transform::from_scale(
                 upem as f32 / span.font_size.get(),
                 upem as f32 / span.font_size.get(),
             ));
 
+            // We need to apply the inverse transform to fill/stroke because we don't
+            // want the paint to be affected by the transform applied to the glyph.
+            let fill = span.fill.as_ref().map(|f| {
+                convert_fill(
+                    &f,
+                    canvas_builder.sub_canvas(),
+                    font_context,
+                    transform.invert().unwrap(),
+                )
+            });
+            let stroke = span.stroke.as_ref().map(|s| {
+                convert_stroke(
+                    &s,
+                    canvas_builder.sub_canvas(),
+                    font_context,
+                    transform.invert().unwrap(),
+                )
+            });
+
             let fill_op = |sb: &mut CanvasBuilder, fill: &Fill, font_context: &mut FontContext| {
-                sb.fill_glyph(
-                    Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
-                    font,
+                sb.fill_glyph_run(
+                    0.0,
+                    0.0,
                     font_context.fontdb,
-                    FiniteF32::new(span.font_size.get()).unwrap(),
-                    &convert_transform(&transform),
                     &fill,
+                    [TestGlyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
+                        0.0,
+                        0.0,
+                        span.font_size.get(),
+                        glyph.text.clone(),
+                    )]
+                    .into_iter()
+                    .peekable(),
                 );
             };
 
             let stroke_op =
                 |sb: &mut CanvasBuilder, stroke: &Stroke, font_context: &mut FontContext| {
-                    sb.stroke_glyph(
-                        Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
-                        font,
+                    sb.stroke_glyph_run(
+                        0.0,
+                        0.0,
                         font_context.fontdb,
-                        FiniteF32::new(span.font_size.get()).unwrap(),
-                        &convert_transform(&transform),
                         &stroke,
+                        [TestGlyph::new(
+                            font,
+                            GlyphId::new(glyph.id.0 as u32),
+                            0.0,
+                            0.0,
+                            span.font_size.get(),
+                            glyph.text.clone(),
+                        )]
+                        .into_iter()
+                        .peekable(),
                     );
                 };
+
+            canvas_builder.push_transform(&transform);
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
@@ -81,14 +111,24 @@ pub fn render(
                 (None, Some(stroke)) => {
                     stroke_op(canvas_builder, &stroke, font_context);
                 }
-                (None, None) => canvas_builder.invisible_glyph(
-                    Glyph::new(GlyphId::new(glyph.id.0 as u32), glyph.text.clone()),
-                    font,
+                (None, None) => canvas_builder.invisible_glyph_run(
+                    0.0,
+                    0.0,
                     font_context.fontdb,
-                    FiniteF32::new(span.font_size.get()).unwrap(),
-                    &convert_transform(&transform),
+                    [TestGlyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
+                        0.0,
+                        0.0,
+                        span.font_size.get(),
+                        glyph.text.clone(),
+                    )]
+                    .into_iter()
+                    .peekable(),
                 ),
             }
+
+            canvas_builder.pop_transform();
         }
 
         if let Some(line_through) = &span.line_through {

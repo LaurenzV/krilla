@@ -1,14 +1,13 @@
 #[cfg(test)]
 mod tests {
     use crate::canvas::Page;
-    use crate::font::Glyph;
     use crate::serialize::PageSerialize;
+    use crate::stream::TestGlyph;
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
     use fontdb::Source;
     use skrifa::GlyphId;
     use std::sync::Arc;
-    use tiny_skia_path::{FiniteF32, Transform};
 
     #[test]
     fn cosmic_text_integration() {
@@ -28,19 +27,22 @@ mod tests {
         // Inspect the output runs
         for run in buffer.layout_runs() {
             let y_offset = run.line_y;
-            for glyph in run.glyphs.iter() {
-                let text = &run.text[glyph.start..glyph.end];
-                let x_offset = glyph.x_offset * glyph.font_size + glyph.x;
-                let y_offset = y_offset + glyph.y_offset * glyph.font_size;
-                builder.fill_glyph(
-                    Glyph::new(GlyphId::new(glyph.glyph_id as u32), text.to_string()),
-                    glyph.font_id,
-                    font_system.db_mut(),
-                    FiniteF32::new(glyph.font_size).unwrap(),
-                    &Transform::from_translate(x_offset, y_offset),
-                    &Fill::default(),
-                )
-            }
+            let iter = run
+                .glyphs
+                .iter()
+                .map(|g| {
+                    eprintln!("{:?}", g);
+                    TestGlyph::new(
+                        g.font_id,
+                        GlyphId::new(g.glyph_id as u32),
+                        g.w,
+                        g.x_offset,
+                        g.font_size,
+                        run.text[g.start..g.end].to_string(),
+                    )
+                })
+                .peekable();
+            builder.fill_glyph_run(0.0, y_offset, font_system.db_mut(), &Fill::default(), iter);
         }
 
         // panic!();
