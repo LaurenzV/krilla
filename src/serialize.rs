@@ -1,8 +1,9 @@
 use crate::font::{Font, FontInfo, Glyph};
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::ColorSpace;
+use crate::object::color_space::d65_gray::D65Gray;
+use crate::object::color_space::srgb::Srgb;
 use crate::object::type3_font::Type3Font;
-use crate::resource::FontResource;
+use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Pdf, Ref};
@@ -80,11 +81,11 @@ impl SerializerContext {
     }
 
     pub fn srgb(&mut self) -> Ref {
-        self.add(ColorSpace::SRGB)
+        self.add(ColorSpaceEnum::Srgb(Srgb))
     }
 
     pub fn d65_gray(&mut self) -> Ref {
-        self.add(ColorSpace::D65Gray)
+        self.add(ColorSpaceEnum::D65Gray(D65Gray))
     }
 
     pub fn add<T>(&mut self, object: T) -> Ref

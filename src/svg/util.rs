@@ -1,8 +1,9 @@
 use crate::canvas::CanvasBuilder;
+use crate::object::color_space::srgb::Srgb;
 use crate::svg::{group, FontContext};
 use crate::{
-    Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern,
-    RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash,
+    Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
+    SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use pdf_writer::types::BlendMode;
 use std::sync::Arc;
@@ -30,7 +31,7 @@ pub fn convert_spread_mode(s: &usvg::SpreadMethod) -> SpreadMethod {
 pub fn convert_stop(s: &usvg::Stop) -> Stop {
     Stop {
         offset: s.offset(),
-        color: Color::new_rgb(s.color().red, s.color().green, s.color().blue),
+        color: Srgb::new_rgb(s.color().red, s.color().green, s.color().blue),
         opacity: NormalizedF32::new(s.opacity().get()).unwrap(),
     }
 }
@@ -42,7 +43,7 @@ pub fn convert_paint(
     additional_transform: Transform,
 ) -> Paint {
     match paint {
-        usvg::Paint::Color(c) => Paint::Color(Color::new_rgb(c.red, c.green, c.blue)),
+        usvg::Paint::Color(c) => Paint::Color(Srgb::new_rgb(c.red, c.green, c.blue)),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
             x1: lg.x1(),
             y1: lg.y1(),

@@ -1,5 +1,4 @@
 pub mod canvas;
-pub mod color;
 pub mod font;
 mod graphics_state;
 mod object;
@@ -12,7 +11,6 @@ pub mod svg;
 pub mod transform;
 pub mod util;
 
-pub use color::*;
 pub use fontdb::*;
 pub use object::mask::MaskType;
 pub use paint::*;

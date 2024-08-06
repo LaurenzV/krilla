@@ -1,4 +1,3 @@
-use crate::color::PdfColorExt;
 use crate::paint::{SpreadMethod, Stop};
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
@@ -257,11 +256,23 @@ fn select_axial_radial_function(
 
     if stops.len() == 2 {
         if use_opacities {
-            serialize_exponential(&[stops[0].opacity], &[stops[1].opacity], sc)
+            serialize_exponential(
+                vec![stops[0].opacity.get()],
+                vec![stops[1].opacity.get()],
+                sc,
+            )
         } else {
             serialize_exponential(
-                &stops[0].color.to_normalized_pdf_components(),
-                &stops[1].color.to_normalized_pdf_components(),
+                stops[0]
+                    .color
+                    .to_pdf_color()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+                stops[1]
+                    .color
+                    .to_pdf_color()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
                 sc,
             )
         }
@@ -560,8 +571,8 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         } else {
             stops[0]
                 .color
-                .to_pdf_components()
-                .iter()
+                .to_pdf_color()
+                .into_iter()
                 .map(|n| n.to_string())
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -581,8 +592,16 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
             )
         } else {
             encode_two_stops(
-                &stops[0].color.to_pdf_components(),
-                &stops[1].color.to_pdf_components(),
+                &stops[0]
+                    .color
+                    .to_pdf_color()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+                &stops[1]
+                    .color
+                    .to_pdf_color()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
                 stops_min,
                 stops_max,
             )
@@ -609,17 +628,17 @@ fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext, use_opacities
         bounds.push(second.offset.get());
 
         let (c0_components, c1_components) = if use_opacities {
-            (vec![first.opacity], vec![second.opacity])
+            (vec![first.opacity.get()], vec![second.opacity.get()])
         } else {
             (
-                first.color.to_normalized_pdf_components(),
-                second.color.to_normalized_pdf_components(),
+                first.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
             )
         };
         debug_assert!(c0_components.len() == c1_components.len());
         count = c0_components.len();
 
-        let exp_ref = serialize_exponential(&c0_components, &c1_components, sc);
+        let exp_ref = serialize_exponential(c0_components, c1_components, sc);
 
         functions.push(exp_ref);
         encode.extend([0.0, 1.0]);
@@ -637,8 +656,8 @@ fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext, use_opacities
 }
 
 fn serialize_exponential(
-    first_comps: &[NormalizedF32],
-    second_comps: &[NormalizedF32],
+    first_comps: Vec<f32>,
+    second_comps: Vec<f32>,
     sc: &mut SerializerContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
@@ -648,8 +667,8 @@ fn serialize_exponential(
     let mut exp = sc.chunk_mut().exponential_function(root_ref);
 
     exp.range([0.0, 1.0].repeat(num_components));
-    exp.c0(first_comps.into_iter().map(|n| n.get()));
-    exp.c1(second_comps.into_iter().map(|n| n.get()));
+    exp.c0(first_comps);
+    exp.c1(second_comps);
     exp.domain([0.0, 1.0]);
     exp.n(1.0);
     exp.finish();

@@ -1,4 +1,4 @@
-use crate::color::Color;
+use crate::object::color_space::device_gray::DeviceGray;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
@@ -68,7 +68,7 @@ pub struct Stroke {
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
-            paint: Paint::Color(Color::black()),
+            paint: Paint::Color(DeviceGray::black()),
             width: 1.0,
             miter_limit: 10.0,
             line_cap: LineCap::default(),
@@ -134,7 +134,7 @@ pub struct Fill {
 impl Default for Fill {
     fn default() -> Self {
         Fill {
-            paint: Paint::Color(Color::black()),
+            paint: Paint::Color(DeviceGray::black()),
             opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }

@@ -1,6 +1,7 @@
 use crate::font::Glyph;
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
+use crate::object::color_space::Color;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -16,7 +17,7 @@ use crate::resource::{
 use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
+use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
@@ -563,7 +564,7 @@ impl StreamBuilder {
             Paint::Color(c) => {
                 let color_space = self
                     .rd_builder
-                    .register_resource(Resource::ColorSpace(c.get_pdf_color_space()));
+                    .register_resource(Resource::ColorSpace(c.color_space()));
                 set_solid_fn(&mut self.content, color_space, c);
             }
             Paint::LinearGradient(lg) => {
@@ -612,7 +613,7 @@ impl StreamBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: &Color) {
             content.set_fill_color_space(color_space.to_pdf_name());
-            content.set_fill_color(color.to_pdf_components());
+            content.set_fill_color(color.to_pdf_color());
         }
 
         self.content_set_fill_stroke_properties(
@@ -638,7 +639,7 @@ impl StreamBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: &Color) {
             content.set_stroke_color_space(color_space.to_pdf_name());
-            content.set_stroke_color(color.to_pdf_components());
+            content.set_stroke_color(color.to_pdf_color());
         }
 
         self.content_set_fill_stroke_properties(

@@ -1,4 +1,7 @@
-use crate::object::color_space::ColorSpace;
+use crate::object::color_space::d65_gray::D65Gray;
+use crate::object::color_space::device_gray::DeviceGray;
+use crate::object::color_space::device_rgb::DeviceRgb;
+use crate::object::color_space::srgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
@@ -13,6 +16,7 @@ use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use crate::object::color_space::device_cmyk::DeviceCmyk;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -29,7 +33,7 @@ impl ResourceTrait for ExtGState {
     }
 }
 
-impl ResourceTrait for ColorSpace {
+impl ResourceTrait for ColorSpaceEnum {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
         resources.color_spaces()
     }
@@ -54,7 +58,7 @@ pub enum Resource {
     XObject(XObjectResource),
     Pattern(PatternResource),
     ExtGState(ExtGState),
-    ColorSpace(ColorSpace),
+    ColorSpace(ColorSpaceEnum),
     Shading(ShadingFunction),
     Font(FontResource),
 }
@@ -130,7 +134,7 @@ impl RegisterableObject for PatternResource {}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ResourceDictionaryBuilder {
-    pub color_spaces: ResourceMapper<ColorSpace>,
+    pub color_spaces: ResourceMapper<ColorSpaceEnum>,
     pub ext_g_states: ResourceMapper<ExtGState>,
     pub patterns: ResourceMapper<PatternResource>,
     pub x_objects: ResourceMapper<XObjectResource>,
@@ -150,11 +154,13 @@ impl ResourceDictionaryBuilder {
         }
     }
 
-    fn register_color_space(&mut self, color_space: ColorSpace) -> String {
+    fn register_color_space(&mut self, color_space: ColorSpaceEnum) -> String {
         match color_space {
-            ColorSpace::DeviceRgb => "DeviceRGB".to_string(),
-            ColorSpace::DeviceGray => "DeviceGray".to_string(),
-            _ => self.color_spaces.remap_with_name(color_space),
+            ColorSpaceEnum::DeviceRgb(_) => "DeviceRGB".to_string(),
+            ColorSpaceEnum::DeviceGray(_) => "DeviceGray".to_string(),
+            ColorSpaceEnum::DeviceCmyk(_) => "DeviceCMYK".to_string(),
+            ColorSpaceEnum::Srgb(_) => self.color_spaces.remap_with_name(color_space),
+            ColorSpaceEnum::D65Gray(_) => self.color_spaces.remap_with_name(color_space),
         }
     }
 
@@ -203,7 +209,7 @@ impl ResourceDictionaryBuilder {
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct ResourceDictionary {
-    pub color_spaces: ResourceList<ColorSpace>,
+    pub color_spaces: ResourceList<ColorSpaceEnum>,
     pub ext_g_states: ResourceList<ExtGState>,
     pub patterns: ResourceList<PatternResource>,
     pub x_objects: ResourceList<XObjectResource>,
@@ -339,6 +345,29 @@ impl Object for FontResource {
         // unreachable!()
     }
 }
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum ColorSpaceEnum {
+    Srgb(Srgb),
+    D65Gray(D65Gray),
+    DeviceGray(DeviceGray),
+    DeviceRgb(DeviceRgb),
+    DeviceCmyk(DeviceCmyk),
+}
+
+impl Object for ColorSpaceEnum {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        match self {
+            ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
+            ColorSpaceEnum::D65Gray(d65_gray) => d65_gray.serialize_into(sc, root_ref),
+            ColorSpaceEnum::DeviceGray(device_gray) => device_gray.serialize_into(sc, root_ref),
+            ColorSpaceEnum::DeviceRgb(device_rgb) => device_rgb.serialize_into(sc, root_ref),
+            ColorSpaceEnum::DeviceCmyk(device_cmyk) => device_cmyk.serialize_into(sc, root_ref),
+        }
+    }
+}
+
+impl RegisterableObject for ColorSpaceEnum {}
 
 impl RegisterableObject for FontResource {}
 

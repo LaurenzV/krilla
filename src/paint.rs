@@ -1,4 +1,4 @@
-use crate::color::Color;
+use crate::object::color_space::Color;
 use crate::stream::Stream;
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Transform};

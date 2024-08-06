@@ -1,6 +1,7 @@
 use crate::canvas::CanvasBuilder;
-use crate::color::Color;
 use crate::font::{Font, OutlineBuilder};
+use crate::object::color_space::srgb::Srgb;
+use crate::object::color_space::Color;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
@@ -60,11 +61,11 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
                 .unwrap()[palette_index as usize];
 
             (
-                Color::new_rgb(color.red, color.green, color.blue),
+                Srgb::new_rgb(color.red, color.green, color.blue),
                 NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
             )
         } else {
-            (Color::new_rgb(0, 0, 0), NormalizedF32::new(alpha).unwrap())
+            (Srgb::new_rgb(0, 0, 0), NormalizedF32::new(alpha).unwrap())
         }
     }
 
