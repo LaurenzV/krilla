@@ -658,12 +658,12 @@ impl StreamBuilder {
 
         // Only write if they don't correspond to the default values as defined in the
         // PDF specification.
-        if stroke.width.get() != 1.0 {
-            self.content.set_line_width(stroke.width.get());
+        if stroke.width != 1.0 {
+            self.content.set_line_width(stroke.width);
         }
 
-        if stroke.miter_limit.get() != 10.0 {
-            self.content.set_miter_limit(stroke.miter_limit.get());
+        if stroke.miter_limit != 10.0 {
+            self.content.set_miter_limit(stroke.miter_limit);
         }
 
         if stroke.line_cap != LineCap::Butt {

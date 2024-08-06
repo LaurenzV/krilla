@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use tiny_skia_path::{FiniteF32, NonZeroPositiveF32, NormalizedF32};
 pub use tiny_skia_path::{Path, PathBuilder};
 
-#[derive(Eq, PartialEq, Debug, Hash, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum LineCap {
     Butt,
     Round,
@@ -17,7 +17,7 @@ impl Default for LineCap {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum LineJoin {
     Miter,
     Round,
@@ -30,17 +30,17 @@ impl Default for LineJoin {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct StrokeDash {
     pub array: Vec<FiniteF32>,
     pub offset: FiniteF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Stroke {
     pub paint: Paint,
-    pub width: NonZeroPositiveF32,
-    pub miter_limit: NonZeroPositiveF32,
+    pub width: f32,
+    pub miter_limit: f32,
     pub line_cap: LineCap,
     pub line_join: LineJoin,
     pub opacity: NormalizedF32,
@@ -50,8 +50,8 @@ pub struct Stroke {
 impl Stroke {
     pub fn to_tiny_skia(&self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
-            width: self.width.get(),
-            miter_limit: self.miter_limit.get(),
+            width: self.width,
+            miter_limit: self.miter_limit,
             line_cap: match self.line_cap {
                 LineCap::Butt => tiny_skia_path::LineCap::Butt,
                 LineCap::Round => tiny_skia_path::LineCap::Round,
@@ -84,8 +84,8 @@ impl Default for Stroke {
     fn default() -> Self {
         Stroke {
             paint: Paint::Color(Color::black()),
-            width: NonZeroPositiveF32::new(1.0).unwrap(),
-            miter_limit: NonZeroPositiveF32::new(10.0).unwrap(),
+            width: 1.0,
+            miter_limit: 10.0,
             line_cap: LineCap::default(),
             line_join: LineJoin::default(),
             opacity: NormalizedF32::ONE,
@@ -94,7 +94,7 @@ impl Default for Stroke {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum FillRule {
     NonZero,
     EvenOdd,
@@ -106,7 +106,7 @@ impl Default for FillRule {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Fill {
     pub paint: Paint,
     pub opacity: NormalizedF32,
@@ -120,33 +120,5 @@ impl Default for Fill {
             opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct PathWrapper(pub Path);
-
-// We don't care about NaNs.
-impl Eq for PathWrapper {}
-
-impl Hash for PathWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.verbs().hash(state);
-
-        for point in self.0.points() {
-            debug_assert!(!point.x.is_nan());
-            debug_assert!(!point.y.is_nan());
-
-            point.x.to_bits().hash(state);
-            point.y.to_bits().hash(state);
-        }
-
-        self.0.bounds().hash(state);
-    }
-}
-
-impl Into<PathWrapper> for Path {
-    fn into(self) -> PathWrapper {
-        PathWrapper(self)
     }
 }
