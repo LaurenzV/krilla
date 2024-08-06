@@ -1,7 +1,7 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{Font, FontInfo};
+use crate::font::FontInfo;
 use fontdb::Database;
-use skrifa::instance::{Location, LocationRef};
+use skrifa::instance::LocationRef;
 use skrifa::FontRef;
 use std::collections::HashMap;
 use std::sync::Arc;

@@ -1,4 +1,3 @@
-use crate::font::Glyph;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
@@ -6,12 +5,12 @@ use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder, TestGlyph};
 use crate::util::{deflate, RectExt};
 use crate::{Fill, FillRule, Stroke};
-use fontdb::{Database, ID};
+use fontdb::Database;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Filter, Finish, Pdf};
 use std::iter::Peekable;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, Path, Size, Transform};
+use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
 
 pub struct Page {

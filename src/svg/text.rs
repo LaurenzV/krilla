@@ -1,11 +1,10 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::Glyph;
 use crate::stream::TestGlyph;
-use crate::svg::util::{convert_fill, convert_stroke, convert_transform};
+use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, FontContext};
 use crate::{Fill, Stroke};
 use skrifa::GlyphId;
-use tiny_skia_path::{FiniteF32, Transform};
+use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
 pub fn render(

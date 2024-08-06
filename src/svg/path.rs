@@ -1,7 +1,6 @@
 use crate::canvas::CanvasBuilder;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::FontContext;
-use cosmic_text::Transform;
 use usvg::PaintOrder;
 
 pub fn render(

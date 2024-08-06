@@ -1,8 +1,7 @@
 use crate::color::Color;
 use crate::stream::Stream;
-use crate::transform::TransformWrapper;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32};
+use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum SpreadMethod {
@@ -17,62 +16,60 @@ impl Default for SpreadMethod {
     }
 }
 
-pub type StopOffset = NormalizedF32;
-
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Stop {
-    pub offset: StopOffset,
+    pub offset: NormalizedF32,
     pub color: Color,
     pub opacity: NormalizedF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct LinearGradient {
-    pub x1: FiniteF32,
-    pub y1: FiniteF32,
-    pub x2: FiniteF32,
-    pub y2: FiniteF32,
-    pub transform: TransformWrapper,
+    pub x1: f32,
+    pub y1: f32,
+    pub x2: f32,
+    pub y2: f32,
+    pub transform: Transform,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct RadialGradient {
-    pub cx: FiniteF32,
-    pub cy: FiniteF32,
-    pub cr: FiniteF32,
-    pub fx: FiniteF32,
-    pub fy: FiniteF32,
-    pub fr: FiniteF32,
-    pub transform: TransformWrapper,
+    pub cx: f32,
+    pub cy: f32,
+    pub cr: f32,
+    pub fx: f32,
+    pub fy: f32,
+    pub fr: f32,
+    pub transform: Transform,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct SweepGradient {
-    pub cx: FiniteF32,
-    pub cy: FiniteF32,
-    pub start_angle: FiniteF32,
-    pub end_angle: FiniteF32,
-    pub transform: TransformWrapper,
+    pub cx: f32,
+    pub cy: f32,
+    pub start_angle: f32,
+    pub end_angle: f32,
+    pub transform: Transform,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Pattern {
     pub(crate) stream: Arc<Stream>,
-    pub(crate) transform: TransformWrapper,
-    pub(crate) width: FiniteF32,
-    pub(crate) height: FiniteF32,
+    pub(crate) transform: Transform,
+    pub(crate) width: f32,
+    pub(crate) height: f32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Paint {
     Color(Color),
     LinearGradient(LinearGradient),

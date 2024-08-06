@@ -18,9 +18,7 @@ use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Color, Fill, FillRule, LineCap, LineJoin, Paint, PdfColorExt, Stroke};
 use fontdb::{Database, ID};
-use pdf_writer::types::StructRole::P;
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::writers::PositionedItems;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
 use std::iter::Peekable;
@@ -523,12 +521,8 @@ impl StreamBuilder {
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
     ) {
-        let pattern_transform = |transform: TransformWrapper| -> TransformWrapper {
-            TransformWrapper(
-                transform
-                    .0
-                    .post_concat(self.graphics_states.cur().transform()),
-            )
+        let pattern_transform = |transform: Transform| -> Transform {
+            transform.post_concat(self.graphics_states.cur().transform())
         };
 
         let mut write_gradient = |gradient_props: GradientProperties,
@@ -593,10 +587,10 @@ impl StreamBuilder {
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
                         pat.stream.clone(),
-                        pat.transform,
+                        TransformWrapper(pat.transform),
                         opacity,
-                        pat.width,
-                        pat.height,
+                        FiniteF32::new(pat.width).unwrap(),
+                        FiniteF32::new(pat.height).unwrap(),
                         serializer_context,
                     )),
                 ));
@@ -676,10 +670,8 @@ impl StreamBuilder {
         }
 
         if let Some(stroke_dash) = &stroke.dash {
-            self.content.set_dash_pattern(
-                stroke_dash.array.iter().map(|n| n.get()),
-                stroke_dash.offset.get(),
-            );
+            self.content
+                .set_dash_pattern(stroke_dash.array.iter().copied(), stroke_dash.offset);
         }
     }
 

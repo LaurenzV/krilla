@@ -1,8 +1,5 @@
-use crate::stream::TestGlyph;
 use crate::util::Prehashed;
-use fontdb::{Database, Source};
 use skrifa::instance::Location;
-use skrifa::metrics::GlyphMetrics;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::TableProvider;
@@ -249,7 +246,9 @@ impl Font {
 fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     use crate::canvas::Page;
     use crate::serialize::PageSerialize;
+    use crate::stream::TestGlyph;
     use crate::Transform;
+    use crate::{Database, Source};
 
     let mut fontdb = Database::new();
     let cloned = font_data.clone();

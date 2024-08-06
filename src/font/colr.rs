@@ -1,8 +1,7 @@
 use crate::canvas::CanvasBuilder;
 use crate::color::Color;
-use crate::font::{Font, FontInfo, OutlineBuilder};
+use crate::font::{Font, OutlineBuilder};
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
-use crate::transform::TransformWrapper;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
@@ -10,8 +9,8 @@ use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathBuilder, Transform};
+use skrifa::{GlyphId, MetadataProvider};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
 pub fn draw_glyph<'a, 'b>(
     font: Font,
@@ -188,13 +187,13 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 extend,
             } => {
                 let linear = LinearGradient {
-                    x1: FiniteF32::new(p0.x).unwrap(),
-                    y1: FiniteF32::new(p0.y).unwrap(),
-                    x2: FiniteF32::new(p1.x).unwrap(),
-                    y2: FiniteF32::new(p1.y).unwrap(),
+                    x1: p0.x,
+                    y1: p0.y,
+                    x2: p1.x,
+                    y2: p1.y,
                     stops: self.stops(color_stops),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(*self.transforms.last().unwrap()),
+                    transform: *self.transforms.last().unwrap(),
                 };
 
                 Some(Fill {
@@ -212,15 +211,15 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 extend,
             } => {
                 let radial = RadialGradient {
-                    fx: FiniteF32::new(c0.x).unwrap(),
-                    fy: FiniteF32::new(c0.y).unwrap(),
-                    fr: FiniteF32::new(r0).unwrap(),
-                    cx: FiniteF32::new(c1.x).unwrap(),
-                    cy: FiniteF32::new(c1.y).unwrap(),
-                    cr: FiniteF32::new(r1).unwrap(),
+                    fx: c0.x,
+                    fy: c0.y,
+                    fr: r0,
+                    cx: c1.x,
+                    cy: c1.y,
+                    cr: r1,
                     stops: self.stops(color_stops),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(*self.transforms.last().unwrap()),
+                    transform: *self.transforms.last().unwrap(),
                 };
 
                 Some(Fill {
@@ -245,14 +244,14 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     None
                 } else {
                     let sweep = SweepGradient {
-                        cx: FiniteF32::new(c0.x).unwrap(),
-                        cy: FiniteF32::new(c0.y).unwrap(),
-                        start_angle: FiniteF32::new(start_angle).unwrap(),
-                        end_angle: FiniteF32::new(end_angle).unwrap(),
+                        cx: c0.x,
+                        cy: c0.y,
+                        start_angle,
+                        end_angle,
                         stops: self.stops(color_stops),
                         spread_method: extend.to_spread_method(),
                         // COLR gradients run in the different direction
-                        transform: TransformWrapper(*self.transforms.last().unwrap()),
+                        transform: *self.transforms.last().unwrap(),
                     };
 
                     Some(Fill {

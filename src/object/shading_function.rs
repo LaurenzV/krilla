@@ -70,27 +70,32 @@ impl GradientPropertiesExt for LinearGradient {
         if self.spread_method == SpreadMethod::Pad {
             (
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
-                    coords: vec![self.x1, self.y1, self.x2, self.y2],
+                    coords: vec![
+                        FiniteF32::new(self.x1).unwrap(),
+                        FiniteF32::new(self.y1).unwrap(),
+                        FiniteF32::new(self.x2).unwrap(),
+                        FiniteF32::new(self.y2).unwrap(),
+                    ],
                     shading_type: FunctionShadingType::Axial,
                     stops: Vec::from(self.stops.clone()),
                 }),
-                self.transform,
+                TransformWrapper(self.transform),
             )
         } else {
             let (ts, min, max) = get_point_ts(
-                Point::from_xy(self.x1.get(), self.y1.get()),
-                Point::from_xy(self.x2.get(), self.y2.get()),
+                Point::from_xy(self.x1, self.y1),
+                Point::from_xy(self.x2, self.y2),
             );
             (
                 GradientProperties::PostScriptGradient(PostScriptGradient {
                     min: FiniteF32::new(min).unwrap(),
                     max: FiniteF32::new(max).unwrap(),
                     stops: Vec::from(self.stops.clone()),
-                    domain: get_expanded_bbox(bbox, self.transform.0.post_concat(ts)),
+                    domain: get_expanded_bbox(bbox, self.transform.post_concat(ts)),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
                 }),
-                TransformWrapper(self.transform.0.post_concat(ts)),
+                TransformWrapper(self.transform.post_concat(ts)),
             )
         }
     }
@@ -103,13 +108,12 @@ impl GradientPropertiesExt for SweepGradient {
 
         let transform = self
             .transform
-            .0
-            .post_concat(Transform::from_translate(self.cx.get(), self.cy.get()));
+            .post_concat(Transform::from_translate(self.cx, self.cy));
 
         (
             GradientProperties::PostScriptGradient(PostScriptGradient {
-                min,
-                max,
+                min: FiniteF32::new(min).unwrap(),
+                max: FiniteF32::new(max).unwrap(),
                 stops: Vec::from(self.stops.clone()),
                 domain: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
@@ -125,11 +129,18 @@ impl GradientPropertiesExt for RadialGradient {
         // TODO: Support other spread methods
         (
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
-                coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
+                coords: vec![
+                    FiniteF32::new(self.fx).unwrap(),
+                    FiniteF32::new(self.fy).unwrap(),
+                    FiniteF32::new(self.fr).unwrap(),
+                    FiniteF32::new(self.cx).unwrap(),
+                    FiniteF32::new(self.cy).unwrap(),
+                    FiniteF32::new(self.cr).unwrap(),
+                ],
                 shading_type: FunctionShadingType::Radial,
                 stops: Vec::from(self.stops.clone()),
             }),
-            self.transform,
+            TransformWrapper(self.transform),
         )
     }
 }

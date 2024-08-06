@@ -1,5 +1,5 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{bitmap, colr, outline, svg, Font, FontInfo, Glyph};
+use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -8,8 +8,7 @@ use crate::util::{NameExt, RectExt, TransformExt};
 use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
-use skrifa::prelude::Size;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{FontRef, GlyphId};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};

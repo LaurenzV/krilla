@@ -13,7 +13,6 @@ use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::sync::Arc;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;

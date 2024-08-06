@@ -1,8 +1,8 @@
 use crate::canvas::CanvasBuilder;
-use crate::font::{Font, FontInfo, OutlineBuilder};
+use crate::font::{Font, OutlineBuilder};
 use crate::Fill;
 use skrifa::outline::DrawSettings;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
 pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {

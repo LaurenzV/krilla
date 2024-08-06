@@ -6,7 +6,7 @@ use pdf_writer::{Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{FontRef, GlyphId};
 use std::collections::BTreeMap;
 use subsetter::GlyphRemapper;
 

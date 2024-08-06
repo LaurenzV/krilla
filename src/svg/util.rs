@@ -1,14 +1,12 @@
 use crate::canvas::CanvasBuilder;
 use crate::svg::{group, FontContext};
-use crate::transform::TransformWrapper;
 use crate::{
     Color, Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern,
     RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use pdf_writer::types::BlendMode;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
-use usvg::NonZeroPositiveF32;
+use tiny_skia_path::{NormalizedF32, Transform};
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {
     Transform {
@@ -46,13 +44,11 @@ pub fn convert_paint(
     match paint {
         usvg::Paint::Color(c) => Paint::Color(Color::new_rgb(c.red, c.green, c.blue)),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
-            x1: FiniteF32::new(lg.x1()).unwrap(),
-            y1: FiniteF32::new(lg.y1()).unwrap(),
-            x2: FiniteF32::new(lg.x2()).unwrap(),
-            y2: FiniteF32::new(lg.y2()).unwrap(),
-            transform: TransformWrapper(
-                additional_transform.pre_concat(convert_transform(&lg.transform())),
-            ),
+            x1: lg.x1(),
+            y1: lg.y1(),
+            x2: lg.x2(),
+            y2: lg.y2(),
+            transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
             spread_method: convert_spread_mode(&lg.spread_method()),
             stops: lg
                 .stops()
@@ -61,15 +57,13 @@ pub fn convert_paint(
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::RadialGradient(rg) => Paint::RadialGradient(RadialGradient {
-            cx: FiniteF32::new(rg.cx()).unwrap(),
-            cy: FiniteF32::new(rg.cy()).unwrap(),
-            cr: FiniteF32::new(rg.r().get()).unwrap(),
-            fx: FiniteF32::new(rg.fx()).unwrap(),
-            fy: FiniteF32::new(rg.fy()).unwrap(),
-            fr: FiniteF32::new(0.0).unwrap(),
-            transform: TransformWrapper(
-                additional_transform.pre_concat(convert_transform(&rg.transform())),
-            ),
+            cx: rg.cx(),
+            cy: rg.cy(),
+            cr: rg.r().get(),
+            fx: rg.fx(),
+            fy: rg.fy(),
+            fr: 0.0,
+            transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
             spread_method: convert_spread_mode(&rg.spread_method()),
             stops: rg
                 .stops()
@@ -83,13 +77,11 @@ pub fn convert_paint(
 
             Paint::Pattern(Arc::new(Pattern {
                 stream: Arc::new(stream),
-                transform: TransformWrapper(
-                    additional_transform
-                        .pre_concat(pat.transform())
-                        .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
-                ),
-                width: FiniteF32::new(pat.rect().width()).unwrap(),
-                height: FiniteF32::new(pat.rect().height()).unwrap(),
+                transform: additional_transform
+                    .pre_concat(pat.transform())
+                    .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
+                width: pat.rect().width(),
+                height: pat.rect().height(),
             }))
         }
     }
@@ -145,11 +137,8 @@ pub fn convert_stroke(
 ) -> Stroke {
     let dash = if let Some(dash_array) = stroke.dasharray() {
         Some(StrokeDash {
-            offset: FiniteF32::new(stroke.dashoffset()).unwrap(),
-            array: dash_array
-                .iter()
-                .map(|d| FiniteF32::new(*d).unwrap())
-                .collect::<Vec<_>>(),
+            offset: stroke.dashoffset(),
+            array: dash_array.to_vec(),
         })
     } else {
         None
