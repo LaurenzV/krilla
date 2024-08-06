@@ -1,6 +1,7 @@
 use crate::canvas::CanvasBuilder;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::FontContext;
+use cosmic_text::Transform;
 use usvg::PaintOrder;
 
 pub fn render(
@@ -30,7 +31,12 @@ pub fn fill_path(
     font_context: &mut FontContext,
 ) {
     if let Some(fill) = path.fill() {
-        let fill = convert_fill(fill, canvas_builder.sub_canvas(), font_context);
+        let fill = convert_fill(
+            fill,
+            canvas_builder.sub_canvas(),
+            font_context,
+            tiny_skia_path::Transform::identity(),
+        );
         canvas_builder.fill_path(&path.data(), &fill);
     }
 }
@@ -41,7 +47,12 @@ pub fn stroke_path(
     font_context: &mut FontContext,
 ) {
     if let Some(stroke) = path.stroke() {
-        let stroke = convert_stroke(stroke, canvas_builder.sub_canvas(), font_context);
+        let stroke = convert_stroke(
+            stroke,
+            canvas_builder.sub_canvas(),
+            font_context,
+            tiny_skia_path::Transform::identity(),
+        );
         canvas_builder.stroke_path(&path.data(), &stroke);
     }
 }

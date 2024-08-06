@@ -28,19 +28,30 @@ pub fn render(
 
         for glyph in &span.positioned_glyphs {
             let (font, upem) = font_context.fonts.get(&glyph.font).copied().unwrap();
-            let fill = span
-                .fill
-                .as_ref()
-                .map(|f| convert_fill(&f, canvas_builder.sub_canvas(), font_context));
-            let stroke = span
-                .stroke
-                .as_ref()
-                .map(|s| convert_stroke(&s, canvas_builder.sub_canvas(), font_context));
 
             let transform = glyph.transform().pre_concat(Transform::from_scale(
                 upem as f32 / span.font_size.get(),
                 upem as f32 / span.font_size.get(),
             ));
+
+            // We need to apply the inverse transform to fill/stroke because we don't
+            // want the paint to be affected by the transform applied to the glyph.
+            let fill = span.fill.as_ref().map(|f| {
+                convert_fill(
+                    &f,
+                    canvas_builder.sub_canvas(),
+                    font_context,
+                    transform.invert().unwrap(),
+                )
+            });
+            let stroke = span.stroke.as_ref().map(|s| {
+                convert_stroke(
+                    &s,
+                    canvas_builder.sub_canvas(),
+                    font_context,
+                    transform.invert().unwrap(),
+                )
+            });
 
             let fill_op = |sb: &mut CanvasBuilder, fill: &Fill, font_context: &mut FontContext| {
                 sb.fill_glyph_run(
