@@ -1,4 +1,4 @@
-use crate::object::color_space::Color;
+use crate::object::color_space::ColorSpace;
 use crate::stream::Stream;
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Transform};
@@ -17,26 +17,47 @@ impl Default for SpreadMethod {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub struct Stop {
+pub struct Stop<C>
+where
+    C: ColorSpace,
+{
     pub offset: NormalizedF32,
-    pub color: Color,
+    pub color: C::Color,
     pub opacity: NormalizedF32,
 }
 
+impl<C> Into<crate::object::shading_function::Stop> for Stop<C>
+where
+    C: ColorSpace,
+{
+    fn into(self) -> crate::object::shading_function::Stop {
+        crate::object::shading_function::Stop {
+            offset: self.offset,
+            opacity: self.opacity,
+            color: self.color.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct LinearGradient {
+pub struct LinearGradient<C>
+where
+    C: ColorSpace,
+{
     pub x1: f32,
     pub y1: f32,
     pub x2: f32,
     pub y2: f32,
     pub transform: Transform,
     pub spread_method: SpreadMethod,
-    // TODO: Add note that all stops must be in the same color space
-    pub stops: Vec<Stop>,
+    pub stops: Vec<Stop<C>>,
 }
 
 #[derive(Debug, Clone)]
-pub struct RadialGradient {
+pub struct RadialGradient<C>
+where
+    C: ColorSpace,
+{
     pub cx: f32,
     pub cy: f32,
     pub cr: f32,
@@ -45,12 +66,14 @@ pub struct RadialGradient {
     pub fr: f32,
     pub transform: Transform,
     pub spread_method: SpreadMethod,
-    // TODO: Add note that all stops must be in the same color space
-    pub stops: Vec<Stop>,
+    pub stops: Vec<Stop<C>>,
 }
 
 #[derive(Debug, Clone)]
-pub struct SweepGradient {
+pub struct SweepGradient<C>
+where
+    C: ColorSpace,
+{
     pub cx: f32,
     pub cy: f32,
     pub start_angle: f32,
@@ -58,7 +81,7 @@ pub struct SweepGradient {
     pub transform: Transform,
     pub spread_method: SpreadMethod,
     // TODO: Add note that all stops must be in the same color space
-    pub stops: Vec<Stop>,
+    pub stops: Vec<Stop<C>>,
 }
 
 #[derive(Debug, Clone)]
@@ -70,10 +93,13 @@ pub struct Pattern {
 }
 
 #[derive(Debug, Clone)]
-pub enum Paint {
-    Color(Color),
-    LinearGradient(LinearGradient),
-    RadialGradient(RadialGradient),
-    SweepGradient(SweepGradient),
+pub enum Paint<C>
+where
+    C: ColorSpace,
+{
+    Color(C::Color),
+    LinearGradient(LinearGradient<C>),
+    RadialGradient(RadialGradient<C>),
+    SweepGradient(SweepGradient<C>),
     Pattern(Arc<Pattern>),
 }

@@ -1,7 +1,7 @@
 use crate::font::Glyph;
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::Color;
+use crate::object::color_space::{Color, ColorSpace, InternalColor};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -91,22 +91,26 @@ impl StreamBuilder {
         }
     }
 
-    pub fn fill_path(
+    pub fn fill_path<C>(
         &mut self,
         path: &Path,
-        fill: &Fill,
+        fill: &Fill<C>,
         serializer_context: &mut SerializerContext,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         self.fill_path_impl(path, fill, serializer_context, false);
     }
 
-    pub(crate) fn fill_path_impl(
+    pub(crate) fn fill_path_impl<C>(
         &mut self,
         path: &Path,
-        fill: &Fill,
+        fill: &Fill<C>,
         serializer_context: &mut SerializerContext,
         no_fill: bool,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -137,12 +141,14 @@ impl StreamBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_path(
+    pub fn stroke_path<C>(
         &mut self,
         path: &Path,
-        stroke: &Stroke,
+        stroke: &Stroke<C>,
         serializer_context: &mut SerializerContext,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
@@ -207,15 +213,17 @@ impl StreamBuilder {
         );
     }
 
-    pub fn fill_glyph_run(
+    pub fn fill_glyph_run<C>(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
-        fill: &Fill,
+        fill: &Fill<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         self.graphics_states.save_state();
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -243,15 +251,17 @@ impl StreamBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_glyph_run(
+    pub fn stroke_glyph_run<C>(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
-        stroke: &Stroke,
+        stroke: &Stroke<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         self.graphics_states.save_state();
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -513,15 +523,17 @@ impl StreamBuilder {
         }
     }
 
-    fn content_set_fill_stroke_properties(
+    fn content_set_fill_stroke_properties<C>(
         &mut self,
         bounds: Rect,
-        paint: &Paint,
+        paint: &Paint<C>,
         opacity: NormalizedF32,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.graphics_states.cur().transform())
         };
@@ -564,19 +576,19 @@ impl StreamBuilder {
             Paint::Color(c) => {
                 let color_space = self
                     .rd_builder
-                    .register_resource(Resource::ColorSpace(c.color_space()));
-                set_solid_fn(&mut self.content, color_space, c);
+                    .register_resource(Resource::ColorSpace(c.color_space().into()));
+                set_solid_fn(&mut self.content, color_space, &(*c).into());
             }
             Paint::LinearGradient(lg) => {
-                let (gradient_props, transform) = lg.gradient_properties(bounds);
+                let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::RadialGradient(rg) => {
-                let (gradient_props, transform) = rg.gradient_properties(bounds);
+                let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::SweepGradient(sg) => {
-                let (gradient_props, transform) = sg.gradient_properties(bounds);
+                let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
             Paint::Pattern(pat) => {
@@ -600,12 +612,14 @@ impl StreamBuilder {
         }
     }
 
-    fn content_set_fill_properties(
+    fn content_set_fill_properties<C>(
         &mut self,
         bounds: Rect,
-        fill: &Fill,
+        fill: &Fill<C>,
         serializer_context: &mut SerializerContext,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_fill_pattern(None, color_space.to_pdf_name());
@@ -626,12 +640,14 @@ impl StreamBuilder {
         );
     }
 
-    fn content_set_stroke_properties(
+    fn content_set_stroke_properties<C>(
         &mut self,
         bounds: Rect,
-        stroke: &Stroke,
+        stroke: &Stroke<C>,
         serializer_context: &mut SerializerContext,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_stroke_pattern(None, color_space.to_pdf_name());

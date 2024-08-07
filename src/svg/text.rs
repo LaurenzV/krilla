@@ -1,4 +1,5 @@
 use crate::canvas::CanvasBuilder;
+use crate::object::color_space::srgb::Srgb;
 use crate::stream::TestGlyph;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, FontContext};
@@ -52,27 +53,28 @@ pub fn render(
                 )
             });
 
-            let fill_op = |sb: &mut CanvasBuilder, fill: &Fill, font_context: &mut FontContext| {
-                sb.fill_glyph_run(
-                    0.0,
-                    0.0,
-                    font_context.fontdb,
-                    &fill,
-                    [TestGlyph::new(
-                        font,
-                        GlyphId::new(glyph.id.0 as u32),
+            let fill_op =
+                |sb: &mut CanvasBuilder, fill: &Fill<Srgb>, font_context: &mut FontContext| {
+                    sb.fill_glyph_run(
                         0.0,
                         0.0,
-                        span.font_size.get(),
-                        glyph.text.clone(),
-                    )]
-                    .into_iter()
-                    .peekable(),
-                );
-            };
+                        font_context.fontdb,
+                        &fill,
+                        [TestGlyph::new(
+                            font,
+                            GlyphId::new(glyph.id.0 as u32),
+                            0.0,
+                            0.0,
+                            span.font_size.get(),
+                            glyph.text.clone(),
+                        )]
+                        .into_iter()
+                        .peekable(),
+                    );
+                };
 
             let stroke_op =
-                |sb: &mut CanvasBuilder, stroke: &Stroke, font_context: &mut FontContext| {
+                |sb: &mut CanvasBuilder, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,

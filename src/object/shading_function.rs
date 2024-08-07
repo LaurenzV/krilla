@@ -1,4 +1,5 @@
-use crate::paint::{SpreadMethod, Stop};
+use crate::object::color_space::{Color, ColorSpace};
+use crate::paint::SpreadMethod;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
@@ -8,11 +9,18 @@ use pdf_writer::{Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {
     Sweep,
     Linear,
     Radial,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+pub struct Stop {
+    pub offset: NormalizedF32,
+    pub color: Color,
+    pub opacity: NormalizedF32,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -39,7 +47,7 @@ pub enum GradientProperties {
 }
 
 pub trait GradientPropertiesExt {
-    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper);
+    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper);
 }
 
 fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
@@ -64,8 +72,11 @@ fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     )
 }
 
-impl GradientPropertiesExt for LinearGradient {
-    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+impl<C> GradientPropertiesExt for LinearGradient<C>
+where
+    C: ColorSpace,
+{
+    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         if self.spread_method == SpreadMethod::Pad {
             (
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
@@ -76,7 +87,11 @@ impl GradientPropertiesExt for LinearGradient {
                         FiniteF32::new(self.y2).unwrap(),
                     ],
                     shading_type: FunctionShadingType::Axial,
-                    stops: Vec::from(self.stops.clone()),
+                    stops: self
+                        .stops
+                        .into_iter()
+                        .map(|s| s.into())
+                        .collect::<Vec<Stop>>(),
                 }),
                 TransformWrapper(self.transform),
             )
@@ -89,7 +104,11 @@ impl GradientPropertiesExt for LinearGradient {
                 GradientProperties::PostScriptGradient(PostScriptGradient {
                     min: FiniteF32::new(min).unwrap(),
                     max: FiniteF32::new(max).unwrap(),
-                    stops: Vec::from(self.stops.clone()),
+                    stops: self
+                        .stops
+                        .into_iter()
+                        .map(|s| s.into())
+                        .collect::<Vec<Stop>>(),
                     domain: get_expanded_bbox(bbox, self.transform.post_concat(ts)),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
@@ -100,8 +119,11 @@ impl GradientPropertiesExt for LinearGradient {
     }
 }
 
-impl GradientPropertiesExt for SweepGradient {
-    fn gradient_properties(&self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+impl<C> GradientPropertiesExt for SweepGradient<C>
+where
+    C: ColorSpace,
+{
+    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         let min = self.start_angle;
         let max = self.end_angle;
 
@@ -113,7 +135,11 @@ impl GradientPropertiesExt for SweepGradient {
             GradientProperties::PostScriptGradient(PostScriptGradient {
                 min: FiniteF32::new(min).unwrap(),
                 max: FiniteF32::new(max).unwrap(),
-                stops: Vec::from(self.stops.clone()),
+                stops: self
+                    .stops
+                    .into_iter()
+                    .map(|s| s.into())
+                    .collect::<Vec<Stop>>(),
                 domain: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
@@ -123,8 +149,11 @@ impl GradientPropertiesExt for SweepGradient {
     }
 }
 
-impl GradientPropertiesExt for RadialGradient {
-    fn gradient_properties(&self, _: Rect) -> (GradientProperties, TransformWrapper) {
+impl<C> GradientPropertiesExt for RadialGradient<C>
+where
+    C: ColorSpace,
+{
+    fn gradient_properties(self, _: Rect) -> (GradientProperties, TransformWrapper) {
         // TODO: Support other spread methods
         (
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
@@ -137,7 +166,11 @@ impl GradientPropertiesExt for RadialGradient {
                     FiniteF32::new(self.cr).unwrap(),
                 ],
                 shading_type: FunctionShadingType::Radial,
-                stops: Vec::from(self.stops.clone()),
+                stops: self
+                    .stops
+                    .into_iter()
+                    .map(|s| s.into())
+                    .collect::<Vec<Stop>>(),
             }),
             TransformWrapper(self.transform),
         )

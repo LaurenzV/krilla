@@ -1,3 +1,4 @@
+use crate::object::color_space::ColorSpace;
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
@@ -97,7 +98,10 @@ impl RectExt for Rect {
     }
 }
 
-pub fn calculate_stroke_bbox(stroke: &Stroke, path: &tiny_skia_path::Path) -> Option<Rect> {
+pub fn calculate_stroke_bbox<C>(stroke: &Stroke<C>, path: &tiny_skia_path::Path) -> Option<Rect>
+where
+    C: ColorSpace,
+{
     let stroke = stroke.clone().to_tiny_skia();
 
     if let Some(stroked_path) = path.stroke(&stroke, 1.0) {

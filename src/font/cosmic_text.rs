@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::canvas::Page;
+    use crate::object::color_space::srgb::Srgb;
     use crate::serialize::PageSerialize;
     use crate::stream::TestGlyph;
     use crate::Fill;
@@ -42,7 +43,13 @@ mod tests {
                     )
                 })
                 .peekable();
-            builder.fill_glyph_run(0.0, y_offset, font_system.db_mut(), &Fill::default(), iter);
+            builder.fill_glyph_run(
+                0.0,
+                y_offset,
+                font_system.db_mut(),
+                &Fill::<Srgb>::default(),
+                iter,
+            );
         }
 
         // panic!();

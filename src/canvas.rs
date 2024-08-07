@@ -1,3 +1,4 @@
+use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
@@ -139,12 +140,18 @@ impl<'a> CanvasBuilder<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
     }
 
-    pub fn fill_path<'b>(&'b mut self, path: &Path, fill: &Fill) {
+    pub fn fill_path<'b, C>(&'b mut self, path: &Path, fill: &Fill<C>)
+    where
+        C: ColorSpace,
+    {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path(path, fill, self.sc);
     }
 
-    pub fn stroke_path<'b>(&'b mut self, path: &Path, stroke: &Stroke) {
+    pub fn stroke_path<'b, C>(&'b mut self, path: &Path, stroke: &Stroke<C>)
+    where
+        C: ColorSpace,
+    {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc);
     }
@@ -158,7 +165,10 @@ impl<'a> CanvasBuilder<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path();
     }
 
-    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: &Fill, no_fill: bool) {
+    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: &Fill<C>, no_fill: bool)
+    where
+        C: ColorSpace,
+    {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path_impl(path, fill, self.sc, no_fill)
     }
@@ -174,26 +184,30 @@ impl<'a> CanvasBuilder<'a> {
             .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
     }
 
-    pub fn fill_glyph_run<'b>(
+    pub fn fill_glyph_run<'b, C>(
         &'b mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
-        fill: &Fill,
+        fill: &Fill<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
     }
 
-    pub fn stroke_glyph_run<'b>(
+    pub fn stroke_glyph_run<'b, C>(
         &'b mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
-        stroke: &Stroke,
+        stroke: &Stroke<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
+    ) where
+        C: ColorSpace,
+    {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
     }

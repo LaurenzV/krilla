@@ -28,7 +28,7 @@ pub fn convert_spread_mode(s: &usvg::SpreadMethod) -> SpreadMethod {
     }
 }
 
-pub fn convert_stop(s: &usvg::Stop) -> Stop {
+pub fn convert_stop(s: &usvg::Stop) -> Stop<Srgb> {
     Stop {
         offset: s.offset(),
         color: Srgb::new_rgb(s.color().red, s.color().green, s.color().blue).into(),
@@ -41,7 +41,7 @@ pub fn convert_paint(
     mut sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
-) -> Paint {
+) -> Paint<Srgb> {
     match paint {
         usvg::Paint::Color(c) => Paint::Color(Srgb::new_rgb(c.red, c.green, c.blue).into()),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
@@ -117,7 +117,7 @@ pub fn convert_fill(
     sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
-) -> Fill {
+) -> Fill<Srgb> {
     Fill {
         paint: convert_paint(
             fill.paint(),
@@ -135,7 +135,7 @@ pub fn convert_stroke(
     sub_builder: CanvasBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
-) -> Stroke {
+) -> Stroke<Srgb> {
     let dash = if let Some(dash_array) = stroke.dasharray() {
         Some(StrokeDash {
             offset: stroke.dashoffset(),

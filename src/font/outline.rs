@@ -1,5 +1,6 @@
 use crate::canvas::CanvasBuilder;
 use crate::font::{Font, OutlineBuilder};
+use crate::object::color_space::device_gray::DeviceGray;
 use crate::Fill;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
@@ -18,7 +19,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilde
 
     if let Some(path) = outline_builder.finish() {
         canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
-        canvas_builder.fill_path_impl(&path, &Fill::default(), true);
+        canvas_builder.fill_path_impl(&path, &Fill::<DeviceGray>::default(), true);
         canvas_builder.pop_transform();
 
         return Some(());

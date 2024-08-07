@@ -1,3 +1,4 @@
+use crate::object::color_space::srgb::Srgb;
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
@@ -309,7 +310,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             &mut fontdb,
-            &crate::Fill::default(),
+            &crate::Fill::<Srgb>::default(),
             [TestGlyph::new(id, i, 0.0, 0.0, size as f32, text)]
                 .into_iter()
                 .peekable(),

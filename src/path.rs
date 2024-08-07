@@ -1,4 +1,4 @@
-use crate::object::color_space::device_gray::DeviceGray;
+use crate::object::color_space::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
@@ -48,9 +48,12 @@ pub struct StrokeDash {
 
 /// A stroke that can be applied to a path or some text.
 #[derive(Debug, Clone)]
-pub struct Stroke {
+pub struct Stroke<C>
+where
+    C: ColorSpace,
+{
     /// The paint of the stroke.
-    pub paint: Paint,
+    pub paint: Paint<C>,
     /// The width of the stroke.
     pub width: f32,
     /// The miter limit of the stroke.
@@ -65,10 +68,13 @@ pub struct Stroke {
     pub dash: Option<StrokeDash>,
 }
 
-impl Default for Stroke {
+impl<C> Default for Stroke<C>
+where
+    C: ColorSpace,
+{
     fn default() -> Self {
         Stroke {
-            paint: Paint::Color(DeviceGray::black().into()),
+            paint: Paint::Color(C::Color::default()),
             width: 1.0,
             miter_limit: 10.0,
             line_cap: LineCap::default(),
@@ -79,7 +85,10 @@ impl Default for Stroke {
     }
 }
 
-impl Stroke {
+impl<C> Stroke<C>
+where
+    C: ColorSpace,
+{
     pub(crate) fn to_tiny_skia(self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
             width: self.width,
@@ -122,19 +131,25 @@ impl Default for FillRule {
 
 /// A fill that can be applied to a path or some text.
 #[derive(Debug, Clone)]
-pub struct Fill {
+pub struct Fill<C>
+where
+    C: ColorSpace,
+{
     /// The paint of the fill.
-    pub paint: Paint,
+    pub paint: Paint<C>,
     /// The opacity of the fill.
     pub opacity: NormalizedF32,
     /// The fill rule that should be used when applying the fill.
     pub rule: FillRule,
 }
 
-impl Default for Fill {
+impl<C> Default for Fill<C>
+where
+    C: ColorSpace,
+{
     fn default() -> Self {
         Fill {
-            paint: Paint::Color(DeviceGray::black().into()),
+            paint: Paint::Color(C::Color::default()),
             opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }

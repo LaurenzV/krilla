@@ -1,19 +1,20 @@
 use crate::resource::ColorSpaceEnum;
-use crate::serialize::{Object, RegisterableObject};
-use pdf_writer::Finish;
+use crate::serialize::Object;
 use std::fmt::Debug;
 use std::hash::Hash;
 
 pub trait InternalColor<C>
 where
-    C: Clone + Copy + ColorSpace,
+    C: Clone + Copy + ColorSpace + Debug,
 {
     fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
     fn color_space(&self) -> C;
 }
 
-pub trait ColorSpace: Object + Debug + Hash + Eq + PartialEq + Clone + Copy {
-    type Color: InternalColor<Self>;
+pub trait ColorSpace:
+    Object + Debug + Hash + Eq + PartialEq + Clone + Copy + Into<ColorSpaceEnum>
+{
+    type Color: InternalColor<Self> + Into<Color> + Debug + Clone + Copy + Default;
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -49,6 +50,7 @@ impl Color {
 
 pub mod device_cmyk {
     use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::Ref;
 
@@ -67,6 +69,18 @@ pub mod device_cmyk {
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
             super::Color::DeviceCmyk(self)
+        }
+    }
+
+    impl Default for Color {
+        fn default() -> Self {
+            DeviceCmyk::new_cmyk(0, 0, 0, 255)
+        }
+    }
+
+    impl Into<ColorSpaceEnum> for DeviceCmyk {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceCmyk(self)
         }
     }
 
@@ -98,6 +112,7 @@ pub mod device_cmyk {
 
 pub mod device_rgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::Ref;
 
@@ -127,8 +142,20 @@ pub mod device_rgb {
         }
     }
 
+    impl Into<ColorSpaceEnum> for DeviceRgb {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceRgb(self)
+        }
+    }
+
     impl ColorSpace for DeviceRgb {
         type Color = Color;
+    }
+
+    impl Default for Color {
+        fn default() -> Self {
+            DeviceRgb::black()
+        }
     }
 
     impl InternalColor<DeviceRgb> for Color {
@@ -154,6 +181,7 @@ pub mod device_rgb {
 
 pub mod srgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use crate::util::deflate;
     use once_cell::sync::Lazy;
@@ -167,6 +195,12 @@ pub mod srgb {
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color([u8; 3], Srgb);
+
+    impl Default for Color {
+        fn default() -> Self {
+            Srgb::black()
+        }
+    }
 
     impl Srgb {
         pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
@@ -185,6 +219,12 @@ pub mod srgb {
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
             super::Color::Srgb(self)
+        }
+    }
+
+    impl Into<ColorSpaceEnum> for Srgb {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::Srgb(self)
         }
     }
 
@@ -225,6 +265,7 @@ pub mod srgb {
 
 pub mod device_gray {
     use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::Ref;
 
@@ -233,6 +274,12 @@ pub mod device_gray {
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(u8, DeviceGray);
+
+    impl Default for Color {
+        fn default() -> Self {
+            DeviceGray::black()
+        }
+    }
 
     impl DeviceGray {
         pub fn new_gray(lightness: u8) -> Color {
@@ -245,6 +292,12 @@ pub mod device_gray {
 
         pub fn white() -> Color {
             Self::new_gray(255)
+        }
+    }
+
+    impl Into<ColorSpaceEnum> for DeviceGray {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceGray(self)
         }
     }
 
@@ -277,6 +330,7 @@ pub mod device_gray {
 
 pub mod d65_gray {
     use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use crate::util::deflate;
     use once_cell::sync::Lazy;
@@ -291,6 +345,12 @@ pub mod d65_gray {
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(u8, D65Gray);
 
+    impl Default for Color {
+        fn default() -> Self {
+            D65Gray::black()
+        }
+    }
+
     impl D65Gray {
         pub fn new_gray(lightness: u8) -> Color {
             Color(lightness, D65Gray)
@@ -302,6 +362,12 @@ pub mod d65_gray {
 
         pub fn white() -> Color {
             Self::new_gray(255)
+        }
+    }
+
+    impl Into<ColorSpaceEnum> for D65Gray {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::D65Gray(self)
         }
     }
 
