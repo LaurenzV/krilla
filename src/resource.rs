@@ -13,7 +13,7 @@ use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
 use fontdb::ID;
 use pdf_writer::writers::Resources;
-use pdf_writer::{Dict, Finish, Ref};
+use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -64,14 +64,14 @@ pub enum Resource {
 }
 
 impl Object for Resource {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
         match self {
-            Resource::XObject(x) => x.serialize_into(sc, root_ref),
-            Resource::Pattern(p) => p.serialize_into(sc, root_ref),
-            Resource::ExtGState(e) => e.serialize_into(sc, root_ref),
-            Resource::ColorSpace(x) => x.serialize_into(sc, root_ref),
-            Resource::Shading(s) => s.serialize_into(sc, root_ref),
-            Resource::Font(_) => {}
+            Resource::XObject(x) => x.serialize_into(sc),
+            Resource::Pattern(p) => p.serialize_into(sc),
+            Resource::ExtGState(e) => e.serialize_into(sc),
+            Resource::ColorSpace(x) => x.serialize_into(sc),
+            Resource::Shading(s) => s.serialize_into(sc),
+            Resource::Font(_) => unreachable!(),
         }
     }
 }
@@ -95,10 +95,10 @@ impl ResourceTrait for XObjectResource {
 }
 
 impl Object for XObjectResource {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
         match self {
-            XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
-            XObjectResource::Image(i) => i.serialize_into(sc, root_ref),
+            XObjectResource::XObject(x) => x.serialize_into(sc),
+            XObjectResource::Image(i) => i.serialize_into(sc),
         }
     }
 }
@@ -122,10 +122,10 @@ impl ResourceTrait for PatternResource {
 }
 
 impl Object for PatternResource {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
         match self {
-            PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
-            PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
+            PatternResource::ShadingPattern(sp) => sp.serialize_into(sc),
+            PatternResource::TilingPattern(tp) => tp.serialize_into(sc),
         }
     }
 }
@@ -219,12 +219,12 @@ pub struct ResourceDictionary {
 
 impl ResourceDictionary {
     pub fn to_pdf_resources(&self, sc: &mut SerializerContext, resources: &mut Resources) {
-        write_resource_type(sc, resources, &self.color_spaces);
-        write_resource_type(sc, resources, &self.ext_g_states);
-        write_resource_type(sc, resources, &self.patterns);
-        write_resource_type(sc, resources, &self.x_objects);
-        write_resource_type(sc, resources, &self.shadings);
-        write_resource_type(sc, resources, &self.fonts);
+        write_resource_type(sc, resources, &self.color_spaces, false);
+        write_resource_type(sc, resources, &self.ext_g_states, false);
+        write_resource_type(sc, resources, &self.patterns, false);
+        write_resource_type(sc, resources, &self.x_objects, false);
+        write_resource_type(sc, resources, &self.shadings, false);
+        write_resource_type(sc, resources, &self.fonts, true);
     }
 }
 
@@ -232,6 +232,7 @@ fn write_resource_type<T>(
     sc: &mut SerializerContext,
     resources: &mut Resources,
     resource_list: &ResourceList<T>,
+    is_font: bool,
 ) where
     T: Hash + Eq + ResourceTrait + Debug + RegisterableObject,
 {
@@ -239,7 +240,11 @@ fn write_resource_type<T>(
         let mut dict = T::get_dict(resources);
 
         for (name, entry) in resource_list.get_entries() {
-            dict.pair(name.to_pdf_name(), sc.add(entry.clone()));
+            if !is_font {
+                dict.pair(name.to_pdf_name(), sc.add(entry.clone()));
+            } else {
+                dict.pair(name.to_pdf_name(), sc.add_font(entry.clone()));
+            }
         }
 
         dict.finish();
@@ -340,9 +345,9 @@ impl FontResource {
 }
 
 impl Object for FontResource {
-    fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
+    fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
         // Fonts are written manually by the serializer in the end, so this should never be called.
-        // unreachable!()
+        unreachable!()
     }
 }
 
@@ -356,13 +361,13 @@ pub enum ColorSpaceEnum {
 }
 
 impl Object for ColorSpaceEnum {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
         match self {
-            ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
-            ColorSpaceEnum::D65Gray(d65_gray) => d65_gray.serialize_into(sc, root_ref),
-            ColorSpaceEnum::DeviceGray(device_gray) => device_gray.serialize_into(sc, root_ref),
-            ColorSpaceEnum::DeviceRgb(device_rgb) => device_rgb.serialize_into(sc, root_ref),
-            ColorSpaceEnum::DeviceCmyk(device_cmyk) => device_cmyk.serialize_into(sc, root_ref),
+            ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc),
+            ColorSpaceEnum::D65Gray(d65_gray) => d65_gray.serialize_into(sc),
+            ColorSpaceEnum::DeviceGray(device_gray) => device_gray.serialize_into(sc),
+            ColorSpaceEnum::DeviceRgb(device_rgb) => device_rgb.serialize_into(sc),
+            ColorSpaceEnum::DeviceCmyk(device_cmyk) => device_cmyk.serialize_into(sc),
         }
     }
 }

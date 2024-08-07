@@ -4,7 +4,7 @@ use crate::object::xobject::XObject;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::transform::TransformWrapper;
-use pdf_writer::{Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
@@ -84,7 +84,10 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+        let root_ref = sc.new_ref();
+        let mut chunk = Chunk::new();
+
         let x_ref = sc.add(XObject::new(
             self.0.stream.clone(),
             false,
@@ -92,10 +95,14 @@ impl Object for Mask {
             self.0.custom_bbox,
         ));
 
-        let mut dict = sc.chunk_mut().indirect(root_ref).dict();
+        let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
         dict.pair(Name(b"S"), self.0.mask_type.to_name());
         dict.pair(Name(b"G"), x_ref);
+
+        dict.finish();
+
+        (root_ref, chunk)
     }
 }
 

@@ -31,7 +31,7 @@ impl Default for SerializeSettings {
 }
 
 pub trait Object: Sized + Hash + Clone + 'static {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref);
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk);
 }
 
 pub trait RegisterableObject: Object {}
@@ -45,7 +45,8 @@ pub struct SerializerContext {
     font_info_to_id: HashMap<Arc<FontInfo>, ID>,
     fonts: HashMap<ID, FontContainer>,
     cached_mappings: HashMap<u128, Ref>,
-    chunk: Chunk,
+    chunks: Vec<Chunk>,
+    chunks_len: usize,
     cur_ref: Ref,
     pub serialize_settings: SerializeSettings,
 }
@@ -69,8 +70,9 @@ impl SerializerContext {
         Self {
             cached_mappings: HashMap::new(),
             font_info_to_id: HashMap::new(),
-            chunk: Chunk::new(),
             cur_ref: Ref::new(1),
+            chunks: Vec::new(),
+            chunks_len: 0,
             fonts: HashMap::new(),
             serialize_settings,
         }
@@ -96,9 +98,24 @@ impl SerializerContext {
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
         } else {
+            let (root_ref, chunk) = object.serialize_into(self);
+            self.cached_mappings.insert(hash, root_ref);
+            self.chunks_len += chunk.len();
+            self.chunks.push(chunk);
+            root_ref
+        }
+    }
+
+    pub fn add_font<T>(&mut self, object: T) -> Ref
+    where
+        T: RegisterableObject,
+    {
+        let hash = hash_item(&object);
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            *_ref
+        } else {
             let root_ref = self.new_ref();
             self.cached_mappings.insert(hash, root_ref);
-            object.serialize_into(self, root_ref);
             root_ref
         }
     }
@@ -149,17 +166,11 @@ impl SerializerContext {
         })
     }
 
-    pub fn chunk_mut(&mut self) -> &mut Chunk {
-        &mut self.chunk
-    }
-
-    pub fn chunk(&self) -> &Chunk {
-        &self.chunk
-    }
-
-    fn write_fonts(sc: &mut SerializerContext, fontdb: &Database) {
+    // Always needs to be called.
+    pub fn finish(mut self, fontdb: &Database) -> Chunk {
+        // Write fonts
         // TODO: Make more efficient
-        let fonts = std::mem::take(&mut sc.fonts);
+        let fonts = std::mem::take(&mut self.fonts);
         for (font_id, font_container) in fonts {
             fontdb
                 .with_face_data(font_id, |data, index| {
@@ -168,24 +179,29 @@ impl SerializerContext {
                     match font_container {
                         FontContainer::Type3(font_mapper) => {
                             for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
-                                let ref_ = sc.add(FontResource::new(font_id, pdf_index));
-                                mapper.serialize_into(sc, &font_ref, ref_);
+                                let ref_ = self.add_font(FontResource::new(font_id, pdf_index));
+                                let chunk = mapper.serialize_into(&mut self, &font_ref, ref_);
+                                self.chunks_len += chunk.len();
+                                self.chunks.push(chunk);
                             }
                         }
                         FontContainer::CIDFont(cid_font) => {
-                            let ref_ = sc.add(FontResource::new(font_id, 0));
-                            cid_font.serialize_into(sc, &font_ref, ref_);
+                            let ref_ = self.add_font(FontResource::new(font_id, 0));
+                            let chunk = cid_font.serialize_into(&mut self, &font_ref, ref_);
+                            self.chunks_len += chunk.len();
+                            self.chunks.push(chunk);
                         }
                     }
                 })
                 .unwrap();
         }
-    }
 
-    // Always needs to be called.
-    pub fn finish(mut self, fontdb: &Database) -> Chunk {
-        Self::write_fonts(&mut self, fontdb);
-        self.chunk
+        let mut chunk = Chunk::with_capacity(self.chunks_len);
+        for part_chunk in self.chunks.drain(..) {
+            chunk.extend(&part_chunk);
+        }
+
+        chunk
     }
 }
 

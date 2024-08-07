@@ -52,7 +52,7 @@ pub mod device_cmyk {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::Ref;
+    use pdf_writer::{Chunk, Ref};
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceCmyk;
@@ -104,7 +104,7 @@ pub mod device_cmyk {
     }
 
     impl Object for DeviceCmyk {
-        fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
+        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
             unreachable!()
         }
     }
@@ -114,7 +114,7 @@ pub mod device_rgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::Ref;
+    use pdf_writer::{Chunk, Ref};
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceRgb;
@@ -173,7 +173,7 @@ pub mod device_rgb {
     }
 
     impl Object for DeviceRgb {
-        fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
+        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
             unreachable!()
         }
     }
@@ -185,7 +185,7 @@ pub mod srgb {
     use crate::serialize::{Object, SerializerContext};
     use crate::util::deflate;
     use once_cell::sync::Lazy;
-    use pdf_writer::{Finish, Name, Ref};
+    use pdf_writer::{Chunk, Finish, Name, Ref};
 
     pub static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> =
         Lazy::new(|| deflate(include_bytes!("../icc/sRGB-v4.icc")));
@@ -247,18 +247,24 @@ pub mod srgb {
     }
 
     impl Object for Srgb {
-        fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+            let root_ref = sc.new_ref();
             let icc_ref = sc.new_ref();
-            let mut array = sc.chunk_mut().indirect(root_ref).array();
+
+            let mut chunk = Chunk::new();
+
+            let mut array = chunk.indirect(root_ref).array();
             array.item(Name(b"ICCBased"));
             array.item(icc_ref);
             array.finish();
 
-            sc.chunk_mut()
+            chunk
                 .icc_profile(icc_ref, &SRGB_ICC_DEFLATED)
                 .n(3)
                 .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
                 .filter(pdf_writer::Filter::FlateDecode);
+
+            (root_ref, chunk)
         }
     }
 }
@@ -267,7 +273,7 @@ pub mod device_gray {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::Ref;
+    use pdf_writer::{Chunk, Ref};
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceGray;
@@ -322,7 +328,7 @@ pub mod device_gray {
     }
 
     impl Object for DeviceGray {
-        fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
+        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
             unreachable!()
         }
     }
@@ -334,7 +340,7 @@ pub mod d65_gray {
     use crate::serialize::{Object, SerializerContext};
     use crate::util::deflate;
     use once_cell::sync::Lazy;
-    use pdf_writer::{Finish, Name, Ref};
+    use pdf_writer::{Chunk, Finish, Name, Ref};
 
     pub static GREY_ICC_DEFLATED: Lazy<Vec<u8>> =
         Lazy::new(|| deflate(include_bytes!("../icc/sGrey-v4.icc")));
@@ -392,18 +398,23 @@ pub mod d65_gray {
     }
 
     impl Object for D65Gray {
-        fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+        fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+            let root_ref = sc.new_ref();
             let icc_ref = sc.new_ref();
-            let mut array = sc.chunk_mut().indirect(root_ref).array();
+            let mut chunk = Chunk::new();
+
+            let mut array = chunk.indirect(root_ref).array();
             array.item(Name(b"ICCBased"));
             array.item(icc_ref);
             array.finish();
 
-            sc.chunk_mut()
+            chunk
                 .icc_profile(icc_ref, &GREY_ICC_DEFLATED)
                 .n(1)
                 .range([0.0, 1.0])
                 .filter(pdf_writer::Filter::FlateDecode);
+
+            (root_ref, chunk)
         }
     }
 }

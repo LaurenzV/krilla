@@ -5,7 +5,7 @@ use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use crate::{LinearGradient, RadialGradient, SweepGradient};
 use pdf_writer::types::FunctionShadingType;
-use pdf_writer::{Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 
@@ -196,15 +196,20 @@ impl ShadingFunction {
 }
 
 impl Object for ShadingFunction {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+        let root_ref = sc.new_ref();
+        let mut chunk = Chunk::new();
+
         match &self.0.properties {
             GradientProperties::RadialAxialGradient(rag) => {
-                serialize_axial_radial_shading(sc, root_ref, rag, self.0.use_opacities)
+                serialize_axial_radial_shading(sc, &mut chunk, root_ref, rag, self.0.use_opacities)
             }
             GradientProperties::PostScriptGradient(psg) => {
-                serialize_postscript_shading(sc, root_ref, psg, self.0.use_opacities)
+                serialize_postscript_shading(sc, &mut chunk, root_ref, psg, self.0.use_opacities)
             }
         }
+
+        (root_ref, chunk)
     }
 }
 
@@ -212,20 +217,21 @@ impl RegisterableObject for ShadingFunction {}
 
 fn serialize_postscript_shading(
     sc: &mut SerializerContext,
+    chunk: &mut Chunk,
     root_ref: Ref,
     post_script_gradient: &PostScriptGradient,
     use_opacities: bool,
 ) {
     let domain = post_script_gradient.domain;
 
-    let function_ref = select_postscript_function(post_script_gradient, sc, use_opacities);
+    let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
     let cs_ref = if use_opacities {
         sc.d65_gray()
     } else {
         sc.srgb()
     };
 
-    let mut shading = sc.chunk_mut().function_shading(root_ref);
+    let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
     shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
 
@@ -237,18 +243,20 @@ fn serialize_postscript_shading(
 
 fn serialize_axial_radial_shading(
     sc: &mut SerializerContext,
+    chunk: &mut Chunk,
     root_ref: Ref,
     radial_axial_gradient: &RadialAxialGradient,
     use_opacities: bool,
 ) {
-    let function_ref = select_axial_radial_function(radial_axial_gradient, sc, use_opacities);
+    let function_ref =
+        select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs_ref = if use_opacities {
         sc.d65_gray()
     } else {
         sc.srgb()
     };
 
-    let mut shading = sc.chunk_mut().function_shading(root_ref);
+    let mut shading = chunk.function_shading(root_ref);
     if radial_axial_gradient.shading_type == FunctionShadingType::Radial {
         shading.shading_type(FunctionShadingType::Radial);
     } else {
@@ -264,6 +272,7 @@ fn serialize_axial_radial_shading(
 
 fn select_axial_radial_function(
     properties: &RadialAxialGradient,
+    chunk: &mut Chunk,
     sc: &mut SerializerContext,
     use_opacities: bool,
 ) -> Ref {
@@ -292,6 +301,7 @@ fn select_axial_radial_function(
             serialize_exponential(
                 vec![stops[0].opacity.get()],
                 vec![stops[1].opacity.get()],
+                chunk,
                 sc,
             )
         } else {
@@ -306,25 +316,27 @@ fn select_axial_radial_function(
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
+                chunk,
                 sc,
             )
         }
     } else {
-        serialize_stitching(&stops, sc, use_opacities)
+        serialize_stitching(&stops, chunk, sc, use_opacities)
     }
 }
 
 fn select_postscript_function(
     properties: &PostScriptGradient,
+    chunk: &mut Chunk,
     sc: &mut SerializerContext,
     use_opacities: bool,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
     if properties.gradient_type == GradientType::Linear {
-        serialize_linear_postscript(properties, sc, use_opacities)
+        serialize_linear_postscript(properties, chunk, sc, use_opacities)
     } else if properties.gradient_type == GradientType::Sweep {
-        serialize_sweep_postscript(properties, sc, use_opacities)
+        serialize_sweep_postscript(properties, chunk, sc, use_opacities)
     } else {
         todo!();
         // serialize_radial_postscript(properties, sc, bbox)
@@ -364,6 +376,7 @@ fn select_postscript_function(
 
 fn serialize_sweep_postscript(
     properties: &PostScriptGradient,
+    chunk: &mut Chunk,
     sc: &mut SerializerContext,
     use_opacities: bool,
 ) -> Ref {
@@ -398,7 +411,7 @@ fn serialize_sweep_postscript(
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
-    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
+    let mut postscript_function = chunk.post_script_function(root_ref, &code);
     postscript_function.domain([
         properties.domain.left(),
         properties.domain.right(),
@@ -417,6 +430,7 @@ fn serialize_sweep_postscript(
 
 fn serialize_linear_postscript(
     properties: &PostScriptGradient,
+    chunk: &mut Chunk,
     sc: &mut SerializerContext,
     use_opacities: bool,
 ) -> Ref {
@@ -448,7 +462,7 @@ fn serialize_linear_postscript(
     code.extend(end_code);
 
     let code = code.join(" ").into_bytes();
-    let mut postscript_function = sc.chunk_mut().post_script_function(root_ref, &code);
+    let mut postscript_function = chunk.post_script_function(root_ref, &code);
     postscript_function.domain([
         properties.domain.left(),
         properties.domain.right(),
@@ -649,7 +663,12 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
     };
 }
 
-fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext, use_opacities: bool) -> Ref {
+fn serialize_stitching(
+    stops: &[Stop],
+    chunk: &mut Chunk,
+    sc: &mut SerializerContext,
+    use_opacities: bool,
+) -> Ref {
     let root_ref = sc.new_ref();
     let mut functions = vec![];
     let mut bounds = vec![];
@@ -671,14 +690,14 @@ fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext, use_opacities
         debug_assert!(c0_components.len() == c1_components.len());
         count = c0_components.len();
 
-        let exp_ref = serialize_exponential(c0_components, c1_components, sc);
+        let exp_ref = serialize_exponential(c0_components, c1_components, chunk, sc);
 
         functions.push(exp_ref);
         encode.extend([0.0, 1.0]);
     }
 
     bounds.pop();
-    let mut stitching_function = sc.chunk_mut().stitching_function(root_ref);
+    let mut stitching_function = chunk.stitching_function(root_ref);
     stitching_function.domain([0.0, 1.0]);
     stitching_function.range([0.0, 1.0].repeat(count));
     stitching_function.functions(functions);
@@ -691,13 +710,14 @@ fn serialize_stitching(stops: &[Stop], sc: &mut SerializerContext, use_opacities
 fn serialize_exponential(
     first_comps: Vec<f32>,
     second_comps: Vec<f32>,
+    chunk: &mut Chunk,
     sc: &mut SerializerContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
     debug_assert_eq!(first_comps.len(), second_comps.len());
     let num_components = first_comps.len();
 
-    let mut exp = sc.chunk_mut().exponential_function(root_ref);
+    let mut exp = chunk.exponential_function(root_ref);
 
     exp.range([0.0, 1.0].repeat(num_components));
     exp.c0(first_comps);

@@ -1,7 +1,7 @@
 use crate::object::mask::Mask;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
 
@@ -76,10 +76,13 @@ impl ExtGState {
 }
 
 impl Object for ExtGState {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+        let root_ref = sc.new_ref();
+        let mut chunk = Chunk::new();
+
         let mask_ref = self.0.mask.clone().map(|ma| sc.add(ma));
 
-        let mut ext_st = sc.chunk_mut().ext_graphics(root_ref);
+        let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
             ext_st.non_stroking_alpha(nsa.get());
         }
@@ -97,6 +100,8 @@ impl Object for ExtGState {
         }
 
         ext_st.finish();
+
+        (root_ref, chunk)
     }
 }
 

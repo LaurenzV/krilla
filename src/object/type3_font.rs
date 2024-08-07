@@ -89,7 +89,14 @@ impl Type3Font {
             .map(|n| self.to_font_units(n))
     }
 
-    pub fn serialize_into(self, sc: &mut SerializerContext, font_ref: &FontRef, root_ref: Ref) {
+    pub fn serialize_into(
+        self,
+        sc: &mut SerializerContext,
+        font_ref: &FontRef,
+        root_ref: Ref,
+    ) -> Chunk {
+        let mut chunk = Chunk::new();
+
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
@@ -149,7 +156,7 @@ impl Type3Font {
                 };
 
                 let stream_ref = sc.new_ref();
-                sc.chunk_mut().stream(stream_ref, &stream);
+                chunk.stream(stream_ref, &stream);
 
                 stream_ref
             })
@@ -159,8 +166,6 @@ impl Type3Font {
 
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
-
-        let mut chunk = Chunk::new();
 
         let postscript_name = find_name(&font_ref);
 
@@ -241,6 +246,6 @@ impl Type3Font {
         };
         chunk.cmap(cmap_ref, &cmap.finish());
 
-        sc.chunk_mut().extend(&chunk);
+        chunk
     }
 }

@@ -2,7 +2,7 @@ use crate::font::{Font, Glyph};
 use crate::serialize::{hash_item, SerializerContext};
 use crate::util::{deflate, RectExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
-use pdf_writer::{Filter, Finish, Name, Ref, Str};
+use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
@@ -69,7 +69,9 @@ impl CIDFont {
         sc: &mut SerializerContext,
         font_ref: &FontRef,
         root_ref: Ref,
-    ) {
+    ) -> Chunk {
+        let mut chunk = Chunk::new();
+
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
@@ -92,7 +94,7 @@ impl CIDFont {
             base_font.clone()
         };
 
-        sc.chunk_mut()
+        chunk
             .type0_font(root_ref)
             .base_font(Name(base_font_type0.as_bytes()))
             .encoding_predefined(Name(b"Identity-H"))
@@ -100,7 +102,7 @@ impl CIDFont {
             .to_unicode(cmap_ref);
 
         // Write the CID font referencing the font descriptor.
-        let mut cid = sc.chunk_mut().cid_font(cid_ref);
+        let mut cid = chunk.cid_font(cid_ref);
         cid.subtype(if is_cff {
             CidFontType::Type0
         } else {
@@ -159,10 +161,10 @@ impl CIDFont {
             cmap
         };
 
-        sc.chunk_mut().cmap(cmap_ref, &cmap.finish());
+        chunk.cmap(cmap_ref, &cmap.finish());
 
         // Write the font descriptor (contains metrics about the font).
-        let mut font_descriptor = sc.chunk_mut().font_descriptor(descriptor_ref);
+        let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
             .name(Name(base_font.as_bytes()))
             .flags(flags)
@@ -181,13 +183,15 @@ impl CIDFont {
 
         font_descriptor.finish();
 
-        let mut stream = sc.chunk_mut().stream(data_ref, &subsetted_font);
+        let mut stream = chunk.stream(data_ref, &subsetted_font);
         stream.filter(Filter::FlateDecode);
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
         }
 
         stream.finish();
+
+        chunk
     }
 }
 

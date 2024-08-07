@@ -2,7 +2,7 @@ use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
-use pdf_writer::{Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -28,11 +28,18 @@ impl ShadingPattern {
 }
 
 impl Object for ShadingPattern {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+        let root_ref = sc.new_ref();
+        let mut chunk = Chunk::new();
+
         let shading_ref = sc.add(self.0.shading_function.clone());
-        let mut shading_pattern = sc.chunk_mut().shading_pattern(root_ref);
+        let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.0.to_pdf_transform());
+
+        shading_pattern.finish();
+
+        (root_ref, chunk)
     }
 }
 
