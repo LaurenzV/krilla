@@ -59,8 +59,14 @@ pub mod device_cmyk {
     pub struct Color([u8; 4], DeviceCmyk);
 
     impl DeviceCmyk {
-        pub fn new_cmyk(cyan: u8, magenta: u8, yellow: u8, black: u8) -> super::Color {
-            super::Color::DeviceCmyk(Color([cyan, magenta, yellow, black], DeviceCmyk))
+        pub fn new_cmyk(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
+            Color([cyan, magenta, yellow, black], DeviceCmyk)
+        }
+    }
+
+    impl Into<super::Color> for Color {
+        fn into(self) -> crate::object::color_space::Color {
+            super::Color::DeviceCmyk(self)
         }
     }
 
@@ -102,16 +108,22 @@ pub mod device_rgb {
     pub struct Color([u8; 3], DeviceRgb);
 
     impl DeviceRgb {
-        pub fn new_rgb(red: u8, green: u8, blue: u8) -> super::Color {
-            super::Color::DeviceRgb(Color([red, green, blue], DeviceRgb))
+        pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
+            Color([red, green, blue], DeviceRgb)
         }
 
-        pub fn black() -> super::Color {
+        pub fn black() -> Color {
             Self::new_rgb(0, 0, 0)
         }
 
-        pub fn white() -> super::Color {
+        pub fn white() -> Color {
             Self::new_rgb(255, 255, 255)
+        }
+    }
+
+    impl Into<super::Color> for Color {
+        fn into(self) -> crate::object::color_space::Color {
+            super::Color::DeviceRgb(self)
         }
     }
 
@@ -157,16 +169,22 @@ pub mod srgb {
     pub struct Color([u8; 3], Srgb);
 
     impl Srgb {
-        pub fn new_rgb(red: u8, green: u8, blue: u8) -> super::Color {
-            super::Color::Srgb(Color([red, green, blue], Srgb))
+        pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
+            Color([red, green, blue], Srgb)
         }
 
-        pub fn black() -> super::Color {
+        pub fn black() -> Color {
             Self::new_rgb(0, 0, 0)
         }
 
-        pub fn white() -> super::Color {
+        pub fn white() -> Color {
             Self::new_rgb(255, 255, 255)
+        }
+    }
+
+    impl Into<super::Color> for Color {
+        fn into(self) -> crate::object::color_space::Color {
+            super::Color::Srgb(self)
         }
     }
 
@@ -217,16 +235,22 @@ pub mod device_gray {
     pub struct Color(u8, DeviceGray);
 
     impl DeviceGray {
-        pub fn new_gray(lightness: u8) -> super::Color {
-            super::Color::DeviceGray(Color(lightness, DeviceGray))
+        pub fn new_gray(lightness: u8) -> Color {
+            Color(lightness, DeviceGray)
         }
 
-        pub fn black() -> super::Color {
+        pub fn black() -> Color {
             Self::new_gray(0)
         }
 
-        pub fn white() -> super::Color {
+        pub fn white() -> Color {
             Self::new_gray(255)
+        }
+    }
+
+    impl Into<super::Color> for Color {
+        fn into(self) -> crate::object::color_space::Color {
+            super::Color::DeviceGray(self)
         }
     }
 
@@ -268,16 +292,22 @@ pub mod d65_gray {
     pub struct Color(u8, D65Gray);
 
     impl D65Gray {
-        pub fn new_gray(lightness: u8) -> super::Color {
-            super::Color::D65Gray(Color(lightness, D65Gray))
+        pub fn new_gray(lightness: u8) -> Color {
+            Color(lightness, D65Gray)
         }
 
-        pub fn black() -> super::Color {
+        pub fn black() -> Color {
             Self::new_gray(0)
         }
 
-        pub fn white() -> super::Color {
+        pub fn white() -> Color {
             Self::new_gray(255)
+        }
+    }
+
+    impl Into<super::Color> for Color {
+        fn into(self) -> crate::object::color_space::Color {
+            super::Color::D65Gray(self)
         }
     }
 
@@ -311,45 +341,3 @@ pub mod d65_gray {
         }
     }
 }
-
-// #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
-// pub struct D65Gray;
-//
-
-// impl ColorSpace for D65Gray {}
-//
-// #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
-// pub struct DeviceGray;
-//
-// impl Object for DeviceGray {
-//     fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
-//         unreachable!()
-//     }
-// }
-//
-// impl ColorSpace for DeviceGray {}
-//
-// #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
-// pub struct DeviceRgb;
-//
-// impl DeviceRgb {
-//     pub fn new_rgb(red: u8, green: u8, blue: u8) -> TestColor {
-//         TestColor::DeviceRgb(InternalColor([FiniteF32::new(red as f32 / 255.0).unwrap(), FiniteF32::new(green as f32 / 255.0).unwrap(), FiniteF32::new(blue as f32 / 255.0).unwrap()], DeviceRgb))
-//     }
-//
-//     pub fn black() -> TestColor {
-//         Self::new_rgb(0, 0, 0)
-//     }
-//
-//     pub fn white() -> TestColor {
-//         Self::new_rgb(255, 255, 255)
-//     }
-// }
-//
-// impl Object for DeviceRgb {
-//     fn serialize_into(self, _: &mut SerializerContext, _: Ref) {
-//         unreachable!()
-//     }
-// }
-//
-// impl ColorSpace for DeviceRgb {}

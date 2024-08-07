@@ -31,7 +31,7 @@ pub fn convert_spread_mode(s: &usvg::SpreadMethod) -> SpreadMethod {
 pub fn convert_stop(s: &usvg::Stop) -> Stop {
     Stop {
         offset: s.offset(),
-        color: Srgb::new_rgb(s.color().red, s.color().green, s.color().blue),
+        color: Srgb::new_rgb(s.color().red, s.color().green, s.color().blue).into(),
         opacity: NormalizedF32::new(s.opacity().get()).unwrap(),
     }
 }
@@ -43,7 +43,7 @@ pub fn convert_paint(
     additional_transform: Transform,
 ) -> Paint {
     match paint {
-        usvg::Paint::Color(c) => Paint::Color(Srgb::new_rgb(c.red, c.green, c.blue)),
+        usvg::Paint::Color(c) => Paint::Color(Srgb::new_rgb(c.red, c.green, c.blue).into()),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
             x1: lg.x1(),
             y1: lg.y1(),

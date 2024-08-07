@@ -68,7 +68,7 @@ pub struct Stroke {
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
-            paint: Paint::Color(DeviceGray::black()),
+            paint: Paint::Color(DeviceGray::black().into()),
             width: 1.0,
             miter_limit: 10.0,
             line_cap: LineCap::default(),
@@ -134,7 +134,7 @@ pub struct Fill {
 impl Default for Fill {
     fn default() -> Self {
         Fill {
-            paint: Paint::Color(DeviceGray::black()),
+            paint: Paint::Color(DeviceGray::black().into()),
             opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }
