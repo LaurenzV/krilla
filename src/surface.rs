@@ -62,18 +62,12 @@ impl<'a> Surface<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
     }
 
-    pub fn fill_path<C>(&mut self, path: &Path, fill: Fill<C>)
-    where
-        C: ColorSpace,
-    {
+    pub fn fill_path(&mut self, path: &Path, fill: Fill<impl ColorSpace>) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path(path, fill, self.sc);
     }
 
-    pub fn stroke_path<C>(&mut self, path: &Path, stroke: Stroke<C>)
-    where
-        C: ColorSpace,
-    {
+    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke<impl ColorSpace>) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc);
     }
@@ -98,30 +92,26 @@ impl<'a> Surface<'a> {
             .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
     }
 
-    pub fn fill_glyph_run<C>(
+    pub fn fill_glyph_run(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
-        fill: Fill<C>,
+        fill: Fill<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
     }
 
-    pub fn stroke_glyph_run<C>(
+    pub fn stroke_glyph_run(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
-        stroke: Stroke<C>,
+        stroke: Stroke<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
     }
@@ -182,10 +172,12 @@ impl<'a> Surface<'a> {
         sub_builders.last_mut().unwrap_or(root_builder)
     }
 
-    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: Fill<C>, no_fill: bool)
-    where
-        C: ColorSpace,
-    {
+    pub(crate) fn fill_path_impl(
+        &mut self,
+        path: &Path,
+        fill: Fill<impl ColorSpace>,
+        no_fill: bool,
+    ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path_impl(path, fill, self.sc, no_fill)
     }

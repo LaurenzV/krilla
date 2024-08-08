@@ -87,26 +87,22 @@ impl ContentBuilder {
         }
     }
 
-    pub fn fill_path<C>(
+    pub fn fill_path(
         &mut self,
         path: &Path,
-        fill: Fill<C>,
+        fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         self.fill_path_impl(path, fill, serializer_context, false);
     }
 
-    pub(crate) fn fill_path_impl<C>(
+    pub(crate) fn fill_path_impl(
         &mut self,
         path: &Path,
-        fill: Fill<C>,
+        fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
         no_fill: bool,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -138,14 +134,12 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_path<C>(
+    pub fn stroke_path(
         &mut self,
         path: &Path,
-        stroke: Stroke<C>,
+        stroke: Stroke<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
@@ -210,17 +204,15 @@ impl ContentBuilder {
         );
     }
 
-    pub fn fill_glyph_run<C>(
+    pub fn fill_glyph_run(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
-        fill: Fill<C>,
+        fill: Fill<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         self.graphics_states.save_state();
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -248,17 +240,15 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_glyph_run<C>(
+    pub fn stroke_glyph_run(
         &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
-        stroke: Stroke<C>,
+        stroke: Stroke<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         self.graphics_states.save_state();
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -520,17 +510,15 @@ impl ContentBuilder {
         }
     }
 
-    fn content_set_fill_stroke_properties<C>(
+    fn content_set_fill_stroke_properties(
         &mut self,
         bounds: Rect,
-        paint: Paint<C>,
+        paint: Paint<impl ColorSpace>,
         opacity: NormalizedF32,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.graphics_states.cur().transform())
         };
@@ -608,14 +596,12 @@ impl ContentBuilder {
         }
     }
 
-    fn content_set_fill_properties<C>(
+    fn content_set_fill_properties(
         &mut self,
         bounds: Rect,
-        fill: Fill<C>,
+        fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_fill_pattern(None, color_space.to_pdf_name());
@@ -636,14 +622,12 @@ impl ContentBuilder {
         );
     }
 
-    fn content_set_stroke_properties<C>(
+    fn content_set_stroke_properties(
         &mut self,
         bounds: Rect,
-        stroke: Stroke<C>,
+        stroke: Stroke<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
-    ) where
-        C: ColorSpace,
-    {
+    ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
             content.set_stroke_pattern(None, color_space.to_pdf_name());

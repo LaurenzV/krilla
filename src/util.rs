@@ -98,10 +98,10 @@ impl RectExt for Rect {
     }
 }
 
-pub fn calculate_stroke_bbox<C>(stroke: &Stroke<C>, path: &tiny_skia_path::Path) -> Option<Rect>
-where
-    C: ColorSpace,
-{
+pub fn calculate_stroke_bbox(
+    stroke: &Stroke<impl ColorSpace>,
+    path: &tiny_skia_path::Path,
+) -> Option<Rect> {
     let stroke = stroke.clone().to_tiny_skia();
 
     if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
