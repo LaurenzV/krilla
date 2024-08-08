@@ -8,23 +8,21 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
-#[derive(PartialEq, Eq, Debug, Hash)]
-struct Repr {
-    stream: Arc<Stream>,
+// TODO: Remove clone and see what it breaks, fix them
+#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+pub struct Mask {
+    stream: Stream,
     mask_type: MaskType,
     custom_bbox: Option<Rect>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
-pub struct Mask(Arc<Repr>);
-
 impl Mask {
-    pub fn new(stream: Arc<Stream>, mask_type: MaskType) -> Self {
-        Self(Arc::new(Repr {
+    pub fn new(stream: Stream, mask_type: MaskType) -> Self {
+        Self {
             stream,
             mask_type,
             custom_bbox: None,
-        }))
+        }
     }
 
     pub fn new_from_shading(
@@ -58,15 +56,15 @@ impl Mask {
             builder.finish()
         };
 
-        Some(Self(Arc::new(Repr {
-            stream: Arc::new(shading_stream),
+        Some(Self {
+            stream: shading_stream,
             mask_type: MaskType::Luminosity,
             custom_bbox: Some(bbox),
-        })))
+        })
     }
 
     pub fn custom_bbox(&self) -> Option<Rect> {
-        self.0.custom_bbox
+        self.custom_bbox
     }
 }
 
@@ -90,16 +88,11 @@ impl Object for Mask {
         let root_ref = sc.new_ref();
         let mut chunk = Chunk::new();
 
-        let x_ref = sc.add(XObject::new(
-            self.0.stream.clone(),
-            false,
-            true,
-            self.0.custom_bbox,
-        ));
+        let x_ref = sc.add(XObject::new(self.stream, false, true, self.custom_bbox));
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
-        dict.pair(Name(b"S"), self.0.mask_type.to_name());
+        dict.pair(Name(b"S"), self.mask_type.to_name());
         dict.pair(Name(b"G"), x_ref);
 
         dict.finish();

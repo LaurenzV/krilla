@@ -4,7 +4,7 @@ use crate::object::mask::Mask;
 use crate::object::page::Page;
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
-use crate::stream::{Stream, ContentBuilder, TestGlyph};
+use crate::stream::{ContentBuilder, Stream, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::Database;
 use pdf_writer::types::BlendMode;
@@ -63,7 +63,7 @@ impl<'a> Surface<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
     }
 
-    pub fn fill_path<'b, C>(&'b mut self, path: &Path, fill: &Fill<C>)
+    pub fn fill_path<C>(&mut self, path: &Path, fill: Fill<C>)
     where
         C: ColorSpace,
     {
@@ -71,7 +71,7 @@ impl<'a> Surface<'a> {
             .fill_path(path, fill, self.sc);
     }
 
-    pub fn stroke_path<'b, C>(&'b mut self, path: &Path, stroke: &Stroke<C>)
+    pub fn stroke_path<C>(&mut self, path: &Path, stroke: Stroke<C>)
     where
         C: ColorSpace,
     {
@@ -99,12 +99,12 @@ impl<'a> Surface<'a> {
             .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
     }
 
-    pub fn fill_glyph_run<'b, C>(
-        &'b mut self,
+    pub fn fill_glyph_run<C>(
+        &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
-        fill: &Fill<C>,
+        fill: Fill<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) where
         C: ColorSpace,
@@ -113,12 +113,12 @@ impl<'a> Surface<'a> {
             .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
     }
 
-    pub fn stroke_glyph_run<'b, C>(
-        &'b mut self,
+    pub fn stroke_glyph_run<C>(
+        &mut self,
         x: f32,
         y: f32,
         fontdb: &mut Database,
-        stroke: &Stroke<C>,
+        stroke: Stroke<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) where
         C: ColorSpace,
@@ -147,7 +147,7 @@ impl<'a> Surface<'a> {
         let stream = self.sub_builders.pop().unwrap().finish();
         let opacity = self.opacities.pop().unwrap();
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .draw_opacified(opacity, Arc::new(stream));
+            .draw_opacified(opacity, stream);
     }
 
     pub fn push_isolated(&mut self) {
@@ -171,7 +171,7 @@ impl<'a> Surface<'a> {
         (self.finish_fn)(self.root_builder.finish(), &mut self.sc)
     }
 
-    pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
+    pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .draw_opacified(opacity, stream)
     }
@@ -183,7 +183,7 @@ impl<'a> Surface<'a> {
         sub_builders.last_mut().unwrap_or(root_builder)
     }
 
-    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: &Fill<C>, no_fill: bool)
+    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: Fill<C>, no_fill: bool)
     where
         C: ColorSpace,
     {

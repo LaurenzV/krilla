@@ -29,5 +29,5 @@ pub fn get_mask(
     surface.finish();
     let stream = canvas_builder.finish();
 
-    Mask::new(Arc::new(stream), convert_mask_type(&mask.kind()))
+    Mask::new(stream, convert_mask_type(&mask.kind()))
 }

@@ -10,7 +10,7 @@ struct Repr {
     non_stroking_alpha: Option<NormalizedF32>,
     stroking_alpha: Option<NormalizedF32>,
     blend_mode: Option<BlendMode>,
-    mask: Option<Mask>,
+    mask: Option<Arc<Mask>>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
@@ -41,7 +41,7 @@ impl ExtGState {
 
     #[must_use]
     pub fn mask(mut self, mask: Mask) -> Self {
-        Arc::make_mut(&mut self.0).mask = Some(mask);
+        Arc::make_mut(&mut self.0).mask = Some(Arc::new(mask));
         self
     }
 
@@ -80,7 +80,12 @@ impl Object for ExtGState {
         let root_ref = sc.new_ref();
         let mut chunk = Chunk::new();
 
-        let mask_ref = self.0.mask.clone().map(|ma| sc.add(ma));
+        // TODO: Avoid mask being cloned here?
+        let mask_ref = self
+            .0
+            .mask
+            .clone()
+            .map(|ma| sc.add(Arc::unwrap_or_clone(ma)));
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {

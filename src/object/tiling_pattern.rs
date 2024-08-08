@@ -5,25 +5,21 @@ use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
-use std::sync::Arc;
 use tiny_skia_path::FiniteF32;
 use usvg::NormalizedF32;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
-struct Repr {
-    stream: Arc<Stream>,
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct TilingPattern {
+    stream: Stream,
     transform: TransformWrapper,
     base_opacity: NormalizedF32,
     width: FiniteF32,
     height: FiniteF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct TilingPattern(Arc<Repr>);
-
 impl TilingPattern {
     pub fn new(
-        stream: Arc<Stream>,
+        stream: Stream,
         transform: TransformWrapper,
         base_opacity: NormalizedF32,
         width: FiniteF32,
@@ -38,21 +34,21 @@ impl TilingPattern {
             let stream = {
                 let mut builder = StreamBuilder::new(serializer_context);
                 let mut surface = builder.surface();
-                surface.draw_opacified_stream(base_opacity, stream.clone());
+                surface.draw_opacified_stream(base_opacity, stream);
                 surface.finish();
                 builder.finish()
             };
 
-            Arc::new(stream)
+            stream
         };
 
-        Self(Arc::new(Repr {
+        Self {
             stream: pattern_stream,
             transform,
             base_opacity,
             width,
             height,
-        }))
+        }
     }
 }
 
@@ -61,19 +57,18 @@ impl Object for TilingPattern {
         let root_ref = sc.new_ref();
         let mut chunk = Chunk::new();
 
-        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &self.0.stream.content());
-        self.0
-            .stream
-            .resource_dictionary()
+        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &self.stream.content);
+        self.stream
+            .resource_dictionary
             .to_pdf_resources(sc, &mut tiling_pattern.resources());
 
-        let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.0.width.get(), self.0.height.get());
+        let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width.get(), self.height.get());
 
         tiling_pattern
             .tiling_type(TilingType::ConstantSpacing)
             .paint_type(PaintType::Colored)
             .bbox(final_bbox)
-            .matrix(self.0.transform.0.to_pdf_transform())
+            .matrix(self.transform.0.to_pdf_transform())
             .x_step(final_bbox.x2 - final_bbox.x1)
             .y_step(final_bbox.y2 - final_bbox.y1);
 

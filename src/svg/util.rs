@@ -78,14 +78,14 @@ pub fn convert_paint(
             surface.finish();
             let stream = sub_builder.finish();
 
-            Paint::Pattern(Arc::new(Pattern {
-                stream: Arc::new(stream),
+            Paint::Pattern(Pattern {
+                stream,
                 transform: additional_transform
                     .pre_concat(pat.transform())
                     .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
                 width: pat.rect().width(),
                 height: pat.rect().height(),
-            }))
+            })
         }
     }
 }

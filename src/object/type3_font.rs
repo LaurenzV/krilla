@@ -129,7 +129,7 @@ impl Type3Font {
                 let mut content = Content::new();
 
                 let stream = if is_outline {
-                    let bbox = stream.bbox();
+                    let bbox = stream.bbox;
                     content.start_shape_glyph(
                         self.widths[index],
                         bbox.left(),
@@ -141,14 +141,14 @@ impl Type3Font {
                     // TODO: Find a type-safe way of doing this.
                     let mut final_stream = content.finish();
                     final_stream.push(b'\n');
-                    final_stream.extend(stream.content());
+                    final_stream.extend(stream.content);
                     final_stream
                 } else {
                     // I considered writing into the stream directly instead of creating an XObject
                     // and showing that, but it seems like many viewers don't like that, and emojis
                     // look messed up. Using XObjects seems like the best choice here.
                     content.start_color_glyph(self.widths[index]);
-                    let x_object = XObject::new(Arc::new(stream), false, false, None);
+                    let x_object = XObject::new(stream, false, false, None);
                     bbox.expand(&x_object.bbox());
                     let x_name = rd_builder
                         .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));

@@ -49,7 +49,7 @@ mod tests {
                 0.0,
                 y_offset,
                 font_system.db_mut(),
-                &Fill::<Srgb>::default(),
+                Fill::<Srgb>::default(),
                 iter,
             );
         }

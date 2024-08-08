@@ -313,7 +313,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             &mut fontdb,
-            &crate::Fill::<Srgb>::default(),
+            crate::Fill::<Srgb>::default(),
             [TestGlyph::new(id, i, 0.0, 0.0, size as f32, text)]
                 .into_iter()
                 .peekable(),

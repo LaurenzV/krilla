@@ -23,14 +23,14 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
 use std::iter::Peekable;
-use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+// TODO: Remove clone
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stream {
-    content: Vec<u8>,
-    bbox: Rect,
-    resource_dictionary: ResourceDictionary,
+    pub content: Vec<u8>,
+    pub bbox: Rect,
+    pub resource_dictionary: ResourceDictionary,
 }
 
 impl Stream {
@@ -40,18 +40,6 @@ impl Stream {
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
         }
-    }
-
-    pub fn content(&self) -> &[u8] {
-        self.content.as_slice()
-    }
-
-    pub fn bbox(&self) -> Rect {
-        self.bbox
-    }
-
-    pub fn resource_dictionary(&self) -> &ResourceDictionary {
-        &self.resource_dictionary
     }
 }
 
@@ -102,7 +90,7 @@ impl ContentBuilder {
     pub fn fill_path<C>(
         &mut self,
         path: &Path,
-        fill: &Fill<C>,
+        fill: Fill<C>,
         serializer_context: &mut SerializerContext,
     ) where
         C: ColorSpace,
@@ -113,7 +101,7 @@ impl ContentBuilder {
     pub(crate) fn fill_path_impl<C>(
         &mut self,
         path: &Path,
-        fill: &Fill<C>,
+        fill: Fill<C>,
         serializer_context: &mut SerializerContext,
         no_fill: bool,
     ) where
@@ -135,12 +123,13 @@ impl ContentBuilder {
         }
 
         self.apply_isolated_op(|sb| {
+            let fill_rule = fill.rule;
             if !no_fill {
                 sb.content_set_fill_properties(path.bounds(), fill, serializer_context);
             }
             sb.content_draw_path(path.segments());
 
-            match fill.rule {
+            match fill_rule {
                 FillRule::NonZero => sb.content.fill_nonzero(),
                 FillRule::EvenOdd => sb.content.fill_even_odd(),
             };
@@ -152,7 +141,7 @@ impl ContentBuilder {
     pub fn stroke_path<C>(
         &mut self,
         path: &Path,
-        stroke: &Stroke<C>,
+        stroke: Stroke<C>,
         serializer_context: &mut SerializerContext,
     ) where
         C: ColorSpace,
@@ -161,7 +150,7 @@ impl ContentBuilder {
             return;
         }
 
-        let stroke_bbox = calculate_stroke_bbox(stroke, path).unwrap();
+        let stroke_bbox = calculate_stroke_bbox(&stroke, path).unwrap();
         self.bbox
             .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
@@ -227,7 +216,7 @@ impl ContentBuilder {
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
-        fill: &Fill<C>,
+        fill: Fill<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) where
         C: ColorSpace,
@@ -236,7 +225,7 @@ impl ContentBuilder {
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(fill.paint, Paint::Pattern(_)) {
+        if !matches!(&fill.paint, &Paint::Pattern(_)) {
             self.set_fill_opacity(fill.opacity);
         }
 
@@ -246,7 +235,7 @@ impl ContentBuilder {
             fontdb,
             sc,
             TextRenderingMode::Fill,
-            |sb, sc| {
+            move |sb, sc| {
                 sb.content_set_fill_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     fill,
@@ -265,7 +254,7 @@ impl ContentBuilder {
         y: f32,
         fontdb: &mut Database,
         sc: &mut SerializerContext,
-        stroke: &Stroke<C>,
+        stroke: Stroke<C>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) where
         C: ColorSpace,
@@ -274,7 +263,7 @@ impl ContentBuilder {
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(stroke.paint, Paint::Pattern(_)) {
+        if !matches!(&stroke.paint, &Paint::Pattern(_)) {
             self.set_stroke_opacity(stroke.opacity);
         }
 
@@ -378,7 +367,7 @@ impl ContentBuilder {
         fontdb: &mut Database,
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
-        mut action: impl FnMut(&mut ContentBuilder, &mut SerializerContext),
+        mut action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         mut glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         let mut cur_x = x;
@@ -428,11 +417,11 @@ impl ContentBuilder {
 
     pub fn draw_masked(&mut self, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask);
-        let x_object = XObject::new(Arc::new(stream), false, true, None);
+        let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(x_object, &state);
     }
 
-    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
+    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Stream) {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
@@ -442,7 +431,7 @@ impl ContentBuilder {
 
     pub fn draw_isolated(&mut self, stream: Stream) {
         let state = ExtGState::new();
-        let x_object = XObject::new(Arc::new(stream), true, false, None);
+        let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(x_object, &state);
     }
 
@@ -534,7 +523,7 @@ impl ContentBuilder {
     fn content_set_fill_stroke_properties<C>(
         &mut self,
         bounds: Rect,
-        paint: &Paint<C>,
+        paint: Paint<C>,
         opacity: NormalizedF32,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
@@ -585,7 +574,7 @@ impl ContentBuilder {
                 let color_space = self
                     .rd_builder
                     .register_resource(Resource::ColorSpace(c.color_space().into()));
-                set_solid_fn(&mut self.content, color_space, &(*c).into());
+                set_solid_fn(&mut self.content, color_space, &c.into());
             }
             Paint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
@@ -599,15 +588,14 @@ impl ContentBuilder {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform);
             }
-            Paint::Pattern(pat) => {
-                let mut pat = pat.clone();
+            Paint::Pattern(mut pat) => {
                 let transform = pat.transform;
 
-                Arc::make_mut(&mut pat).transform = pattern_transform(transform);
+                pat.transform = pattern_transform(transform);
 
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
-                        pat.stream.clone(),
+                        pat.stream,
                         TransformWrapper(pat.transform),
                         opacity,
                         FiniteF32::new(pat.width).unwrap(),
@@ -623,7 +611,7 @@ impl ContentBuilder {
     fn content_set_fill_properties<C>(
         &mut self,
         bounds: Rect,
-        fill: &Fill<C>,
+        fill: Fill<C>,
         serializer_context: &mut SerializerContext,
     ) where
         C: ColorSpace,
@@ -640,7 +628,7 @@ impl ContentBuilder {
 
         self.content_set_fill_stroke_properties(
             bounds,
-            &fill.paint,
+            fill.paint,
             fill.opacity,
             serializer_context,
             set_pattern_fn,
@@ -651,7 +639,7 @@ impl ContentBuilder {
     fn content_set_stroke_properties<C>(
         &mut self,
         bounds: Rect,
-        stroke: &Stroke<C>,
+        stroke: Stroke<C>,
         serializer_context: &mut SerializerContext,
     ) where
         C: ColorSpace,
@@ -668,7 +656,7 @@ impl ContentBuilder {
 
         self.content_set_fill_stroke_properties(
             bounds,
-            &stroke.paint,
+            stroke.paint,
             stroke.opacity,
             serializer_context,
             set_pattern_fn,

@@ -6,20 +6,17 @@ use std::sync::Arc;
 use tiny_skia_path::{Rect, Size};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-struct Repr {
+pub(crate) struct Page {
     pub stream: Stream,
     pub media_box: Rect,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub(crate) struct Page(Arc<Repr>);
-
 impl Page {
     pub fn new(size: Size, stream: Stream) -> Self {
-        Self(Arc::new(Repr {
+        Self {
             stream,
             media_box: size.to_rect(0.0, 0.0).unwrap(),
-        }))
+        }
     }
 }
 
@@ -31,17 +28,16 @@ impl Object for Page {
         let mut chunk = Chunk::new();
 
         let mut page = chunk.page(root_ref);
-        self.0
-            .stream
-            .resource_dictionary()
+        self.stream
+            .resource_dictionary
             .to_pdf_resources(sc, &mut page.resources());
 
-        page.media_box(self.0.media_box.to_pdf_rect());
+        page.media_box(self.media_box.to_pdf_rect());
         page.parent(sc.page_tree_ref());
         page.contents(stream_ref);
         page.finish();
 
-        chunk.stream(stream_ref, &self.0.stream.content());
+        chunk.stream(stream_ref, &self.stream.content);
 
         sc.add_page_ref(root_ref);
 

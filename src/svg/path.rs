@@ -28,7 +28,7 @@ pub fn fill_path(path: &usvg::Path, canvas_builder: &mut Surface, font_context: 
             font_context,
             tiny_skia_path::Transform::identity(),
         );
-        canvas_builder.fill_path(&path.data(), &fill);
+        canvas_builder.fill_path(&path.data(), fill);
     }
 }
 
@@ -44,6 +44,6 @@ pub fn stroke_path(
             font_context,
             tiny_skia_path::Transform::identity(),
         );
-        canvas_builder.stroke_path(&path.data(), &stroke);
+        canvas_builder.stroke_path(&path.data(), stroke);
     }
 }

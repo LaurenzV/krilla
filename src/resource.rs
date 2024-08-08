@@ -9,7 +9,7 @@ use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
 use fontdb::ID;
 use pdf_writer::writers::Resources;
@@ -53,7 +53,7 @@ impl ResourceTrait for ShadingFunction {
     }
 }
 
-#[derive(Hash, Clone, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq)]
 pub enum Resource {
     XObject(XObjectResource),
     Pattern(PatternResource),
@@ -207,7 +207,7 @@ impl ResourceDictionaryBuilder {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct ResourceDictionary {
     pub color_spaces: ResourceList<ColorSpaceEnum>,
     pub ext_g_states: ResourceList<ExtGState>,
@@ -218,20 +218,20 @@ pub struct ResourceDictionary {
 }
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources(&self, sc: &mut SerializerContext, resources: &mut Resources) {
-        write_resource_type(sc, resources, &self.color_spaces, false);
-        write_resource_type(sc, resources, &self.ext_g_states, false);
-        write_resource_type(sc, resources, &self.patterns, false);
-        write_resource_type(sc, resources, &self.x_objects, false);
-        write_resource_type(sc, resources, &self.shadings, false);
-        write_resource_type(sc, resources, &self.fonts, true);
+    pub fn to_pdf_resources(self, sc: &mut SerializerContext, resources: &mut Resources) {
+        write_resource_type(sc, resources, self.color_spaces, false);
+        write_resource_type(sc, resources, self.ext_g_states, false);
+        write_resource_type(sc, resources, self.patterns, false);
+        write_resource_type(sc, resources, self.x_objects, false);
+        write_resource_type(sc, resources, self.shadings, false);
+        write_resource_type(sc, resources, self.fonts, true);
     }
 }
 
 fn write_resource_type<T>(
     sc: &mut SerializerContext,
     resources: &mut Resources,
-    resource_list: &ResourceList<T>,
+    resource_list: ResourceList<T>,
     is_font: bool,
 ) where
     T: Hash + Eq + ResourceTrait + Debug + RegisterableObject,
@@ -241,9 +241,9 @@ fn write_resource_type<T>(
 
         for (name, entry) in resource_list.get_entries() {
             if !is_font {
-                dict.pair(name.to_pdf_name(), sc.add(entry.clone()));
+                dict.pair(name.to_pdf_name(), sc.add(entry));
             } else {
-                dict.pair(name.to_pdf_name(), sc.add_font(entry.clone()));
+                dict.pair(name.to_pdf_name(), sc.add_font(entry));
             }
         }
 
@@ -251,7 +251,7 @@ fn write_resource_type<T>(
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct ResourceList<V>
 where
     V: Hash + Eq + PartialEq + Debug,
@@ -261,7 +261,7 @@ where
 
 impl<T> ResourceList<T>
 where
-    T: Hash + Eq + Clone + ResourceTrait + Debug,
+    T: Hash + Eq + ResourceTrait + Debug,
 {
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
@@ -271,11 +271,11 @@ where
         format!("{}{}", T::get_prefix(), num)
     }
 
-    pub fn get_entries(&self) -> impl Iterator<Item = (String, T)> + '_ {
+    pub fn get_entries(self) -> impl Iterator<Item = (String, T)> {
         self.entries
-            .iter()
+            .into_iter()
             .enumerate()
-            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r.clone()))
+            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r))
     }
 }
 
@@ -285,12 +285,12 @@ where
     V: Hash + Eq + PartialEq + Debug + ResourceTrait,
 {
     forward: Vec<V>,
-    backward: HashMap<V, ResourceNumber>,
+    backward: HashMap<u128, ResourceNumber>,
 }
 
 impl<V> ResourceMapper<V>
 where
-    V: Hash + Eq + Clone + ResourceTrait + Debug,
+    V: Hash + Eq + ResourceTrait + Debug,
 {
     pub fn new() -> Self {
         Self {
@@ -299,17 +299,17 @@ where
         }
     }
 
-    pub fn get(&self, resource: V) -> Option<ResourceNumber> {
-        self.backward.get(&resource).copied()
+    pub fn get(&self, resource: &V) -> Option<ResourceNumber> {
+        self.backward.get(&hash_item(resource)).copied()
     }
 
     pub fn remap(&mut self, resource: V) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
 
-        *backward.entry(resource.clone()).or_insert_with(|| {
+        *backward.entry(hash_item(&resource)).or_insert_with(|| {
             let old = forward.len();
-            forward.push(resource.clone());
+            forward.push(resource);
             old as ResourceNumber
         })
     }

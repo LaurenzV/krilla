@@ -21,14 +21,14 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
         .clip_path()
         .map(|c| get_clip_path(group, c, canvas_builder.stream_surface(), font_context));
 
-    if let Some(ref svg_clip) = svg_clip {
+    if let Some(svg_clip) = svg_clip.clone() {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for rule in rules {
                     canvas_builder.push_clip_path(&rule.0, &rule.1);
                 }
             }
-            SvgClipPath::ComplexClip(mask) => canvas_builder.push_mask(mask.clone()),
+            SvgClipPath::ComplexClip(mask) => canvas_builder.push_mask(mask),
         }
     }
 
@@ -58,6 +58,7 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
         canvas_builder.pop_mask();
     }
 
+    // TODO: Remove clone
     if let Some(svg_clip) = svg_clip {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {

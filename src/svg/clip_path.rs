@@ -6,6 +6,7 @@ use crate::{FillRule, MaskType};
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
+#[derive(Clone)]
 pub enum SvgClipPath {
     SimpleClip(Vec<(Path, FillRule)>),
     ComplexClip(Mask),
@@ -196,14 +197,15 @@ fn create_complex_clip_path(
         .clip_path()
         .map(|c| get_clip_path(parent, c, surface.stream_surface(), font_context));
 
-    if let Some(ref svg_clip) = svg_clip {
+    // TODO: Remove clone
+    if let Some(svg_clip) = svg_clip.clone() {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for rule in rules {
                     surface.push_clip_path(&rule.0, &rule.1);
                 }
             }
-            SvgClipPath::ComplexClip(mask) => surface.push_mask(mask.clone()),
+            SvgClipPath::ComplexClip(mask) => surface.push_mask(mask),
         }
     }
 
@@ -227,5 +229,5 @@ fn create_complex_clip_path(
     surface.finish();
     let stream = canvas_builder.finish();
 
-    Mask::new(Arc::new(stream), MaskType::Alpha)
+    Mask::new(stream, MaskType::Alpha)
 }

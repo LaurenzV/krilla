@@ -1,4 +1,5 @@
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::util::Prehashed;
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};

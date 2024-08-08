@@ -49,12 +49,12 @@ pub fn render(text: &usvg::Text, canvas_builder: &mut Surface, font_context: &mu
                 )
             });
 
-            let fill_op = |sb: &mut Surface, fill: &Fill<Srgb>, font_context: &mut FontContext| {
+            let fill_op = |sb: &mut Surface, fill: Fill<Srgb>, font_context: &mut FontContext| {
                 sb.fill_glyph_run(
                     0.0,
                     0.0,
                     font_context.fontdb,
-                    &fill,
+                    fill,
                     [TestGlyph::new(
                         font,
                         GlyphId::new(glyph.id.0 as u32),
@@ -69,12 +69,12 @@ pub fn render(text: &usvg::Text, canvas_builder: &mut Surface, font_context: &mu
             };
 
             let stroke_op =
-                |sb: &mut Surface, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
+                |sb: &mut Surface, stroke: Stroke<Srgb>, font_context: &mut FontContext| {
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,
                         font_context.fontdb,
-                        &stroke,
+                        stroke,
                         [TestGlyph::new(
                             font,
                             GlyphId::new(glyph.id.0 as u32),
@@ -93,19 +93,19 @@ pub fn render(text: &usvg::Text, canvas_builder: &mut Surface, font_context: &mu
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
                     PaintOrder::FillAndStroke => {
-                        fill_op(canvas_builder, &fill, font_context);
-                        stroke_op(canvas_builder, &stroke, font_context);
+                        fill_op(canvas_builder, fill, font_context);
+                        stroke_op(canvas_builder, stroke, font_context);
                     }
                     PaintOrder::StrokeAndFill => {
-                        stroke_op(canvas_builder, &stroke, font_context);
-                        fill_op(canvas_builder, &fill, font_context);
+                        stroke_op(canvas_builder, stroke, font_context);
+                        fill_op(canvas_builder, fill, font_context);
                     }
                 },
                 (Some(fill), None) => {
-                    fill_op(canvas_builder, &fill, font_context);
+                    fill_op(canvas_builder, fill, font_context);
                 }
                 (None, Some(stroke)) => {
-                    stroke_op(canvas_builder, &stroke, font_context);
+                    stroke_op(canvas_builder, stroke, font_context);
                 }
                 (None, None) => canvas_builder.invisible_glyph_run(
                     0.0,

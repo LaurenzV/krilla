@@ -86,7 +86,7 @@ where
 
 #[derive(Debug, Clone)]
 pub struct Pattern {
-    pub(crate) stream: Arc<Stream>,
+    pub(crate) stream: Stream,
     pub(crate) transform: Transform,
     pub(crate) width: f32,
     pub(crate) height: f32,
@@ -101,5 +101,5 @@ where
     LinearGradient(LinearGradient<C>),
     RadialGradient(RadialGradient<C>),
     SweepGradient(SweepGradient<C>),
-    Pattern(Arc<Pattern>),
+    Pattern(Pattern),
 }

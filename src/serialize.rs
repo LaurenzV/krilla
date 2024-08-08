@@ -30,7 +30,7 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: Sized + Hash + Clone + 'static {
+pub trait Object: Sized + Hash + 'static {
     fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk);
 }
 
