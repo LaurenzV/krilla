@@ -1,80 +1,19 @@
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
+use crate::object::page::Page;
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
 use crate::stream::{Stream, StreamBuilder, TestGlyph};
-use crate::util::{deflate, RectExt};
+use crate::util::RectExt;
 use crate::{Fill, FillRule, Stroke};
 use fontdb::Database;
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Filter, Finish, Pdf};
+use pdf_writer::Finish;
 use std::iter::Peekable;
 use std::sync::Arc;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
-
-pub struct Page {
-    pub size: Size,
-    pub serializer_context: SerializerContext,
-}
-
-impl Page {
-    pub fn new(size: Size) -> Self {
-        Self {
-            size,
-            serializer_context: SerializerContext::new(SerializeSettings::default()),
-        }
-    }
-
-    pub fn builder(&mut self) -> CanvasBuilder {
-        let size = self.size;
-        CanvasBuilder::new_flipped(&mut self.serializer_context, size)
-    }
-
-    pub fn finish(self) -> SerializerContext {
-        self.serializer_context
-    }
-}
-
-impl PageSerialize for Stream {
-    fn serialize(self, mut sc: SerializerContext, fontdb: &Database, size: Size) -> Pdf {
-        let catalog_ref = sc.new_ref();
-        let page_tree_ref = sc.new_ref();
-        let page_ref = sc.new_ref();
-        let content_ref = sc.new_ref();
-
-        let mut chunk = Chunk::new();
-        chunk.pages(page_tree_ref).count(1).kids([page_ref]);
-
-        if sc.serialize_settings.compress {
-            let deflated = deflate(self.content());
-
-            let mut stream = chunk.stream(content_ref, &deflated);
-            stream.filter(Filter::FlateDecode);
-            stream.finish();
-        } else {
-            chunk.stream(content_ref, self.content());
-        }
-
-        let mut page = chunk.page(page_ref);
-        self.resource_dictionary()
-            .to_pdf_resources(&mut sc, &mut page.resources());
-
-        page.media_box(size.to_rect(0.0, 0.0).unwrap().to_pdf_rect());
-        page.parent(page_tree_ref);
-        page.contents(content_ref);
-        page.finish();
-        let cached_chunk = sc.finish(fontdb);
-
-        let mut pdf = Pdf::new();
-        pdf.catalog(catalog_ref).pages(page_tree_ref);
-        pdf.extend(&chunk);
-        pdf.extend(&cached_chunk);
-
-        pdf
-    }
-}
 
 pub struct CanvasBuilder<'a> {
     sc: &'a mut SerializerContext,
@@ -82,6 +21,7 @@ pub struct CanvasBuilder<'a> {
     sub_builders: Vec<StreamBuilder>,
     masks: Vec<Mask>,
     opacities: Vec<NormalizedF32>,
+    page_size: Option<Size>,
 }
 
 impl<'a> CanvasBuilder<'a> {
@@ -92,10 +32,11 @@ impl<'a> CanvasBuilder<'a> {
             sub_builders: Vec::new(),
             masks: Vec::new(),
             opacities: Vec::new(),
+            page_size: None,
         }
     }
 
-    pub fn new_flipped(sc: &'a mut SerializerContext, size: Size) -> Self {
+    pub fn new_page(sc: &'a mut SerializerContext, size: Size) -> Self {
         let mut root_builder = StreamBuilder::new();
         // Invert the y-axis.
         root_builder.concat_transform(&Transform::from_row(
@@ -113,6 +54,7 @@ impl<'a> CanvasBuilder<'a> {
             sub_builders: Vec::new(),
             masks: Vec::new(),
             opacities: Vec::new(),
+            page_size: Some(size),
         }
     }
 
@@ -266,6 +208,12 @@ impl<'a> CanvasBuilder<'a> {
 
     pub fn finish(self) -> Stream {
         self.root_builder.finish()
+    }
+
+    pub fn finish_page(self) {
+        let stream = self.root_builder.finish();
+        let page = Page::new(self.page_size.unwrap(), stream);
+        self.sc.add(page);
     }
 }
 

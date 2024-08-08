@@ -1,4 +1,5 @@
 pub mod canvas;
+pub mod document;
 pub mod font;
 mod graphics_state;
 mod object;

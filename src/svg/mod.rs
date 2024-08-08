@@ -124,8 +124,8 @@ fn get_context_from_node_impl(
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Page;
-    use crate::serialize::PageSerialize;
+    use crate::document::Document;
+    use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::svg::render_tree;
     use std::sync::Arc;
     use usvg::fontdb;
@@ -145,14 +145,11 @@ mod tests {
         )
         .unwrap();
 
-        let mut page = Page::new(tree.size());
-        let mut stream_builder = page.builder();
+        let mut document_builder = Document::new(SerializeSettings::default());
+        let mut stream_builder = document_builder.add_page(tree.size());
         render_tree(&tree, &mut stream_builder, &mut db);
-        let stream = stream_builder.finish();
-        let serializer_context = page.finish();
-        let finished = stream
-            .serialize(serializer_context, &db, tree.size())
-            .finish();
+        stream_builder.finish_page();
+        let finished = document_builder.finish(&db);
         let _ = std::fs::write("out/svg.pdf", &finished);
         let _ = std::fs::write("out/svg.txt", &finished);
     }
