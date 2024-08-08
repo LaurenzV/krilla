@@ -146,9 +146,9 @@ mod tests {
         .unwrap();
 
         let mut document_builder = Document::new(SerializeSettings::default());
-        let mut stream_builder = document_builder.add_page(tree.size());
+        let mut stream_builder = document_builder.start_page(tree.size());
         render_tree(&tree, &mut stream_builder, &mut db);
-        stream_builder.finish_page();
+        stream_builder.finish();
         let finished = document_builder.finish(&db);
         let _ = std::fs::write("out/svg.pdf", &finished);
         let _ = std::fs::write("out/svg.txt", &finished);

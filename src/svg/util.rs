@@ -74,7 +74,7 @@ pub fn convert_paint(
         }),
         usvg::Paint::Pattern(pat) => {
             group::render(pat.root(), &mut sub_builder, font_context);
-            let stream = sub_builder.finish();
+            let stream = sub_builder.finish_stream();
 
             Paint::Pattern(Arc::new(Pattern {
                 stream: Arc::new(stream),

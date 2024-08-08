@@ -284,7 +284,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
     let mut document_builder = Document::new(SerializeSettings::default());
-    let mut builder = document_builder.add_page(page_size);
+    let mut builder = document_builder.start_page(page_size);
 
     for (i, text) in glyphs.iter().cloned() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
@@ -322,7 +322,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
         cur_point += size;
     }
 
-    builder.finish_page();
+    builder.finish();
     let pdf = document_builder.finish(&fontdb);
     let _ = std::fs::write(format!("out/{}.pdf", name), &pdf);
     let _ = std::fs::write(format!("out/{}.txt", name), &pdf);

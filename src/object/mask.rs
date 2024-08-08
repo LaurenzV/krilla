@@ -53,7 +53,7 @@ impl Mask {
             builder.push_transform(&shading_transform.0);
             builder.draw_shading(&shading_function);
             builder.pop_transform();
-            builder.finish()
+            builder.finish_stream()
         };
 
         Some(Self(Arc::new(Repr {

@@ -15,7 +15,7 @@ impl Document {
         }
     }
 
-    pub fn add_page(&mut self, size: Size) -> CanvasBuilder {
+    pub fn start_page(&mut self, size: Size) -> CanvasBuilder {
         CanvasBuilder::new_page(&mut self.serializer_context, size)
     }
 

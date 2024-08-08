@@ -23,7 +23,7 @@ mod tests {
 
         let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
         let mut document_builder = Document::new(SerializeSettings::default());
-        let mut builder = document_builder.add_page(page_size);
+        let mut builder = document_builder.start_page(page_size);
 
         // Inspect the output runs
         for run in buffer.layout_runs() {
@@ -52,7 +52,7 @@ mod tests {
             );
         }
 
-        builder.finish_page();
+        builder.finish();
 
         let pdf = document_builder.finish(font_system.db());
         let _ = std::fs::write(format!("out/cosmic_text.pdf"), &pdf);

@@ -38,7 +38,7 @@ impl TilingPattern {
             let stream = {
                 let mut builder = CanvasBuilder::new(serializer_context);
                 builder.draw_opacified_stream(base_opacity, stream.clone());
-                builder.finish()
+                builder.finish_stream()
             };
 
             Arc::new(stream)

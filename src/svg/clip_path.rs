@@ -223,7 +223,7 @@ fn create_complex_clip_path(
         }
     }
 
-    let stream = canvas_builder.finish();
+    let stream = canvas_builder.finish_stream();
 
     Mask::new(Arc::new(stream), MaskType::Alpha)
 }

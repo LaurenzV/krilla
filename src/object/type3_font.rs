@@ -122,7 +122,7 @@ impl Type3Font {
                     });
 
                 canvas_builder.pop_transform();
-                let stream = canvas_builder.finish();
+                let stream = canvas_builder.finish_stream();
 
                 let mut content = Content::new();
 

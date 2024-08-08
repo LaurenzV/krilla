@@ -25,7 +25,7 @@ pub fn get_mask(
         canvas_builder.pop_mask();
     }
 
-    let stream = canvas_builder.finish();
+    let stream = canvas_builder.finish_stream();
 
     Mask::new(Arc::new(stream), convert_mask_type(&mask.kind()))
 }

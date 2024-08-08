@@ -25,7 +25,7 @@ pub struct CanvasBuilder<'a> {
 }
 
 impl<'a> CanvasBuilder<'a> {
-    pub fn new(sc: &'a mut SerializerContext) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
         Self {
             sc,
             root_builder: StreamBuilder::new(),
@@ -36,7 +36,7 @@ impl<'a> CanvasBuilder<'a> {
         }
     }
 
-    pub fn new_page(sc: &'a mut SerializerContext, size: Size) -> Self {
+    pub(crate) fn new_page(sc: &'a mut SerializerContext, size: Size) -> Self {
         let mut root_builder = StreamBuilder::new();
         // Invert the y-axis.
         root_builder.concat_transform(&Transform::from_row(
@@ -206,11 +206,11 @@ impl<'a> CanvasBuilder<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
     }
 
-    pub fn finish(self) -> Stream {
+    pub fn finish_stream(self) -> Stream {
         self.root_builder.finish()
     }
 
-    pub fn finish_page(self) {
+    pub fn finish(self) {
         let stream = self.root_builder.finish();
         let page = Page::new(self.page_size.unwrap(), stream);
         self.sc.add(page);
