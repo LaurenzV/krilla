@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::surface::CanvasBuilder;
 use crate::object::color_space::srgb::Srgb;
 use crate::svg::{group, FontContext};
 use crate::{

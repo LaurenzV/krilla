@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::surface::CanvasBuilder;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::transform::TransformWrapper;

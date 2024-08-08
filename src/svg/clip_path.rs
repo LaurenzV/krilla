@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasBuilder, Surface};
+use crate::surface::{CanvasBuilder, Surface};
 use crate::object::mask::Mask;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};

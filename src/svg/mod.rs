@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::surface::CanvasBuilder;
 use crate::font::FontInfo;
 use fontdb::Database;
 use skrifa::instance::LocationRef;

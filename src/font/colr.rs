@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasBuilder, Surface};
+use crate::surface::{CanvasBuilder, Surface};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::srgb;
 use crate::object::color_space::srgb::Srgb;

@@ -1,4 +1,4 @@
-pub mod canvas;
+pub mod surface;
 pub mod document;
 pub mod font;
 mod graphics_state;

@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasBuilder, Surface};
+use crate::surface::{CanvasBuilder, Surface};
 use crate::object::color_space::srgb::Srgb;
 use crate::stream::TestGlyph;
 use crate::svg::util::{convert_fill, convert_stroke};

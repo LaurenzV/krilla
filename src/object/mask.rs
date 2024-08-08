@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasBuilder, Surface};
+use crate::surface::{CanvasBuilder, Surface};
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};

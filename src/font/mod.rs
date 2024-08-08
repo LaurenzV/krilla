@@ -1,4 +1,4 @@
-use crate::canvas::Surface;
+use crate::surface::Surface;
 use crate::document::Document;
 use crate::object::color_space::srgb::Srgb;
 use crate::serialize::SerializeSettings;

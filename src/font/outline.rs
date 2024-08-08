@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasBuilder, Surface};
+use crate::surface::{CanvasBuilder, Surface};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::device_gray::DeviceGray;
 use crate::Fill;

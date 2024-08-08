@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::surface::CanvasBuilder;
 use crate::serialize::{SerializeSettings, SerializerContext};
 use fontdb::Database;
 use pdf_writer::Pdf;

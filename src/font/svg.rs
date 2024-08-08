@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::surface::CanvasBuilder;
 use crate::svg;
 use fontdb::Database;
 use skrifa::raw::TableProvider;

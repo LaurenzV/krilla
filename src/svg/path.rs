@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasBuilder, Surface};
+use crate::surface::{CanvasBuilder, Surface};
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::FontContext;
 use usvg::PaintOrder;
