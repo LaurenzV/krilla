@@ -4,6 +4,7 @@ use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::util::Prehashed;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
@@ -15,7 +16,7 @@ pub struct Repr {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Image(Arc<Repr>);
+pub struct Image(Arc<Prehashed<Repr>>);
 
 impl Image {
     pub fn new(dynamic_image: &DynamicImage) -> Self {
@@ -23,13 +24,13 @@ impl Image {
         let color_type = dynamic_image.color();
         let size =
             Size::from_wh(dynamic_image.width() as f32, dynamic_image.height() as f32).unwrap();
-        Self(Arc::new(Repr {
+        Self(Arc::new(Prehashed::new(Repr {
             samples,
             filter,
             mask_bytes,
             color_type,
             size,
-        }))
+        })))
     }
 
     pub fn size(&self) -> Size {
