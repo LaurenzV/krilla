@@ -1,5 +1,5 @@
 use crate::object::color_space::srgb::Srgb;
-use crate::surface::{StreamSurface, Surface};
+use crate::surface::{StreamBuilder, Surface};
 use crate::svg::{group, FontContext};
 use crate::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
@@ -38,7 +38,7 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop<Srgb> {
 
 pub fn convert_paint(
     paint: &usvg::Paint,
-    mut sub_builder: StreamSurface,
+    mut sub_builder: StreamBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
 ) -> Paint<Srgb> {
@@ -116,7 +116,7 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
 
 pub fn convert_fill(
     fill: &usvg::Fill,
-    sub_builder: StreamSurface,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
 ) -> Fill<Srgb> {
@@ -134,7 +134,7 @@ pub fn convert_fill(
 
 pub fn convert_stroke(
     stroke: &usvg::Stroke,
-    sub_builder: StreamSurface,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
 ) -> Stroke<Srgb> {

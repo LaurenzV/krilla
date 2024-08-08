@@ -3,7 +3,7 @@ use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
-use crate::surface::{StreamSurface, Surface};
+use crate::surface::{StreamBuilder, Surface};
 use crate::util::{NameExt, RectExt, TransformExt};
 use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
@@ -105,7 +105,7 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph_id)| {
-                let mut stream_surface = StreamSurface::new(sc);
+                let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
                 surface.push_transform(&Transform::from_scale(1.0, -1.0));
                 let mut is_outline = false;

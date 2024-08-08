@@ -1,5 +1,5 @@
 use crate::serialize::{SerializeSettings, SerializerContext};
-use crate::surface::{PageSurface, Surface};
+use crate::surface::{PageBuilder, Surface};
 use fontdb::Database;
 use pdf_writer::Pdf;
 use tiny_skia_path::Size;
@@ -15,8 +15,8 @@ impl Document {
         }
     }
 
-    pub fn start_page(&mut self, size: Size) -> PageSurface {
-        PageSurface::new(&mut self.serializer_context, size)
+    pub fn start_page(&mut self, size: Size) -> PageBuilder {
+        PageBuilder::new(&mut self.serializer_context, size)
     }
 
     pub fn finish(self, fontdb: &Database) -> Vec<u8> {

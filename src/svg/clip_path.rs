@@ -1,5 +1,5 @@
 use crate::object::mask::Mask;
-use crate::surface::{StreamSurface, Surface};
+use crate::surface::{StreamBuilder, Surface};
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
@@ -14,7 +14,7 @@ pub enum SvgClipPath {
 pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    canvas_builder: StreamSurface,
+    canvas_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
@@ -188,7 +188,7 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
 fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    mut canvas_builder: StreamSurface,
+    mut canvas_builder: StreamBuilder,
     font_context: &mut FontContext,
 ) -> Mask {
     let mut surface = canvas_builder.surface();

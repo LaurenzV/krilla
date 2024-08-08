@@ -4,7 +4,7 @@ use crate::object::mask::Mask;
 use crate::object::page::Page;
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
-use crate::stream::{Stream, StreamBuilder, TestGlyph};
+use crate::stream::{Stream, ContentBuilder, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::Database;
 use pdf_writer::types::BlendMode;
@@ -16,8 +16,8 @@ use usvg::NormalizedF32;
 
 pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
-    root_builder: StreamBuilder,
-    sub_builders: Vec<StreamBuilder>,
+    root_builder: ContentBuilder,
+    sub_builders: Vec<ContentBuilder>,
     masks: Vec<Mask>,
     opacities: Vec<NormalizedF32>,
     finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
@@ -26,7 +26,7 @@ pub struct Surface<'a> {
 impl<'a> Surface<'a> {
     pub fn new(
         sc: &'a mut SerializerContext,
-        root_builder: StreamBuilder,
+        root_builder: ContentBuilder,
         finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
     ) -> Surface<'a> {
         Self {
@@ -39,8 +39,8 @@ impl<'a> Surface<'a> {
         }
     }
 
-    pub fn stream_surface(&mut self) -> StreamSurface {
-        StreamSurface::new(&mut self.sc)
+    pub fn stream_surface(&mut self) -> StreamBuilder {
+        StreamBuilder::new(&mut self.sc)
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {
@@ -128,7 +128,7 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_mask(&mut self, mask: Mask) {
-        self.sub_builders.push(StreamBuilder::new());
+        self.sub_builders.push(ContentBuilder::new());
         self.masks.push(mask);
     }
 
@@ -139,7 +139,7 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_opacified(&mut self, opacity: NormalizedF32) {
-        self.sub_builders.push(StreamBuilder::new());
+        self.sub_builders.push(ContentBuilder::new());
         self.opacities.push(opacity);
     }
 
@@ -151,7 +151,7 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_isolated(&mut self) {
-        self.sub_builders.push(StreamBuilder::new());
+        self.sub_builders.push(ContentBuilder::new());
     }
 
     pub fn pop_isolated(&mut self) {
@@ -177,9 +177,9 @@ impl<'a> Surface<'a> {
     }
 
     fn cur_builder<'b>(
-        root_builder: &'b mut StreamBuilder,
-        sub_builders: &'b mut [StreamBuilder],
-    ) -> &'b mut StreamBuilder {
+        root_builder: &'b mut ContentBuilder,
+        sub_builders: &'b mut [ContentBuilder],
+    ) -> &'b mut ContentBuilder {
         sub_builders.last_mut().unwrap_or(root_builder)
     }
 
@@ -192,18 +192,18 @@ impl<'a> Surface<'a> {
     }
 }
 
-pub struct PageSurface<'a> {
+pub struct PageBuilder<'a> {
     sc: &'a mut SerializerContext,
     size: Size,
 }
 
-impl<'a> PageSurface<'a> {
+impl<'a> PageBuilder<'a> {
     pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
         Self { sc, size }
     }
 
     pub fn surface(&mut self) -> Surface {
-        let mut root_builder = StreamBuilder::new();
+        let mut root_builder = ContentBuilder::new();
         // Invert the y-axis.
         root_builder.concat_transform(&Transform::from_row(
             1.0,
@@ -225,12 +225,12 @@ impl<'a> PageSurface<'a> {
     pub fn finish(self) {}
 }
 
-pub struct StreamSurface<'a> {
+pub struct StreamBuilder<'a> {
     sc: &'a mut SerializerContext,
     stream: Stream,
 }
 
-impl<'a> StreamSurface<'a> {
+impl<'a> StreamBuilder<'a> {
     pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
         Self {
             sc,
@@ -243,7 +243,7 @@ impl<'a> StreamSurface<'a> {
             self.stream = stream;
         });
 
-        Surface::new(&mut self.sc, StreamBuilder::new(), finish_fn)
+        Surface::new(&mut self.sc, ContentBuilder::new(), finish_fn)
     }
 
     pub fn finish(self) -> Stream {
