@@ -1,6 +1,6 @@
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
-use crate::surface::{StreamBuilder, Surface};
+use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};

@@ -1,10 +1,9 @@
 use crate::object::mask::Mask;
-use crate::surface::{StreamBuilder, Surface};
+use crate::surface::StreamBuilder;
 use crate::svg::util::convert_mask_type;
 use crate::svg::{group, FontContext};
 use crate::util::RectExt;
 use crate::FillRule;
-use std::sync::Arc;
 
 pub fn get_mask(
     mask: &usvg::Mask,

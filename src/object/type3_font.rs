@@ -3,14 +3,13 @@ use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
-use crate::surface::{StreamBuilder, Surface};
+use crate::surface::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::{FontRef, GlyphId};
 use std::collections::BTreeSet;
-use std::sync::Arc;
 use tiny_skia_path::{Rect, Transform};
 
 // TODO: Add FontDescriptor, required for Tagged PDF

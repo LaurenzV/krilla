@@ -2,7 +2,6 @@ use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Ref};
-use std::sync::Arc;
 use tiny_skia_path::{Rect, Size};
 
 #[derive(Debug, Hash, Eq, PartialEq)]

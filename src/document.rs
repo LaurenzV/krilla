@@ -1,7 +1,6 @@
 use crate::serialize::{SerializeSettings, SerializerContext};
-use crate::surface::{PageBuilder, Surface};
+use crate::surface::PageBuilder;
 use fontdb::Database;
-use pdf_writer::Pdf;
 use tiny_skia_path::Size;
 
 pub struct Document {

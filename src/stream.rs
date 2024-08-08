@@ -367,7 +367,7 @@ impl ContentBuilder {
         fontdb: &mut Database,
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
-        mut action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
+        action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         mut glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         let mut cur_x = x;

@@ -1,9 +1,8 @@
 use crate::object::mask::Mask;
-use crate::surface::{StreamBuilder, Surface};
+use crate::surface::StreamBuilder;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
-use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
 #[derive(Clone)]

@@ -1,12 +1,11 @@
 use crate::object::color_space::srgb::Srgb;
-use crate::surface::{StreamBuilder, Surface};
+use crate::surface::StreamBuilder;
 use crate::svg::{group, FontContext};
 use crate::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
     SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use pdf_writer::types::BlendMode;
-use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Transform};
 
 pub fn convert_transform(transform: &usvg::Transform) -> Transform {

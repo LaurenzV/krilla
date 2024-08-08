@@ -10,7 +10,6 @@ use fontdb::Database;
 use pdf_writer::types::BlendMode;
 use pdf_writer::Finish;
 use std::iter::Peekable;
-use std::sync::Arc;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
 
