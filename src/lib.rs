@@ -1,4 +1,4 @@
-pub mod canvas;
+pub mod document;
 pub mod font;
 mod graphics_state;
 mod object;
@@ -7,6 +7,7 @@ pub mod path;
 pub mod resource;
 pub mod serialize;
 pub mod stream;
+pub mod surface;
 pub mod svg;
 pub mod transform;
 pub mod util;

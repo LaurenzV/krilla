@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Page;
+    use crate::document::Document;
     use crate::object::color_space::srgb::Srgb;
-    use crate::serialize::PageSerialize;
+    use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::stream::TestGlyph;
+    use crate::surface::Surface;
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
     use fontdb::Source;
@@ -22,8 +23,9 @@ mod tests {
         buffer.shape_until_scroll(&mut font_system, false);
 
         let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
-        let mut page = Page::new(page_size);
-        let mut builder = page.builder();
+        let mut document_builder = Document::new(SerializeSettings::default());
+        let mut builder = document_builder.start_page(page_size);
+        let mut surface = builder.surface();
 
         // Inspect the output runs
         for run in buffer.layout_runs() {
@@ -43,7 +45,7 @@ mod tests {
                     )
                 })
                 .peekable();
-            builder.fill_glyph_run(
+            surface.fill_glyph_run(
                 0.0,
                 y_offset,
                 font_system.db_mut(),
@@ -52,14 +54,11 @@ mod tests {
             );
         }
 
-        // panic!();
+        surface.finish();
+        builder.finish();
 
-        let stream = builder.finish();
-        let sc = page.finish();
-
-        let pdf = stream.serialize(sc, font_system.db(), page_size);
-        let finished = pdf.finish();
-        let _ = std::fs::write(format!("out/cosmic_text.pdf"), &finished);
-        let _ = std::fs::write(format!("out/cosmic_text.txt"), &finished);
+        let pdf = document_builder.finish(font_system.db());
+        let _ = std::fs::write(format!("out/cosmic_text.pdf"), &pdf);
+        let _ = std::fs::write(format!("out/cosmic_text.txt"), &pdf);
     }
 }

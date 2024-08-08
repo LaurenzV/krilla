@@ -1,6 +1,6 @@
-use crate::canvas::CanvasBuilder;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
+use crate::surface::{StreamBuilder, Surface};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
@@ -36,8 +36,10 @@ impl TilingPattern {
             stream
         } else {
             let stream = {
-                let mut builder = CanvasBuilder::new(serializer_context);
-                builder.draw_opacified_stream(base_opacity, stream.clone());
+                let mut builder = StreamBuilder::new(serializer_context);
+                let mut surface = builder.surface();
+                surface.draw_opacified_stream(base_opacity, stream.clone());
+                surface.finish();
                 builder.finish()
             };
 

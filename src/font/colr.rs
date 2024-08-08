@@ -1,8 +1,8 @@
-use crate::canvas::CanvasBuilder;
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::srgb;
 use crate::object::color_space::srgb::Srgb;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
+use crate::surface::Surface;
 use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
@@ -13,13 +13,13 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
-pub fn draw_glyph(font: Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
     let colr_glyphs = font.font_ref().color_glyphs();
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-        canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
-        let mut colr_canvas = ColrCanvas::new(font.clone(), canvas_builder);
+        surface.push_transform(&Transform::from_scale(1.0, -1.0));
+        let mut colr_canvas = ColrCanvas::new(font.clone(), surface);
         let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
-        canvas_builder.pop_transform();
+        surface.pop_transform();
         return Some(());
     } else {
         return None;
@@ -29,12 +29,12 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder
 struct ColrCanvas<'a, 'b> {
     font: Font,
     clips: Vec<Vec<Path>>,
-    canvas_builder: &'b mut CanvasBuilder<'a>,
+    canvas_builder: &'b mut Surface<'a>,
     transforms: Vec<Transform>,
 }
 
 impl<'a, 'b> ColrCanvas<'a, 'b> {
-    pub fn new(font: Font, canvas_builder: &'b mut CanvasBuilder<'a>) -> Self {
+    pub fn new(font: Font, canvas_builder: &'b mut Surface<'a>) -> Self {
         Self {
             font,
             canvas_builder,

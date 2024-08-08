@@ -1,4 +1,7 @@
+use crate::document::Document;
 use crate::object::color_space::srgb::Srgb;
+use crate::serialize::SerializeSettings;
+use crate::surface::Surface;
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
@@ -245,7 +248,6 @@ impl Font {
 
 #[cfg(test)]
 fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
-    use crate::canvas::Page;
     use crate::serialize::PageSerialize;
     use crate::stream::TestGlyph;
     use crate::Transform;
@@ -282,8 +284,9 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
     let mut cur_point = 0;
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut page = Page::new(page_size);
-    let mut builder = page.builder();
+    let mut document_builder = Document::new(SerializeSettings::default());
+    let mut builder = document_builder.start_page(page_size);
+    let mut surface = builder.surface();
 
     for (i, text) in glyphs.iter().cloned() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
@@ -305,8 +308,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             // ))
         }
 
-        builder.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        builder.fill_glyph_run(
+        surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
+        surface.fill_glyph_run(
             0.0,
             0.0,
             &mut fontdb,
@@ -316,16 +319,14 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
                 .peekable(),
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
-        builder.pop_transform();
+        surface.pop_transform();
 
         cur_point += size;
     }
 
-    let stream = builder.finish();
-    let sc = page.finish();
-
-    let pdf = stream.serialize(sc, &fontdb, page_size);
-    let finished = pdf.finish();
-    let _ = std::fs::write(format!("out/{}.pdf", name), &finished);
-    let _ = std::fs::write(format!("out/{}.txt", name), &finished);
+    surface.finish();
+    builder.finish();
+    let pdf = document_builder.finish(&fontdb);
+    let _ = std::fs::write(format!("out/{}.pdf", name), &pdf);
+    let _ = std::fs::write(format!("out/{}.txt", name), &pdf);
 }

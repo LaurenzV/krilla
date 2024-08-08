@@ -44,6 +44,9 @@ pub trait PageSerialize: Sized {
 pub struct SerializerContext {
     font_info_to_id: HashMap<Arc<FontInfo>, ID>,
     fonts: HashMap<ID, FontContainer>,
+    catalog_ref: Ref,
+    page_tree_ref: Ref,
+    page_refs: Vec<Ref>,
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
     chunks_len: usize,
@@ -67,15 +70,29 @@ impl PDFGlyph {
 
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
+        let mut cur_ref = Ref::new(1);
+        let catalog_ref = cur_ref.bump();
+        let page_tree_ref = cur_ref.bump();
         Self {
             cached_mappings: HashMap::new(),
             font_info_to_id: HashMap::new(),
-            cur_ref: Ref::new(1),
+            cur_ref,
             chunks: Vec::new(),
+            page_tree_ref,
+            catalog_ref,
+            page_refs: vec![],
             chunks_len: 0,
             fonts: HashMap::new(),
             serialize_settings,
         }
+    }
+
+    pub fn page_tree_ref(&self) -> Ref {
+        self.page_tree_ref
+    }
+
+    pub fn add_page_ref(&mut self, ref_: Ref) {
+        self.page_refs.push(ref_);
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -166,8 +183,13 @@ impl SerializerContext {
         })
     }
 
+    fn push_chunk(&mut self, chunk: Chunk) {
+        self.chunks_len += chunk.len();
+        self.chunks.push(chunk);
+    }
+
     // Always needs to be called.
-    pub fn finish(mut self, fontdb: &Database) -> Chunk {
+    pub fn finish(mut self, fontdb: &Database) -> Pdf {
         // Write fonts
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.fonts);
@@ -181,27 +203,36 @@ impl SerializerContext {
                             for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
                                 let ref_ = self.add_font(FontResource::new(font_id, pdf_index));
                                 let chunk = mapper.serialize_into(&mut self, &font_ref, ref_);
-                                self.chunks_len += chunk.len();
-                                self.chunks.push(chunk);
+                                self.push_chunk(chunk)
                             }
                         }
                         FontContainer::CIDFont(cid_font) => {
                             let ref_ = self.add_font(FontResource::new(font_id, 0));
                             let chunk = cid_font.serialize_into(&mut self, &font_ref, ref_);
-                            self.chunks_len += chunk.len();
-                            self.chunks.push(chunk);
+                            self.push_chunk(chunk)
                         }
                     }
                 })
                 .unwrap();
         }
 
-        let mut chunk = Chunk::with_capacity(self.chunks_len);
+        let mut page_tree_chunk = Chunk::new();
+
+        page_tree_chunk
+            .pages(self.page_tree_ref)
+            .count(self.page_refs.len() as i32)
+            .kids(self.page_refs);
+
+        self.chunks_len += page_tree_chunk.len();
+
+        let mut pdf = Pdf::new();
+        pdf.catalog(self.catalog_ref).pages(self.page_tree_ref);
+        pdf.extend(&page_tree_chunk);
         for part_chunk in self.chunks.drain(..) {
-            chunk.extend(&part_chunk);
+            pdf.extend(&part_chunk);
         }
 
-        chunk
+        pdf
     }
 }
 

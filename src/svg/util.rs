@@ -1,5 +1,5 @@
-use crate::canvas::CanvasBuilder;
 use crate::object::color_space::srgb::Srgb;
+use crate::surface::{StreamBuilder, Surface};
 use crate::svg::{group, FontContext};
 use crate::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
@@ -38,7 +38,7 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop<Srgb> {
 
 pub fn convert_paint(
     paint: &usvg::Paint,
-    mut sub_builder: CanvasBuilder,
+    mut sub_builder: StreamBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
 ) -> Paint<Srgb> {
@@ -73,7 +73,9 @@ pub fn convert_paint(
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
-            group::render(pat.root(), &mut sub_builder, font_context);
+            let mut surface = sub_builder.surface();
+            group::render(pat.root(), &mut surface, font_context);
+            surface.finish();
             let stream = sub_builder.finish();
 
             Paint::Pattern(Arc::new(Pattern {
@@ -114,7 +116,7 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
 
 pub fn convert_fill(
     fill: &usvg::Fill,
-    sub_builder: CanvasBuilder,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
 ) -> Fill<Srgb> {
@@ -132,7 +134,7 @@ pub fn convert_fill(
 
 pub fn convert_stroke(
     stroke: &usvg::Stroke,
-    sub_builder: CanvasBuilder,
+    sub_builder: StreamBuilder,
     font_context: &mut FontContext,
     additional_transform: Transform,
 ) -> Stroke<Srgb> {

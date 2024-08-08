@@ -1,123 +1,46 @@
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
+use crate::object::page::Page;
 use crate::object::shading_function::ShadingFunction;
-use crate::serialize::{PageSerialize, SerializeSettings, SerializerContext};
-use crate::stream::{Stream, StreamBuilder, TestGlyph};
-use crate::util::{deflate, RectExt};
+use crate::serialize::SerializerContext;
+use crate::stream::{Stream, ContentBuilder, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::Database;
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Filter, Finish, Pdf};
+use pdf_writer::Finish;
 use std::iter::Peekable;
 use std::sync::Arc;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
 
-pub struct Page {
-    pub size: Size,
-    pub serializer_context: SerializerContext,
-}
-
-impl Page {
-    pub fn new(size: Size) -> Self {
-        Self {
-            size,
-            serializer_context: SerializerContext::new(SerializeSettings::default()),
-        }
-    }
-
-    pub fn builder(&mut self) -> CanvasBuilder {
-        let size = self.size;
-        CanvasBuilder::new_flipped(&mut self.serializer_context, size)
-    }
-
-    pub fn finish(self) -> SerializerContext {
-        self.serializer_context
-    }
-}
-
-impl PageSerialize for Stream {
-    fn serialize(self, mut sc: SerializerContext, fontdb: &Database, size: Size) -> Pdf {
-        let catalog_ref = sc.new_ref();
-        let page_tree_ref = sc.new_ref();
-        let page_ref = sc.new_ref();
-        let content_ref = sc.new_ref();
-
-        let mut chunk = Chunk::new();
-        chunk.pages(page_tree_ref).count(1).kids([page_ref]);
-
-        if sc.serialize_settings.compress {
-            let deflated = deflate(self.content());
-
-            let mut stream = chunk.stream(content_ref, &deflated);
-            stream.filter(Filter::FlateDecode);
-            stream.finish();
-        } else {
-            chunk.stream(content_ref, self.content());
-        }
-
-        let mut page = chunk.page(page_ref);
-        self.resource_dictionary()
-            .to_pdf_resources(&mut sc, &mut page.resources());
-
-        page.media_box(size.to_rect(0.0, 0.0).unwrap().to_pdf_rect());
-        page.parent(page_tree_ref);
-        page.contents(content_ref);
-        page.finish();
-        let cached_chunk = sc.finish(fontdb);
-
-        let mut pdf = Pdf::new();
-        pdf.catalog(catalog_ref).pages(page_tree_ref);
-        pdf.extend(&chunk);
-        pdf.extend(&cached_chunk);
-
-        pdf
-    }
-}
-
-pub struct CanvasBuilder<'a> {
+pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
-    root_builder: StreamBuilder,
-    sub_builders: Vec<StreamBuilder>,
+    root_builder: ContentBuilder,
+    sub_builders: Vec<ContentBuilder>,
     masks: Vec<Mask>,
     opacities: Vec<NormalizedF32>,
+    finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
 }
 
-impl<'a> CanvasBuilder<'a> {
-    pub fn new(sc: &'a mut SerializerContext) -> Self {
-        Self {
-            sc,
-            root_builder: StreamBuilder::new(),
-            sub_builders: Vec::new(),
-            masks: Vec::new(),
-            opacities: Vec::new(),
-        }
-    }
-
-    pub fn new_flipped(sc: &'a mut SerializerContext, size: Size) -> Self {
-        let mut root_builder = StreamBuilder::new();
-        // Invert the y-axis.
-        root_builder.concat_transform(&Transform::from_row(
-            1.0,
-            0.0,
-            0.0,
-            -1.0,
-            0.0,
-            size.height(),
-        ));
-
+impl<'a> Surface<'a> {
+    pub fn new(
+        sc: &'a mut SerializerContext,
+        root_builder: ContentBuilder,
+        finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
+    ) -> Surface<'a> {
         Self {
             sc,
             root_builder,
-            sub_builders: Vec::new(),
-            masks: Vec::new(),
-            opacities: Vec::new(),
+            sub_builders: vec![],
+            masks: vec![],
+            opacities: vec![],
+            finish_fn,
         }
     }
 
-    pub fn sub_canvas(&mut self) -> CanvasBuilder {
-        CanvasBuilder::new(&mut self.sc)
+    pub fn stream_surface(&mut self) -> StreamBuilder {
+        StreamBuilder::new(&mut self.sc)
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {
@@ -165,14 +88,6 @@ impl<'a> CanvasBuilder<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path();
     }
 
-    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: &Fill<C>, no_fill: bool)
-    where
-        C: ColorSpace,
-    {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path_impl(path, fill, self.sc, no_fill)
-    }
-
     pub fn invisible_glyph_run(
         &mut self,
         x: f32,
@@ -212,15 +127,8 @@ impl<'a> CanvasBuilder<'a> {
             .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
     }
 
-    fn cur_builder<'b>(
-        root_builder: &'b mut StreamBuilder,
-        sub_builders: &'b mut [StreamBuilder],
-    ) -> &'b mut StreamBuilder {
-        sub_builders.last_mut().unwrap_or(root_builder)
-    }
-
     pub fn push_mask(&mut self, mask: Mask) {
-        self.sub_builders.push(StreamBuilder::new());
+        self.sub_builders.push(ContentBuilder::new());
         self.masks.push(mask);
     }
 
@@ -230,13 +138,8 @@ impl<'a> CanvasBuilder<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_masked(mask, stream);
     }
 
-    pub fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .draw_opacified(opacity, stream)
-    }
-
     pub fn push_opacified(&mut self, opacity: NormalizedF32) {
-        self.sub_builders.push(StreamBuilder::new());
+        self.sub_builders.push(ContentBuilder::new());
         self.opacities.push(opacity);
     }
 
@@ -248,7 +151,7 @@ impl<'a> CanvasBuilder<'a> {
     }
 
     pub fn push_isolated(&mut self) {
-        self.sub_builders.push(StreamBuilder::new());
+        self.sub_builders.push(ContentBuilder::new());
     }
 
     pub fn pop_isolated(&mut self) {
@@ -260,12 +163,91 @@ impl<'a> CanvasBuilder<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
     }
 
-    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
+    pub fn draw_shading(&mut self, shading: &ShadingFunction) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
     }
 
+    pub fn finish(mut self) {
+        (self.finish_fn)(self.root_builder.finish(), &mut self.sc)
+    }
+
+    pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_opacified(opacity, stream)
+    }
+
+    fn cur_builder<'b>(
+        root_builder: &'b mut ContentBuilder,
+        sub_builders: &'b mut [ContentBuilder],
+    ) -> &'b mut ContentBuilder {
+        sub_builders.last_mut().unwrap_or(root_builder)
+    }
+
+    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: &Fill<C>, no_fill: bool)
+    where
+        C: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path_impl(path, fill, self.sc, no_fill)
+    }
+}
+
+pub struct PageBuilder<'a> {
+    sc: &'a mut SerializerContext,
+    size: Size,
+}
+
+impl<'a> PageBuilder<'a> {
+    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
+        Self { sc, size }
+    }
+
+    pub fn surface(&mut self) -> Surface {
+        let mut root_builder = ContentBuilder::new();
+        // Invert the y-axis.
+        root_builder.concat_transform(&Transform::from_row(
+            1.0,
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            self.size.height(),
+        ));
+
+        let finish_fn = Box::new(|stream, sc: &mut SerializerContext| {
+            let page = Page::new(self.size, stream);
+            sc.add(page);
+        });
+
+        Surface::new(&mut self.sc, root_builder, finish_fn)
+    }
+
+    pub fn finish(self) {}
+}
+
+pub struct StreamBuilder<'a> {
+    sc: &'a mut SerializerContext,
+    stream: Stream,
+}
+
+impl<'a> StreamBuilder<'a> {
+    pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
+        Self {
+            sc,
+            stream: Stream::empty(),
+        }
+    }
+
+    pub fn surface(&mut self) -> Surface {
+        let finish_fn = Box::new(|stream, _: &mut SerializerContext| {
+            self.stream = stream;
+        });
+
+        Surface::new(&mut self.sc, ContentBuilder::new(), finish_fn)
+    }
+
     pub fn finish(self) -> Stream {
-        self.root_builder.finish()
+        self.stream
     }
 }
 

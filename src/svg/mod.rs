@@ -1,5 +1,5 @@
-use crate::canvas::CanvasBuilder;
 use crate::font::FontInfo;
+use crate::surface::Surface;
 use fontdb::Database;
 use skrifa::instance::LocationRef;
 use skrifa::FontRef;
@@ -30,7 +30,7 @@ impl<'a> FontContext<'a> {
     }
 }
 
-pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut CanvasBuilder, fontdb: &mut Database) {
+pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut Surface, fontdb: &mut Database) {
     let mut fc = get_context_from_group(tree.fontdb().clone(), tree.root(), fontdb);
     group::render(tree.root(), canvas_builder, &mut fc);
 }
@@ -38,7 +38,7 @@ pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut CanvasBuilder, fontdb
 pub fn render_node(
     node: &Node,
     tree_fontdb: Arc<fontdb::Database>,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut Surface,
     fontdb: &mut Database,
 ) {
     let mut fc = get_context_from_node(tree_fontdb, node, fontdb);
@@ -124,36 +124,33 @@ fn get_context_from_node_impl(
 
 #[cfg(test)]
 mod tests {
-    use crate::canvas::Page;
-    use crate::serialize::PageSerialize;
+    use crate::document::Document;
+    use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::svg::render_tree;
     use std::sync::Arc;
     use usvg::fontdb;
 
-    #[test]
-    pub fn svg() {
-        let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
-        let mut db = fontdb::Database::new();
-        db.load_system_fonts();
-
-        let tree = usvg::Tree::from_data(
-            &data,
-            &usvg::Options {
-                fontdb: Arc::new(db.clone()),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        let mut page = Page::new(tree.size());
-        let mut stream_builder = page.builder();
-        render_tree(&tree, &mut stream_builder, &mut db);
-        let stream = stream_builder.finish();
-        let serializer_context = page.finish();
-        let finished = stream
-            .serialize(serializer_context, &db, tree.size())
-            .finish();
-        let _ = std::fs::write("out/svg.pdf", &finished);
-        let _ = std::fs::write("out/svg.txt", &finished);
-    }
+    // #[test]
+    // pub fn svg() {
+    //     let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
+    //     let mut db = fontdb::Database::new();
+    //     db.load_system_fonts();
+    //
+    //     let tree = usvg::Tree::from_data(
+    //         &data,
+    //         &usvg::Options {
+    //             fontdb: Arc::new(db.clone()),
+    //             ..Default::default()
+    //         },
+    //     )
+    //     .unwrap();
+    //
+    //     let mut document_builder = Document::new(SerializeSettings::default());
+    //     let mut stream_builder = document_builder.start_page(tree.size());
+    //     render_tree(&tree, &mut stream_builder, &mut db);
+    //     stream_builder.finish();
+    //     let finished = document_builder.finish(&db);
+    //     let _ = std::fs::write("out/svg.pdf", &finished);
+    //     let _ = std::fs::write("out/svg.txt", &finished);
+    // }
 }

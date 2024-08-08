@@ -34,6 +34,14 @@ pub struct Stream {
 }
 
 impl Stream {
+    pub fn empty() -> Self {
+        Self {
+            content: vec![],
+            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
+            resource_dictionary: ResourceDictionaryBuilder::new().finish(),
+        }
+    }
+
     pub fn content(&self) -> &[u8] {
         self.content.as_slice()
     }
@@ -47,14 +55,14 @@ impl Stream {
     }
 }
 
-pub struct StreamBuilder {
+pub struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
 }
 
-impl StreamBuilder {
+impl ContentBuilder {
     pub fn new() -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
@@ -370,7 +378,7 @@ impl StreamBuilder {
         fontdb: &mut Database,
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
-        mut action: impl FnMut(&mut StreamBuilder, &mut SerializerContext),
+        mut action: impl FnMut(&mut ContentBuilder, &mut SerializerContext),
         mut glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         let mut cur_x = x;

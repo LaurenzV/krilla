@@ -1,6 +1,6 @@
-use crate::canvas::CanvasBuilder;
 use crate::object::color_space::srgb::Srgb;
 use crate::stream::TestGlyph;
+use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, FontContext};
 use crate::{Fill, Stroke};
@@ -8,11 +8,7 @@ use skrifa::GlyphId;
 use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
-pub fn render(
-    text: &usvg::Text,
-    canvas_builder: &mut CanvasBuilder,
-    font_context: &mut FontContext,
-) {
+pub fn render(text: &usvg::Text, canvas_builder: &mut Surface, font_context: &mut FontContext) {
     for span in text.layouted() {
         if !span.visible {
             continue;
@@ -39,7 +35,7 @@ pub fn render(
             let fill = span.fill.as_ref().map(|f| {
                 convert_fill(
                     &f,
-                    canvas_builder.sub_canvas(),
+                    canvas_builder.stream_surface(),
                     font_context,
                     transform.invert().unwrap(),
                 )
@@ -47,34 +43,33 @@ pub fn render(
             let stroke = span.stroke.as_ref().map(|s| {
                 convert_stroke(
                     &s,
-                    canvas_builder.sub_canvas(),
+                    canvas_builder.stream_surface(),
                     font_context,
                     transform.invert().unwrap(),
                 )
             });
 
-            let fill_op =
-                |sb: &mut CanvasBuilder, fill: &Fill<Srgb>, font_context: &mut FontContext| {
-                    sb.fill_glyph_run(
+            let fill_op = |sb: &mut Surface, fill: &Fill<Srgb>, font_context: &mut FontContext| {
+                sb.fill_glyph_run(
+                    0.0,
+                    0.0,
+                    font_context.fontdb,
+                    &fill,
+                    [TestGlyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
                         0.0,
                         0.0,
-                        font_context.fontdb,
-                        &fill,
-                        [TestGlyph::new(
-                            font,
-                            GlyphId::new(glyph.id.0 as u32),
-                            0.0,
-                            0.0,
-                            span.font_size.get(),
-                            glyph.text.clone(),
-                        )]
-                        .into_iter()
-                        .peekable(),
-                    );
-                };
+                        span.font_size.get(),
+                        glyph.text.clone(),
+                    )]
+                    .into_iter()
+                    .peekable(),
+                );
+            };
 
             let stroke_op =
-                |sb: &mut CanvasBuilder, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
+                |sb: &mut Surface, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,
