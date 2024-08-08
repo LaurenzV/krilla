@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::canvas::{CanvasBuilder, Surface};
 use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;

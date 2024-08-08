@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::canvas::{CanvasBuilder, Surface};
 use crate::font::Font;
 use crate::object::image::Image;
 use skrifa::raw::TableProvider;

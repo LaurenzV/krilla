@@ -1,4 +1,4 @@
-use crate::canvas::CanvasBuilder;
+use crate::canvas::{CanvasBuilder, Surface};
 use crate::object::image::Image;
 use image::ImageFormat;
 use tiny_skia_path::{Size, Transform};
