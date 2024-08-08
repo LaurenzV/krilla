@@ -1,9 +1,9 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
+use crate::surface::{CanvasBuilder, StreamSurface, Surface};
 use crate::util::{NameExt, RectExt, TransformExt};
 use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
@@ -105,24 +105,24 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph_id)| {
-                let mut canvas_builder = CanvasBuilder::new(sc);
-                canvas_builder.push_transform(&Transform::from_scale(1.0, -1.0));
+                let mut stream_surface = StreamSurface::new(sc);
+                stream_surface.push_transform(&Transform::from_scale(1.0, -1.0));
                 let mut is_outline = false;
 
-                colr::draw_glyph(self.font.clone(), *glyph_id, &mut canvas_builder)
+                colr::draw_glyph(self.font.clone(), *glyph_id, &mut stream_surface)
                     .or_else(|| {
                         // SVG fonts must not have any text So we can just use a dummy database here.
                         let mut db = Database::new();
-                        svg::draw_glyph(font_ref, *glyph_id, &mut db, &mut canvas_builder)
+                        svg::draw_glyph(font_ref, *glyph_id, &mut db, &mut stream_surface)
                     })
-                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut canvas_builder))
+                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut stream_surface))
                     .or_else(|| {
                         is_outline = true;
-                        outline::draw_glyph(&self.font, *glyph_id, &mut canvas_builder)
+                        outline::draw_glyph(&self.font, *glyph_id, &mut stream_surface)
                     });
 
-                canvas_builder.pop_transform();
-                let stream = canvas_builder.finish_stream();
+                stream_surface.pop_transform();
+                let stream = stream_surface.finish();
 
                 let mut content = Content::new();
 

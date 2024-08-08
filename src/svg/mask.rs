@@ -1,5 +1,5 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::object::mask::Mask;
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::util::convert_mask_type;
 use crate::svg::{group, FontContext};
 use crate::util::RectExt;
@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 pub fn get_mask(
     mask: &usvg::Mask,
-    mut canvas_builder: CanvasBuilder,
+    mut canvas_builder: StreamSurface,
     font_context: &mut FontContext,
 ) -> Mask {
     if let Some(sub_usvg_mask) = mask.mask() {
-        let sub_mask = get_mask(sub_usvg_mask, canvas_builder.sub_canvas(), font_context);
+        let sub_mask = get_mask(sub_usvg_mask, canvas_builder.stream_surface(), font_context);
         canvas_builder.push_mask(sub_mask);
     }
 
@@ -25,7 +25,7 @@ pub fn get_mask(
         canvas_builder.pop_mask();
     }
 
-    let stream = canvas_builder.finish_stream();
+    let stream = canvas_builder.finish();
 
     Mask::new(Arc::new(stream), convert_mask_type(&mask.kind()))
 }

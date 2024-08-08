@@ -1,5 +1,5 @@
-use crate::surface::CanvasBuilder;
 use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::surface::CanvasBuilder;
 use fontdb::Database;
 use pdf_writer::Pdf;
 use tiny_skia_path::Size;
@@ -16,7 +16,7 @@ impl Document {
     }
 
     pub fn start_page(&mut self, size: Size) -> CanvasBuilder {
-        CanvasBuilder::new_page(&mut self.serializer_context, size)
+        CanvasBuilder::new(&mut self.serializer_context, size)
     }
 
     pub fn finish(self, fontdb: &Database) -> Vec<u8> {

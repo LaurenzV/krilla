@@ -1,6 +1,6 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::object::color_space::srgb::Srgb;
 use crate::stream::TestGlyph;
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, FontContext};
 use crate::{Fill, Stroke};
@@ -10,7 +10,7 @@ use usvg::PaintOrder;
 
 pub fn render(
     text: &usvg::Text,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     for span in text.layouted() {
@@ -39,7 +39,7 @@ pub fn render(
             let fill = span.fill.as_ref().map(|f| {
                 convert_fill(
                     &f,
-                    canvas_builder.sub_canvas(),
+                    canvas_builder.stream_surface(),
                     font_context,
                     transform.invert().unwrap(),
                 )
@@ -47,14 +47,14 @@ pub fn render(
             let stroke = span.stroke.as_ref().map(|s| {
                 convert_stroke(
                     &s,
-                    canvas_builder.sub_canvas(),
+                    canvas_builder.stream_surface(),
                     font_context,
                     transform.invert().unwrap(),
                 )
             });
 
             let fill_op =
-                |sb: &mut CanvasBuilder, fill: &Fill<Srgb>, font_context: &mut FontContext| {
+                |sb: &mut StreamSurface, fill: &Fill<Srgb>, font_context: &mut FontContext| {
                     sb.fill_glyph_run(
                         0.0,
                         0.0,
@@ -74,7 +74,7 @@ pub fn render(
                 };
 
             let stroke_op =
-                |sb: &mut CanvasBuilder, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
+                |sb: &mut StreamSurface, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,

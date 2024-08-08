@@ -1,7 +1,7 @@
-use crate::surface::Surface;
 use crate::document::Document;
 use crate::object::color_space::srgb::Srgb;
 use crate::serialize::SerializeSettings;
+use crate::surface::Surface;
 use crate::util::Prehashed;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;

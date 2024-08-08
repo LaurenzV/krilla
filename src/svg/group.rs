@@ -1,4 +1,4 @@
-use crate::surface::{CanvasBuilder, Surface};
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
@@ -7,7 +7,7 @@ use usvg::{Node, NormalizedF32};
 
 pub fn render(
     group: &usvg::Group,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     if !group.filters().is_empty() {
@@ -23,7 +23,7 @@ pub fn render(
 
     let svg_clip = group
         .clip_path()
-        .map(|c| get_clip_path(group, c, canvas_builder.sub_canvas(), font_context));
+        .map(|c| get_clip_path(group, c, canvas_builder.stream_surface(), font_context));
 
     if let Some(ref svg_clip) = svg_clip {
         match svg_clip {
@@ -37,7 +37,7 @@ pub fn render(
     }
 
     if let Some(mask) = group.mask() {
-        let mask = get_mask(mask, canvas_builder.sub_canvas(), font_context);
+        let mask = get_mask(mask, canvas_builder.stream_surface(), font_context);
         canvas_builder.push_mask(mask);
     }
 
@@ -84,7 +84,7 @@ pub fn render(
 
 pub fn render_node(
     node: &Node,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     match node {

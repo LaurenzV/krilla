@@ -1,5 +1,5 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::object::image::Image;
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::{group, FontContext};
 use crate::util::RectExt;
 use crate::FillRule;
@@ -9,7 +9,7 @@ use usvg::ImageKind;
 
 pub fn render(
     image: &usvg::Image,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     if !image.is_visible() {

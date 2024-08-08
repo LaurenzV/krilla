@@ -1,12 +1,12 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::device_gray::DeviceGray;
+use crate::surface::{StreamSurface, Surface};
 use crate::Fill;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut StreamSurface) -> Option<()> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 

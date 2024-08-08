@@ -1,11 +1,11 @@
-use crate::surface::{CanvasBuilder, Surface};
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::FontContext;
 use usvg::PaintOrder;
 
 pub fn render(
     path: &usvg::Path,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     if !path.is_visible() {
@@ -26,13 +26,13 @@ pub fn render(
 
 pub fn fill_path(
     path: &usvg::Path,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     if let Some(fill) = path.fill() {
         let fill = convert_fill(
             fill,
-            canvas_builder.sub_canvas(),
+            canvas_builder.stream_surface(),
             font_context,
             tiny_skia_path::Transform::identity(),
         );
@@ -42,13 +42,13 @@ pub fn fill_path(
 
 pub fn stroke_path(
     path: &usvg::Path,
-    canvas_builder: &mut CanvasBuilder,
+    canvas_builder: &mut StreamSurface,
     font_context: &mut FontContext,
 ) {
     if let Some(stroke) = path.stroke() {
         let stroke = convert_stroke(
             stroke,
-            canvas_builder.sub_canvas(),
+            canvas_builder.stream_surface(),
             font_context,
             tiny_skia_path::Transform::identity(),
         );

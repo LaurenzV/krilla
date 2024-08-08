@@ -1,5 +1,5 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::object::mask::Mask;
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, FontContext};
 use crate::{FillRule, MaskType};
@@ -14,7 +14,7 @@ pub enum SvgClipPath {
 pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    canvas_builder: CanvasBuilder,
+    canvas_builder: StreamSurface,
     font_context: &mut FontContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
@@ -188,12 +188,12 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
 fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    mut canvas_builder: CanvasBuilder,
+    mut canvas_builder: StreamSurface,
     font_context: &mut FontContext,
 ) -> Mask {
     let svg_clip = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, c, canvas_builder.sub_canvas(), font_context));
+        .map(|c| get_clip_path(parent, c, canvas_builder.stream_surface(), font_context));
 
     if let Some(ref svg_clip) = svg_clip {
         match svg_clip {
@@ -223,7 +223,7 @@ fn create_complex_clip_path(
         }
     }
 
-    let stream = canvas_builder.finish_stream();
+    let stream = canvas_builder.finish();
 
     Mask::new(Arc::new(stream), MaskType::Alpha)
 }

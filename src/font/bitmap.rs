@@ -1,11 +1,11 @@
-use crate::surface::{CanvasBuilder, Surface};
 use crate::font::Font;
 use crate::object::image::Image;
+use crate::surface::{StreamSurface, Surface};
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut CanvasBuilder) -> Option<()> {
+pub fn draw_glyph(font: &Font, glyph: GlyphId, canvas_builder: &mut StreamSurface) -> Option<()> {
     let metrics = font
         .font_ref()
         .metrics(skrifa::instance::Size::unscaled(), font.location_ref());

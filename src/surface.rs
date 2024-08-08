@@ -51,8 +51,8 @@ macro_rules! surface_impl {
 macro_rules! surface {
     ($struct:ident) => {
         impl<'a> Surface for $struct<'a> {
-            fn sub_canvas(&mut self) -> CanvasBuilder {
-                CanvasBuilder::new(&mut self.sc)
+            fn stream_surface(&mut self) -> StreamSurface {
+                StreamSurface::new(&mut self.sc)
             }
 
             fn push_transform(&mut self, transform: &Transform) {
@@ -191,18 +191,7 @@ macro_rules! surface {
 }
 
 impl<'a> CanvasBuilder<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
-        Self {
-            sc,
-            root_builder: StreamBuilder::new(),
-            sub_builders: Vec::new(),
-            masks: Vec::new(),
-            opacities: Vec::new(),
-            page_size: None,
-        }
-    }
-
-    pub(crate) fn new_page(sc: &'a mut SerializerContext, size: Size) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
         let mut root_builder = StreamBuilder::new();
         // Invert the y-axis.
         root_builder.concat_transform(&Transform::from_row(
@@ -224,24 +213,18 @@ impl<'a> CanvasBuilder<'a> {
         }
     }
 
-    pub fn finish_stream(self) -> Stream {
-        self.root_builder.finish()
-    }
-
     pub fn finish(self) {
         let stream = self.root_builder.finish();
         let page = Page::new(self.page_size.unwrap(), stream);
         self.sc.add(page);
     }
-}
 
-impl<'a> CanvasBuilder<'a> {
     surface_impl!(self);
 }
 
 surface!(CanvasBuilder);
 
-pub struct MaskBuilder<'a> {
+pub struct StreamSurface<'a> {
     sc: &'a mut SerializerContext,
     root_builder: StreamBuilder,
     sub_builders: Vec<StreamBuilder>,
@@ -250,29 +233,29 @@ pub struct MaskBuilder<'a> {
     page_size: Option<Size>,
 }
 
-impl<'a> MaskBuilder<'a> {
+impl<'a> StreamSurface<'a> {
+    pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
+        Self {
+            sc,
+            root_builder: StreamBuilder::new(),
+            sub_builders: Vec::new(),
+            masks: Vec::new(),
+            opacities: Vec::new(),
+            page_size: None,
+        }
+    }
+
+    pub fn finish(self) -> Stream {
+        self.root_builder.finish()
+    }
+
     surface_impl!(self);
 }
 
-surface!(MaskBuilder);
-
-pub struct PatternBuilder<'a> {
-    sc: &'a mut SerializerContext,
-    root_builder: StreamBuilder,
-    sub_builders: Vec<StreamBuilder>,
-    masks: Vec<Mask>,
-    opacities: Vec<NormalizedF32>,
-    page_size: Option<Size>,
-}
-
-impl<'a> PatternBuilder<'a> {
-    surface_impl!(self);
-}
-
-surface!(PatternBuilder);
+surface!(StreamSurface);
 
 pub trait Surface {
-    fn sub_canvas(&mut self) -> CanvasBuilder;
+    fn stream_surface(&mut self) -> StreamSurface;
     fn push_transform(&mut self, transform: &Transform);
     fn pop_transform(&mut self);
     fn push_blend_mode(&mut self, blend_mode: BlendMode);
