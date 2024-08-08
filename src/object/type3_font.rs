@@ -3,7 +3,7 @@ use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
-use crate::surface::{CanvasBuilder, StreamSurface, Surface};
+use crate::surface::{StreamSurface, Surface};
 use crate::util::{NameExt, RectExt, TransformExt};
 use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
@@ -106,22 +106,24 @@ impl Type3Font {
             .enumerate()
             .map(|(index, glyph_id)| {
                 let mut stream_surface = StreamSurface::new(sc);
-                stream_surface.push_transform(&Transform::from_scale(1.0, -1.0));
+                let mut surface = stream_surface.surface();
+                surface.push_transform(&Transform::from_scale(1.0, -1.0));
                 let mut is_outline = false;
 
-                colr::draw_glyph(self.font.clone(), *glyph_id, &mut stream_surface)
+                colr::draw_glyph(self.font.clone(), *glyph_id, &mut surface)
                     .or_else(|| {
                         // SVG fonts must not have any text So we can just use a dummy database here.
                         let mut db = Database::new();
-                        svg::draw_glyph(font_ref, *glyph_id, &mut db, &mut stream_surface)
+                        svg::draw_glyph(font_ref, *glyph_id, &mut db, &mut surface)
                     })
-                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut stream_surface))
+                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut surface))
                     .or_else(|| {
                         is_outline = true;
-                        outline::draw_glyph(&self.font, *glyph_id, &mut stream_surface)
+                        outline::draw_glyph(&self.font, *glyph_id, &mut surface)
                     });
 
-                stream_surface.pop_transform();
+                surface.pop_transform();
+                surface.finish();
                 let stream = stream_surface.finish();
 
                 let mut content = Content::new();

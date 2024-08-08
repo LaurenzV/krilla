@@ -1,15 +1,11 @@
-use crate::surface::{StreamSurface, Surface};
+use crate::surface::Surface;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 use crate::svg::{filter, image, path, text, FontContext};
 use usvg::{Node, NormalizedF32};
 
-pub fn render(
-    group: &usvg::Group,
-    canvas_builder: &mut StreamSurface,
-    font_context: &mut FontContext,
-) {
+pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &mut FontContext) {
     if !group.filters().is_empty() {
         filter::render(group, canvas_builder);
         return;
@@ -82,11 +78,7 @@ pub fn render(
     }
 }
 
-pub fn render_node(
-    node: &Node,
-    canvas_builder: &mut StreamSurface,
-    font_context: &mut FontContext,
-) {
+pub fn render_node(node: &Node, canvas_builder: &mut Surface, font_context: &mut FontContext) {
     match node {
         Node::Group(g) => render(g, canvas_builder, font_context),
         Node::Path(p) => path::render(p, canvas_builder, font_context),

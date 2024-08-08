@@ -1,6 +1,6 @@
 use crate::object::color_space::srgb::Srgb;
 use crate::stream::TestGlyph;
-use crate::surface::{StreamSurface, Surface};
+use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, FontContext};
 use crate::{Fill, Stroke};
@@ -8,11 +8,7 @@ use skrifa::GlyphId;
 use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
-pub fn render(
-    text: &usvg::Text,
-    canvas_builder: &mut StreamSurface,
-    font_context: &mut FontContext,
-) {
+pub fn render(text: &usvg::Text, canvas_builder: &mut Surface, font_context: &mut FontContext) {
     for span in text.layouted() {
         if !span.visible {
             continue;
@@ -53,28 +49,27 @@ pub fn render(
                 )
             });
 
-            let fill_op =
-                |sb: &mut StreamSurface, fill: &Fill<Srgb>, font_context: &mut FontContext| {
-                    sb.fill_glyph_run(
+            let fill_op = |sb: &mut Surface, fill: &Fill<Srgb>, font_context: &mut FontContext| {
+                sb.fill_glyph_run(
+                    0.0,
+                    0.0,
+                    font_context.fontdb,
+                    &fill,
+                    [TestGlyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
                         0.0,
                         0.0,
-                        font_context.fontdb,
-                        &fill,
-                        [TestGlyph::new(
-                            font,
-                            GlyphId::new(glyph.id.0 as u32),
-                            0.0,
-                            0.0,
-                            span.font_size.get(),
-                            glyph.text.clone(),
-                        )]
-                        .into_iter()
-                        .peekable(),
-                    );
-                };
+                        span.font_size.get(),
+                        glyph.text.clone(),
+                    )]
+                    .into_iter()
+                    .peekable(),
+                );
+            };
 
             let stroke_op =
-                |sb: &mut StreamSurface, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
+                |sb: &mut Surface, stroke: &Stroke<Srgb>, font_context: &mut FontContext| {
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,

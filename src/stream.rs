@@ -34,6 +34,14 @@ pub struct Stream {
 }
 
 impl Stream {
+    pub fn empty() -> Self {
+        Self {
+            content: vec![],
+            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
+            resource_dictionary: ResourceDictionaryBuilder::new().finish(),
+        }
+    }
+
     pub fn content(&self) -> &[u8] {
         self.content.as_slice()
     }

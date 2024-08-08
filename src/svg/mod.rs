@@ -1,5 +1,5 @@
 use crate::font::FontInfo;
-use crate::surface::StreamSurface;
+use crate::surface::Surface;
 use fontdb::Database;
 use skrifa::instance::LocationRef;
 use skrifa::FontRef;
@@ -30,7 +30,7 @@ impl<'a> FontContext<'a> {
     }
 }
 
-pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut StreamSurface, fontdb: &mut Database) {
+pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut Surface, fontdb: &mut Database) {
     let mut fc = get_context_from_group(tree.fontdb().clone(), tree.root(), fontdb);
     group::render(tree.root(), canvas_builder, &mut fc);
 }
@@ -38,7 +38,7 @@ pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut StreamSurface, fontdb
 pub fn render_node(
     node: &Node,
     tree_fontdb: Arc<fontdb::Database>,
-    canvas_builder: &mut StreamSurface,
+    canvas_builder: &mut Surface,
     fontdb: &mut Database,
 ) {
     let mut fc = get_context_from_node(tree_fontdb, node, fontdb);

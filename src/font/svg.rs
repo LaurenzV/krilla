@@ -1,4 +1,4 @@
-use crate::surface::StreamSurface;
+use crate::surface::Surface;
 use crate::svg;
 use fontdb::Database;
 use skrifa::raw::TableProvider;
@@ -10,7 +10,7 @@ pub fn draw_glyph(
     font_ref: &FontRef,
     glyph: GlyphId,
     fontdb: &mut Database,
-    builder: &mut StreamSurface,
+    builder: &mut Surface,
 ) -> Option<()> {
     if let Ok(Some(svg_data)) = font_ref
         .svg()

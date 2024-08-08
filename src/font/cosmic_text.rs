@@ -25,6 +25,7 @@ mod tests {
         let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
         let mut document_builder = Document::new(SerializeSettings::default());
         let mut builder = document_builder.start_page(page_size);
+        let mut surface = builder.surface();
 
         // Inspect the output runs
         for run in buffer.layout_runs() {
@@ -44,7 +45,7 @@ mod tests {
                     )
                 })
                 .peekable();
-            builder.fill_glyph_run(
+            surface.fill_glyph_run(
                 0.0,
                 y_offset,
                 font_system.db_mut(),
@@ -53,6 +54,7 @@ mod tests {
             );
         }
 
+        surface.finish();
         builder.finish();
 
         let pdf = document_builder.finish(font_system.db());

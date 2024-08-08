@@ -191,38 +191,40 @@ fn create_complex_clip_path(
     mut canvas_builder: StreamSurface,
     font_context: &mut FontContext,
 ) -> Mask {
+    let mut surface = canvas_builder.surface();
     let svg_clip = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, c, canvas_builder.stream_surface(), font_context));
+        .map(|c| get_clip_path(parent, c, surface.stream_surface(), font_context));
 
     if let Some(ref svg_clip) = svg_clip {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for rule in rules {
-                    canvas_builder.push_clip_path(&rule.0, &rule.1);
+                    surface.push_clip_path(&rule.0, &rule.1);
                 }
             }
-            SvgClipPath::ComplexClip(mask) => canvas_builder.push_mask(mask.clone()),
+            SvgClipPath::ComplexClip(mask) => surface.push_mask(mask.clone()),
         }
     }
 
-    canvas_builder.push_transform(&convert_transform(&clip_path.transform()));
-    group::render(clip_path.root(), &mut canvas_builder, font_context);
-    canvas_builder.pop_transform();
+    surface.push_transform(&convert_transform(&clip_path.transform()));
+    group::render(clip_path.root(), &mut surface, font_context);
+    surface.pop_transform();
 
     if let Some(svg_clip) = svg_clip {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for _ in &rules {
-                    canvas_builder.pop_clip_path();
+                    surface.pop_clip_path();
                 }
             }
             SvgClipPath::ComplexClip(_) => {
-                canvas_builder.pop_mask();
+                surface.pop_mask();
             }
         }
     }
 
+    surface.finish();
     let stream = canvas_builder.finish();
 
     Mask::new(Arc::new(stream), MaskType::Alpha)

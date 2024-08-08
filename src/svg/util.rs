@@ -1,5 +1,5 @@
 use crate::object::color_space::srgb::Srgb;
-use crate::surface::StreamSurface;
+use crate::surface::{StreamSurface, Surface};
 use crate::svg::{group, FontContext};
 use crate::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
@@ -73,7 +73,9 @@ pub fn convert_paint(
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
-            group::render(pat.root(), &mut sub_builder, font_context);
+            let mut surface = sub_builder.surface();
+            group::render(pat.root(), &mut surface, font_context);
+            surface.finish();
             let stream = sub_builder.finish();
 
             Paint::Pattern(Arc::new(Pattern {

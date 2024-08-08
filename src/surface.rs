@@ -15,183 +15,195 @@ use std::sync::Arc;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
 
-pub struct CanvasBuilder<'a> {
+pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
     root_builder: StreamBuilder,
     sub_builders: Vec<StreamBuilder>,
     masks: Vec<Mask>,
     opacities: Vec<NormalizedF32>,
-    page_size: Option<Size>,
+    finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
 }
 
-macro_rules! surface_impl {
-    ($self:ident) => {
-        pub(crate) fn draw_opacified_stream(&mut $self, opacity: NormalizedF32, stream: Arc<Stream>) {
-            Self::cur_builder(&mut $self.root_builder, &mut $self.sub_builders)
-                .draw_opacified(opacity, stream)
+impl<'a> Surface<'a> {
+    pub fn new(
+        sc: &'a mut SerializerContext,
+        root_builder: StreamBuilder,
+        finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
+    ) -> Surface<'a> {
+        Self {
+            sc,
+            root_builder,
+            sub_builders: vec![],
+            masks: vec![],
+            opacities: vec![],
+            finish_fn,
         }
+    }
 
-        fn cur_builder<'b>(
-            root_builder: &'b mut StreamBuilder,
-            sub_builders: &'b mut [StreamBuilder],
-        ) -> &'b mut StreamBuilder {
-            sub_builders.last_mut().unwrap_or(root_builder)
-        }
+    pub fn stream_surface(&mut self) -> StreamSurface {
+        StreamSurface::new(&mut self.sc)
+    }
 
-        pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: &Fill<C>, no_fill: bool)
-        where
-            C: ColorSpace,
-        {
-            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                .fill_path_impl(path, fill, self.sc, no_fill)
-        }
-    };
+    pub fn push_transform(&mut self, transform: &Transform) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .concat_transform(transform);
+    }
+
+    pub fn pop_transform(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
+    }
+
+    pub fn push_blend_mode(&mut self, blend_mode: BlendMode) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .set_blend_mode(blend_mode);
+    }
+
+    pub fn pop_blend_mode(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
+    }
+
+    pub fn fill_path<'b, C>(&'b mut self, path: &Path, fill: &Fill<C>)
+    where
+        C: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path(path, fill, self.sc);
+    }
+
+    pub fn stroke_path<'b, C>(&'b mut self, path: &Path, stroke: &Stroke<C>)
+    where
+        C: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .stroke_path(path, stroke, self.sc);
+    }
+
+    pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .push_clip_path(path, clip_rule);
+    }
+
+    pub fn pop_clip_path(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path();
+    }
+
+    pub fn invisible_glyph_run(
+        &mut self,
+        x: f32,
+        y: f32,
+        fontdb: &mut Database,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+    ) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
+    }
+
+    pub fn fill_glyph_run<'b, C>(
+        &'b mut self,
+        x: f32,
+        y: f32,
+        fontdb: &mut Database,
+        fill: &Fill<C>,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+    ) where
+        C: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
+    }
+
+    pub fn stroke_glyph_run<'b, C>(
+        &'b mut self,
+        x: f32,
+        y: f32,
+        fontdb: &mut Database,
+        stroke: &Stroke<C>,
+        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+    ) where
+        C: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
+    }
+
+    pub fn push_mask(&mut self, mask: Mask) {
+        self.sub_builders.push(StreamBuilder::new());
+        self.masks.push(mask);
+    }
+
+    pub fn pop_mask(&mut self) {
+        let stream = self.sub_builders.pop().unwrap().finish();
+        let mask = self.masks.pop().unwrap();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_masked(mask, stream);
+    }
+
+    pub fn push_opacified(&mut self, opacity: NormalizedF32) {
+        self.sub_builders.push(StreamBuilder::new());
+        self.opacities.push(opacity);
+    }
+
+    pub fn pop_opacified(&mut self) {
+        let stream = self.sub_builders.pop().unwrap().finish();
+        let opacity = self.opacities.pop().unwrap();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_opacified(opacity, Arc::new(stream));
+    }
+
+    pub fn push_isolated(&mut self) {
+        self.sub_builders.push(StreamBuilder::new());
+    }
+
+    pub fn pop_isolated(&mut self) {
+        let stream = self.sub_builders.pop().unwrap().finish();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_isolated(stream);
+    }
+
+    pub fn draw_image(&mut self, image: Image, size: Size) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
+    }
+
+    pub fn draw_shading(&mut self, shading: &ShadingFunction) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
+    }
+
+    pub fn finish(mut self) {
+        (self.finish_fn)(self.root_builder.finish(), &mut self.sc)
+    }
+
+    pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Arc<Stream>) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_opacified(opacity, stream)
+    }
+
+    fn cur_builder<'b>(
+        root_builder: &'b mut StreamBuilder,
+        sub_builders: &'b mut [StreamBuilder],
+    ) -> &'b mut StreamBuilder {
+        sub_builders.last_mut().unwrap_or(root_builder)
+    }
+
+    pub(crate) fn fill_path_impl<C>(&mut self, path: &Path, fill: &Fill<C>, no_fill: bool)
+    where
+        C: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path_impl(path, fill, self.sc, no_fill)
+    }
 }
 
-macro_rules! surface {
-    ($struct:ident) => {
-        impl<'a> Surface for $struct<'a> {
-            fn stream_surface(&mut self) -> StreamSurface {
-                StreamSurface::new(&mut self.sc)
-            }
-
-            fn push_transform(&mut self, transform: &Transform) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .save_graphics_state();
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .concat_transform(transform);
-            }
-
-            fn pop_transform(&mut self) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .restore_graphics_state();
-            }
-
-            fn push_blend_mode(&mut self, blend_mode: BlendMode) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .save_graphics_state();
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .set_blend_mode(blend_mode);
-            }
-
-            fn pop_blend_mode(&mut self) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .restore_graphics_state();
-            }
-
-            fn fill_path<'b, C>(&'b mut self, path: &Path, fill: &Fill<C>)
-            where
-                C: ColorSpace,
-            {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_path(path, fill, self.sc);
-            }
-
-            fn stroke_path<'b, C>(&'b mut self, path: &Path, stroke: &Stroke<C>)
-            where
-                C: ColorSpace,
-            {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_path(path, stroke, self.sc);
-            }
-
-            fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .push_clip_path(path, clip_rule);
-            }
-
-            fn pop_clip_path(&mut self) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path();
-            }
-
-            fn invisible_glyph_run(
-                &mut self,
-                x: f32,
-                y: f32,
-                fontdb: &mut Database,
-                glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-            ) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
-            }
-
-            fn fill_glyph_run<'b, C>(
-                &'b mut self,
-                x: f32,
-                y: f32,
-                fontdb: &mut Database,
-                fill: &Fill<C>,
-                glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-            ) where
-                C: ColorSpace,
-            {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
-            }
-
-            fn stroke_glyph_run<'b, C>(
-                &'b mut self,
-                x: f32,
-                y: f32,
-                fontdb: &mut Database,
-                stroke: &Stroke<C>,
-                glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-            ) where
-                C: ColorSpace,
-            {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
-            }
-
-            fn push_mask(&mut self, mask: Mask) {
-                self.sub_builders.push(StreamBuilder::new());
-                self.masks.push(mask);
-            }
-
-            fn pop_mask(&mut self) {
-                let stream = self.sub_builders.pop().unwrap().finish();
-                let mask = self.masks.pop().unwrap();
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_masked(mask, stream);
-            }
-
-            fn push_opacified(&mut self, opacity: NormalizedF32) {
-                self.sub_builders.push(StreamBuilder::new());
-                self.opacities.push(opacity);
-            }
-
-            fn pop_opacified(&mut self) {
-                let stream = self.sub_builders.pop().unwrap().finish();
-                let opacity = self.opacities.pop().unwrap();
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_opacified(opacity, Arc::new(stream));
-            }
-
-            fn push_isolated(&mut self) {
-                self.sub_builders.push(StreamBuilder::new());
-            }
-
-            fn pop_isolated(&mut self) {
-                let stream = self.sub_builders.pop().unwrap().finish();
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_isolated(stream);
-            }
-
-            fn draw_image(&mut self, image: Image, size: Size) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_image(image, size);
-            }
-
-            fn draw_shading(&mut self, shading: &ShadingFunction) {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_shading(shading);
-            }
-        }
-    };
+pub struct PageSurface<'a> {
+    sc: &'a mut SerializerContext,
+    size: Size,
 }
 
-impl<'a> CanvasBuilder<'a> {
+impl<'a> PageSurface<'a> {
     pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
+        Self { sc, size }
+    }
+
+    pub fn surface(&mut self) -> Surface {
         let mut root_builder = StreamBuilder::new();
         // Invert the y-axis.
         root_builder.concat_transform(&Transform::from_row(
@@ -200,107 +212,44 @@ impl<'a> CanvasBuilder<'a> {
             0.0,
             -1.0,
             0.0,
-            size.height(),
+            self.size.height(),
         ));
 
-        Self {
-            sc,
-            root_builder,
-            sub_builders: Vec::new(),
-            masks: Vec::new(),
-            opacities: Vec::new(),
-            page_size: Some(size),
-        }
+        let finish_fn = Box::new(|stream, sc: &mut SerializerContext| {
+            let page = Page::new(self.size, stream);
+            sc.add(page);
+        });
+
+        Surface::new(&mut self.sc, root_builder, finish_fn)
     }
 
-    pub fn finish(self) {
-        let stream = self.root_builder.finish();
-        let page = Page::new(self.page_size.unwrap(), stream);
-        self.sc.add(page);
-    }
-
-    surface_impl!(self);
+    pub fn finish(self) {}
 }
-
-surface!(CanvasBuilder);
 
 pub struct StreamSurface<'a> {
     sc: &'a mut SerializerContext,
-    root_builder: StreamBuilder,
-    sub_builders: Vec<StreamBuilder>,
-    masks: Vec<Mask>,
-    opacities: Vec<NormalizedF32>,
-    page_size: Option<Size>,
+    stream: Stream,
 }
 
 impl<'a> StreamSurface<'a> {
     pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
         Self {
             sc,
-            root_builder: StreamBuilder::new(),
-            sub_builders: Vec::new(),
-            masks: Vec::new(),
-            opacities: Vec::new(),
-            page_size: None,
+            stream: Stream::empty(),
         }
     }
 
-    pub fn finish(self) -> Stream {
-        self.root_builder.finish()
+    pub fn surface(&mut self) -> Surface {
+        let finish_fn = Box::new(|stream, _: &mut SerializerContext| {
+            self.stream = stream;
+        });
+
+        Surface::new(&mut self.sc, StreamBuilder::new(), finish_fn)
     }
 
-    surface_impl!(self);
-}
-
-surface!(StreamSurface);
-
-pub trait Surface {
-    fn stream_surface(&mut self) -> StreamSurface;
-    fn push_transform(&mut self, transform: &Transform);
-    fn pop_transform(&mut self);
-    fn push_blend_mode(&mut self, blend_mode: BlendMode);
-    fn pop_blend_mode(&mut self);
-    fn fill_path<'b, C>(&'b mut self, path: &Path, fill: &Fill<C>)
-    where
-        C: ColorSpace;
-    fn stroke_path<'b, C>(&'b mut self, path: &Path, stroke: &Stroke<C>)
-    where
-        C: ColorSpace;
-    fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule);
-    fn pop_clip_path(&mut self);
-    fn invisible_glyph_run(
-        &mut self,
-        x: f32,
-        y: f32,
-        fontdb: &mut Database,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    );
-    fn fill_glyph_run<'b, C>(
-        &'b mut self,
-        x: f32,
-        y: f32,
-        fontdb: &mut Database,
-        fill: &Fill<C>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where
-        C: ColorSpace;
-    fn stroke_glyph_run<'b, C>(
-        &'b mut self,
-        x: f32,
-        y: f32,
-        fontdb: &mut Database,
-        stroke: &Stroke<C>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where
-        C: ColorSpace;
-    fn push_mask(&mut self, mask: Mask);
-    fn pop_mask(&mut self);
-    fn push_opacified(&mut self, opacity: NormalizedF32);
-    fn pop_opacified(&mut self);
-    fn push_isolated(&mut self);
-    fn pop_isolated(&mut self);
-    fn draw_image(&mut self, image: Image, size: Size);
-    fn draw_shading(&mut self, shading: &ShadingFunction);
+    pub fn finish(self) -> Stream {
+        self.stream
+    }
 }
 
 #[cfg(test)]
