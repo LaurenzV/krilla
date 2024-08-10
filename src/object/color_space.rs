@@ -183,12 +183,10 @@ pub mod srgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use crate::util::deflate;
     use once_cell::sync::Lazy;
     use pdf_writer::{Chunk, Finish, Name, Ref};
 
-    pub static SRGB_ICC_DEFLATED: Lazy<Vec<u8>> =
-        Lazy::new(|| deflate(include_bytes!("../icc/sRGB-v4.icc")));
+    pub static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Srgb;
@@ -258,11 +256,13 @@ pub mod srgb {
             array.item(icc_ref);
             array.finish();
 
+            let (stream, filter) = sc.get_binary_stream(SRGB_ICC);
+
             chunk
-                .icc_profile(icc_ref, &SRGB_ICC_DEFLATED)
+                .icc_profile(icc_ref, &stream)
                 .n(3)
                 .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
-                .filter(pdf_writer::Filter::FlateDecode);
+                .filter(filter);
 
             (root_ref, chunk)
         }
@@ -335,15 +335,13 @@ pub mod device_gray {
 }
 
 pub mod d65_gray {
+    use crate::object::color_space::srgb::SRGB_ICC;
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use crate::util::deflate;
-    use once_cell::sync::Lazy;
     use pdf_writer::{Chunk, Finish, Name, Ref};
 
-    pub static GREY_ICC_DEFLATED: Lazy<Vec<u8>> =
-        Lazy::new(|| deflate(include_bytes!("../icc/sGrey-v4.icc")));
+    pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct D65Gray;
@@ -408,11 +406,13 @@ pub mod d65_gray {
             array.item(icc_ref);
             array.finish();
 
+            let (stream, filter) = sc.get_binary_stream(GREY_ICC);
+
             chunk
-                .icc_profile(icc_ref, &GREY_ICC_DEFLATED)
+                .icc_profile(icc_ref, &stream)
                 .n(1)
                 .range([0.0, 1.0])
-                .filter(pdf_writer::Filter::FlateDecode);
+                .filter(filter);
 
             (root_ref, chunk)
         }

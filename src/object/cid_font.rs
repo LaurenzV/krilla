@@ -1,12 +1,13 @@
 use crate::font::{Font, Glyph};
 use crate::serialize::{hash_item, SerializerContext};
-use crate::util::{deflate, RectExt};
+use crate::util::RectExt;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::{FontRef, GlyphId};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use subsetter::GlyphRemapper;
 
@@ -82,7 +83,7 @@ impl CIDFont {
         let is_cff = font_ref.cff().is_ok();
 
         // Subset and write the font's bytes.
-        let subsetted_font = subset_font(font_ref.data().as_bytes(), &glyph_remapper);
+        let (subsetted_font, filter) = subset_font(sc, font_ref.data().as_bytes(), &glyph_remapper);
 
         let postscript_name = find_name(&font_ref).unwrap_or("unknown".to_string());
         let subset_tag = subset_tag(&subsetted_font);
@@ -184,7 +185,7 @@ impl CIDFont {
         font_descriptor.finish();
 
         let mut stream = chunk.stream(data_ref, &subsetted_font);
-        stream.filter(Filter::FlateDecode);
+        stream.filter(filter);
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
         }
@@ -195,7 +196,11 @@ impl CIDFont {
     }
 }
 
-fn subset_font(font_data: &[u8], glyph_remapper: &GlyphRemapper) -> Vec<u8> {
+fn subset_font(
+    sc: &SerializerContext,
+    font_data: &[u8],
+    glyph_remapper: &GlyphRemapper,
+) -> (Vec<u8>, Filter) {
     let subsetted = subsetter::subset(font_data, 0, glyph_remapper).unwrap();
     let mut data = subsetted.as_slice();
 
@@ -205,7 +210,7 @@ fn subset_font(font_data: &[u8], glyph_remapper: &GlyphRemapper) -> Vec<u8> {
         data = cff.as_bytes();
     }
 
-    deflate(data)
+    sc.get_binary_stream(data)
 }
 
 /// Extra methods for [`[T]`](slice).

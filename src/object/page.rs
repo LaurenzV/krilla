@@ -36,7 +36,15 @@ impl Object for Page {
         page.contents(stream_ref);
         page.finish();
 
-        chunk.stream(stream_ref, &self.stream.content);
+        let (stream, filter) = sc.get_content_stream(&self.stream.content);
+
+        let mut stream = chunk.stream(stream_ref, &stream);
+
+        if let Some(filter) = filter {
+            stream.filter(filter);
+        }
+
+        stream.finish();
 
         sc.add_page_ref(root_ref);
 

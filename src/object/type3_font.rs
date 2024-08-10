@@ -156,8 +156,10 @@ impl Type3Font {
                     content.finish()
                 };
 
+                let (stream, filter) = sc.get_binary_stream(&stream);
+
                 let stream_ref = sc.new_ref();
-                chunk.stream(stream_ref, &stream);
+                chunk.stream(stream_ref, &stream).filter(filter);
 
                 stream_ref
             })

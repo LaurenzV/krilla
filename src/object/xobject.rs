@@ -39,7 +39,14 @@ impl Object for XObject {
         let root_ref = sc.new_ref();
         let mut chunk = Chunk::new();
 
-        let mut x_object = chunk.form_xobject(root_ref, &self.stream.content);
+        let (stream, filter) = sc.get_content_stream(&self.stream.content);
+
+        let mut x_object = chunk.form_xobject(root_ref, &stream);
+
+        if let Some(filter) = filter {
+            x_object.filter(filter);
+        }
+
         self.stream
             .resource_dictionary
             .to_pdf_resources(sc, &mut x_object.resources());

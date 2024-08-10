@@ -6,10 +6,11 @@ use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Pdf, Ref};
+use pdf_writer::{Chunk, Filter, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::FontRef;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -17,15 +18,15 @@ use tiny_skia_path::Size;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
-    pub serialize_dependencies: bool,
-    pub compress: bool,
+    pub hex_encode_binary_streams: bool,
+    pub compress_content_streams: bool,
 }
 
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
-            serialize_dependencies: false,
-            compress: false,
+            hex_encode_binary_streams: true,
+            compress_content_streams: true,
         }
     }
 }
@@ -188,6 +189,23 @@ impl SerializerContext {
         self.chunks.push(chunk);
     }
 
+    pub fn get_content_stream<'a>(&self, stream: &'a [u8]) -> (Cow<'a, [u8]>, Option<Filter>) {
+        if !self.serialize_settings.compress_content_streams {
+            (Cow::Borrowed(stream), None)
+        } else {
+            let (stream, filter) = self.get_binary_stream(stream);
+            (Cow::Owned(stream), Some(filter))
+        }
+    }
+
+    pub fn get_binary_stream(&self, stream: &[u8]) -> (Vec<u8>, Filter) {
+        if self.serialize_settings.hex_encode_binary_streams {
+            (hex_encode(stream), Filter::AsciiHexDecode)
+        } else {
+            (deflate(stream), Filter::FlateDecode)
+        }
+    }
+
     // Always needs to be called.
     pub fn finish(mut self, fontdb: &Database) -> Pdf {
         // Write fonts
@@ -296,4 +314,23 @@ impl Type3FontMapper {
     pub fn index(&self) -> u32 {
         self.font.index()
     }
+}
+
+fn deflate(data: &[u8]) -> Vec<u8> {
+    const COMPRESSION_LEVEL: u8 = 6;
+    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
+}
+
+fn hex_encode(data: &[u8]) -> Vec<u8> {
+    data.iter()
+        .enumerate()
+        .map(|(index, byte)| {
+            let mut formatted = format!("{:02X}", byte);
+            if index % 35 == 34 {
+                formatted.push('\n');
+            }
+            formatted
+        })
+        .collect::<String>()
+        .into_bytes()
 }
