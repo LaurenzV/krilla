@@ -37,10 +37,6 @@ pub trait Object: Sized + Hash + 'static {
 
 pub trait RegisterableObject: Object {}
 
-pub trait PageSerialize: Sized {
-    fn serialize(self, sc: SerializerContext, fontdb: &Database, size: Size) -> Pdf;
-}
-
 #[derive(Debug)]
 pub struct SerializerContext {
     font_info_to_id: HashMap<Arc<FontInfo>, ID>,

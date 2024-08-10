@@ -2,7 +2,7 @@
 mod tests {
     use crate::document::Document;
     use crate::object::color_space::srgb::Srgb;
-    use crate::serialize::{PageSerialize, SerializeSettings};
+    use crate::serialize::{SerializeSettings};
     use crate::stream::TestGlyph;
     use crate::surface::Surface;
     use crate::Fill;

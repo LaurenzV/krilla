@@ -125,7 +125,6 @@ fn get_context_from_node_impl(
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
-    use crate::serialize::{PageSerialize, SerializeSettings};
     use crate::svg::render_tree;
     use std::sync::Arc;
     use usvg::fontdb;
