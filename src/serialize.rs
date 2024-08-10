@@ -14,7 +14,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
-use tiny_skia_path::Size;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {

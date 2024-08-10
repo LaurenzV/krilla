@@ -1,7 +1,7 @@
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::Prehashed;
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
-use pdf_writer::{Chunk, Filter, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
 

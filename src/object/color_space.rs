@@ -183,7 +183,7 @@ pub mod srgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use once_cell::sync::Lazy;
+    
     use pdf_writer::{Chunk, Finish, Name, Ref};
 
     pub static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
@@ -335,7 +335,7 @@ pub mod device_gray {
 }
 
 pub mod d65_gray {
-    use crate::object::color_space::srgb::SRGB_ICC;
+    
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};

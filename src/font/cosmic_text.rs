@@ -4,7 +4,7 @@ mod tests {
     use crate::object::color_space::srgb::Srgb;
     use crate::serialize::{SerializeSettings};
     use crate::stream::TestGlyph;
-    use crate::surface::Surface;
+    
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
     use fontdb::Source;

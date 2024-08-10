@@ -7,7 +7,6 @@ use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::{FontRef, GlyphId};
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use subsetter::GlyphRemapper;
 
