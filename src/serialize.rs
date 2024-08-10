@@ -32,6 +32,11 @@ impl Default for SerializeSettings {
 
 pub trait Object: Sized + Hash + 'static {
     fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk);
+
+    fn serialize_chunk(self, sc: &mut SerializerContext) -> Chunk {
+        let (_, chunk) = self.serialize_into(sc);
+        chunk
+    }
 }
 
 pub trait RegisterableObject: Object {}
@@ -40,8 +45,8 @@ pub trait RegisterableObject: Object {}
 pub struct SerializerContext {
     font_info_to_id: HashMap<Arc<FontInfo>, ID>,
     fonts: HashMap<ID, FontContainer>,
-    catalog_ref: Ref,
-    page_tree_ref: Ref,
+    catalog_ref: Option<Ref>,
+    page_tree_ref: Option<Ref>,
     page_refs: Vec<Ref>,
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
@@ -67,8 +72,8 @@ impl PDFGlyph {
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         let mut cur_ref = Ref::new(1);
-        let catalog_ref = cur_ref.bump();
-        let page_tree_ref = cur_ref.bump();
+        let catalog_ref = Some(cur_ref.bump());
+        let page_tree_ref = Some(cur_ref.bump());
         Self {
             cached_mappings: HashMap::new(),
             font_info_to_id: HashMap::new(),
@@ -84,7 +89,7 @@ impl SerializerContext {
     }
 
     pub fn page_tree_ref(&self) -> Ref {
-        self.page_tree_ref
+        self.page_tree_ref.unwrap()
     }
 
     pub fn add_page_ref(&mut self, ref_: Ref) {
@@ -229,23 +234,51 @@ impl SerializerContext {
                 .unwrap();
         }
 
-        let mut page_tree_chunk = Chunk::new();
-
-        page_tree_chunk
-            .pages(self.page_tree_ref)
-            .count(self.page_refs.len() as i32)
-            .kids(self.page_refs);
-
-        self.chunks_len += page_tree_chunk.len();
-
         let mut pdf = Pdf::new();
-        pdf.catalog(self.catalog_ref).pages(self.page_tree_ref);
-        pdf.extend(&page_tree_chunk);
+
+        if let (Some(page_tree_ref), Some(catalog_ref)) = (self.page_tree_ref, self.catalog_ref) {
+            let mut page_tree_chunk = Chunk::new();
+
+            page_tree_chunk
+                .pages(page_tree_ref)
+                .count(self.page_refs.len() as i32)
+                .kids(self.page_refs);
+
+            self.chunks_len += page_tree_chunk.len();
+
+            pdf.catalog(catalog_ref).pages(page_tree_ref);
+            pdf.extend(&page_tree_chunk);
+        }
+
         for part_chunk in self.chunks.drain(..) {
             pdf.extend(&part_chunk);
         }
 
         pdf
+    }
+
+    #[cfg(test)]
+    pub(crate) fn new_unit_test() -> Self {
+        let ss = SerializeSettings {
+            hex_encode_binary_streams: true,
+            compress_content_streams: false,
+        };
+
+        let mut cur_ref = Ref::new(1);
+        Self {
+            cached_mappings: HashMap::new(),
+            font_info_to_id: HashMap::new(),
+            cur_ref,
+            chunks: Vec::new(),
+            // Just a dummy.
+            page_tree_ref: None,
+            // Just a dummy.
+            catalog_ref: None,
+            page_refs: vec![],
+            chunks_len: 0,
+            fonts: HashMap::new(),
+            serialize_settings: ss,
+        }
     }
 }
 

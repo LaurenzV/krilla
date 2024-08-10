@@ -18,3 +18,30 @@ pub use paint::*;
 
 pub use path::*;
 pub use tiny_skia_path::{Size, Transform};
+
+#[cfg(test)]
+mod test_utils {
+    use std::path::{Path, PathBuf};
+
+    const REPLACE: bool = false;
+
+    fn snapshot_path(name: &str) -> PathBuf {
+        let mut path = PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("tests/snapshots");
+        path.push(format!("{}.txt", name));
+        path
+    }
+
+    pub fn check_snapshot(name: &str, content: &[u8]) {
+        let path = snapshot_path(name);
+
+        if !path.exists() {
+            std::fs::write(path, &content).unwrap();
+            panic!("new snapshot created");
+        }
+
+        let actual = std::fs::read(path).unwrap();
+        assert!(&actual == content);
+    }
+}

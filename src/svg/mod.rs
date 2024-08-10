@@ -124,10 +124,6 @@ fn get_context_from_node_impl(
 
 #[cfg(test)]
 mod tests {
-    
-    
-    
-    
 
     // #[test]
     // pub fn svg() {

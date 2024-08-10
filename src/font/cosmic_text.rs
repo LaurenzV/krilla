@@ -2,9 +2,9 @@
 mod tests {
     use crate::document::Document;
     use crate::object::color_space::srgb::Srgb;
-    use crate::serialize::{SerializeSettings};
+    use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
-    
+
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
     use fontdb::Source;

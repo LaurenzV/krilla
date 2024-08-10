@@ -111,3 +111,54 @@ impl Object for ExtGState {
 }
 
 impl RegisterableObject for ExtGState {}
+
+#[cfg(test)]
+mod tests {
+    use crate::object::ext_g_state::ExtGState;
+    use crate::object::mask::Mask;
+    use crate::serialize::{Object, SerializeSettings, SerializerContext};
+    use crate::stream::Stream;
+    use crate::test_utils::check_snapshot;
+    use crate::MaskType;
+    use fontdb::Database;
+    use pdf_writer::types::BlendMode;
+    use usvg::NormalizedF32;
+
+    #[test]
+    pub fn empty() {
+        let mut sc = SerializerContext::new_unit_test();
+        let ext_state = ExtGState::new();
+        sc.add(ext_state);
+        check_snapshot("ext_g_state_empty", sc.finish(&Database::new()).as_bytes());
+    }
+
+    #[test]
+    pub fn default_values() {
+        let mut sc = SerializerContext::new_unit_test();
+        let ext_state = ExtGState::new()
+            .non_stroking_alpha(NormalizedF32::ONE)
+            .stroking_alpha(NormalizedF32::ONE)
+            .blend_mode(BlendMode::Normal);
+        sc.add(ext_state);
+        check_snapshot(
+            "ext_g_state_default_values",
+            sc.finish(&Database::new()).as_bytes(),
+        );
+    }
+
+    #[test]
+    pub fn all_set() {
+        let mut sc = SerializerContext::new_unit_test();
+        let mask = Mask::new(Stream::empty(), MaskType::Luminosity);
+        let ext_state = ExtGState::new()
+            .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())
+            .stroking_alpha(NormalizedF32::new(0.6).unwrap())
+            .blend_mode(BlendMode::Difference)
+            .mask(mask);
+        sc.add(ext_state);
+        check_snapshot(
+            "ext_g_state_all_set",
+            sc.finish(&Database::new()).as_bytes(),
+        );
+    }
+}

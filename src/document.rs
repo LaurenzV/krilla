@@ -14,6 +14,10 @@ impl Document {
         }
     }
 
+    pub fn new_with_sc(serializer_context: SerializerContext) -> Self {
+        Self { serializer_context }
+    }
+
     pub fn start_page(&mut self, size: Size) -> PageBuilder {
         PageBuilder::new(&mut self.serializer_context, size)
     }
