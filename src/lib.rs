@@ -19,6 +19,8 @@ pub use paint::*;
 pub use path::*;
 pub use tiny_skia_path::{Size, Transform};
 
+// TODO: Add acknowledgements and license files
+
 #[cfg(test)]
 mod test_utils {
     use difference::{Changeset, Difference};
