@@ -1,3 +1,8 @@
+use crate::object::color_space::device_cmyk::DeviceCmyk;
+use crate::object::color_space::device_gray::DeviceGray;
+use crate::object::color_space::device_rgb::DeviceRgb;
+use crate::object::color_space::sgray::SGray;
+use crate::object::color_space::srgb::Srgb;
 use crate::resource::ColorSpaceEnum;
 use crate::serialize::Object;
 use pdf_writer::Name;
@@ -13,7 +18,6 @@ where
     C: Clone + Copy + ColorSpace + Debug,
 {
     fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
-    fn color_space(&self) -> C;
 }
 
 pub trait ColorSpace:
@@ -44,11 +48,11 @@ impl Color {
 
     pub fn color_space(&self) -> ColorSpaceEnum {
         match self {
-            Color::Srgb(srgb) => ColorSpaceEnum::Srgb(srgb.color_space()),
-            Color::SGray(sgray) => ColorSpaceEnum::SGray(sgray.color_space()),
-            Color::DeviceGray(d) => ColorSpaceEnum::DeviceGray(d.color_space()),
-            Color::DeviceRgb(d) => ColorSpaceEnum::DeviceRgb(d.color_space()),
-            Color::DeviceCmyk(d) => ColorSpaceEnum::DeviceCmyk(d.color_space()),
+            Color::Srgb(_) => ColorSpaceEnum::Srgb(Srgb),
+            Color::SGray(_) => ColorSpaceEnum::SGray(SGray),
+            Color::DeviceGray(_) => ColorSpaceEnum::DeviceGray(DeviceGray),
+            Color::DeviceRgb(_) => ColorSpaceEnum::DeviceRgb(DeviceRgb),
+            Color::DeviceCmyk(_) => ColorSpaceEnum::DeviceCmyk(DeviceCmyk),
         }
     }
 }
@@ -101,10 +105,6 @@ pub mod device_cmyk {
                 self.0[2] as f32 / 255.0,
                 self.0[3] as f32 / 255.0,
             ]
-        }
-
-        fn color_space(&self) -> DeviceCmyk {
-            self.1
         }
     }
 
@@ -170,10 +170,6 @@ pub mod device_rgb {
                 self.0[1] as f32 / 255.0,
                 self.0[2] as f32 / 255.0,
             ]
-        }
-
-        fn color_space(&self) -> DeviceRgb {
-            self.1
         }
     }
 
@@ -242,10 +238,6 @@ pub mod srgb {
                 self.0[1] as f32 / 255.0,
                 self.0[2] as f32 / 255.0,
             ]
-        }
-
-        fn color_space(&self) -> Srgb {
-            self.1
         }
     }
 
@@ -326,10 +318,6 @@ pub mod device_gray {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [self.0 as f32 / 255.0]
         }
-
-        fn color_space(&self) -> DeviceGray {
-            self.1
-        }
     }
 
     impl Object for DeviceGray {
@@ -393,10 +381,6 @@ pub mod sgray {
     impl InternalColor<SGray> for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [self.0 as f32 / 255.0]
-        }
-
-        fn color_space(&self) -> SGray {
-            self.1
         }
     }
 

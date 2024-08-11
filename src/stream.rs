@@ -559,9 +559,9 @@ impl ContentBuilder {
 
         match paint {
             Paint::Color(c) => {
-                let color_space = self
-                    .rd_builder
-                    .register_resource(Resource::ColorSpace(c.color_space().into()));
+                let color_space = self.rd_builder.register_resource(Resource::ColorSpace(
+                    Into::<Color>::into(c).color_space().into(),
+                ));
                 set_solid_fn(&mut self.content, color_space, &c.into());
             }
             Paint::LinearGradient(lg) => {
