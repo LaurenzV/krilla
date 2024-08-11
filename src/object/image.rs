@@ -67,7 +67,7 @@ impl Object for Image {
         if self.0.color_type.has_color() {
             image_x_object.pair(Name(b"ColorSpace"), sc.srgb());
         } else {
-            image_x_object.pair(Name(b"ColorSpace"), sc.d65_gray());
+            image_x_object.pair(Name(b"ColorSpace"), sc.sgray());
         }
 
         image_x_object.bits_per_component(calculate_bits_per_component(self.0.color_type));

@@ -20,7 +20,7 @@ pub trait ColorSpace:
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
     Srgb(srgb::Color),
-    D65Gray(d65_gray::Color),
+    SGray(sgray::Color),
     DeviceGray(device_gray::Color),
     DeviceRgb(device_rgb::Color),
     DeviceCmyk(device_cmyk::Color),
@@ -30,7 +30,7 @@ impl Color {
     pub fn to_pdf_color(&self) -> Vec<f32> {
         match self {
             Color::Srgb(srgb) => srgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::D65Gray(d65_gray) => d65_gray.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::SGray(sgray) => sgray.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::DeviceGray(dg) => dg.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::DeviceRgb(dr) => dr.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::DeviceCmyk(dc) => dc.to_pdf_color().into_iter().collect::<Vec<_>>(),
@@ -40,7 +40,7 @@ impl Color {
     pub fn color_space(&self) -> ColorSpaceEnum {
         match self {
             Color::Srgb(srgb) => ColorSpaceEnum::Srgb(srgb.color_space()),
-            Color::D65Gray(d65_gray) => ColorSpaceEnum::D65Gray(d65_gray.color_space()),
+            Color::SGray(sgray) => ColorSpaceEnum::SGray(sgray.color_space()),
             Color::DeviceGray(d) => ColorSpaceEnum::DeviceGray(d.color_space()),
             Color::DeviceRgb(d) => ColorSpaceEnum::DeviceRgb(d.color_space()),
             Color::DeviceCmyk(d) => ColorSpaceEnum::DeviceCmyk(d.color_space()),
@@ -334,7 +334,7 @@ pub mod device_gray {
     }
 }
 
-pub mod d65_gray {
+pub mod sgray {
 
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
@@ -344,20 +344,20 @@ pub mod d65_gray {
     pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct D65Gray;
+    pub struct SGray;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(u8, D65Gray);
+    pub struct Color(u8, SGray);
 
     impl Default for Color {
         fn default() -> Self {
-            D65Gray::black()
+            SGray::black()
         }
     }
 
-    impl D65Gray {
+    impl SGray {
         pub fn new_gray(lightness: u8) -> Color {
-            Color(lightness, D65Gray)
+            Color(lightness, SGray)
         }
 
         pub fn black() -> Color {
@@ -369,33 +369,33 @@ pub mod d65_gray {
         }
     }
 
-    impl Into<ColorSpaceEnum> for D65Gray {
+    impl Into<ColorSpaceEnum> for SGray {
         fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::D65Gray(self)
+            ColorSpaceEnum::SGray(self)
         }
     }
 
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
-            super::Color::D65Gray(self)
+            super::Color::SGray(self)
         }
     }
 
-    impl ColorSpace for D65Gray {
+    impl ColorSpace for SGray {
         type Color = Color;
     }
 
-    impl InternalColor<D65Gray> for Color {
+    impl InternalColor<SGray> for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [self.0 as f32 / 255.0]
         }
 
-        fn color_space(&self) -> D65Gray {
+        fn color_space(&self) -> SGray {
             self.1
         }
     }
 
-    impl Object for D65Gray {
+    impl Object for SGray {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
             let root_ref = sc.new_ref();
             let icc_ref = sc.new_ref();

@@ -226,7 +226,7 @@ fn serialize_postscript_shading(
 
     let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
     let cs_ref = if use_opacities {
-        sc.d65_gray()
+        sc.sgray()
     } else {
         sc.srgb()
     };
@@ -251,7 +251,7 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs_ref = if use_opacities {
-        sc.d65_gray()
+        sc.sgray()
     } else {
         sc.srgb()
     };

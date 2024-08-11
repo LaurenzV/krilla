@@ -1,6 +1,6 @@
 use crate::font::{Font, FontInfo, Glyph};
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::d65_gray::D65Gray;
+use crate::object::color_space::sgray::SGray;
 use crate::object::color_space::srgb::Srgb;
 use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
@@ -104,8 +104,8 @@ impl SerializerContext {
         self.add(ColorSpaceEnum::Srgb(Srgb))
     }
 
-    pub fn d65_gray(&mut self) -> Ref {
-        self.add(ColorSpaceEnum::D65Gray(D65Gray))
+    pub fn sgray(&mut self) -> Ref {
+        self.add(ColorSpaceEnum::SGray(SGray))
     }
 
     pub fn add<T>(&mut self, object: T) -> Ref

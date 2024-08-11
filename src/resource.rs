@@ -1,4 +1,4 @@
-use crate::object::color_space::d65_gray::D65Gray;
+use crate::object::color_space::sgray::SGray;
 use crate::object::color_space::device_cmyk::DeviceCmyk;
 use crate::object::color_space::device_gray::DeviceGray;
 use crate::object::color_space::device_rgb::DeviceRgb;
@@ -160,7 +160,7 @@ impl ResourceDictionaryBuilder {
             ColorSpaceEnum::DeviceGray(_) => "DeviceGray".to_string(),
             ColorSpaceEnum::DeviceCmyk(_) => "DeviceCMYK".to_string(),
             ColorSpaceEnum::Srgb(_) => self.color_spaces.remap_with_name(color_space),
-            ColorSpaceEnum::D65Gray(_) => self.color_spaces.remap_with_name(color_space),
+            ColorSpaceEnum::SGray(_) => self.color_spaces.remap_with_name(color_space),
         }
     }
 
@@ -354,7 +354,7 @@ impl Object for FontResource {
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ColorSpaceEnum {
     Srgb(Srgb),
-    D65Gray(D65Gray),
+    SGray(SGray),
     DeviceGray(DeviceGray),
     DeviceRgb(DeviceRgb),
     DeviceCmyk(DeviceCmyk),
@@ -364,7 +364,7 @@ impl Object for ColorSpaceEnum {
     fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
         match self {
             ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc),
-            ColorSpaceEnum::D65Gray(d65_gray) => d65_gray.serialize_into(sc),
+            ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc),
             ColorSpaceEnum::DeviceGray(device_gray) => device_gray.serialize_into(sc),
             ColorSpaceEnum::DeviceRgb(device_rgb) => device_rgb.serialize_into(sc),
             ColorSpaceEnum::DeviceCmyk(device_cmyk) => device_cmyk.serialize_into(sc),
