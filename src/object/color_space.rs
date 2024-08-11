@@ -75,11 +75,11 @@ pub mod device_cmyk {
     pub struct DeviceCmyk;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color([u8; 4], DeviceCmyk);
+    pub struct Color([u8; 4]);
 
     impl DeviceCmyk {
         pub fn new_cmyk(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
-            Color([cyan, magenta, yellow, black], DeviceCmyk)
+            Color([cyan, magenta, yellow, black])
         }
     }
 
@@ -133,11 +133,11 @@ pub mod device_rgb {
     pub struct DeviceRgb;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color([u8; 3], DeviceRgb);
+    pub struct Color([u8; 3]);
 
     impl DeviceRgb {
         pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
-            Color([red, green, blue], DeviceRgb)
+            Color([red, green, blue])
         }
 
         pub fn black() -> Color {
@@ -201,7 +201,7 @@ pub mod srgb {
     pub struct Srgb;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color([u8; 3], Srgb);
+    pub struct Color([u8; 3]);
 
     impl Default for Color {
         fn default() -> Self {
@@ -211,7 +211,7 @@ pub mod srgb {
 
     impl Srgb {
         pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
-            Color([red, green, blue], Srgb)
+            Color([red, green, blue])
         }
 
         pub fn black() -> Color {
@@ -284,7 +284,7 @@ pub mod device_gray {
     pub struct DeviceGray;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(u8, DeviceGray);
+    pub struct Color(u8);
 
     impl Default for Color {
         fn default() -> Self {
@@ -294,7 +294,7 @@ pub mod device_gray {
 
     impl DeviceGray {
         pub fn new_gray(lightness: u8) -> Color {
-            Color(lightness, DeviceGray)
+            Color(lightness)
         }
 
         pub fn black() -> Color {
@@ -348,7 +348,7 @@ pub mod sgray {
     pub struct SGray;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(u8, SGray);
+    pub struct Color(u8);
 
     impl Default for Color {
         fn default() -> Self {
@@ -358,7 +358,7 @@ pub mod sgray {
 
     impl SGray {
         pub fn new_gray(lightness: u8) -> Color {
-            Color(lightness, SGray)
+            Color(lightness)
         }
 
         pub fn black() -> Color {
