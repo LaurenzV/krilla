@@ -1,7 +1,10 @@
 use crate::resource::ColorSpaceEnum;
-use crate::serialize::Object;
-use std::fmt::Debug;
-use std::hash::Hash;
+use crate::serialize::{Object, SerializerContext};
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use crate::util::Prehashed;
 
 pub const DEVICE_RGB: &'static str = "DeviceRGB";
 pub const DEVICE_GRAY: &'static str = "DeviceGray";
@@ -16,6 +19,33 @@ pub trait ColorSpace:
     Object + Debug + Hash + Eq + PartialEq + Clone + Copy + Into<ColorSpaceEnum>
 {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
+}
+
+#[derive(Clone)]
+struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
+
+impl ICCBasedColorSpace {
+    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+        let root_ref = sc.new_ref();
+        let icc_ref = sc.new_ref();
+
+        let mut chunk = Chunk::new();
+
+        let mut array = chunk.indirect(root_ref).array();
+        array.item(Name(b"ICCBased"));
+        array.item(icc_ref);
+        array.finish();
+
+        let (stream, filter) = sc.get_binary_stream(self.0.as_ref().as_ref());
+
+        chunk
+            .icc_profile(icc_ref, &stream)
+            .n(self.1 as i32)
+            .range([0.0, 1.0].repeat(self.1 as usize))
+            .filter(filter);
+
+        (root_ref, chunk)
+    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -108,7 +138,8 @@ pub mod device_cmyk {
 }
 
 pub mod rgb {
-    use crate::object::color_space::{ColorSpace, InternalColor};
+    use std::sync::Arc;
+    use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
 
@@ -178,25 +209,8 @@ pub mod rgb {
 
     impl Object for Srgb {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-            let root_ref = sc.new_ref();
-            let icc_ref = sc.new_ref();
-
-            let mut chunk = Chunk::new();
-
-            let mut array = chunk.indirect(root_ref).array();
-            array.item(Name(b"ICCBased"));
-            array.item(icc_ref);
-            array.finish();
-
-            let (stream, filter) = sc.get_binary_stream(SRGB_ICC);
-
-            chunk
-                .icc_profile(icc_ref, &stream)
-                .n(3)
-                .range([0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
-                .filter(filter);
-
-            (root_ref, chunk)
+            let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
+            icc_based.serialize_into(sc)
         }
     }
 
@@ -221,7 +235,8 @@ pub mod rgb {
 }
 
 pub mod luma {
-    use crate::object::color_space::{ColorSpace, InternalColor};
+    use std::sync::Arc;
+    use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -286,24 +301,8 @@ pub mod luma {
 
     impl Object for SGray {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-            let root_ref = sc.new_ref();
-            let icc_ref = sc.new_ref();
-            let mut chunk = Chunk::new();
-
-            let mut array = chunk.indirect(root_ref).array();
-            array.item(Name(b"ICCBased"));
-            array.item(icc_ref);
-            array.finish();
-
-            let (stream, filter) = sc.get_binary_stream(GREY_ICC);
-
-            chunk
-                .icc_profile(icc_ref, &stream)
-                .n(1)
-                .range([0.0, 1.0])
-                .filter(filter);
-
-            (root_ref, chunk)
+            let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
+            icc_based.serialize_into(sc)
         }
     }
 
