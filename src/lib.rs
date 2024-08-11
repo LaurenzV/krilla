@@ -22,7 +22,7 @@ pub use tiny_skia_path::{Size, Transform};
 #[cfg(test)]
 mod test_utils {
     use difference::{Changeset, Difference};
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     const REPLACE: bool = false;
 
@@ -71,15 +71,15 @@ mod test_utils {
             match diff {
                 Difference::Same(ref x) => {
                     t.reset().unwrap();
-                    writeln!(t, " {}", x);
+                    writeln!(t, " {}", x).unwrap();
                 }
                 Difference::Add(ref x) => {
                     t.fg(term::color::GREEN).unwrap();
-                    writeln!(t, "+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
+                    writeln!(t, "+++++++++++++++++++\n{}\n+++++++++++++++++++", x).unwrap();
                 }
                 Difference::Rem(ref x) => {
                     t.fg(term::color::RED).unwrap();
-                    writeln!(t, "-------------------\n{}\n-------------------", x);
+                    writeln!(t, "-------------------\n{}\n-------------------", x).unwrap();
                 }
             }
         }

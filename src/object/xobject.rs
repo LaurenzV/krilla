@@ -1,4 +1,4 @@
-use crate::serialize::{CSWrapper, Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};

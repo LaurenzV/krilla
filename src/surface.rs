@@ -8,7 +8,6 @@ use crate::stream::{ContentBuilder, Stream, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::Database;
 use pdf_writer::types::BlendMode;
-use pdf_writer::Finish;
 use std::iter::Peekable;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;

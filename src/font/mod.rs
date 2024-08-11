@@ -98,7 +98,7 @@ impl Hash for Repr {
 pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Debug for Font {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }

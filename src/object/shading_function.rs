@@ -1,6 +1,6 @@
 use crate::object::color_space::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
-use crate::serialize::{CSWrapper, Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use crate::{LinearGradient, RadialGradient, SweepGradient};

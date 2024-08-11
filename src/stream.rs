@@ -1,7 +1,7 @@
 use crate::font::Glyph;
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::{Color, ColorSpace, InternalColor};
+use crate::object::color_space::{Color, ColorSpace};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;

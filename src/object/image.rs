@@ -1,5 +1,5 @@
 use crate::object::color_space::DEVICE_GRAY;
-use crate::serialize::{CSWrapper, Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::util::{NameExt, Prehashed};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};

@@ -8,7 +8,7 @@ use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Filter, Name, Pdf, Ref};
+use pdf_writer::{Chunk, Filter, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::FontRef;
