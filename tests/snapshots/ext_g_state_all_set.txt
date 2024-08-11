@@ -1,5 +1,13 @@
 %PDF-1.7
-%€€€€
+%ï¿½ï¿½ï¿½ï¿½
+
+2 0 obj
+<<
+  /Type /Mask
+  /S /Luminosity
+  /G 3 0 R
+>>
+endobj
 
 3 0 obj
 <<
@@ -7,7 +15,7 @@
   /Type /XObject
   /Subtype /Form
   /Resources <<>>
-  /BBox [0 0 0 0]
+  /Hi [1, 2, 5]
   /Group <<
     /Type /Group
     /S /Transparency
@@ -17,14 +25,6 @@
 stream
 
 endstream
-endobj
-
-2 0 obj
-<<
-  /Type /Mask
-  /S /Luminosity
-  /G 3 0 R
->>
 endobj
 
 1 0 obj

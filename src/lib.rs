@@ -21,9 +21,10 @@ pub use tiny_skia_path::{Size, Transform};
 
 #[cfg(test)]
 mod test_utils {
+    use difference::{Changeset, Difference};
     use std::path::{Path, PathBuf};
 
-    const REPLACE: bool = true;
+    const REPLACE: bool = false;
 
     fn snapshot_path(name: &str) -> PathBuf {
         let mut path = PathBuf::new();
@@ -48,6 +49,33 @@ mod test_utils {
             panic!("test was replaced");
         }
 
-        assert!(&actual == content);
+        let changeset = Changeset::new(
+            &String::from_utf8_lossy(content),
+            &String::from_utf8_lossy(&actual),
+            "\n",
+        );
+
+        let mut t = term::stdout().unwrap();
+
+        for diff in changeset.diffs {
+            match diff {
+                Difference::Same(ref x) => {
+                    t.reset().unwrap();
+                    writeln!(t, " {}", x);
+                }
+                Difference::Add(ref x) => {
+                    t.fg(term::color::GREEN).unwrap();
+                    writeln!(t, "+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
+                }
+                Difference::Rem(ref x) => {
+                    t.fg(term::color::RED).unwrap();
+                    writeln!(t, "-------------------\n{}\n-------------------", x);
+                }
+            }
+        }
+        t.reset().unwrap();
+        t.flush().unwrap();
+
+        assert_eq!(changeset.distance, 0);
     }
 }
