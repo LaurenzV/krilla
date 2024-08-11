@@ -46,10 +46,18 @@ impl Color {
         }
     }
 
-    pub fn color_space(&self) -> ColorSpaceEnum {
+    pub fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
         match self {
-            Color::Srgb(_) => ColorSpaceEnum::Srgb(Srgb),
-            Color::SGray(_) => ColorSpaceEnum::SGray(SGray),
+            Color::Srgb(_) => if no_device_cs {
+                ColorSpaceEnum::Srgb(Srgb)
+            }   else {
+                ColorSpaceEnum::DeviceRgb(DeviceRgb)
+            },
+            Color::SGray(_) => if no_device_cs {
+                ColorSpaceEnum::SGray(SGray)
+            }   else {
+                ColorSpaceEnum::DeviceGray(DeviceGray)
+            },
             Color::DeviceGray(_) => ColorSpaceEnum::DeviceGray(DeviceGray),
             Color::DeviceRgb(_) => ColorSpaceEnum::DeviceRgb(DeviceRgb),
             Color::DeviceCmyk(_) => ColorSpaceEnum::DeviceCmyk(DeviceCmyk),
