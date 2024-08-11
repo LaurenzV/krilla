@@ -75,11 +75,11 @@ pub mod device_cmyk {
     pub struct DeviceCmyk;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color([u8; 4]);
+    pub struct Color(pub u8, pub u8, pub u8, pub u8);
 
     impl DeviceCmyk {
         pub fn new_cmyk(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
-            Color([cyan, magenta, yellow, black])
+            Color(cyan, magenta, yellow, black)
         }
     }
 
@@ -108,10 +108,10 @@ pub mod device_cmyk {
     impl InternalColor<DeviceCmyk> for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [
-                self.0[0] as f32 / 255.0,
-                self.0[1] as f32 / 255.0,
-                self.0[2] as f32 / 255.0,
-                self.0[3] as f32 / 255.0,
+                self.0 as f32 / 255.0,
+                self.1 as f32 / 255.0,
+                self.2 as f32 / 255.0,
+                self.3 as f32 / 255.0,
             ]
         }
     }
@@ -201,7 +201,7 @@ pub mod srgb {
     pub struct Srgb;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color([u8; 3]);
+    pub struct Color(pub u8, pub u8, pub u8);
 
     impl Default for Color {
         fn default() -> Self {
@@ -211,7 +211,7 @@ pub mod srgb {
 
     impl Srgb {
         pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
-            Color([red, green, blue])
+            Color(red, green, blue)
         }
 
         pub fn black() -> Color {
@@ -242,9 +242,9 @@ pub mod srgb {
     impl InternalColor<Srgb> for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [
-                self.0[0] as f32 / 255.0,
-                self.0[1] as f32 / 255.0,
-                self.0[2] as f32 / 255.0,
+                self.0 as f32 / 255.0,
+                self.1 as f32 / 255.0,
+                self.2 as f32 / 255.0,
             ]
         }
     }
