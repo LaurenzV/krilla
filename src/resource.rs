@@ -365,9 +365,9 @@ impl Object for ColorSpaceEnum {
         match self {
             ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc),
             ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc),
-            ColorSpaceEnum::DeviceGray(device_gray) => device_gray.serialize_into(sc),
-            ColorSpaceEnum::DeviceRgb(device_rgb) => device_rgb.serialize_into(sc),
-            ColorSpaceEnum::DeviceCmyk(device_cmyk) => device_cmyk.serialize_into(sc),
+            ColorSpaceEnum::DeviceGray(_) => unreachable!(),
+            ColorSpaceEnum::DeviceRgb(device_rgb) => unreachable!(),
+            ColorSpaceEnum::DeviceCmyk(device_cmyk) => unreachable!(),
         }
     }
 }
