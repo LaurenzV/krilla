@@ -24,7 +24,7 @@ mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
 
-    const REPLACE: bool = true;
+    const REPLACE: bool = false;
 
     fn snapshot_path(name: &str) -> PathBuf {
         let mut path = PathBuf::new();
@@ -47,7 +47,6 @@ mod test_utils {
         let path = snapshot_path(name);
 
         if !path.exists() {
-            eprintln!("{:?}", path);
             std::fs::write(path, &content).unwrap();
             panic!("new snapshot created");
         }
@@ -65,26 +64,19 @@ mod test_utils {
             "\n",
         );
 
-        let mut t = term::stdout().unwrap();
-
         for diff in changeset.diffs {
             match diff {
                 Difference::Same(ref x) => {
-                    t.reset().unwrap();
-                    writeln!(t, " {}", x).unwrap();
+                    println!(" {}", x);
                 }
                 Difference::Add(ref x) => {
-                    t.fg(term::color::GREEN).unwrap();
-                    writeln!(t, "+++++++++++++++++++\n{}\n+++++++++++++++++++", x).unwrap();
+                    println!("+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
                 }
                 Difference::Rem(ref x) => {
-                    t.fg(term::color::RED).unwrap();
-                    writeln!(t, "-------------------\n{}\n-------------------", x).unwrap();
+                    println!("-------------------\n{}\n-------------------", x);
                 }
             }
         }
-        t.reset().unwrap();
-        t.flush().unwrap();
 
         assert_eq!(changeset.distance, 0);
     }
