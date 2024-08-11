@@ -49,13 +49,12 @@ pub mod device_cmyk {
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
 
+    /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct DeviceCmyk;
-
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(pub u8, pub u8, pub u8, pub u8);
+    pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8, pub(crate) u8);
 
     impl Color {
+        /// Create a new CMYK color.
         pub fn new(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
             Color(cyan, magenta, yellow, black)
         }
@@ -73,16 +72,6 @@ pub mod device_cmyk {
         }
     }
 
-    impl Into<ColorSpaceEnum> for DeviceCmyk {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceCmyk(self)
-        }
-    }
-
-    impl ColorSpace for DeviceCmyk {
-        type Color = Color;
-    }
-
     impl InternalColor for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [
@@ -96,6 +85,19 @@ pub mod device_cmyk {
         fn color_space(&self, _: bool) -> ColorSpaceEnum {
             ColorSpaceEnum::DeviceCmyk(DeviceCmyk)
         }
+    }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub struct DeviceCmyk;
+
+    impl Into<ColorSpaceEnum> for DeviceCmyk {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceCmyk(self)
+        }
+    }
+
+    impl ColorSpace for DeviceCmyk {
+        type Color = Color;
     }
 
     impl Object for DeviceCmyk {
@@ -112,13 +114,8 @@ pub mod rgb {
 
     use pdf_writer::{Chunk, Finish, Name, Ref};
 
-    pub static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
-
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Srgb;
-
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(pub u8, pub u8, pub u8);
+    pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8);
 
     impl Default for Color {
         fn default() -> Self {
@@ -146,16 +143,6 @@ pub mod rgb {
         }
     }
 
-    impl Into<ColorSpaceEnum> for Srgb {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::Srgb(self)
-        }
-    }
-
-    impl ColorSpace for Srgb {
-        type Color = Color;
-    }
-
     impl InternalColor for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [
@@ -172,6 +159,21 @@ pub mod rgb {
                 ColorSpaceEnum::DeviceRgb(DeviceRgb)
             }
         }
+    }
+
+    static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub struct Srgb;
+
+    impl Into<ColorSpaceEnum> for Srgb {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::Srgb(self)
+        }
+    }
+
+    impl ColorSpace for Srgb {
+        type Color = Color;
     }
 
     impl Object for Srgb {
@@ -224,11 +226,6 @@ pub mod luma {
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Finish, Name, Ref};
 
-    pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
-
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct SGray;
-
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(u8);
 
@@ -252,20 +249,10 @@ pub mod luma {
         }
     }
 
-    impl Into<ColorSpaceEnum> for SGray {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::SGray(self)
-        }
-    }
-
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
             super::Color::SGray(self)
         }
-    }
-
-    impl ColorSpace for SGray {
-        type Color = Color;
     }
 
     impl InternalColor for Color {
@@ -280,6 +267,21 @@ pub mod luma {
                 ColorSpaceEnum::DeviceGray(DeviceGray)
             }
         }
+    }
+
+    pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub struct SGray;
+
+    impl Into<ColorSpaceEnum> for SGray {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::SGray(self)
+        }
+    }
+
+    impl ColorSpace for SGray {
+        type Color = Color;
     }
 
     impl Object for SGray {
