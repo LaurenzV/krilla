@@ -20,8 +20,8 @@ pub trait ColorSpace:
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
-    Srgb(srgb::Color),
-    SGray(sgray::Color),
+    Srgb(rgb::Color),
+    SGray(luma::Color),
     DeviceCmyk(device_cmyk::Color),
 }
 
@@ -106,7 +106,7 @@ pub mod device_cmyk {
 }
 
 pub mod device_rgb {
-    use crate::object::color_space::{srgb, ColorSpace, InternalColor};
+    use crate::object::color_space::{rgb, ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
@@ -121,7 +121,7 @@ pub mod device_rgb {
     }
 
     impl ColorSpace for DeviceRgb {
-        type Color = srgb::Color;
+        type Color = rgb::Color;
     }
 
     impl Object for DeviceRgb {
@@ -131,7 +131,7 @@ pub mod device_rgb {
     }
 }
 
-pub mod srgb {
+pub mod rgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
@@ -226,7 +226,7 @@ pub mod srgb {
 }
 
 pub mod device_gray {
-    use crate::object::color_space::{sgray, ColorSpace, InternalColor};
+    use crate::object::color_space::{luma, ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
@@ -241,7 +241,7 @@ pub mod device_gray {
     }
 
     impl ColorSpace for DeviceGray {
-        type Color = sgray::Color;
+        type Color = luma::Color;
     }
 
     impl Object for DeviceGray {
@@ -251,7 +251,7 @@ pub mod device_gray {
     }
 }
 
-pub mod sgray {
+pub mod luma {
 
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;

@@ -1,4 +1,4 @@
-use crate::object::color_space::srgb::Srgb;
+use crate::object::color_space::rgb::Srgb;
 use crate::surface::StreamBuilder;
 use crate::svg::{group, FontContext};
 use crate::{

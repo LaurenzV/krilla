@@ -1,6 +1,6 @@
 use crate::font::{Font, OutlineBuilder};
-use crate::object::color_space::srgb;
-use crate::object::color_space::srgb::Srgb;
+use crate::object::color_space::rgb;
+use crate::object::color_space::rgb::Srgb;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::surface::Surface;
 use crate::{Fill, FillRule};
@@ -49,7 +49,7 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
         &self,
         palette_index: u16,
         alpha: f32,
-    ) -> (srgb::Color, NormalizedF32) {
+    ) -> (rgb::Color, NormalizedF32) {
         if palette_index != u16::MAX {
             let color = self
                 .font

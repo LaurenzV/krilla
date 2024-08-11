@@ -1,4 +1,4 @@
-use crate::object::color_space::srgb::Srgb;
+use crate::object::color_space::rgb::Srgb;
 use crate::stream::TestGlyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};

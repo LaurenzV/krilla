@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
-    use crate::object::color_space::srgb::Srgb;
+    use crate::object::color_space::rgb::Srgb;
     use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
 
