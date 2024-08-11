@@ -28,6 +28,14 @@ mod test_utils {
 
     const REPLACE: bool = false;
 
+    pub fn load_font(name: &str) -> Vec<u8> {
+        let mut path = PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("tests/fonts");
+        path.push(name);
+        std::fs::read(&path).unwrap()
+    }
+
     fn snapshot_path(name: &str) -> PathBuf {
         let mut path = PathBuf::new();
         path.push(env!("CARGO_MANIFEST_DIR"));

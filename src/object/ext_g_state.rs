@@ -131,7 +131,7 @@ impl RegisterableObject for ExtGState {}
 mod tests {
     use crate::object::ext_g_state::ExtGState;
     use crate::object::mask::Mask;
-    use crate::serialize::{SerializerContext, SerializeSettings};
+    use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::stream::Stream;
     use crate::test_utils::check_snapshot;
     use crate::MaskType;

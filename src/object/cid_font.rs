@@ -112,9 +112,6 @@ impl CIDFont {
         cid.system_info(SYSTEM_INFO);
         cid.font_descriptor(descriptor_ref);
         cid.default_width(0.0);
-        if !is_cff {
-            cid.cid_to_gid_map_predefined(Name(b"Identity"));
-        }
 
         // Write all non-zero glyph widths.
         let mut first = 0;
@@ -150,19 +147,6 @@ impl CIDFont {
             .unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 
-        let cmap = {
-            let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in self.strings.iter() {
-                if !text.is_empty() {
-                    cmap.pair_with_multiple(g.to_u32() as u16, text.chars());
-                }
-            }
-
-            cmap
-        };
-
-        chunk.cmap(cmap_ref, &cmap.finish());
-
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
@@ -182,6 +166,19 @@ impl CIDFont {
         }
 
         font_descriptor.finish();
+
+        let cmap = {
+            let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
+            for (g, text) in self.strings.iter() {
+                if !text.is_empty() {
+                    cmap.pair_with_multiple(g.to_u32() as u16, text.chars());
+                }
+            }
+
+            cmap
+        };
+
+        chunk.cmap(cmap_ref, &cmap.finish());
 
         let mut stream = chunk.stream(data_ref, &subsetted_font);
         stream.filter(filter);
@@ -276,5 +273,33 @@ pub fn find_name(font_ref: &FontRef) -> Option<String> {
         })
     } else {
         return None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::font::{Font, Glyph};
+    use crate::object::cid_font::CIDFont;
+    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::test_utils::{check_snapshot, load_font};
+    use fontdb::{Database, Source};
+    use skrifa::instance::Location;
+    use skrifa::GlyphId;
+    use std::sync::Arc;
+
+    fn sc() -> SerializerContext {
+        let settings = SerializeSettings::default_test();
+        SerializerContext::new(settings)
+    }
+
+    #[test]
+    fn ttf_font() {
+        let mut sc = sc();
+        let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
+        let mut db = Database::new();
+        let id = db.load_font_source(Source::Binary(font_data.clone()))[0];
+        sc.map_glyph(id, &mut db, Glyph::new(GlyphId::new(36), "A".to_string()));
+        sc.map_glyph(id, &mut db, Glyph::new(GlyphId::new(37), "B".to_string()));
+        check_snapshot("cid_font/ttf_font", sc.finish(&db).as_bytes());
     }
 }

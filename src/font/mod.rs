@@ -93,7 +93,6 @@ impl Hash for Repr {
     }
 }
 
-// TODO: Make cheap to clone
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Font(Arc<Prehashed<Repr>>);
 

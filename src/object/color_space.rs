@@ -1,10 +1,10 @@
 use crate::resource::ColorSpaceEnum;
 use crate::serialize::{Object, SerializerContext};
+use crate::util::Prehashed;
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use crate::util::Prehashed;
 
 pub const DEVICE_RGB: &'static str = "DeviceRGB";
 pub const DEVICE_GRAY: &'static str = "DeviceGray";
@@ -138,10 +138,10 @@ pub mod device_cmyk {
 }
 
 pub mod rgb {
-    use std::sync::Arc;
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
+    use std::sync::Arc;
 
     use pdf_writer::{Chunk, Finish, Name, Ref};
 
@@ -235,11 +235,11 @@ pub mod rgb {
 }
 
 pub mod luma {
-    use std::sync::Arc;
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Finish, Name, Ref};
+    use std::sync::Arc;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(u8);
@@ -328,12 +328,12 @@ pub mod luma {
 
 #[cfg(test)]
 mod tests {
-    use fontdb::Database;
     use crate::object::color_space::luma::SGray;
     use crate::object::color_space::rgb::Srgb;
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{SerializerContext, SerializeSettings};
+    use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::check_snapshot;
+    use fontdb::Database;
 
     fn sc() -> SerializerContext {
         let settings = SerializeSettings::default_test();
