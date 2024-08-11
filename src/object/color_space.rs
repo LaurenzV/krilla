@@ -55,8 +55,8 @@ pub mod device_cmyk {
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(pub u8, pub u8, pub u8, pub u8);
 
-    impl DeviceCmyk {
-        pub fn new_cmyk(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
+    impl Color {
+        pub fn new(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
             Color(cyan, magenta, yellow, black)
         }
     }
@@ -69,7 +69,7 @@ pub mod device_cmyk {
 
     impl Default for Color {
         fn default() -> Self {
-            DeviceCmyk::new_cmyk(0, 0, 0, 255)
+            Color::new(0, 0, 0, 255)
         }
     }
 
@@ -122,21 +122,21 @@ pub mod rgb {
 
     impl Default for Color {
         fn default() -> Self {
-            Srgb::black()
+            Color::black()
         }
     }
 
-    impl Srgb {
-        pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
+    impl Color {
+        pub fn new(red: u8, green: u8, blue: u8) -> Self {
             Color(red, green, blue)
         }
 
-        pub fn black() -> Color {
-            Self::new_rgb(0, 0, 0)
+        pub fn black() -> Self {
+            Self::new(0, 0, 0)
         }
 
-        pub fn white() -> Color {
-            Self::new_rgb(255, 255, 255)
+        pub fn white() -> Self {
+            Self::new(255, 255, 255)
         }
     }
 
@@ -219,8 +219,7 @@ pub mod rgb {
 }
 
 pub mod luma {
-
-    use crate::object::color_space::{luma, ColorSpace, InternalColor};
+    use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -235,21 +234,21 @@ pub mod luma {
 
     impl Default for Color {
         fn default() -> Self {
-            SGray::black()
+            Color::black()
         }
     }
 
-    impl SGray {
-        pub fn new_gray(lightness: u8) -> Color {
+    impl Color {
+        pub fn new(lightness: u8) -> Self {
             Color(lightness)
         }
 
-        pub fn black() -> Color {
-            Self::new_gray(0)
+        pub fn black() -> Self {
+            Self::new(0)
         }
 
-        pub fn white() -> Color {
-            Self::new_gray(255)
+        pub fn white() -> Self {
+            Self::new(255)
         }
     }
 

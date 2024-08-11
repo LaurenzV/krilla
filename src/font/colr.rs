@@ -61,11 +61,11 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
                 .unwrap()[palette_index as usize];
 
             (
-                Srgb::new_rgb(color.red, color.green, color.blue),
+                rgb::Color::new(color.red, color.green, color.blue),
                 NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
             )
         } else {
-            (Srgb::new_rgb(0, 0, 0), NormalizedF32::new(alpha).unwrap())
+            (rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap())
         }
     }
 
