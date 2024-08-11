@@ -50,7 +50,7 @@ impl Object for Image {
             s_mask.height(self.0.size.height() as i32);
             s_mask.pair(
                 Name(b"ColorSpace"),
-                // Mask color space must be device gray.
+                // Mask color space must be device gray -- see Table 145.
                 Name(b"DeviceGray"),
             );
             s_mask.bits_per_component(calculate_bits_per_component(self.0.color_type));
