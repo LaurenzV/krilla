@@ -31,17 +31,15 @@ pub enum Color {
     Srgb(srgb::Color),
     SGray(sgray::Color),
     DeviceGray(device_gray::Color),
-    DeviceRgb(device_rgb::Color),
     DeviceCmyk(device_cmyk::Color),
 }
 
 impl Color {
     pub fn to_pdf_color(&self) -> Vec<f32> {
         match self {
-            Color::Srgb(srgb) => srgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Srgb(srgb) => InternalColor::<Srgb>::to_pdf_color(srgb).into_iter().collect::<Vec<_>>(),
             Color::SGray(sgray) => sgray.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::DeviceGray(dg) => dg.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::DeviceRgb(dr) => dr.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::DeviceCmyk(dc) => dc.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
@@ -59,7 +57,6 @@ impl Color {
                 ColorSpaceEnum::DeviceGray(DeviceGray)
             },
             Color::DeviceGray(_) => ColorSpaceEnum::DeviceGray(DeviceGray),
-            Color::DeviceRgb(_) => ColorSpaceEnum::DeviceRgb(DeviceRgb),
             Color::DeviceCmyk(_) => ColorSpaceEnum::DeviceCmyk(DeviceCmyk),
         }
     }
@@ -124,36 +121,13 @@ pub mod device_cmyk {
 }
 
 pub mod device_rgb {
-    use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::object::color_space::{ColorSpace, InternalColor, srgb};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceRgb;
-
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color([u8; 3]);
-
-    impl DeviceRgb {
-        pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
-            Color([red, green, blue])
-        }
-
-        pub fn black() -> Color {
-            Self::new_rgb(0, 0, 0)
-        }
-
-        pub fn white() -> Color {
-            Self::new_rgb(255, 255, 255)
-        }
-    }
-
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color_space::Color {
-            super::Color::DeviceRgb(self)
-        }
-    }
 
     impl Into<ColorSpaceEnum> for DeviceRgb {
         fn into(self) -> ColorSpaceEnum {
@@ -162,21 +136,15 @@ pub mod device_rgb {
     }
 
     impl ColorSpace for DeviceRgb {
-        type Color = Color;
+        type Color = srgb::Color;
     }
 
-    impl Default for Color {
-        fn default() -> Self {
-            DeviceRgb::black()
-        }
-    }
-
-    impl InternalColor<DeviceRgb> for Color {
+    impl InternalColor<DeviceRgb> for srgb::Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [
-                self.0[0] as f32 / 255.0,
-                self.0[1] as f32 / 255.0,
-                self.0[2] as f32 / 255.0,
+                self.0 as f32 / 255.0,
+                self.1 as f32 / 255.0,
+                self.2 as f32 / 255.0,
             ]
         }
     }
