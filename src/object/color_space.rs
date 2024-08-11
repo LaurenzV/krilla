@@ -1,11 +1,5 @@
-use crate::object::color_space::device_cmyk::DeviceCmyk;
-use crate::object::color_space::device_gray::DeviceGray;
-use crate::object::color_space::device_rgb::DeviceRgb;
-use crate::object::color_space::sgray::SGray;
-use crate::object::color_space::srgb::Srgb;
 use crate::resource::ColorSpaceEnum;
 use crate::serialize::Object;
-use pdf_writer::Name;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -15,6 +9,7 @@ pub const DEVICE_CMYK: &'static str = "DeviceCMYK";
 
 pub trait InternalColor {
     fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
+    fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum;
 }
 
 pub trait ColorSpace:
@@ -41,21 +36,9 @@ impl Color {
 
     pub fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
         match self {
-            Color::Srgb(_) => {
-                if no_device_cs {
-                    ColorSpaceEnum::Srgb(Srgb)
-                } else {
-                    ColorSpaceEnum::DeviceRgb(DeviceRgb)
-                }
-            }
-            Color::SGray(_) => {
-                if no_device_cs {
-                    ColorSpaceEnum::SGray(SGray)
-                } else {
-                    ColorSpaceEnum::DeviceGray(DeviceGray)
-                }
-            }
-            Color::DeviceCmyk(_) => ColorSpaceEnum::DeviceCmyk(DeviceCmyk),
+            Color::Srgb(srgb) => srgb.color_space(no_device_cs),
+            Color::SGray(sgray) => sgray.color_space(no_device_cs),
+            Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs),
         }
     }
 }
@@ -108,6 +91,10 @@ pub mod device_cmyk {
                 self.2 as f32 / 255.0,
                 self.3 as f32 / 255.0,
             ]
+        }
+
+        fn color_space(&self, _: bool) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceCmyk(DeviceCmyk)
         }
     }
 
@@ -203,6 +190,14 @@ pub mod srgb {
                 self.2 as f32 / 255.0,
             ]
         }
+
+        fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+            if no_device_cs {
+                ColorSpaceEnum::Srgb(Srgb)
+            } else {
+                ColorSpaceEnum::DeviceRgb(super::device_rgb::DeviceRgb)
+            }
+        }
     }
 
     impl Object for Srgb {
@@ -231,7 +226,7 @@ pub mod srgb {
 }
 
 pub mod device_gray {
-    use crate::object::color_space::{ColorSpace, InternalColor, sgray};
+    use crate::object::color_space::{sgray, ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
@@ -244,8 +239,6 @@ pub mod device_gray {
             ColorSpaceEnum::DeviceGray(self)
         }
     }
-
-
 
     impl ColorSpace for DeviceGray {
         type Color = sgray::Color;
@@ -312,6 +305,14 @@ pub mod sgray {
     impl InternalColor for Color {
         fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [self.0 as f32 / 255.0]
+        }
+
+        fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+            if no_device_cs {
+                ColorSpaceEnum::SGray(SGray)
+            } else {
+                ColorSpaceEnum::DeviceGray(super::device_gray::DeviceGray)
+            }
         }
     }
 

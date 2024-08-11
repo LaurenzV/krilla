@@ -560,8 +560,9 @@ impl ContentBuilder {
         match paint {
             Paint::Color(c) => {
                 let color_space = self.rd_builder.register_resource(Resource::ColorSpace(
-                    Into::<Color>::into(c).color_space(serializer_context.serialize_settings
-                        .no_device_cs).into(),
+                    Into::<Color>::into(c)
+                        .color_space(serializer_context.serialize_settings.no_device_cs)
+                        .into(),
                 ));
                 set_solid_fn(&mut self.content, color_space, &c.into());
             }
