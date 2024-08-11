@@ -1,5 +1,5 @@
 use crate::font::{Font, OutlineBuilder};
-use crate::object::color_space::device_gray::DeviceGray;
+use crate::object::color_space::luma::DeviceGray;
 use crate::surface::Surface;
 use crate::Fill;
 use skrifa::outline::DrawSettings;

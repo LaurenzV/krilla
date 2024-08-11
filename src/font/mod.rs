@@ -245,7 +245,7 @@ impl Font {
 #[cfg(test)]
 fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     use crate::document::Document;
-    use crate::object::color_space::srgb::Srgb;
+    use crate::object::color_space::rgb::Srgb;
     use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
     use crate::Transform;
