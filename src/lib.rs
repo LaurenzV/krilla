@@ -23,7 +23,7 @@ pub use tiny_skia_path::{Size, Transform};
 mod test_utils {
     use std::path::{Path, PathBuf};
 
-    const REPLACE: bool = false;
+    const REPLACE: bool = true;
 
     fn snapshot_path(name: &str) -> PathBuf {
         let mut path = PathBuf::new();
@@ -41,7 +41,13 @@ mod test_utils {
             panic!("new snapshot created");
         }
 
-        let actual = std::fs::read(path).unwrap();
+        let actual = std::fs::read(&path).unwrap();
+
+        if REPLACE && &actual != content {
+            std::fs::write(&path, content).unwrap();
+            panic!("test was replaced");
+        }
+
         assert!(&actual == content);
     }
 }

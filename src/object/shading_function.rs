@@ -1,6 +1,6 @@
 use crate::object::color_space::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{CSWrapper, Object, RegisterableObject, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use crate::{LinearGradient, RadialGradient, SweepGradient};
@@ -225,15 +225,16 @@ fn serialize_postscript_shading(
     let domain = post_script_gradient.domain;
 
     let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
-    let cs_ref = if use_opacities {
-        sc.sgray()
+    let cs = if use_opacities {
+        sc.gray()
     } else {
-        sc.srgb()
+        sc.rgb()
     };
 
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
-    shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
+
+    shading.insert(Name(b"ColorSpace")).primitive(cs);
 
     shading.function(function_ref);
 
@@ -251,9 +252,9 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs_ref = if use_opacities {
-        sc.sgray()
+        sc.gray()
     } else {
-        sc.srgb()
+        sc.rgb()
     };
 
     let mut shading = chunk.function_shading(root_ref);

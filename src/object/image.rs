@@ -1,4 +1,4 @@
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{CSWrapper, Object, RegisterableObject, SerializerContext};
 use crate::util::Prehashed;
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -65,9 +65,9 @@ impl Object for Image {
         image_x_object.height(self.0.size.height() as i32);
 
         if self.0.color_type.has_color() {
-            image_x_object.pair(Name(b"ColorSpace"), sc.srgb());
+            image_x_object.pair(Name(b"ColorSpace"), sc.rgb());
         } else {
-            image_x_object.pair(Name(b"ColorSpace"), sc.sgray());
+            image_x_object.pair(Name(b"ColorSpace"), sc.gray());
         }
 
         image_x_object.bits_per_component(calculate_bits_per_component(self.0.color_type));

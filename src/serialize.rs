@@ -6,7 +6,7 @@ use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Filter, Pdf, Ref};
+use pdf_writer::{Chunk, Filter, Name, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::FontRef;
@@ -19,6 +19,7 @@ use std::sync::Arc;
 pub struct SerializeSettings {
     pub hex_encode_binary_streams: bool,
     pub compress_content_streams: bool,
+    pub no_device_cs: bool
 }
 
 impl Default for SerializeSettings {
@@ -26,6 +27,7 @@ impl Default for SerializeSettings {
         Self {
             hex_encode_binary_streams: true,
             compress_content_streams: true,
+            no_device_cs: false,
         }
     }
 }
@@ -100,12 +102,20 @@ impl SerializerContext {
         self.cur_ref.bump()
     }
 
-    pub fn srgb(&mut self) -> Ref {
-        self.add(ColorSpaceEnum::Srgb(Srgb))
+    pub fn rgb(&mut self) -> CSWrapper {
+        if self.serialize_settings.no_device_cs {
+            CSWrapper::Ref(self.add(ColorSpaceEnum::Srgb(Srgb)))
+        }   else {
+            CSWrapper::Name(Name(b"DeviceRGB"))
+        }
     }
 
-    pub fn sgray(&mut self) -> Ref {
-        self.add(ColorSpaceEnum::SGray(SGray))
+    pub fn gray(&mut self) -> CSWrapper {
+        if self.serialize_settings.no_device_cs {
+            CSWrapper::Ref(self.add(ColorSpaceEnum::SGray(SGray)))
+        }   else {
+            CSWrapper::Name(Name(b"DeviceGray"))
+        }
     }
 
     pub fn add<T>(&mut self, object: T) -> Ref
@@ -262,9 +272,10 @@ impl SerializerContext {
         let ss = SerializeSettings {
             hex_encode_binary_streams: true,
             compress_content_streams: false,
+            no_device_cs: false,
         };
 
-        let mut cur_ref = Ref::new(1);
+        let cur_ref = Ref::new(1);
         Self {
             cached_mappings: HashMap::new(),
             font_info_to_id: HashMap::new(),
@@ -291,6 +302,21 @@ pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
     // TODO: Hash type ID too, like in Typst?
     item.hash(&mut state);
     state.finish128().as_u128()
+}
+
+#[derive(Copy, Clone)]
+pub enum CSWrapper {
+    Ref(pdf_writer::Ref),
+    Name(pdf_writer::Name<'static>)
+}
+
+impl pdf_writer::Primitive for CSWrapper {
+    fn write(self, buf: &mut Vec<u8>) {
+        match self {
+            CSWrapper::Ref(r) => r.write(buf),
+            CSWrapper::Name(n) => n.write(buf)
+        }
+    }
 }
 
 #[derive(Debug)]

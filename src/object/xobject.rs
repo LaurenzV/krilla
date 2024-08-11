@@ -1,4 +1,4 @@
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{CSWrapper, Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -34,7 +34,7 @@ impl XObject {
 
 impl Object for XObject {
     fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-        let srgb_ref = sc.srgb();
+        let cs = sc.rgb();
 
         let root_ref = sc.new_ref();
         let mut chunk = Chunk::new();
@@ -61,7 +61,7 @@ impl Object for XObject {
             }
 
             if self.transparency_group_color_space {
-                transparency.pair(Name(b"CS"), srgb_ref);
+                transparency.pair(Name(b"CS"), cs);
             }
 
             transparency.finish();
