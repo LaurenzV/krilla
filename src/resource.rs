@@ -1,8 +1,7 @@
 use crate::object::color_space::device_cmyk::DeviceCmyk;
 use crate::object::color_space::device_gray::DeviceGray;
-use crate::object::color_space::device_rgb::DeviceRgb;
 use crate::object::color_space::luma::SGray;
-use crate::object::color_space::rgb::Srgb;
+use crate::object::color_space::rgb::{DeviceRgb, Srgb};
 use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;

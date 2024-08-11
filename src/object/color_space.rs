@@ -105,31 +105,6 @@ pub mod device_cmyk {
     }
 }
 
-pub mod device_rgb {
-    use crate::object::color_space::{rgb, ColorSpace, InternalColor};
-    use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::{Chunk, Ref};
-
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct DeviceRgb;
-
-    impl Into<ColorSpaceEnum> for DeviceRgb {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceRgb(self)
-        }
-    }
-
-    impl ColorSpace for DeviceRgb {
-        type Color = rgb::Color;
-    }
-
-    impl Object for DeviceRgb {
-        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
-            unreachable!()
-        }
-    }
-}
 
 pub mod rgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
@@ -195,7 +170,7 @@ pub mod rgb {
             if no_device_cs {
                 ColorSpaceEnum::Srgb(Srgb)
             } else {
-                ColorSpaceEnum::DeviceRgb(super::device_rgb::DeviceRgb)
+                ColorSpaceEnum::DeviceRgb(DeviceRgb)
             }
         }
     }
@@ -221,6 +196,25 @@ pub mod rgb {
                 .filter(filter);
 
             (root_ref, chunk)
+        }
+    }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub struct DeviceRgb;
+
+    impl Into<ColorSpaceEnum> for DeviceRgb {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceRgb(self)
+        }
+    }
+
+    impl ColorSpace for DeviceRgb {
+        type Color = Color;
+    }
+
+    impl Object for DeviceRgb {
+        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
+            unreachable!()
         }
     }
 }
