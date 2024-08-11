@@ -326,3 +326,32 @@ pub mod luma {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use fontdb::Database;
+    use crate::object::color_space::luma::SGray;
+    use crate::object::color_space::rgb::Srgb;
+    use crate::resource::ColorSpaceEnum;
+    use crate::serialize::{SerializerContext, SerializeSettings};
+    use crate::test_utils::check_snapshot;
+
+    fn sc() -> SerializerContext {
+        let settings = SerializeSettings::default_test();
+        SerializerContext::new(settings)
+    }
+
+    #[test]
+    fn sgray() {
+        let mut sc = sc();
+        sc.add(ColorSpaceEnum::SGray(SGray));
+        check_snapshot("color_space/sgray", sc.finish(&Database::new()).as_bytes());
+    }
+
+    #[test]
+    fn srgb() {
+        let mut sc = sc();
+        sc.add(ColorSpaceEnum::Srgb(Srgb));
+        check_snapshot("color_space/srgb", sc.finish(&Database::new()).as_bytes());
+    }
+}
