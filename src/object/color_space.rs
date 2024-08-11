@@ -105,7 +105,6 @@ pub mod device_cmyk {
     }
 }
 
-
 pub mod rgb {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
@@ -219,35 +218,9 @@ pub mod rgb {
     }
 }
 
-pub mod device_gray {
-    use crate::object::color_space::{luma, ColorSpace, InternalColor};
-    use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::{Chunk, Ref};
-
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct DeviceGray;
-
-    impl Into<ColorSpaceEnum> for DeviceGray {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceGray(self)
-        }
-    }
-
-    impl ColorSpace for DeviceGray {
-        type Color = luma::Color;
-    }
-
-    impl Object for DeviceGray {
-        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
-            unreachable!()
-        }
-    }
-}
-
 pub mod luma {
 
-    use crate::object::color_space::{ColorSpace, InternalColor};
+    use crate::object::color_space::{luma, ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -305,7 +278,7 @@ pub mod luma {
             if no_device_cs {
                 ColorSpaceEnum::SGray(SGray)
             } else {
-                ColorSpaceEnum::DeviceGray(super::device_gray::DeviceGray)
+                ColorSpaceEnum::DeviceGray(DeviceGray)
             }
         }
     }
@@ -330,6 +303,25 @@ pub mod luma {
                 .filter(filter);
 
             (root_ref, chunk)
+        }
+    }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub struct DeviceGray;
+
+    impl Into<ColorSpaceEnum> for DeviceGray {
+        fn into(self) -> ColorSpaceEnum {
+            ColorSpaceEnum::DeviceGray(self)
+        }
+    }
+
+    impl ColorSpace for DeviceGray {
+        type Color = Color;
+    }
+
+    impl Object for DeviceGray {
+        fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
+            unreachable!()
         }
     }
 }

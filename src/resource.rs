@@ -1,6 +1,5 @@
 use crate::object::color_space::device_cmyk::DeviceCmyk;
-use crate::object::color_space::device_gray::DeviceGray;
-use crate::object::color_space::luma::SGray;
+use crate::object::color_space::luma::{DeviceGray, SGray};
 use crate::object::color_space::rgb::{DeviceRgb, Srgb};
 use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::ext_g_state::ExtGState;
@@ -366,8 +365,8 @@ impl Object for ColorSpaceEnum {
             ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc),
             ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc),
             ColorSpaceEnum::DeviceGray(_) => unreachable!(),
-            ColorSpaceEnum::DeviceRgb(device_rgb) => unreachable!(),
-            ColorSpaceEnum::DeviceCmyk(device_cmyk) => unreachable!(),
+            ColorSpaceEnum::DeviceRgb(_) => unreachable!(),
+            ColorSpaceEnum::DeviceCmyk(_) => unreachable!(),
         }
     }
 }
