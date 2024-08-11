@@ -1,7 +1,22 @@
 %PDF-1.7
 %€€€€
 
-3 0 obj
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Pages
+  /Count 0
+  /Kids []
+>>
+endobj
+
+5 0 obj
 <<
   /Length 0
   /Type /XObject
@@ -19,21 +34,21 @@ stream
 endstream
 endobj
 
-2 0 obj
+4 0 obj
 <<
   /Type /Mask
   /S /Luminosity
-  /G 3 0 R
+  /G 5 0 R
 >>
 endobj
 
-1 0 obj
+3 0 obj
 <<
   /Type /ExtGState
   /ca 0.4
   /CA 0.6
   /BM /Difference
-  /SMask 2 0 R
+  /SMask 4 0 R
 >>
 endobj
 

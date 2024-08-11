@@ -24,7 +24,7 @@ mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
 
-    const REPLACE: bool = false;
+    const REPLACE: bool = true;
 
     fn snapshot_path(name: &str) -> PathBuf {
         let mut path = PathBuf::new();

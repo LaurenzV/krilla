@@ -131,7 +131,7 @@ impl RegisterableObject for ExtGState {}
 mod tests {
     use crate::object::ext_g_state::ExtGState;
     use crate::object::mask::Mask;
-    use crate::serialize::{SerializerContext};
+    use crate::serialize::{SerializerContext, SerializeSettings};
     use crate::stream::Stream;
     use crate::test_utils::check_snapshot;
     use crate::MaskType;
@@ -139,9 +139,14 @@ mod tests {
     use pdf_writer::types::BlendMode;
     use usvg::NormalizedF32;
 
+    fn sc() -> SerializerContext {
+        let settings = SerializeSettings::default_test();
+        SerializerContext::new(settings)
+    }
+
     #[test]
     pub fn empty() {
-        let mut sc = SerializerContext::new_unit_test();
+        let mut sc = sc();
         let ext_state = ExtGState::new();
         sc.add(ext_state);
         check_snapshot("ext_g_state/empty", sc.finish(&Database::new()).as_bytes());
@@ -149,7 +154,7 @@ mod tests {
 
     #[test]
     pub fn default_values() {
-        let mut sc = SerializerContext::new_unit_test();
+        let mut sc = sc();
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
@@ -163,7 +168,7 @@ mod tests {
 
     #[test]
     pub fn all_set() {
-        let mut sc = SerializerContext::new_unit_test();
+        let mut sc = sc();
         let mask = Mask::new(Stream::empty(), MaskType::Luminosity);
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())
