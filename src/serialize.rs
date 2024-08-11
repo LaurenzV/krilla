@@ -2,9 +2,11 @@ use crate::font::{Font, FontInfo, Glyph};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::sgray::SGray;
 use crate::object::color_space::srgb::Srgb;
+use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
+use crate::util::NameExt;
 use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Filter, Name, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
@@ -14,13 +16,12 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
-use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
     pub hex_encode_binary_streams: bool,
     pub compress_content_streams: bool,
-    pub no_device_cs: bool
+    pub no_device_cs: bool,
 }
 
 impl Default for SerializeSettings {
@@ -106,16 +107,16 @@ impl SerializerContext {
     pub fn rgb(&mut self) -> CSWrapper {
         if self.serialize_settings.no_device_cs {
             CSWrapper::Ref(self.add(ColorSpaceEnum::Srgb(Srgb)))
-        }   else {
-            CSWrapper::Name(DEVICE_RGB)
+        } else {
+            CSWrapper::Name(DEVICE_RGB.to_pdf_name())
         }
     }
 
     pub fn gray(&mut self) -> CSWrapper {
         if self.serialize_settings.no_device_cs {
             CSWrapper::Ref(self.add(ColorSpaceEnum::SGray(SGray)))
-        }   else {
-            CSWrapper::Name(DEVICE_GRAY)
+        } else {
+            CSWrapper::Name(DEVICE_GRAY.to_pdf_name())
         }
     }
 
@@ -308,14 +309,14 @@ pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
 #[derive(Copy, Clone)]
 pub enum CSWrapper {
     Ref(pdf_writer::Ref),
-    Name(pdf_writer::Name<'static>)
+    Name(pdf_writer::Name<'static>),
 }
 
 impl pdf_writer::Primitive for CSWrapper {
     fn write(self, buf: &mut Vec<u8>) {
         match self {
             CSWrapper::Ref(r) => r.write(buf),
-            CSWrapper::Name(n) => n.write(buf)
+            CSWrapper::Name(n) => n.write(buf),
         }
     }
 }

@@ -225,11 +225,7 @@ fn serialize_postscript_shading(
     let domain = post_script_gradient.domain;
 
     let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
-    let cs = if use_opacities {
-        sc.gray()
-    } else {
-        sc.rgb()
-    };
+    let cs = if use_opacities { sc.gray() } else { sc.rgb() };
 
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
@@ -251,11 +247,7 @@ fn serialize_axial_radial_shading(
 ) {
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
-    let cs_ref = if use_opacities {
-        sc.gray()
-    } else {
-        sc.rgb()
-    };
+    let cs_ref = if use_opacities { sc.gray() } else { sc.rgb() };
 
     let mut shading = chunk.function_shading(root_ref);
     if radial_axial_gradient.shading_type == FunctionShadingType::Radial {

@@ -1,8 +1,9 @@
-use crate::object::color_space::sgray::SGray;
 use crate::object::color_space::device_cmyk::DeviceCmyk;
 use crate::object::color_space::device_gray::DeviceGray;
 use crate::object::color_space::device_rgb::DeviceRgb;
+use crate::object::color_space::sgray::SGray;
 use crate::object::color_space::srgb::Srgb;
+use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
@@ -17,7 +18,6 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;

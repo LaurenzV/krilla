@@ -20,6 +20,12 @@ impl NameExt for String {
     }
 }
 
+impl NameExt for &str {
+    fn to_pdf_name(&self) -> Name {
+        Name(self.as_bytes())
+    }
+}
+
 pub trait TransformExt {
     fn to_pdf_transform(&self) -> [f32; 6];
 }
