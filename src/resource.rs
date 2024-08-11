@@ -17,6 +17,7 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -156,9 +157,9 @@ impl ResourceDictionaryBuilder {
 
     fn register_color_space(&mut self, color_space: ColorSpaceEnum) -> String {
         match color_space {
-            ColorSpaceEnum::DeviceRgb(_) => "DeviceRGB".to_string(),
-            ColorSpaceEnum::DeviceGray(_) => "DeviceGray".to_string(),
-            ColorSpaceEnum::DeviceCmyk(_) => "DeviceCMYK".to_string(),
+            ColorSpaceEnum::DeviceRgb(_) => DEVICE_RGB.to_string(),
+            ColorSpaceEnum::DeviceGray(_) => DEVICE_GRAY.to_string(),
+            ColorSpaceEnum::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
             ColorSpaceEnum::Srgb(_) => self.color_spaces.remap_with_name(color_space),
             ColorSpaceEnum::SGray(_) => self.color_spaces.remap_with_name(color_space),
         }

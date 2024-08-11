@@ -14,6 +14,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
+use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
@@ -106,7 +107,7 @@ impl SerializerContext {
         if self.serialize_settings.no_device_cs {
             CSWrapper::Ref(self.add(ColorSpaceEnum::Srgb(Srgb)))
         }   else {
-            CSWrapper::Name(Name(b"DeviceRGB"))
+            CSWrapper::Name(DEVICE_RGB)
         }
     }
 
@@ -114,7 +115,7 @@ impl SerializerContext {
         if self.serialize_settings.no_device_cs {
             CSWrapper::Ref(self.add(ColorSpaceEnum::SGray(SGray)))
         }   else {
-            CSWrapper::Name(Name(b"DeviceGray"))
+            CSWrapper::Name(DEVICE_GRAY)
         }
     }
 

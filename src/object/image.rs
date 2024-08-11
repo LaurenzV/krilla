@@ -4,6 +4,7 @@ use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::object::color_space::DEVICE_GRAY;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
@@ -51,7 +52,7 @@ impl Object for Image {
             s_mask.pair(
                 Name(b"ColorSpace"),
                 // Mask color space must be device gray -- see Table 145.
-                Name(b"DeviceGray"),
+                DEVICE_GRAY,
             );
             s_mask.bits_per_component(calculate_bits_per_component(self.0.color_type));
             soft_mask_id

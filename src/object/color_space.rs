@@ -2,6 +2,11 @@ use crate::resource::ColorSpaceEnum;
 use crate::serialize::Object;
 use std::fmt::Debug;
 use std::hash::Hash;
+use pdf_writer::Name;
+
+pub const DEVICE_RGB: Name<'static> = Name(b"DeviceRGB");
+pub const DEVICE_GRAY: Name<'static> = Name(b"DeviceGray");
+pub const DEVICE_CMYK: Name<'static> = Name(b"DeviceCMYK");
 
 pub trait InternalColor<C>
 where
