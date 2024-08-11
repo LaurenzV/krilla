@@ -30,7 +30,16 @@ mod test_utils {
         let mut path = PathBuf::new();
         path.push(env!("CARGO_MANIFEST_DIR"));
         path.push("tests/snapshots");
-        path.push(format!("{}.txt", name));
+
+        let parts = name.split("/").collect::<Vec<_>>();
+
+        for i in 0..parts.len() - 1 {
+            path.push(parts[i]);
+        }
+
+        std::fs::create_dir_all(&path).unwrap();
+
+        path.push(format!("{}.txt", parts.last().unwrap()));
         path
     }
 
@@ -38,6 +47,7 @@ mod test_utils {
         let path = snapshot_path(name);
 
         if !path.exists() {
+            eprintln!("{:?}", path);
             std::fs::write(path, &content).unwrap();
             panic!("new snapshot created");
         }

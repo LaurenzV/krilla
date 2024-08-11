@@ -129,7 +129,7 @@ mod tests {
         let mut sc = SerializerContext::new_unit_test();
         let ext_state = ExtGState::new();
         sc.add(ext_state);
-        check_snapshot("ext_g_state_empty", sc.finish(&Database::new()).as_bytes());
+        check_snapshot("ext_g_state/empty", sc.finish(&Database::new()).as_bytes());
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod tests {
             .blend_mode(BlendMode::Normal);
         sc.add(ext_state);
         check_snapshot(
-            "ext_g_state_default_values",
+            "ext_g_state/default_values",
             sc.finish(&Database::new()).as_bytes(),
         );
     }
@@ -157,7 +157,7 @@ mod tests {
             .mask(mask);
         sc.add(ext_state);
         check_snapshot(
-            "ext_g_state_all_set",
+            "ext_g_state/all_set",
             sc.finish(&Database::new()).as_bytes(),
         );
     }
