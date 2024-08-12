@@ -5,6 +5,7 @@ use crate::svg::{group, ProcessContext};
 use crate::{FillRule, MaskType};
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
+/// Render a clip path into a surface.
 pub fn render(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
@@ -42,7 +43,7 @@ pub fn render(
         || (clip_rules.iter().all(|f| *f == usvg::FillRule::EvenOdd)
         && clip_rules.len() == 1))
     {
-        let clips = create_simple_clip_path(
+        let clips = create_clip_path(
             clip_path,
             clip_rules
                 .first()
@@ -55,19 +56,20 @@ pub fn render(
             pop_count += 1;
         }
     } else {
-        pop_count += render_complex_clip_path(group, clip_path, surface, process_context);
+        pop_count += render_complex(group, clip_path, surface, process_context);
     }
 
     pop_count
 }
 
-fn create_simple_clip_path(
+/// Create a simple clip path.
+fn create_clip_path(
     clip_path: &usvg::ClipPath,
     clip_rule: usvg::FillRule,
 ) -> Vec<(Path, FillRule)> {
     let mut clips = vec![];
     if let Some(clip_path) = clip_path.clip_path() {
-        clips.extend(create_simple_clip_path(clip_path, clip_rule));
+        clips.extend(create_clip_path(clip_path, clip_rule));
     }
 
     // Just a dummy operation, so that in case the clip path only has hidden children the clip
@@ -90,6 +92,7 @@ fn create_simple_clip_path(
     clips
 }
 
+/// Collect the paths of a group so that they can be used in the clip path.
 fn extend_segments_from_group(
     group: &usvg::Group,
     transform: &Transform,
@@ -149,6 +152,7 @@ fn extend_segments_from_group(
     }
 }
 
+/// Check if the clip path is simple, i.e. it can be translated into a PDF clip path.
 fn is_simple_clip_path(group: &usvg::Group) -> bool {
     group.children().iter().all(|n| {
         match n {
@@ -163,6 +167,7 @@ fn is_simple_clip_path(group: &usvg::Group) -> bool {
     })
 }
 
+/// Collect the filling rules used in the clip path.
 fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
     let mut clip_rules = vec![];
     group.children().iter().for_each(|n| match n {
@@ -181,7 +186,8 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
     clip_rules
 }
 
-fn render_complex_clip_path(
+/// Render a clip path by using alpha masks.
+fn render_complex(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
     surface: &mut Surface,
