@@ -1,6 +1,6 @@
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::rgb;
-use crate::object::color_space::rgb::Srgb;
+use crate::object::color_space::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::surface::Surface;
 use crate::{Fill, FillRule};
@@ -69,7 +69,7 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
         }
     }
 
-    fn stops(&self, stops: &[ColorStop]) -> Vec<Stop<Srgb>> {
+    fn stops(&self, stops: &[ColorStop]) -> Vec<Stop<Rgb>> {
         stops
             .iter()
             .map(|s| {

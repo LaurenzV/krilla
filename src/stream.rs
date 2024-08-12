@@ -28,9 +28,9 @@ use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Tr
 // TODO: Remove clone
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stream {
-    pub content: Vec<u8>,
-    pub bbox: Rect,
-    pub resource_dictionary: ResourceDictionary,
+    pub(crate) content: Vec<u8>,
+    pub(crate) bbox: Rect,
+    pub(crate) resource_dictionary: ResourceDictionary,
 }
 
 impl Stream {

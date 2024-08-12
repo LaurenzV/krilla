@@ -1,32 +1,36 @@
 use crate::object::mask::Mask;
-use crate::surface::StreamBuilder;
+use crate::surface::Surface;
 use crate::svg::util::convert_mask_type;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
 use crate::FillRule;
 
-pub fn get_mask(
+/// Render a usvg `Mask` into a surface.
+#[must_use]
+pub fn render(
     mask: &usvg::Mask,
-    mut canvas_builder: StreamBuilder,
+    surface: &mut Surface,
     process_context: &mut ProcessContext,
-) -> Mask {
-    let mut surface = canvas_builder.surface();
-    if let Some(sub_usvg_mask) = mask.mask() {
-        let sub_mask = get_mask(sub_usvg_mask, surface.stream_surface(), process_context);
-        surface.push_mask(sub_mask);
+) -> u16 {
+    let mut stream_builder = surface.stream_surface();
+    let mut sub_surface = stream_builder.surface();
+    let mut pop_count = 0;
+    if let Some(sub_mask) = mask.mask() {
+        pop_count += render(sub_mask, &mut sub_surface, process_context)
     }
 
     let clip_path = mask.rect().to_rect().to_clip_path();
-    surface.push_clip_path(&clip_path, &FillRule::NonZero);
-    group::render(mask.root(), &mut surface, process_context);
-    surface.pop();
+    sub_surface.push_clip_path(&clip_path, &FillRule::NonZero);
+    pop_count += 1;
+    group::render(mask.root(), &mut sub_surface, process_context);
 
-    if mask.mask().is_some() {
-        surface.pop();
+    for _ in 0..pop_count {
+        sub_surface.pop();
     }
 
-    surface.finish();
-    let stream = canvas_builder.finish();
+    sub_surface.finish();
+    let stream = stream_builder.finish();
 
-    Mask::new(stream, convert_mask_type(&mask.kind()))
+    surface.push_mask(Mask::new(stream, convert_mask_type(&mask.kind())));
+    1
 }

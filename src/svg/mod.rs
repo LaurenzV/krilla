@@ -17,67 +17,84 @@ mod path;
 mod text;
 mod util;
 
+/// A struct that stores some information that is needed globally when processing an SVG.
 struct ProcessContext<'a> {
+    /// A map from fontdb ID's of the fontdb of the tree to the ID's of the fontdb of krilla.
+    /// Since krilla assumes a single global fontdb, we need to clone each font source
+    /// that is referenced in the SVG into the krilla fontdb, and when writing the glyphs
+    /// we need this hash map to get the actual ID.
     fonts: HashMap<fontdb::ID, (fontdb::ID, u16)>,
+    /// A number of settings that can be used to configure the behavior for converting the SVG.
     svg_settings: SvgSettings,
-    fontdb: &'a mut Database,
+    /// The krilla fontdb.
+    krilla_fontdb: &'a mut Database,
 }
 
 impl<'a> ProcessContext<'a> {
+    /// Create a new `ProcessContext`.
     pub fn new(fontdb: &'a mut Database, svg_settings: SvgSettings) -> Self {
         Self {
             fonts: HashMap::new(),
             svg_settings,
-            fontdb,
+            krilla_fontdb: fontdb,
         }
     }
 }
 
+/// Render a usvg `Tree` into a surface.
 pub fn render_tree(
     tree: &usvg::Tree,
     svg_settings: SvgSettings,
-    canvas_builder: &mut Surface,
-    fontdb: &mut Database,
+    surface: &mut Surface,
+    krilla_fontdb: &mut Database,
 ) {
-    let mut fc = get_context_from_group(tree.fontdb().clone(), svg_settings, tree.root(), fontdb);
-    group::render(tree.root(), canvas_builder, &mut fc);
+    let mut fc = get_context_from_group(
+        tree.fontdb().clone(),
+        svg_settings,
+        tree.root(),
+        krilla_fontdb,
+    );
+    group::render(tree.root(), surface, &mut fc);
 }
 
+/// Render a usvg `Node` into a surface.
 pub fn render_node(
     node: &Node,
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
-    canvas_builder: &mut Surface,
-    fontdb: &mut Database,
+    surface: &mut Surface,
+    krilla_fontdb: &mut Database,
 ) {
-    let mut fc = get_context_from_node(tree_fontdb, svg_settings, node, fontdb);
-    group::render_node(node, canvas_builder, &mut fc);
+    let mut fc = get_context_from_node(tree_fontdb, svg_settings, node, krilla_fontdb);
+    group::render_node(node, surface, &mut fc);
 }
 
+/// Get the `PorcessContext` from a `Group`.
 fn get_context_from_group<'a>(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
     group: &Group,
-    fontdb: &'a mut Database,
+    krilla_fontdb: &'a mut Database,
 ) -> ProcessContext<'a> {
-    let mut process_context = ProcessContext::new(fontdb, svg_settings);
+    let mut process_context = ProcessContext::new(krilla_fontdb, svg_settings);
     get_context_from_group_impl(tree_fontdb, group, &mut process_context);
     process_context
 }
 
+/// Get the `PorcessContext` from a `Node`.
 fn get_context_from_node<'a>(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
     node: &Node,
-    fontdb: &'a mut Database,
+    krilla_fontdb: &'a mut Database,
 ) -> ProcessContext<'a> {
-    let mut process_context = ProcessContext::new(fontdb, svg_settings);
+    let mut process_context = ProcessContext::new(krilla_fontdb, svg_settings);
     get_context_from_node_impl(tree_fontdb, node, &mut process_context);
     process_context
 }
 
 fn get_context_from_group_impl(
-    tree_fontdb: Arc<fontdb::Database>,
+    tree_fontdb: Arc<Database>,
     group: &Group,
     render_context: &mut ProcessContext,
 ) {
@@ -87,7 +104,7 @@ fn get_context_from_group_impl(
 }
 
 fn get_context_from_node_impl(
-    tree_fontdb: Arc<fontdb::Database>,
+    tree_fontdb: Arc<Database>,
     node: &Node,
     render_context: &mut ProcessContext,
 ) {
@@ -111,7 +128,7 @@ fn get_context_from_node_impl(
                             })
                             .unwrap();
 
-                        let ids = render_context.fontdb.load_font_source(source);
+                        let ids = render_context.krilla_fontdb.load_font_source(source);
                         (ids[index as usize], upem)
                     });
                 }
@@ -131,32 +148,4 @@ fn get_context_from_node_impl(
     node.subroots(|subroot| {
         get_context_from_group_impl(tree_fontdb.clone(), subroot, render_context)
     });
-}
-
-#[cfg(test)]
-mod tests {
-
-    // #[test]
-    // pub fn svg() {
-    //     let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
-    //     let mut db = fontdb::Database::new();
-    //     db.load_system_fonts();
-    //
-    //     let tree = usvg::Tree::from_data(
-    //         &data,
-    //         &usvg::Options {
-    //             fontdb: Arc::new(db.clone()),
-    //             ..Default::default()
-    //         },
-    //     )
-    //     .unwrap();
-    //
-    //     let mut document_builder = Document::new(SerializeSettings::default());
-    //     let mut stream_builder = document_builder.start_page(tree.size());
-    //     render_tree(&tree, &mut stream_builder, &mut db);
-    //     stream_builder.finish();
-    //     let finished = document_builder.finish(&db);
-    //     let _ = std::fs::write("out/svg.pdf", &finished);
-    //     let _ = std::fs::write("out/svg.txt", &finished);
-    // }
 }

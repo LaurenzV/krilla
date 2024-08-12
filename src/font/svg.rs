@@ -4,7 +4,7 @@ use crate::surface::Surface;
 use crate::svg;
 use fontdb::Database;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, GlyphId};
+use skrifa::GlyphId;
 use std::io::Read;
 use usvg::roxmltree;
 

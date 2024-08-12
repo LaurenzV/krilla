@@ -1,97 +1,50 @@
 use crate::surface::Surface;
-use crate::svg::clip_path::{get_clip_path, SvgClipPath};
-use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
-use crate::svg::{filter, image, path, text, ProcessContext};
-use usvg::{Node, NormalizedF32};
+use crate::svg::{clip_path, filter, image, mask, path, text, ProcessContext};
+use usvg::Node;
 
-pub fn render(
-    group: &usvg::Group,
-    canvas_builder: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !group.filters().is_empty() {
-        filter::render(group, canvas_builder, process_context);
+        filter::render(group, surface, process_context);
         return;
     }
 
+    let mut pop_count = 0;
+
     if group.isolate() {
-        canvas_builder.push_isolated();
+        surface.push_isolated();
+        pop_count += 1
     }
 
-    canvas_builder.push_transform(&convert_transform(&group.transform()));
+    surface.push_transform(&convert_transform(&group.transform()));
+    pop_count += 1;
 
-    let svg_clip = group
-        .clip_path()
-        .map(|c| get_clip_path(group, c, canvas_builder.stream_surface(), process_context));
-
-    if let Some(svg_clip) = svg_clip.clone() {
-        match svg_clip {
-            SvgClipPath::SimpleClip(rules) => {
-                for rule in rules {
-                    canvas_builder.push_clip_path(&rule.0, &rule.1);
-                }
-            }
-            SvgClipPath::ComplexClip(mask) => canvas_builder.push_mask(mask),
-        }
+    if let Some(clip_path) = group.clip_path() {
+        pop_count += clip_path::render(group, clip_path, surface, process_context);
     }
 
     if let Some(mask) = group.mask() {
-        let mask = get_mask(mask, canvas_builder.stream_surface(), process_context);
-        canvas_builder.push_mask(mask);
+        pop_count += mask::render(mask, surface, process_context);
     }
 
-    canvas_builder.push_blend_mode(convert_blend_mode(&group.blend_mode()));
-
-    // TODO: OPtimize alpha = 1 case.
-    if group.opacity() != NormalizedF32::ONE {
-        canvas_builder.push_opacified(group.opacity());
-    }
+    surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));
+    surface.push_opacified(group.opacity());
+    pop_count += 2;
 
     for child in group.children() {
-        render_node(child, canvas_builder, process_context);
+        render_node(child, surface, process_context);
     }
 
-    if group.opacity() != NormalizedF32::ONE {
-        canvas_builder.pop();
-    }
-
-    canvas_builder.pop();
-
-    if group.mask().is_some() {
-        canvas_builder.pop();
-    }
-
-    // TODO: Remove clone
-    if let Some(svg_clip) = svg_clip {
-        match svg_clip {
-            SvgClipPath::SimpleClip(rules) => {
-                for _ in &rules {
-                    canvas_builder.pop();
-                }
-            }
-            SvgClipPath::ComplexClip(_) => {
-                canvas_builder.pop();
-            }
-        }
-    }
-
-    canvas_builder.pop();
-
-    if group.isolate() {
-        canvas_builder.pop();
+    for _ in 0..pop_count {
+        surface.pop();
     }
 }
 
-pub fn render_node(
-    node: &Node,
-    canvas_builder: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render_node(node: &Node, surface: &mut Surface, process_context: &mut ProcessContext) {
     match node {
-        Node::Group(g) => render(g, canvas_builder, process_context),
-        Node::Path(p) => path::render(p, canvas_builder, process_context),
-        Node::Image(i) => image::render(i, canvas_builder, process_context),
-        Node::Text(t) => text::render(t, canvas_builder, process_context),
+        Node::Group(g) => render(g, surface, process_context),
+        Node::Path(p) => path::render(p, surface, process_context),
+        Node::Image(i) => image::render(i, surface, process_context),
+        Node::Text(t) => text::render(t, surface, process_context),
     }
 }

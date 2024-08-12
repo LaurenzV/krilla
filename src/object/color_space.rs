@@ -1,9 +1,8 @@
 use crate::resource::ColorSpaceEnum;
-use crate::serialize::{Object, SerializerContext};
-use crate::util::Prehashed;
+use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
+use std::fmt::Debug;
+use std::hash::Hash;
 use std::sync::Arc;
 
 pub const DEVICE_RGB: &'static str = "DeviceRGB";
@@ -15,9 +14,7 @@ pub trait InternalColor {
     fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum;
 }
 
-pub trait ColorSpace:
-    Object + Debug + Hash + Eq + PartialEq + Clone + Copy + Into<ColorSpaceEnum>
-{
+pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
 
@@ -50,24 +47,24 @@ impl ICCBasedColorSpace {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
-    Srgb(rgb::Color),
-    SGray(luma::Color),
+    Rgb(rgb::Color),
+    Luma(luma::Color),
     DeviceCmyk(device_cmyk::Color),
 }
 
 impl Color {
-    pub fn to_pdf_color(&self) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(&self) -> Vec<f32> {
         match self {
-            Color::Srgb(srgb) => srgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::SGray(sgray) => sgray.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::DeviceCmyk(dc) => dc.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Luma(luma) => luma.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::DeviceCmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
 
-    pub fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+    pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
         match self {
-            Color::Srgb(srgb) => srgb.color_space(no_device_cs),
-            Color::SGray(sgray) => sgray.color_space(no_device_cs),
+            Color::Rgb(rgb) => rgb.color_space(no_device_cs),
+            Color::Luma(luma) => luma.color_space(no_device_cs),
             Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs),
         }
     }
@@ -120,12 +117,6 @@ pub mod device_cmyk {
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceCmyk;
 
-    impl Into<ColorSpaceEnum> for DeviceCmyk {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceCmyk(self)
-        }
-    }
-
     impl ColorSpace for DeviceCmyk {
         type Color = Color;
     }
@@ -143,7 +134,7 @@ pub mod rgb {
     use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
-    use pdf_writer::{Chunk, Finish, Name, Ref};
+    use pdf_writer::{Chunk, Ref};
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8);
@@ -170,7 +161,7 @@ pub mod rgb {
 
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
-            super::Color::Srgb(self)
+            super::Color::Rgb(self)
         }
     }
 
@@ -195,17 +186,14 @@ pub mod rgb {
     static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Srgb;
+    pub struct Rgb;
 
-    impl Into<ColorSpaceEnum> for Srgb {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::Srgb(self)
-        }
-    }
-
-    impl ColorSpace for Srgb {
+    impl ColorSpace for Rgb {
         type Color = Color;
     }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub(crate) struct Srgb;
 
     impl Object for Srgb {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
@@ -216,12 +204,6 @@ pub mod rgb {
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceRgb;
-
-    impl Into<ColorSpaceEnum> for DeviceRgb {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceRgb(self)
-        }
-    }
 
     impl ColorSpace for DeviceRgb {
         type Color = Color;
@@ -238,7 +220,7 @@ pub mod luma {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::{Chunk, Finish, Name, Ref};
+    use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -266,7 +248,7 @@ pub mod luma {
 
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
-            super::Color::SGray(self)
+            super::Color::Luma(self)
         }
     }
 
@@ -287,17 +269,14 @@ pub mod luma {
     pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct SGray;
+    pub struct Luma;
 
-    impl Into<ColorSpaceEnum> for SGray {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::SGray(self)
-        }
-    }
-
-    impl ColorSpace for SGray {
+    impl ColorSpace for Luma {
         type Color = Color;
     }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub(crate) struct SGray;
 
     impl Object for SGray {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
@@ -308,12 +287,6 @@ pub mod luma {
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceGray;
-
-    impl Into<ColorSpaceEnum> for DeviceGray {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceGray(self)
-        }
-    }
 
     impl ColorSpace for DeviceGray {
         type Color = Color;
