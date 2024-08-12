@@ -14,7 +14,7 @@ pub enum SvgClipPath {
 pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    canvas_builder: StreamBuilder,
+    surface: StreamBuilder,
     process_context: &mut ProcessContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
@@ -59,7 +59,7 @@ pub fn get_clip_path(
         SvgClipPath::ComplexClip(create_complex_clip_path(
             group,
             clip_path,
-            canvas_builder,
+            surface,
             process_context,
         ))
     }
@@ -188,10 +188,10 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
 fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    mut canvas_builder: StreamBuilder,
+    mut stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
 ) -> Mask {
-    let mut surface = canvas_builder.surface();
+    let mut surface = stream_builder.surface();
     let svg_clip = clip_path
         .clip_path()
         .map(|c| get_clip_path(parent, c, surface.stream_surface(), process_context));
@@ -226,7 +226,7 @@ fn create_complex_clip_path(
     }
 
     surface.finish();
-    let stream = canvas_builder.finish();
+    let stream = stream_builder.finish();
 
     Mask::new(stream, MaskType::Alpha)
 }

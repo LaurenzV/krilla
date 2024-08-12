@@ -10,7 +10,7 @@ use usvg::PaintOrder;
 
 pub fn render(
     text: &usvg::Text,
-    canvas_builder: &mut Surface,
+    surface: &mut Surface,
     process_context: &mut ProcessContext,
 ) {
     // TODO: Add possibility to render as paths instead
@@ -20,11 +20,11 @@ pub fn render(
         }
 
         if let Some(overline) = &span.overline {
-            path::render(overline, canvas_builder, process_context);
+            path::render(overline, surface, process_context);
         }
 
         if let Some(underline) = &span.underline {
-            path::render(underline, canvas_builder, process_context);
+            path::render(underline, surface, process_context);
         }
 
         for glyph in &span.positioned_glyphs {
@@ -40,7 +40,7 @@ pub fn render(
             let fill = span.fill.as_ref().map(|f| {
                 convert_fill(
                     &f,
-                    canvas_builder.stream_surface(),
+                    surface.stream_surface(),
                     process_context,
                     transform.invert().unwrap(),
                 )
@@ -48,7 +48,7 @@ pub fn render(
             let stroke = span.stroke.as_ref().map(|s| {
                 convert_stroke(
                     &s,
-                    canvas_builder.stream_surface(),
+                    surface.stream_surface(),
                     process_context,
                     transform.invert().unwrap(),
                 )
@@ -94,26 +94,26 @@ pub fn render(
                     );
                 };
 
-            canvas_builder.push_transform(&transform);
+            surface.push_transform(&transform);
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
                     PaintOrder::FillAndStroke => {
-                        fill_op(canvas_builder, fill, process_context);
-                        stroke_op(canvas_builder, stroke, process_context);
+                        fill_op(surface, fill, process_context);
+                        stroke_op(surface, stroke, process_context);
                     }
                     PaintOrder::StrokeAndFill => {
-                        stroke_op(canvas_builder, stroke, process_context);
-                        fill_op(canvas_builder, fill, process_context);
+                        stroke_op(surface, stroke, process_context);
+                        fill_op(surface, fill, process_context);
                     }
                 },
                 (Some(fill), None) => {
-                    fill_op(canvas_builder, fill, process_context);
+                    fill_op(surface, fill, process_context);
                 }
                 (None, Some(stroke)) => {
-                    stroke_op(canvas_builder, stroke, process_context);
+                    stroke_op(surface, stroke, process_context);
                 }
-                (None, None) => canvas_builder.invisible_glyph_run(
+                (None, None) => surface.invisible_glyph_run(
                     0.0,
                     0.0,
                     process_context.fontdb,
@@ -130,11 +130,11 @@ pub fn render(
                 ),
             }
 
-            canvas_builder.pop();
+            surface.pop();
         }
 
         if let Some(line_through) = &span.line_through {
-            path::render(line_through, canvas_builder, process_context);
+            path::render(line_through, surface, process_context);
         }
     }
 }

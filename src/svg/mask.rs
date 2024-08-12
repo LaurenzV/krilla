@@ -7,10 +7,10 @@ use crate::FillRule;
 
 pub fn get_mask(
     mask: &usvg::Mask,
-    mut canvas_builder: StreamBuilder,
+    mut stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
 ) -> Mask {
-    let mut surface = canvas_builder.surface();
+    let mut surface = stream_builder.surface();
     if let Some(sub_usvg_mask) = mask.mask() {
         let sub_mask = get_mask(sub_usvg_mask, surface.stream_surface(), process_context);
         surface.push_mask(sub_mask);
@@ -26,7 +26,7 @@ pub fn get_mask(
     }
 
     surface.finish();
-    let stream = canvas_builder.finish();
+    let stream = stream_builder.finish();
 
     Mask::new(stream, convert_mask_type(&mask.kind()))
 }

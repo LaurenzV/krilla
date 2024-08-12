@@ -17,13 +17,21 @@ mod path;
 mod text;
 mod util;
 
+/// A struct that stores some information that is needed globally when processing an SVG.
 struct ProcessContext<'a> {
+    /// A map from fontdb ID's of the fontdb of the tree to the ID's of the fontdb of krilla.
+    /// Since krilla assumes a single global fontdb, we need to clone each font source
+    /// that is referenced in the SVG into the krilla fontdb, and when writing the glyphs
+    /// we need this hash map to get the actual ID.
     fonts: HashMap<fontdb::ID, (fontdb::ID, u16)>,
+    /// A number of settings that can be used to configure the behavior for converting the SVG.
     svg_settings: SvgSettings,
+    /// The krilla fontdb.
     fontdb: &'a mut Database,
 }
 
 impl<'a> ProcessContext<'a> {
+    /// Create a new `ProcessContext`.
     pub fn new(fontdb: &'a mut Database, svg_settings: SvgSettings) -> Self {
         Self {
             fonts: HashMap::new(),
@@ -36,22 +44,22 @@ impl<'a> ProcessContext<'a> {
 pub fn render_tree(
     tree: &usvg::Tree,
     svg_settings: SvgSettings,
-    canvas_builder: &mut Surface,
+    surface: &mut Surface,
     fontdb: &mut Database,
 ) {
     let mut fc = get_context_from_group(tree.fontdb().clone(), svg_settings, tree.root(), fontdb);
-    group::render(tree.root(), canvas_builder, &mut fc);
+    group::render(tree.root(), surface, &mut fc);
 }
 
 pub fn render_node(
     node: &Node,
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
-    canvas_builder: &mut Surface,
+    surface: &mut Surface,
     fontdb: &mut Database,
 ) {
     let mut fc = get_context_from_node(tree_fontdb, svg_settings, node, fontdb);
-    group::render_node(node, canvas_builder, &mut fc);
+    group::render_node(node, surface, &mut fc);
 }
 
 fn get_context_from_group<'a>(
