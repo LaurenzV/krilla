@@ -40,9 +40,7 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut 
     }
 
     if let Some(mask) = group.mask() {
-        let mask = mask::render(mask, surface.stream_surface(), process_context);
-        surface.push_mask(mask);
-        pop_count += 1;
+        pop_count += mask::render(mask, surface, process_context);
     }
 
     surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));

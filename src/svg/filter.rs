@@ -14,8 +14,7 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &Proc
 
     let raster_scale = process_context.svg_settings.raster_scale;
 
-    // TODO: Don't hardcode
-    let pixmap_size = usvg::Size::from_wh(
+    let pixmap_size = Size::from_wh(
         layer_bbox.width() * raster_scale,
         layer_bbox.height() * raster_scale,
     )
