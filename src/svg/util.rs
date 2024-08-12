@@ -46,8 +46,8 @@ pub fn convert_paint(
     process_context: &mut ProcessContext,
     // The additional transform is needed because in krilla, a transform to a shape will also apply
     // the transform to the paint server. However, in the case of SVG glyphs, we don't want the transform
-    // to be shifted for each glyph we draw (since we draw them separately instead of in a glyph run)
-    // , so we need to apply an additional inverse transform to counter that effect.
+    // to be shifted for each glyph we draw (since we draw them separately instead of in a glyph run),
+    // so we need to apply an additional inverse transform to counter that effect.
     additional_transform: Transform,
 ) -> Paint<Rgb> {
     match paint {
