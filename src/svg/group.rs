@@ -1,8 +1,7 @@
 use crate::surface::Surface;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
-use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
-use crate::svg::{filter, image, path, text, ProcessContext};
+use crate::svg::{filter, image, path, text, ProcessContext, mask};
 use usvg::{Node, NormalizedF32};
 
 pub fn render(
@@ -15,11 +14,15 @@ pub fn render(
         return;
     }
 
+    let mut pop_count = 0;
+
     if group.isolate() {
         surface.push_isolated();
+        pop_count += 1
     }
 
     surface.push_transform(&convert_transform(&group.transform()));
+    pop_count += 1;
 
     let svg_clip = group
         .clip_path()
@@ -37,29 +40,17 @@ pub fn render(
     }
 
     if let Some(mask) = group.mask() {
-        let mask = get_mask(mask, surface.stream_surface(), process_context);
+        let mask = mask::render(mask, surface.stream_surface(), process_context);
         surface.push_mask(mask);
+        pop_count += 1;
     }
 
     surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));
-
-    // TODO: OPtimize alpha = 1 case.
-    if group.opacity() != NormalizedF32::ONE {
-        surface.push_opacified(group.opacity());
-    }
+    surface.push_opacified(group.opacity());
+    pop_count += 2;
 
     for child in group.children() {
         render_node(child, surface, process_context);
-    }
-
-    if group.opacity() != NormalizedF32::ONE {
-        surface.pop();
-    }
-
-    surface.pop();
-
-    if group.mask().is_some() {
-        surface.pop();
     }
 
     // TODO: Remove clone
@@ -76,9 +67,7 @@ pub fn render(
         }
     }
 
-    surface.pop();
-
-    if group.isolate() {
+    for _ in 0..pop_count {
         surface.pop();
     }
 }
