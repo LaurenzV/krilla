@@ -16,7 +16,7 @@ pub trait InternalColor {
 }
 
 pub trait ColorSpace:
-    Object + Debug + Hash + Eq + PartialEq + Clone + Copy
+    Debug + Hash + Eq + PartialEq + Clone + Copy
 {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
