@@ -61,7 +61,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     sb.fill_glyph_run(
                         0.0,
                         0.0,
-                        process_context.fontdb,
+                        process_context.krilla_fontdb,
                         fill,
                         [TestGlyph::new(
                             font,
@@ -82,7 +82,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,
-                        process_context.fontdb,
+                        process_context.krilla_fontdb,
                         stroke,
                         [TestGlyph::new(
                             font,
@@ -120,7 +120,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 (None, None) => surface.invisible_glyph_run(
                     0.0,
                     0.0,
-                    process_context.fontdb,
+                    process_context.krilla_fontdb,
                     [TestGlyph::new(
                         font,
                         GlyphId::new(glyph.id.0 as u32),

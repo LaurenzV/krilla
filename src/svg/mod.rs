@@ -27,7 +27,7 @@ struct ProcessContext<'a> {
     /// A number of settings that can be used to configure the behavior for converting the SVG.
     svg_settings: SvgSettings,
     /// The krilla fontdb.
-    fontdb: &'a mut Database,
+    krilla_fontdb: &'a mut Database,
 }
 
 impl<'a> ProcessContext<'a> {
@@ -36,7 +36,7 @@ impl<'a> ProcessContext<'a> {
         Self {
             fonts: HashMap::new(),
             svg_settings,
-            fontdb,
+            krilla_fontdb: fontdb,
         }
     }
 }
@@ -46,9 +46,14 @@ pub fn render_tree(
     tree: &usvg::Tree,
     svg_settings: SvgSettings,
     surface: &mut Surface,
-    fontdb: &mut Database,
+    krilla_fontdb: &mut Database,
 ) {
-    let mut fc = get_context_from_group(tree.fontdb().clone(), svg_settings, tree.root(), fontdb);
+    let mut fc = get_context_from_group(
+        tree.fontdb().clone(),
+        svg_settings,
+        tree.root(),
+        krilla_fontdb,
+    );
     group::render(tree.root(), surface, &mut fc);
 }
 
@@ -58,9 +63,9 @@ pub fn render_node(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
     surface: &mut Surface,
-    fontdb: &mut Database,
+    krilla_fontdb: &mut Database,
 ) {
-    let mut fc = get_context_from_node(tree_fontdb, svg_settings, node, fontdb);
+    let mut fc = get_context_from_node(tree_fontdb, svg_settings, node, krilla_fontdb);
     group::render_node(node, surface, &mut fc);
 }
 
@@ -69,9 +74,9 @@ fn get_context_from_group<'a>(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
     group: &Group,
-    fontdb: &'a mut Database,
+    krilla_fontdb: &'a mut Database,
 ) -> ProcessContext<'a> {
-    let mut process_context = ProcessContext::new(fontdb, svg_settings);
+    let mut process_context = ProcessContext::new(krilla_fontdb, svg_settings);
     get_context_from_group_impl(tree_fontdb, group, &mut process_context);
     process_context
 }
@@ -81,15 +86,15 @@ fn get_context_from_node<'a>(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
     node: &Node,
-    fontdb: &'a mut Database,
+    krilla_fontdb: &'a mut Database,
 ) -> ProcessContext<'a> {
-    let mut process_context = ProcessContext::new(fontdb, svg_settings);
+    let mut process_context = ProcessContext::new(krilla_fontdb, svg_settings);
     get_context_from_node_impl(tree_fontdb, node, &mut process_context);
     process_context
 }
 
 fn get_context_from_group_impl(
-    tree_fontdb: Arc<fontdb::Database>,
+    tree_fontdb: Arc<Database>,
     group: &Group,
     render_context: &mut ProcessContext,
 ) {
@@ -99,7 +104,7 @@ fn get_context_from_group_impl(
 }
 
 fn get_context_from_node_impl(
-    tree_fontdb: Arc<fontdb::Database>,
+    tree_fontdb: Arc<Database>,
     node: &Node,
     render_context: &mut ProcessContext,
 ) {
@@ -123,7 +128,7 @@ fn get_context_from_node_impl(
                             })
                             .unwrap();
 
-                        let ids = render_context.fontdb.load_font_source(source);
+                        let ids = render_context.krilla_fontdb.load_font_source(source);
                         (ids[index as usize], upem)
                     });
                 }
