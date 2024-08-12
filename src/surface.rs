@@ -17,7 +17,7 @@ pub enum PushInstruction {
     Opacity(NormalizedF32),
     ClipPath,
     BlendMode,
-    Mask,
+    Mask(Mask),
     Isolated,
 }
 
@@ -25,7 +25,6 @@ pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
     root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
-    masks: Vec<Mask>,
     push_instructions: Vec<PushInstruction>,
     finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
 }
@@ -40,7 +39,6 @@ impl<'a> Surface<'a> {
             sc,
             root_builder,
             sub_builders: vec![],
-            masks: vec![],
             push_instructions: vec![],
             finish_fn,
         }
@@ -116,9 +114,8 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_mask(&mut self, mask: Mask) {
-        self.push_instructions.push(PushInstruction::Mask);
+        self.push_instructions.push(PushInstruction::Mask(mask));
         self.sub_builders.push(ContentBuilder::new());
-        self.masks.push(mask);
     }
 
     pub fn push_opacified(&mut self, opacity: NormalizedF32) {
@@ -155,10 +152,8 @@ impl<'a> Surface<'a> {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                     .restore_graphics_state()
             }
-            PushInstruction::Mask => {
+            PushInstruction::Mask(mask) => {
                 let stream = self.sub_builders.pop().unwrap().finish();
-                // TODO: Add to instruction instead?
-                let mask = self.masks.pop().unwrap();
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                     .draw_masked(mask, stream)
             }
