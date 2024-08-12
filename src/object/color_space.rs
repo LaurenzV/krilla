@@ -270,11 +270,14 @@ pub mod luma {
     pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct SGray;
+    pub struct Luma;
 
-    impl ColorSpace for SGray {
+    impl ColorSpace for Luma {
         type Color = Color;
     }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub(crate) struct SGray;
 
     impl Object for SGray {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
