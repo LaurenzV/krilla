@@ -1,5 +1,5 @@
 use crate::object::mask::Mask;
-use crate::surface::{StreamBuilder, Surface};
+use crate::surface::Surface;
 use crate::svg::util::convert_mask_type;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
@@ -11,7 +11,7 @@ pub fn render(
     mask: &usvg::Mask,
     surface: &mut Surface,
     process_context: &mut ProcessContext,
-) -> u8 {
+) -> u16 {
     let mut stream_builder = surface.stream_surface();
     let mut sub_surface = stream_builder.surface();
     let mut pop_count = 0;

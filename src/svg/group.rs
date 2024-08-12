@@ -1,7 +1,6 @@
 use crate::surface::Surface;
-use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::util::{convert_blend_mode, convert_transform};
-use crate::svg::{filter, image, mask, path, text, ProcessContext};
+use crate::svg::{clip_path, filter, image, mask, path, text, ProcessContext};
 use usvg::Node;
 
 pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
@@ -20,23 +19,8 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut 
     surface.push_transform(&convert_transform(&group.transform()));
     pop_count += 1;
 
-    let svg_clip = group
-        .clip_path()
-        .map(|c| get_clip_path(group, c, surface.stream_surface(), process_context));
-
-    if let Some(svg_clip) = svg_clip {
-        match svg_clip {
-            SvgClipPath::SimpleClip(rules) => {
-                for rule in rules {
-                    surface.push_clip_path(&rule.0, &rule.1);
-                    pop_count += 1;
-                }
-            }
-            SvgClipPath::ComplexClip(mask) => {
-                surface.push_mask(mask);
-                pop_count += 1;
-            }
-        }
+    if let Some(clip_path) = group.clip_path() {
+        pop_count += clip_path::render(group, clip_path, surface, process_context);
     }
 
     if let Some(mask) = group.mask() {

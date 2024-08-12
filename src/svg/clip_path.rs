@@ -1,22 +1,16 @@
 use crate::object::mask::Mask;
-use crate::surface::StreamBuilder;
+use crate::surface::Surface;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, ProcessContext};
 use crate::{FillRule, MaskType};
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
-#[derive(Clone)]
-pub enum SvgClipPath {
-    SimpleClip(Vec<(Path, FillRule)>),
-    ComplexClip(Mask),
-}
-
-pub fn get_clip_path(
+pub fn render(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    surface: StreamBuilder,
+    surface: &mut Surface,
     process_context: &mut ProcessContext,
-) -> SvgClipPath {
+) -> u16 {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
     // SVGs can be much more complex than in PDF. In SVG, clip paths can have transforms, as well as
     // nested clip paths. The objects inside of the clip path can have transforms as well, making it
@@ -36,9 +30,10 @@ pub fn get_clip_path(
     // should suffice. But in order to conform with the SVG specification, we also handle the case
     // of more complex clipping paths, even if this means that Safari will in some cases not
     // display them correctly.
-
     let is_simple_clip_path = is_simple_clip_path(clip_path.root());
     let clip_rules = collect_clip_rules(clip_path.root());
+
+    let mut pop_count = 0;
 
     if is_simple_clip_path
         && (clip_rules.iter().all(|f| *f == usvg::FillRule::NonZero)
@@ -54,15 +49,16 @@ pub fn get_clip_path(
                 .copied()
                 .unwrap_or(usvg::FillRule::NonZero),
         );
-        SvgClipPath::SimpleClip(clips)
+
+        for (clip, rule) in clips {
+            surface.push_clip_path(&clip, &rule);
+            pop_count += 1;
+        }
     } else {
-        SvgClipPath::ComplexClip(create_complex_clip_path(
-            group,
-            clip_path,
-            surface,
-            process_context,
-        ))
+        pop_count += render_complex_clip_path(group, clip_path, surface, process_context);
     }
+
+    pop_count
 }
 
 fn create_simple_clip_path(
@@ -185,48 +181,32 @@ fn collect_clip_rules(group: &usvg::Group) -> Vec<usvg::FillRule> {
     clip_rules
 }
 
-fn create_complex_clip_path(
+fn render_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
-    mut stream_builder: StreamBuilder,
+    surface: &mut Surface,
     process_context: &mut ProcessContext,
-) -> Mask {
-    let mut surface = stream_builder.surface();
-    let svg_clip = clip_path
-        .clip_path()
-        .map(|c| get_clip_path(parent, c, surface.stream_surface(), process_context));
+) -> u16 {
+    let mut stream_builder = surface.stream_surface();
+    let mut sub_surface = stream_builder.surface();
 
-    // TODO: Remove clone
-    if let Some(svg_clip) = svg_clip.clone() {
-        match svg_clip {
-            SvgClipPath::SimpleClip(rules) => {
-                for rule in rules {
-                    surface.push_clip_path(&rule.0, &rule.1);
-                }
-            }
-            SvgClipPath::ComplexClip(mask) => surface.push_mask(mask),
-        }
+    let mut pop_count = 0;
+
+    if let Some(clip_path) = clip_path.clip_path() {
+        pop_count += render(parent, clip_path, &mut sub_surface, process_context);
     }
 
-    surface.push_transform(&convert_transform(&clip_path.transform()));
-    group::render(clip_path.root(), &mut surface, process_context);
-    surface.pop();
+    sub_surface.push_transform(&convert_transform(&clip_path.transform()));
+    pop_count += 1;
+    group::render(clip_path.root(), &mut sub_surface, process_context);
 
-    if let Some(svg_clip) = svg_clip {
-        match svg_clip {
-            SvgClipPath::SimpleClip(rules) => {
-                for _ in &rules {
-                    surface.pop();
-                }
-            }
-            SvgClipPath::ComplexClip(_) => {
-                surface.pop();
-            }
-        }
+    for _ in 0..pop_count {
+        sub_surface.pop();
     }
 
-    surface.finish();
+    sub_surface.finish();
     let stream = stream_builder.finish();
 
-    Mask::new(stream, MaskType::Alpha)
+    surface.push_mask(Mask::new(stream, MaskType::Alpha));
+    1
 }
