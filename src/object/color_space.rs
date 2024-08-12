@@ -2,7 +2,7 @@ use crate::resource::ColorSpaceEnum;
 use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::sync::Arc;
 
 pub const DEVICE_RGB: &'static str = "DeviceRGB";
@@ -53,7 +53,7 @@ pub enum Color {
 }
 
 impl Color {
-    pub fn to_pdf_color(&self) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(&self) -> Vec<f32> {
         match self {
             Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::Luma(luma) => luma.to_pdf_color().into_iter().collect::<Vec<_>>(),
@@ -61,7 +61,7 @@ impl Color {
         }
     }
 
-    pub fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+    pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
         match self {
             Color::Rgb(rgb) => rgb.color_space(no_device_cs),
             Color::Luma(luma) => luma.color_space(no_device_cs),

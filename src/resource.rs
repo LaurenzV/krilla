@@ -53,7 +53,7 @@ impl ResourceTrait for ShadingFunction {
 }
 
 #[derive(Hash, Eq, PartialEq)]
-pub enum Resource {
+pub(crate) enum Resource {
     XObject(XObjectResource),
     Pattern(PatternResource),
     ExtGState(ExtGState),
@@ -132,7 +132,7 @@ impl Object for PatternResource {
 impl RegisterableObject for PatternResource {}
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ResourceDictionaryBuilder {
+pub(crate) struct ResourceDictionaryBuilder {
     pub color_spaces: ResourceMapper<ColorSpaceEnum>,
     pub ext_g_states: ResourceMapper<ExtGState>,
     pub patterns: ResourceMapper<PatternResource>,
@@ -207,7 +207,7 @@ impl ResourceDictionaryBuilder {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct ResourceDictionary {
+pub(crate) struct ResourceDictionary {
     pub color_spaces: ResourceList<ColorSpaceEnum>,
     pub ext_g_states: ResourceList<ExtGState>,
     pub patterns: ResourceList<PatternResource>,
@@ -351,7 +351,7 @@ impl Object for FontResource {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub enum ColorSpaceEnum {
+pub(crate) enum ColorSpaceEnum {
     Srgb(Srgb),
     SGray(SGray),
     DeviceGray(DeviceGray),
