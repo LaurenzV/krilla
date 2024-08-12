@@ -286,7 +286,7 @@ pub fn draw_glyph(
 #[cfg(test)]
 fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
     use crate::document::Document;
-    use crate::object::color_space::rgb::Srgb;
+    use crate::object::color_space::rgb::Rgb;
     use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
     use crate::Transform;
@@ -352,7 +352,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             &mut fontdb,
-            crate::Fill::<Srgb>::default(),
+            crate::Fill::<Rgb>::default(),
             [TestGlyph::new(id, i, 0.0, 0.0, size as f32, text)]
                 .into_iter()
                 .peekable(),

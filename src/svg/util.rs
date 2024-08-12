@@ -1,5 +1,5 @@
 use crate::object::color_space::rgb;
-use crate::object::color_space::rgb::Srgb;
+use crate::object::color_space::rgb::Rgb;
 use crate::surface::StreamBuilder;
 use crate::svg::{group, ProcessContext};
 use crate::{
@@ -31,7 +31,7 @@ pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod
 }
 
 /// Convert a usvg `Stop` into a krilla `Stop`.
-pub fn convert_stop(stop: &usvg::Stop) -> Stop<Srgb> {
+pub fn convert_stop(stop: &usvg::Stop) -> Stop<Rgb> {
     Stop {
         offset: stop.offset(),
         color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
@@ -49,7 +49,7 @@ pub fn convert_paint(
     // to be shifted for each glyph we draw (since we draw them separately instead of in a glyph run)
     // , so we need to apply an additional inverse transform to counter that effect.
     additional_transform: Transform,
-) -> Paint<Srgb> {
+) -> Paint<Rgb> {
     match paint {
         usvg::Paint::Color(c) => Paint::Color(rgb::Color::new(c.red, c.green, c.blue).into()),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
@@ -131,7 +131,7 @@ pub fn convert_fill(
     stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     additional_transform: Transform,
-) -> Fill<Srgb> {
+) -> Fill<Rgb> {
     Fill {
         paint: convert_paint(
             fill.paint(),
@@ -150,7 +150,7 @@ pub fn convert_stroke(
     stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     additional_transform: Transform,
-) -> Stroke<Srgb> {
+) -> Stroke<Rgb> {
     let dash = if let Some(dash_array) = stroke.dasharray() {
         Some(StrokeDash {
             offset: stroke.dashoffset(),

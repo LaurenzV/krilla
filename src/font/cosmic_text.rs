@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
-    use crate::object::color_space::rgb::Srgb;
+    use crate::object::color_space::rgb::Rgb;
     use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
 
@@ -49,7 +49,7 @@ mod tests {
                 0.0,
                 y_offset,
                 font_system.db_mut(),
-                Fill::<Srgb>::default(),
+                Fill::<Rgb>::default(),
                 iter,
             );
         }

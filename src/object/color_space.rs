@@ -15,9 +15,7 @@ pub trait InternalColor {
     fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum;
 }
 
-pub trait ColorSpace:
-    Debug + Hash + Eq + PartialEq + Clone + Copy
-{
+pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
 
@@ -189,11 +187,14 @@ pub mod rgb {
     static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Srgb;
+    pub struct Rgb;
 
-    impl ColorSpace for Srgb {
+    impl ColorSpace for Rgb {
         type Color = Color;
     }
+
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub(crate) struct Srgb;
 
     impl Object for Srgb {
         fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {

@@ -1,4 +1,4 @@
-use crate::object::color_space::rgb::Srgb;
+use crate::object::color_space::rgb::Rgb;
 use crate::stream::TestGlyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
@@ -57,7 +57,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             });
 
             let fill_op =
-                |sb: &mut Surface, fill: Fill<Srgb>, process_context: &mut ProcessContext| {
+                |sb: &mut Surface, fill: Fill<Rgb>, process_context: &mut ProcessContext| {
                     sb.fill_glyph_run(
                         0.0,
                         0.0,
@@ -78,7 +78,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 };
 
             let stroke_op =
-                |sb: &mut Surface, stroke: Stroke<Srgb>, process_context: &mut ProcessContext| {
+                |sb: &mut Surface, stroke: Stroke<Rgb>, process_context: &mut ProcessContext| {
                     sb.stroke_glyph_run(
                         0.0,
                         0.0,
