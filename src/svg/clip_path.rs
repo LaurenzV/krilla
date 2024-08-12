@@ -1,7 +1,7 @@
 use crate::object::mask::Mask;
 use crate::surface::StreamBuilder;
 use crate::svg::util::{convert_fill_rule, convert_transform};
-use crate::svg::{group, FontContext};
+use crate::svg::{group, ProcessContext};
 use crate::{FillRule, MaskType};
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
@@ -15,7 +15,7 @@ pub fn get_clip_path(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
     canvas_builder: StreamBuilder,
-    font_context: &mut FontContext,
+    process_context: &mut ProcessContext,
 ) -> SvgClipPath {
     // Unfortunately, clip paths are a bit tricky to deal with, the reason being that clip paths in
     // SVGs can be much more complex than in PDF. In SVG, clip paths can have transforms, as well as
@@ -60,7 +60,7 @@ pub fn get_clip_path(
             group,
             clip_path,
             canvas_builder,
-            font_context,
+            process_context,
         ))
     }
 }
@@ -189,12 +189,12 @@ fn create_complex_clip_path(
     parent: &usvg::Group,
     clip_path: &usvg::ClipPath,
     mut canvas_builder: StreamBuilder,
-    font_context: &mut FontContext,
+    process_context: &mut ProcessContext,
 ) -> Mask {
     let mut surface = canvas_builder.surface();
     let svg_clip = clip_path
         .clip_path()
-        .map(|c| get_clip_path(parent, c, surface.stream_surface(), font_context));
+        .map(|c| get_clip_path(parent, c, surface.stream_surface(), process_context));
 
     // TODO: Remove clone
     if let Some(svg_clip) = svg_clip.clone() {
@@ -209,7 +209,7 @@ fn create_complex_clip_path(
     }
 
     surface.push_transform(&convert_transform(&clip_path.transform()));
-    group::render(clip_path.root(), &mut surface, font_context);
+    group::render(clip_path.root(), &mut surface, process_context);
     surface.pop();
 
     if let Some(svg_clip) = svg_clip {

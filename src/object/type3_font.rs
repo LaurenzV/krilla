@@ -95,6 +95,7 @@ impl Type3Font {
         root_ref: Ref,
     ) -> Chunk {
         let mut chunk = Chunk::new();
+        let svg_settings = sc.serialize_settings.svg_settings;
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
@@ -113,7 +114,7 @@ impl Type3Font {
                     .or_else(|| {
                         // SVG fonts must not have any text So we can just use a dummy database here.
                         let mut db = Database::new();
-                        svg::draw_glyph(font_ref, *glyph_id, &mut db, &mut surface)
+                        svg::draw_glyph(font_ref, svg_settings, *glyph_id, &mut db, &mut surface)
                     })
                     .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut surface))
                     .or_else(|| {

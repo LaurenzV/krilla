@@ -1,4 +1,5 @@
 use crate::font::FontInfo;
+use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use fontdb::Database;
 use skrifa::instance::LocationRef;
@@ -16,59 +17,69 @@ mod path;
 mod text;
 mod util;
 
-struct FontContext<'a> {
+struct ProcessContext<'a> {
     fonts: HashMap<fontdb::ID, (fontdb::ID, u16)>,
+    svg_settings: SvgSettings,
     fontdb: &'a mut Database,
 }
 
-impl<'a> FontContext<'a> {
-    pub fn new(fontdb: &'a mut Database) -> Self {
+impl<'a> ProcessContext<'a> {
+    pub fn new(fontdb: &'a mut Database, svg_settings: SvgSettings) -> Self {
         Self {
             fonts: HashMap::new(),
+            svg_settings,
             fontdb,
         }
     }
 }
 
-pub fn render_tree(tree: &usvg::Tree, canvas_builder: &mut Surface, fontdb: &mut Database) {
-    let mut fc = get_context_from_group(tree.fontdb().clone(), tree.root(), fontdb);
+pub fn render_tree(
+    tree: &usvg::Tree,
+    svg_settings: SvgSettings,
+    canvas_builder: &mut Surface,
+    fontdb: &mut Database,
+) {
+    let mut fc = get_context_from_group(tree.fontdb().clone(), svg_settings, tree.root(), fontdb);
     group::render(tree.root(), canvas_builder, &mut fc);
 }
 
 pub fn render_node(
     node: &Node,
-    tree_fontdb: Arc<fontdb::Database>,
+    tree_fontdb: Arc<Database>,
+    svg_settings: SvgSettings,
     canvas_builder: &mut Surface,
     fontdb: &mut Database,
 ) {
-    let mut fc = get_context_from_node(tree_fontdb, node, fontdb);
+    let mut fc = get_context_from_node(tree_fontdb, svg_settings, node, fontdb);
     group::render_node(node, canvas_builder, &mut fc);
 }
 
 fn get_context_from_group<'a>(
     tree_fontdb: Arc<Database>,
+    svg_settings: SvgSettings,
     group: &Group,
     fontdb: &'a mut Database,
-) -> FontContext<'a> {
-    let mut font_context = FontContext::new(fontdb);
-    get_context_from_group_impl(tree_fontdb, group, &mut font_context);
-    font_context
+) -> ProcessContext<'a> {
+    let mut process_context = ProcessContext::new(fontdb, svg_settings);
+    get_context_from_group_impl(tree_fontdb, group, &mut process_context);
+    process_context
 }
 
 fn get_context_from_node<'a>(
     tree_fontdb: Arc<Database>,
+    svg_settings: SvgSettings,
     node: &Node,
     fontdb: &'a mut Database,
-) -> FontContext<'a> {
-    let mut font_context = FontContext::new(fontdb);
-    get_context_from_node_impl(tree_fontdb, node, &mut font_context);
-    font_context
+) -> ProcessContext<'a> {
+    let mut process_context = ProcessContext::new(fontdb, svg_settings);
+    get_context_from_node_impl(tree_fontdb, node, &mut process_context);
+    process_context
 }
 
 fn get_context_from_group_impl(
     tree_fontdb: Arc<fontdb::Database>,
     group: &Group,
-    render_context: &mut FontContext,
+    render_context: &mut ProcessContext,
 ) {
     for child in group.children() {
         get_context_from_node_impl(tree_fontdb.clone(), child, render_context);
@@ -78,7 +89,7 @@ fn get_context_from_group_impl(
 fn get_context_from_node_impl(
     tree_fontdb: Arc<fontdb::Database>,
     node: &Node,
-    render_context: &mut FontContext,
+    render_context: &mut ProcessContext,
 ) {
     match node {
         Node::Text(t) => {

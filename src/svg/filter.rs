@@ -1,15 +1,18 @@
 use crate::object::image::Image;
 use crate::surface::Surface;
+use crate::svg::ProcessContext;
 use image::ImageFormat;
 use tiny_skia_path::{Size, Transform};
 
-pub fn render(group: &usvg::Group, canvas_builder: &mut Surface) {
+/// Render a filter into a surface by rasterizing it with `resvg` and drawing
+/// the image.
+pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &ProcessContext) {
     let layer_bbox = group
         .layer_bounding_box()
         .transform(group.transform())
         .unwrap();
 
-    let raster_scale = 1.5;
+    let raster_scale = process_context.svg_settings.raster_scale;
 
     // TODO: Don't hardcode
     let pixmap_size = usvg::Size::from_wh(
@@ -44,10 +47,10 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface) {
     // TODO: Optimize, don't re-encode
     let image =
         Image::new(&image::load_from_memory_with_format(&encoded_image, ImageFormat::Png).unwrap());
-    canvas_builder.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
-    canvas_builder.draw_image(
+    surface.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
+    surface.draw_image(
         image,
         Size::from_wh(layer_bbox.width(), layer_bbox.height()).unwrap(),
     );
-    canvas_builder.pop();
+    surface.pop();
 }

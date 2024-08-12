@@ -1,3 +1,4 @@
+use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::svg;
 use fontdb::Database;
@@ -8,6 +9,7 @@ use usvg::roxmltree;
 
 pub fn draw_glyph(
     font_ref: &FontRef,
+    svg_settings: SvgSettings,
     glyph: GlyphId,
     fontdb: &mut Database,
     builder: &mut Surface,
@@ -34,11 +36,11 @@ pub fn draw_glyph(
         let opts = usvg::Options::default();
         let tree = usvg::Tree::from_xmltree(&document, &opts).unwrap();
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
-            svg::render_node(&node, tree.fontdb().clone(), builder, fontdb)
+            svg::render_node(&node, tree.fontdb().clone(), svg_settings, builder, fontdb)
         } else {
             // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
             // usvg. So in this case, we simply draw the whole document.
-            svg::render_tree(&tree, builder, fontdb)
+            svg::render_tree(&tree, svg_settings, builder, fontdb)
         };
 
         return Some(());

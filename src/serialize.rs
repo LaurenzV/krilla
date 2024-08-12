@@ -18,10 +18,26 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug)]
+pub struct SvgSettings {
+    pub raster_scale: f32,
+    pub embed_text: bool,
+}
+
+impl Default for SvgSettings {
+    fn default() -> Self {
+        Self {
+            raster_scale: 1.5,
+            embed_text: true,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
     pub hex_encode_binary_streams: bool,
     pub compress_content_streams: bool,
     pub no_device_cs: bool,
+    pub svg_settings: SvgSettings,
 }
 
 impl SerializeSettings {
@@ -31,6 +47,7 @@ impl SerializeSettings {
             hex_encode_binary_streams: true,
             compress_content_streams: false,
             no_device_cs: false,
+            svg_settings: SvgSettings::default(),
         }
     }
 }
@@ -41,6 +58,7 @@ impl Default for SerializeSettings {
             hex_encode_binary_streams: true,
             compress_content_streams: true,
             no_device_cs: false,
+            svg_settings: SvgSettings::default(),
         }
     }
 }

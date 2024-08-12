@@ -1,13 +1,17 @@
 use crate::object::image::Image;
 use crate::surface::Surface;
-use crate::svg::{group, FontContext};
+use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
 use crate::FillRule;
 use image::ImageFormat;
 use tiny_skia_path::Rect;
 use usvg::ImageKind;
 
-pub fn render(image: &usvg::Image, canvas_builder: &mut Surface, font_context: &mut FontContext) {
+pub fn render(
+    image: &usvg::Image,
+    canvas_builder: &mut Surface,
+    process_context: &mut ProcessContext,
+) {
     if !image.is_visible() {
         return;
     }
@@ -38,7 +42,7 @@ pub fn render(image: &usvg::Image, canvas_builder: &mut Surface, font_context: &
                     .to_clip_path(),
                 &FillRule::NonZero,
             );
-            group::render(t.root(), canvas_builder, font_context);
+            group::render(t.root(), canvas_builder, process_context);
             canvas_builder.pop();
         }
         _ => unimplemented!(),

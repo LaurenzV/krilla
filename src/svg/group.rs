@@ -2,12 +2,16 @@ use crate::surface::Surface;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::mask::get_mask;
 use crate::svg::util::{convert_blend_mode, convert_transform};
-use crate::svg::{filter, image, path, text, FontContext};
+use crate::svg::{filter, image, path, text, ProcessContext};
 use usvg::{Node, NormalizedF32};
 
-pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &mut FontContext) {
+pub fn render(
+    group: &usvg::Group,
+    canvas_builder: &mut Surface,
+    process_context: &mut ProcessContext,
+) {
     if !group.filters().is_empty() {
-        filter::render(group, canvas_builder);
+        filter::render(group, canvas_builder, process_context);
         return;
     }
 
@@ -19,7 +23,7 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
 
     let svg_clip = group
         .clip_path()
-        .map(|c| get_clip_path(group, c, canvas_builder.stream_surface(), font_context));
+        .map(|c| get_clip_path(group, c, canvas_builder.stream_surface(), process_context));
 
     if let Some(svg_clip) = svg_clip.clone() {
         match svg_clip {
@@ -33,7 +37,7 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
     }
 
     if let Some(mask) = group.mask() {
-        let mask = get_mask(mask, canvas_builder.stream_surface(), font_context);
+        let mask = get_mask(mask, canvas_builder.stream_surface(), process_context);
         canvas_builder.push_mask(mask);
     }
 
@@ -45,7 +49,7 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
     }
 
     for child in group.children() {
-        render_node(child, canvas_builder, font_context);
+        render_node(child, canvas_builder, process_context);
     }
 
     if group.opacity() != NormalizedF32::ONE {
@@ -79,11 +83,15 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
     }
 }
 
-pub fn render_node(node: &Node, canvas_builder: &mut Surface, font_context: &mut FontContext) {
+pub fn render_node(
+    node: &Node,
+    canvas_builder: &mut Surface,
+    process_context: &mut ProcessContext,
+) {
     match node {
-        Node::Group(g) => render(g, canvas_builder, font_context),
-        Node::Path(p) => path::render(p, canvas_builder, font_context),
-        Node::Image(i) => image::render(i, canvas_builder, font_context),
-        Node::Text(t) => text::render(t, canvas_builder, font_context),
+        Node::Group(g) => render(g, canvas_builder, process_context),
+        Node::Path(p) => path::render(p, canvas_builder, process_context),
+        Node::Image(i) => image::render(i, canvas_builder, process_context),
+        Node::Text(t) => text::render(t, canvas_builder, process_context),
     }
 }

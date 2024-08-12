@@ -1,7 +1,7 @@
 use crate::object::color_space::rgb;
 use crate::object::color_space::rgb::Srgb;
 use crate::surface::StreamBuilder;
-use crate::svg::{group, FontContext};
+use crate::svg::{group, ProcessContext};
 use crate::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
     SpreadMethod, Stop, Stroke, StrokeDash,
@@ -39,7 +39,7 @@ pub fn convert_stop(s: &usvg::Stop) -> Stop<Srgb> {
 pub fn convert_paint(
     paint: &usvg::Paint,
     mut sub_builder: StreamBuilder,
-    font_context: &mut FontContext,
+    process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Paint<Srgb> {
     match paint {
@@ -74,7 +74,7 @@ pub fn convert_paint(
         }),
         usvg::Paint::Pattern(pat) => {
             let mut surface = sub_builder.surface();
-            group::render(pat.root(), &mut surface, font_context);
+            group::render(pat.root(), &mut surface, process_context);
             surface.finish();
             let stream = sub_builder.finish();
 
@@ -117,14 +117,14 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
 pub fn convert_fill(
     fill: &usvg::Fill,
     sub_builder: StreamBuilder,
-    font_context: &mut FontContext,
+    process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Fill<Srgb> {
     Fill {
         paint: convert_paint(
             fill.paint(),
             sub_builder,
-            font_context,
+            process_context,
             additional_transform,
         ),
         opacity: fill.opacity(),
@@ -135,7 +135,7 @@ pub fn convert_fill(
 pub fn convert_stroke(
     stroke: &usvg::Stroke,
     sub_builder: StreamBuilder,
-    font_context: &mut FontContext,
+    process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Stroke<Srgb> {
     let dash = if let Some(dash_array) = stroke.dasharray() {
@@ -151,7 +151,7 @@ pub fn convert_stroke(
         paint: convert_paint(
             stroke.paint(),
             sub_builder,
-            font_context,
+            process_context,
             additional_transform,
         ),
         width: stroke.width().get(),
