@@ -22,8 +22,8 @@ pub fn convert_transform(transform: &Transform) -> Transform {
 }
 
 /// Convert a usvg `SpreadMethod` into a krilla `SpreadMethod`.
-pub fn convert_spread_method(s: &usvg::SpreadMethod) -> SpreadMethod {
-    match s {
+pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod {
+    match spread_method {
         usvg::SpreadMethod::Pad => SpreadMethod::Pad,
         usvg::SpreadMethod::Reflect => SpreadMethod::Reflect,
         usvg::SpreadMethod::Repeat => SpreadMethod::Repeat,
@@ -31,18 +31,18 @@ pub fn convert_spread_method(s: &usvg::SpreadMethod) -> SpreadMethod {
 }
 
 /// Convert a usvg `Stop` into a krilla `Stop`.
-pub fn convert_stop(s: &usvg::Stop) -> Stop<Srgb> {
+pub fn convert_stop(stop: &usvg::Stop) -> Stop<Srgb> {
     Stop {
-        offset: s.offset(),
-        color: rgb::Color::new(s.color().red, s.color().green, s.color().blue).into(),
-        opacity: NormalizedF32::new(s.opacity().get()).unwrap(),
+        offset: stop.offset(),
+        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
+        opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
 }
 
 /// Convert a usvg `Paint` into a krilla `Paint`.
 pub fn convert_paint(
     paint: &usvg::Paint,
-    mut sub_builder: StreamBuilder,
+    mut stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     // The additional transform is needed because in krilla, a transform to a shape will also apply
     // the transform to the paint server. However, in the case of SVG glyphs, we don't want the transform
@@ -81,10 +81,10 @@ pub fn convert_paint(
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
-            let mut surface = sub_builder.surface();
+            let mut surface = stream_builder.surface();
             group::render(pat.root(), &mut surface, process_context);
             surface.finish();
-            let stream = sub_builder.finish();
+            let stream = stream_builder.finish();
 
             Paint::Pattern(Pattern {
                 stream,
@@ -99,8 +99,8 @@ pub fn convert_paint(
 }
 
 /// Convert a usvg `LineCap` into a krilla `LineCap`.
-pub fn convert_line_cap(linecap: &usvg::LineCap) -> LineCap {
-    match linecap {
+pub fn convert_line_cap(line_cap: &usvg::LineCap) -> LineCap {
+    match line_cap {
         usvg::LineCap::Butt => LineCap::Butt,
         usvg::LineCap::Round => LineCap::Round,
         usvg::LineCap::Square => LineCap::Square,
@@ -118,8 +118,8 @@ pub fn convert_line_join(line_join: &usvg::LineJoin) -> LineJoin {
 }
 
 /// Convert a usvg `FillRule` into a krilla `FillRule`.
-pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
-    match rule {
+pub fn convert_fill_rule(fill_rule: &usvg::FillRule) -> FillRule {
+    match fill_rule {
         usvg::FillRule::NonZero => FillRule::NonZero,
         usvg::FillRule::EvenOdd => FillRule::EvenOdd,
     }
@@ -128,14 +128,14 @@ pub fn convert_fill_rule(rule: &usvg::FillRule) -> FillRule {
 /// Convert a usvg `Fill` into a krilla `Fill`.
 pub fn convert_fill(
     fill: &usvg::Fill,
-    sub_builder: StreamBuilder,
+    stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Fill<Srgb> {
     Fill {
         paint: convert_paint(
             fill.paint(),
-            sub_builder,
+            stream_builder,
             process_context,
             additional_transform,
         ),
@@ -147,7 +147,7 @@ pub fn convert_fill(
 /// Convert a usvg `Stroke` into a krilla `Stroke`.
 pub fn convert_stroke(
     stroke: &usvg::Stroke,
-    sub_builder: StreamBuilder,
+    stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Stroke<Srgb> {
@@ -163,7 +163,7 @@ pub fn convert_stroke(
     Stroke {
         paint: convert_paint(
             stroke.paint(),
-            sub_builder,
+            stream_builder,
             process_context,
             additional_transform,
         ),
