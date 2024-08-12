@@ -1,14 +1,10 @@
 use crate::surface::Surface;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::util::{convert_blend_mode, convert_transform};
-use crate::svg::{filter, image, path, text, ProcessContext, mask};
+use crate::svg::{filter, image, mask, path, text, ProcessContext};
 use usvg::{Node, NormalizedF32};
 
-pub fn render(
-    group: &usvg::Group,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !group.filters().is_empty() {
         filter::render(group, surface, process_context);
         return;
@@ -28,14 +24,18 @@ pub fn render(
         .clip_path()
         .map(|c| get_clip_path(group, c, surface.stream_surface(), process_context));
 
-    if let Some(svg_clip) = svg_clip.clone() {
+    if let Some(svg_clip) = svg_clip {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for rule in rules {
                     surface.push_clip_path(&rule.0, &rule.1);
+                    pop_count += 1;
                 }
             }
-            SvgClipPath::ComplexClip(mask) => surface.push_mask(mask),
+            SvgClipPath::ComplexClip(mask) => {
+                surface.push_mask(mask);
+                pop_count += 1;
+            }
         }
     }
 
@@ -53,30 +53,12 @@ pub fn render(
         render_node(child, surface, process_context);
     }
 
-    // TODO: Remove clone
-    if let Some(svg_clip) = svg_clip {
-        match svg_clip {
-            SvgClipPath::SimpleClip(rules) => {
-                for _ in &rules {
-                    surface.pop();
-                }
-            }
-            SvgClipPath::ComplexClip(_) => {
-                surface.pop();
-            }
-        }
-    }
-
-    for _ in 0..pop_count {
+    for _ in 0..pop_count - 1 {
         surface.pop();
     }
 }
 
-pub fn render_node(
-    node: &Node,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render_node(node: &Node, surface: &mut Surface, process_context: &mut ProcessContext) {
     match node {
         Node::Group(g) => render(g, surface, process_context),
         Node::Path(p) => path::render(p, surface, process_context),

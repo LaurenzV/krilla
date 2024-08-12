@@ -4,11 +4,7 @@ use crate::svg::ProcessContext;
 use usvg::PaintOrder;
 
 /// Render a path into a surface.
-pub fn render(
-    path: &usvg::Path,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !path.is_visible() {
         return;
     }
@@ -26,11 +22,7 @@ pub fn render(
 }
 
 /// Render a filled path into a surface.
-pub fn fill_path(
-    path: &usvg::Path,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn fill_path(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {
     if let Some(fill) = path.fill() {
         let fill = convert_fill(
             fill,
@@ -43,11 +35,7 @@ pub fn fill_path(
 }
 
 /// Render a stroked path into a surface.
-pub fn stroke_path(
-    path: &usvg::Path,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn stroke_path(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {
     if let Some(stroke) = path.stroke() {
         let stroke = convert_stroke(
             stroke,

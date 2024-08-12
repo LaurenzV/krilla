@@ -7,11 +7,7 @@ use image::ImageFormat;
 use tiny_skia_path::Rect;
 use usvg::ImageKind;
 
-pub fn render(
-    image: &usvg::Image,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !image.is_visible() {
         return;
     }

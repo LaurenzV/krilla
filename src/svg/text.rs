@@ -9,11 +9,7 @@ use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
 /// Render a text into a surface.
-pub fn render(
-    text: &usvg::Text,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
+pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {
     // TODO: Add possibility to render as paths instead
     for span in text.layouted() {
         if !span.visible {
