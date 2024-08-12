@@ -79,7 +79,6 @@ where
     pub end_angle: f32,
     pub transform: Transform,
     pub spread_method: SpreadMethod,
-    // TODO: Add note that all stops must be in the same color space
     pub stops: Vec<Stop<C>>,
 }
 

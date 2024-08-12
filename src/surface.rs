@@ -48,20 +48,6 @@ impl<'a> Surface<'a> {
         StreamBuilder::new(&mut self.sc)
     }
 
-    pub fn push_transform(&mut self, transform: &Transform) {
-        self.push_instructions.push(PushInstruction::Transform);
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .concat_transform(transform);
-    }
-
-    pub fn push_blend_mode(&mut self, blend_mode: BlendMode) {
-        self.push_instructions.push(PushInstruction::BlendMode);
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .set_blend_mode(blend_mode);
-    }
-
     pub fn fill_path(&mut self, path: &Path, fill: Fill<impl ColorSpace>) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path(path, fill, self.sc);
@@ -70,12 +56,6 @@ impl<'a> Surface<'a> {
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke<impl ColorSpace>) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc);
-    }
-
-    pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
-        self.push_instructions.push(PushInstruction::ClipPath);
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .push_clip_path(path, clip_rule);
     }
 
     pub fn invisible_glyph_run(
@@ -111,6 +91,26 @@ impl<'a> Surface<'a> {
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
+    }
+
+    pub fn push_transform(&mut self, transform: &Transform) {
+        self.push_instructions.push(PushInstruction::Transform);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .concat_transform(transform);
+    }
+
+    pub fn push_blend_mode(&mut self, blend_mode: BlendMode) {
+        self.push_instructions.push(PushInstruction::BlendMode);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .set_blend_mode(blend_mode);
+    }
+
+    pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
+        self.push_instructions.push(PushInstruction::ClipPath);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .push_clip_path(path, clip_rule);
     }
 
     pub fn push_mask(&mut self, mask: Mask) {
