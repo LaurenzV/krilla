@@ -49,13 +49,13 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
     }
 
     if group.opacity() != NormalizedF32::ONE {
-        canvas_builder.pop_opacified();
+        canvas_builder.pop();
     }
 
-    canvas_builder.pop_blend_mode();
+    canvas_builder.pop();
 
     if group.mask().is_some() {
-        canvas_builder.pop_mask();
+        canvas_builder.pop();
     }
 
     // TODO: Remove clone
@@ -63,19 +63,19 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface, font_context: &
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for _ in &rules {
-                    canvas_builder.pop_clip_path();
+                    canvas_builder.pop();
                 }
             }
             SvgClipPath::ComplexClip(_) => {
-                canvas_builder.pop_mask();
+                canvas_builder.pop();
             }
         }
     }
 
-    canvas_builder.pop_transform();
+    canvas_builder.pop();
 
     if group.isolate() {
-        canvas_builder.pop_isolated();
+        canvas_builder.pop();
     }
 }
 

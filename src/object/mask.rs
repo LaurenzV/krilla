@@ -50,7 +50,7 @@ impl Mask {
             let mut surface = builder.surface();
             surface.push_transform(&shading_transform.0);
             surface.draw_shading(&shading_function);
-            surface.pop_transform();
+            surface.pop();
             surface.finish();
             builder.finish()
         };

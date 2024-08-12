@@ -39,7 +39,7 @@ pub fn render(image: &usvg::Image, canvas_builder: &mut Surface, font_context: &
                 &FillRule::NonZero,
             );
             group::render(t.root(), canvas_builder, font_context);
-            canvas_builder.pop_clip_path();
+            canvas_builder.pop();
         }
         _ => unimplemented!(),
     }

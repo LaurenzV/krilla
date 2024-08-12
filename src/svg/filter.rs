@@ -49,5 +49,5 @@ pub fn render(group: &usvg::Group, canvas_builder: &mut Surface) {
         image,
         Size::from_wh(layer_bbox.width(), layer_bbox.height()).unwrap(),
     );
-    canvas_builder.pop_transform();
+    canvas_builder.pop();
 }

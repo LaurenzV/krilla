@@ -19,10 +19,10 @@ pub fn get_mask(
     let clip_path = mask.rect().to_rect().to_clip_path();
     surface.push_clip_path(&clip_path, &FillRule::NonZero);
     group::render(mask.root(), &mut surface, font_context);
-    surface.pop_clip_path();
+    surface.pop();
 
     if mask.mask().is_some() {
-        surface.pop_mask();
+        surface.pop();
     }
 
     surface.finish();

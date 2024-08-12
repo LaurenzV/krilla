@@ -12,12 +12,21 @@ use std::iter::Peekable;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
 
+pub enum PushInstruction {
+    Transform,
+    Opacity(NormalizedF32),
+    ClipPath,
+    BlendMode,
+    Mask,
+    Isolated,
+}
+
 pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
     root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     masks: Vec<Mask>,
-    opacities: Vec<NormalizedF32>,
+    push_instructions: Vec<PushInstruction>,
     finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
 }
 
@@ -32,7 +41,7 @@ impl<'a> Surface<'a> {
             root_builder,
             sub_builders: vec![],
             masks: vec![],
-            opacities: vec![],
+            push_instructions: vec![],
             finish_fn,
         }
     }
@@ -42,23 +51,17 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {
+        self.push_instructions.push(PushInstruction::Transform);
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .concat_transform(transform);
     }
 
-    pub fn pop_transform(&mut self) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
-    }
-
     pub fn push_blend_mode(&mut self, blend_mode: BlendMode) {
+        self.push_instructions.push(PushInstruction::BlendMode);
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .set_blend_mode(blend_mode);
-    }
-
-    pub fn pop_blend_mode(&mut self) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).restore_graphics_state();
     }
 
     pub fn fill_path(&mut self, path: &Path, fill: Fill<impl ColorSpace>) {
@@ -72,12 +75,9 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
+        self.push_instructions.push(PushInstruction::ClipPath);
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .push_clip_path(path, clip_rule);
-    }
-
-    pub fn pop_clip_path(&mut self) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path();
     }
 
     pub fn invisible_glyph_run(
@@ -116,35 +116,58 @@ impl<'a> Surface<'a> {
     }
 
     pub fn push_mask(&mut self, mask: Mask) {
+        self.push_instructions.push(PushInstruction::Mask);
         self.sub_builders.push(ContentBuilder::new());
         self.masks.push(mask);
     }
 
-    pub fn pop_mask(&mut self) {
-        let stream = self.sub_builders.pop().unwrap().finish();
-        let mask = self.masks.pop().unwrap();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_masked(mask, stream);
-    }
-
     pub fn push_opacified(&mut self, opacity: NormalizedF32) {
-        self.sub_builders.push(ContentBuilder::new());
-        self.opacities.push(opacity);
-    }
+        self.push_instructions
+            .push(PushInstruction::Opacity(opacity));
 
-    pub fn pop_opacified(&mut self) {
-        let stream = self.sub_builders.pop().unwrap().finish();
-        let opacity = self.opacities.pop().unwrap();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .draw_opacified(opacity, stream);
+        if opacity != NormalizedF32::ONE {
+            self.sub_builders.push(ContentBuilder::new());
+        }
     }
 
     pub fn push_isolated(&mut self) {
+        self.push_instructions.push(PushInstruction::Isolated);
         self.sub_builders.push(ContentBuilder::new());
     }
 
-    pub fn pop_isolated(&mut self) {
-        let stream = self.sub_builders.pop().unwrap().finish();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_isolated(stream);
+    pub fn pop(&mut self) {
+        match self.push_instructions.pop().unwrap() {
+            PushInstruction::Transform => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .restore_graphics_state()
+            }
+            PushInstruction::Opacity(o) => {
+                if o != NormalizedF32::ONE {
+                    let stream = self.sub_builders.pop().unwrap().finish();
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        .draw_opacified(o, stream);
+                }
+            }
+            PushInstruction::ClipPath => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path()
+            }
+            PushInstruction::BlendMode => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .restore_graphics_state()
+            }
+            PushInstruction::Mask => {
+                let stream = self.sub_builders.pop().unwrap().finish();
+                // TODO: Add to instruction instead?
+                let mask = self.masks.pop().unwrap();
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .draw_masked(mask, stream)
+            }
+            PushInstruction::Isolated => {
+                let stream = self.sub_builders.pop().unwrap().finish();
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .draw_isolated(stream);
+            }
+        }
     }
 
     pub fn draw_image(&mut self, image: Image, size: Size) {

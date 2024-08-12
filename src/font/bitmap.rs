@@ -39,7 +39,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, surface: &mut Surface) -> Option<
                         .pre_concat(Transform::from_translate(0.0, 0.128 * upem)),
                 );
                 surface.draw_image(Image::new(&dynamic_image), size);
-                surface.pop_transform();
+                surface.pop();
 
                 return Some(());
             }

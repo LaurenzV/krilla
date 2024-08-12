@@ -316,7 +316,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
                 .peekable(),
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
-        surface.pop_transform();
+        surface.pop();
 
         cur_point += size;
     }

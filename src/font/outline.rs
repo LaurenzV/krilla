@@ -20,7 +20,7 @@ pub fn draw_glyph(font: &Font, glyph: GlyphId, surface: &mut Surface) -> Option<
     if let Some(path) = outline_builder.finish() {
         surface.push_transform(&Transform::from_scale(1.0, -1.0));
         surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), true);
-        surface.pop_transform();
+        surface.pop();
 
         return Some(());
     }

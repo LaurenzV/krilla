@@ -19,7 +19,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
         surface.push_transform(&Transform::from_scale(1.0, -1.0));
         let mut colr_canvas = ColrCanvas::new(font.clone(), surface);
         let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
-        surface.pop_transform();
+        surface.pop();
         return Some(());
     } else {
         return None;
@@ -284,7 +284,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             self.canvas_builder.fill_path(&filled[0].0, fill);
 
             for _ in clips {
-                self.canvas_builder.pop_clip_path();
+                self.canvas_builder.pop();
             }
         }
     }
@@ -314,8 +314,8 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     }
 
     fn pop_layer(&mut self) {
-        self.canvas_builder.pop_blend_mode();
-        self.canvas_builder.pop_isolated();
+        self.canvas_builder.pop();
+        self.canvas_builder.pop();
     }
 }
 

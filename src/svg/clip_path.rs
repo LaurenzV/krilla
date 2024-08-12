@@ -210,17 +210,17 @@ fn create_complex_clip_path(
 
     surface.push_transform(&convert_transform(&clip_path.transform()));
     group::render(clip_path.root(), &mut surface, font_context);
-    surface.pop_transform();
+    surface.pop();
 
     if let Some(svg_clip) = svg_clip {
         match svg_clip {
             SvgClipPath::SimpleClip(rules) => {
                 for _ in &rules {
-                    surface.pop_clip_path();
+                    surface.pop();
                 }
             }
             SvgClipPath::ComplexClip(_) => {
-                surface.pop_mask();
+                surface.pop();
             }
         }
     }

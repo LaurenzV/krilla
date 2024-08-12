@@ -124,7 +124,7 @@ pub fn render(text: &usvg::Text, canvas_builder: &mut Surface, font_context: &mu
                 ),
             }
 
-            canvas_builder.pop_transform();
+            canvas_builder.pop();
         }
 
         if let Some(line_through) = &span.line_through {

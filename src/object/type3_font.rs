@@ -121,7 +121,7 @@ impl Type3Font {
                         outline::draw_glyph(&self.font, *glyph_id, &mut surface)
                     });
 
-                surface.pop_transform();
+                surface.pop();
                 surface.finish();
                 let stream = stream_surface.finish();
 
