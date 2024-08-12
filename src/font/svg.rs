@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::svg;
@@ -8,13 +9,14 @@ use std::io::Read;
 use usvg::roxmltree;
 
 pub fn draw_glyph(
-    font_ref: &FontRef,
+    font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
     fontdb: &mut Database,
     builder: &mut Surface,
 ) -> Option<()> {
-    if let Ok(Some(svg_data)) = font_ref
+    if let Ok(Some(svg_data)) = font
+        .font_ref()
         .svg()
         .and_then(|svg_table| svg_table.glyph_data(glyph))
     {

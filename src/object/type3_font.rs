@@ -1,4 +1,5 @@
-use crate::font::{bitmap, colr, outline, svg, Font, Glyph};
+use crate::font;
+use crate::font::{bitmap, colr, outline, svg, Font, Glyph, GlyphType};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -107,28 +108,14 @@ impl Type3Font {
             .map(|(index, glyph_id)| {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
-                surface.push_transform(&Transform::from_scale(1.0, -1.0));
-                let mut is_outline = false;
-
-                colr::draw_glyph(self.font.clone(), *glyph_id, &mut surface)
-                    .or_else(|| {
-                        // SVG fonts must not have any text So we can just use a dummy database here.
-                        let mut db = Database::new();
-                        svg::draw_glyph(font_ref, svg_settings, *glyph_id, &mut db, &mut surface)
-                    })
-                    .or_else(|| bitmap::draw_glyph(&self.font, *glyph_id, &mut surface))
-                    .or_else(|| {
-                        is_outline = true;
-                        outline::draw_glyph(&self.font, *glyph_id, &mut surface)
-                    });
-
-                surface.pop();
+                let glyph_type =
+                    font::draw_glyph(self.font.clone(), svg_settings, *glyph_id, &mut surface);
                 surface.finish();
                 let stream = stream_surface.finish();
 
                 let mut content = Content::new();
 
-                let stream = if is_outline {
+                let stream = if glyph_type == Some(GlyphType::Outline) {
                     let bbox = stream.bbox;
                     content.start_shape_glyph(
                         self.widths[index],

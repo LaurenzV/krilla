@@ -6,7 +6,7 @@ use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 

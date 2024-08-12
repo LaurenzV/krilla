@@ -1,4 +1,7 @@
+use crate::serialize::{SerializeSettings, SvgSettings};
+use crate::surface::Surface;
 use crate::util::Prehashed;
+use fontdb::Database;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -7,7 +10,7 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect};
+use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
 pub mod bitmap;
@@ -239,6 +242,45 @@ impl Font {
             .glyph_metrics(Size::unscaled(), self.location_ref())
             .advance_width(glyph_id)
     }
+}
+
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum GlyphType {
+    Colr,
+    Svg,
+    Outline,
+    Bitmap,
+}
+
+pub fn draw_glyph(
+    font: Font,
+    svg_settings: SvgSettings,
+    glyph: GlyphId,
+    surface: &mut Surface,
+) -> Option<GlyphType> {
+    let mut glyph_type = None;
+
+    surface.push_transform(&Transform::from_scale(1.0, -1.0));
+
+    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
+        glyph_type = Some(GlyphType::Colr);
+    } else if let Some(()) = svg::draw_glyph(
+        font.clone(),
+        svg_settings,
+        glyph,
+        &mut Database::new(),
+        surface,
+    ) {
+        glyph_type = Some(GlyphType::Svg);
+    } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface) {
+        glyph_type = Some(GlyphType::Bitmap);
+    } else if let Some(()) = outline::draw_glyph(font.clone(), glyph, surface) {
+        glyph_type = Some(GlyphType::Outline);
+    }
+
+    surface.pop();
+
+    glyph_type
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
 
-pub fn draw_glyph(font: &Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
     let metrics = font
         .font_ref()
         .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
