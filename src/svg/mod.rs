@@ -41,6 +41,7 @@ impl<'a> ProcessContext<'a> {
     }
 }
 
+/// Render a usvg `Tree` into a surface.
 pub fn render_tree(
     tree: &usvg::Tree,
     svg_settings: SvgSettings,
@@ -51,6 +52,7 @@ pub fn render_tree(
     group::render(tree.root(), surface, &mut fc);
 }
 
+/// Render a usvg `Node` into a surface.
 pub fn render_node(
     node: &Node,
     tree_fontdb: Arc<Database>,
@@ -62,6 +64,7 @@ pub fn render_node(
     group::render_node(node, surface, &mut fc);
 }
 
+/// Get the `PorcessContext` from a `Group`.
 fn get_context_from_group<'a>(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
@@ -73,6 +76,7 @@ fn get_context_from_group<'a>(
     process_context
 }
 
+/// Get the `PorcessContext` from a `Node`.
 fn get_context_from_node<'a>(
     tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
@@ -139,32 +143,4 @@ fn get_context_from_node_impl(
     node.subroots(|subroot| {
         get_context_from_group_impl(tree_fontdb.clone(), subroot, render_context)
     });
-}
-
-#[cfg(test)]
-mod tests {
-
-    // #[test]
-    // pub fn svg() {
-    //     let data = std::fs::read("/Users/lstampfl/Programming/GitHub/svg2pdf/test.svg").unwrap();
-    //     let mut db = fontdb::Database::new();
-    //     db.load_system_fonts();
-    //
-    //     let tree = usvg::Tree::from_data(
-    //         &data,
-    //         &usvg::Options {
-    //             fontdb: Arc::new(db.clone()),
-    //             ..Default::default()
-    //         },
-    //     )
-    //     .unwrap();
-    //
-    //     let mut document_builder = Document::new(SerializeSettings::default());
-    //     let mut stream_builder = document_builder.start_page(tree.size());
-    //     render_tree(&tree, &mut stream_builder, &mut db);
-    //     stream_builder.finish();
-    //     let finished = document_builder.finish(&db);
-    //     let _ = std::fs::write("out/svg.pdf", &finished);
-    //     let _ = std::fs::write("out/svg.txt", &finished);
-    // }
 }

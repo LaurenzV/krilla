@@ -8,6 +8,7 @@ use skrifa::GlyphId;
 use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
+/// Render a text into a surface.
 pub fn render(
     text: &usvg::Text,
     surface: &mut Surface,
@@ -30,13 +31,17 @@ pub fn render(
         for glyph in &span.positioned_glyphs {
             let (font, upem) = process_context.fonts.get(&glyph.font).copied().unwrap();
 
+            // The text transform contains the scale transform `font_size / upem`, we need to invert that
+            // so we only get the raw transform to account for the glyph position, and the font size
+            // is being taken care of by krilla.
             let transform = glyph.transform().pre_concat(Transform::from_scale(
                 upem as f32 / span.font_size.get(),
                 upem as f32 / span.font_size.get(),
             ));
 
             // We need to apply the inverse transform to fill/stroke because we don't
-            // want the paint to be affected by the transform applied to the glyph.
+            // want the paint to be affected by the transform applied to the glyph. See docs
+            // of `convert_paint`.
             let fill = span.fill.as_ref().map(|f| {
                 convert_fill(
                     &f,
@@ -45,6 +50,7 @@ pub fn render(
                     transform.invert().unwrap(),
                 )
             });
+
             let stroke = span.stroke.as_ref().map(|s| {
                 convert_stroke(
                     &s,
@@ -64,6 +70,7 @@ pub fn render(
                         [TestGlyph::new(
                             font,
                             GlyphId::new(glyph.id.0 as u32),
+                            // Don't care about those, since we render only one glyph.
                             0.0,
                             0.0,
                             span.font_size.get(),
@@ -84,6 +91,7 @@ pub fn render(
                         [TestGlyph::new(
                             font,
                             GlyphId::new(glyph.id.0 as u32),
+                            // Don't care about those, since we render only one glyph.
                             0.0,
                             0.0,
                             span.font_size.get(),
@@ -120,6 +128,7 @@ pub fn render(
                     [TestGlyph::new(
                         font,
                         GlyphId::new(glyph.id.0 as u32),
+                        // Don't care about those, since we render only one glyph.
                         0.0,
                         0.0,
                         span.font_size.get(),

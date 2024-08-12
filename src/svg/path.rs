@@ -3,6 +3,7 @@ use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::ProcessContext;
 use usvg::PaintOrder;
 
+/// Render a path into a surface.
 pub fn render(
     path: &usvg::Path,
     surface: &mut Surface,
@@ -24,6 +25,7 @@ pub fn render(
     }
 }
 
+/// Render a filled path into a surface.
 pub fn fill_path(
     path: &usvg::Path,
     surface: &mut Surface,
@@ -40,6 +42,7 @@ pub fn fill_path(
     }
 }
 
+/// Render a stroked path into a surface.
 pub fn stroke_path(
     path: &usvg::Path,
     surface: &mut Surface,
