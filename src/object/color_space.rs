@@ -50,24 +50,24 @@ impl ICCBasedColorSpace {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
-    Srgb(rgb::Color),
-    SGray(luma::Color),
+    Rgb(rgb::Color),
+    Luma(luma::Color),
     DeviceCmyk(device_cmyk::Color),
 }
 
 impl Color {
     pub fn to_pdf_color(&self) -> Vec<f32> {
         match self {
-            Color::Srgb(srgb) => srgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::SGray(sgray) => sgray.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::DeviceCmyk(dc) => dc.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Luma(luma) => luma.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::DeviceCmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
 
     pub fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
         match self {
-            Color::Srgb(srgb) => srgb.color_space(no_device_cs),
-            Color::SGray(sgray) => sgray.color_space(no_device_cs),
+            Color::Rgb(rgb) => rgb.color_space(no_device_cs),
+            Color::Luma(luma) => luma.color_space(no_device_cs),
             Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs),
         }
     }
@@ -164,7 +164,7 @@ pub mod rgb {
 
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
-            super::Color::Srgb(self)
+            super::Color::Rgb(self)
         }
     }
 
@@ -248,7 +248,7 @@ pub mod luma {
 
     impl Into<super::Color> for Color {
         fn into(self) -> crate::object::color_space::Color {
-            super::Color::SGray(self)
+            super::Color::Luma(self)
         }
     }
 
