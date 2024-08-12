@@ -174,6 +174,8 @@ impl<'a> Surface<'a> {
     }
 
     pub fn finish(mut self) {
+        assert!(self.sub_builders.is_empty());
+        assert!(self.push_instructions.is_empty());
         (self.finish_fn)(self.root_builder.finish(), &mut self.sc)
     }
 
