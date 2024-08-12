@@ -53,7 +53,7 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut 
         render_node(child, surface, process_context);
     }
 
-    for _ in 0..pop_count - 1 {
+    for _ in 0..pop_count {
         surface.pop();
     }
 }
