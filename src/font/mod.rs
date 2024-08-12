@@ -1,4 +1,4 @@
-use crate::serialize::{SerializeSettings, SvgSettings};
+use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::Prehashed;
 use fontdb::Database;

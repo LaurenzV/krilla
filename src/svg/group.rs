@@ -2,7 +2,7 @@ use crate::surface::Surface;
 use crate::svg::clip_path::{get_clip_path, SvgClipPath};
 use crate::svg::util::{convert_blend_mode, convert_transform};
 use crate::svg::{filter, image, mask, path, text, ProcessContext};
-use usvg::{Node, NormalizedF32};
+use usvg::Node;
 
 pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !group.filters().is_empty() {

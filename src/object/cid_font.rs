@@ -278,12 +278,12 @@ pub fn find_name(font_ref: &FontRef) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, Glyph};
-    use crate::object::cid_font::CIDFont;
+    use crate::font::Glyph;
+    
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::{check_snapshot, load_font};
     use fontdb::{Database, Source};
-    use skrifa::instance::Location;
+    
     use skrifa::GlyphId;
     use std::sync::Arc;
 

@@ -1,7 +1,7 @@
 use crate::font::{Font, FontInfo, Glyph};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
-use crate::object::color_space::rgb::{Rgb, Srgb};
+use crate::object::color_space::rgb::Srgb;
 use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};

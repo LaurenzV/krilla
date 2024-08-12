@@ -1,12 +1,11 @@
 use crate::font;
-use crate::font::{bitmap, colr, outline, svg, Font, Glyph, GlyphType};
+use crate::font::{Font, Glyph, GlyphType};
 use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
 use crate::surface::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
-use cosmic_text::fontdb::Database;
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::{FontRef, GlyphId};

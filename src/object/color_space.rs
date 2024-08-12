@@ -1,8 +1,7 @@
 use crate::resource::ColorSpaceEnum;
-use crate::serialize::{Object, SerializerContext};
-use crate::util::Prehashed;
+use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
@@ -135,7 +134,7 @@ pub mod rgb {
     use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
-    use pdf_writer::{Chunk, Finish, Name, Ref};
+    use pdf_writer::{Chunk, Ref};
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8);
@@ -221,7 +220,7 @@ pub mod luma {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::{Chunk, Finish, Name, Ref};
+    use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
