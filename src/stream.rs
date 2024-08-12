@@ -101,6 +101,8 @@ impl ContentBuilder {
         path: &Path,
         fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
+        // This is only needed because when creating a Type3 glyph, we don't want to apply a
+        // fill color for outline glyphs, so that they are taken from wherever the glyph is shown.
         no_fill: bool,
     ) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
