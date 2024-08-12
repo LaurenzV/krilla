@@ -16,7 +16,7 @@ pub trait InternalColor {
 }
 
 pub trait ColorSpace:
-    Object + Debug + Hash + Eq + PartialEq + Clone + Copy + Into<ColorSpaceEnum>
+    Object + Debug + Hash + Eq + PartialEq + Clone + Copy
 {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
@@ -120,12 +120,6 @@ pub mod device_cmyk {
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceCmyk;
 
-    impl Into<ColorSpaceEnum> for DeviceCmyk {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceCmyk(self)
-        }
-    }
-
     impl ColorSpace for DeviceCmyk {
         type Color = Color;
     }
@@ -197,12 +191,6 @@ pub mod rgb {
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Srgb;
 
-    impl Into<ColorSpaceEnum> for Srgb {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::Srgb(self)
-        }
-    }
-
     impl ColorSpace for Srgb {
         type Color = Color;
     }
@@ -216,12 +204,6 @@ pub mod rgb {
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceRgb;
-
-    impl Into<ColorSpaceEnum> for DeviceRgb {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceRgb(self)
-        }
-    }
 
     impl ColorSpace for DeviceRgb {
         type Color = Color;
@@ -289,12 +271,6 @@ pub mod luma {
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct SGray;
 
-    impl Into<ColorSpaceEnum> for SGray {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::SGray(self)
-        }
-    }
-
     impl ColorSpace for SGray {
         type Color = Color;
     }
@@ -308,12 +284,6 @@ pub mod luma {
 
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceGray;
-
-    impl Into<ColorSpaceEnum> for DeviceGray {
-        fn into(self) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceGray(self)
-        }
-    }
 
     impl ColorSpace for DeviceGray {
         type Color = Color;
