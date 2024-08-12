@@ -5,6 +5,8 @@ use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
 use crate::FillRule;
 
+/// Render a usvg `Mask` and return it as a krilla `Mask`.
+#[must_use]
 pub fn render(
     mask: &usvg::Mask,
     mut stream_builder: StreamBuilder,
