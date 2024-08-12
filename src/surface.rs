@@ -58,17 +58,6 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc);
     }
 
-    pub fn invisible_glyph_run(
-        &mut self,
-        x: f32,
-        y: f32,
-        fontdb: &mut Database,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .invisible_glyph_run(x, y, fontdb, self.sc, glyphs)
-    }
-
     pub fn fill_glyph_run(
         &mut self,
         x: f32,

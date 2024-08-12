@@ -187,25 +187,6 @@ impl ContentBuilder {
         self.content_restore_state();
     }
 
-    pub fn invisible_glyph_run(
-        &mut self,
-        x: f32,
-        y: f32,
-        fontdb: &mut Database,
-        sc: &mut SerializerContext,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
-        self.fill_stroke_glyph_run(
-            x,
-            y,
-            fontdb,
-            sc,
-            TextRenderingMode::Invisible,
-            |_, _| {},
-            glyphs,
-        );
-    }
-
     pub fn fill_glyph_run(
         &mut self,
         x: f32,

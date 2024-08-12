@@ -1,12 +1,13 @@
+use crate::object::color_space::rgb;
 use crate::object::color_space::rgb::Rgb;
 use crate::stream::TestGlyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
-use crate::{Fill, Stroke};
+use crate::{Fill, Paint, Stroke};
 use skrifa::GlyphId;
 use tiny_skia_path::Transform;
-use usvg::PaintOrder;
+use usvg::{NormalizedF32, PaintOrder};
 
 /// Render a text into a surface.
 pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {
@@ -117,21 +118,15 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 (None, Some(stroke)) => {
                     stroke_op(surface, stroke, process_context);
                 }
-                (None, None) => surface.invisible_glyph_run(
-                    0.0,
-                    0.0,
-                    process_context.krilla_fontdb,
-                    [TestGlyph::new(
-                        font,
-                        GlyphId::new(glyph.id.0 as u32),
-                        // Don't care about those, since we render only one glyph.
-                        0.0,
-                        0.0,
-                        span.font_size.get(),
-                        glyph.text.clone(),
-                    )]
-                    .into_iter()
-                    .peekable(),
+                // Emulate invisible glyph by drawing it with an opacity of zero.
+                (None, None) => fill_op(
+                    surface,
+                    Fill {
+                        paint: Paint::Color(rgb::Color::new(0, 0, 0)),
+                        opacity: NormalizedF32::ZERO,
+                        rule: Default::default(),
+                    },
+                    process_context,
                 ),
             }
 
