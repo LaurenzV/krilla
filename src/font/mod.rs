@@ -5,6 +5,7 @@ use fontdb::Database;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
+use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
@@ -70,6 +71,7 @@ pub struct FontInfo {
     checksum: u32,
     pub(crate) units_per_em: u16,
     global_bbox: Rect,
+    postscript_name: Option<String>,
     is_type3_font: bool,
     ascent: FiniteF32,
     descent: FiniteF32,
@@ -127,6 +129,22 @@ impl FontInfo {
                 units_per_em as f32,
             )?);
 
+        let postscript_name = {
+            if let Ok(name) = font_ref.name() {
+                name.name_record().iter().find_map(|n| {
+                    if n.name_id.get() == NameId::POSTSCRIPT_NAME {
+                        if let Ok(string) = n.string(name.string_data()) {
+                            return Some(string.to_string());
+                        }
+                    }
+
+                    return None;
+                })
+            } else {
+                return None;
+            }
+        };
+
         // Right now, we decide whether to embed a font as a Type3 font solely based on whether one of these
         // tables exist. This is not the most "efficient" method, because it is possible a font has a `COLR` table,
         // but there are still some glyphs which are not in COLR but still in `glyf` or `CFF`. In this case,
@@ -142,6 +160,7 @@ impl FontInfo {
             index,
             checksum,
             units_per_em,
+            postscript_name,
             ascent,
             cap_height,
             descent,
@@ -183,6 +202,10 @@ impl Font {
             font_info: Arc::new(font_info),
             location,
         }))))
+    }
+
+    pub fn postscript_name(&self) -> Option<&str> {
+        self.0.font_info.postscript_name.as_deref()
     }
 
     pub fn index(&self) -> u32 {

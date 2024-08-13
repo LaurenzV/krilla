@@ -84,7 +84,7 @@ impl CIDFont {
         // Subset and write the font's bytes.
         let (subsetted_font, filter) = subset_font(sc, font_ref.data().as_bytes(), &glyph_remapper);
 
-        let postscript_name = find_name(&font_ref).unwrap_or("unknown".to_string());
+        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
         let subset_tag = subset_tag(&subsetted_font);
 
         let base_font = format!("{subset_tag}+{postscript_name}");
@@ -258,22 +258,6 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
         hash /= BASE;
     }
     std::str::from_utf8(&letter).unwrap().to_string()
-}
-
-pub fn find_name(font_ref: &FontRef) -> Option<String> {
-    if let Ok(name) = font_ref.name() {
-        name.name_record().iter().find_map(|n| {
-            if n.name_id.get() == NameId::POSTSCRIPT_NAME {
-                if let Ok(string) = n.string(name.string_data()) {
-                    return Some(string.to_string());
-                }
-            }
-
-            return None;
-        })
-    } else {
-        return None;
-    }
 }
 
 #[cfg(test)]

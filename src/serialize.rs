@@ -261,7 +261,7 @@ impl SerializerContext {
                         FontContainer::Type3(font_mapper) => {
                             for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
                                 let ref_ = self.add_font(FontResource::new(font_id, pdf_index));
-                                let chunk = mapper.serialize_into(&mut self, &font_ref, ref_);
+                                let chunk = mapper.serialize_into(&mut self, ref_);
                                 self.push_chunk(chunk)
                             }
                         }

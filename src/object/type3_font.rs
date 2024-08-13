@@ -1,6 +1,5 @@
 use crate::font;
 use crate::font::{Font, Glyph, GlyphType};
-use crate::object::cid_font::find_name;
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::SerializerContext;
@@ -88,12 +87,7 @@ impl Type3Font {
             .map(|n| self.to_font_units(n))
     }
 
-    pub fn serialize_into(
-        self,
-        sc: &mut SerializerContext,
-        font_ref: &FontRef,
-        root_ref: Ref,
-    ) -> Chunk {
+    pub fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let svg_settings = sc.serialize_settings.svg_settings;
 
@@ -157,13 +151,12 @@ impl Type3Font {
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
 
-        let postscript_name = find_name(&font_ref);
+        let postscript_name = self.font.postscript_name();
 
         let mut flags = FontFlags::empty();
         flags.set(
             FontFlags::SERIF,
             postscript_name
-                .clone()
                 .map(|n| n.contains("Serif"))
                 .unwrap_or(false),
         );
@@ -179,9 +172,7 @@ impl Type3Font {
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
-            .name(Name(
-                postscript_name.unwrap_or("unknown".to_string()).as_bytes(),
-            ))
+            .name(Name(postscript_name.unwrap_or("unknown").as_bytes()))
             .flags(flags)
             .bbox(bbox.to_pdf_rect())
             .italic_angle(italic_angle)
