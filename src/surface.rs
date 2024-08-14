@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -6,7 +7,9 @@ use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
 use crate::stream::{ContentBuilder, Stream, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
+use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
+use std::collections::HashMap;
 use std::iter::Peekable;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
@@ -157,6 +160,10 @@ impl<'a> Surface<'a> {
 
     pub fn draw_shading(&mut self, shading: &ShadingFunction) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
+    }
+
+    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+        self.sc.convert_fontdb(db, ids)
     }
 
     pub fn finish(mut self) {

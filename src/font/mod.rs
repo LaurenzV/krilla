@@ -1,7 +1,6 @@
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::Prehashed;
-use fontdb::Database;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -107,7 +106,8 @@ impl Debug for Font {
 }
 
 impl FontInfo {
-    pub fn new(font_ref: FontRef, index: u32, location: Location) -> Option<Self> {
+    pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
+        let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().unwrap().checksum_adjustment();
 
         let metrics = font_ref.metrics(Size::unscaled(), &location);
@@ -192,9 +192,7 @@ impl Font {
                 },
             );
 
-        let data_ref = data.as_ref().as_ref();
-        let font_ref = FontRef::from_index(data_ref, index).ok()?;
-        let font_info = FontInfo::new(font_ref.clone(), index, location)?;
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             data: data.clone(),
@@ -286,13 +284,7 @@ pub fn draw_glyph(
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
         glyph_type = Some(GlyphType::Colr);
-    } else if let Some(()) = svg::draw_glyph(
-        font.clone(),
-        svg_settings,
-        glyph,
-        &mut Database::new(),
-        surface,
-    ) {
+    } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface) {
         glyph_type = Some(GlyphType::Svg);
     } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface) {
         glyph_type = Some(GlyphType::Bitmap);

@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::rgb;
 use crate::object::color_space::rgb::Rgb;
 use crate::stream::TestGlyph;
@@ -26,7 +27,8 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
         }
 
         for glyph in &span.positioned_glyphs {
-            let (font, upem) = process_context.fonts.get(&glyph.font).copied().unwrap();
+            let font = process_context.fonts.get(&glyph.font).cloned().unwrap();
+            let upem = font.units_per_em();
 
             // The text transform contains the scale transform `font_size / upem`, we need to invert that
             // so we only get the raw transform to account for the glyph position, and the font size
@@ -57,66 +59,62 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 )
             });
 
-            let fill_op =
-                |sb: &mut Surface, fill: Fill<Rgb>, process_context: &mut ProcessContext| {
-                    sb.fill_glyph_run(
+            let fill_op = |sb: &mut Surface, fill: Fill<Rgb>, font: Font| {
+                sb.fill_glyph_run(
+                    0.0,
+                    0.0,
+                    fill,
+                    [TestGlyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
+                        // Don't care about those, since we render only one glyph.
                         0.0,
                         0.0,
-                        process_context.krilla_fontdb,
-                        fill,
-                        [TestGlyph::new(
-                            font,
-                            GlyphId::new(glyph.id.0 as u32),
-                            // Don't care about those, since we render only one glyph.
-                            0.0,
-                            0.0,
-                            span.font_size.get(),
-                            glyph.text.clone(),
-                        )]
-                        .into_iter()
-                        .peekable(),
-                    );
-                };
+                        span.font_size.get(),
+                        glyph.text.clone(),
+                    )]
+                    .into_iter()
+                    .peekable(),
+                );
+            };
 
-            let stroke_op =
-                |sb: &mut Surface, stroke: Stroke<Rgb>, process_context: &mut ProcessContext| {
-                    sb.stroke_glyph_run(
+            let stroke_op = |sb: &mut Surface, stroke: Stroke<Rgb>, font: Font| {
+                sb.stroke_glyph_run(
+                    0.0,
+                    0.0,
+                    stroke,
+                    [TestGlyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
+                        // Don't care about those, since we render only one glyph.
                         0.0,
                         0.0,
-                        process_context.krilla_fontdb,
-                        stroke,
-                        [TestGlyph::new(
-                            font,
-                            GlyphId::new(glyph.id.0 as u32),
-                            // Don't care about those, since we render only one glyph.
-                            0.0,
-                            0.0,
-                            span.font_size.get(),
-                            glyph.text.clone(),
-                        )]
-                        .into_iter()
-                        .peekable(),
-                    );
-                };
+                        span.font_size.get(),
+                        glyph.text.clone(),
+                    )]
+                    .into_iter()
+                    .peekable(),
+                );
+            };
 
             surface.push_transform(&transform);
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
                     PaintOrder::FillAndStroke => {
-                        fill_op(surface, fill, process_context);
-                        stroke_op(surface, stroke, process_context);
+                        fill_op(surface, fill, font.clone());
+                        stroke_op(surface, stroke, font);
                     }
                     PaintOrder::StrokeAndFill => {
-                        stroke_op(surface, stroke, process_context);
-                        fill_op(surface, fill, process_context);
+                        stroke_op(surface, stroke, font.clone());
+                        fill_op(surface, fill, font);
                     }
                 },
                 (Some(fill), None) => {
-                    fill_op(surface, fill, process_context);
+                    fill_op(surface, fill, font);
                 }
                 (None, Some(stroke)) => {
-                    stroke_op(surface, stroke, process_context);
+                    stroke_op(surface, stroke, font);
                 }
                 // Emulate invisible glyph by drawing it with an opacity of zero.
                 (None, None) => fill_op(
@@ -126,7 +124,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                         opacity: NormalizedF32::ZERO,
                         rule: Default::default(),
                     },
-                    process_context,
+                    font,
                 ),
             }
 
