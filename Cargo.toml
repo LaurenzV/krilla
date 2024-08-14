@@ -7,7 +7,7 @@ edition = "2021"
 image = { version = "0.25.1", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 miniz_oxide = "0.7.4"
 once_cell = "1.19.0"
-pdf-writer = "0.10.0"
+pdf-writer = {git = "https://github.com/LaurenzV/pdf-writer", rev = "5aa89f5"}
 resvg = {git = "https://github.com/LaurenzV/resvg", rev = "1c2b6bd0"}
 siphasher = "1.0.1"
 skrifa = {git="https://github.com/LaurenzV/fontations", rev="0ed7955"}

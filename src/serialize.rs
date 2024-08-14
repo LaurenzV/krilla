@@ -33,7 +33,7 @@ impl Default for SvgSettings {
 
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
-    pub hex_encode_binary_streams: bool,
+    pub ascii_compatible: bool,
     pub compress_content_streams: bool,
     pub no_device_cs: bool,
     pub svg_settings: SvgSettings,
@@ -43,7 +43,7 @@ impl SerializeSettings {
     #[cfg(test)]
     pub fn default_test() -> Self {
         Self {
-            hex_encode_binary_streams: true,
+            ascii_compatible: true,
             compress_content_streams: false,
             no_device_cs: false,
             svg_settings: SvgSettings::default(),
@@ -54,7 +54,7 @@ impl SerializeSettings {
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
-            hex_encode_binary_streams: true,
+            ascii_compatible: true,
             compress_content_streams: true,
             no_device_cs: false,
             svg_settings: SvgSettings::default(),
@@ -262,7 +262,7 @@ impl SerializerContext {
     }
 
     pub fn get_binary_stream(&self, stream: &[u8]) -> (Vec<u8>, Filter) {
-        if self.serialize_settings.hex_encode_binary_streams {
+        if self.serialize_settings.ascii_compatible {
             (hex_encode(stream), Filter::AsciiHexDecode)
         } else {
             (deflate(stream), Filter::FlateDecode)
@@ -295,6 +295,10 @@ impl SerializerContext {
         }
 
         let mut pdf = Pdf::new();
+
+        if self.serialize_settings.ascii_compatible {
+            pdf.set_binary_marker(&[b'A', b'A', b'A', b'A']);
+        }
 
         let mut page_tree_chunk = Chunk::new();
 
