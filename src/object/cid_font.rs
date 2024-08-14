@@ -90,12 +90,8 @@ impl Object for CIDFont {
 
         let is_cff = self.font.font_ref().cff().is_ok();
 
-        let (subsetted_font, filter) = subset_font(
-            sc,
-            self.font.font_ref(),
-            self.font.index(),
-            &glyph_remapper,
-        );
+        let (subsetted_font, filter) =
+            subset_font(sc, self.font.font_ref(), self.font.index(), &glyph_remapper);
 
         let postscript_name = self.font.postscript_name().unwrap_or("unknown");
         let subset_tag = subset_tag(&subsetted_font);

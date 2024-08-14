@@ -1,19 +1,27 @@
 use crate::resource::ColorSpaceEnum;
-use crate::serialize::SerializerContext;
+use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
 
+/// The PDF name for the device RGB color space.
 pub const DEVICE_RGB: &'static str = "DeviceRGB";
+/// The PDF name for the device gray color space.
 pub const DEVICE_GRAY: &'static str = "DeviceGray";
+/// The PDF name for the device CMYK color space.
 pub const DEVICE_CMYK: &'static str = "DeviceCMYK";
 
+/// An internal helper trait to more easily deal with colors
+/// of different color spaces.
 pub trait InternalColor {
+    /// Return the components of the color as a normalized f32.
     fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
+    /// Return the color space of the color.
     fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum;
 }
 
+/// A color space and it's associated color.
 pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
@@ -21,7 +29,7 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
 #[derive(Clone)]
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
-impl ICCBasedColorSpace {
+impl Object for ICCBasedColorSpace {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.new_ref();
 
@@ -44,10 +52,14 @@ impl ICCBasedColorSpace {
     }
 }
 
+/// A wrapper enum that can hold colors from different color spaces.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
+    /// An RGB-based color.
     Rgb(rgb::Color),
+    /// A luma-based color.
     Luma(luma::Color),
+    /// A device CMYK color.
     DeviceCmyk(device_cmyk::Color),
 }
 
@@ -69,6 +81,7 @@ impl Color {
     }
 }
 
+/// A module for dealing with device CMYK colors.
 pub mod device_cmyk {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
@@ -113,6 +126,7 @@ pub mod device_cmyk {
         }
     }
 
+    /// The device CMYK color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceCmyk;
 
@@ -127,6 +141,7 @@ pub mod device_cmyk {
     }
 }
 
+/// A module for dealing with device RGB colors.
 pub mod rgb {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
@@ -135,6 +150,7 @@ pub mod rgb {
 
     use pdf_writer::{Chunk, Ref};
 
+    /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8);
 
@@ -145,14 +161,17 @@ pub mod rgb {
     }
 
     impl Color {
+        /// Create a new RGB color.
         pub fn new(red: u8, green: u8, blue: u8) -> Self {
             Color(red, green, blue)
         }
 
+        /// Create a black RGB color.
         pub fn black() -> Self {
             Self::new(0, 0, 0)
         }
 
+        /// Create a white RGB color.
         pub fn white() -> Self {
             Self::new(255, 255, 255)
         }
@@ -182,8 +201,12 @@ pub mod rgb {
         }
     }
 
+    /// The ICC profile for the SRGB color space.
     static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
 
+    /// The RGB color space. Depending on whether the `no_device_cs` serialize option is set,
+    /// this will internally be encoded either using the PDF `DeviceRgb` color space, or in the
+    /// SRGB color space using an ICC profile.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Rgb;
 
@@ -191,6 +214,7 @@ pub mod rgb {
         type Color = Color;
     }
 
+    /// The SRGB color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub(crate) struct Srgb;
 
@@ -201,6 +225,7 @@ pub mod rgb {
         }
     }
 
+    /// The device RGB color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceRgb;
 
@@ -215,6 +240,7 @@ pub mod rgb {
     }
 }
 
+/// A module for dealing with device luma (= grayscale) colors.
 pub mod luma {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
@@ -222,6 +248,7 @@ pub mod luma {
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
+    /// An luma color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(u8);
 
@@ -265,8 +292,12 @@ pub mod luma {
         }
     }
 
+    /// The ICC profile for the s-gray color space.
     pub static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
+    /// The luma color space. Depending on whether the `no_device_cs` serialize option is set,
+    /// this will internally be encoded either using the PDF `DeviceGray` color space, or in the
+    /// s-grey color space using an ICC profile.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Luma;
 
@@ -274,6 +305,7 @@ pub mod luma {
         type Color = Color;
     }
 
+    /// The s-gray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub(crate) struct SGray;
 
@@ -284,6 +316,7 @@ pub mod luma {
         }
     }
 
+    /// The device gray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceGray;
 
