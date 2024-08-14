@@ -7,7 +7,7 @@ use crate::surface::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
-use skrifa::{GlyphId};
+use skrifa::GlyphId;
 use std::collections::BTreeSet;
 use tiny_skia_path::{Rect, Transform};
 

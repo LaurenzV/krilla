@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::device_cmyk::DeviceCmyk;
 use crate::object::color_space::luma::{DeviceGray, SGray};
 use crate::object::color_space::rgb::{DeviceRgb, Srgb};
@@ -15,7 +16,6 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use crate::font::Font;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;

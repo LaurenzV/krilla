@@ -265,9 +265,9 @@ mod tests {
 
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::{check_snapshot, load_font};
+    use skrifa::instance::Location;
     use skrifa::GlyphId;
     use std::sync::Arc;
-    use skrifa::instance::Location;
 
     fn sc() -> SerializerContext {
         let settings = SerializeSettings::default_test();
