@@ -284,7 +284,6 @@ impl ContentBuilder {
         while let Some(glyph) = glyphs.peek() {
             let (font_resource, gid) = sc.map_glyph(
                 glyph.font_id,
-                fontdb,
                 Glyph::new(glyph.glyph_id, glyph.text.clone()),
             );
             if font_resource != cur_font || glyph.size != cur_size {

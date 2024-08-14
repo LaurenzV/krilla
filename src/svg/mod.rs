@@ -2,7 +2,7 @@ use crate::font::FontInfo;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use fontdb::Database;
-use skrifa::instance::{Location, LocationRef};
+use skrifa::instance::Location;
 use skrifa::FontRef;
 use std::collections::HashMap;
 use std::sync::Arc;

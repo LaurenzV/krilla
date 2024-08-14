@@ -16,6 +16,7 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use crate::font::Font;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -331,15 +332,15 @@ where
 
 pub type ResourceNumber = u32;
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FontResource {
-    pub font_id: ID,
+    pub font: Font,
     pub pdf_index: usize,
 }
 
 impl FontResource {
-    pub fn new(font_id: ID, pdf_index: usize) -> Self {
-        Self { font_id, pdf_index }
+    pub fn new(font: Font, pdf_index: usize) -> Self {
+        Self { font, pdf_index }
     }
 }
 

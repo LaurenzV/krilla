@@ -76,8 +76,8 @@ pub trait RegisterableObject: Object {}
 
 #[derive(Debug)]
 pub struct SerializerContext {
-    font_info_to_id: HashMap<Arc<FontInfo>, ID>,
-    fonts: HashMap<ID, FontContainer>,
+    font_cache: HashMap<Arc<FontInfo>, Font>,
+    font_map: HashMap<Font, FontContainer>,
     catalog_ref: Ref,
     page_tree_ref: Ref,
     page_refs: Vec<Ref>,
@@ -109,14 +109,14 @@ impl SerializerContext {
         let page_tree_ref = cur_ref.bump();
         Self {
             cached_mappings: HashMap::new(),
-            font_info_to_id: HashMap::new(),
+            font_cache: HashMap::new(),
             cur_ref,
             chunks: Vec::new(),
             page_tree_ref,
             catalog_ref,
             page_refs: vec![],
             chunks_len: 0,
-            fonts: HashMap::new(),
+            font_map: HashMap::new(),
             serialize_settings,
         }
     }
@@ -181,16 +181,12 @@ impl SerializerContext {
 
     pub fn map_glyph(
         &mut self,
-        font_id: ID,
-        fontdb: &mut Database,
+        font: Font,
         glyph: Glyph,
     ) -> (FontResource, PDFGlyph) {
-        let font_container = self.fonts.entry(font_id).or_insert_with(|| {
-            let (font_ref, index) = unsafe { fontdb.make_shared_face_data(font_id).unwrap() };
-            let font = Font::new(font_ref, index, Location::default()).unwrap();
-            // TODO: Overthink this, does it really work? Do we need to expose font info directly?
-            self.font_info_to_id
-                .insert(font.font_info().clone(), font_id);
+        let font_container = self.font_map.entry(font.clone()).or_insert_with(|| {
+            self.font_cache
+                .insert(font.font_info().clone(), font.clone());
 
             if font.is_type3_font() {
                 FontContainer::Type3(Type3FontMapper::new(font.clone()))
@@ -204,14 +200,14 @@ impl SerializerContext {
                 let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph);
 
                 (
-                    FontResource::new(font_id, pdf_index),
+                    FontResource::new(font, pdf_index),
                     PDFGlyph::ColorGlyph(glyph_id),
                 )
             }
             FontContainer::CIDFont(cid) => {
                 let new_gid = cid.remap(&glyph);
                 (
-                    FontResource::new(font_id, 0),
+                    FontResource::new(font, 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
                 )
             }
@@ -219,7 +215,7 @@ impl SerializerContext {
     }
 
     pub fn get_pdf_font(&self, font_resource: &FontResource) -> Option<PdfFont> {
-        self.fonts.get(&font_resource.font_id).map(|f| match f {
+        self.font_map.get(&font_resource.font).map(|f| match f {
             FontContainer::Type3(fm) => PdfFont::Type3(&fm.fonts[font_resource.pdf_index]),
             FontContainer::CIDFont(cid) => PdfFont::CID(cid),
         })
@@ -251,28 +247,24 @@ impl SerializerContext {
     pub fn finish(mut self, fontdb: &Database) -> Pdf {
         // Write fonts
         // TODO: Make more efficient
-        let fonts = std::mem::take(&mut self.fonts);
-        for (font_id, font_container) in fonts {
-            fontdb
-                .with_face_data(font_id, |data, index| {
-                    let font_ref = FontRef::from_index(data, index).unwrap();
+        let fonts = std::mem::take(&mut self.font_map);
+        for (font, font_container) in fonts {
+            let font_ref = font.font_ref();
 
-                    match font_container {
-                        FontContainer::Type3(font_mapper) => {
-                            for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
-                                let ref_ = self.add_font(FontResource::new(font_id, pdf_index));
-                                let chunk = mapper.serialize_into(&mut self, ref_);
-                                self.push_chunk(chunk)
-                            }
-                        }
-                        FontContainer::CIDFont(cid_font) => {
-                            let ref_ = self.add_font(FontResource::new(font_id, 0));
-                            let chunk = cid_font.serialize_into(&mut self, &font_ref, ref_);
-                            self.push_chunk(chunk)
-                        }
+            match font_container {
+                FontContainer::Type3(font_mapper) => {
+                    for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
+                        let ref_ = self.add_font(FontResource::new(font.clone(), pdf_index));
+                        let chunk = mapper.serialize_into(&mut self, ref_);
+                        self.push_chunk(chunk)
                     }
-                })
-                .unwrap();
+                }
+                FontContainer::CIDFont(cid_font) => {
+                    let ref_ = self.add_font(FontResource::new(font, 0));
+                    let chunk = cid_font.serialize_into(&mut self, &font_ref, ref_);
+                    self.push_chunk(chunk)
+                }
+            }
         }
 
         let mut pdf = Pdf::new();
