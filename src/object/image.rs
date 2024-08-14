@@ -17,6 +17,9 @@ pub struct Repr {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
 
+// TODO: Improve this so:
+// 1) Users are not forced to pass a dynamic image
+// 2) Use the DCT decoder for JPEG images.
 impl Image {
     pub fn new(dynamic_image: &DynamicImage) -> Self {
         let (image_data, mask_data) = handle_transparent_image(&dynamic_image);
@@ -38,7 +41,6 @@ impl Image {
 
 impl Object for Image {
     fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        // TODO: Error handling
         let mut chunk = Chunk::new();
 
         let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
