@@ -20,8 +20,7 @@ impl Page {
 }
 
 impl Object for Page {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-        let root_ref = sc.new_ref();
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let stream_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -48,7 +47,7 @@ impl Object for Page {
 
         sc.add_page_ref(root_ref);
 
-        (root_ref, chunk)
+        chunk
     }
 }
 

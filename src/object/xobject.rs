@@ -33,10 +33,8 @@ impl XObject {
 }
 
 impl Object for XObject {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let cs = sc.rgb();
-
-        let root_ref = sc.new_ref();
         let mut chunk = Chunk::new();
 
         let (stream, filter) = sc.get_content_stream(&self.stream.content);
@@ -70,7 +68,7 @@ impl Object for XObject {
 
         x_object.finish();
 
-        (root_ref, chunk)
+        chunk
     }
 }
 

@@ -28,8 +28,7 @@ impl ShadingPattern {
 }
 
 impl Object for ShadingPattern {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-        let root_ref = sc.new_ref();
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let shading_ref = sc.add(self.0.shading_function.clone());
@@ -39,7 +38,7 @@ impl Object for ShadingPattern {
 
         shading_pattern.finish();
 
-        (root_ref, chunk)
+        chunk
     }
 }
 

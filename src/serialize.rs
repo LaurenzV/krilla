@@ -63,11 +63,11 @@ impl Default for SerializeSettings {
 }
 
 pub trait Object: Sized + 'static {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk);
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 
-    fn serialize_chunk(self, sc: &mut SerializerContext) -> Chunk {
-        let (_, chunk) = self.serialize_into(sc);
-        chunk
+    fn serialize(self, sc: &mut SerializerContext) -> Chunk {
+        let root_ref = sc.new_ref();
+        self.serialize_into(sc, root_ref)
     }
 }
 
@@ -156,7 +156,8 @@ impl SerializerContext {
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
         } else {
-            let (root_ref, chunk) = object.serialize_into(self);
+            let root_ref = self.new_ref();
+            let chunk = object.serialize_into(self, root_ref);
             self.cached_mappings.insert(hash, root_ref);
             self.chunks_len += chunk.len();
             self.chunks.push(chunk);

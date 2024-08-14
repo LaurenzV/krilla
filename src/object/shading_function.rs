@@ -196,8 +196,7 @@ impl ShadingFunction {
 }
 
 impl Object for ShadingFunction {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-        let root_ref = sc.new_ref();
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -209,7 +208,7 @@ impl Object for ShadingFunction {
             }
         }
 
-        (root_ref, chunk)
+        chunk
     }
 }
 

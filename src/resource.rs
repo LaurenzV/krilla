@@ -63,13 +63,13 @@ pub(crate) enum Resource {
 }
 
 impl Object for Resource {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
-            Resource::XObject(x) => x.serialize_into(sc),
-            Resource::Pattern(p) => p.serialize_into(sc),
-            Resource::ExtGState(e) => e.serialize_into(sc),
-            Resource::ColorSpace(x) => x.serialize_into(sc),
-            Resource::Shading(s) => s.serialize_into(sc),
+            Resource::XObject(x) => x.serialize_into(sc, root_ref),
+            Resource::Pattern(p) => p.serialize_into(sc, root_ref),
+            Resource::ExtGState(e) => e.serialize_into(sc, root_ref),
+            Resource::ColorSpace(x) => x.serialize_into(sc, root_ref),
+            Resource::Shading(s) => s.serialize_into(sc, root_ref),
             Resource::Font(_) => unreachable!(),
         }
     }
@@ -94,10 +94,10 @@ impl ResourceTrait for XObjectResource {
 }
 
 impl Object for XObjectResource {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
-            XObjectResource::XObject(x) => x.serialize_into(sc),
-            XObjectResource::Image(i) => i.serialize_into(sc),
+            XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
+            XObjectResource::Image(i) => i.serialize_into(sc, root_ref),
         }
     }
 }
@@ -121,10 +121,10 @@ impl ResourceTrait for PatternResource {
 }
 
 impl Object for PatternResource {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
-            PatternResource::ShadingPattern(sp) => sp.serialize_into(sc),
-            PatternResource::TilingPattern(tp) => tp.serialize_into(sc),
+            PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
+            PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
         }
     }
 }
@@ -344,7 +344,7 @@ impl FontResource {
 }
 
 impl Object for FontResource {
-    fn serialize_into(self, _: &mut SerializerContext) -> (Ref, Chunk) {
+    fn serialize_into(self, _: &mut SerializerContext, _: Ref) -> Chunk {
         // Fonts are written manually by the serializer in the end, so this should never be called.
         unreachable!()
     }
@@ -360,10 +360,10 @@ pub(crate) enum ColorSpaceEnum {
 }
 
 impl Object for ColorSpaceEnum {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
-            ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc),
-            ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc),
+            ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
+            ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc, root_ref),
             ColorSpaceEnum::DeviceGray(_) => unreachable!(),
             ColorSpaceEnum::DeviceRgb(_) => unreachable!(),
             ColorSpaceEnum::DeviceCmyk(_) => unreachable!(),

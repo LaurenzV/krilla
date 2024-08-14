@@ -53,8 +53,7 @@ impl TilingPattern {
 }
 
 impl Object for TilingPattern {
-    fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk) {
-        let root_ref = sc.new_ref();
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let (stream, filter) = sc.get_content_stream(&self.stream.content);
@@ -80,7 +79,7 @@ impl Object for TilingPattern {
 
         tiling_pattern.finish();
 
-        (root_ref, chunk)
+        chunk
     }
 }
 
