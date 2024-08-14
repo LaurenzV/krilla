@@ -7,15 +7,22 @@ use crate::transform::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
-// TODO: Remove clone and see what it breaks, fix them
+/// A mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub struct Mask {
+    /// The stream of the mask.
     stream: Stream,
+    /// The type of the mask.
     mask_type: MaskType,
+    /// A custom bbox of the mask. The only reason we need this is that for gradients with
+    /// transparencies, we create a custom mask where we call the shading operator. In this case,
+    /// we want to manually set the bbox of the underlying XObject to match the shape that the
+    /// gradient is being applied to.
     custom_bbox: Option<Rect>,
 }
 
 impl Mask {
+    /// Create a new mask.
     pub fn new(stream: Stream, mask_type: MaskType) -> Self {
         Self {
             stream,
@@ -24,6 +31,7 @@ impl Mask {
         }
     }
 
+    /// Create a new mask for a shading to encode the opacity channels.
     pub fn new_from_shading(
         gradient_properties: GradientProperties,
         shading_transform: TransformWrapper,
@@ -62,18 +70,23 @@ impl Mask {
         })
     }
 
+    /// Return the custom bbox of the mask, if existing.
     pub fn custom_bbox(&self) -> Option<Rect> {
         self.custom_bbox
     }
 }
 
+/// A mask type.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum MaskType {
+    /// A luminosity mask.
     Luminosity,
+    /// An alpha mask.
     Alpha,
 }
 
 impl MaskType {
+    /// Return the PDF name of the mask type.
     pub fn to_name(self) -> Name<'static> {
         match self {
             MaskType::Alpha => Name(b"Alpha"),
