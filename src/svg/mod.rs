@@ -2,7 +2,7 @@ use crate::font::FontInfo;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use fontdb::Database;
-use skrifa::instance::LocationRef;
+use skrifa::instance::{Location, LocationRef};
 use skrifa::FontRef;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -121,7 +121,7 @@ fn get_context_from_node_impl(
                                 FontInfo::new(
                                     FontRef::from_index(data, index).unwrap(),
                                     index,
-                                    LocationRef::default(),
+                                    Location::default(),
                                 )
                                 .unwrap()
                                 .units_per_em

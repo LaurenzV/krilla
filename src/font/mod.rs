@@ -69,6 +69,7 @@ impl OutlinePen for OutlineBuilder {
 pub struct FontInfo {
     index: u32,
     checksum: u32,
+    location: Location,
     pub(crate) units_per_em: u16,
     global_bbox: Rect,
     postscript_name: Option<String>,
@@ -84,7 +85,6 @@ pub struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
-    location: Location,
     data: Arc<dyn AsRef<[u8]> + Send + Sync>,
 }
 
@@ -93,7 +93,6 @@ impl Hash for Repr {
         // Need to include index as well, because ttc fonts with different indices will have
         // the same underlying bytes, but we distinguish them by their index as well.
         self.font_info.index.hash(state);
-        self.location.hash(state);
         self.data.as_ref().as_ref().hash(state);
     }
 }
@@ -108,10 +107,10 @@ impl Debug for Font {
 }
 
 impl FontInfo {
-    pub fn new(font_ref: FontRef, index: u32, location: LocationRef) -> Option<Self> {
+    pub fn new(font_ref: FontRef, index: u32, location: Location) -> Option<Self> {
         let checksum = font_ref.head().unwrap().checksum_adjustment();
 
-        let metrics = font_ref.metrics(Size::unscaled(), location);
+        let metrics = font_ref.metrics(Size::unscaled(), &location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
         let descent = FiniteF32::new(metrics.descent).unwrap();
         let is_monospaced = metrics.is_monospace;
@@ -159,6 +158,7 @@ impl FontInfo {
         Some(FontInfo {
             index,
             checksum,
+            location,
             units_per_em,
             postscript_name,
             ascent,
@@ -194,13 +194,12 @@ impl Font {
 
         let data_ref = data.as_ref().as_ref();
         let font_ref = FontRef::from_index(data_ref, index).ok()?;
-        let font_info = FontInfo::new(font_ref.clone(), index, (&location).into())?;
+        let font_info = FontInfo::new(font_ref.clone(), index, location)?;
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             data: data.clone(),
             font_ref_yoke,
             font_info: Arc::new(font_info),
-            location,
         }))))
     }
 
@@ -249,7 +248,7 @@ impl Font {
     }
 
     pub fn location_ref(&self) -> LocationRef {
-        (&self.0.location).into()
+        (&self.0.font_info.location).into()
     }
 
     pub fn is_type3_font(&self) -> bool {
