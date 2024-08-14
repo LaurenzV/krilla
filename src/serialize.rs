@@ -275,9 +275,6 @@ impl SerializerContext {
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
         for (font, font_container) in fonts {
-            let cloned = font.clone();
-            let font_ref = cloned.font_ref();
-
             match font_container {
                 FontContainer::Type3(font_mapper) => {
                     for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
@@ -288,7 +285,7 @@ impl SerializerContext {
                 }
                 FontContainer::CIDFont(cid_font) => {
                     let ref_ = self.add_font(FontResource::new(font, 0));
-                    let chunk = cid_font.serialize_into(&mut self, &font_ref, ref_);
+                    let chunk = cid_font.serialize_into(&mut self, ref_);
                     self.push_chunk(chunk)
                 }
             }
