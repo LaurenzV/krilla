@@ -283,4 +283,16 @@ mod tests {
         sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(37), "B".to_string()));
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
+
+    #[test]
+    fn latin_modern_four_glyphs() {
+        let mut sc = sc();
+        let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
+        let font = Font::new(font_data, 0, Location::default()).unwrap();
+        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(58), "G".to_string()));
+        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(54), "F".to_string()));
+        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(69), "K".to_string()));
+        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(71), "L".to_string()));
+        check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
+    }
 }
