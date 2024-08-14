@@ -6,7 +6,6 @@ use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
 use crate::stream::{ContentBuilder, Stream, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
-use fontdb::Database;
 use pdf_writer::types::BlendMode;
 use std::iter::Peekable;
 use tiny_skia_path::{Path, Size, Transform};

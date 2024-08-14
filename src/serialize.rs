@@ -176,11 +176,7 @@ impl SerializerContext {
         }
     }
 
-    pub fn map_glyph(
-        &mut self,
-        font: Font,
-        glyph: Glyph,
-    ) -> (FontResource, PDFGlyph) {
+    pub fn map_glyph(&mut self, font: Font, glyph: Glyph) -> (FontResource, PDFGlyph) {
         let font_container = self.font_map.entry(font.clone()).or_insert_with(|| {
             self.font_cache
                 .insert(font.font_info().clone(), font.clone());
@@ -246,7 +242,8 @@ impl SerializerContext {
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
         for (font, font_container) in fonts {
-            let font_ref = font.clone().font_ref();
+            let cloned = font.clone();
+            let font_ref = cloned.font_ref();
 
             match font_container {
                 FontContainer::Type3(font_mapper) => {

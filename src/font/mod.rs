@@ -312,10 +312,9 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
     use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
     use crate::Transform;
-    use crate::{Database, Source};
 
     let font = Font::new(font_data, 0, Location::default()).unwrap();
-    let font_ref = font.clone().font_ref();
+    let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file =

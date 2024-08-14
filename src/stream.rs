@@ -263,7 +263,9 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         glyphs: &mut Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
-        let font_name = self.rd_builder.register_resource(Resource::Font(cur_font));
+        let font_name = self
+            .rd_builder
+            .register_resource(Resource::Font(cur_font.clone()));
         self.content.set_font(font_name.to_pdf_name(), cur_size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
