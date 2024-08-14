@@ -300,17 +300,20 @@ impl SerializerContext {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A']);
         }
 
-        let mut page_tree_chunk = Chunk::new();
+        // This basically just exists so that for unit tests, we don't print the catalog
+        // and page tree.
+        if !self.page_refs.is_empty() {
+            let mut page_tree_chunk = Chunk::new();
 
-        page_tree_chunk
-            .pages(self.page_tree_ref)
-            .count(self.page_refs.len() as i32)
-            .kids(self.page_refs);
+            page_tree_chunk
+                .pages(self.page_tree_ref)
+                .count(self.page_refs.len() as i32)
+                .kids(self.page_refs);
 
-        self.chunks_len += page_tree_chunk.len();
-
-        pdf.catalog(self.catalog_ref).pages(self.page_tree_ref);
-        pdf.extend(&page_tree_chunk);
+            self.chunks_len += page_tree_chunk.len();
+            pdf.catalog(self.catalog_ref).pages(self.page_tree_ref);
+            pdf.extend(&page_tree_chunk);
+        }
 
         for part_chunk in self.chunks.drain(..) {
             pdf.extend(&part_chunk);
