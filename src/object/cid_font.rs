@@ -16,17 +16,30 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
     supplement: 0,
 };
 
+/// A CID-keyed font.
 #[derive(Debug, Clone)]
 pub struct CIDFont {
+    /// The _actual_ underlying font of the CID-keyed font.
     font: Font,
+    /// A mapper that maps the original glyph IDs to their corresponding glyph ID in the font
+    /// subset. The subsetter will ensure that for CID-keyed CFF fonts, the CID-to-GID mapping
+    /// will be the identity mapping, regardless of what the mapping was in the original font. This
+    /// allows us to index both font types transparently using GIDs instead of having to distinguish
+    /// according to the underlying font. See the PDF reference for more information on how glyphs
+    /// are indexed in a CID-keyed font.
     glyph_remapper: GlyphRemapper,
+    /// A mapping from glyph IDs to their string in the original text.
     strings: BTreeMap<GlyphId, String>,
+    /// The widths of the glyphs, _index by their new GID_.
     widths: Vec<f32>,
 }
 
 impl CIDFont {
+    /// Create a new CID font from a font.
     pub fn new(font: Font) -> CIDFont {
+        // Always include the .notdef glyph. Will also always be included by the subsetter.
         let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
+
         Self {
             glyph_remapper: GlyphRemapper::new(),
             strings: BTreeMap::new(),
@@ -35,31 +48,31 @@ impl CIDFont {
         }
     }
 
-    pub fn index(&self) -> u32 {
-        self.font.index()
-    }
-
+    /// Get the advance width of a glyph, _indexed by the new GID from the subsetted font_,
+    /// in PDF font units.
     pub fn advance_width(&self, glyph_id: u16) -> Option<f32> {
-        self.widths.get(glyph_id as usize).copied()
+        self.widths
+            .get(glyph_id as usize)
+            .map(|v| self.to_pdf_font_units(*v))
     }
 
-    pub fn units_per_em(&self) -> u16 {
-        self.font.units_per_em()
-    }
-
-    pub fn to_font_units(&self, val: f32) -> f32 {
+    /// Rescale a value from the original text-space units to PDF font units.
+    /// Fonts in PDF are processed with a upem of 1000, see section 9.4.4 of the spec.
+    pub fn to_pdf_font_units(&self, val: f32) -> f32 {
         val / self.font.units_per_em() as f32 * 1000.0
     }
 
-    pub fn remap(&mut self, glyph: &Glyph) -> GlyphId {
+    /// Register a glyph and return its glyph ID in the subsetted version of the font.
+    pub fn register(&mut self, glyph: &Glyph) -> GlyphId {
         let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
         self.strings.insert(new_id, glyph.string.clone());
 
-        // This means that the glyph ID has been newly assigned.
+        // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id.to_u32() >= self.widths.len() as u32 {
             self.widths
                 .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
         }
+
         new_id
     }
 
@@ -119,7 +132,7 @@ impl CIDFont {
             let end = first + group.len();
             if w != 0.0 {
                 let last = end - 1;
-                width_writer.same(first as u16, last as u16, self.to_font_units(w));
+                width_writer.same(first as u16, last as u16, self.to_pdf_font_units(w));
             }
             first = end;
         }
@@ -137,12 +150,12 @@ impl CIDFont {
         let bbox = self.font.bbox().to_pdf_rect();
 
         let italic_angle = self.font.italic_angle();
-        let ascender = self.to_font_units(self.font.ascent());
-        let descender = self.to_font_units(self.font.descent());
+        let ascender = self.to_pdf_font_units(self.font.ascent());
+        let descender = self.to_pdf_font_units(self.font.descent());
         let cap_height = self
             .font
             .cap_height()
-            .map(|h| self.to_font_units(h))
+            .map(|h| self.to_pdf_font_units(h))
             .unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 

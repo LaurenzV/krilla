@@ -732,7 +732,7 @@ impl PdfFont<'_> {
     pub fn to_font_units(&self, val: f32) -> f32 {
         match self {
             PdfFont::Type3(t3) => t3.to_font_units(val),
-            PdfFont::CID(cid) => cid.to_font_units(val),
+            PdfFont::CID(cid) => cid.to_pdf_font_units(val),
         }
     }
 
@@ -740,13 +740,6 @@ impl PdfFont<'_> {
         match self {
             PdfFont::Type3(t3) => t3.advance_width(glyph as u8),
             PdfFont::CID(cid) => cid.advance_width(glyph),
-        }
-    }
-
-    pub fn units_per_em(&self) -> u16 {
-        match self {
-            PdfFont::Type3(t3) => t3.units_per_em(),
-            PdfFont::CID(cid) => cid.units_per_em(),
         }
     }
 }
