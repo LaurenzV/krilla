@@ -62,7 +62,7 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: Sized + Hash + 'static {
+pub trait Object: Sized + 'static {
     fn serialize_into(self, sc: &mut SerializerContext) -> (Ref, Chunk);
 
     fn serialize_chunk(self, sc: &mut SerializerContext) -> Chunk {
@@ -71,7 +71,7 @@ pub trait Object: Sized + Hash + 'static {
     }
 }
 
-pub trait RegisterableObject: Object {}
+pub trait RegisterableObject: Object + Hash {}
 
 #[derive(Debug)]
 pub struct SerializerContext {
