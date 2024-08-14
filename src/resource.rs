@@ -10,7 +10,6 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
-use fontdb::ID;
 use pdf_writer::writers::Resources;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;

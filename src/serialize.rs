@@ -244,7 +244,7 @@ impl SerializerContext {
     }
 
     // Always needs to be called.
-    pub fn finish(mut self, fontdb: &Database) -> Pdf {
+    pub fn finish(mut self) -> Pdf {
         // Write fonts
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
