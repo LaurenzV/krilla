@@ -5,11 +5,16 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
 
+/// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
 struct Repr {
+    /// The non-stroking alpha.
     non_stroking_alpha: Option<NormalizedF32>,
+    /// The stroking alpha.
     stroking_alpha: Option<NormalizedF32>,
+    /// The blend mode.
     blend_mode: Option<BlendMode>,
+    /// An active mask.
     mask: Option<Arc<Mask>>,
 }
 
