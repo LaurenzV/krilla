@@ -76,11 +76,8 @@ impl CIDFont {
         new_id
     }
 
-    pub(crate) fn serialize_into(
-        self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> Chunk {
+    // TODO: Think whether can just implement Object instead.
+    pub(crate) fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();
@@ -92,9 +89,12 @@ impl CIDFont {
 
         let is_cff = self.font.font_ref().cff().is_ok();
 
-        // Subset and write the font's bytes.
-        let (subsetted_font, filter) = subset_font(sc, self.font.font_ref().data()
-            .as_bytes(), self.font.index(), &glyph_remapper);
+        let (subsetted_font, filter) = subset_font(
+            sc,
+            self.font.font_ref().data().as_bytes(),
+            self.font.index(),
+            &glyph_remapper,
+        );
 
         let postscript_name = self.font.postscript_name().unwrap_or("unknown");
         let subset_tag = subset_tag(&subsetted_font);
@@ -113,7 +113,6 @@ impl CIDFont {
             .descendant_font(cid_ref)
             .to_unicode(cmap_ref);
 
-        // Write the CID font referencing the font descriptor.
         let mut cid = chunk.cid_font(cid_ref);
         cid.subtype(if is_cff {
             CidFontType::Type0
@@ -125,7 +124,6 @@ impl CIDFont {
         cid.font_descriptor(descriptor_ref);
         cid.default_width(0.0);
 
-        // Write all non-zero glyph widths.
         let mut first = 0;
         let mut width_writer = cid.widths();
         for (w, group) in self.widths.group_by_key(|&w| w) {
@@ -159,7 +157,6 @@ impl CIDFont {
             .unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 
-        // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
             .name(Name(base_font.as_bytes()))
@@ -204,6 +201,7 @@ impl CIDFont {
     }
 }
 
+/// Subset a font with the given glyphs.
 fn subset_font(
     sc: &SerializerContext,
     font_data: &[u8],
@@ -261,6 +259,7 @@ where
     }
 }
 
+/// Create a tag for a font subset.
 fn subset_tag(subsetted_font: &[u8]) -> String {
     const LEN: usize = 6;
     const BASE: u128 = 26;
