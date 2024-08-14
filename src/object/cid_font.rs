@@ -76,7 +76,7 @@ impl CIDFont {
         new_id
     }
 
-    // TODO: Think whether can just implement Object instead.
+    /// Serialize the CID font.
     pub(crate) fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
