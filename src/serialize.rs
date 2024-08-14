@@ -7,11 +7,8 @@ use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
-use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Filter, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
-use skrifa::instance::Location;
-use skrifa::FontRef;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -249,7 +246,7 @@ impl SerializerContext {
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
         for (font, font_container) in fonts {
-            let font_ref = font.font_ref();
+            let font_ref = font.clone().font_ref();
 
             match font_container {
                 FontContainer::Type3(font_mapper) => {

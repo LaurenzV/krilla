@@ -62,24 +62,22 @@ impl<'a> Surface<'a> {
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         fill: Fill<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
+            .fill_glyph_run(x, y, self.sc, fill, glyphs);
     }
 
     pub fn stroke_glyph_run(
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         stroke: Stroke<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
+            .stroke_glyph_run(x, y, self.sc, stroke, glyphs);
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {

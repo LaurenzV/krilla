@@ -314,10 +314,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
     use crate::Transform;
     use crate::{Database, Source};
 
-    let mut fontdb = Database::new();
-    let cloned = font_data.clone();
-    let font_ref = FontRef::from_index(&cloned, 0).unwrap();
-    let id = fontdb.load_font_source(Source::Binary(font_data))[0];
+    let font = Font::new(font_data, 0, Location::default()).unwrap();
+    let font_ref = font.clone().font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file =
@@ -373,9 +371,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
         surface.fill_glyph_run(
             0.0,
             0.0,
-            &mut fontdb,
             crate::Fill::<Rgb>::default(),
-            [TestGlyph::new(id, i, 0.0, 0.0, size as f32, text)]
+            [TestGlyph::new(font.clone(), i, 0.0, 0.0, size as f32, text)]
                 .into_iter()
                 .peekable(),
         );
@@ -387,7 +384,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
 
     surface.finish();
     builder.finish();
-    let pdf = document_builder.finish(&fontdb);
+    let pdf = document_builder.finish();
     let _ = std::fs::write(format!("out/{}.pdf", name), &pdf);
     let _ = std::fs::write(format!("out/{}.txt", name), &pdf);
 }

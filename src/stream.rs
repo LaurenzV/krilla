@@ -18,7 +18,6 @@ use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
-use fontdb::{Database, ID};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
