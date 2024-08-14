@@ -275,12 +275,12 @@ mod tests {
     }
 
     #[test]
-    fn ttf_font() {
+    fn noto_sans_two_glyphs() {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
         sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(36), "A".to_string()));
         sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(37), "B".to_string()));
-        check_snapshot("cid_font/ttf_font", sc.finish().as_bytes());
+        check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 }
