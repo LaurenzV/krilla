@@ -222,15 +222,18 @@ impl SerializerContext {
             // If not, we still need to construct it.
             if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
                 let location = Location::default();
-                let font_info =
-                    FontInfo::new(font_data.as_ref().as_ref(), index, location.clone()).unwrap();
 
-                let font = self
-                    .font_cache
-                    .get(&Arc::new(font_info))
-                    .cloned()
-                    .unwrap_or(Font::new(font_data, index, location).unwrap());
-                map.insert(id, font);
+                if let Some(font_info) =
+                    FontInfo::new(font_data.as_ref().as_ref(), index, location.clone())
+                {
+                    // TODO: Prevent font info from being computed twice?
+                    let font = self
+                        .font_cache
+                        .get(&Arc::new(font_info))
+                        .cloned()
+                        .unwrap_or(Font::new(font_data, index, location).unwrap());
+                    map.insert(id, font);
+                }
             }
         }
 

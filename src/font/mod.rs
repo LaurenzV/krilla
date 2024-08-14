@@ -84,15 +84,16 @@ pub struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
-    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
 }
 
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        // Need to include index as well, because ttc fonts with different indices will have
-        // the same underlying bytes, but we distinguish them by their index as well.
-        self.font_info.index.hash(state);
-        self.data.as_ref().as_ref().hash(state);
+        // We assume that if the font info is distinct, the font itself is distinct as well. This
+        // strictly doesn't have to be the case, while the font does have a checksum, it's "only" a
+        // u32. The proper way would be to hash the whole font data, but this is just too expensive.
+        // However, the odds of the checksum AND all font metrics (including font name) being the same
+        // with the font being different is diminishingly low.
+        self.font_info.hash(state);
     }
 }
 
@@ -108,7 +109,7 @@ impl Debug for Font {
 impl FontInfo {
     pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
-        let checksum = font_ref.head().unwrap().checksum_adjustment();
+        let checksum = font_ref.head().ok()?.checksum_adjustment();
 
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
@@ -195,7 +196,6 @@ impl Font {
         let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
 
         Some(Font(Arc::new(Prehashed::new(Repr {
-            data: data.clone(),
             font_ref_yoke,
             font_info: Arc::new(font_info),
         }))))
