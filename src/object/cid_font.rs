@@ -213,7 +213,8 @@ fn subset_font(
     let mut data = subsetted.as_slice();
 
     // If we have a CFF font, only embed the standalone CFF program.
-    if let Some(cff) = font_ref.data_for_tag(Cff::TAG) {
+    let subsetted_ref = skrifa::FontRef::new(data).unwrap();
+    if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
         data = cff.as_bytes();
     }
 
