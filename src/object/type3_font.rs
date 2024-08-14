@@ -2,7 +2,7 @@ use crate::font;
 use crate::font::{Font, Glyph, GlyphType};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
-use crate::serialize::SerializerContext;
+use crate::serialize::{Object, SerializerContext};
 use crate::surface::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
@@ -86,8 +86,10 @@ impl Type3Font {
             .copied()
             .map(|n| self.to_font_units(n))
     }
+}
 
-    pub fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+impl Object for Type3Font {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let svg_settings = sc.serialize_settings.svg_settings;
 
