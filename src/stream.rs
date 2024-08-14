@@ -1,4 +1,4 @@
-use crate::font::Glyph;
+use crate::font::{Font, Glyph};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::{Color, ColorSpace};
@@ -18,7 +18,6 @@ use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
-use fontdb::{Database, ID};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
@@ -191,7 +190,6 @@ impl ContentBuilder {
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
@@ -207,7 +205,6 @@ impl ContentBuilder {
         self.fill_stroke_glyph_run(
             x,
             y,
-            fontdb,
             sc,
             TextRenderingMode::Fill,
             move |sb, sc| {
@@ -227,7 +224,6 @@ impl ContentBuilder {
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
@@ -243,7 +239,6 @@ impl ContentBuilder {
         self.fill_stroke_glyph_run(
             x,
             y,
-            fontdb,
             sc,
             TextRenderingMode::Stroke,
             |sb, sc| {
@@ -265,11 +260,12 @@ impl ContentBuilder {
         cur_y: f32,
         cur_font: FontResource,
         cur_size: f32,
-        fontdb: &mut Database,
         sc: &mut SerializerContext,
         glyphs: &mut Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
-        let font_name = self.rd_builder.register_resource(Resource::Font(cur_font));
+        let font_name = self
+            .rd_builder
+            .register_resource(Resource::Font(cur_font.clone()));
         self.content.set_font(font_name.to_pdf_name(), cur_size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
@@ -283,8 +279,7 @@ impl ContentBuilder {
 
         while let Some(glyph) = glyphs.peek() {
             let (font_resource, gid) = sc.map_glyph(
-                glyph.font_id,
-                fontdb,
+                glyph.font.clone(),
                 Glyph::new(glyph.glyph_id, glyph.text.clone()),
             );
             if font_resource != cur_font || glyph.size != cur_size {
@@ -337,7 +332,6 @@ impl ContentBuilder {
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
@@ -353,8 +347,7 @@ impl ContentBuilder {
 
             while let Some(glyph) = glyphs.peek() {
                 let (font_resource, _) = sc.map_glyph(
-                    glyph.font_id,
-                    fontdb,
+                    glyph.font.clone(),
                     Glyph::new(glyph.glyph_id, glyph.text.clone()),
                 );
                 sb.encode_single(
@@ -362,7 +355,6 @@ impl ContentBuilder {
                     cur_y,
                     font_resource,
                     glyph.size,
-                    fontdb,
                     sc,
                     &mut glyphs,
                 )
@@ -703,7 +695,7 @@ impl ContentBuilder {
 
 #[derive(Debug)]
 pub struct TestGlyph {
-    font_id: ID,
+    font: Font,
     glyph_id: GlyphId,
     x_advance: f32,
     x_offset: f32,
@@ -713,7 +705,7 @@ pub struct TestGlyph {
 
 impl TestGlyph {
     pub fn new(
-        font_id: ID,
+        font: Font,
         glyph_id: GlyphId,
         x_advance: f32,
         x_offset: f32,
@@ -721,7 +713,7 @@ impl TestGlyph {
         text: String,
     ) -> Self {
         Self {
-            font_id,
+            font,
             glyph_id,
             x_advance,
             x_offset,

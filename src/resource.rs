@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::device_cmyk::DeviceCmyk;
 use crate::object::color_space::luma::{DeviceGray, SGray};
 use crate::object::color_space::rgb::{DeviceRgb, Srgb};
@@ -10,7 +11,6 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
-use fontdb::ID;
 use pdf_writer::writers::Resources;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
@@ -331,15 +331,15 @@ where
 
 pub type ResourceNumber = u32;
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FontResource {
-    pub font_id: ID,
+    pub font: Font,
     pub pdf_index: usize,
 }
 
 impl FontResource {
-    pub fn new(font_id: ID, pdf_index: usize) -> Self {
-        Self { font_id, pdf_index }
+    pub fn new(font: Font, pdf_index: usize) -> Self {
+        Self { font, pdf_index }
     }
 }
 

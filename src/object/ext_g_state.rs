@@ -135,7 +135,6 @@ mod tests {
     use crate::stream::Stream;
     use crate::test_utils::check_snapshot;
     use crate::MaskType;
-    use fontdb::Database;
     use pdf_writer::types::BlendMode;
     use usvg::NormalizedF32;
 
@@ -149,7 +148,7 @@ mod tests {
         let mut sc = sc();
         let ext_state = ExtGState::new();
         sc.add(ext_state);
-        check_snapshot("ext_g_state/empty", sc.finish(&Database::new()).as_bytes());
+        check_snapshot("ext_g_state/empty", sc.finish().as_bytes());
     }
 
     #[test]
@@ -160,10 +159,7 @@ mod tests {
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
         sc.add(ext_state);
-        check_snapshot(
-            "ext_g_state/default_values",
-            sc.finish(&Database::new()).as_bytes(),
-        );
+        check_snapshot("ext_g_state/default_values", sc.finish().as_bytes());
     }
 
     #[test]
@@ -176,9 +172,6 @@ mod tests {
             .blend_mode(BlendMode::Difference)
             .mask(mask);
         sc.add(ext_state);
-        check_snapshot(
-            "ext_g_state/all_set",
-            sc.finish(&Database::new()).as_bytes(),
-        );
+        check_snapshot("ext_g_state/all_set", sc.finish().as_bytes());
     }
 }

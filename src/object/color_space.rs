@@ -306,7 +306,6 @@ mod tests {
     use crate::resource::ColorSpaceEnum;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::check_snapshot;
-    use fontdb::Database;
 
     fn sc() -> SerializerContext {
         let settings = SerializeSettings::default_test();
@@ -317,13 +316,13 @@ mod tests {
     fn sgray() {
         let mut sc = sc();
         sc.add(ColorSpaceEnum::SGray(SGray));
-        check_snapshot("color_space/sgray", sc.finish(&Database::new()).as_bytes());
+        check_snapshot("color_space/sgray", sc.finish().as_bytes());
     }
 
     #[test]
     fn srgb() {
         let mut sc = sc();
         sc.add(ColorSpaceEnum::Srgb(Srgb));
-        check_snapshot("color_space/srgb", sc.finish(&Database::new()).as_bytes());
+        check_snapshot("color_space/srgb", sc.finish().as_bytes());
     }
 }

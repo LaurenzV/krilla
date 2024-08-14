@@ -4,7 +4,6 @@ use crate::util::RectExt;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
-use skrifa::raw::types::NameId;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::{FontRef, GlyphId};
 use std::collections::BTreeMap;
@@ -262,12 +261,11 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::Glyph;
+    use crate::font::{Font, Glyph};
 
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::{check_snapshot, load_font};
-    use fontdb::{Database, Source};
-
+    use skrifa::instance::Location;
     use skrifa::GlyphId;
     use std::sync::Arc;
 
@@ -280,10 +278,9 @@ mod tests {
     fn ttf_font() {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
-        let mut db = Database::new();
-        let id = db.load_font_source(Source::Binary(font_data.clone()))[0];
-        sc.map_glyph(id, &mut db, Glyph::new(GlyphId::new(36), "A".to_string()));
-        sc.map_glyph(id, &mut db, Glyph::new(GlyphId::new(37), "B".to_string()));
-        check_snapshot("cid_font/ttf_font", sc.finish(&db).as_bytes());
+        let font = Font::new(font_data, 0, Location::default()).unwrap();
+        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(36), "A".to_string()));
+        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(37), "B".to_string()));
+        check_snapshot("cid_font/ttf_font", sc.finish().as_bytes());
     }
 }

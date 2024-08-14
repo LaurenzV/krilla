@@ -1,3 +1,4 @@
+use crate::font::Font;
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -6,8 +7,9 @@ use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
 use crate::stream::{ContentBuilder, Stream, TestGlyph};
 use crate::{Fill, FillRule, Stroke};
-use fontdb::Database;
+use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
+use std::collections::HashMap;
 use std::iter::Peekable;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
@@ -62,24 +64,22 @@ impl<'a> Surface<'a> {
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         fill: Fill<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyph_run(x, y, fontdb, self.sc, fill, glyphs);
+            .fill_glyph_run(x, y, self.sc, fill, glyphs);
     }
 
     pub fn stroke_glyph_run(
         &mut self,
         x: f32,
         y: f32,
-        fontdb: &mut Database,
         stroke: Stroke<impl ColorSpace>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyph_run(x, y, fontdb, self.sc, stroke, glyphs);
+            .stroke_glyph_run(x, y, self.sc, stroke, glyphs);
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {
@@ -160,6 +160,10 @@ impl<'a> Surface<'a> {
 
     pub fn draw_shading(&mut self, shading: &ShadingFunction) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
+    }
+
+    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+        self.sc.convert_fontdb(db, ids)
     }
 
     pub fn finish(mut self) {

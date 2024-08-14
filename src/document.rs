@@ -1,6 +1,5 @@
 use crate::serialize::{SerializeSettings, SerializerContext};
 use crate::surface::PageBuilder;
-use fontdb::Database;
 use tiny_skia_path::Size;
 
 pub struct Document {
@@ -22,7 +21,7 @@ impl Document {
         PageBuilder::new(&mut self.serializer_context, size)
     }
 
-    pub fn finish(self, fontdb: &Database) -> Vec<u8> {
-        self.serializer_context.finish(fontdb).finish()
+    pub fn finish(self) -> Vec<u8> {
+        self.serializer_context.finish().finish()
     }
 }

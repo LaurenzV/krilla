@@ -1,7 +1,6 @@
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::Prehashed;
-use fontdb::Database;
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -69,6 +68,7 @@ impl OutlinePen for OutlineBuilder {
 pub struct FontInfo {
     index: u32,
     checksum: u32,
+    location: Location,
     pub(crate) units_per_em: u16,
     global_bbox: Rect,
     postscript_name: Option<String>,
@@ -84,17 +84,16 @@ pub struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
-    location: Location,
-    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
 }
 
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        // Need to include index as well, because ttc fonts with different indices will have
-        // the same underlying bytes, but we distinguish them by their index as well.
-        self.font_info.index.hash(state);
-        self.location.hash(state);
-        self.data.as_ref().as_ref().hash(state);
+        // We assume that if the font info is distinct, the font itself is distinct as well. This
+        // strictly doesn't have to be the case, while the font does have a checksum, it's "only" a
+        // u32. The proper way would be to hash the whole font data, but this is just too expensive.
+        // However, the odds of the checksum AND all font metrics (including font name) being the same
+        // with the font being different is diminishingly low.
+        self.font_info.hash(state);
     }
 }
 
@@ -108,10 +107,11 @@ impl Debug for Font {
 }
 
 impl FontInfo {
-    pub fn new(font_ref: FontRef, index: u32, location: LocationRef) -> Option<Self> {
-        let checksum = font_ref.head().unwrap().checksum_adjustment();
+    pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
+        let font_ref = FontRef::from_index(data, index).ok()?;
+        let checksum = font_ref.head().ok()?.checksum_adjustment();
 
-        let metrics = font_ref.metrics(Size::unscaled(), location);
+        let metrics = font_ref.metrics(Size::unscaled(), &location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
         let descent = FiniteF32::new(metrics.descent).unwrap();
         let is_monospaced = metrics.is_monospace;
@@ -159,6 +159,7 @@ impl FontInfo {
         Some(FontInfo {
             index,
             checksum,
+            location,
             units_per_em,
             postscript_name,
             ascent,
@@ -192,15 +193,11 @@ impl Font {
                 },
             );
 
-        let data_ref = data.as_ref().as_ref();
-        let font_ref = FontRef::from_index(data_ref, index).ok()?;
-        let font_info = FontInfo::new(font_ref.clone(), index, (&location).into())?;
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
 
         Some(Font(Arc::new(Prehashed::new(Repr {
-            data: data.clone(),
             font_ref_yoke,
             font_info: Arc::new(font_info),
-            location,
         }))))
     }
 
@@ -249,7 +246,7 @@ impl Font {
     }
 
     pub fn location_ref(&self) -> LocationRef {
-        (&self.0.location).into()
+        (&self.0.font_info.location).into()
     }
 
     pub fn is_type3_font(&self) -> bool {
@@ -287,13 +284,7 @@ pub fn draw_glyph(
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
         glyph_type = Some(GlyphType::Colr);
-    } else if let Some(()) = svg::draw_glyph(
-        font.clone(),
-        svg_settings,
-        glyph,
-        &mut Database::new(),
-        surface,
-    ) {
+    } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface) {
         glyph_type = Some(GlyphType::Svg);
     } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface) {
         glyph_type = Some(GlyphType::Bitmap);
@@ -313,12 +304,9 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
     use crate::serialize::SerializeSettings;
     use crate::stream::TestGlyph;
     use crate::Transform;
-    use crate::{Database, Source};
 
-    let mut fontdb = Database::new();
-    let cloned = font_data.clone();
-    let font_ref = FontRef::from_index(&cloned, 0).unwrap();
-    let id = fontdb.load_font_source(Source::Binary(font_data))[0];
+    let font = Font::new(font_data, 0, Location::default()).unwrap();
+    let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file =
@@ -374,9 +362,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
         surface.fill_glyph_run(
             0.0,
             0.0,
-            &mut fontdb,
             crate::Fill::<Rgb>::default(),
-            [TestGlyph::new(id, i, 0.0, 0.0, size as f32, text)]
+            [TestGlyph::new(font.clone(), i, 0.0, 0.0, size as f32, text)]
                 .into_iter()
                 .peekable(),
         );
@@ -388,7 +375,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
 
     surface.finish();
     builder.finish();
-    let pdf = document_builder.finish(&fontdb);
+    let pdf = document_builder.finish();
     let _ = std::fs::write(format!("out/{}.pdf", name), &pdf);
     let _ = std::fs::write(format!("out/{}.txt", name), &pdf);
 }

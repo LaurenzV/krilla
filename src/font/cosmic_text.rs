@@ -27,6 +27,8 @@ mod tests {
         let mut builder = document_builder.start_page(page_size);
         let mut surface = builder.surface();
 
+        let font_map = surface.convert_fontdb(font_system.db_mut(), None);
+
         // Inspect the output runs
         for run in buffer.layout_runs() {
             let y_offset = run.line_y;
@@ -34,9 +36,8 @@ mod tests {
                 .glyphs
                 .iter()
                 .map(|g| {
-                    eprintln!("{:?}", g);
                     TestGlyph::new(
-                        g.font_id,
+                        font_map.get(&g.font_id).unwrap().clone(),
                         GlyphId::new(g.glyph_id as u32),
                         g.w,
                         g.x_offset,
@@ -45,19 +46,13 @@ mod tests {
                     )
                 })
                 .peekable();
-            surface.fill_glyph_run(
-                0.0,
-                y_offset,
-                font_system.db_mut(),
-                Fill::<Rgb>::default(),
-                iter,
-            );
+            surface.fill_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
         }
 
         surface.finish();
         builder.finish();
 
-        let pdf = document_builder.finish(font_system.db());
+        let pdf = document_builder.finish();
         let _ = std::fs::write(format!("out/cosmic_text.pdf"), &pdf);
         let _ = std::fs::write(format!("out/cosmic_text.txt"), &pdf);
     }
