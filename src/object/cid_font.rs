@@ -5,7 +5,7 @@ use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::GlyphId;
+use skrifa::{FontRef, GlyphId};
 use std::collections::BTreeMap;
 use subsetter::GlyphRemapper;
 
@@ -92,7 +92,7 @@ impl Object for CIDFont {
 
         let (subsetted_font, filter) = subset_font(
             sc,
-            self.font.font_ref().data().as_bytes(),
+            self.font.font_ref(),
             self.font.index(),
             &glyph_remapper,
         );
@@ -205,16 +205,15 @@ impl Object for CIDFont {
 /// Subset a font with the given glyphs.
 fn subset_font(
     sc: &SerializerContext,
-    font_data: &[u8],
+    font_ref: &FontRef,
     index: u32,
     glyph_remapper: &GlyphRemapper,
 ) -> (Vec<u8>, Filter) {
-    let subsetted = subsetter::subset(font_data, index, glyph_remapper).unwrap();
+    let subsetted = subsetter::subset(font_ref.data().as_bytes(), index, glyph_remapper).unwrap();
     let mut data = subsetted.as_slice();
 
-    // Extract the standalone CFF font program if applicable.
-    let face = skrifa::FontRef::new(data).unwrap();
-    if let Some(cff) = face.data_for_tag(Cff::TAG) {
+    // If we have a CFF font, only embed the standalone CFF program.
+    if let Some(cff) = font_ref.data_for_tag(Cff::TAG) {
         data = cff.as_bytes();
     }
 
