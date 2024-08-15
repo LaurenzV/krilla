@@ -115,12 +115,10 @@ mod tests {
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
     use crate::{Fill, MaskType, Paint, rgb};
-    use crate::object::ext_g_state::ExtGState;
     use crate::object::mask::Mask;
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::stream::ContentBuilder;
-    use crate::surface::{StreamBuilder, Surface};
+    use crate::surface::StreamBuilder;
     use crate::test_utils::check_snapshot;
 
     fn sc() -> SerializerContext {

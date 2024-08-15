@@ -4,13 +4,17 @@ use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::{Rect, Size};
 
+/// A page.
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct Page {
+    /// The stream of the page.
     pub stream: Stream,
+    /// The media box of the page.
     pub media_box: Rect,
 }
 
 impl Page {
+    /// Create a new page.
     pub fn new(size: Size, stream: Stream) -> Self {
         Self {
             stream,
@@ -52,3 +56,58 @@ impl Object for Page {
 }
 
 impl RegisterableObject for Page {}
+
+#[cfg(test)]
+mod tests {
+    use tiny_skia_path::{PathBuilder, Rect, Size};
+    use usvg::NormalizedF32;
+    use crate::{Fill, MaskType, Paint, rgb};
+    use crate::object::mask::Mask;
+    use crate::object::page::Page;
+    use crate::rgb::Rgb;
+    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::surface::StreamBuilder;
+    use crate::test_utils::check_snapshot;
+
+    #[test]
+    fn simple_page() {
+        let mut sc = SerializerContext::new(SerializeSettings::default_test());
+
+        let mut stream_builder = StreamBuilder::new(&mut sc);
+        let mut surface = stream_builder.surface();
+
+        let mut builder = PathBuilder::new();
+        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
+        let path = builder.finish().unwrap();
+
+        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.finish();
+        let page = Page::new(Size::from_wh(200.0, 200.0).unwrap(), stream_builder.finish());
+        sc.add(page);
+
+        check_snapshot("page/simple_page", sc.finish().as_bytes());
+    }
+
+    #[test]
+    fn page_with_resources() {
+        let mut sc = SerializerContext::new(SerializeSettings {
+            no_device_cs: true,
+            ..SerializeSettings::default_test()
+        });
+
+        let mut stream_builder = StreamBuilder::new(&mut sc);
+        let mut surface = stream_builder.surface();
+
+        let mut builder = PathBuilder::new();
+        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
+        let path = builder.finish().unwrap();
+
+        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.finish();
+        let page = Page::new(Size::from_wh(200.0, 200.0).unwrap(), stream_builder.finish());
+        sc.add(page);
+
+        check_snapshot("page/page_with_resources", sc.finish().as_bytes());
+    }
+
+}
