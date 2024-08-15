@@ -109,17 +109,16 @@ impl Object for Mask {
 
 impl RegisterableObject for Mask {}
 
-
 #[cfg(test)]
 mod tests {
-    use tiny_skia_path::{PathBuilder, Rect};
-    use usvg::NormalizedF32;
-    use crate::{Fill, MaskType, Paint, rgb};
     use crate::object::mask::Mask;
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::StreamBuilder;
     use crate::test_utils::check_snapshot;
+    use crate::{rgb, Fill, MaskType, Paint};
+    use tiny_skia_path::{PathBuilder, Rect};
+    use usvg::NormalizedF32;
 
     fn sc() -> SerializerContext {
         let settings = SerializeSettings::default_test();
@@ -136,11 +135,14 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        surface.fill_path(&path, Fill {
-            paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
-            opacity: NormalizedF32::new(0.5).unwrap(),
-            rule: Default::default(),
-        });
+        surface.fill_path(
+            &path,
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+                opacity: NormalizedF32::new(0.5).unwrap(),
+                rule: Default::default(),
+            },
+        );
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
         sc.add(mask);
@@ -157,5 +159,4 @@ mod tests {
     pub fn alpha() {
         mask_impl(MaskType::Alpha, "alpha");
     }
-
 }

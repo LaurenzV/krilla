@@ -59,15 +59,15 @@ impl RegisterableObject for Page {}
 
 #[cfg(test)]
 mod tests {
-    use tiny_skia_path::{PathBuilder, Rect, Size};
-    use usvg::NormalizedF32;
-    use crate::{Fill, MaskType, Paint, rgb};
     use crate::object::mask::Mask;
     use crate::object::page::Page;
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::StreamBuilder;
     use crate::test_utils::check_snapshot;
+    use crate::{rgb, Fill, MaskType, Paint};
+    use tiny_skia_path::{PathBuilder, Rect, Size};
+    use usvg::NormalizedF32;
 
     #[test]
     fn simple_page() {
@@ -82,7 +82,10 @@ mod tests {
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
-        let page = Page::new(Size::from_wh(200.0, 200.0).unwrap(), stream_builder.finish());
+        let page = Page::new(
+            Size::from_wh(200.0, 200.0).unwrap(),
+            stream_builder.finish(),
+        );
         sc.add(page);
 
         check_snapshot("page/simple_page", sc.finish().as_bytes());
@@ -104,10 +107,12 @@ mod tests {
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
-        let page = Page::new(Size::from_wh(200.0, 200.0).unwrap(), stream_builder.finish());
+        let page = Page::new(
+            Size::from_wh(200.0, 200.0).unwrap(),
+            stream_builder.finish(),
+        );
         sc.add(page);
 
         check_snapshot("page/page_with_resources", sc.finish().as_bytes());
     }
-
 }

@@ -37,8 +37,7 @@ pub(crate) mod test_utils {
     }
 
     fn snapshot_path(name: &str) -> PathBuf {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/snapshots");
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
 
         let parts = name.split("/").collect::<Vec<_>>();
 
