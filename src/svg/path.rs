@@ -26,7 +26,7 @@ pub fn fill_path(path: &usvg::Path, surface: &mut Surface, process_context: &mut
     if let Some(fill) = path.fill() {
         let fill = convert_fill(
             fill,
-            surface.stream_surface(),
+            surface.stream_builder(),
             process_context,
             tiny_skia_path::Transform::identity(),
         );
@@ -39,7 +39,7 @@ pub fn stroke_path(path: &usvg::Path, surface: &mut Surface, process_context: &m
     if let Some(stroke) = path.stroke() {
         let stroke = convert_stroke(
             stroke,
-            surface.stream_surface(),
+            surface.stream_builder(),
             process_context,
             tiny_skia_path::Transform::identity(),
         );

@@ -26,6 +26,9 @@ pub use tiny_skia_path::{Size, Transform};
 mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
+    use crate::serialize::SerializerContext;
+    use crate::stream::ContentBuilder;
+    use crate::surface::Surface;
 
     const REPLACE: bool = true;
 

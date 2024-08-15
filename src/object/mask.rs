@@ -32,7 +32,7 @@ impl Mask {
     }
 
     /// Create a new mask for a shading to encode the opacity channels.
-    pub fn new_from_shading(
+    pub(crate) fn new_from_shading(
         gradient_properties: GradientProperties,
         shading_transform: TransformWrapper,
         bbox: Rect,
@@ -71,7 +71,7 @@ impl Mask {
     }
 
     /// Return the custom bbox of the mask, if existing.
-    pub fn custom_bbox(&self) -> Option<Rect> {
+    pub(crate) fn custom_bbox(&self) -> Option<Rect> {
         self.custom_bbox
     }
 }
@@ -113,3 +113,4 @@ impl Object for Mask {
 }
 
 impl RegisterableObject for Mask {}
+

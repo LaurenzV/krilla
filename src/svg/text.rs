@@ -44,7 +44,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             let fill = span.fill.as_ref().map(|f| {
                 convert_fill(
                     &f,
-                    surface.stream_surface(),
+                    surface.stream_builder(),
                     process_context,
                     transform.invert().unwrap(),
                 )
@@ -53,7 +53,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             let stroke = span.stroke.as_ref().map(|s| {
                 convert_stroke(
                     &s,
-                    surface.stream_surface(),
+                    surface.stream_builder(),
                     process_context,
                     transform.invert().unwrap(),
                 )

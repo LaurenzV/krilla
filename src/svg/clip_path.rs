@@ -193,7 +193,7 @@ fn render_complex(
     surface: &mut Surface,
     process_context: &mut ProcessContext,
 ) -> u16 {
-    let mut stream_builder = surface.stream_surface();
+    let mut stream_builder = surface.stream_builder();
     let mut sub_surface = stream_builder.surface();
 
     let mut pop_count = 0;

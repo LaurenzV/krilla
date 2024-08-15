@@ -46,7 +46,7 @@ impl<'a> Surface<'a> {
         }
     }
 
-    pub fn stream_surface(&mut self) -> StreamBuilder {
+    pub fn stream_builder(&mut self) -> StreamBuilder {
         StreamBuilder::new(&mut self.sc)
     }
 
