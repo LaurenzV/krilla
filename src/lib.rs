@@ -23,27 +23,22 @@ pub use tiny_skia_path::{Size, Transform};
 // TODO: Add acknowledgements and license files
 
 #[cfg(test)]
-mod test_utils {
+pub(crate) mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
-    use crate::serialize::SerializerContext;
-    use crate::stream::ContentBuilder;
-    use crate::surface::Surface;
 
     const REPLACE: bool = true;
 
     pub fn load_font(name: &str) -> Vec<u8> {
-        let mut path = PathBuf::new();
-        path.push(env!("CARGO_MANIFEST_DIR"));
-        path.push("tests/fonts");
-        path.push(name);
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fonts")
+            .join(name);
         std::fs::read(&path).unwrap()
     }
 
     fn snapshot_path(name: &str) -> PathBuf {
-        let mut path = PathBuf::new();
-        path.push(env!("CARGO_MANIFEST_DIR"));
-        path.push("tests/snapshots");
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/snapshots");
 
         let parts = name.split("/").collect::<Vec<_>>();
 

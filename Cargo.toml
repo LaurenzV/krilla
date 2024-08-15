@@ -25,5 +25,6 @@ tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"
 
 [dev-dependencies]
 difference = "2.0.0"
+sitro = {git = "https://github.com/LaurenzV/sitro", rev="87c0d14"}
 
 
