@@ -69,11 +69,6 @@ impl Mask {
             custom_bbox: Some(bbox),
         })
     }
-
-    /// Return the custom bbox of the mask, if existing.
-    pub(crate) fn custom_bbox(&self) -> Option<Rect> {
-        self.custom_bbox
-    }
 }
 
 /// A mask type.
@@ -114,3 +109,55 @@ impl Object for Mask {
 
 impl RegisterableObject for Mask {}
 
+
+#[cfg(test)]
+mod tests {
+    use tiny_skia_path::{PathBuilder, Rect};
+    use usvg::NormalizedF32;
+    use crate::{Fill, MaskType, Paint, rgb};
+    use crate::object::ext_g_state::ExtGState;
+    use crate::object::mask::Mask;
+    use crate::rgb::Rgb;
+    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::stream::ContentBuilder;
+    use crate::surface::{StreamBuilder, Surface};
+    use crate::test_utils::check_snapshot;
+
+    fn sc() -> SerializerContext {
+        let settings = SerializeSettings::default_test();
+        SerializerContext::new(settings)
+    }
+
+    fn mask_impl(mask_type: MaskType, name: &str) {
+        let mut sc = sc();
+
+        let mut stream_builder = StreamBuilder::new(&mut sc);
+        let mut surface = stream_builder.surface();
+
+        let mut builder = PathBuilder::new();
+        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
+        let path = builder.finish().unwrap();
+
+        surface.fill_path(&path, Fill {
+            paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+            opacity: NormalizedF32::new(0.5).unwrap(),
+            rule: Default::default(),
+        });
+        surface.finish();
+        let mask = Mask::new(stream_builder.finish(), mask_type);
+        sc.add(mask);
+
+        check_snapshot(&format!("mask/{}", name), sc.finish().as_bytes());
+    }
+
+    #[test]
+    pub fn luminosity() {
+        mask_impl(MaskType::Luminosity, "luminosity");
+    }
+
+    #[test]
+    pub fn alpha() {
+        mask_impl(MaskType::Alpha, "alpha");
+    }
+
+}

@@ -1,0 +1,50 @@
+%PDF-1.7
+%AAAA
+
+5 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+>>
+endobj
+
+4 0 obj
+<<
+  /Length 74
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ExtGState <<
+      /g0 5 0 R
+    >>
+  >>
+  /BBox [0 0 180 180]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /CS /DeviceRGB
+  >>
+>>
+stream
+q
+/g0 gs
+/DeviceRGB cs
+1 0 0 scn
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q
+endstream
+endobj
+
+3 0 obj
+<<
+  /Type /Mask
+  /S /Alpha
+  /G 4 0 R
+>>
+endobj
+
