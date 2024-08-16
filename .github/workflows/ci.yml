@@ -51,7 +51,7 @@ jobs:
         with:
           name: mutool
           path: |
-            build/release/mutool
+            mupdf-1.24.8-source/build/release/mutool
 
   tests:
     name: Tests
@@ -91,6 +91,12 @@ jobs:
           name: pdfium
           path: .
 
+      - name: Download mutool
+        uses: actions/download-artifact@v4
+        with:
+          name: mutool
+          path: .
+
       - name: Get pdfium library
         run: |
           curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
@@ -123,6 +129,7 @@ jobs:
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
           echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
           echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
+          echo "MUPDF_BIN=$(pwd)/mutool" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --release

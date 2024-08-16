@@ -52,12 +52,12 @@ macro_rules! generate_renderer_tests {
                 $test_body(renderer);
             }
 
-            // #[test]
-            // fn [<$test_name _mupdf>]() {
-            //     let renderer = Renderer::Mupdf;
-            //     $test_body(renderer);
-            // }
-            //
+            #[test]
+            fn [<$test_name _mupdf>]() {
+                let renderer = Renderer::Mupdf;
+                $test_body(renderer);
+            }
+
             #[test]
             fn [<$test_name _xpdf>]() {
                 let renderer = Renderer::Xpdf;
