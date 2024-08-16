@@ -77,11 +77,11 @@ macro_rules! generate_renderer_tests {
             //     $test_body(renderer);
             // }
             //
-            // #[test]
-            // fn [<$test_name _pdfbox>]() {
-            //     let renderer = Renderer::PdfboxRenderer;
-            //     $test_body(renderer);
-            // }
+            #[test]
+            fn [<$test_name _pdfbox>]() {
+                let renderer = Renderer::PdfboxRenderer;
+                $test_body(renderer);
+            }
         }
     };
 }
