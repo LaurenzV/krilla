@@ -54,31 +54,32 @@ jobs:
           name: pdfium
           path: sitro/target/release/pdfium
 
-#  mupdf:
-#    name: MuPDF
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Cache MuPDF binary
-#        uses: actions/cache@v4
-#        with:
-#          path: mupdf-1.24.8-source/build/release/mutool
-#          key: mupdf-binary-v1
-#      - name: Download MuPDF (if not cached)
-#        if: steps.cache.outputs.cache-hit != 'true'
-#        run: |
-#          curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
-#          tar -xvzf ./mupdf-1.24.8-source.tar.gz
-#      - name: Build MuPDF (if not cached)
-#        if: steps.cache.outputs.cache-hit != 'true'
-#        run: |
-#          cd mupdf-1.24.8-source
-#          make HAVE_X11=no HAVE_GLUT=no
-#      - name: Upload binary
-#        if: steps.cache.outputs.cache-hit != 'true'
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: mutool
-#          path: mupdf-1.24.8-source/build/release/mutool
+  mupdf:
+    name: MuPDF
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache MuPDF binary
+        id: cache-mupdf
+        uses: actions/cache@v4
+        with:
+          path: mupdf-1.24.8-source/build/release/mutool
+          key: mupdf-binary-v1
+      - name: Download MuPDF (if not cached)
+        if: steps.cache-mupdf.outputs.cache-hit != 'true'
+        run: |
+          curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
+          tar -xvzf ./mupdf-1.24.8-source.tar.gz
+      - name: Build MuPDF (if not cached)
+        if: steps.cache-mupdf.outputs.cache-hit != 'true'
+        run: |
+          cd mupdf-1.24.8-source
+          make HAVE_X11=no HAVE_GLUT=no
+      - name: Upload binary
+        if: steps.cache-mupdf.outputs.cache-hit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutool
+          path: mupdf-1.24.8-source/build/release/mutool
 
 #  tests:
 #    name: Tests
