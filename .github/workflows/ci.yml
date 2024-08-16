@@ -29,6 +29,19 @@ jobs:
           tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
           mv ./pdfium-linux-x64/lib/libpdfium.so ./tests/pdfium
 
+      - name: Clone sitro repository
+        run: |
+          git clone https://github.com/LaurenzV/sitro
+          cd sitro/src/pdfium
+
+      - name: Build pdfium binary
+        run: |
+          cd sitro/src/pdfium
+          cargo run --release
+
+      - name: Set PDFIUM_BIN environment variable
+        run: echo "PDFIUM_BIN=$(pwd)/sitro/target/release/pdfium" >> $GITHUB_ENV
+
       - name: Run tests
         id: tests
         run: cargo test --release
