@@ -19,6 +19,23 @@ jobs:
           name: pdftopng
           path: |
             xpdf-tools-linux-4.05/bin64/pdftopng
+  pdfium:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone sitro
+        run: |
+          git clone https://github.com/LaurenzV/sitro
+      - name: Build pdfium
+        run: |
+          cd sitro/src/pdfium
+          cargo build --release
+            - name: Upload binary
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pdfium
+          path: |
+            sitro/target/release/pdfium
+
   tests:
     name: Tests
     runs-on: ubuntu-latest
@@ -36,31 +53,31 @@ jobs:
       - name: Get Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Download pdftopng binary
+      - name: Download pdftopng
         uses: actions/download-artifact@v4
         with:
           name: pdftopng
           path: .
-#      - name: Get pdfium
-#        run: |
-#          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
-#          mkdir pdfium-linux-x64
-#          tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
-#          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
-#
-#      - name: Clone sitro repository
-#        run: |
-#          git clone https://github.com/LaurenzV/sitro
-#
-#      - name: Build pdfium binary
-#        run: |
-#          cd sitro/src/pdfium
-#          cargo build --release
-#
-      - name: Set env variable
+
+      - name: Download pdfium
+        uses: actions/download-artifact@v4
+        with:
+          name: pdfium
+          path: .
+      - name: Get pdfium library
+        run: |
+          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
+          mkdir pdfium-linux-x64
+          tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
+          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
+          rm pdfium-linux-x64.tgz
+          rm pdfium-linux-x64
+
+      - name: Setup
         run: |
           sudo chmod +x pdftopng
           echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
+          echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --release
