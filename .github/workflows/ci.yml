@@ -49,6 +49,8 @@ jobs:
       - name: Set PDFIUM_BIN environment variable
         run: echo "PDFIUM_BIN=$(pwd)/sitro/target/release/pdfium" >> $GITHUB_ENV
 
+      - name: Build
+        run: cargo build --release
+
       - name: Run tests
-        id: tests
         run: cargo test --release
