@@ -37,7 +37,7 @@ jobs:
       - name: Build pdfium binary
         run: |
           cd sitro/src/pdfium
-          cargo run --release
+          cargo build --release
 
       - name: Set PDFIUM_BIN environment variable
         run: echo "PDFIUM_BIN=$(pwd)/sitro/target/release/pdfium" >> $GITHUB_ENV
