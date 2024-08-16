@@ -45,7 +45,13 @@ jobs:
       - name: Build mupdf
         run: |
           cd mupdf-1.24.8-source
-          make HAVE_X11=no HAVE_GLUT=no prefix=/usr/local install
+          make HAVE_X11=no HAVE_GLUT=no
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutool
+          path: |
+            build/release/mutool
 
   tests:
     name: Tests
