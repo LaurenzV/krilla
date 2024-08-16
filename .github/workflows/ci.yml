@@ -42,9 +42,10 @@ jobs:
         run: |
           curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
           tar -xvzf ./mupdf-1.24.8-source.tar.gz
-          cd mupdf-1.24.8-source.tar.gz
       - name: Build mupdf
-        run: make HAVE_X11=no HAVE_GLUT=no prefix=/usr/local install
+        run: |
+          cd mupdf-1.24.8-source
+          make HAVE_X11=no HAVE_GLUT=no prefix=/usr/local install
 
   tests:
     name: Tests
