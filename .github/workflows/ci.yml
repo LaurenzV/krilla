@@ -107,23 +107,23 @@ jobs:
         with:
           node-version: 20
 
-      - name: Download pdftopng
-        uses: actions/download-artifact@v4
+      - id: cache-xpdf
+        uses: actions/cache@v4
         with:
-          name: pdftopng
-          path: .
+          path: pdftopng
+          key: xpdf-binary-v1
 
-      - name: Download pdfium
-        uses: actions/download-artifact@v4
+      - id: cache-pdfium
+        uses: actions/cache@v4
         with:
-          name: pdfium
-          path: .
+          path: pdfium
+          key: pdfium-binary-v1
 
-      - name: Download mutool
-        uses: actions/download-artifact@v4
+      - id: cache-mupdf
+        uses: actions/cache@v4
         with:
-          name: mutool
-          path: .
+          path: mutool
+          key: mupdf-binary-v1
 
       - name: Download the pdfium library
         run: |
