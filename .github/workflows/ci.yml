@@ -70,8 +70,8 @@ jobs:
           mkdir pdfium-linux-x64
           tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
           sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
-          rm pdfium-linux-x64.tgz
-          rm pdfium-linux-x64
+          rm -r pdfium-linux-x64.tgz
+          rm -r pdfium-linux-x64
 
       - name: Setup
         run: |
