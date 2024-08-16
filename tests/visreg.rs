@@ -58,11 +58,11 @@ macro_rules! generate_renderer_tests {
             //     $test_body(renderer);
             // }
             //
-            // #[test]
-            // fn [<$test_name _xpdf>]() {
-            //     let renderer = Renderer::Xpdf;
-            //     $test_body(renderer);
-            // }
+            #[test]
+            fn [<$test_name _xpdf>]() {
+                let renderer = Renderer::Xpdf;
+                $test_body(renderer);
+            }
 
             // #[cfg(target_os = "macos")]
             // #[test]
