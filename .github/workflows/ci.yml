@@ -122,7 +122,7 @@ jobs:
           name: mutool
           path: .
 
-      - name: Get pdfium library
+      - name: Download the pdfium library
         run: |
           curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
           mkdir pdfium-linux-x64
