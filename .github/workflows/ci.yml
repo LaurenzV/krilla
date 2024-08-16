@@ -76,6 +76,7 @@ jobs:
       - name: Setup
         run: |
           sudo chmod +x pdftopng
+          sudo chmod +x pdfium
           echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
 
