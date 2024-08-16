@@ -11,17 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cache XPDF binary
+        id: cache-xpdf
         uses: actions/cache@v4
         with:
           path: xpdf-tools-linux-4.05/bin64/pdftopng
           key: xpdf-binary-v1
       - name: Download XPDF (if not cached)
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache-xpdf.outputs.cache-hit != 'true'
         run: |
           curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
           tar -xvzf ./xpdf-tools-linux-4.05.tar.gz
       - name: Upload binary
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache-xpdf.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: pdftopng
