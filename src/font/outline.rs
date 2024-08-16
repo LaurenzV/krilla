@@ -38,6 +38,7 @@ mod tests {
     use std::sync::Arc;
 
     // This will not use Type3
+    #[ignore]
     #[test]
     fn outline_noto_sans() {
         let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();

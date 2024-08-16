@@ -327,6 +327,7 @@ mod tests {
 
     use std::sync::Arc;
 
+    #[ignore]
     #[test]
     fn colr_test() {
         let font_data =
@@ -340,12 +341,14 @@ mod tests {
         draw(Arc::new(font_data), Some(glyphs), "colr_test");
     }
 
+    #[ignore]
     #[test]
     fn noto_color() {
         let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
         draw(Arc::new(font_data), None, "colr_noto");
     }
 
+    #[ignore]
     #[test]
     fn segoe_emoji() {
         let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();

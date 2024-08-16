@@ -56,6 +56,7 @@ mod tests {
 
     use std::sync::Arc;
 
+    #[ignore]
     #[test]
     fn sbix_apple_color() {
         let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();

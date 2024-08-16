@@ -54,6 +54,7 @@ mod tests {
     use crate::font::draw;
     use std::sync::Arc;
 
+    #[ignore]
     #[test]
     fn svg_twitter() {
         let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
