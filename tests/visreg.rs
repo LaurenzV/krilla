@@ -71,12 +71,12 @@ macro_rules! generate_renderer_tests {
             //     $test_body(renderer);
             // }
             //
-            // #[test]
-            // fn [<$test_name _pdfjs>]() {
-            //     let renderer = Renderer::PdfjsRenderer;
-            //     $test_body(renderer);
-            // }
-            //
+            #[test]
+            fn [<$test_name _pdfjs>]() {
+                let renderer = Renderer::PdfjsRenderer;
+                $test_body(renderer);
+            }
+
             #[test]
             fn [<$test_name _pdfbox>]() {
                 let renderer = Renderer::PdfboxRenderer;

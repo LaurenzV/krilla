@@ -58,6 +58,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Download pdftopng
         uses: actions/download-artifact@v4
         with:
@@ -85,6 +89,15 @@ jobs:
           mv pdfbox-app-3.0.3.jar pdfbox.jar
           ls .
 
+      - name: Clone sitro
+        run: |
+          git clone https://github.com/LaurenzV/sitro
+
+      - name: npm install
+        run: |
+          cd sitro/src/pdfjs
+          npm i
+
       - name: Setup
         run: |
           sudo chmod +x pdftopng
@@ -92,6 +105,7 @@ jobs:
           echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
           echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
+          echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --release
