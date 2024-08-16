@@ -16,7 +16,7 @@ jobs:
         with:
           path: pdftopng
           key: xpdf-binary-v1
-      - name: Download XPDF (if not cached)
+      - name: Download XPDF
         if: steps.cache-xpdf.outputs.cache-hit != 'true'
         run: |
           curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
@@ -33,11 +33,11 @@ jobs:
         with:
           path: pdfium
           key: pdfium-binary-v1
-      - name: Clone sitro
+      - name: Clone sitro repo
         if: steps.cache-pdfium.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/LaurenzV/sitro
-      - name: Build pdfium (if not cached)
+      - name: Build pdfium
         if: steps.cache-pdfium.outputs.cache-hit != 'true'
         run: |
           cd sitro/src/pdfium
@@ -49,18 +49,18 @@ jobs:
     name: MuPDF
     runs-on: ubuntu-latest
     steps:
-      - name: Cache MuPDF binary
+      - name: Cache MuPDF
         id: cache-mupdf
         uses: actions/cache@v4
         with:
           path: mutool
           key: mupdf-binary-v1
-      - name: Download MuPDF (if not cached)
+      - name: Download MuPDF
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
         run: |
           curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
           tar -xvzf ./mupdf-1.24.8-source.tar.gz
-      - name: Build MuPDF (if not cached)
+      - name: Build MuPDF
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
         run: |
           cd mupdf-1.24.8-source
