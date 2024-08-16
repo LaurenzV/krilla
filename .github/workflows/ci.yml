@@ -58,7 +58,9 @@ jobs:
 #          cargo build --release
 #
       - name: Set env variable
-        run: echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
+        run: |
+          ls .
+          echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --release
