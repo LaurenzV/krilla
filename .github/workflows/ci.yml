@@ -79,7 +79,7 @@ jobs:
           rm -r pdfium-linux-x64.tgz
           rm -r pdfium-linux-x64
 
-      - name: Get pdfium library
+      - name: Get pdfbox
         run: |
           curl -LO https://www.apache.org/dyn/closer.lua/pdfbox/3.0.3/pdfbox-app-3.0.3.jar
           mv pdfbox-app-3.0.3.jar pdfbox.jar
@@ -90,7 +90,7 @@ jobs:
           sudo chmod +x pdfium
           echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
-          echo "PDFBOX_BIN=$(pwd)/pdfbox" >> $GITHUB_ENV
+          echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --release
