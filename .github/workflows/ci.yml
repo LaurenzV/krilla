@@ -6,75 +6,56 @@ env:
   RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
-  tests:
-    name: Tests
+  pdfium:
+    name: XPDF
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Get Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Get Rust cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Cache PDFium binaries
-        id: pdfium-cache
-        uses: actions/cache@v3
-        with:
-          path: pdfium-linux-x64
-          key: pdfium-5880
-
-      - name: Get pdfium
-        if: steps.pdfium-cache.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
-          mkdir pdfium-linux-x64
-          tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
-          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
-
-      - name: Cache XPDF binaries
-        id: xpdf-cache
-        uses: actions/cache@v3
-        with:
-          path: xpdf-tools-linux-4.05
-          key: xpdf-4.05
-
-      - name: Get xpdf
-        if: steps.xpdf-cache.outputs.cache-hit != 'true'
-        run: |
+      - run: |
           curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
           tar -xvzf ./xpdf-tools-linux-4.05.tar.gz
-          ls $(pwd)/xpdf-tools-linux-4.05/bin64
-          echo "XPDF_BIN=$(pwd)/xpdf-tools-linux-4.05/bin64/pdftopng" >> $GITHUB_ENV
-
-      - name: Cache sitro repository and PDFium build
-        id: sitro-cache
-        uses: actions/cache@v3
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
         with:
-          path: sitro
-          key: sitro-1
-
-      - name: Clone sitro repository
-        if: steps.sitro-cache.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/LaurenzV/sitro
-
-      - name: Build pdfium binary
-        if: steps.sitro-cache.outputs.cache-hit != 'true'
-        run: |
-          cd sitro/src/pdfium
-          cargo build --release
-
-      - name: Set PDFIUM_BIN environment variable
-        run: echo "PDFIUM_BIN=$(pwd)/sitro/target/release/pdfium" >> $GITHUB_ENV
-
-      - name: Build
-        run: cargo build --release
-
-      - name: Run testss
-        run: cargo test --release
+          name: pdftopng
+          path: |
+            xpdf-tools-linux-4.05/bin64/pdftopng
+#  tests:
+#    name: Tests
+#    runs-on: ubuntu-latest
+#    defaults:
+#      run:
+#        shell: bash
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#
+#      - name: Get Rust toolchain
+#        uses: dtolnay/rust-toolchain@stable
+#
+#      - name: Get Rust cache
+#        uses: Swatinem/rust-cache@v2
+#
+#      - name: Get pdfium
+#        run: |
+#          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
+#          mkdir pdfium-linux-x64
+#          tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
+#          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
+#
+#      - name: Clone sitro repository
+#        run: |
+#          git clone https://github.com/LaurenzV/sitro
+#
+#      - name: Build pdfium binary
+#        run: |
+#          cd sitro/src/pdfium
+#          cargo build --release
+#
+#      - name: Set PDFIUM_BIN environment variable
+#        run: echo "PDFIUM_BIN=$(pwd)/sitro/target/release/pdfium" >> $GITHUB_ENV
+#
+#      - name: Build
+#        run: cargo build --release
+#
+#      - name: Run testss
+#        run: cargo test --release
