@@ -81,7 +81,7 @@ jobs:
 
       - name: Get pdfbox
         run: |
-          curl -LO https://www.apache.org/dyn/closer.lua/pdfbox/3.0.3/pdfbox-app-3.0.3.jar
+          curl -LO https://dlcdn.apache.org/pdfbox/3.0.3/pdfbox-app-3.0.3.jar
           mv pdfbox-app-3.0.3.jar pdfbox.jar
           ls .
 
