@@ -108,6 +108,7 @@ jobs:
           node-version: 20
 
       - uses: actions/cache@v4
+        id: cache-xpdf
         with:
           path: pdftopng
           key: xpdf-binary-v1
