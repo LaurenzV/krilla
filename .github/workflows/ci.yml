@@ -27,7 +27,7 @@ jobs:
           curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
           mkdir pdfium-linux-x64
           tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
-          mv ./pdfium-linux-x64/lib/libpdfium.so /usr/local/lib
+          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
 
       - name: Clone sitro repository
         run: |
