@@ -29,6 +29,13 @@ jobs:
           tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
           sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
 
+      - name: Get xpdf
+        run: |
+          curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
+          mkdir xpdf
+          tar -xvzf ./xpdf-tools-linux-4.05.tar.gz -C xpdf
+          echo "XPDF_BIN=$(pwd)/xpdf/bin64/pdftopng" >> $GITHUB_ENV
+
       - name: Clone sitro repository
         run: |
           git clone https://github.com/LaurenzV/sitro
