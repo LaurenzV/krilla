@@ -110,7 +110,7 @@ jobs:
       - uses: actions/cache@v4
         id: cache-xpdf
         with:
-          path: pdftopng
+          path: xpdf-tools-linux-4.05/bin64/pdftopng
           key: xpdf-binary-v1
 
       - uses: actions/cache@v4
