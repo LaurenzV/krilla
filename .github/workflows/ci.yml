@@ -59,7 +59,7 @@ jobs:
 #
       - name: Set env variable
         run: |
-          ls .
+          sudo chmod +x pdftopng
           echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
 
       - name: Build
