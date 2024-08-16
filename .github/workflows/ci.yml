@@ -32,9 +32,13 @@ jobs:
       - name: Get xpdf
         run: |
           curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
+          mkdir xpdf
           tar -xvzf ./xpdf-tools-linux-4.05.tar.gz -C xpdf
+          pwd
           echo $(pwd)
           ls .
+          ls ./xpdf
+          ls ./xpdf/bin64
           ls $(pwd)/xpdf/bin64
           echo "XPDF_BIN=$(pwd)/xpdf/bin64/pdftopng" >> $GITHUB_ENV
 
