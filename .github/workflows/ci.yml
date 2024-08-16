@@ -6,7 +6,7 @@ env:
   RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
-  pdfium:
+  xpdf:
     name: XPDF
     runs-on: ubuntu-latest
     steps:
@@ -19,22 +19,28 @@ jobs:
           name: pdftopng
           path: |
             xpdf-tools-linux-4.05/bin64/pdftopng
-#  tests:
-#    name: Tests
-#    runs-on: ubuntu-latest
-#    defaults:
-#      run:
-#        shell: bash
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-#
-#      - name: Get Rust toolchain
-#        uses: dtolnay/rust-toolchain@stable
-#
-#      - name: Get Rust cache
-#        uses: Swatinem/rust-cache@v2
-#
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: xpdf
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Get Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Download pdftopng binary
+        uses: actions/download-artifact@v4
+        with:
+          name: pdftopng
+          path: .
 #      - name: Get pdfium
 #        run: |
 #          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
@@ -51,11 +57,11 @@ jobs:
 #          cd sitro/src/pdfium
 #          cargo build --release
 #
-#      - name: Set PDFIUM_BIN environment variable
-#        run: echo "PDFIUM_BIN=$(pwd)/sitro/target/release/pdfium" >> $GITHUB_ENV
-#
-#      - name: Build
-#        run: cargo build --release
-#
-#      - name: Run testss
-#        run: cargo test --release
+      - name: Set env variable
+        run: echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run testss
+        run: cargo test --release
