@@ -107,20 +107,17 @@ jobs:
         with:
           node-version: 20
 
-      - id: cache-xpdf
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: pdftopng
           key: xpdf-binary-v1
 
-      - id: cache-pdfium
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: pdfium
           key: pdfium-binary-v1
 
-      - id: cache-mupdf
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: mutool
           key: mupdf-binary-v1
