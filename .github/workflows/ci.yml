@@ -10,48 +10,73 @@ jobs:
     name: XPDF
     runs-on: ubuntu-latest
     steps:
-      - run: |
+      - name: Cache XPDF binary
+        uses: actions/cache@v4
+        with:
+          path: xpdf-tools-linux-4.05/bin64/pdftopng
+          key: xpdf-binary-v1
+      - name: Download XPDF (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
           curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
           tar -xvzf ./xpdf-tools-linux-4.05.tar.gz
       - name: Upload binary
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: pdftopng
-          path: |
-            xpdf-tools-linux-4.05/bin64/pdftopng
+          path: xpdf-tools-linux-4.05/bin64/pdftopng
+
   pdfium:
+    name: PDFium
     runs-on: ubuntu-latest
     steps:
+      - name: Cache PDFium binary
+        uses: actions/cache@v4
+        with:
+          path: sitro/target/release/pdfium
+          key: pdfium-binary-v1
       - name: Clone sitro
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           git clone https://github.com/LaurenzV/sitro
-      - name: Build pdfium
+      - name: Build pdfium (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd sitro/src/pdfium
           cargo build --release
       - name: Upload binary
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: pdfium
-          path: |
-            sitro/target/release/pdfium
+          path: sitro/target/release/pdfium
+
   mupdf:
+    name: MuPDF
     runs-on: ubuntu-latest
     steps:
-      - name: Download mupdf
+      - name: Cache MuPDF binary
+        uses: actions/cache@v4
+        with:
+          path: mupdf-1.24.8-source/build/release/mutool
+          key: mupdf-binary-v1
+      - name: Download MuPDF (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
           tar -xvzf ./mupdf-1.24.8-source.tar.gz
-      - name: Build mupdf
+      - name: Build MuPDF (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd mupdf-1.24.8-source
           make HAVE_X11=no HAVE_GLUT=no
       - name: Upload binary
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: mutool
-          path: |
-            mupdf-1.24.8-source/build/release/mutool
+          path: mupdf-1.24.8-source/build/release/mutool
 
   tests:
     name: Tests
@@ -125,6 +150,7 @@ jobs:
         run: |
           sudo chmod +x pdftopng
           sudo chmod +x pdfium
+          sudo chmod +x mutool
           echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
           echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
@@ -134,5 +160,5 @@ jobs:
       - name: Build
         run: cargo build --release
 
-      - name: Run testss
+      - name: Run tests
         run: cargo test --release
