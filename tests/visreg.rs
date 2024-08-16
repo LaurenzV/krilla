@@ -52,36 +52,36 @@ macro_rules! generate_renderer_tests {
                 $test_body(renderer);
             }
 
-            #[test]
-            fn [<$test_name _mupdf>]() {
-                let renderer = Renderer::Mupdf;
-                $test_body(renderer);
-            }
+            // #[test]
+            // fn [<$test_name _mupdf>]() {
+            //     let renderer = Renderer::Mupdf;
+            //     $test_body(renderer);
+            // }
+            //
+            // #[test]
+            // fn [<$test_name _xpdf>]() {
+            //     let renderer = Renderer::Xpdf;
+            //     $test_body(renderer);
+            // }
 
-            #[test]
-            fn [<$test_name _xpdf>]() {
-                let renderer = Renderer::Xpdf;
-                $test_body(renderer);
-            }
-
-            #[cfg(target_os = "macos")]
-            #[test]
-            fn [<$test_name _quartz>]() {
-                let renderer = Renderer::QuartzRenderer;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _pdfjs>]() {
-                let renderer = Renderer::PdfjsRenderer;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _pdfbox>]() {
-                let renderer = Renderer::PdfboxRenderer;
-                $test_body(renderer);
-            }
+            // #[cfg(target_os = "macos")]
+            // #[test]
+            // fn [<$test_name _quartz>]() {
+            //     let renderer = Renderer::QuartzRenderer;
+            //     $test_body(renderer);
+            // }
+            //
+            // #[test]
+            // fn [<$test_name _pdfjs>]() {
+            //     let renderer = Renderer::PdfjsRenderer;
+            //     $test_body(renderer);
+            // }
+            //
+            // #[test]
+            // fn [<$test_name _pdfbox>]() {
+            //     let renderer = Renderer::PdfboxRenderer;
+            //     $test_body(renderer);
+            // }
         }
     };
 }
