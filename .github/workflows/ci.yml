@@ -14,19 +14,14 @@ jobs:
         id: cache-xpdf
         uses: actions/cache@v4
         with:
-          path: xpdf-tools-linux-4.05/bin64/pdftopng
+          path: pdftopng
           key: xpdf-binary-v1
       - name: Download XPDF (if not cached)
         if: steps.cache-xpdf.outputs.cache-hit != 'true'
         run: |
           curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
           tar -xvzf ./xpdf-tools-linux-4.05.tar.gz
-      - name: Upload binary
-        if: steps.cache-xpdf.outputs.cache-hit != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: pdftopng
-          path: xpdf-tools-linux-4.05/bin64/pdftopng
+          mv xpdf-tools-linux-4.05/bin64/pdftopng pdftopng
 
   pdfium:
     name: PDFium
@@ -36,7 +31,7 @@ jobs:
         id: cache-pdfium
         uses: actions/cache@v4
         with:
-          path: sitro/target/release/pdfium
+          path: pdfium
           key: pdfium-binary-v1
       - name: Clone sitro
         if: steps.cache-pdfium.outputs.cache-hit != 'true'
@@ -47,12 +42,8 @@ jobs:
         run: |
           cd sitro/src/pdfium
           cargo build --release
-      - name: Upload binary
-        if: steps.cache-pdfium.outputs.cache-hit != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: pdfium
-          path: sitro/target/release/pdfium
+      - name: Finish
+        run: mv sitro/target/release/pdfium pdfium
 
   mupdf:
     name: MuPDF
@@ -62,7 +53,7 @@ jobs:
         id: cache-mupdf
         uses: actions/cache@v4
         with:
-          path: mupdf-1.24.8-source/build/release/mutool
+          path: mutool
           key: mupdf-binary-v1
       - name: Download MuPDF (if not cached)
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
@@ -74,12 +65,8 @@ jobs:
         run: |
           cd mupdf-1.24.8-source
           make HAVE_X11=no HAVE_GLUT=no
-      - name: Upload binary
-        if: steps.cache-mupdf.outputs.cache-hit != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mutool
-          path: mupdf-1.24.8-source/build/release/mutool
+      - name: Finish
+        run: mv mupdf-1.24.8-source/build/release/mutool mutool
 
   tests:
     name: Tests
@@ -110,17 +97,17 @@ jobs:
       - uses: actions/cache@v4
         id: cache-xpdf
         with:
-          path: xpdf-tools-linux-4.05/bin64/pdftopng
+          path: pdftopng
           key: xpdf-binary-v1
 
       - uses: actions/cache@v4
         with:
-          path: sitro/target/release/pdfium
+          path: pdfium
           key: pdfium-binary-v1
 
       - uses: actions/cache@v4
         with:
-          path: mupdf-1.24.8-source/build/release/mutool
+          path: mutool
           key: mupdf-binary-v1
 
       - name: Download the pdfium library
@@ -149,9 +136,6 @@ jobs:
 
       - name: Setup
         run: |
-          mv xpdf-tools-linux-4.05/bin64/pdftopng pdftopng
-          mv sitro/target/release/pdfium pdfium
-          mv mupdf-1.24.8-source/build/release/mutool mutool
           sudo chmod +x pdftopng
           sudo chmod +x pdfium
           sudo chmod +x mutool
