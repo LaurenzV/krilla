@@ -149,6 +149,7 @@ jobs:
 
       - name: Setup
         run: |
+          mv xpdf-tools-linux-4.05/bin64/pdftopng pdftopng
           sudo chmod +x pdftopng
           sudo chmod +x pdfium
           sudo chmod +x mutool
