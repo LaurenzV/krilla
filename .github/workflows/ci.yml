@@ -43,6 +43,7 @@ jobs:
           cd sitro/src/pdfium
           cargo build --release
       - name: Finish
+        if: steps.cache-xpdf.outputs.cache-hit != 'true'
         run: mv sitro/target/release/pdfium pdfium
 
   mupdf:
@@ -66,6 +67,7 @@ jobs:
           cd mupdf-1.24.8-source
           make HAVE_X11=no HAVE_GLUT=no
       - name: Finish
+        if: steps.cache-xpdf.outputs.cache-hit != 'true'
         run: mv mupdf-1.24.8-source/build/release/mutool mutool
 
   tests:
