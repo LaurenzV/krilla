@@ -59,15 +59,13 @@ impl RegisterableObject for Page {}
 
 #[cfg(test)]
 mod tests {
-    use crate::object::mask::Mask;
     use crate::object::page::Page;
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::StreamBuilder;
     use crate::test_utils::check_snapshot;
-    use crate::{rgb, Fill, MaskType, Paint};
+    use crate::Fill;
     use tiny_skia_path::{PathBuilder, Rect, Size};
-    use usvg::NormalizedF32;
 
     #[test]
     fn simple_page() {

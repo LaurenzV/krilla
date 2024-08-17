@@ -12,7 +12,7 @@ resvg = {git = "https://github.com/LaurenzV/resvg", rev = "1c2b6bd0"}
 siphasher = "1.0.1"
 skrifa = {git="https://github.com/LaurenzV/fontations", rev="0ed7955"}
 tiny-skia = "0.11.4"
-subsetter = {path = "../subsetter"}
+subsetter = {git = "https://github.com/typst/subsetter/", rev="67bde74"}
 tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
 usvg = {git = "https://github.com/LaurenzV/resvg", rev="1c2b6bd0"}
 cosmic-text = {git = "https://github.com/pop-os/cosmic-text", rev = "6f78d23"}
@@ -26,6 +26,6 @@ tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"
 [dev-dependencies]
 difference = "2.0.0"
 paste = "1.0.15"
-sitro = {git = "https://github.com/LaurenzV/sitro", rev="87c0d14"}
+sitro = {git = "https://github.com/LaurenzV/sitro", rev = "9b8b1fb"}
 
 
