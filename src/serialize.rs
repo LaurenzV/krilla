@@ -416,3 +416,5 @@ fn hex_encode(data: &[u8]) -> Vec<u8> {
         .collect::<String>()
         .into_bytes()
 }
+
+pub struct PageLabel {}

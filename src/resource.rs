@@ -7,12 +7,9 @@ use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
-use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
-use pdf_writer::traits::ResourcesExt;
-use pdf_writer::writers::Resources;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -108,7 +105,7 @@ impl RegisterableObject for XObjectResource {}
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PatternResource {
     ShadingPattern(ShadingPattern),
-    TilingPattern(TilingPattern),
+    TilingPattern(crate::object::tiling_pattern::TilingPattern),
 }
 
 impl ResourceTrait for PatternResource {
@@ -402,5 +399,43 @@ impl ResourceTrait for FontResource {
 
     fn get_prefix() -> &'static str {
         "f"
+    }
+}
+
+use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
+
+/// A trait for getting the resource dictionary of an object.
+pub trait ResourcesExt {
+    /// Return the resources dictionary of the object.
+    fn resources(&mut self) -> Resources<'_>;
+}
+
+impl ResourcesExt for FormXObject<'_> {
+    fn resources(&mut self) -> Resources<'_> {
+        self.resources()
+    }
+}
+
+impl ResourcesExt for TilingPattern<'_> {
+    fn resources(&mut self) -> Resources<'_> {
+        self.resources()
+    }
+}
+
+impl ResourcesExt for Type3Font<'_> {
+    fn resources(&mut self) -> Resources<'_> {
+        self.resources()
+    }
+}
+
+impl ResourcesExt for Pages<'_> {
+    fn resources(&mut self) -> Resources<'_> {
+        self.resources()
+    }
+}
+
+impl ResourcesExt for Page<'_> {
+    fn resources(&mut self) -> Resources<'_> {
+        self.resources()
     }
 }

@@ -1,7 +1,9 @@
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
-use pdf_writer::{Chunk, Finish, Ref};
+use pdf_writer::types::NumberingStyle;
+use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use std::num::{NonZeroI32, NonZeroU32};
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
@@ -57,14 +59,61 @@ impl Object for Page {
 
 impl RegisterableObject for Page {}
 
+// TODO: Make sure that page 0 is always included.
+
+/// A page label.
+#[derive(Debug, Hash, Eq, PartialEq)]
+pub(crate) struct PageLabel {
+    /// The numbering style of the page label.
+    style: NumberingStyle,
+    /// The prefix of the page label.
+    prefix: Option<String>,
+    /// The start numeric value of the page label.
+    offset: NonZeroI32,
+}
+
+impl PageLabel {
+    pub fn new(style: NumberingStyle, prefix: Option<String>, offset: NonZeroI32) -> Self {
+        Self {
+            style,
+            prefix,
+            offset,
+        }
+    }
+}
+
+impl Object for PageLabel {
+    fn serialize_into(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        let mut chunk = Chunk::new();
+        let mut label = chunk
+            .indirect(root_ref)
+            .start::<pdf_writer::writers::PageLabel>();
+        label.style(self.style);
+
+        if let Some(prefix) = &self.prefix {
+            label.prefix(TextStr(prefix));
+        }
+
+        label.offset(self.offset.get());
+
+        label.finish();
+
+        chunk
+    }
+}
+
+impl RegisterableObject for PageLabel {}
+
 #[cfg(test)]
 mod tests {
-    use crate::object::page::Page;
+    use crate::object::page::{Page, PageLabel};
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::StreamBuilder;
     use crate::test_utils::check_snapshot;
     use crate::Fill;
+    use pdf_writer::types::NumberingStyle;
+    use std::num::NonZeroI32;
     use tiny_skia_path::{PathBuilder, Rect, Size};
 
     #[test]
@@ -112,5 +161,20 @@ mod tests {
         sc.add(page);
 
         check_snapshot("page/page_with_resources", sc.finish().as_bytes());
+    }
+
+    #[test]
+    fn page_label() {
+        let mut sc = SerializerContext::new(SerializeSettings::default_test());
+
+        let page_label = PageLabel::new(
+            NumberingStyle::Arabic,
+            Some("P".to_string()),
+            NonZeroI32::new(2).unwrap(),
+        );
+
+        sc.add(page_label);
+
+        check_snapshot("page/page_label", sc.finish().as_bytes());
     }
 }
