@@ -32,7 +32,7 @@ impl Object for Page {
         let mut page = chunk.page(root_ref);
         self.stream
             .resource_dictionary
-            .to_pdf_resources(sc, &mut page.resources());
+            .to_pdf_resources(sc, &mut page);
 
         page.media_box(self.media_box.to_pdf_rect());
         page.parent(sc.page_tree_ref());

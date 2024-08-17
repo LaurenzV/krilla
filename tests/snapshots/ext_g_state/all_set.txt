@@ -6,7 +6,6 @@
   /Length 0
   /Type /XObject
   /Subtype /Form
-  /Resources <<>>
   /BBox [0 0 0 0]
   /Group <<
     /Type /Group

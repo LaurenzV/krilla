@@ -19,7 +19,6 @@ endobj
 3 0 obj
 <<
   /Type /Page
-  /Resources <<>>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
   /Contents 4 0 R

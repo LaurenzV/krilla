@@ -47,7 +47,7 @@ impl Object for XObject {
 
         self.stream
             .resource_dictionary
-            .to_pdf_resources(sc, &mut x_object.resources());
+            .to_pdf_resources(sc, &mut x_object);
         x_object.bbox(self.custom_bbox.unwrap_or(self.stream.bbox).to_pdf_rect());
 
         if self.isolated || self.transparency_group_color_space {

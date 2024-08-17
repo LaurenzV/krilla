@@ -11,6 +11,7 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
+use pdf_writer::traits::ResourcesExt;
 use pdf_writer::writers::Resources;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
@@ -217,13 +218,28 @@ pub(crate) struct ResourceDictionary {
 }
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources(self, sc: &mut SerializerContext, resources: &mut Resources) {
-        write_resource_type(sc, resources, self.color_spaces, false);
-        write_resource_type(sc, resources, self.ext_g_states, false);
-        write_resource_type(sc, resources, self.patterns, false);
-        write_resource_type(sc, resources, self.x_objects, false);
-        write_resource_type(sc, resources, self.shadings, false);
-        write_resource_type(sc, resources, self.fonts, true);
+    pub fn to_pdf_resources<T>(self, sc: &mut SerializerContext, parent: &mut T)
+    where
+        T: ResourcesExt,
+    {
+        if !self.is_empty() {
+            let resources = &mut parent.resources();
+            write_resource_type(sc, resources, self.color_spaces, false);
+            write_resource_type(sc, resources, self.ext_g_states, false);
+            write_resource_type(sc, resources, self.patterns, false);
+            write_resource_type(sc, resources, self.x_objects, false);
+            write_resource_type(sc, resources, self.shadings, false);
+            write_resource_type(sc, resources, self.fonts, true);
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.color_spaces.is_empty()
+            && self.ext_g_states.is_empty()
+            && self.patterns.is_empty()
+            && self.x_objects.is_empty()
+            && self.shadings.is_empty()
+            && self.fonts.is_empty()
     }
 }
 
@@ -264,6 +280,10 @@ where
 {
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     fn name_from_number(num: ResourceNumber) -> String {

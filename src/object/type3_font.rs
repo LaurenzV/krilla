@@ -184,7 +184,7 @@ impl Object for Type3Font {
         font_descriptor.finish();
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(sc, &mut type3_font.resources());
+        resource_dictionary.to_pdf_resources(sc, &mut type3_font);
 
         type3_font.bbox(bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
