@@ -63,8 +63,6 @@ impl Object for Page {
 
 impl RegisterableObject for Page {}
 
-// TODO: Make sure that page 0 is always included.
-
 /// A page label.
 #[derive(Debug, Hash, Eq, PartialEq, Default, Clone)]
 pub struct PageLabel {
@@ -80,12 +78,12 @@ impl PageLabel {
     pub fn new(
         style: Option<NumberingStyle>,
         prefix: Option<String>,
-        offset: Option<NonZeroU32>,
+        offset: NonZeroU32,
     ) -> Self {
         Self {
             style,
             prefix,
-            offset,
+            offset: Some(offset),
         }
     }
 
@@ -186,6 +184,7 @@ mod tests {
     use pdf_writer::types::NumberingStyle;
     use std::num::{NonZeroI32, NonZeroU32};
     use tiny_skia_path::{PathBuilder, Rect, Size};
+    use crate::document::Document;
 
     #[test]
     fn simple_page() {
@@ -243,11 +242,40 @@ mod tests {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),
             Some("P".to_string()),
-            NonZeroU32::new(2),
+            NonZeroU32::new(2).unwrap(),
         );
 
         sc.add(page_label);
 
         check_snapshot("page/page_label", sc.finish().as_bytes());
+    }
+
+    // TODO: Fix issues with not being able to create empty pages with just start_page_with.
+    // TODO: Fix issue with two duplicate pages not showing up.
+
+    #[test]
+    fn page_label_complex() {
+        let mut db = Document::new(SerializeSettings::default_test());
+        let mut page = db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
+        let mut surface = page.surface();
+        surface.finish();
+        page.finish();
+
+        let mut page = db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
+        let mut surface = page.surface();
+        surface.finish();
+        page.finish();
+
+        let mut page = db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::new(
+            Some(NumberingStyle::LowerRoman),
+            None,
+            NonZeroU32::new(2).unwrap()
+        ));
+        let mut surface = page.surface();
+        surface.finish();
+        page.finish();
+
+
+        check_snapshot("page/page_label_complex", &db.finish());
     }
 }

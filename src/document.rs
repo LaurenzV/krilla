@@ -1,6 +1,7 @@
 use crate::serialize::{SerializeSettings, SerializerContext};
 use crate::surface::PageBuilder;
 use tiny_skia_path::Size;
+use crate::object::page::PageLabel;
 
 pub struct Document {
     serializer_context: SerializerContext,
@@ -19,6 +20,10 @@ impl Document {
 
     pub fn start_page(&mut self, size: Size) -> PageBuilder {
         PageBuilder::new(&mut self.serializer_context, size)
+    }
+
+    pub fn start_page_with(&mut self, size: Size, page_label: PageLabel) -> PageBuilder {
+        PageBuilder::new_with(&mut self.serializer_context, size, page_label)
     }
 
     pub fn finish(self) -> Vec<u8> {

@@ -9,7 +9,7 @@ use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Filter, Finish, Pdf, Ref};
+use pdf_writer::{Chunk, Filter, Finish, Name, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use std::borrow::Cow;
@@ -80,6 +80,7 @@ pub struct SerializerContext {
     font_map: HashMap<Font, FontContainer>,
     catalog_ref: Ref,
     page_tree_ref: Ref,
+    page_labels_ref: Option<Ref>,
     page_refs: Vec<Ref>,
     page_labels: Vec<PageLabel>,
     cached_mappings: HashMap<u128, Ref>,
@@ -115,6 +116,7 @@ impl SerializerContext {
             chunks: Vec::new(),
             page_tree_ref,
             catalog_ref,
+            page_labels_ref: None,
             page_refs: vec![],
             page_labels: vec![],
             chunks_len: 0,
@@ -277,7 +279,7 @@ impl SerializerContext {
     // Always needs to be called.
     pub fn finish(mut self) -> Pdf {
         if let Some(container) = PageLabelContainer::new(self.page_labels.clone()) {
-            self.add(container);
+            self.page_labels_ref = Some(self.add(container));
         }
 
         // Write fonts
@@ -317,6 +319,11 @@ impl SerializerContext {
 
         let mut catalog = pdf.catalog(self.catalog_ref);
         catalog.pages(self.page_tree_ref);
+
+        if let Some(plr) = self.page_labels_ref {
+            catalog.pair(Name(b"PageLabels"), plr);
+        }
+
         catalog.finish();
 
         pdf.extend(&page_tree_chunk);
