@@ -1,7 +1,7 @@
+use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
 use crate::surface::PageBuilder;
 use tiny_skia_path::Size;
-use crate::object::page::PageLabel;
 
 pub struct Document {
     serializer_context: SerializerContext,

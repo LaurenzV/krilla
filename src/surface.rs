@@ -28,14 +28,14 @@ pub struct Surface<'a> {
     root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
-    finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
+    finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
 impl<'a> Surface<'a> {
     pub fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
-        finish_fn: Box<dyn FnMut(Stream, &mut SerializerContext) + 'a>,
+        finish_fn: Box<dyn FnMut(Stream) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
@@ -166,11 +166,7 @@ impl<'a> Surface<'a> {
         self.sc.convert_fontdb(db, ids)
     }
 
-    pub fn finish(mut self) {
-        assert!(self.sub_builders.is_empty());
-        assert!(self.push_instructions.is_empty());
-        (self.finish_fn)(self.root_builder.finish(), &mut self.sc)
-    }
+    pub fn finish(self) {}
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
@@ -195,10 +191,21 @@ impl<'a> Surface<'a> {
     }
 }
 
+impl Drop for Surface<'_> {
+    fn drop(&mut self) {
+        // Replace with a dummy builder.
+        let root_builder = std::mem::replace(&mut self.root_builder, ContentBuilder::new());
+        assert!(self.sub_builders.is_empty());
+        assert!(self.push_instructions.is_empty());
+        (self.finish_fn)(root_builder.finish())
+    }
+}
+
 pub struct PageBuilder<'a> {
     sc: &'a mut SerializerContext,
     size: Size,
     page_label: PageLabel,
+    page_stream: Stream,
 }
 
 impl<'a> PageBuilder<'a> {
@@ -207,6 +214,7 @@ impl<'a> PageBuilder<'a> {
             sc,
             size,
             page_label: PageLabel::default(),
+            page_stream: Stream::empty(),
         }
     }
 
@@ -219,6 +227,7 @@ impl<'a> PageBuilder<'a> {
             sc,
             size,
             page_label,
+            page_stream: Stream::empty(),
         }
     }
 
@@ -234,15 +243,20 @@ impl<'a> PageBuilder<'a> {
             self.size.height(),
         ));
 
-        let finish_fn = Box::new(|stream, sc: &mut SerializerContext| {
-            let page = Page::new(self.size, stream, self.page_label.clone());
-            sc.add(page);
-        });
+        let finish_fn = Box::new(|stream| self.page_stream = stream);
 
         Surface::new(&mut self.sc, root_builder, finish_fn)
     }
 
     pub fn finish(self) {}
+}
+
+impl Drop for PageBuilder<'_> {
+    fn drop(&mut self) {
+        let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
+        let page = Page::new(self.size, stream, self.page_label.clone());
+        self.sc.add(page);
+    }
 }
 
 pub struct StreamBuilder<'a> {
@@ -259,7 +273,7 @@ impl<'a> StreamBuilder<'a> {
     }
 
     pub fn surface(&mut self) -> Surface {
-        let finish_fn = Box::new(|stream, _: &mut SerializerContext| {
+        let finish_fn = Box::new(|stream| {
             self.stream = stream;
         });
 

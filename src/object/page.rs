@@ -4,7 +4,7 @@ use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use std::num::{NonZeroI32, NonZeroU32};
+use std::num::NonZeroU32;
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
@@ -75,11 +75,7 @@ pub struct PageLabel {
 }
 
 impl PageLabel {
-    pub fn new(
-        style: Option<NumberingStyle>,
-        prefix: Option<String>,
-        offset: NonZeroU32,
-    ) -> Self {
+    pub fn new(style: Option<NumberingStyle>, prefix: Option<String>, offset: NonZeroU32) -> Self {
         Self {
             style,
             prefix,
@@ -175,6 +171,7 @@ impl RegisterableObject for PageLabelContainer {}
 
 #[cfg(test)]
 mod tests {
+    use crate::document::Document;
     use crate::object::page::{Page, PageLabel};
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
@@ -182,9 +179,8 @@ mod tests {
     use crate::test_utils::check_snapshot;
     use crate::Fill;
     use pdf_writer::types::NumberingStyle;
-    use std::num::{NonZeroI32, NonZeroU32};
+    use std::num::NonZeroU32;
     use tiny_skia_path::{PathBuilder, Rect, Size};
-    use crate::document::Document;
 
     #[test]
     fn simple_page() {
@@ -256,25 +252,16 @@ mod tests {
     #[test]
     fn page_label_complex() {
         let mut db = Document::new(SerializeSettings::default_test());
-        let mut page = db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
-        let mut surface = page.surface();
-        surface.finish();
-        page.finish();
-
-        let mut page = db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
-        let mut surface = page.surface();
-        surface.finish();
-        page.finish();
-
-        let mut page = db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::new(
-            Some(NumberingStyle::LowerRoman),
-            None,
-            NonZeroU32::new(2).unwrap()
-        ));
-        let mut surface = page.surface();
-        surface.finish();
-        page.finish();
-
+        db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
+        db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
+        db.start_page_with(
+            Size::from_wh(200.0, 200.0).unwrap(),
+            PageLabel::new(
+                Some(NumberingStyle::LowerRoman),
+                None,
+                NonZeroU32::new(2).unwrap(),
+            ),
+        );
 
         check_snapshot("page/page_label_complex", &db.finish());
     }
