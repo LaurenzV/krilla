@@ -3,12 +3,13 @@ use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
 use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::page::{PageLabel, PageLabelContainer};
 use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Filter, Pdf, Ref};
+use pdf_writer::{Chunk, Filter, Finish, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use std::borrow::Cow;
@@ -80,6 +81,7 @@ pub struct SerializerContext {
     catalog_ref: Ref,
     page_tree_ref: Ref,
     page_refs: Vec<Ref>,
+    page_labels: Vec<PageLabel>,
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
     chunks_len: usize,
@@ -114,6 +116,7 @@ impl SerializerContext {
             page_tree_ref,
             catalog_ref,
             page_refs: vec![],
+            page_labels: vec![],
             chunks_len: 0,
             font_map: HashMap::new(),
             serialize_settings,
@@ -124,8 +127,9 @@ impl SerializerContext {
         self.page_tree_ref
     }
 
-    pub fn add_page_ref(&mut self, ref_: Ref) {
+    pub fn add_page_info(&mut self, ref_: Ref, label: PageLabel) {
         self.page_refs.push(ref_);
+        self.page_labels.push(label);
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -272,6 +276,10 @@ impl SerializerContext {
 
     // Always needs to be called.
     pub fn finish(mut self) -> Pdf {
+        if let Some(container) = PageLabelContainer::new(self.page_labels.clone()) {
+            self.add(container);
+        }
+
         // Write fonts
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
@@ -298,20 +306,20 @@ impl SerializerContext {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A']);
         }
 
-        // This basically just exists so that for unit tests, we don't print the catalog
-        // and page tree.
-        if !self.page_refs.is_empty() {
-            let mut page_tree_chunk = Chunk::new();
+        let mut page_tree_chunk = Chunk::new();
 
-            page_tree_chunk
-                .pages(self.page_tree_ref)
-                .count(self.page_refs.len() as i32)
-                .kids(self.page_refs);
+        page_tree_chunk
+            .pages(self.page_tree_ref)
+            .count(self.page_refs.len() as i32)
+            .kids(self.page_refs);
 
-            self.chunks_len += page_tree_chunk.len();
-            pdf.catalog(self.catalog_ref).pages(self.page_tree_ref);
-            pdf.extend(&page_tree_chunk);
-        }
+        self.chunks_len += page_tree_chunk.len();
+
+        let mut catalog = pdf.catalog(self.catalog_ref);
+        catalog.pages(self.page_tree_ref);
+        catalog.finish();
+
+        pdf.extend(&page_tree_chunk);
 
         for part_chunk in self.chunks.drain(..) {
             pdf.extend(&part_chunk);
@@ -416,5 +424,3 @@ fn hex_encode(data: &[u8]) -> Vec<u8> {
         .collect::<String>()
         .into_bytes()
 }
-
-pub struct PageLabel {}

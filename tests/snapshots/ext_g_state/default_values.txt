@@ -1,6 +1,21 @@
 %PDF-1.7
 %AAAA
 
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Pages
+  /Count 0
+  /Kids []
+>>
+endobj
+
 3 0 obj
 <<
   /Type /ExtGState

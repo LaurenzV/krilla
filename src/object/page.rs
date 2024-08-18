@@ -2,6 +2,7 @@ use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
+use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::{NonZeroI32, NonZeroU32};
 use tiny_skia_path::{Rect, Size};
@@ -13,14 +14,17 @@ pub(crate) struct Page {
     pub stream: Stream,
     /// The media box of the page.
     pub media_box: Rect,
+    /// The label of the page.
+    pub page_label: PageLabel,
 }
 
 impl Page {
     /// Create a new page.
-    pub fn new(size: Size, stream: Stream) -> Self {
+    pub fn new(size: Size, stream: Stream, page_label: PageLabel) -> Self {
         Self {
             stream,
             media_box: size.to_rect(0.0, 0.0).unwrap(),
+            page_label,
         }
     }
 }
@@ -51,7 +55,7 @@ impl Object for Page {
 
         stream.finish();
 
-        sc.add_page_ref(root_ref);
+        sc.add_page_info(root_ref, self.page_label);
 
         chunk
     }
@@ -62,23 +66,31 @@ impl RegisterableObject for Page {}
 // TODO: Make sure that page 0 is always included.
 
 /// A page label.
-#[derive(Debug, Hash, Eq, PartialEq)]
-pub(crate) struct PageLabel {
+#[derive(Debug, Hash, Eq, PartialEq, Default, Clone)]
+pub struct PageLabel {
     /// The numbering style of the page label.
-    style: NumberingStyle,
+    pub style: Option<NumberingStyle>,
     /// The prefix of the page label.
-    prefix: Option<String>,
-    /// The start numeric value of the page label.
-    offset: NonZeroI32,
+    pub prefix: Option<String>,
+    /// The numeric value of the page label.
+    pub offset: Option<NonZeroU32>,
 }
 
 impl PageLabel {
-    pub fn new(style: NumberingStyle, prefix: Option<String>, offset: NonZeroI32) -> Self {
+    pub fn new(
+        style: Option<NumberingStyle>,
+        prefix: Option<String>,
+        offset: Option<NonZeroU32>,
+    ) -> Self {
         Self {
             style,
             prefix,
             offset,
         }
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 }
 
@@ -88,13 +100,17 @@ impl Object for PageLabel {
         let mut label = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::PageLabel>();
-        label.style(self.style);
+        if let Some(style) = self.style {
+            label.style(style);
+        }
 
         if let Some(prefix) = &self.prefix {
             label.prefix(TextStr(prefix));
         }
 
-        label.offset(self.offset.get());
+        if let Some(offset) = self.offset {
+            label.offset(i32::try_from(offset.get()).unwrap());
+        }
 
         label.finish();
 
@@ -103,6 +119,61 @@ impl Object for PageLabel {
 }
 
 impl RegisterableObject for PageLabel {}
+
+#[derive(Hash)]
+pub struct PageLabelContainer {
+    labels: Vec<PageLabel>,
+}
+
+impl PageLabelContainer {
+    pub fn new(labels: Vec<PageLabel>) -> Option<Self> {
+        return if labels.iter().all(|f| f.is_empty()) {
+            None
+        } else {
+            Some(PageLabelContainer { labels })
+        };
+    }
+}
+
+impl Object for PageLabelContainer {
+    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
+        // be empty
+        let mut filtered_entries = vec![];
+        let mut prev: Option<PageLabel> = None;
+
+        for (i, label) in self.labels.into_iter().enumerate() {
+            if let Some(n_prev) = &prev {
+                if n_prev.style != label.style
+                    || n_prev.prefix != label.prefix
+                    || n_prev.offset.map(|n| n.get()) != label.offset.map(|n| n.get() + 1)
+                {
+                    filtered_entries.push((i, label.clone()));
+                    prev = Some(label);
+                }
+            } else {
+                filtered_entries.push((i, label.clone()));
+                prev = Some(label);
+            }
+        }
+
+        let mut chunk = Chunk::new();
+        let mut num_tree = chunk.indirect(root_ref).start::<NumberTree<Ref>>();
+        let mut nums = num_tree.nums();
+
+        for (page_num, label) in filtered_entries {
+            let label_ref = sc.add(label);
+            nums.insert(page_num as i32, label_ref);
+        }
+
+        nums.finish();
+        num_tree.finish();
+
+        chunk
+    }
+}
+
+impl RegisterableObject for PageLabelContainer {}
 
 #[cfg(test)]
 mod tests {
@@ -113,7 +184,7 @@ mod tests {
     use crate::test_utils::check_snapshot;
     use crate::Fill;
     use pdf_writer::types::NumberingStyle;
-    use std::num::NonZeroI32;
+    use std::num::{NonZeroI32, NonZeroU32};
     use tiny_skia_path::{PathBuilder, Rect, Size};
 
     #[test]
@@ -132,6 +203,7 @@ mod tests {
         let page = Page::new(
             Size::from_wh(200.0, 200.0).unwrap(),
             stream_builder.finish(),
+            PageLabel::default(),
         );
         sc.add(page);
 
@@ -157,6 +229,7 @@ mod tests {
         let page = Page::new(
             Size::from_wh(200.0, 200.0).unwrap(),
             stream_builder.finish(),
+            PageLabel::default(),
         );
         sc.add(page);
 
@@ -168,9 +241,9 @@ mod tests {
         let mut sc = SerializerContext::new(SerializeSettings::default_test());
 
         let page_label = PageLabel::new(
-            NumberingStyle::Arabic,
+            Some(NumberingStyle::Arabic),
             Some("P".to_string()),
-            NonZeroI32::new(2).unwrap(),
+            NonZeroU32::new(2),
         );
 
         sc.add(page_label);

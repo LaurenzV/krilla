@@ -2,7 +2,7 @@ use crate::font::Font;
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
-use crate::object::page::Page;
+use crate::object::page::{Page, PageLabel};
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
 use crate::stream::{ContentBuilder, Stream, TestGlyph};
@@ -198,11 +198,28 @@ impl<'a> Surface<'a> {
 pub struct PageBuilder<'a> {
     sc: &'a mut SerializerContext,
     size: Size,
+    page_label: PageLabel,
 }
 
 impl<'a> PageBuilder<'a> {
     pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
-        Self { sc, size }
+        Self {
+            sc,
+            size,
+            page_label: PageLabel::default(),
+        }
+    }
+
+    pub(crate) fn new_with(
+        sc: &'a mut SerializerContext,
+        size: Size,
+        page_label: PageLabel,
+    ) -> Self {
+        Self {
+            sc,
+            size,
+            page_label,
+        }
     }
 
     pub fn surface(&mut self) -> Surface {
@@ -218,7 +235,7 @@ impl<'a> PageBuilder<'a> {
         ));
 
         let finish_fn = Box::new(|stream, sc: &mut SerializerContext| {
-            let page = Page::new(self.size, stream);
+            let page = Page::new(self.size, stream, self.page_label.clone());
             sc.add(page);
         });
 
