@@ -1,4 +1,4 @@
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, PageInfo, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
@@ -55,7 +55,11 @@ impl Object for Page {
 
         stream.finish();
 
-        sc.add_page_info(root_ref, self.page_label);
+        sc.add_page_info(PageInfo {
+            ref_: root_ref,
+            media_box: self.media_box,
+            page_label: self.page_label,
+        });
 
         chunk
     }

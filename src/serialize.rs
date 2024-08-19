@@ -16,6 +16,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
+use tiny_skia_path::Rect;
+use crate::outline::Outline;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
@@ -81,8 +83,8 @@ pub struct SerializerContext {
     catalog_ref: Ref,
     page_tree_ref: Ref,
     page_labels_ref: Option<Ref>,
-    page_refs: Vec<Ref>,
-    page_labels: Vec<PageLabel>,
+    page_infos: Vec<PageInfo>,
+    outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
     chunks_len: usize,
@@ -104,6 +106,13 @@ impl PDFGlyph {
     }
 }
 
+#[derive(Debug)]
+pub struct PageInfo {
+    pub ref_: Ref,
+    pub media_box: Rect,
+    pub page_label: PageLabel,
+}
+
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         let mut cur_ref = Ref::new(1);
@@ -116,22 +125,25 @@ impl SerializerContext {
             chunks: Vec::new(),
             page_tree_ref,
             catalog_ref,
+            outline: None,
             page_labels_ref: None,
-            page_refs: vec![],
-            page_labels: vec![],
+            page_infos: vec![],
             chunks_len: 0,
             font_map: HashMap::new(),
             serialize_settings,
         }
     }
 
+    pub fn set_outline(&mut self, outline: Outline) {
+        self.outline = Some(outline);
+    }
+
     pub fn page_tree_ref(&self) -> Ref {
         self.page_tree_ref
     }
 
-    pub fn add_page_info(&mut self, ref_: Ref, label: PageLabel) {
-        self.page_refs.push(ref_);
-        self.page_labels.push(label);
+    pub fn add_page_info(&mut self, page_info: PageInfo) {
+        self.page_infos.push(page_info);
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -278,7 +290,12 @@ impl SerializerContext {
 
     // Always needs to be called.
     pub fn finish(mut self) -> Pdf {
-        if let Some(container) = PageLabelContainer::new(self.page_labels.clone()) {
+        if let Some(container) = PageLabelContainer::new(
+            self.page_infos
+                .iter()
+                .map(|i| i.page_label.clone())
+                .collect::<Vec<_>>(),
+        ) {
             self.page_labels_ref = Some(self.add(container));
         }
 
@@ -312,8 +329,8 @@ impl SerializerContext {
 
         page_tree_chunk
             .pages(self.page_tree_ref)
-            .count(self.page_refs.len() as i32)
-            .kids(self.page_refs);
+            .count(self.page_infos.len() as i32)
+            .kids(self.page_infos.iter().map(|i| i.ref_));
 
         self.chunks_len += page_tree_chunk.len();
 

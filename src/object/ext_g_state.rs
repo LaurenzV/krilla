@@ -119,6 +119,8 @@ impl Object for ExtGState {
             ext_st.blend_mode(bm);
         }
 
+        ext_st.overprint(false);
+
         if let Some(mask_ref) = mask_ref {
             ext_st.pair(Name(b"SMask"), mask_ref);
         }
