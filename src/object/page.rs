@@ -250,7 +250,6 @@ mod tests {
         check_snapshot("page/page_label", sc.finish().as_bytes());
     }
 
-    // TODO: Fix issues with not being able to create empty pages with just start_page_with.
     // TODO: Fix issue with two duplicate pages not showing up.
 
     #[test]

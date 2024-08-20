@@ -3,6 +3,7 @@ use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
 use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::outline::Outline;
 use crate::object::page::{PageLabel, PageLabelContainer};
 use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
@@ -17,7 +18,6 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::object::outline::Outline;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
@@ -83,6 +83,7 @@ pub struct SerializerContext {
     catalog_ref: Ref,
     page_tree_ref: Ref,
     page_labels_ref: Option<Ref>,
+    outline_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
@@ -126,12 +127,17 @@ impl SerializerContext {
             page_tree_ref,
             catalog_ref,
             outline: None,
+            outline_ref: None,
             page_labels_ref: None,
             page_infos: vec![],
             chunks_len: 0,
             font_map: HashMap::new(),
             serialize_settings,
         }
+    }
+
+    pub fn page_infos(&self) -> &[PageInfo] {
+        &self.page_infos
     }
 
     pub fn set_outline(&mut self, outline: Outline) {
@@ -299,6 +305,13 @@ impl SerializerContext {
             self.page_labels_ref = Some(self.add(container));
         }
 
+        if let Some(outline) = self.outline.clone() {
+            let outline_ref = self.new_ref();
+            self.outline_ref = Some(outline_ref);
+            let chunk = outline.serialize_into(&mut self, outline_ref);
+            self.push_chunk(chunk);
+        }
+
         // Write fonts
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
@@ -339,6 +352,10 @@ impl SerializerContext {
 
         if let Some(plr) = self.page_labels_ref {
             catalog.pair(Name(b"PageLabels"), plr);
+        }
+
+        if let Some(olr) = self.outline_ref {
+            catalog.outlines(olr);
         }
 
         catalog.finish();

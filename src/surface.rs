@@ -218,6 +218,10 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
+    pub(crate) fn root_transform(&self) -> Transform {
+        Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, self.size.height())
+    }
+
     pub(crate) fn new_with(
         sc: &'a mut SerializerContext,
         size: Size,
@@ -234,14 +238,7 @@ impl<'a> PageBuilder<'a> {
     pub fn surface(&mut self) -> Surface {
         let mut root_builder = ContentBuilder::new();
         // Invert the y-axis.
-        root_builder.concat_transform(&Transform::from_row(
-            1.0,
-            0.0,
-            0.0,
-            -1.0,
-            0.0,
-            self.size.height(),
-        ));
+        root_builder.concat_transform(&self.root_transform());
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
