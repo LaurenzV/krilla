@@ -2,7 +2,6 @@ pub mod document;
 pub mod font;
 mod graphics_state;
 mod object;
-mod outline;
 pub mod paint;
 pub mod path;
 pub mod resource;

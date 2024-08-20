@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::outline::Outline;
+use crate::object::outline::Outline;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
