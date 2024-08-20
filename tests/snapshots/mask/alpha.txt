@@ -29,6 +29,7 @@ endobj
   /Type /XObject
   /Subtype /Form
   /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
     /ExtGState <<
       /g0 5 0 R
     >>
