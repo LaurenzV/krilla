@@ -1,3 +1,4 @@
+use crate::object::outline::Outline;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
 use crate::surface::PageBuilder;
@@ -24,6 +25,10 @@ impl Document {
 
     pub fn start_page_with(&mut self, size: Size, page_label: PageLabel) -> PageBuilder {
         PageBuilder::new_with(&mut self.serializer_context, size, page_label)
+    }
+
+    pub fn set_outline(&mut self, outline: Outline) {
+        self.serializer_context.set_outline(outline);
     }
 
     pub fn finish(self) -> Vec<u8> {

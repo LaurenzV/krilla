@@ -49,6 +49,7 @@ endobj
 <<
   /Type /Page
   /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
     /ColorSpace <<
       /c0 5 0 R
     >>

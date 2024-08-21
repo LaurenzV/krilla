@@ -14,6 +14,7 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use pdf_writer::types::ProcSet;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -219,24 +220,14 @@ impl ResourceDictionary {
     where
         T: ResourcesExt,
     {
-        if !self.is_empty() {
-            let resources = &mut parent.resources();
-            write_resource_type(sc, resources, self.color_spaces, false);
-            write_resource_type(sc, resources, self.ext_g_states, false);
-            write_resource_type(sc, resources, self.patterns, false);
-            write_resource_type(sc, resources, self.x_objects, false);
-            write_resource_type(sc, resources, self.shadings, false);
-            write_resource_type(sc, resources, self.fonts, true);
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.color_spaces.is_empty()
-            && self.ext_g_states.is_empty()
-            && self.patterns.is_empty()
-            && self.x_objects.is_empty()
-            && self.shadings.is_empty()
-            && self.fonts.is_empty()
+        let resources = &mut parent.resources();
+        resources.proc_sets([ProcSet::Pdf, ProcSet::Text, ProcSet::ImageColor, ProcSet::ImageGrayscale]);
+        write_resource_type(sc, resources, self.color_spaces, false);
+        write_resource_type(sc, resources, self.ext_g_states, false);
+        write_resource_type(sc, resources, self.patterns, false);
+        write_resource_type(sc, resources, self.x_objects, false);
+        write_resource_type(sc, resources, self.shadings, false);
+        write_resource_type(sc, resources, self.fonts, true);
     }
 }
 

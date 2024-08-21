@@ -21,6 +21,9 @@ endobj
   /Length 0
   /Type /XObject
   /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
   /BBox [0 0 0 0]
   /Group <<
     /Type /Group
