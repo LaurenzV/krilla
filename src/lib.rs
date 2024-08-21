@@ -27,7 +27,7 @@ pub(crate) mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
 
-    const REPLACE: bool = true;
+    const REPLACE: bool = false;
 
     pub fn load_font(name: &str) -> Vec<u8> {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

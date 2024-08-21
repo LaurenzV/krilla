@@ -89,9 +89,10 @@ jobs:
           path: mutool
           key: mupdf-binary-v1
 
-      - name: Install poppler-utils
+      - name: Install deps
         run: | 
           sudo apt-get install -y poppler-utils
+          sudo apt-get install -y ghostscript
 
       - name: Download the pdfium library
         run: |
@@ -121,7 +122,8 @@ jobs:
         run: |
           sudo chmod +x pdfium
           sudo chmod +x mutool
-          echo "POPPLER_BIN=$(pwd)/pdftoppm" >> $GITHUB_ENV
+          echo "POPPLER_BIN=pdftoppm" >> $GITHUB_ENV
+          echo "GHOSTSCRIPT_BIN=gs" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
           echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
           echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
