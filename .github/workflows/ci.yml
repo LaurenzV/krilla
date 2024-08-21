@@ -53,7 +53,7 @@ jobs:
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
         run: mv mupdf-1.24.8-source/build/release/mutool mutool
 
-  ghostscript:
+  gs:
     name: gs
     runs-on: ubuntu-latest
     steps:
