@@ -2,4 +2,4 @@ target
 .idea
 out
 data
-./tests/diffs
+./tests/diff
