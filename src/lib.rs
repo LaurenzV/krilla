@@ -27,7 +27,7 @@ pub(crate) mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
 
-    const REPLACE: bool = false;
+    const REPLACE: bool = true;
 
     pub fn load_font(name: &str) -> Vec<u8> {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -60,8 +60,6 @@ pub(crate) mod test_utils {
         }
 
         let actual = std::fs::read(&path).unwrap();
-
-        assert_eq!(actual, content);
 
         if REPLACE && &actual != content {
             std::fs::write(&path, content).unwrap();

@@ -1,6 +1,7 @@
 use crate::serialize::{Object, SerializerContext};
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use tiny_skia_path::{Point, Transform};
+use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
+use tiny_skia_path::Point;
+use crate::object::destination::XyzDestination;
 
 #[derive(Debug, Clone)]
 pub struct Outline {
@@ -93,16 +94,12 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        let page_ref = sc.page_infos()[self.page_index as usize].ref_;
-        let page_size = sc.page_infos()[self.page_index as usize].media_box.height();
-        let mut mapped_point = self.pos;
-        let invert_transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_size);
-        invert_transform.map_point(&mut mapped_point);
+        let dest = XyzDestination::new(self.page_index as usize, self.pos);
+        let dest_ref = sc.new_ref();
+        sub_chunks.push(dest.serialize_into(sc, dest_ref));
 
         outline_entry
-            .dest()
-            .page(page_ref)
-            .xyz(mapped_point.x, mapped_point.y, None);
+            .pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
 

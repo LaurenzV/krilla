@@ -107,7 +107,7 @@ endobj
   /Last 12 0 R
   /Count -1
   /Title (Level 1)
-  /Dest [3 0 R /XYZ 50 150 0]
+  /Dest 14 0 R
 >>
 endobj
 
@@ -115,8 +115,16 @@ endobj
 <<
   /Parent 10 0 R
   /Title (Level 2)
-  /Dest [3 0 R /XYZ 50 50 0]
+  /Dest 13 0 R
 >>
+endobj
+
+13 0 obj
+[3 0 R /XYZ 50 50 0]
+endobj
+
+14 0 obj
+[3 0 R /XYZ 50 150 0]
 endobj
 
 11 0 obj
@@ -124,12 +132,16 @@ endobj
   /Parent 9 0 R
   /Prev 10 0 R
   /Title (Level 1 try 2)
-  /Dest [5 0 R /XYZ 75 350 0]
+  /Dest 15 0 R
 >>
 endobj
 
+15 0 obj
+[5 0 R /XYZ 75 350 0]
+endobj
+
 xref
-0 13
+0 16
 0000000000 65535 f
 0000000016 00000 n
 0000000088 00000 n
@@ -141,13 +153,16 @@ xref
 0000000831 00000 n
 0000000883 00000 n
 0000000965 00000 n
-0000001199 00000 n
-0000001111 00000 n
+0000001247 00000 n
+0000001096 00000 n
+0000001170 00000 n
+0000001208 00000 n
+0000001341 00000 n
 trailer
 <<
-  /Size 13
+  /Size 16
   /Root 1 0 R
 >>
 startxref
-1308
+1380
 %%EOF
