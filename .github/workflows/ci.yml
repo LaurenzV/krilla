@@ -54,7 +54,7 @@ jobs:
         run: mv mupdf-1.24.8-source/build/release/mutool mutool
 
   ghostscript:
-    name: GhostScript
+    name: gs
     runs-on: ubuntu-latest
     steps:
       - name: Cache GhostScript
@@ -81,7 +81,7 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-    needs: [pdfium, mupdf]
+    needs: [pdfium, mupdf, gs]
     defaults:
       run:
         shell: bash
