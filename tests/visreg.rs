@@ -1,5 +1,5 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
-use fontdb::Source;
+use fontdb::{Database, Source};
 use image::{load_from_memory, Rgba, RgbaImage};
 use krilla::document::Document;
 use krilla::rgb::Rgb;
@@ -229,9 +229,12 @@ generate_renderer_tests!(linear_gradient, |renderer| {
 });
 
 generate_renderer_tests!(cosmic_text, |renderer| {
-    let mut font_system = FontSystem::new_with_fonts([Source::Binary(Arc::new(include_bytes!(
+    let mut db = Database::new();
+    db.load_font_source(Source::Binary(Arc::new(include_bytes!(
         "fonts/NotoSans-Regular.ttf"
-    )))]);
+    ))));
+    let mut font_system = FontSystem::new_with_locale_and_db("".to_string(), db);
+    assert_eq!(font_system.db().len(), 1);
     let metrics = Metrics::new(14.0, 20.0);
     let mut buffer = Buffer::new(&mut font_system, metrics);
     buffer.set_size(&mut font_system, Some(200.0), None);
