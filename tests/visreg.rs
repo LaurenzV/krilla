@@ -2,10 +2,7 @@ use krilla::document::Document;
 use krilla::rgb::Rgb;
 use krilla::serialize::SerializeSettings;
 use krilla::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
-use sitro::{
-    render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_quartz, render_xpdf,
-    RenderOptions, RenderedDocument, Renderer,
-};
+use sitro::{render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_quartz, RenderOptions, RenderedDocument, Renderer, render_poppler, render_ghostscript};
 use std::path::PathBuf;
 use tiny_skia_path::{PathBuilder, Rect, Size, Transform};
 use usvg::NormalizedF32;
@@ -16,10 +13,11 @@ pub fn render_doc(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
     match renderer {
         Renderer::Pdfium => render_pdfium(doc, &options).unwrap(),
         Renderer::Mupdf => render_mupdf(doc, &options).unwrap(),
-        Renderer::Xpdf => render_xpdf(doc, &options).unwrap(),
-        Renderer::QuartzRenderer => render_quartz(doc, &options).unwrap(),
-        Renderer::PdfjsRenderer => render_pdfjs(doc, &options).unwrap(),
-        Renderer::PdfboxRenderer => render_pdfbox(doc, &options).unwrap(),
+        Renderer::Poppler => render_poppler(doc, &options).unwrap(),
+        Renderer::Quartz => render_quartz(doc, &options).unwrap(),
+        Renderer::Pdfjs => render_pdfjs(doc, &options).unwrap(),
+        Renderer::Pdfbox => render_pdfbox(doc, &options).unwrap(),
+        Renderer::Ghostscript => render_ghostscript(doc, &options).unwrap()
     }
 }
 
@@ -59,27 +57,33 @@ macro_rules! generate_renderer_tests {
             }
 
             #[test]
-            fn [<$test_name _xpdf>]() {
-                let renderer = Renderer::Xpdf;
+            fn [<$test_name _ghostscript>]() {
+                let renderer = Renderer::Ghostscript;
                 $test_body(renderer);
             }
 
-            // #[cfg(target_os = "macos")]
-            // #[test]
-            // fn [<$test_name _quartz>]() {
-            //     let renderer = Renderer::QuartzRenderer;
-            //     $test_body(renderer);
-            // }
-            //
+            #[test]
+            fn [<$test_name _poppler>]() {
+                let renderer = Renderer::Poppler;
+                $test_body(renderer);
+            }
+
+            #[cfg(target_os = "macos")]
+            #[test]
+            fn [<$test_name _quartz>]() {
+                let renderer = Renderer::Quartz;
+                $test_body(renderer);
+            }
+
             #[test]
             fn [<$test_name _pdfjs>]() {
-                let renderer = Renderer::PdfjsRenderer;
+                let renderer = Renderer::Pdfjs;
                 $test_body(renderer);
             }
 
             #[test]
             fn [<$test_name _pdfbox>]() {
-                let renderer = Renderer::PdfboxRenderer;
+                let renderer = Renderer::Pdfbox;
                 $test_body(renderer);
             }
         }

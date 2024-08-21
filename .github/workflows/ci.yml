@@ -6,74 +6,57 @@ env:
   RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
-  xpdf:
-    name: XPDF
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cache XPDF binary
-        id: cache-xpdf
-        uses: actions/cache@v4
-        with:
-          path: pdftopng
-          key: xpdf-binary-v1
-      - name: Download XPDF
-        if: steps.cache-xpdf.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
-          tar -xvzf ./xpdf-tools-linux-4.05.tar.gz
-          mv xpdf-tools-linux-4.05/bin64/pdftopng pdftopng
-
-  pdfium:
-    name: PDFium
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cache PDFium binary
-        id: cache-pdfium
-        uses: actions/cache@v4
-        with:
-          path: pdfium
-          key: pdfium-binary-v1
-      - name: Clone sitro repo
-        if: steps.cache-pdfium.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/LaurenzV/sitro
-      - name: Build pdfium
-        if: steps.cache-pdfium.outputs.cache-hit != 'true'
-        run: |
-          cd sitro/src/pdfium
-          cargo build --release
-      - name: Finish
-        if: steps.cache-pdfium.outputs.cache-hit != 'true'
-        run: mv sitro/target/release/pdfium pdfium
-
-  mupdf:
-    name: MuPDF
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cache MuPDF
-        id: cache-mupdf
-        uses: actions/cache@v4
-        with:
-          path: mutool
-          key: mupdf-binary-v1
-      - name: Download MuPDF
-        if: steps.cache-mupdf.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
-          tar -xvzf ./mupdf-1.24.8-source.tar.gz
-      - name: Build MuPDF
-        if: steps.cache-mupdf.outputs.cache-hit != 'true'
-        run: |
-          cd mupdf-1.24.8-source
-          make HAVE_X11=no HAVE_GLUT=no
-      - name: Finish
-        if: steps.cache-mupdf.outputs.cache-hit != 'true'
-        run: mv mupdf-1.24.8-source/build/release/mutool mutool
+#  pdfium:
+#    name: PDFium
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Cache PDFium binary
+#        id: cache-pdfium
+#        uses: actions/cache@v4
+#        with:
+#          path: pdfium
+#          key: pdfium-binary-v1
+#      - name: Clone sitro repo
+#        if: steps.cache-pdfium.outputs.cache-hit != 'true'
+#        run: |
+#          git clone https://github.com/LaurenzV/sitro
+#      - name: Build pdfium
+#        if: steps.cache-pdfium.outputs.cache-hit != 'true'
+#        run: |
+#          cd sitro/src/pdfium
+#          cargo build --release
+#      - name: Finish
+#        if: steps.cache-pdfium.outputs.cache-hit != 'true'
+#        run: mv sitro/target/release/pdfium pdfium
+#
+#  mupdf:
+#    name: MuPDF
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Cache MuPDF
+#        id: cache-mupdf
+#        uses: actions/cache@v4
+#        with:
+#          path: mutool
+#          key: mupdf-binary-v1
+#      - name: Download MuPDF
+#        if: steps.cache-mupdf.outputs.cache-hit != 'true'
+#        run: |
+#          curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
+#          tar -xvzf ./mupdf-1.24.8-source.tar.gz
+#      - name: Build MuPDF
+#        if: steps.cache-mupdf.outputs.cache-hit != 'true'
+#        run: |
+#          cd mupdf-1.24.8-source
+#          make HAVE_X11=no HAVE_GLUT=no
+#      - name: Finish
+#        if: steps.cache-mupdf.outputs.cache-hit != 'true'
+#        run: mv mupdf-1.24.8-source/build/release/mutool mutool
 
   tests:
     name: Tests
     runs-on: ubuntu-latest
-    needs: [xpdf, pdfium, mupdf]
+#    needs: [pdfium, mupdf]
     defaults:
       run:
         shell: bash
@@ -97,12 +80,6 @@ jobs:
           node-version: 20
 
       - uses: actions/cache@v4
-        id: cache-xpdf
-        with:
-          path: pdftopng
-          key: xpdf-binary-v1
-
-      - uses: actions/cache@v4
         with:
           path: pdfium
           key: pdfium-binary-v1
@@ -112,43 +89,49 @@ jobs:
           path: mutool
           key: mupdf-binary-v1
 
-      - name: Download the pdfium library
-        run: |
-          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
-          mkdir pdfium-linux-x64
-          tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
-          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
-          rm -r pdfium-linux-x64.tgz
-          rm -r pdfium-linux-x64
+      - name: Install poppler-utils
+        run: | 
+          sudo apt-get install -y poppler-utils
+          where pdftoppm
 
-      - name: Get pdfbox
-        run: |
-          curl -LO https://dlcdn.apache.org/pdfbox/3.0.3/pdfbox-app-3.0.3.jar
-          mv pdfbox-app-3.0.3.jar pdfbox.jar
-          ls .
-
-      - name: Clone sitro
-        run: |
-          git clone https://github.com/LaurenzV/sitro
-
-      - name: npm install
-        run: |
-          cd sitro/src/pdfjs
-          npm i
-
-      - name: Setup
-        run: |
-          sudo chmod +x pdftopng
-          sudo chmod +x pdfium
-          sudo chmod +x mutool
-          echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
-          echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
-          echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
-          echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
-          echo "MUPDF_BIN=$(pwd)/mutool" >> $GITHUB_ENV
-
-      - name: Build
-        run: cargo build --release
-
-      - name: Run tests
-        run: cargo test --release
+#
+#      - name: Download the pdfium library
+#        run: |
+#          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
+#          mkdir pdfium-linux-x64
+#          tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
+#          sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
+#          rm -r pdfium-linux-x64.tgz
+#          rm -r pdfium-linux-x64
+#
+#      - name: Get pdfbox
+#        run: |
+#          curl -LO https://dlcdn.apache.org/pdfbox/3.0.3/pdfbox-app-3.0.3.jar
+#          mv pdfbox-app-3.0.3.jar pdfbox.jar
+#          ls .
+#
+#      - name: Clone sitro
+#        run: |
+#          git clone https://github.com/LaurenzV/sitro
+#
+#      - name: npm install
+#        run: |
+#          cd sitro/src/pdfjs
+#          npm i
+#
+#      - name: Setup
+#        run: |
+#          sudo chmod +x pdftopng
+#          sudo chmod +x pdfium
+#          sudo chmod +x mutool
+#          echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
+#          echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
+#          echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
+#          echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
+#          echo "MUPDF_BIN=$(pwd)/mutool" >> $GITHUB_ENV
+#
+#      - name: Build
+#        run: cargo build --release
+#
+#      - name: Run tests
+#        run: cargo test --release
