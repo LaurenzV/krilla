@@ -6,23 +6,6 @@ env:
   RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
-  xpdf:
-    name: XPDF
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cache XPDF binary
-        id: cache-xpdf
-        uses: actions/cache@v4
-        with:
-          path: pdftopng
-          key: xpdf-binary-v1
-      - name: Download XPDF
-        if: steps.cache-xpdf.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://dl.xpdfreader.com/xpdf-tools-linux-4.05.tar.gz
-          tar -xvzf ./xpdf-tools-linux-4.05.tar.gz
-          mv xpdf-tools-linux-4.05/bin64/pdftopng pdftopng
-
   pdfium:
     name: PDFium
     runs-on: ubuntu-latest
@@ -70,10 +53,35 @@ jobs:
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
         run: mv mupdf-1.24.8-source/build/release/mutool mutool
 
+  gs:
+    name: gs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache GhostScript
+        id: cache-gs
+        uses: actions/cache@v4
+        with:
+          path: gs
+          key: gs-binary-v1
+      - name: Download GhostScript
+        if: steps.cache-gs.outputs.cache-hit != 'true'
+        run: |
+          curl -LO https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10031/ghostscript-10.03.1.tar.gz
+          tar -xvzf ./ghostscript-10.03.1.tar.gz
+      - name: Build GhostScript
+        if: steps.cache-gs.outputs.cache-hit != 'true'
+        run: |
+          cd ghostscript-10.03.1
+          ./configure
+          make
+      - name: Finish
+        if: steps.cache-gs.outputs.cache-hit != 'true'
+        run: mv ghostscript-10.03.1/bin/gs gs
+
   tests:
     name: Tests
     runs-on: ubuntu-latest
-    needs: [xpdf, pdfium, mupdf]
+    needs: [pdfium, mupdf, gs]
     defaults:
       run:
         shell: bash
@@ -97,12 +105,6 @@ jobs:
           node-version: 20
 
       - uses: actions/cache@v4
-        id: cache-xpdf
-        with:
-          path: pdftopng
-          key: xpdf-binary-v1
-
-      - uses: actions/cache@v4
         with:
           path: pdfium
           key: pdfium-binary-v1
@@ -111,6 +113,16 @@ jobs:
         with:
           path: mutool
           key: mupdf-binary-v1
+
+      - uses: actions/cache@v4
+        with:
+          path: gs
+          key: gs-binary-v1
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: poppler-utils
+          version: 1.0
 
       - name: Download the pdfium library
         run: |
@@ -138,17 +150,23 @@ jobs:
 
       - name: Setup
         run: |
-          sudo chmod +x pdftopng
           sudo chmod +x pdfium
           sudo chmod +x mutool
-          echo "XPDF_BIN=$(pwd)/pdftopng" >> $GITHUB_ENV
+          echo "POPPLER_BIN=pdftoppm" >> $GITHUB_ENV
+          echo "GHOSTSCRIPT_BIN=$(pwd)/gs" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
           echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
           echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
           echo "MUPDF_BIN=$(pwd)/mutool" >> $GITHUB_ENV
 
       - name: Build
-        run: cargo build --release
+        run: cargo build
 
       - name: Run tests
-        run: cargo test --release
+        run: cargo test
+
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./tests/diff

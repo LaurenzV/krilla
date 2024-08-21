@@ -2,3 +2,5 @@ target
 .idea
 out
 data
+tests/diff/*
+**/.DS_STORE
