@@ -1,6 +1,6 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::Source;
-use image::{load_from_memory, Rgba};
+use image::{load_from_memory, Rgba, RgbaImage};
 use krilla::document::Document;
 use krilla::rgb::Rgb;
 use krilla::serialize::SerializeSettings;
@@ -36,6 +36,10 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
         .join("tests/refs")
         .join(name);
 
+    let diffs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/diffs")
+        .join(name);
+
     std::fs::create_dir_all(&refs_path).unwrap();
 
     if document.is_empty() {
@@ -46,33 +50,14 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
         let reference = load_from_memory(&std::fs::read(&ref_path).unwrap()).unwrap().into_rgba8();
         let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
 
-        let width = max(reference.width(), actual.width());
-        let height = max(reference.height(), actual.height());
+        let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
-        let mut pixel_diff = 0;
-
-        for x in 0..width {
-            for y in 0..height {
-                let actual_pixel = actual.get_pixel_checked(x, y);
-                let expected_pixel = reference.get_pixel_checked(x, y);
-
-
-
-                match (actual_pixel, expected_pixel) {
-                    (Some(actual), Some(expected)) => {
-                        if is_pix_diff(expected, actual) {
-                            pixel_diff += 1;
-                        }
-                    }
-                    (Some(_), None) => {
-                        pixel_diff += 1;
-                    }
-                    (None, Some(_)) => {
-                        pixel_diff += 1;
-                    }
-                    _ => unreachable!(),
-                }
-            }
+        if pixel_diff != 0 {
+            std::fs::create_dir_all(&diffs_path).unwrap();
+            let diff_path = diffs_path.join(format!("{}.png", renderer.name()));
+            diff_image
+                .save_with_format(&diff_path, image::ImageFormat::Png)
+                .unwrap();
         }
 
         assert_eq!(pixel_diff, 0);
@@ -85,6 +70,51 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
             std::fs::write(&ref_path, page).unwrap();
         }
     }
+}
+
+pub fn get_diff(
+    expected_image: &RgbaImage,
+    actual_image: &RgbaImage,
+) -> (RgbaImage, i32) {
+    let width = max(expected_image.width(), actual_image.width());
+    let height = max(expected_image.height(), actual_image.height());
+
+    let mut diff_image = RgbaImage::new(width * 3, height);
+
+    let mut pixel_diff = 0;
+
+    for x in 0..width {
+        for y in 0..height {
+            let actual_pixel = actual_image.get_pixel_checked(x, y);
+            let expected_pixel = expected_image.get_pixel_checked(x, y);
+
+            match (actual_pixel, expected_pixel) {
+                (Some(actual), Some(expected)) => {
+                    diff_image.put_pixel(x, y, *expected);
+                    diff_image.put_pixel(x + 2 * width, y, *actual);
+                    if is_pix_diff(expected, actual) {
+                        pixel_diff += 1;
+                        diff_image.put_pixel(x + width, y, Rgba([255, 0, 0, 255]));
+                    } else {
+                        diff_image.put_pixel(x + width, y, Rgba([0, 0, 0, 255]))
+                    }
+                }
+                (Some(actual), None) => {
+                    pixel_diff += 1;
+                    diff_image.put_pixel(x + 2 * width, y, *actual);
+                    diff_image.put_pixel(x + width, y, Rgba([255, 0, 0, 255]));
+                }
+                (None, Some(expected)) => {
+                    pixel_diff += 1;
+                    diff_image.put_pixel(x, y, *expected);
+                    diff_image.put_pixel(x + width, y, Rgba([255, 0, 0, 255]));
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    (diff_image, pixel_diff)
 }
 
 fn is_pix_diff(pixel1: &Rgba<u8>, pixel2: &Rgba<u8>) -> bool {

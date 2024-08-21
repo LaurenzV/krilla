@@ -134,3 +134,9 @@ jobs:
 
       - name: Run tests
         run: cargo test --release
+
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./tests/diff
