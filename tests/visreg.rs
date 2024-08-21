@@ -64,10 +64,10 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
                             pixel_diff += 1;
                         }
                     }
-                    (Some(actual), None) => {
+                    (Some(_), None) => {
                         pixel_diff += 1;
                     }
-                    (None, Some(expected)) => {
+                    (None, Some(_)) => {
                         pixel_diff += 1;
                     }
                     _ => unreachable!(),
