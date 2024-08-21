@@ -89,10 +89,10 @@ jobs:
           path: mutool
           key: mupdf-binary-v1
 
-      - name: Install deps
-        run: | 
-          sudo apt-get install -y poppler-utils
-          sudo apt-get install -y ghostscript
+      - uses: awash128/cache-apt-pkgs-action@latest
+        with:
+          packages: poppler-utils ghostscript
+          version: 1.0
 
       - name: Download the pdfium library
         run: |

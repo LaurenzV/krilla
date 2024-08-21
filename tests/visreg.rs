@@ -37,7 +37,7 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
         .join(name);
 
     let diffs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/diffs")
+        .join("tests/diff")
         .join(name);
 
     std::fs::create_dir_all(&refs_path).unwrap();
