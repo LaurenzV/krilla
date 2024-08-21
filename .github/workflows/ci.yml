@@ -89,7 +89,7 @@ jobs:
           path: mutool
           key: mupdf-binary-v1
 
-      - uses: awash128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: poppler-utils ghostscript
           version: 1.0
