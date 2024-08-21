@@ -130,10 +130,10 @@ jobs:
           echo "MUPDF_BIN=$(pwd)/mutool" >> $GITHUB_ENV
 
       - name: Build
-        run: cargo build --release
+        run: cargo build
 
       - name: Run tests
-        run: cargo test --release
+        run: cargo test
 
       - name: Upload artifacts
         if: failure()
