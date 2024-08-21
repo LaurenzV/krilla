@@ -20,6 +20,9 @@ endobj
 3 0 obj
 <<
   /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
   /Contents 4 0 R
@@ -38,6 +41,9 @@ endobj
 5 0 obj
 <<
   /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
   /MediaBox [0 0 250 200]
   /Parent 2 0 R
   /Contents 6 0 R
@@ -56,6 +62,9 @@ endobj
 7 0 obj
 <<
   /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
   /Contents 8 0 R
@@ -97,19 +106,19 @@ xref
 0000000016 00000 n
 0000000090 00000 n
 0000000166 00000 n
-0000000262 00000 n
-0000000314 00000 n
-0000000410 00000 n
-0000000462 00000 n
-0000000558 00000 n
-0000000710 00000 n
-0000000610 00000 n
-0000000652 00000 n
+0000000325 00000 n
+0000000377 00000 n
+0000000536 00000 n
+0000000588 00000 n
+0000000747 00000 n
+0000000899 00000 n
+0000000799 00000 n
+0000000841 00000 n
 trailer
 <<
   /Size 12
   /Root 1 0 R
 >>
 startxref
-760
+949
 %%EOF
