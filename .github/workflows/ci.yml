@@ -121,7 +121,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: poppler-utils ghostscript
+          packages: poppler-utils
           version: 1.0
 
       - name: Download the pdfium library
