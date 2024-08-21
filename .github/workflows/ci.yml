@@ -76,7 +76,7 @@ jobs:
           make
       - name: Finish
         if: steps.cache-gs.outputs.cache-hit != 'true'
-        run: mv ghostscript-10.03.1/bin/gs mutool
+        run: mv ghostscript-10.03.1/bin/gs gs
 
   tests:
     name: Tests
