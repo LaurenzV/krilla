@@ -61,6 +61,8 @@ pub(crate) mod test_utils {
 
         let actual = std::fs::read(&path).unwrap();
 
+        assert!(actual == content);
+
         if REPLACE && &actual != content {
             std::fs::write(&path, content).unwrap();
             panic!("test was replaced");
