@@ -1,4 +1,5 @@
-use crate::serialize::{Object, PageInfo, RegisterableObject, SerializerContext};
+use crate::object::annotation::Annotation;
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
@@ -8,23 +9,29 @@ use std::num::NonZeroU32;
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
-#[derive(Debug, Hash, Eq, PartialEq)]
-pub(crate) struct Page {
+pub struct Page {
     /// The stream of the page.
     pub stream: Stream,
     /// The media box of the page.
     pub media_box: Rect,
     /// The label of the page.
     pub page_label: PageLabel,
+    pub annotations: Vec<Box<dyn Annotation>>,
 }
 
 impl Page {
     /// Create a new page.
-    pub fn new(size: Size, stream: Stream, page_label: PageLabel) -> Self {
+    pub fn new(
+        size: Size,
+        stream: Stream,
+        page_label: PageLabel,
+        annotations: Vec<Box<dyn Annotation>>,
+    ) -> Self {
         Self {
             stream,
             media_box: size.to_rect(0.0, 0.0).unwrap(),
             page_label,
+            annotations,
         }
     }
 }
@@ -55,17 +62,9 @@ impl Object for Page {
 
         stream.finish();
 
-        sc.add_page_info(PageInfo {
-            ref_: root_ref,
-            media_box: self.media_box,
-            page_label: self.page_label.clone(),
-        });
-
         chunk
     }
 }
-
-impl RegisterableObject for Page {}
 
 /// A page label.
 #[derive(Debug, Hash, Eq, PartialEq, Default, Clone)]
@@ -203,8 +202,9 @@ mod tests {
             Size::from_wh(200.0, 200.0).unwrap(),
             stream_builder.finish(),
             PageLabel::default(),
+            vec![],
         );
-        sc.add(page);
+        sc.add_page(page);
 
         check_snapshot("page/simple_page", sc.finish().as_bytes());
     }
@@ -229,8 +229,9 @@ mod tests {
             Size::from_wh(200.0, 200.0).unwrap(),
             stream_builder.finish(),
             PageLabel::default(),
+            vec![],
         );
-        sc.add(page);
+        sc.add_page(page);
 
         check_snapshot("page/page_with_resources", sc.finish().as_bytes());
     }

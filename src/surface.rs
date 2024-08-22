@@ -1,4 +1,5 @@
 use crate::font::Font;
+use crate::object::annotation::Annotation;
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -205,18 +206,18 @@ pub struct PageBuilder<'a> {
     sc: &'a mut SerializerContext,
     size: Size,
     page_label: PageLabel,
-    page_index: usize,
     page_stream: Stream,
+    annotations: Vec<Box<dyn Annotation>>,
 }
 
 impl<'a> PageBuilder<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size, page_index: usize) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
         Self {
             sc,
             size,
             page_label: PageLabel::default(),
             page_stream: Stream::empty(),
-            page_index
+            annotations: vec![],
         }
     }
 
@@ -228,15 +229,18 @@ impl<'a> PageBuilder<'a> {
         sc: &'a mut SerializerContext,
         size: Size,
         page_label: PageLabel,
-        page_index: usize
     ) -> Self {
         Self {
             sc,
             size,
             page_label,
             page_stream: Stream::empty(),
-            page_index
+            annotations: vec![],
         }
+    }
+
+    pub fn add_annotation(&mut self, annotation: Box<dyn Annotation>) {
+        self.annotations.push(annotation);
     }
 
     pub fn surface(&mut self) -> Surface {
@@ -254,9 +258,11 @@ impl<'a> PageBuilder<'a> {
 
 impl Drop for PageBuilder<'_> {
     fn drop(&mut self) {
+        let annotations = std::mem::take(&mut self.annotations);
+
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = Page::new(self.size, stream, self.page_label.clone());
-        self.sc.add(page);
+        let page = Page::new(self.size, stream, self.page_label.clone(), annotations);
+        self.sc.add_page(page);
     }
 }
 

@@ -4,7 +4,7 @@ use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
 use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
-use crate::object::page::{PageLabel, PageLabelContainer};
+use crate::object::page::{Page, PageLabelContainer};
 use crate::object::type3_font::Type3Font;
 use crate::resource::{ColorSpaceEnum, FontResource};
 use crate::stream::PdfFont;
@@ -17,8 +17,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
-use tiny_skia_path::Rect;
-use crate::object::annotation::Annotation;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
@@ -84,9 +82,8 @@ pub struct SerializerContext {
     page_tree_ref: Ref,
     page_labels_ref: Option<Ref>,
     outline_ref: Option<Ref>,
-    page_infos: Vec<PageInfo>,
+    pages: Vec<(Ref, Page)>,
     outline: Option<Outline>,
-    annotations: Vec<(Ref, Box<dyn Annotation>)>,
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
     chunks_len: usize,
@@ -108,13 +105,6 @@ impl PDFGlyph {
     }
 }
 
-#[derive(Debug)]
-pub struct PageInfo {
-    pub ref_: Ref,
-    pub media_box: Rect,
-    pub page_label: PageLabel,
-}
-
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         let mut cur_ref = Ref::new(1);
@@ -128,18 +118,17 @@ impl SerializerContext {
             page_tree_ref,
             catalog_ref,
             outline: None,
-            annotations: vec![],
             outline_ref: None,
             page_labels_ref: None,
-            page_infos: vec![],
+            pages: vec![],
             chunks_len: 0,
             font_map: HashMap::new(),
             serialize_settings,
         }
     }
 
-    pub fn page_infos(&self) -> &[PageInfo] {
-        &self.page_infos
+    pub fn pages(&self) -> &[(Ref, Page)] {
+        &self.pages
     }
 
     pub fn set_outline(&mut self, outline: Outline) {
@@ -150,8 +139,9 @@ impl SerializerContext {
         self.page_tree_ref
     }
 
-    pub fn add_page_info(&mut self, page_info: PageInfo) {
-        self.page_infos.push(page_info);
+    pub fn add_page(&mut self, page: Page) {
+        let ref_ = self.new_ref();
+        self.pages.push((ref_, page));
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -299,9 +289,9 @@ impl SerializerContext {
     // Always needs to be called.
     pub fn finish(mut self) -> Pdf {
         if let Some(container) = PageLabelContainer::new(
-            self.page_infos
+            self.pages
                 .iter()
-                .map(|i| i.page_label.clone())
+                .map(|(_, p)| p.page_label.clone())
                 .collect::<Vec<_>>(),
         ) {
             self.page_labels_ref = Some(self.add(container));
@@ -342,10 +332,18 @@ impl SerializerContext {
 
         let mut page_tree_chunk = Chunk::new();
 
+        let pages = std::mem::take(&mut self.pages);
+        for (ref_, page) in &pages {
+            let chunk = page.serialize_into(&mut self, *ref_);
+            self.push_chunk(chunk);
+        }
+
+        self.pages = pages;
+
         page_tree_chunk
             .pages(self.page_tree_ref)
-            .count(self.page_infos.len() as i32)
-            .kids(self.page_infos.iter().map(|i| i.ref_));
+            .count(self.pages.len() as i32)
+            .kids(self.pages.iter().map(|(r, _)| *r));
 
         self.chunks_len += page_tree_chunk.len();
 
@@ -376,7 +374,10 @@ pub trait SipHashable {
     fn sip_hash(&self) -> u128;
 }
 
-impl<T> SipHashable for T where T: Hash + ?Sized{
+impl<T> SipHashable for T
+where
+    T: Hash + ?Sized,
+{
     fn sip_hash(&self) -> u128 {
         let mut state = SipHasher13::new();
         // TODO: Hash type ID too, like in Typst?
