@@ -1,18 +1,15 @@
+use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Ref};
 use tiny_skia_path::{Point, Transform};
-use crate::serialize::{Object, SerializerContext};
 
 pub struct XyzDestination {
     page_index: usize,
-    point: Point
+    point: Point,
 }
 
 impl XyzDestination {
     pub fn new(page_index: usize, point: Point) -> Self {
-        Self {
-            page_index,
-            point
-        }
+        Self { page_index, point }
     }
 }
 
@@ -27,11 +24,12 @@ impl Object for XyzDestination {
         invert_transform.map_point(&mut mapped_point);
 
         let mut chunk = Chunk::new();
-        chunk.indirect(root_ref).start::<pdf_writer::writers::Destination>()
+        chunk
+            .indirect(root_ref)
+            .start::<pdf_writer::writers::Destination>()
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
 
         chunk
-
     }
 }

@@ -10,11 +10,11 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
 use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
 use crate::util::NameExt;
+use pdf_writer::types::ProcSet;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use pdf_writer::types::ProcSet;
 
 pub trait ResourceTrait: Object {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -221,7 +221,12 @@ impl ResourceDictionary {
         T: ResourcesExt,
     {
         let resources = &mut parent.resources();
-        resources.proc_sets([ProcSet::Pdf, ProcSet::Text, ProcSet::ImageColor, ProcSet::ImageGrayscale]);
+        resources.proc_sets([
+            ProcSet::Pdf,
+            ProcSet::Text,
+            ProcSet::ImageColor,
+            ProcSet::ImageGrayscale,
+        ]);
         write_resource_type(sc, resources, self.color_spaces, false);
         write_resource_type(sc, resources, self.ext_g_states, false);
         write_resource_type(sc, resources, self.patterns, false);

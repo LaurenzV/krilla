@@ -1,7 +1,7 @@
+use crate::object::destination::XyzDestination;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 use tiny_skia_path::Point;
-use crate::object::destination::XyzDestination;
 
 #[derive(Debug, Clone)]
 pub struct Outline {
@@ -98,8 +98,7 @@ impl OutlineNode {
         let dest_ref = sc.new_ref();
         sub_chunks.push(dest.serialize_into(sc, dest_ref));
 
-        outline_entry
-            .pair(Name(b"Dest"), dest_ref);
+        outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
 

@@ -62,7 +62,6 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
         //
         // assert_eq!(pixel_diff, 0);
 
-
         std::fs::write(&ref_path, &document[0]).unwrap();
     } else {
         for (index, page) in document.iter().enumerate() {
@@ -72,10 +71,7 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
     }
 }
 
-pub fn get_diff(
-    expected_image: &RgbaImage,
-    actual_image: &RgbaImage,
-) -> (RgbaImage, i32) {
+pub fn get_diff(expected_image: &RgbaImage, actual_image: &RgbaImage) -> (RgbaImage, i32) {
     let width = max(expected_image.width(), actual_image.width());
     let height = max(expected_image.height(), actual_image.height());
 
