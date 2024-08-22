@@ -22,23 +22,50 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
 use std::iter::Peekable;
+use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
-// TODO: Remove clone
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Stream {
-    pub(crate) content: Vec<u8>,
-    pub(crate) bbox: Rect,
-    pub(crate) resource_dictionary: ResourceDictionary,
+struct Repr {
+    content: Vec<u8>,
+    bbox: Rect,
+    resource_dictionary: ResourceDictionary,
 }
 
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct Stream(Arc<Repr>);
+
 impl Stream {
+    pub(crate) fn new(
+        content: Vec<u8>,
+        bbox: Rect,
+        resource_dictionary: ResourceDictionary,
+    ) -> Self {
+        Self(Arc::new(Repr {
+            content,
+            bbox,
+            resource_dictionary,
+        }))
+    }
+
+    pub(crate) fn content(&self) -> &[u8] {
+        &self.0.content
+    }
+
+    pub(crate) fn bbox(&self) -> Rect {
+        self.0.bbox
+    }
+
+    pub(crate) fn resource_dictionary(&self) -> &ResourceDictionary {
+        &self.0.resource_dictionary
+    }
+
     pub fn empty() -> Self {
-        Self {
+        Self(Arc::new(Repr {
             content: vec![],
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
-        }
+        }))
     }
 }
 
@@ -60,11 +87,7 @@ impl ContentBuilder {
     }
 
     pub fn finish(self) -> Stream {
-        Stream {
-            content: self.content.finish(),
-            bbox: self.bbox,
-            resource_dictionary: self.rd_builder.finish(),
-        }
+        Stream::new(self.content.finish(), self.bbox, self.rd_builder.finish())
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {

@@ -30,14 +30,14 @@ impl Page {
 }
 
 impl Object for Page {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let stream_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
 
         let mut page = chunk.page(root_ref);
         self.stream
-            .resource_dictionary
+            .resource_dictionary()
             .to_pdf_resources(sc, &mut page);
 
         page.media_box(self.media_box.to_pdf_rect());
@@ -45,7 +45,7 @@ impl Object for Page {
         page.contents(stream_ref);
         page.finish();
 
-        let (stream, filter) = sc.get_content_stream(&self.stream.content);
+        let (stream, filter) = sc.get_content_stream(self.stream.content());
 
         let mut stream = chunk.stream(stream_ref, &stream);
 
@@ -58,7 +58,7 @@ impl Object for Page {
         sc.add_page_info(PageInfo {
             ref_: root_ref,
             media_box: self.media_box,
-            page_label: self.page_label,
+            page_label: self.page_label.clone(),
         });
 
         chunk
@@ -93,7 +93,7 @@ impl PageLabel {
 }
 
 impl Object for PageLabel {
-    fn serialize_into(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)
@@ -134,24 +134,24 @@ impl PageLabelContainer {
 }
 
 impl Object for PageLabelContainer {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
         let mut prev: Option<PageLabel> = None;
 
-        for (i, label) in self.labels.into_iter().enumerate() {
+        for (i, label) in self.labels.iter().enumerate() {
             if let Some(n_prev) = &prev {
                 if n_prev.style != label.style
                     || n_prev.prefix != label.prefix
                     || n_prev.offset.map(|n| n.get()) != label.offset.map(|n| n.get() + 1)
                 {
                     filtered_entries.push((i, label.clone()));
-                    prev = Some(label);
+                    prev = Some(label.clone());
                 }
             } else {
                 filtered_entries.push((i, label.clone()));
-                prev = Some(label);
+                prev = Some(label.clone());
             }
         }
 

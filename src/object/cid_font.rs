@@ -78,7 +78,7 @@ impl CIDFont {
 }
 
 impl Object for CIDFont {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();

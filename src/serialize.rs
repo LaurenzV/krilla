@@ -65,10 +65,10 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: Sized  {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
+pub trait Object {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 
-    fn serialize(self, sc: &mut SerializerContext) -> Chunk {
+    fn serialize(&self, sc: &mut SerializerContext) -> Chunk {
         let root_ref = sc.new_ref();
         self.serialize_into(sc, root_ref)
     }

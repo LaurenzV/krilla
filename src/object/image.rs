@@ -40,7 +40,7 @@ impl Image {
 }
 
 impl Object for Image {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {

@@ -91,10 +91,15 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let x_ref = sc.add(XObject::new(self.stream, false, true, self.custom_bbox));
+        let x_ref = sc.add(XObject::new(
+            self.stream.clone(),
+            false,
+            true,
+            self.custom_bbox,
+        ));
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
