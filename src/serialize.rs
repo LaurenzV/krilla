@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
+use crate::object::annotation::Annotation;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
@@ -74,9 +75,8 @@ pub trait Object {
     }
 }
 
-pub trait RegisterableObject: Object + Hash {}
+pub trait RegisterableObject: Object + SipHashable {}
 
-#[derive(Debug)]
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, FontContainer>,
@@ -86,6 +86,7 @@ pub struct SerializerContext {
     outline_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     outline: Option<Outline>,
+    annotations: Vec<(Ref, Box<dyn Annotation>)>,
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
     chunks_len: usize,
@@ -127,6 +128,7 @@ impl SerializerContext {
             page_tree_ref,
             catalog_ref,
             outline: None,
+            annotations: vec![],
             outline_ref: None,
             page_labels_ref: None,
             page_infos: vec![],
@@ -176,7 +178,7 @@ impl SerializerContext {
     where
         T: RegisterableObject,
     {
-        let hash = hash_item(&object);
+        let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
         } else {
@@ -193,7 +195,7 @@ impl SerializerContext {
     where
         T: RegisterableObject,
     {
-        let hash = hash_item(&object);
+        let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
         } else {
@@ -370,15 +372,17 @@ impl SerializerContext {
     }
 }
 
-/// Hash the item.
-#[inline]
-pub fn hash_item<T: Hash + ?Sized>(item: &T) -> u128 {
-    // Also hash the TypeId because the type might be converted
-    // through an unsized coercion.
-    let mut state = SipHasher13::new();
-    // TODO: Hash type ID too, like in Typst?
-    item.hash(&mut state);
-    state.finish128().as_u128()
+pub trait SipHashable {
+    fn sip_hash(&self) -> u128;
+}
+
+impl<T> SipHashable for T where T: Hash + ?Sized{
+    fn sip_hash(&self) -> u128 {
+        let mut state = SipHasher13::new();
+        // TODO: Hash type ID too, like in Typst?
+        self.hash(&mut state);
+        state.finish128().as_u128()
+    }
 }
 
 #[derive(Copy, Clone)]

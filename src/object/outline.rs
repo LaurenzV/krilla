@@ -1,4 +1,4 @@
-use crate::object::destination::{Destination, XyzDestination};
+use crate::object::destination::XyzDestination;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 use tiny_skia_path::Point;

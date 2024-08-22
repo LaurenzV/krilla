@@ -205,16 +205,18 @@ pub struct PageBuilder<'a> {
     sc: &'a mut SerializerContext,
     size: Size,
     page_label: PageLabel,
+    page_index: usize,
     page_stream: Stream,
 }
 
 impl<'a> PageBuilder<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size, page_index: usize) -> Self {
         Self {
             sc,
             size,
             page_label: PageLabel::default(),
             page_stream: Stream::empty(),
+            page_index
         }
     }
 
@@ -226,12 +228,14 @@ impl<'a> PageBuilder<'a> {
         sc: &'a mut SerializerContext,
         size: Size,
         page_label: PageLabel,
+        page_index: usize
     ) -> Self {
         Self {
             sc,
             size,
             page_label,
             page_stream: Stream::empty(),
+            page_index
         }
     }
 

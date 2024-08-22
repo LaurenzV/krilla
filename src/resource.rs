@@ -8,7 +8,7 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
@@ -312,14 +312,14 @@ where
     }
 
     pub fn get(&self, resource: &V) -> Option<ResourceNumber> {
-        self.backward.get(&hash_item(resource)).copied()
+        self.backward.get(&resource.sip_hash()).copied()
     }
 
     pub fn remap(&mut self, resource: V) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
 
-        *backward.entry(hash_item(&resource)).or_insert_with(|| {
+        *backward.entry(resource.sip_hash()).or_insert_with(|| {
             let old = forward.len();
             forward.push(resource);
             old as ResourceNumber
