@@ -288,6 +288,8 @@ impl SerializerContext {
 
     // Always needs to be called.
     pub fn finish(mut self) -> Pdf {
+        // TODO: Get rid of all the clones
+
         if let Some(container) = PageLabelContainer::new(
             self.pages
                 .iter()
@@ -332,13 +334,10 @@ impl SerializerContext {
 
         let mut page_tree_chunk = Chunk::new();
 
-        let pages = std::mem::take(&mut self.pages);
-        for (ref_, page) in &pages {
-            let chunk = page.serialize_into(&mut self, *ref_);
+        for (ref_, page) in self.pages.clone() {
+            let chunk = page.serialize_into(&mut self, ref_);
             self.push_chunk(chunk);
         }
-
-        self.pages = pages;
 
         page_tree_chunk
             .pages(self.page_tree_ref)

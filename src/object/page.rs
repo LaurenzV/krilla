@@ -1,4 +1,4 @@
-use crate::object::annotation::Annotation;
+use crate::object::annotation::{Annotation, LinkAnnotation};
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
@@ -9,6 +9,7 @@ use std::num::NonZeroU32;
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
+#[derive(Clone)]
 pub struct Page {
     /// The stream of the page.
     pub stream: Stream,
@@ -16,7 +17,7 @@ pub struct Page {
     pub media_box: Rect,
     /// The label of the page.
     pub page_label: PageLabel,
-    pub annotations: Vec<Box<dyn Annotation>>,
+    pub annotations: Vec<LinkAnnotation>,
 }
 
 impl Page {
@@ -25,7 +26,7 @@ impl Page {
         size: Size,
         stream: Stream,
         page_label: PageLabel,
-        annotations: Vec<Box<dyn Annotation>>,
+        annotations: Vec<LinkAnnotation>,
     ) -> Self {
         Self {
             stream,
@@ -42,6 +43,16 @@ impl Object for Page {
 
         let mut chunk = Chunk::new();
 
+        let mut annotation_refs = vec![];
+
+        if !self.annotations.is_empty() {
+            for annotation in &self.annotations {
+                let annot_ref = sc.new_ref();
+                chunk.extend(&annotation.serialize_into(sc, annot_ref, self.media_box.height()));
+                annotation_refs.push(annot_ref);
+            }
+        }
+
         let mut page = chunk.page(root_ref);
         self.stream
             .resource_dictionary()
@@ -50,6 +61,11 @@ impl Object for Page {
         page.media_box(self.media_box.to_pdf_rect());
         page.parent(sc.page_tree_ref());
         page.contents(stream_ref);
+
+        if !annotation_refs.is_empty() {
+            page.annotations(annotation_refs);
+        }
+
         page.finish();
 
         let (stream, filter) = sc.get_content_stream(self.stream.content());

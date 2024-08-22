@@ -1,5 +1,5 @@
 use crate::font::Font;
-use crate::object::annotation::Annotation;
+use crate::object::annotation::LinkAnnotation;
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -26,7 +26,7 @@ pub enum PushInstruction {
 
 pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
-    root_builder: ContentBuilder,
+    pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
@@ -207,7 +207,7 @@ pub struct PageBuilder<'a> {
     size: Size,
     page_label: PageLabel,
     page_stream: Stream,
-    annotations: Vec<Box<dyn Annotation>>,
+    annotations: Vec<LinkAnnotation>,
 }
 
 impl<'a> PageBuilder<'a> {
@@ -239,7 +239,7 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
-    pub fn add_annotation(&mut self, annotation: Box<dyn Annotation>) {
+    pub fn add_annotation(&mut self, annotation: LinkAnnotation) {
         self.annotations.push(annotation);
     }
 

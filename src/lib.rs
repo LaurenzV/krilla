@@ -26,8 +26,15 @@ pub use tiny_skia_path::{Size, Transform};
 pub(crate) mod test_utils {
     use difference::{Changeset, Difference};
     use std::path::PathBuf;
+    use tiny_skia_path::{Path, PathBuilder, Rect};
 
     const REPLACE: bool = true;
+
+    pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
+        let mut builder = PathBuilder::new();
+        builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
+        builder.finish().unwrap()
+    }
 
     pub fn load_font(name: &str) -> Vec<u8> {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

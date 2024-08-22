@@ -6,6 +6,7 @@ pub trait Destination: Object {}
 
 impl Destination for XyzDestination {}
 
+#[derive(Clone)]
 pub struct XyzDestination {
     page_index: usize,
     point: Point,
