@@ -1,4 +1,4 @@
-use crate::object::annotation::{Annotation, LinkAnnotation};
+use crate::object::annotation::Annotation;
 use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
@@ -9,7 +9,6 @@ use std::num::NonZeroU32;
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
-#[derive(Clone)]
 pub struct Page {
     /// The stream of the page.
     pub stream: Stream,
@@ -17,7 +16,7 @@ pub struct Page {
     pub media_box: Rect,
     /// The label of the page.
     pub page_label: PageLabel,
-    pub annotations: Vec<LinkAnnotation>,
+    pub annotations: Vec<Box<dyn Annotation>>,
 }
 
 impl Page {
@@ -26,7 +25,7 @@ impl Page {
         size: Size,
         stream: Stream,
         page_label: PageLabel,
-        annotations: Vec<LinkAnnotation>,
+        annotations: Vec<Box<dyn Annotation>>,
     ) -> Self {
         Self {
             stream,

@@ -1,5 +1,5 @@
-use crate::object::destination::XyzDestination;
-use crate::serialize::{Object, SerializerContext};
+use crate::object::destination::Destination;
+use crate::serialize::SerializerContext;
 use crate::util::RectExt;
 use pdf_writer::types::AnnotationType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -9,12 +9,10 @@ pub trait Annotation {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref, page_size: f32) -> Chunk;
 }
 
-#[derive(Clone)]
 pub enum LinkTarget {
-    Destination(XyzDestination),
+    Destination(Box<dyn Destination>),
 }
 
-#[derive(Clone)]
 pub struct LinkAnnotation {
     pub rect: Rect,
     pub link_target: LinkTarget,
@@ -65,13 +63,13 @@ mod tests {
     fn simple() {
         let mut db = Document::new(SerializeSettings::default_test());
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        page.add_annotation(LinkAnnotation {
+        page.add_annotation(Box::new(LinkAnnotation {
             rect: Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-            link_target: LinkTarget::Destination(XyzDestination::new(
+            link_target: LinkTarget::Destination(Box::new(XyzDestination::new(
                 1,
                 Point::from_xy(100.0, 100.0),
-            )),
-        });
+            ))),
+        }));
 
         let mut surface = page.surface();
         surface.fill_path(&rect_path(0.0, 0.0, 100.0, 100.0), Fill::<Rgb>::default());
@@ -79,10 +77,13 @@ mod tests {
         page.finish();
 
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        page.add_annotation(LinkAnnotation {
+        page.add_annotation(Box::new(LinkAnnotation {
             rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-            link_target: LinkTarget::Destination(XyzDestination::new(0, Point::from_xy(0.0, 0.0))),
-        });
+            link_target: LinkTarget::Destination(Box::new(XyzDestination::new(
+                0,
+                Point::from_xy(0.0, 0.0),
+            ))),
+        }));
         let mut my_surface = page.surface();
         my_surface.fill_path(
             &rect_path(100.0, 100.0, 200.0, 200.0),

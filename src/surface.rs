@@ -1,5 +1,5 @@
 use crate::font::Font;
-use crate::object::annotation::LinkAnnotation;
+use crate::object::annotation::Annotation;
 use crate::object::color_space::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -207,7 +207,7 @@ pub struct PageBuilder<'a> {
     size: Size,
     page_label: PageLabel,
     page_stream: Stream,
-    annotations: Vec<LinkAnnotation>,
+    annotations: Vec<Box<dyn Annotation>>,
 }
 
 impl<'a> PageBuilder<'a> {
@@ -239,7 +239,7 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
-    pub fn add_annotation(&mut self, annotation: LinkAnnotation) {
+    pub fn add_annotation(&mut self, annotation: Box<dyn Annotation>) {
         self.annotations.push(annotation);
     }
 

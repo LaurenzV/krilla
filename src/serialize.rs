@@ -17,6 +17,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
+use tiny_skia_path::Rect;
 
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
@@ -73,6 +74,11 @@ pub trait Object {
     }
 }
 
+pub struct PageInfo {
+    pub ref_: Ref,
+    pub media_box: Rect,
+}
+
 pub trait RegisterableObject: Object + SipHashable {}
 
 pub struct SerializerContext {
@@ -82,6 +88,7 @@ pub struct SerializerContext {
     page_tree_ref: Ref,
     page_labels_ref: Option<Ref>,
     outline_ref: Option<Ref>,
+    page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, Page)>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
@@ -120,6 +127,7 @@ impl SerializerContext {
             outline: None,
             outline_ref: None,
             page_labels_ref: None,
+            page_infos: vec![],
             pages: vec![],
             chunks_len: 0,
             font_map: HashMap::new(),
@@ -127,8 +135,8 @@ impl SerializerContext {
         }
     }
 
-    pub fn pages(&self) -> &[(Ref, Page)] {
-        &self.pages
+    pub fn page_infos(&self) -> &[PageInfo] {
+        &self.page_infos
     }
 
     pub fn set_outline(&mut self, outline: Outline) {
@@ -141,6 +149,10 @@ impl SerializerContext {
 
     pub fn add_page(&mut self, page: Page) {
         let ref_ = self.new_ref();
+        self.page_infos.push(PageInfo {
+            ref_,
+            media_box: page.media_box,
+        });
         self.pages.push((ref_, page));
     }
 
@@ -334,15 +346,16 @@ impl SerializerContext {
 
         let mut page_tree_chunk = Chunk::new();
 
-        for (ref_, page) in self.pages.clone() {
-            let chunk = page.serialize_into(&mut self, ref_);
+        let pages = std::mem::take(&mut self.pages);
+        for (ref_, page) in &pages {
+            let chunk = page.serialize_into(&mut self, *ref_);
             self.push_chunk(chunk);
         }
 
         page_tree_chunk
             .pages(self.page_tree_ref)
-            .count(self.pages.len() as i32)
-            .kids(self.pages.iter().map(|(r, _)| *r));
+            .count(pages.len() as i32)
+            .kids(pages.iter().map(|(r, _)| *r));
 
         self.chunks_len += page_tree_chunk.len();
 

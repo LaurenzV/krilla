@@ -20,8 +20,8 @@ impl XyzDestination {
 
 impl Object for XyzDestination {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        let page_ref = sc.pages()[self.page_index].0;
-        let page_size = sc.pages()[self.page_index].1.media_box.height();
+        let page_ref = sc.page_infos()[self.page_index].ref_;
+        let page_size = sc.page_infos()[self.page_index].media_box.height();
 
         let mut mapped_point = self.point;
         // Convert to PDF coordinates
