@@ -1,3 +1,4 @@
+use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::serialize::SerializerContext;
 use crate::util::RectExt;
@@ -11,6 +12,7 @@ pub trait Annotation {
 
 pub enum Target {
     Destination(Box<dyn Destination>),
+    Action(Box<dyn Action>),
 }
 
 pub struct LinkAnnotation {
@@ -26,6 +28,7 @@ impl Annotation for LinkAnnotation {
 
         match &self.target {
             Target::Destination(dest) => chunk.extend(&dest.serialize_into(sc, target_ref)),
+            Target::Action(_) => {}
         };
 
         let mut annotation = chunk
@@ -39,7 +42,10 @@ impl Annotation for LinkAnnotation {
         annotation.border(0.0, 0.0, 0.0, None);
 
         match &self.target {
-            Target::Destination(_) => annotation.pair(Name(b"Dest"), target_ref),
+            Target::Destination(_) => {
+                annotation.pair(Name(b"Dest"), target_ref);
+            }
+            Target::Action(action) => action.serialize_into(sc, annotation.action()),
         };
 
         annotation.finish();
@@ -51,6 +57,7 @@ impl Annotation for LinkAnnotation {
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
+    use crate::object::action::LinkAction;
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
@@ -71,18 +78,26 @@ mod tests {
             ))),
         }));
 
+        page.add_annotation(Box::new(LinkAnnotation {
+            rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
+            target: Target::Action(Box::new(LinkAction::new(
+                "https://www.youtube.com".to_string(),
+            ))),
+        }));
+
         let mut surface = page.surface();
         surface.fill_path(&rect_path(0.0, 0.0, 100.0, 100.0), Fill::<Rgb>::default());
+        surface.fill_path(
+            &rect_path(100.0, 100.0, 200.0, 200.0),
+            Fill::<Rgb>::default(),
+        );
         surface.finish();
         page.finish();
 
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(Box::new(LinkAnnotation {
             rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-            target: Target::Destination(Box::new(XyzDestination::new(
-                0,
-                Point::from_xy(0.0, 0.0),
-            ))),
+            target: Target::Destination(Box::new(XyzDestination::new(0, Point::from_xy(0.0, 0.0)))),
         }));
         let mut my_surface = page.surface();
         my_surface.fill_path(

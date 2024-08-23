@@ -1,3 +1,4 @@
+pub mod action;
 pub mod annotation;
 pub mod cid_font;
 pub mod color_space;
