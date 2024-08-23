@@ -9,13 +9,13 @@ pub trait Annotation {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref, page_size: f32) -> Chunk;
 }
 
-pub enum LinkTarget {
+pub enum Target {
     Destination(Box<dyn Destination>),
 }
 
 pub struct LinkAnnotation {
     pub rect: Rect,
-    pub link_target: LinkTarget,
+    pub target: Target,
 }
 
 impl Annotation for LinkAnnotation {
@@ -24,8 +24,8 @@ impl Annotation for LinkAnnotation {
 
         let target_ref = sc.new_ref();
 
-        match &self.link_target {
-            LinkTarget::Destination(dest) => chunk.extend(&dest.serialize_into(sc, target_ref)),
+        match &self.target {
+            Target::Destination(dest) => chunk.extend(&dest.serialize_into(sc, target_ref)),
         };
 
         let mut annotation = chunk
@@ -38,8 +38,8 @@ impl Annotation for LinkAnnotation {
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
 
-        match &self.link_target {
-            LinkTarget::Destination(_) => annotation.pair(Name(b"Dest"), target_ref),
+        match &self.target {
+            Target::Destination(_) => annotation.pair(Name(b"Dest"), target_ref),
         };
 
         annotation.finish();
@@ -51,7 +51,7 @@ impl Annotation for LinkAnnotation {
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
-    use crate::object::annotation::{LinkAnnotation, LinkTarget};
+    use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
@@ -65,7 +65,7 @@ mod tests {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(Box::new(LinkAnnotation {
             rect: Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-            link_target: LinkTarget::Destination(Box::new(XyzDestination::new(
+            target: Target::Destination(Box::new(XyzDestination::new(
                 1,
                 Point::from_xy(100.0, 100.0),
             ))),
@@ -79,7 +79,7 @@ mod tests {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(Box::new(LinkAnnotation {
             rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-            link_target: LinkTarget::Destination(Box::new(XyzDestination::new(
+            target: Target::Destination(Box::new(XyzDestination::new(
                 0,
                 Point::from_xy(0.0, 0.0),
             ))),
