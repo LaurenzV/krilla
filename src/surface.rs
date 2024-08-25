@@ -81,9 +81,7 @@ impl<'a> Surface<'a> {
     where
         T: ColorSpace,
     {
-        let fos: FillOrStroke<T> = mode.into();
-
-        match fos {
+        match mode.into() {
             FillOrStroke::Fill(fill) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                     .fill_path(path, fill, self.sc);
@@ -95,26 +93,23 @@ impl<'a> Surface<'a> {
         }
     }
 
-    pub fn fill_glyph_run(
+    pub fn draw_glyph_run<T>(
         &mut self,
         x: f32,
         y: f32,
-        fill: Fill<impl ColorSpace>,
+        mode: impl Into<FillOrStroke<T>>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyph_run(x, y, self.sc, fill, glyphs);
-    }
-
-    pub fn stroke_glyph_run(
-        &mut self,
-        x: f32,
-        y: f32,
-        stroke: Stroke<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyph_run(x, y, self.sc, stroke, glyphs);
+    ) where T: ColorSpace {
+        match mode.into() {
+            FillOrStroke::Fill(fill) => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .fill_glyph_run(x, y, self.sc, fill, glyphs);
+            }
+            FillOrStroke::Stroke(stroke) => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .stroke_glyph_run(x, y, self.sc, stroke, glyphs);
+            }
+        };
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {

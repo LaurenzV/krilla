@@ -360,7 +360,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
         }
 
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        surface.fill_glyph_run(
+        surface.draw_glyph_run(
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),

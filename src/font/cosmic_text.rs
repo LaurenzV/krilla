@@ -47,7 +47,7 @@ mod tests {
                     )
                 })
                 .peekable();
-            surface.fill_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
+            surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
         }
 
         surface.finish();
