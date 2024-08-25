@@ -140,7 +140,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        surface.fill_path(
+        surface.draw_path(
             &path,
             Fill {
                 paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),

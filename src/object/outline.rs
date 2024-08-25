@@ -174,7 +174,7 @@ mod tests {
         let mut db = Document::new(SerializeSettings::default_test());
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         let mut surface = page.surface();
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.draw_path(&path, Fill::<Rgb>::default());
         surface.finish();
         page.finish();
 

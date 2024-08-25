@@ -7,13 +7,18 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
 
 pub enum Annotation {
-    Link(LinkAnnotation)
+    Link(LinkAnnotation),
 }
 
 impl Annotation {
-    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref, page_size: f32) -> Chunk  {
+    pub(crate) fn serialize_into(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+        page_size: f32,
+    ) -> Chunk {
         match self {
-            Annotation::Link(link) => link.serialize_into(sc, root_ref, page_size)
+            Annotation::Link(link) => link.serialize_into(sc, root_ref, page_size),
         }
     }
 }
@@ -84,21 +89,29 @@ mod tests {
     fn simple() {
         let mut db = Document::new(SerializeSettings::default_test());
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        page.add_annotation(LinkAnnotation {
-            rect: Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-            target: Target::Destination(
-                XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
-            ),
-        }.into());
+        page.add_annotation(
+            LinkAnnotation {
+                rect: Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
+                target: Target::Destination(
+                    XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
+                ),
+            }
+            .into(),
+        );
 
-        page.add_annotation(LinkAnnotation {
-            rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-            target: Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
-        }.into());
+        page.add_annotation(
+            LinkAnnotation {
+                rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
+                target: Target::Action(
+                    LinkAction::new("https://www.youtube.com".to_string()).into(),
+                ),
+            }
+            .into(),
+        );
 
         let mut surface = page.surface();
-        surface.fill_path(&rect_path(0.0, 0.0, 100.0, 100.0), Fill::<Rgb>::default());
-        surface.fill_path(
+        surface.draw_path(&rect_path(0.0, 0.0, 100.0, 100.0), Fill::<Rgb>::default());
+        surface.draw_path(
             &rect_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
@@ -106,12 +119,17 @@ mod tests {
         page.finish();
 
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        page.add_annotation(LinkAnnotation {
-            rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-            target: Target::Destination(XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into()),
-        }.into());
+        page.add_annotation(
+            LinkAnnotation {
+                rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
+                target: Target::Destination(
+                    XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into(),
+                ),
+            }
+            .into(),
+        );
         let mut my_surface = page.surface();
-        my_surface.fill_path(
+        my_surface.draw_path(
             &rect_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );

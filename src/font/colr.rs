@@ -281,7 +281,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 self.canvas_builder.push_clip_path(path, rule);
             }
 
-            self.canvas_builder.fill_path(&filled[0].0, fill);
+            self.canvas_builder.draw_path(&filled[0].0, fill);
 
             for _ in clips {
                 self.canvas_builder.pop();

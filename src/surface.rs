@@ -32,6 +32,32 @@ pub struct Surface<'a> {
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
+pub enum FillOrStroke<T>
+where
+    T: ColorSpace,
+{
+    Fill(Fill<T>),
+    Stroke(Stroke<T>),
+}
+
+impl<T> Into<FillOrStroke<T>> for Stroke<T>
+where
+    T: ColorSpace,
+{
+    fn into(self) -> FillOrStroke<T> {
+        FillOrStroke::Stroke(self)
+    }
+}
+
+impl<T> Into<FillOrStroke<T>> for Fill<T>
+where
+    T: ColorSpace,
+{
+    fn into(self) -> FillOrStroke<T> {
+        FillOrStroke::Fill(self)
+    }
+}
+
 impl<'a> Surface<'a> {
     pub fn new(
         sc: &'a mut SerializerContext,
@@ -51,14 +77,22 @@ impl<'a> Surface<'a> {
         StreamBuilder::new(&mut self.sc)
     }
 
-    pub fn fill_path(&mut self, path: &Path, fill: Fill<impl ColorSpace>) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path(path, fill, self.sc);
-    }
+    pub fn draw_path<T>(&mut self, path: &Path, mode: impl Into<FillOrStroke<T>>)
+    where
+        T: ColorSpace,
+    {
+        let fos: FillOrStroke<T> = mode.into();
 
-    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke<impl ColorSpace>) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_path(path, stroke, self.sc);
+        match fos {
+            FillOrStroke::Fill(fill) => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .fill_path(path, fill, self.sc);
+            }
+            FillOrStroke::Stroke(stroke) => {
+                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    .stroke_path(path, stroke, self.sc);
+            }
+        }
     }
 
     pub fn fill_glyph_run(

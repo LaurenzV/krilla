@@ -211,7 +211,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.draw_path(&path, Fill::<Rgb>::default());
         surface.finish();
         let page = Page::new(
             Size::from_wh(200.0, 200.0).unwrap(),
@@ -238,7 +238,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.draw_path(&path, Fill::<Rgb>::default());
         surface.finish();
         let page = Page::new(
             Size::from_wh(200.0, 200.0).unwrap(),
