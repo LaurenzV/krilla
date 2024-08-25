@@ -2,14 +2,28 @@ use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Ref};
 use tiny_skia_path::{Point, Transform};
 
-pub trait Destination: Object {}
+pub enum Destination {
+    Xyz(XyzDestination),
+}
 
-impl Destination for XyzDestination {}
+impl Object for Destination {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        match self {
+            Destination::Xyz(xyz) => xyz.serialize_into(sc, root_ref),
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct XyzDestination {
     page_index: usize,
     point: Point,
+}
+
+impl Into<Destination> for XyzDestination {
+    fn into(self) -> Destination {
+        Destination::Xyz(self)
+    }
 }
 
 impl XyzDestination {

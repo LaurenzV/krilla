@@ -207,7 +207,7 @@ pub struct PageBuilder<'a> {
     size: Size,
     page_label: PageLabel,
     page_stream: Stream,
-    annotations: Vec<Box<dyn Annotation>>,
+    annotations: Vec<Annotation>,
 }
 
 impl<'a> PageBuilder<'a> {
@@ -239,7 +239,7 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
-    pub fn add_annotation(&mut self, annotation: Box<dyn Annotation>) {
+    pub fn add_annotation(&mut self, annotation: Annotation) {
         self.annotations.push(annotation);
     }
 

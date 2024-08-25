@@ -16,7 +16,7 @@ pub struct Page {
     pub media_box: Rect,
     /// The label of the page.
     pub page_label: PageLabel,
-    pub annotations: Vec<Box<dyn Annotation>>,
+    pub annotations: Vec<Annotation>,
 }
 
 impl Page {
@@ -25,7 +25,7 @@ impl Page {
         size: Size,
         stream: Stream,
         page_label: PageLabel,
-        annotations: Vec<Box<dyn Annotation>>,
+        annotations: Vec<Annotation>,
     ) -> Self {
         Self {
             stream,
