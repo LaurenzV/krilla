@@ -364,7 +364,7 @@ impl Object for FontResource {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) enum ColorSpaceEnum {
+pub enum ColorSpaceEnum {
     Srgb(Srgb),
     SGray(SGray),
     DeviceGray(DeviceGray),

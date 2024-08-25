@@ -216,7 +216,7 @@ pub mod rgb {
 
     /// The SRGB color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub(crate) struct Srgb;
+    pub struct Srgb;
 
     impl Object for Srgb {
         fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
@@ -307,7 +307,7 @@ pub mod luma {
 
     /// The s-gray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub(crate) struct SGray;
+    pub struct SGray;
 
     impl Object for SGray {
         fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
