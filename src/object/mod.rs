@@ -13,4 +13,3 @@ pub mod shading_pattern;
 pub mod tiling_pattern;
 pub mod type3_font;
 pub mod xobject;
-mod structure;
