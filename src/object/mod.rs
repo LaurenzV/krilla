@@ -1,7 +1,8 @@
-mod annotation;
+pub mod action;
+pub mod annotation;
 pub mod cid_font;
 pub mod color_space;
-mod destination;
+pub mod destination;
 pub mod ext_g_state;
 pub mod image;
 pub mod mask;

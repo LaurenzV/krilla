@@ -1,5 +1,5 @@
 use crate::font::{Font, Glyph};
-use crate::serialize::{hash_item, Object, SerializerContext};
+use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::RectExt;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
@@ -78,7 +78,7 @@ impl CIDFont {
 }
 
 impl Object for CIDFont {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();
@@ -260,7 +260,7 @@ where
 fn subset_tag(subsetted_font: &[u8]) -> String {
     const LEN: usize = 6;
     const BASE: u128 = 26;
-    let mut hash = hash_item(subsetted_font);
+    let mut hash = subsetted_font.sip_hash();
     let mut letter = [b'A'; LEN];
     for l in letter.iter_mut() {
         *l = b'A' + (hash % BASE) as u8;

@@ -1,4 +1,5 @@
-use crate::serialize::{Object, PageInfo, RegisterableObject, SerializerContext};
+use crate::object::annotation::Annotation;
+use crate::serialize::{Object, RegisterableObject, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
@@ -8,44 +9,65 @@ use std::num::NonZeroU32;
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
-#[derive(Debug, Hash, Eq, PartialEq)]
-pub(crate) struct Page {
+pub struct Page {
     /// The stream of the page.
     pub stream: Stream,
     /// The media box of the page.
     pub media_box: Rect,
     /// The label of the page.
     pub page_label: PageLabel,
+    pub annotations: Vec<Box<dyn Annotation>>,
 }
 
 impl Page {
     /// Create a new page.
-    pub fn new(size: Size, stream: Stream, page_label: PageLabel) -> Self {
+    pub fn new(
+        size: Size,
+        stream: Stream,
+        page_label: PageLabel,
+        annotations: Vec<Box<dyn Annotation>>,
+    ) -> Self {
         Self {
             stream,
             media_box: size.to_rect(0.0, 0.0).unwrap(),
             page_label,
+            annotations,
         }
     }
 }
 
 impl Object for Page {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let stream_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
 
+        let mut annotation_refs = vec![];
+
+        if !self.annotations.is_empty() {
+            for annotation in &self.annotations {
+                let annot_ref = sc.new_ref();
+                chunk.extend(&annotation.serialize_into(sc, annot_ref, self.media_box.height()));
+                annotation_refs.push(annot_ref);
+            }
+        }
+
         let mut page = chunk.page(root_ref);
         self.stream
-            .resource_dictionary
+            .resource_dictionary()
             .to_pdf_resources(sc, &mut page);
 
         page.media_box(self.media_box.to_pdf_rect());
         page.parent(sc.page_tree_ref());
         page.contents(stream_ref);
+
+        if !annotation_refs.is_empty() {
+            page.annotations(annotation_refs);
+        }
+
         page.finish();
 
-        let (stream, filter) = sc.get_content_stream(&self.stream.content);
+        let (stream, filter) = sc.get_content_stream(self.stream.content());
 
         let mut stream = chunk.stream(stream_ref, &stream);
 
@@ -55,17 +77,9 @@ impl Object for Page {
 
         stream.finish();
 
-        sc.add_page_info(PageInfo {
-            ref_: root_ref,
-            media_box: self.media_box,
-            page_label: self.page_label,
-        });
-
         chunk
     }
 }
-
-impl RegisterableObject for Page {}
 
 /// A page label.
 #[derive(Debug, Hash, Eq, PartialEq, Default, Clone)]
@@ -93,7 +107,7 @@ impl PageLabel {
 }
 
 impl Object for PageLabel {
-    fn serialize_into(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)
@@ -134,24 +148,24 @@ impl PageLabelContainer {
 }
 
 impl Object for PageLabelContainer {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
         let mut prev: Option<PageLabel> = None;
 
-        for (i, label) in self.labels.into_iter().enumerate() {
+        for (i, label) in self.labels.iter().enumerate() {
             if let Some(n_prev) = &prev {
                 if n_prev.style != label.style
                     || n_prev.prefix != label.prefix
                     || n_prev.offset.map(|n| n.get()) != label.offset.map(|n| n.get() + 1)
                 {
                     filtered_entries.push((i, label.clone()));
-                    prev = Some(label);
+                    prev = Some(label.clone());
                 }
             } else {
                 filtered_entries.push((i, label.clone()));
-                prev = Some(label);
+                prev = Some(label.clone());
             }
         }
 
@@ -203,8 +217,9 @@ mod tests {
             Size::from_wh(200.0, 200.0).unwrap(),
             stream_builder.finish(),
             PageLabel::default(),
+            vec![],
         );
-        sc.add(page);
+        sc.add_page(page);
 
         check_snapshot("page/simple_page", sc.finish().as_bytes());
     }
@@ -229,8 +244,9 @@ mod tests {
             Size::from_wh(200.0, 200.0).unwrap(),
             stream_builder.finish(),
             PageLabel::default(),
+            vec![],
         );
-        sc.add(page);
+        sc.add_page(page);
 
         check_snapshot("page/page_with_resources", sc.finish().as_bytes());
     }

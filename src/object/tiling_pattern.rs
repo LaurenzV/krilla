@@ -53,10 +53,10 @@ impl TilingPattern {
 }
 
 impl Object for TilingPattern {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let (stream, filter) = sc.get_content_stream(&self.stream.content);
+        let (stream, filter) = sc.get_content_stream(self.stream.content());
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, &stream);
 
         if let Some(filter) = filter {
@@ -64,7 +64,7 @@ impl Object for TilingPattern {
         }
 
         self.stream
-            .resource_dictionary
+            .resource_dictionary()
             .to_pdf_resources(sc, &mut tiling_pattern);
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width.get(), self.height.get());

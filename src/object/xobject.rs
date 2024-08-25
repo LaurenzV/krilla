@@ -28,16 +28,16 @@ impl XObject {
     }
 
     pub fn bbox(&self) -> Rect {
-        self.custom_bbox.unwrap_or(self.stream.bbox)
+        self.custom_bbox.unwrap_or(self.stream.bbox())
     }
 }
 
 impl Object for XObject {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let cs = sc.rgb();
         let mut chunk = Chunk::new();
 
-        let (stream, filter) = sc.get_content_stream(&self.stream.content);
+        let (stream, filter) = sc.get_content_stream(self.stream.content());
 
         let mut x_object = chunk.form_xobject(root_ref, &stream);
 
@@ -46,9 +46,9 @@ impl Object for XObject {
         }
 
         self.stream
-            .resource_dictionary
+            .resource_dictionary()
             .to_pdf_resources(sc, &mut x_object);
-        x_object.bbox(self.custom_bbox.unwrap_or(self.stream.bbox).to_pdf_rect());
+        x_object.bbox(self.custom_bbox.unwrap_or(self.stream.bbox()).to_pdf_rect());
 
         if self.isolated || self.transparency_group_color_space {
             let mut group = x_object.group();

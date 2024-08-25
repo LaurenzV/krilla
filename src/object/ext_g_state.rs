@@ -96,7 +96,7 @@ impl ExtGState {
 }
 
 impl Object for ExtGState {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         // TODO: Avoid mask being cloned here?

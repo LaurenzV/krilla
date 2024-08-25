@@ -8,7 +8,7 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{hash_item, Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, RegisterableObject, SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
@@ -62,7 +62,7 @@ pub(crate) enum Resource {
 }
 
 impl Object for Resource {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             Resource::XObject(x) => x.serialize_into(sc, root_ref),
             Resource::Pattern(p) => p.serialize_into(sc, root_ref),
@@ -93,7 +93,7 @@ impl ResourceTrait for XObjectResource {
 }
 
 impl Object for XObjectResource {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
             XObjectResource::Image(i) => i.serialize_into(sc, root_ref),
@@ -120,7 +120,7 @@ impl ResourceTrait for PatternResource {
 }
 
 impl Object for PatternResource {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
             PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
@@ -216,7 +216,7 @@ pub(crate) struct ResourceDictionary {
 }
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(self, sc: &mut SerializerContext, parent: &mut T)
+    pub fn to_pdf_resources<T>(&self, sc: &mut SerializerContext, parent: &mut T)
     where
         T: ResourcesExt,
     {
@@ -227,22 +227,22 @@ impl ResourceDictionary {
             ProcSet::ImageColor,
             ProcSet::ImageGrayscale,
         ]);
-        write_resource_type(sc, resources, self.color_spaces, false);
-        write_resource_type(sc, resources, self.ext_g_states, false);
-        write_resource_type(sc, resources, self.patterns, false);
-        write_resource_type(sc, resources, self.x_objects, false);
-        write_resource_type(sc, resources, self.shadings, false);
-        write_resource_type(sc, resources, self.fonts, true);
+        write_resource_type(sc, resources, &self.color_spaces, false);
+        write_resource_type(sc, resources, &self.ext_g_states, false);
+        write_resource_type(sc, resources, &self.patterns, false);
+        write_resource_type(sc, resources, &self.x_objects, false);
+        write_resource_type(sc, resources, &self.shadings, false);
+        write_resource_type(sc, resources, &self.fonts, true);
     }
 }
 
 fn write_resource_type<T>(
     sc: &mut SerializerContext,
     resources: &mut Resources,
-    resource_list: ResourceList<T>,
+    resource_list: &ResourceList<T>,
     is_font: bool,
 ) where
-    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject,
+    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject + Clone,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
@@ -269,7 +269,7 @@ where
 
 impl<T> ResourceList<T>
 where
-    T: Hash + Eq + ResourceTrait + Debug,
+    T: Hash + Eq + ResourceTrait + Debug + Clone,
 {
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
@@ -283,11 +283,11 @@ where
         format!("{}{}", T::get_prefix(), num)
     }
 
-    pub fn get_entries(self) -> impl Iterator<Item = (String, T)> {
+    pub fn get_entries(&self) -> impl Iterator<Item = (String, T)> + '_ {
         self.entries
-            .into_iter()
+            .iter()
             .enumerate()
-            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r))
+            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), r.clone()))
     }
 }
 
@@ -312,14 +312,14 @@ where
     }
 
     pub fn get(&self, resource: &V) -> Option<ResourceNumber> {
-        self.backward.get(&hash_item(resource)).copied()
+        self.backward.get(&resource.sip_hash()).copied()
     }
 
     pub fn remap(&mut self, resource: V) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
 
-        *backward.entry(hash_item(&resource)).or_insert_with(|| {
+        *backward.entry(resource.sip_hash()).or_insert_with(|| {
             let old = forward.len();
             forward.push(resource);
             old as ResourceNumber
@@ -357,14 +357,14 @@ impl FontResource {
 }
 
 impl Object for FontResource {
-    fn serialize_into(self, _: &mut SerializerContext, _: Ref) -> Chunk {
+    fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
         // Fonts are written manually by the serializer in the end, so this should never be called.
         unreachable!()
     }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) enum ColorSpaceEnum {
+pub enum ColorSpaceEnum {
     Srgb(Srgb),
     SGray(SGray),
     DeviceGray(DeviceGray),
@@ -373,7 +373,7 @@ pub(crate) enum ColorSpaceEnum {
 }
 
 impl Object for ColorSpaceEnum {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
             ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc, root_ref),

@@ -111,7 +111,7 @@ impl OutlineNode {
 }
 
 impl Object for Outline {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];

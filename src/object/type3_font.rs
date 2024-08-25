@@ -89,7 +89,7 @@ impl Type3Font {
 }
 
 impl Object for Type3Font {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let svg_settings = sc.serialize_settings.svg_settings;
 
@@ -111,7 +111,7 @@ impl Object for Type3Font {
                 let mut content = Content::new();
 
                 let stream = if glyph_type == Some(GlyphType::Outline) {
-                    let bbox = stream.bbox;
+                    let bbox = stream.bbox();
                     content.start_shape_glyph(
                         self.widths[index],
                         bbox.left(),
@@ -123,7 +123,7 @@ impl Object for Type3Font {
                     // TODO: Find a type-safe way of doing this.
                     let mut final_stream = content.finish();
                     final_stream.push(b'\n');
-                    final_stream.extend(stream.content);
+                    final_stream.extend(stream.content());
                     final_stream
                 } else {
                     // I considered writing into the stream directly instead of creating an XObject
@@ -197,7 +197,7 @@ impl Object for Type3Font {
         );
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
-        type3_font.widths(self.widths);
+        type3_font.widths(self.widths.iter().copied());
         type3_font.font_descriptor(descriptor_ref);
 
         let mut char_procs = type3_font.char_procs();

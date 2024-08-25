@@ -30,7 +30,7 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
 impl Object for ICCBasedColorSpace {
-    fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -135,7 +135,7 @@ pub mod device_cmyk {
     }
 
     impl Object for DeviceCmyk {
-        fn serialize_into(self, _: &mut SerializerContext, _: Ref) -> Chunk {
+        fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
             unreachable!()
         }
     }
@@ -216,10 +216,10 @@ pub mod rgb {
 
     /// The SRGB color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub(crate) struct Srgb;
+    pub struct Srgb;
 
     impl Object for Srgb {
-        fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
             let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
             icc_based.serialize_into(sc, root_ref)
         }
@@ -234,7 +234,7 @@ pub mod rgb {
     }
 
     impl Object for DeviceRgb {
-        fn serialize_into(self, _: &mut SerializerContext, _: Ref) -> Chunk {
+        fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
             unreachable!()
         }
     }
@@ -307,10 +307,10 @@ pub mod luma {
 
     /// The s-gray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub(crate) struct SGray;
+    pub struct SGray;
 
     impl Object for SGray {
-        fn serialize_into(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
             let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
             icc_based.serialize_into(sc, root_ref)
         }
@@ -325,7 +325,7 @@ pub mod luma {
     }
 
     impl Object for DeviceGray {
-        fn serialize_into(self, _: &mut SerializerContext, _: Ref) -> Chunk {
+        fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
             unreachable!()
         }
     }
