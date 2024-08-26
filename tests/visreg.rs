@@ -4,7 +4,7 @@ use image::{Rgba, RgbaImage};
 use krilla::document::Document;
 use krilla::rgb::Rgb;
 use krilla::serialize::SerializeSettings;
-use krilla::stream::TestGlyph;
+use krilla::stream::Glyph;
 use krilla::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -253,7 +253,7 @@ generate_renderer_tests!(cosmic_text, |renderer| {
             .glyphs
             .iter()
             .map(|g| {
-                TestGlyph::new(
+                Glyph::new(
                     font_map.get(&g.font_id).unwrap().clone(),
                     GlyphId::new(g.glyph_id as u32),
                     g.w,

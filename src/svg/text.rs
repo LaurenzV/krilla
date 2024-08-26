@@ -1,7 +1,7 @@
 use crate::font::Font;
 use crate::object::color_space::rgb;
 use crate::object::color_space::rgb::Rgb;
-use crate::stream::TestGlyph;
+use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
@@ -64,7 +64,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     0.0,
                     0.0,
                     fill,
-                    [TestGlyph::new(
+                    [Glyph::new(
                         font,
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
@@ -83,7 +83,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     0.0,
                     0.0,
                     stroke,
-                    [TestGlyph::new(
+                    [Glyph::new(
                         font,
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.

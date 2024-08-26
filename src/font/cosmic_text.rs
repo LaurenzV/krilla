@@ -3,7 +3,7 @@ mod tests {
     use crate::document::Document;
     use crate::object::color_space::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::stream::TestGlyph;
+    use crate::stream::Glyph;
 
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -37,7 +37,7 @@ mod tests {
                 .glyphs
                 .iter()
                 .map(|g| {
-                    TestGlyph::new(
+                    Glyph::new(
                         font_map.get(&g.font_id).unwrap().clone(),
                         GlyphId::new(g.glyph_id as u32),
                         g.w,

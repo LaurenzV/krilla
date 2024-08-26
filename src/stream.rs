@@ -215,7 +215,7 @@ impl ContentBuilder {
         y: f32,
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: Peekable<impl Iterator<Item =Glyph>>,
     ) {
         self.graphics_states.save_state();
 
@@ -249,7 +249,7 @@ impl ContentBuilder {
         y: f32,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: Peekable<impl Iterator<Item =Glyph>>,
     ) {
         self.graphics_states.save_state();
 
@@ -284,7 +284,7 @@ impl ContentBuilder {
         cur_font: FontResource,
         cur_size: f32,
         sc: &mut SerializerContext,
-        glyphs: &mut Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: &mut Peekable<impl Iterator<Item = Cluster>>,
     ) {
         let font_name = self
             .rd_builder
@@ -358,7 +358,7 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
-        mut glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        mut glyphs: Peekable<impl Iterator<Item =Glyph>>,
     ) {
         let mut cur_x = x;
         let cur_y = y;
@@ -717,23 +717,58 @@ impl ContentBuilder {
 }
 
 #[derive(Debug)]
-pub struct TestGlyph {
+pub enum ClusterType {
+    SingleGlyph(Glyph),
+    MultipleGlyphs(Vec<Glyph>)
+}
+
+#[derive(Debug)]
+pub struct Cluster<'a> {
+    text: &'a str,
+    cluster_type: ClusterType
+}
+
+impl<'a> Cluster<'a> {
+    pub fn new(text: &'a str, cluster_type: impl Into<ClusterType>) -> Self {
+        Self {
+            text,
+            cluster_type: cluster_type.into()
+        }
+    }
+
+    pub fn cluster_type(&self) -> &ClusterType {
+        &self.cluster_type
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Glyph {
     font: Font,
     glyph_id: GlyphId,
     x_advance: f32,
     x_offset: f32,
     size: f32,
-    text: String,
 }
 
-impl TestGlyph {
+impl Into<ClusterType> for Glyph {
+    fn into(self) -> ClusterType {
+        ClusterType::SingleGlyph(self)
+    }
+}
+
+impl<T> From<T> for ClusterType where T: IntoIterator<Item = Glyph> {
+    fn from(value: T) -> Self {
+        ClusterType::MultipleGlyphs(value.into_iter().collect())
+    }
+}
+
+impl Glyph {
     pub fn new(
         font: Font,
         glyph_id: GlyphId,
         x_advance: f32,
         x_offset: f32,
         size: f32,
-        text: String,
     ) -> Self {
         Self {
             font,
@@ -741,7 +776,6 @@ impl TestGlyph {
             x_advance,
             x_offset,
             size,
-            text,
         }
     }
 }

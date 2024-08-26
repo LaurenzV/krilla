@@ -6,7 +6,7 @@ use crate::object::mask::Mask;
 use crate::object::page::{Page, PageLabel};
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
-use crate::stream::{ContentBuilder, Stream, TestGlyph};
+use crate::stream::{ContentBuilder, Stream, Glyph};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -98,7 +98,7 @@ impl<'a> Surface<'a> {
         x: f32,
         y: f32,
         mode: impl Into<FillOrStroke<T>>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: Peekable<impl Iterator<Item =Glyph>>,
     ) where
         T: ColorSpace,
     {

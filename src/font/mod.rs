@@ -294,7 +294,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
     use crate::document::Document;
     use crate::object::color_space::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::stream::TestGlyph;
+    use crate::stream::Glyph;
     use crate::Transform;
 
     let font = Font::new(font_data, 0, Location::default()).unwrap();
@@ -355,7 +355,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
-            [TestGlyph::new(font.clone(), i, 0.0, 0.0, size as f32, text)]
+            [Glyph::new(font.clone(), i, 0.0, 0.0, size as f32, text)]
                 .into_iter()
                 .peekable(),
         );
