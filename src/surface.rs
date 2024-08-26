@@ -99,7 +99,9 @@ impl<'a> Surface<'a> {
         y: f32,
         mode: impl Into<FillOrStroke<T>>,
         glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
-    ) where T: ColorSpace {
+    ) where
+        T: ColorSpace,
+    {
         match mode.into() {
             FillOrStroke::Fill(fill) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)

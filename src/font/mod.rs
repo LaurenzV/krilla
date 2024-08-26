@@ -18,6 +18,7 @@ pub mod colr;
 mod cosmic_text;
 pub mod outline;
 mod parley;
+mod simple_shape;
 pub mod svg;
 
 pub struct Glyph {

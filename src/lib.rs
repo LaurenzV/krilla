@@ -25,7 +25,11 @@ pub use tiny_skia_path::{Size, Transform};
 
 #[cfg(test)]
 pub(crate) mod test_utils {
+    use crate::font::Font;
+    use crate::stream::TestGlyph;
     use difference::{Changeset, Difference};
+    use rustybuzz::{Direction, UnicodeBuffer};
+    use skrifa::GlyphId;
     use std::path::PathBuf;
     use tiny_skia_path::{Path, PathBuilder, Rect};
 
@@ -95,5 +99,46 @@ pub(crate) mod test_utils {
         }
 
         assert_eq!(changeset.distance, 0);
+    }
+
+    pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<TestGlyph> {
+        let rb_font = rustybuzz::Face::from_slice(font.font_ref().data().as_bytes(), 0).unwrap();
+
+        let mut buffer = UnicodeBuffer::new();
+        buffer.push_str(text);
+        buffer.set_direction(dir);
+
+        let output = rustybuzz::shape(&rb_font, &[], buffer);
+
+        let positions = output.glyph_positions();
+        let infos = output.glyph_infos();
+
+        let mut glyphs = vec![];
+
+        for i in 0..output.len() {
+            let pos = positions[i];
+            let info = infos[i];
+
+            let start = info.cluster as usize;
+
+            let end = if dir == Direction::LeftToRight {
+                i.checked_add(1)
+            } else {
+                i.checked_sub(1)
+            }
+            .and_then(|last| infos.get(last))
+            .map_or(text.len(), |info| info.cluster as usize);
+
+            glyphs.push(TestGlyph::new(
+                font.clone(),
+                GlyphId::new(info.glyph_id),
+                (pos.x_advance as f32 / font.units_per_em() as f32) * size,
+                (pos.x_offset as f32 / font.units_per_em() as f32) * size,
+                size,
+                text[start..end].to_string(),
+            ));
+        }
+
+        glyphs
     }
 }
