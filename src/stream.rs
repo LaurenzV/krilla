@@ -330,7 +330,7 @@ impl ContentBuilder {
             }
 
             match gid {
-                PDFGlyph::ColorGlyph(cg) => encoded.push(cg),
+                PDFGlyph::Type3(cg) => encoded.push(cg),
                 PDFGlyph::CID(cid) => {
                     encoded.push((cid >> 8) as u8);
                     encoded.push((cid & 0xff) as u8);

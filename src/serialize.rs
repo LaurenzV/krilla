@@ -100,14 +100,14 @@ pub struct SerializerContext {
 }
 
 pub enum PDFGlyph {
-    ColorGlyph(u8),
+    Type3(u8),
     CID(u16),
 }
 
 impl PDFGlyph {
     pub fn get(&self) -> u16 {
         match self {
-            PDFGlyph::ColorGlyph(n) => *n as u16,
+            PDFGlyph::Type3(n) => *n as u16,
             PDFGlyph::CID(n) => *n,
         }
     }
@@ -226,7 +226,7 @@ impl SerializerContext {
 
                 (
                     FontResource::new(font, pdf_index),
-                    PDFGlyph::ColorGlyph(glyph_id),
+                    PDFGlyph::Type3(glyph_id),
                 )
             }
             FontContainer::CIDFont(cid) => {
