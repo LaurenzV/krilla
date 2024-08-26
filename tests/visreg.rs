@@ -1,6 +1,6 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::{Database, Source};
-use image::{load_from_memory, Rgba, RgbaImage};
+use image::{Rgba, RgbaImage};
 use krilla::document::Document;
 use krilla::rgb::Rgb;
 use krilla::serialize::SerializeSettings;
@@ -208,7 +208,7 @@ generate_renderer_tests!(linear_gradient, |renderer| {
         ],
     };
 
-    surface.fill_path(
+    surface.draw_path(
         &path,
         Fill {
             paint: Paint::LinearGradient(gradient),
@@ -263,7 +263,7 @@ generate_renderer_tests!(cosmic_text, |renderer| {
                 )
             })
             .peekable();
-        surface.fill_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
+        surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
     }
 
     surface.finish();

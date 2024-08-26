@@ -1,4 +1,4 @@
-use crate::font::{Font, Glyph};
+use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::{Color, ColorSpace};
@@ -303,7 +303,7 @@ impl ContentBuilder {
         while let Some(glyph) = glyphs.peek() {
             let (font_resource, gid) = sc.map_glyph(
                 glyph.font.clone(),
-                Glyph::new(glyph.glyph_id, glyph.text.clone()),
+                glyph.glyph_id, &glyph.text,
             );
             if font_resource != cur_font || glyph.size != cur_size {
                 break;
@@ -371,7 +371,7 @@ impl ContentBuilder {
             while let Some(glyph) = glyphs.peek() {
                 let (font_resource, _) = sc.map_glyph(
                     glyph.font.clone(),
-                    Glyph::new(glyph.glyph_id, glyph.text.clone()),
+                    glyph.glyph_id, &glyph.text,
                 );
                 sb.encode_single(
                     &mut cur_x,

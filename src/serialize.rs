@@ -1,4 +1,4 @@
-use crate::font::{Font, FontInfo, Glyph};
+use crate::font::{Font, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
@@ -17,6 +17,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
+use skrifa::GlyphId;
 use tiny_skia_path::Rect;
 
 #[derive(Copy, Clone, Debug)]
@@ -207,7 +208,7 @@ impl SerializerContext {
         }
     }
 
-    pub fn map_glyph(&mut self, font: Font, glyph: Glyph) -> (FontResource, PDFGlyph) {
+    pub fn map_glyph(&mut self, font: Font, glyph_id: GlyphId, text: &str) -> (FontResource, PDFGlyph) {
         let font_container = self.font_map.entry(font.clone()).or_insert_with(|| {
             self.font_cache
                 .insert(font.font_info().clone(), font.clone());
@@ -221,7 +222,7 @@ impl SerializerContext {
 
         match font_container {
             FontContainer::Type3(font_mapper) => {
-                let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph);
+                let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph_id, text);
 
                 (
                     FontResource::new(font, pdf_index),
@@ -229,7 +230,7 @@ impl SerializerContext {
                 )
             }
             FontContainer::CIDFont(cid) => {
-                let new_gid = cid.register(&glyph);
+                let new_gid = cid.register(glyph_id, text);
                 (
                     FontResource::new(font, 0),
                     PDFGlyph::CID(new_gid.to_u32() as u16),
@@ -435,23 +436,23 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn add_glyph(&mut self, glyph: Glyph) -> (usize, u8) {
-        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph.glyph_id)) {
-            return (index, self.fonts[index].add(&glyph));
+    pub fn add_glyph(&mut self, glyph_id: GlyphId, text: &str) -> (usize, u8) {
+        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
+            return (index, self.fonts[index].add(glyph_id, text));
         }
 
         let glyph_id = if let Some(last_font) = self.fonts.last_mut() {
             if last_font.is_full() {
                 let mut font = Type3Font::new(self.font.clone());
-                let gid = font.add(&glyph);
+                let gid = font.add(glyph_id, text);
                 self.fonts.push(font);
                 gid
             } else {
-                last_font.add(&glyph)
+                last_font.add(glyph_id, text)
             }
         } else {
             let mut font = Type3Font::new(self.font.clone());
-            let gid = font.add(&glyph);
+            let gid = font.add(glyph_id, text);
             self.fonts.push(font);
             gid
         };

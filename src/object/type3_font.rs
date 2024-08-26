@@ -1,5 +1,5 @@
 use crate::font;
-use crate::font::{Font, Glyph, GlyphType};
+use crate::font::{Font, GlyphType};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
@@ -56,22 +56,22 @@ impl Type3Font {
         self.glyph_set.contains(&glyph)
     }
 
-    pub fn add(&mut self, glyph: &Glyph) -> u8 {
+    pub fn add(&mut self, glyph_id: GlyphId, text: &str) -> u8 {
         if let Some(pos) = self
             .glyphs
             .iter()
-            .position(|g| *g == glyph.glyph_id)
+            .position(|g| *g == glyph_id)
             .and_then(|n| u8::try_from(n).ok())
         {
-            self.strings[pos as usize] = glyph.string.clone();
+            self.strings[pos as usize] = text.to_string();
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyphs.push(glyph.glyph_id);
-            self.strings.push(glyph.string.clone());
+            self.glyphs.push(glyph_id);
+            self.strings.push(text.to_string());
             self.widths
-                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
+                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }

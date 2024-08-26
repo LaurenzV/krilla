@@ -21,16 +21,6 @@ mod parley;
 mod simple_shape;
 pub mod svg;
 
-pub struct Glyph {
-    pub glyph_id: GlyphId,
-    pub string: String,
-}
-
-impl Glyph {
-    pub fn new(glyph_id: GlyphId, string: String) -> Self {
-        Self { glyph_id, string }
-    }
-}
 
 struct OutlineBuilder(PathBuilder);
 

@@ -1,4 +1,4 @@
-use crate::font::{Font, Glyph};
+use crate::font::Font;
 use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::RectExt;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -63,14 +63,18 @@ impl CIDFont {
     }
 
     /// Register a glyph and return its glyph ID in the subsetted version of the font.
-    pub fn register(&mut self, glyph: &Glyph) -> GlyphId {
-        let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
-        self.strings.insert(new_id, glyph.string.clone());
+    pub fn register(&mut self, glyph_id: GlyphId, text: &str) -> GlyphId {
+        let new_id = GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32);
+
+        if !self.strings.contains_key(&new_id) {
+            self.strings.insert(new_id, text.to_string());
+        }
+
 
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id.to_u32() >= self.widths.len() as u32 {
             self.widths
-                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
+                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
         }
 
         new_id
@@ -271,7 +275,7 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, Glyph};
+    use crate::font::Font;
 
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::{check_snapshot, load_font};
@@ -289,8 +293,8 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(36), "A".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(37), "B".to_string()));
+        sc.map_glyph(font.clone(), GlyphId::new(36), "A");
+        sc.map_glyph(font.clone(), GlyphId::new(37), "B");
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 
@@ -299,10 +303,10 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(58), "G".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(54), "F".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(69), "K".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(71), "L".to_string()));
+        sc.map_glyph(font.clone(), GlyphId::new(58), "G");
+        sc.map_glyph(font.clone(), GlyphId::new(54), "F");
+        sc.map_glyph(font.clone(), GlyphId::new(69), "K");
+        sc.map_glyph(font.clone(), GlyphId::new(71), "L");
         check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
 }

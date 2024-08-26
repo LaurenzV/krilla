@@ -15,7 +15,7 @@ mod tests {
     fn simple_shape_demo() {
         let mut y = 25.0;
 
-        let mut data = vec![
+        let data = vec![
             (
                 "NotoSansArabic-Regular.ttf",
                 "هذا نص أطول لتجربة القدرات.",
