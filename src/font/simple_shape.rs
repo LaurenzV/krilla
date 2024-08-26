@@ -34,6 +34,12 @@ mod tests {
                 Direction::LeftToRight,
                 14.0,
             ),
+            (
+                "NotoSansDevanagari-Regular.ttf",
+                "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
+                Direction::LeftToRight,
+                14.0,
+            ),
         ];
         let page_size = tiny_skia_path::Size::from_wh(200.0, 200.0).unwrap();
         let mut document_builder = Document::new(SerializeSettings::default_test());
