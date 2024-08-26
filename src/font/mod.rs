@@ -12,6 +12,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
+use crate::stream::Cluster;
 
 pub mod bitmap;
 pub mod colr;
@@ -355,7 +356,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
-            [Glyph::new(font.clone(), i, 0.0, 0.0, size as f32, text)]
+            [Cluster::new(&text, Glyph::new(font.clone(), i, 0.0, 0.0, size as f32))]
                 .into_iter()
                 .peekable(),
         );

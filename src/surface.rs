@@ -6,7 +6,7 @@ use crate::object::mask::Mask;
 use crate::object::page::{Page, PageLabel};
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
-use crate::stream::{ContentBuilder, Stream, Glyph};
+use crate::stream::{ContentBuilder, Stream, Cluster};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -93,23 +93,23 @@ impl<'a> Surface<'a> {
         }
     }
 
-    pub fn draw_glyph_run<T>(
+    pub fn draw_glyph_run<'b, T>(
         &mut self,
         x: f32,
         y: f32,
         mode: impl Into<FillOrStroke<T>>,
-        glyphs: Peekable<impl Iterator<Item =Glyph>>,
+        clusters: Peekable<impl Iterator<Item = Cluster<'b>>>,
     ) where
         T: ColorSpace,
     {
         match mode.into() {
             FillOrStroke::Fill(fill) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_glyph_run(x, y, self.sc, fill, glyphs);
+                    .fill_glyph_run(x, y, self.sc, fill, clusters);
             }
             FillOrStroke::Stroke(stroke) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_glyph_run(x, y, self.sc, stroke, glyphs);
+                    .stroke_glyph_run(x, y, self.sc, stroke, clusters);
             }
         };
     }

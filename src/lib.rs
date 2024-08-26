@@ -26,7 +26,7 @@ pub use tiny_skia_path::{Size, Transform};
 #[cfg(test)]
 pub(crate) mod test_utils {
     use crate::font::Font;
-    use crate::stream::Glyph;
+    use crate::stream::{Cluster, Glyph};
     use difference::{Changeset, Difference};
     use rustybuzz::{Direction, UnicodeBuffer};
     use skrifa::GlyphId;
@@ -101,7 +101,7 @@ pub(crate) mod test_utils {
         assert_eq!(changeset.distance, 0);
     }
 
-    pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Glyph> {
+    pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Cluster> {
         let rb_font = rustybuzz::Face::from_slice(font.font_ref().data().as_bytes(), 0).unwrap();
 
         let mut buffer = UnicodeBuffer::new();
@@ -129,13 +129,15 @@ pub(crate) mod test_utils {
             .and_then(|last| infos.get(last))
             .map_or(text.len(), |info| info.cluster as usize);
 
-            glyphs.push(Glyph::new(
-                font.clone(),
-                GlyphId::new(info.glyph_id),
-                (pos.x_advance as f32 / font.units_per_em() as f32) * size,
-                (pos.x_offset as f32 / font.units_per_em() as f32) * size,
-                size,
-                text[start..end].to_string(),
+            glyphs.push(Cluster::new(
+                &text[start..end],
+                Glyph::new(
+                    font.clone(),
+                    GlyphId::new(info.glyph_id),
+                    (pos.x_advance as f32 / font.units_per_em() as f32) * size,
+                    (pos.x_offset as f32 / font.units_per_em() as f32) * size,
+                    size,
+                )
             ));
         }
 
