@@ -363,7 +363,6 @@ impl ContentBuilder {
         mut clusters: Peekable<impl Iterator<Item = Cluster<'a>>>,
     ) {
         let mut cur_x = x;
-        let cur_y = y;
 
         self.apply_isolated_op(|sb| {
             action(sb, sc);
@@ -379,7 +378,7 @@ impl ContentBuilder {
                 );
                 sb.encode_single(
                     &mut cur_x,
-                    cur_y,
+                    y,
                     font_resource,
                     glyph.size,
                     sc,
