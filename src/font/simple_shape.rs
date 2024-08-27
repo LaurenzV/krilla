@@ -54,12 +54,12 @@ mod tests {
         for (font, text, dir, size) in data {
             let font_data = load_font(font);
             let font = Font::new(Arc::new(font_data), 0, Location::default()).unwrap();
-            let glyphs = simple_shape(text, dir, font, size);
+            let glyphs = simple_shape(text, dir, font.clone(), size);
 
             // eprintln!("{:?}", glyphs.iter().map(|g| g.glyph_id).collect::<Vec<_>>());
             // panic!();
 
-            surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, text);
+            surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, font, size, text);
 
             y += size * 2.0;
         }

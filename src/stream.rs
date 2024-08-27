@@ -215,6 +215,8 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
         glyphs: &[Glyph],
+        font: Font,
+        size: f32,
         text: &str,
     ) {
         self.graphics_states.save_state();
@@ -238,6 +240,8 @@ impl ContentBuilder {
                 )
             },
             glyphs,
+            font,
+            size,
             text,
         );
 
@@ -251,6 +255,8 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
         glyphs: &[Glyph],
+        font: Font,
+        size: f32,
         text: &str,
     ) {
         self.graphics_states.save_state();
@@ -274,6 +280,8 @@ impl ContentBuilder {
                 )
             },
             glyphs,
+            font,
+            size,
             text,
         );
 
@@ -329,7 +337,7 @@ impl ContentBuilder {
                 }
             };
 
-            let actual_advance = glyph.x_advance / glyph.size * 1000.0;
+            let actual_advance = glyph.x_advance / size * 1000.0;
 
             adjustment += glyph.x_offset;
 
@@ -379,6 +387,8 @@ impl ContentBuilder {
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[Glyph],
+        font: Font,
+        size: f32,
         text: &str,
     ) {
         let mut cur_x = x;
@@ -389,14 +399,13 @@ impl ContentBuilder {
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
             glyphs.iter().for_each(|g| {
-                let mut font_container =
-                    sc.create_or_get_font_container(g.font.clone()).borrow_mut();
+                let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
                 font_container.add_glyph(g.glyph_id);
             });
 
-            let segmented = GroupByGlyphs::new(sc, glyphs).collect::<Vec<_>>();
+            let segmented = GroupByGlyphs::new(sc, glyphs, font.clone()).collect::<Vec<_>>();
 
-            for (size, font, actual_text, glyphs) in segmented {
+            for (font, actual_text, glyphs) in segmented {
                 let mut font_container = sc.font_container(font.font()).unwrap().borrow_mut();
                 let pdf_font = font_container
                     .get_from_identifier_mut(font.clone())
@@ -747,29 +756,18 @@ impl ContentBuilder {
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
-    pub font: Font,
     pub glyph_id: GlyphId,
     pub range: Range<usize>,
     pub x_advance: f32,
     pub x_offset: f32,
-    pub size: f32,
 }
 
 impl Glyph {
-    pub fn new(
-        font: Font,
-        glyph_id: GlyphId,
-        x_advance: f32,
-        x_offset: f32,
-        size: f32,
-        range: Range<usize>,
-    ) -> Self {
+    pub fn new(glyph_id: GlyphId, x_advance: f32, x_offset: f32, range: Range<usize>) -> Self {
         Self {
-            font,
             glyph_id,
             x_advance,
             x_offset,
-            size,
             range,
         }
     }
@@ -833,31 +831,31 @@ impl PdfFontMut<'_> {
 pub struct GroupByGlyphs<'a, 'b> {
     sc: &'b SerializerContext,
     slice: &'a [Glyph],
+    font: Font,
 }
 
 impl<'a, 'b> GroupByGlyphs<'a, 'b> {
-    pub fn new(sc: &'b SerializerContext, slice: &'a [Glyph]) -> Self {
-        Self { sc, slice }
+    pub fn new(sc: &'b SerializerContext, slice: &'a [Glyph], font: Font) -> Self {
+        Self { sc, slice, font }
     }
 }
 
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (f32, FontIdentifier, bool, &'a [Glyph]);
+    type Item = (FontIdentifier, bool, &'a [Glyph]);
 
     fn next(&mut self) -> Option<Self::Item> {
         struct TempGlyph {
             font_identifier: FontIdentifier,
             range: Range<usize>,
-            size: f32,
         }
 
         let func = |g: &Glyph| {
-            let font_container = self.sc.font_container(g.font.clone()).unwrap().borrow();
+            let font = self.font.clone();
+            let font_container = self.sc.font_container(font).unwrap().borrow();
             let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
             TempGlyph {
                 font_identifier,
                 range: g.range.clone(),
-                size: g.size,
             }
         };
 
@@ -871,7 +869,7 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
         while let Some(next) = iter.next() {
             let temp_glyph = func(next);
 
-            if first.font_identifier != temp_glyph.font_identifier || first.size != next.size {
+            if first.font_identifier != temp_glyph.font_identifier {
                 break;
             }
 
@@ -898,11 +896,6 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
-        Some((
-            first.size,
-            first.font_identifier,
-            same_range.unwrap_or(false),
-            head,
-        ))
+        Some((first.font_identifier, same_range.unwrap_or(false), head))
     }
 }

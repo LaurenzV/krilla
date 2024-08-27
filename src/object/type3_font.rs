@@ -72,6 +72,7 @@ impl Type3Font {
         } else {
             assert!(self.glyphs.len() < 256);
 
+            self.glyph_set.insert(glyph_id);
             self.glyphs.push(glyph_id);
             self.widths
                 .push(self.font.advance_width(glyph_id).unwrap_or(0.0));

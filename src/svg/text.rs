@@ -65,14 +65,14 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     0.0,
                     fill,
                     &[Glyph::new(
-                        font,
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
                         0.0,
                         0.0,
-                        span.font_size.get(),
                         0..glyph.text.len(),
                     )],
+                    font,
+                    span.font_size.get(),
                     &glyph.text,
                 );
             };
@@ -83,14 +83,14 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     0.0,
                     stroke,
                     &[Glyph::new(
-                        font,
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
                         0.0,
                         0.0,
-                        span.font_size.get(),
                         0..glyph.text.len(),
                     )],
+                    font,
+                    span.font_size.get(),
                     &glyph.text,
                 );
             };
