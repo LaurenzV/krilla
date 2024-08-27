@@ -12,6 +12,7 @@ mod tests {
     use std::sync::Arc;
 
     #[test]
+    #[ignore]
     fn cosmic_text_integration() {
         let mut font_system = FontSystem::new_with_fonts([Source::Binary(Arc::new(std::fs::read("/Users/lstampfl/Programming/GitHub/resvg/crates/resvg/tests/fonts/NotoSans-Regular.ttf").unwrap()))]);
         let metrics = Metrics::new(14.0, 20.0);
