@@ -1,10 +1,10 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::{Database, Source};
-use image::{load_from_memory, Rgba, RgbaImage};
+use image::{Rgba, RgbaImage};
 use krilla::document::Document;
 use krilla::rgb::Rgb;
 use krilla::serialize::SerializeSettings;
-use krilla::stream::TestGlyph;
+use krilla::stream::Glyph;
 use krilla::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -36,7 +36,7 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
         .join("tests/refs")
         .join(name);
 
-    let diffs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let _ = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/diff")
         .join(name);
 
@@ -208,7 +208,7 @@ generate_renderer_tests!(linear_gradient, |renderer| {
         ],
     };
 
-    surface.fill_path(
+    surface.draw_path(
         &path,
         Fill {
             paint: Paint::LinearGradient(gradient),
@@ -249,21 +249,21 @@ generate_renderer_tests!(cosmic_text, |renderer| {
     // Inspect the output runs
     for run in buffer.layout_runs() {
         let y_offset = run.line_y;
-        let iter = run
+        let glyphs = run
             .glyphs
             .iter()
             .map(|g| {
-                TestGlyph::new(
+                Glyph::new(
                     font_map.get(&g.font_id).unwrap().clone(),
                     GlyphId::new(g.glyph_id as u32),
                     g.w,
                     g.x_offset,
                     g.font_size,
-                    run.text[g.start..g.end].to_string(),
+                    g.start..g.end,
                 )
             })
-            .peekable();
-        surface.fill_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
+            .collect::<Vec<_>>();
+        surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), &glyphs, &run.text);
     }
 
     surface.finish();

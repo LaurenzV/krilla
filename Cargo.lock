@@ -293,7 +293,7 @@ dependencies = [
  "rangemap",
  "rayon",
  "rustc-hash",
- "rustybuzz",
+ "rustybuzz 0.17.0",
  "self_cell",
  "swash",
  "sys-locale",
@@ -748,6 +748,7 @@ dependencies = [
  "paste",
  "pdf-writer",
  "resvg",
+ "rustybuzz 0.18.0",
  "siphasher",
  "sitro",
  "skrifa 0.20.0 (git+https://github.com/LaurenzV/fontations?rev=0ed7955)",
@@ -1380,6 +1381,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustybuzz"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c85d1ccd519e61834798eb52c4e886e8c2d7d698dd3d6ce0b1b47eb8557f1181"
+dependencies = [
+ "bitflags 2.6.0",
+ "bytemuck",
+ "core_maths",
+ "log",
+ "smallvec",
+ "ttf-parser",
+ "unicode-bidi-mirroring",
+ "unicode-ccc",
+ "unicode-properties",
+ "unicode-script",
+]
+
+[[package]]
 name = "ryu"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1474,7 +1493,7 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 [[package]]
 name = "sitro"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/sitro?rev=6639d83#6639d83028bf5087c6bab9dbeecb464005c1e31f"
+source = "git+https://github.com/LaurenzV/sitro?rev=b475ddc3#b475ddc323fe724f3a5377b831dd7100ae75f1ec"
 dependencies = [
  "image 0.24.9",
  "imagesize",
@@ -1755,9 +1774,9 @@ dependencies = [
 
 [[package]]
 name = "ttf-parser"
-version = "0.24.0"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8686b91785aff82828ed725225925b33b4fde44c4bb15876e5f7c832724c420a"
+checksum = "5be21190ff5d38e8b4a2d3b6a3ae57f612cc39c96e83cedeaf7abc338a8bac4a"
 dependencies = [
  "core_maths",
 ]
@@ -1830,7 +1849,7 @@ dependencies = [
  "log",
  "pico-args",
  "roxmltree 0.20.0",
- "rustybuzz",
+ "rustybuzz 0.17.0",
  "simplecss",
  "siphasher",
  "strict-num",

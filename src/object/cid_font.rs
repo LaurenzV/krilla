@@ -1,6 +1,6 @@
-use crate::font::{Font, Glyph};
+use crate::font::Font;
 use crate::serialize::{Object, SerializerContext, SipHashable};
-use crate::util::RectExt;
+use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
@@ -29,7 +29,7 @@ pub struct CIDFont {
     /// are indexed in a CID-keyed font.
     glyph_remapper: GlyphRemapper,
     /// A mapping from glyph IDs to their string in the original text.
-    strings: BTreeMap<GlyphId, String>,
+    cmap_entries: BTreeMap<u16, String>,
     /// The widths of the glyphs, _index by their new GID_.
     widths: Vec<f32>,
 }
@@ -42,7 +42,7 @@ impl CIDFont {
 
         Self {
             glyph_remapper: GlyphRemapper::new(),
-            strings: BTreeMap::new(),
+            cmap_entries: BTreeMap::new(),
             widths,
             font,
         }
@@ -63,17 +63,20 @@ impl CIDFont {
     }
 
     /// Register a glyph and return its glyph ID in the subsetted version of the font.
-    pub fn register(&mut self, glyph: &Glyph) -> GlyphId {
-        let new_id = GlyphId::new(self.glyph_remapper.remap(glyph.glyph_id.to_u32() as u16) as u32);
-        self.strings.insert(new_id, glyph.string.clone());
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> GlyphId {
+        let new_id = GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32);
 
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id.to_u32() >= self.widths.len() as u32 {
             self.widths
-                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
+                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
         }
 
         new_id
+    }
+
+    pub fn set_cmap_entry(&mut self, glyph_id: u16, text: String) {
+        self.cmap_entries.insert(glyph_id, text);
     }
 }
 
@@ -175,9 +178,9 @@ impl Object for CIDFont {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in self.strings.iter() {
+            for (g, text) in self.cmap_entries.iter() {
                 if !text.is_empty() {
-                    cmap.pair_with_multiple(g.to_u32() as u16, text.chars());
+                    cmap.pair_with_multiple(*g, text.chars());
                 }
             }
 
@@ -217,45 +220,6 @@ fn subset_font(
     sc.get_binary_stream(data)
 }
 
-/// Extra methods for [`[T]`](slice).
-pub trait SliceExt<T> {
-    /// Split a slice into consecutive runs with the same key and yield for
-    /// each such run the key and the slice of elements with that key.
-    fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F>
-    where
-        F: FnMut(&T) -> K,
-        K: PartialEq;
-}
-
-impl<T> SliceExt<T> for [T] {
-    fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F> {
-        GroupByKey { slice: self, f }
-    }
-}
-
-/// This struct is created by [`SliceExt::group_by_key`].
-pub struct GroupByKey<'a, T, F> {
-    slice: &'a [T],
-    f: F,
-}
-
-impl<'a, T, K, F> Iterator for GroupByKey<'a, T, F>
-where
-    F: FnMut(&T) -> K,
-    K: PartialEq,
-{
-    type Item = (K, &'a [T]);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut iter = self.slice.iter();
-        let key = (self.f)(iter.next()?);
-        let count = 1 + iter.take_while(|t| (self.f)(t) == key).count();
-        let (head, tail) = self.slice.split_at(count);
-        self.slice = tail;
-        Some((key, head))
-    }
-}
-
 /// Create a tag for a font subset.
 fn subset_tag(subsetted_font: &[u8]) -> String {
     const LEN: usize = 6;
@@ -271,7 +235,7 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, Glyph};
+    use crate::font::Font;
 
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::{check_snapshot, load_font};
@@ -289,8 +253,8 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(36), "A".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(37), "B".to_string()));
+        sc.map_glyph(font.clone(), GlyphId::new(36));
+        sc.map_glyph(font.clone(), GlyphId::new(37));
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 
@@ -299,10 +263,10 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(58), "G".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(54), "F".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(69), "K".to_string()));
-        sc.map_glyph(font.clone(), Glyph::new(GlyphId::new(71), "L".to_string()));
+        sc.map_glyph(font.clone(), GlyphId::new(58));
+        sc.map_glyph(font.clone(), GlyphId::new(54));
+        sc.map_glyph(font.clone(), GlyphId::new(69));
+        sc.map_glyph(font.clone(), GlyphId::new(71));
         check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
 }

@@ -173,3 +173,42 @@ fn hash_item<T: Hash + ?Sized + 'static>(item: &T) -> u128 {
     item.hash(&mut state);
     state.finish128().as_u128()
 }
+
+/// Extra methods for [`[T]`](slice).
+pub trait SliceExt<T> {
+    /// Split a slice into consecutive runs with the same key and yield for
+    /// each such run the key and the slice of elements with that key.
+    fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F>
+    where
+        F: FnMut(&T) -> K,
+        K: PartialEq;
+}
+
+impl<T> SliceExt<T> for [T] {
+    fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F> {
+        GroupByKey { slice: self, f }
+    }
+}
+
+/// This struct is created by [`SliceExt::group_by_key`].
+pub struct GroupByKey<'a, T, F> {
+    slice: &'a [T],
+    f: F,
+}
+
+impl<'a, T, K, F> Iterator for GroupByKey<'a, T, F>
+where
+    F: FnMut(&T) -> K,
+    K: PartialEq,
+{
+    type Item = (K, &'a [T]);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut iter = self.slice.iter();
+        let key = (self.f)(iter.next()?);
+        let count = 1 + iter.take_while(|t| (self.f)(t) == key).count();
+        let (head, tail) = self.slice.split_at(count);
+        self.slice = tail;
+        Some((key, head))
+    }
+}

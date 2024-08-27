@@ -18,18 +18,8 @@ pub mod colr;
 mod cosmic_text;
 pub mod outline;
 mod parley;
+mod simple_shape;
 pub mod svg;
-
-pub struct Glyph {
-    pub glyph_id: GlyphId,
-    pub string: String,
-}
-
-impl Glyph {
-    pub fn new(glyph_id: GlyphId, string: String) -> Self {
-        Self { glyph_id, string }
-    }
-}
 
 struct OutlineBuilder(PathBuilder);
 
@@ -303,7 +293,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
     use crate::document::Document;
     use crate::object::color_space::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::stream::TestGlyph;
+    use crate::stream::Glyph;
     use crate::Transform;
 
     let font = Font::new(font_data, 0, Location::default()).unwrap();
@@ -364,9 +354,15 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
-            [TestGlyph::new(font.clone(), i, 0.0, 0.0, size as f32, text)]
-                .into_iter()
-                .peekable(),
+            &[Glyph::new(
+                font.clone(),
+                i,
+                0.0,
+                0.0,
+                size as f32,
+                0..text.len(),
+            )],
+            &text,
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         surface.pop();

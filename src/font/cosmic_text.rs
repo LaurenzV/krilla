@@ -3,7 +3,7 @@ mod tests {
     use crate::document::Document;
     use crate::object::color_space::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::stream::TestGlyph;
+    use crate::stream::Glyph;
 
     use crate::Fill;
     use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -11,8 +11,8 @@ mod tests {
     use skrifa::GlyphId;
     use std::sync::Arc;
 
-    #[ignore]
     #[test]
+    #[ignore]
     fn cosmic_text_integration() {
         let mut font_system = FontSystem::new_with_fonts([Source::Binary(Arc::new(std::fs::read("/Users/lstampfl/Programming/GitHub/resvg/crates/resvg/tests/fonts/NotoSans-Regular.ttf").unwrap()))]);
         let metrics = Metrics::new(14.0, 20.0);
@@ -33,21 +33,21 @@ mod tests {
         // Inspect the output runs
         for run in buffer.layout_runs() {
             let y_offset = run.line_y;
-            let iter = run
+            let glyphs = run
                 .glyphs
                 .iter()
                 .map(|g| {
-                    TestGlyph::new(
+                    Glyph::new(
                         font_map.get(&g.font_id).unwrap().clone(),
                         GlyphId::new(g.glyph_id as u32),
                         g.w,
                         g.x_offset,
                         g.font_size,
-                        run.text[g.start..g.end].to_string(),
+                        g.start..g.end,
                     )
                 })
-                .peekable();
-            surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);
+                .collect::<Vec<_>>();
+            surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), &glyphs, run.text);
         }
 
         surface.finish();

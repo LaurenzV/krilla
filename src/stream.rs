@@ -1,4 +1,4 @@
-use crate::font::{Font, Glyph};
+use crate::font::Font;
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::{Color, ColorSpace};
@@ -14,14 +14,14 @@ use crate::resource::{
     FontResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder,
     XObjectResource,
 };
-use crate::serialize::{PDFGlyph, SerializerContext};
+use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Str};
+use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
-use std::iter::Peekable;
+use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
@@ -209,13 +209,14 @@ impl ContentBuilder {
         self.content_restore_state();
     }
 
-    pub fn fill_glyph_run(
+    pub fn fill_glyph_run<'a>(
         &mut self,
         x: f32,
         y: f32,
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: &[Glyph],
+        text: &str,
     ) {
         self.graphics_states.save_state();
 
@@ -238,18 +239,20 @@ impl ContentBuilder {
                 )
             },
             glyphs,
+            text,
         );
 
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_glyph_run(
+    pub fn stroke_glyph_run<'a>(
         &mut self,
         x: f32,
         y: f32,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: &[Glyph],
+        text: &str,
     ) {
         self.graphics_states.save_state();
 
@@ -272,19 +275,22 @@ impl ContentBuilder {
                 )
             },
             glyphs,
+            text,
         );
 
         self.graphics_states.restore_state();
     }
 
-    fn encode_single(
+    fn encode_single<'a>(
         &mut self,
         cur_x: &mut f32,
         cur_y: f32,
         cur_font: FontResource,
         cur_size: f32,
+        text: &str,
+        actual_text: bool,
         sc: &mut SerializerContext,
-        glyphs: &mut Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: &[Glyph],
     ) {
         let font_name = self
             .rd_builder
@@ -294,24 +300,36 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
+        if actual_text {
+            let mut actual_text = self
+                .content
+                .begin_marked_content_with_properties(Name(b"Span"));
+            actual_text
+                .properties()
+                .actual_text(TextStr(&text[glyphs[0].range.clone()]));
+        }
+
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
 
         let mut adjustment = 0.0;
         let mut encoded = vec![];
 
-        while let Some(glyph) = glyphs.peek() {
-            let (font_resource, gid) = sc.map_glyph(
-                glyph.font.clone(),
-                Glyph::new(glyph.glyph_id, glyph.text.clone()),
-            );
-            if font_resource != cur_font || glyph.size != cur_size {
-                break;
+        for glyph in glyphs {
+            let (_, gid) = sc.map_glyph(glyph.font.clone(), glyph.glyph_id);
+
+            let font_container = sc.font_container_mut(glyph.font.clone());
+
+            match font_container {
+                FontContainer::Type3(t3) => {
+                    t3.set_cmap_entry(glyph.glyph_id, text[glyph.range.clone()].to_string());
+                }
+                FontContainer::CIDFont(cid) => {
+                    cid.set_cmap_entry(gid.get(), text[glyph.range.clone()].to_string())
+                }
             }
 
-            let font = sc.get_pdf_font(&font_resource).unwrap();
-
-            let glyph = glyphs.next().unwrap();
+            let font = sc.get_pdf_font(&cur_font).unwrap();
 
             let actual_advance = glyph.x_advance / glyph.size * 1000.0;
 
@@ -328,7 +346,7 @@ impl ContentBuilder {
             }
 
             match gid {
-                PDFGlyph::ColorGlyph(cg) => encoded.push(cg),
+                PDFGlyph::Type3(cg) => encoded.push(cg),
                 PDFGlyph::CID(cid) => {
                     encoded.push((cid >> 8) as u8);
                     encoded.push((cid & 0xff) as u8);
@@ -349,6 +367,10 @@ impl ContentBuilder {
 
         items.finish();
         positioned.finish();
+
+        if actual_text {
+            self.content.end_marked_content();
+        }
     }
 
     fn fill_stroke_glyph_run(
@@ -358,31 +380,21 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
-        mut glyphs: Peekable<impl Iterator<Item = TestGlyph>>,
+        glyphs: &[Glyph],
+        text: &str,
     ) {
         let mut cur_x = x;
-        let cur_y = y;
 
         self.apply_isolated_op(|sb| {
             action(sb, sc);
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            while let Some(glyph) = glyphs.peek() {
-                let (font_resource, _) = sc.map_glyph(
-                    glyph.font.clone(),
-                    Glyph::new(glyph.glyph_id, glyph.text.clone()),
-                );
-                sb.encode_single(
-                    &mut cur_x,
-                    cur_y,
-                    font_resource,
-                    glyph.size,
-                    sc,
-                    &mut glyphs,
-                )
-            }
+            let segmented = GroupByGlyphs::new(sc, glyphs).collect::<Vec<_>>();
 
+            for (size, font, actual_text, glyphs) in segmented {
+                sb.encode_single(&mut cur_x, y, font, size, text, actual_text, sc, glyphs)
+            }
             sb.content.end_text();
         })
     }
@@ -716,24 +728,24 @@ impl ContentBuilder {
     }
 }
 
-#[derive(Debug)]
-pub struct TestGlyph {
-    font: Font,
-    glyph_id: GlyphId,
-    x_advance: f32,
-    x_offset: f32,
-    size: f32,
-    text: String,
+#[derive(Debug, Clone)]
+pub struct Glyph {
+    pub font: Font,
+    pub glyph_id: GlyphId,
+    pub range: Range<usize>,
+    pub x_advance: f32,
+    pub x_offset: f32,
+    pub size: f32,
 }
 
-impl TestGlyph {
+impl Glyph {
     pub fn new(
         font: Font,
         glyph_id: GlyphId,
         x_advance: f32,
         x_offset: f32,
         size: f32,
-        text: String,
+        range: Range<usize>,
     ) -> Self {
         Self {
             font,
@@ -741,7 +753,7 @@ impl TestGlyph {
             x_advance,
             x_offset,
             size,
-            text,
+            range,
         }
     }
 }
@@ -764,5 +776,81 @@ impl PdfFont<'_> {
             PdfFont::Type3(t3) => t3.advance_width(glyph as u8),
             PdfFont::CID(cid) => cid.advance_width(glyph),
         }
+    }
+}
+
+pub struct GroupByGlyphs<'a, 'b> {
+    sc: &'b mut SerializerContext,
+    slice: &'a [Glyph],
+}
+
+impl<'a, 'b> GroupByGlyphs<'a, 'b> {
+    pub fn new(sc: &'b mut SerializerContext, slice: &'a [Glyph]) -> Self {
+        Self { sc, slice }
+    }
+}
+
+impl<'a> Iterator for GroupByGlyphs<'a, '_> {
+    type Item = (f32, FontResource, bool, &'a [Glyph]);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        struct TempGlyph {
+            font_resource: FontResource,
+            range: Range<usize>,
+            size: f32,
+        }
+
+        let mut func = |g: &Glyph| {
+            let (font_resource, _) = self.sc.map_glyph(g.font.clone(), g.glyph_id);
+            TempGlyph {
+                font_resource,
+                range: g.range.clone(),
+                size: g.size,
+            }
+        };
+
+        let mut same_range = None;
+        let mut count = 1;
+
+        let mut iter = self.slice.iter();
+        let first = (func)(iter.next()?);
+        let mut last_range = first.range.clone();
+
+        while let Some(next) = iter.next() {
+            let temp_glyph = func(next);
+
+            if first.font_resource != temp_glyph.font_resource || first.size != next.size {
+                break;
+            }
+
+            match same_range {
+                None => {
+                    same_range = Some(last_range == temp_glyph.range);
+                }
+                Some(true) => {
+                    if last_range != temp_glyph.range {
+                        break;
+                    }
+                }
+                Some(false) => {
+                    if last_range == temp_glyph.range {
+                        count -= 1;
+                        break;
+                    }
+                }
+            }
+
+            last_range = next.range.clone();
+            count += 1;
+        }
+
+        let (head, tail) = self.slice.split_at(count);
+        self.slice = tail;
+        Some((
+            first.size,
+            first.font_resource,
+            same_range.unwrap_or(false),
+            head,
+        ))
     }
 }
