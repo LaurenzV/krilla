@@ -1,4 +1,4 @@
-use crate::font::Font;
+use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -66,12 +66,15 @@ impl CIDFont {
     }
 
     pub fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
-        self.glyph_remapper.get(u16::try_from(glyph_id.to_u32()).unwrap())
+        self.glyph_remapper
+            .get(u16::try_from(glyph_id.to_u32()).unwrap())
     }
 
     /// Add a new glyph (if it has not already been added) and return its CID.
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
-        let new_id = self.glyph_remapper.remap(u16::try_from(glyph_id.to_u32()).unwrap());
+        let new_id = self
+            .glyph_remapper
+            .remap(u16::try_from(glyph_id.to_u32()).unwrap());
 
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id as usize >= self.widths.len() {
@@ -88,6 +91,10 @@ impl CIDFont {
 
     pub fn set_codepoints(&mut self, cid: Cid, text: String) {
         self.cmap_entries.insert(cid, text);
+    }
+
+    pub fn identifier(&self) -> FontIdentifier {
+        FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
 }
 
@@ -264,8 +271,12 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), GlyphId::new(36));
-        sc.map_glyph(font.clone(), GlyphId::new(37));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(36));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(37));
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 
@@ -274,10 +285,18 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), GlyphId::new(58));
-        sc.map_glyph(font.clone(), GlyphId::new(54));
-        sc.map_glyph(font.clone(), GlyphId::new(69));
-        sc.map_glyph(font.clone(), GlyphId::new(71));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(58));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(54));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(69));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(71));
         check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
 }

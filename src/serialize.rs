@@ -1,13 +1,13 @@
-use crate::font::{Font, FontInfo};
+use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
 use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{Page, PageLabelContainer};
-use crate::object::type3_font::Type3Font;
-use crate::resource::{ColorSpaceEnum, FontResource};
-use crate::stream::PdfFont;
+use crate::object::type3_font::Type3FontMapper;
+use crate::resource::ColorSpaceEnum;
+use crate::stream::PdfFontMut;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Filter, Finish, Name, Pdf, Ref};
@@ -15,6 +15,7 @@ use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -84,7 +85,7 @@ pub trait RegisterableObject: Object + SipHashable {}
 
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
-    font_map: HashMap<Font, FontContainer>,
+    font_map: HashMap<Font, RefCell<FontContainer>>,
     catalog_ref: Ref,
     page_tree_ref: Ref,
     page_labels_ref: Option<Ref>,
@@ -194,6 +195,24 @@ impl SerializerContext {
         }
     }
 
+    pub fn font_container(&self, font: Font) -> Option<&RefCell<FontContainer>> {
+        self.font_map.get(&font)
+    }
+
+    pub fn create_or_get_font_container(&mut self, font: Font) -> &RefCell<FontContainer> {
+        self.font_map.entry(font.clone()).or_insert_with(|| {
+            self.font_cache
+                .insert(font.font_info().clone(), font.clone());
+
+            if font.is_type3_font() {
+                RefCell::new(FontContainer::Type3(Type3FontMapper::new(font.clone())))
+            } else {
+                RefCell::new(FontContainer::CIDFont(CIDFont::new(font.clone())))
+            }
+        })
+    }
+
+    // TODO: Don't use generics here
     pub fn add_font<T>(&mut self, object: T) -> Ref
     where
         T: RegisterableObject,
@@ -205,41 +224,6 @@ impl SerializerContext {
             let root_ref = self.new_ref();
             self.cached_mappings.insert(hash, root_ref);
             root_ref
-        }
-    }
-
-    pub(crate) fn font_container_mut(&mut self, font: Font) -> &mut FontContainer {
-        self.font_map.entry(font.clone()).or_insert_with(|| {
-            self.font_cache
-                .insert(font.font_info().clone(), font.clone());
-
-            if font.is_type3_font() {
-                FontContainer::Type3(Type3FontMapper::new(font.clone()))
-            } else {
-                FontContainer::CIDFont(CIDFont::new(font.clone()))
-            }
-        })
-    }
-
-    pub fn map_glyph(&mut self, font: Font, glyph_id: GlyphId) -> (FontResource, PDFGlyph) {
-        let font_container = self.font_container_mut(font.clone());
-
-        match font_container {
-            FontContainer::Type3(font_mapper) => {
-                let (pdf_index, glyph_id) = font_mapper.add_glyph(glyph_id);
-
-                (
-                    FontResource::new(font, pdf_index),
-                    PDFGlyph::Type3(glyph_id),
-                )
-            }
-            FontContainer::CIDFont(cid) => {
-                let new_gid = cid.add_glyph(glyph_id);
-                (
-                    FontResource::new(font, 0),
-                    PDFGlyph::CID(new_gid.to_u32() as u16),
-                )
-            }
         }
     }
 
@@ -260,25 +244,19 @@ impl SerializerContext {
                 if let Some(font_info) =
                     FontInfo::new(font_data.as_ref().as_ref(), index, location.clone())
                 {
+                    let font_info = Arc::new(font_info);
                     // TODO: Prevent font info from being computed twice?
                     let font = self
                         .font_cache
-                        .get(&Arc::new(font_info))
+                        .get(&font_info.clone())
                         .cloned()
-                        .unwrap_or(Font::new(font_data, index, location).unwrap());
+                        .unwrap_or(Font::new_with_info(font_data, font_info).unwrap());
                     map.insert(id, font);
                 }
             }
         }
 
         map
-    }
-
-    pub fn get_pdf_font(&self, font_resource: &FontResource) -> Option<PdfFont> {
-        self.font_map.get(&font_resource.font).map(|f| match f {
-            FontContainer::Type3(fm) => PdfFont::Type3(&fm.fonts[font_resource.pdf_index]),
-            FontContainer::CIDFont(cid) => PdfFont::CID(cid),
-        })
     }
 
     fn push_chunk(&mut self, chunk: Chunk) {
@@ -326,17 +304,17 @@ impl SerializerContext {
         // Write fonts
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
-        for (font, font_container) in fonts {
-            match font_container {
+        for font_container in fonts.values() {
+            match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
-                    for (pdf_index, mapper) in font_mapper.fonts.into_iter().enumerate() {
-                        let ref_ = self.add_font(FontResource::new(font.clone(), pdf_index));
-                        let chunk = mapper.serialize_into(&mut self, ref_);
+                    for t3_font in font_mapper.fonts() {
+                        let ref_ = self.add_font(t3_font.identifier());
+                        let chunk = t3_font.serialize_into(&mut self, ref_);
                         self.push_chunk(chunk)
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.add_font(FontResource::new(font, 0));
+                    let ref_ = self.add_font(cid_font.identifier());
                     let chunk = cid_font.serialize_into(&mut self, ref_);
                     self.push_chunk(chunk)
                 }
@@ -405,8 +383,8 @@ where
 
 #[derive(Copy, Clone)]
 pub enum CSWrapper {
-    Ref(pdf_writer::Ref),
-    Name(pdf_writer::Name<'static>),
+    Ref(Ref),
+    Name(Name<'static>),
 }
 
 impl pdf_writer::Primitive for CSWrapper {
@@ -419,67 +397,46 @@ impl pdf_writer::Primitive for CSWrapper {
 }
 
 #[derive(Debug)]
-pub(crate) enum FontContainer {
+pub enum FontContainer {
     Type3(Type3FontMapper),
     CIDFont(CIDFont),
 }
 
-#[derive(Debug)]
-pub struct Type3FontMapper {
-    font: Font,
-    fonts: Vec<Type3Font>,
-}
-
-impl Type3FontMapper {
-    pub fn new(font: Font) -> Type3FontMapper {
-        Self {
-            font,
-            fonts: Vec::new(),
+impl FontContainer {
+    pub fn font_identifier(&self, glyph_id: GlyphId) -> Option<FontIdentifier> {
+        match self {
+            FontContainer::Type3(t3) => t3.id_from_glyph(glyph_id),
+            FontContainer::CIDFont(cid) => cid.get_cid(glyph_id).map(|_| cid.identifier()),
         }
     }
-}
 
-impl Type3FontMapper {
-    pub fn type_3_font(&mut self, glyph_id: GlyphId) -> Option<(&mut Type3Font, u8)> {
-        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
-            let glyph = self.fonts[index].get_gid(glyph_id)?;
-            return Some((&mut self.fonts[index], glyph));
-        }
-
-        None
-    }
-
-    pub fn set_cmap_entry(&mut self, glyph_id: GlyphId, text: String) -> Option<()> {
-        self.type_3_font(glyph_id)
-            .map(|(f, g)| f.set_cmap_entry(g, text))
-    }
-
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {
-        if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
-            return (index, self.fonts[index].add_glyph(glyph_id));
-        }
-
-        let glyph_id = if let Some(last_font) = self.fonts.last_mut() {
-            if last_font.is_full() {
-                let mut font = Type3Font::new(self.font.clone());
-                let gid = font.add_glyph(glyph_id);
-                self.fonts.push(font);
-                gid
-            } else {
-                last_font.add_glyph(glyph_id)
+    pub fn get_from_identifier_mut(
+        &mut self,
+        font_identifier: FontIdentifier,
+    ) -> Option<PdfFontMut> {
+        match self {
+            FontContainer::Type3(t3) => {
+                if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
+                    return Some(PdfFontMut::Type3(t3_font));
+                } else {
+                    None
+                }
             }
-        } else {
-            let mut font = Type3Font::new(self.font.clone());
-            let gid = font.add_glyph(glyph_id);
-            self.fonts.push(font);
-            gid
-        };
-
-        (self.fonts.len() - 1, glyph_id)
+            FontContainer::CIDFont(cid) => {
+                if cid.identifier() == font_identifier {
+                    return Some(PdfFontMut::CID(cid));
+                } else {
+                    None
+                }
+            }
+        }
     }
 
-    pub fn index(&self) -> u32 {
-        self.font.index()
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> PDFGlyph {
+        match self {
+            FontContainer::Type3(t3) => PDFGlyph::Type3(t3.add_glyph(glyph_id).1),
+            FontContainer::CIDFont(cid) => PDFGlyph::CID(cid.add_glyph(glyph_id)),
+        }
     }
 }
 

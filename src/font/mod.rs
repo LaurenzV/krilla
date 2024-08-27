@@ -1,6 +1,8 @@
-use crate::serialize::SvgSettings;
+use crate::serialize::{Object, SerializerContext, SvgSettings};
 use crate::surface::Surface;
+use crate::type3_font::Type3ID;
 use crate::util::Prehashed;
+use pdf_writer::{Chunk, Ref};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -176,6 +178,15 @@ impl Font {
         index: u32,
         location: Location,
     ) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
+
+        Font::new_with_info(data, Arc::new(font_info))
+    }
+
+    pub(crate) fn new_with_info(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        font_info: Arc<FontInfo>,
+    ) -> Option<Self> {
         let font_ref_yoke =
             Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.clone(),
@@ -184,11 +195,9 @@ impl Font {
                 },
             );
 
-        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
-
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_ref_yoke,
-            font_info: Arc::new(font_info),
+            font_info,
         }))))
     }
 
@@ -286,6 +295,33 @@ pub fn draw_glyph(
     surface.pop();
 
     glyph_type
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct CIDIdentifer(pub Font);
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Type3Identifier(pub Font, pub Type3ID);
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum FontIdentifier {
+    Cid(CIDIdentifer),
+    Type3(Type3Identifier),
+}
+
+impl FontIdentifier {
+    pub fn font(&self) -> Font {
+        match self {
+            FontIdentifier::Cid(cid) => cid.0.clone(),
+            FontIdentifier::Type3(t3) => t3.0.clone(),
+        }
+    }
+}
+
+// TODO: Remove?
+impl Object for FontIdentifier {
+    fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
+        unreachable!()
+    }
 }
 
 #[cfg(test)]
