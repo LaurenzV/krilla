@@ -15,28 +15,27 @@ mod tests {
         let mut y = 25.0;
 
         let data = vec![
-            // (
-            //     "NotoSansArabic-Regular.ttf",
-            //     "هذا نص أطول لتجربة القدرات.",
-            //     Direction::RightToLeft,
-            //     14.0,
-            // ),
-            // (
-            //     "NotoSans-Regular.ttf",
-            //     "Hi there, this is a very simple test!",
-            //     Direction::LeftToRight,
-            //     14.0,
-            // ),
-            // (
-            //     "NotoSansCJKsc-Regular.otf",
-            //     "你好世界，这是一段很长的测试文章",
-            //     Direction::LeftToRight,
-            //     14.0,
-            // ),
+            (
+                "NotoSansArabic-Regular.ttf",
+                "هذا نص أطول لتجربة القدرات.",
+                Direction::RightToLeft,
+                14.0,
+            ),
+            (
+                "NotoSans-Regular.ttf",
+                "Hi there, this is a very simple test!",
+                Direction::LeftToRight,
+                14.0,
+            ),
+            (
+                "NotoSansCJKsc-Regular.otf",
+                "你好世界，这是一段很长的测试文章",
+                Direction::LeftToRight,
+                14.0,
+            ),
             (
                 "NotoSansDevanagari-Regular.ttf",
                 "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
-                // "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
                 Direction::LeftToRight,
                 14.0,
             ),
@@ -50,7 +49,9 @@ mod tests {
             let font_data = load_font(font);
             let font = Font::new(Arc::new(font_data), 0, Location::default()).unwrap();
             let glyphs = simple_shape(text, dir, font, size);
-            let ranges = glyphs.iter().map(|n| n.range.clone()).collect::<Vec<_>>();
+
+            // eprintln!("{:?}", glyphs.iter().map(|g| g.glyph_id).collect::<Vec<_>>());
+            // panic!();
 
             surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, text);
 

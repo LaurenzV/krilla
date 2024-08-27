@@ -28,7 +28,7 @@ pub(crate) mod test_utils {
     use crate::font::Font;
     use crate::stream::Glyph;
     use difference::{Changeset, Difference};
-    use rustybuzz::{BufferClusterLevel, Direction, UnicodeBuffer};
+    use rustybuzz::{Direction, UnicodeBuffer};
     use skrifa::GlyphId;
     use std::path::PathBuf;
     use tiny_skia_path::{Path, PathBuilder, Rect};
@@ -112,8 +112,6 @@ pub(crate) mod test_utils {
 
         let positions = output.glyph_positions();
         let infos = output.glyph_infos();
-
-        let clusters = infos.iter().map(|c| c.cluster).collect::<Vec<_>>();
 
         let mut glyphs = vec![];
 

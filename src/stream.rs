@@ -21,7 +21,7 @@ use crate::util::{
 };
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Str};
+use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::ops::Range;
 use std::sync::Arc;
@@ -301,6 +301,15 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
+        let use_actual_text = glyphs.len() > 1;
+
+        if use_actual_text {
+            let mut actual_text = self
+                .content
+                .begin_marked_content_with_properties(Name(b"Span"));
+            actual_text.properties().actual_text(TextStr(cur_text));
+        }
+
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
 
@@ -357,6 +366,10 @@ impl ContentBuilder {
 
         items.finish();
         positioned.finish();
+
+        if use_actual_text {
+            self.content.end_marked_content();
+        }
     }
 
     fn fill_stroke_glyph_run(
