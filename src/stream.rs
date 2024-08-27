@@ -16,12 +16,13 @@ use crate::resource::{
 };
 use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, SliceExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
 use std::iter::Peekable;
+use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
@@ -215,7 +216,8 @@ impl ContentBuilder {
         y: f32,
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = Cluster<'a>>>,
+        glyphs: &[Glyph],
+        text: &str,
     ) {
         self.graphics_states.save_state();
 
@@ -238,6 +240,7 @@ impl ContentBuilder {
                 )
             },
             glyphs,
+            text
         );
 
         self.graphics_states.restore_state();
@@ -249,7 +252,8 @@ impl ContentBuilder {
         y: f32,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
-        glyphs: Peekable<impl Iterator<Item = Cluster<'a>>>,
+        glyphs: &[Glyph],
+        text: &str
     ) {
         self.graphics_states.save_state();
 
@@ -272,6 +276,7 @@ impl ContentBuilder {
                 )
             },
             glyphs,
+            text
         );
 
         self.graphics_states.restore_state();
@@ -283,8 +288,9 @@ impl ContentBuilder {
         cur_y: f32,
         cur_font: FontResource,
         cur_size: f32,
+        cur_text: &str,
         sc: &mut SerializerContext,
-        clusters: &mut Peekable<impl Iterator<Item = Cluster<'a>>>,
+        glyphs: &[Glyph],
     ) {
         let font_name = self
             .rd_builder
@@ -300,20 +306,12 @@ impl ContentBuilder {
         let mut adjustment = 0.0;
         let mut encoded = vec![];
 
-        while let Some(cluster) = clusters.peek() {
-            let ClusterType::SingleGlyph(glyph) = cluster.cluster_type.clone() else {
-                panic!()
-            };
+        for glyph in glyphs {
 
-            let (font_resource, gid) =
-                sc.map_glyph(glyph.font.clone(), glyph.glyph_id, cluster.text);
-            if font_resource != cur_font || glyph.size != cur_size {
-                break;
-            }
+            let (_, gid) =
+                sc.map_glyph(glyph.font.clone(), glyph.glyph_id);
 
-            let font = sc.get_pdf_font(&font_resource).unwrap();
-
-            clusters.next().unwrap();
+            let font = sc.get_pdf_font(&cur_font).unwrap();
 
             let actual_advance = glyph.x_advance / glyph.size * 1000.0;
 
@@ -353,14 +351,15 @@ impl ContentBuilder {
         positioned.finish();
     }
 
-    fn fill_stroke_glyph_run<'a>(
+    fn fill_stroke_glyph_run(
         &mut self,
         x: f32,
         y: f32,
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
-        mut clusters: Peekable<impl Iterator<Item = Cluster<'a>>>,
+        glyphs: &[Glyph],
+        text: &str
     ) {
         let mut cur_x = x;
 
@@ -369,16 +368,20 @@ impl ContentBuilder {
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            while let Some(cluster) = clusters.peek() {
-                let ClusterType::SingleGlyph(glyph) = &cluster.cluster_type else {
-                    panic!()
-                };
-
+            let segmented = glyphs.group_by_key(|g| {
                 let (font_resource, _) =
-                    sc.map_glyph(glyph.font.clone(), glyph.glyph_id, cluster.text);
-                sb.encode_single(&mut cur_x, y, font_resource, glyph.size, sc, &mut clusters)
-            }
+                    sc.map_glyph(g.font.clone(), g.glyph_id);
+                (font_resource, g.range.clone(), g.size)
+            }).collect::<Vec<_>>();
 
+            for ((font, range, size), glyphs) in segmented {
+                let text = if let Some(range) = range {
+                    &text[range]
+                }   else {
+                    ""
+                };
+                sb.encode_single(&mut cur_x, y, font, size, text, sc, glyphs)
+            }
             sb.content.end_text();
         })
     }
@@ -712,63 +715,26 @@ impl ContentBuilder {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ClusterType {
-    SingleGlyph(Glyph),
-    MultipleGlyphs(Vec<Glyph>),
-}
-
-#[derive(Debug)]
-pub struct Cluster<'a> {
-    text: &'a str,
-    cluster_type: ClusterType,
-}
-
-impl<'a> Cluster<'a> {
-    pub fn new(text: &'a str, cluster_type: impl Into<ClusterType>) -> Self {
-        Self {
-            text,
-            cluster_type: cluster_type.into(),
-        }
-    }
-
-    pub fn cluster_type(&self) -> &ClusterType {
-        &self.cluster_type
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
     font: Font,
     glyph_id: GlyphId,
+    range: Option<Range<usize>>,
     x_advance: f32,
     x_offset: f32,
     size: f32,
 }
 
-impl Into<ClusterType> for Glyph {
-    fn into(self) -> ClusterType {
-        ClusterType::SingleGlyph(self)
-    }
-}
-
-impl<T> From<T> for ClusterType
-where
-    T: IntoIterator<Item = Glyph>,
-{
-    fn from(value: T) -> Self {
-        ClusterType::MultipleGlyphs(value.into_iter().collect())
-    }
-}
-
 impl Glyph {
-    pub fn new(font: Font, glyph_id: GlyphId, x_advance: f32, x_offset: f32, size: f32) -> Self {
+    pub fn new(font: Font, glyph_id: GlyphId, x_advance: f32, x_offset: f32, size: f32, range: Option<Range<usize>>) -> Self {
         Self {
             font,
             glyph_id,
             x_advance,
             x_offset,
             size,
+            range
         }
     }
 }

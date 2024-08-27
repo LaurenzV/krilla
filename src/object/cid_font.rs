@@ -1,6 +1,6 @@
 use crate::font::Font;
 use crate::serialize::{Object, SerializerContext, SipHashable};
-use crate::util::RectExt;
+use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
@@ -216,45 +216,6 @@ fn subset_font(
     sc.get_binary_stream(data)
 }
 
-/// Extra methods for [`[T]`](slice).
-pub trait SliceExt<T> {
-    /// Split a slice into consecutive runs with the same key and yield for
-    /// each such run the key and the slice of elements with that key.
-    fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F>
-    where
-        F: FnMut(&T) -> K,
-        K: PartialEq;
-}
-
-impl<T> SliceExt<T> for [T] {
-    fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F> {
-        GroupByKey { slice: self, f }
-    }
-}
-
-/// This struct is created by [`SliceExt::group_by_key`].
-pub struct GroupByKey<'a, T, F> {
-    slice: &'a [T],
-    f: F,
-}
-
-impl<'a, T, K, F> Iterator for GroupByKey<'a, T, F>
-where
-    F: FnMut(&T) -> K,
-    K: PartialEq,
-{
-    type Item = (K, &'a [T]);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut iter = self.slice.iter();
-        let key = (self.f)(iter.next()?);
-        let count = 1 + iter.take_while(|t| (self.f)(t) == key).count();
-        let (head, tail) = self.slice.split_at(count);
-        self.slice = tail;
-        Some((key, head))
-    }
-}
-
 /// Create a tag for a font subset.
 fn subset_tag(subsetted_font: &[u8]) -> String {
     const LEN: usize = 6;
@@ -288,8 +249,8 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), GlyphId::new(36), "A");
-        sc.map_glyph(font.clone(), GlyphId::new(37), "B");
+        sc.map_glyph(font.clone(), GlyphId::new(36));
+        sc.map_glyph(font.clone(), GlyphId::new(37));
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 
@@ -298,10 +259,10 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), GlyphId::new(58), "G");
-        sc.map_glyph(font.clone(), GlyphId::new(54), "F");
-        sc.map_glyph(font.clone(), GlyphId::new(69), "K");
-        sc.map_glyph(font.clone(), GlyphId::new(71), "L");
+        sc.map_glyph(font.clone(), GlyphId::new(58));
+        sc.map_glyph(font.clone(), GlyphId::new(54));
+        sc.map_glyph(font.clone(), GlyphId::new(69));
+        sc.map_glyph(font.clone(), GlyphId::new(71));
         check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
 }

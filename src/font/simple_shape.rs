@@ -55,7 +55,8 @@ mod tests {
                 0.0,
                 y,
                 Fill::<Rgb>::default(),
-                glyphs.into_iter().peekable(),
+                &glyphs,
+                text
             );
             y += size * 1.5;
         }

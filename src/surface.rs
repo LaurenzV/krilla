@@ -6,12 +6,11 @@ use crate::object::mask::Mask;
 use crate::object::page::{Page, PageLabel};
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
-use crate::stream::{Cluster, ContentBuilder, Stream};
+use crate::stream::{ContentBuilder, Glyph, Stream};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
 use std::collections::HashMap;
-use std::iter::Peekable;
 use tiny_skia_path::{Path, Size, Transform};
 use usvg::NormalizedF32;
 
@@ -98,18 +97,19 @@ impl<'a> Surface<'a> {
         x: f32,
         y: f32,
         mode: impl Into<FillOrStroke<T>>,
-        clusters: Peekable<impl Iterator<Item = Cluster<'b>>>,
+        glyphs: &[Glyph],
+        text: &str
     ) where
         T: ColorSpace,
     {
         match mode.into() {
             FillOrStroke::Fill(fill) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_glyph_run(x, y, self.sc, fill, clusters);
+                    .fill_glyph_run(x, y, self.sc, fill, glyphs, text);
             }
             FillOrStroke::Stroke(stroke) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_glyph_run(x, y, self.sc, stroke, clusters);
+                    .stroke_glyph_run(x, y, self.sc, stroke, glyphs, text);
             }
         };
     }

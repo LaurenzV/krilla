@@ -1,5 +1,4 @@
 use crate::serialize::SvgSettings;
-use crate::stream::Cluster;
 use crate::surface::Surface;
 use crate::util::Prehashed;
 use skrifa::instance::Location;
@@ -11,6 +10,7 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+use skrifa::raw::tables::glyf::Glyph;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
@@ -355,12 +355,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
-            [Cluster::new(
-                &text,
-                Glyph::new(font.clone(), i, 0.0, 0.0, size as f32),
-            )]
-            .into_iter()
-            .peekable(),
+            &[Glyph::new(font.clone(), i, 0.0, 0.0, size as f32, Some(0..text.len()))],
+            &text
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         surface.pop();

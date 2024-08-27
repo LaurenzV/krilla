@@ -1,7 +1,7 @@
 use crate::font::Font;
 use crate::object::color_space::rgb;
 use crate::object::color_space::rgb::Rgb;
-use crate::stream::{Cluster, Glyph};
+use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
@@ -64,19 +64,16 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     0.0,
                     0.0,
                     fill,
-                    [Cluster::new(
-                        &glyph.text,
-                        Glyph::new(
-                            font,
-                            GlyphId::new(glyph.id.0 as u32),
-                            // Don't care about those, since we render only one glyph.
-                            0.0,
-                            0.0,
-                            span.font_size.get(),
-                        ),
-                    )]
-                    .into_iter()
-                    .peekable(),
+                    &[Glyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
+                        // Don't care about those, since we render only one glyph.
+                        0.0,
+                        0.0,
+                        span.font_size.get(),
+                        Some(0..glyph.text.len())
+                    )],
+                    &glyph.text
                 );
             };
 
@@ -85,19 +82,16 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     0.0,
                     0.0,
                     stroke,
-                    [Cluster::new(
-                        &glyph.text,
-                        Glyph::new(
-                            font,
-                            GlyphId::new(glyph.id.0 as u32),
-                            // Don't care about those, since we render only one glyph.
-                            0.0,
-                            0.0,
-                            span.font_size.get(),
-                        ),
-                    )]
-                    .into_iter()
-                    .peekable(),
+                    &[Glyph::new(
+                        font,
+                        GlyphId::new(glyph.id.0 as u32),
+                        // Don't care about those, since we render only one glyph.
+                        0.0,
+                        0.0,
+                        span.font_size.get(),
+                        Some(0..glyph.text.len())
+                    )],
+                    &glyph.text
                 );
             };
 

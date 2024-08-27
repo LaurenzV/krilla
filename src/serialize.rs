@@ -225,7 +225,6 @@ impl SerializerContext {
         &mut self,
         font: Font,
         glyph_id: GlyphId,
-        _: &str,
     ) -> (FontResource, PDFGlyph) {
         let font_container = self.font_container_mut(font.clone());
 
@@ -424,7 +423,7 @@ impl pdf_writer::Primitive for CSWrapper {
 }
 
 #[derive(Debug)]
-enum FontContainer {
+pub(crate) enum FontContainer {
     Type3(Type3FontMapper),
     CIDFont(CIDFont),
 }
