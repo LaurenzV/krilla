@@ -16,6 +16,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tiny_skia_path::{PathBuilder, Rect, Size, Transform};
 use usvg::NormalizedF32;
+use krilla::util::SliceExt;
 
 pub fn render_doc(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
     let options = RenderOptions { scale: 1.0 };
@@ -248,23 +249,39 @@ generate_renderer_tests!(cosmic_text, |renderer| {
 
     // Inspect the output runs
     for run in buffer.layout_runs() {
-        let y_offset = run.line_y;
-        let glyphs = run
-            .glyphs
-            .iter()
-            .map(|g| {
-                Glyph::new(
-                    font_map.get(&g.font_id).unwrap().clone(),
-                    GlyphId::new(g.glyph_id as u32),
-                    g.w,
-                    g.x_offset,
-                    g.font_size,
-                    g.start..g.end,
-                )
-            })
-            .collect::<Vec<_>>();
-        surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), &glyphs, &run.text);
-    }
+            let y_offset = run.line_y;
+
+            let segmented = run
+                .glyphs
+                .group_by_key(|g| (font_map.get(&g.font_id).unwrap().clone(), g.font_size));
+
+            let mut x = 0.0;
+            for ((font, size), glyphs) in segmented {
+                let start_x = x;
+                let glyphs = glyphs
+                    .iter()
+                    .map(|glyph| {
+                        x += glyph.w;
+                        Glyph::new(
+                            GlyphId::new(glyph.glyph_id as u32),
+                            glyph.w,
+                            glyph.x_offset,
+                            glyph.start..glyph.end,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                surface.draw_glyph_run(
+                    start_x,
+                    y_offset,
+                    Fill::<Rgb>::default(),
+                    &glyphs,
+                    font,
+                    size,
+                    run.text,
+                );
+            }
+        }
 
     surface.finish();
     builder.finish();
