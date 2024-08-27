@@ -29,7 +29,7 @@ pub struct CIDFont {
     /// are indexed in a CID-keyed font.
     glyph_remapper: GlyphRemapper,
     /// A mapping from glyph IDs to their string in the original text.
-    strings: BTreeMap<GlyphId, String>,
+    cmap_entries: BTreeMap<u16, String>,
     /// The widths of the glyphs, _index by their new GID_.
     widths: Vec<f32>,
 }
@@ -42,7 +42,7 @@ impl CIDFont {
 
         Self {
             glyph_remapper: GlyphRemapper::new(),
-            strings: BTreeMap::new(),
+            cmap_entries: BTreeMap::new(),
             widths,
             font,
         }
@@ -63,13 +63,8 @@ impl CIDFont {
     }
 
     /// Register a glyph and return its glyph ID in the subsetted version of the font.
-    pub fn register(&mut self, glyph_id: GlyphId, text: &str) -> GlyphId {
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> GlyphId {
         let new_id = GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32);
-
-        if !self.strings.contains_key(&new_id) {
-            self.strings.insert(new_id, text.to_string());
-        }
-
 
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id.to_u32() >= self.widths.len() as u32 {
@@ -179,9 +174,9 @@ impl Object for CIDFont {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in self.strings.iter() {
+            for (g, text) in self.cmap_entries.iter() {
                 if !text.is_empty() {
-                    cmap.pair_with_multiple(g.to_u32() as u16, text.chars());
+                    cmap.pair_with_multiple(*g, text.chars());
                 }
             }
 

@@ -301,12 +301,12 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         while let Some(cluster) = clusters.peek() {
-            let ClusterType::SingleGlyph(glyph) = cluster.cluster_type.clone() else {panic!()};
+            let ClusterType::SingleGlyph(glyph) = cluster.cluster_type.clone() else {
+                panic!()
+            };
 
-            let (font_resource, gid) = sc.map_glyph(
-                glyph.font.clone(),
-                glyph.glyph_id, cluster.text,
-            );
+            let (font_resource, gid) =
+                sc.map_glyph(glyph.font.clone(), glyph.glyph_id, cluster.text);
             if font_resource != cur_font || glyph.size != cur_size {
                 break;
             }
@@ -370,20 +370,13 @@ impl ContentBuilder {
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
             while let Some(cluster) = clusters.peek() {
-                let ClusterType::SingleGlyph(glyph) = &cluster.cluster_type else {panic!()};
+                let ClusterType::SingleGlyph(glyph) = &cluster.cluster_type else {
+                    panic!()
+                };
 
-                let (font_resource, _) = sc.map_glyph(
-                    glyph.font.clone(),
-                    glyph.glyph_id, cluster.text,
-                );
-                sb.encode_single(
-                    &mut cur_x,
-                    y,
-                    font_resource,
-                    glyph.size,
-                    sc,
-                    &mut clusters,
-                )
+                let (font_resource, _) =
+                    sc.map_glyph(glyph.font.clone(), glyph.glyph_id, cluster.text);
+                sb.encode_single(&mut cur_x, y, font_resource, glyph.size, sc, &mut clusters)
             }
 
             sb.content.end_text();
@@ -722,20 +715,20 @@ impl ContentBuilder {
 #[derive(Debug, Clone)]
 pub enum ClusterType {
     SingleGlyph(Glyph),
-    MultipleGlyphs(Vec<Glyph>)
+    MultipleGlyphs(Vec<Glyph>),
 }
 
 #[derive(Debug)]
 pub struct Cluster<'a> {
     text: &'a str,
-    cluster_type: ClusterType
+    cluster_type: ClusterType,
 }
 
 impl<'a> Cluster<'a> {
     pub fn new(text: &'a str, cluster_type: impl Into<ClusterType>) -> Self {
         Self {
             text,
-            cluster_type: cluster_type.into()
+            cluster_type: cluster_type.into(),
         }
     }
 
@@ -759,20 +752,17 @@ impl Into<ClusterType> for Glyph {
     }
 }
 
-impl<T> From<T> for ClusterType where T: IntoIterator<Item = Glyph> {
+impl<T> From<T> for ClusterType
+where
+    T: IntoIterator<Item = Glyph>,
+{
     fn from(value: T) -> Self {
         ClusterType::MultipleGlyphs(value.into_iter().collect())
     }
 }
 
 impl Glyph {
-    pub fn new(
-        font: Font,
-        glyph_id: GlyphId,
-        x_advance: f32,
-        x_offset: f32,
-        size: f32,
-    ) -> Self {
+    pub fn new(font: Font, glyph_id: GlyphId, x_advance: f32, x_offset: f32, size: f32) -> Self {
         Self {
             font,
             glyph_id,

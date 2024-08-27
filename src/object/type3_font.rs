@@ -8,17 +8,16 @@ use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use tiny_skia_path::{Rect, Transform};
 
 // TODO: Add FontDescriptor, required for Tagged PDF
-// TODO: Remove bound on Clone, which (should?) only be needed for cached objects
 #[derive(Debug)]
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
     widths: Vec<f32>,
-    strings: Vec<String>,
+    cmap_entries: BTreeMap<u8, String>,
     glyph_set: BTreeSet<GlyphId>,
 }
 
@@ -34,7 +33,7 @@ impl Type3Font {
         Self {
             font,
             glyphs: Vec::new(),
-            strings: Vec::new(),
+            cmap_entries: BTreeMap::new(),
             widths: Vec::new(),
             glyph_set: BTreeSet::new(),
         }
@@ -56,24 +55,26 @@ impl Type3Font {
         self.glyph_set.contains(&glyph)
     }
 
-    pub fn add(&mut self, glyph_id: GlyphId, text: &str) -> u8 {
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
         if let Some(pos) = self
             .glyphs
             .iter()
             .position(|g| *g == glyph_id)
             .and_then(|n| u8::try_from(n).ok())
         {
-            self.strings[pos as usize] = text.to_string();
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);
 
             self.glyphs.push(glyph_id);
-            self.strings.push(text.to_string());
             self.widths
                 .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
+    }
+
+    pub fn set_cmap_entry(&mut self, glyph_id: u8, text: String) {
+        self.cmap_entries.insert(glyph_id, text);
     }
 
     pub fn units_per_em(&self) -> u16 {
@@ -219,9 +220,9 @@ impl Object for Type3Font {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in self.strings.iter().enumerate() {
+            for (g, text) in &self.cmap_entries {
                 if !text.is_empty() {
-                    cmap.pair_with_multiple(g as u8, text.chars());
+                    cmap.pair_with_multiple(*g, text.chars());
                 }
             }
 

@@ -254,15 +254,15 @@ generate_renderer_tests!(cosmic_text, |renderer| {
             .iter()
             .map(|g| {
                 Cluster::new(
-                &run.text[g.start..g.end],
-                Glyph::new(
-                    font_map.get(&g.font_id).unwrap().clone(),
-                    GlyphId::new(g.glyph_id as u32),
-                    g.w,
-                    g.x_offset,
-                    g.font_size,
+                    &run.text[g.start..g.end],
+                    Glyph::new(
+                        font_map.get(&g.font_id).unwrap().clone(),
+                        GlyphId::new(g.glyph_id as u32),
+                        g.w,
+                        g.x_offset,
+                        g.font_size,
+                    ),
                 )
-            )
             })
             .peekable();
         surface.draw_glyph_run(0.0, y_offset, Fill::<Rgb>::default(), iter);

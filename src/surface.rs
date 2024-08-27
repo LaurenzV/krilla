@@ -6,7 +6,7 @@ use crate::object::mask::Mask;
 use crate::object::page::{Page, PageLabel};
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
-use crate::stream::{ContentBuilder, Stream, Cluster};
+use crate::stream::{Cluster, ContentBuilder, Stream};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;

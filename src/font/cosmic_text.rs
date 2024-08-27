@@ -44,7 +44,7 @@ mod tests {
                             g.w,
                             g.x_offset,
                             g.font_size,
-                        )
+                        ),
                     )
                 })
                 .peekable();

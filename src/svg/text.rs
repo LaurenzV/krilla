@@ -73,7 +73,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                             0.0,
                             0.0,
                             span.font_size.get(),
-                        )
+                        ),
                     )]
                     .into_iter()
                     .peekable(),
@@ -94,7 +94,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                             0.0,
                             0.0,
                             span.font_size.get(),
-                        )
+                        ),
                     )]
                     .into_iter()
                     .peekable(),
