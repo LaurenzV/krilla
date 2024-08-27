@@ -56,16 +56,14 @@ impl Type3Font {
     }
 
     pub fn get_glyph(&mut self, glyph_id: GlyphId) -> Option<u8> {
-        self
-            .glyphs
+        self.glyphs
             .iter()
             .position(|g| *g == glyph_id)
             .and_then(|n| u8::try_from(n).ok())
     }
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
-        if let Some(pos) = self.get_glyph(glyph_id)
-        {
+        if let Some(pos) = self.get_glyph(glyph_id) {
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);

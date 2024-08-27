@@ -16,7 +16,9 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, SliceExt, TransformExt};
+use crate::util::{
+    calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, SliceExt, TransformExt,
+};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
@@ -239,7 +241,7 @@ impl ContentBuilder {
                 )
             },
             glyphs,
-            text
+            text,
         );
 
         self.graphics_states.restore_state();
@@ -252,7 +254,7 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
         glyphs: &[Glyph],
-        text: &str
+        text: &str,
     ) {
         self.graphics_states.save_state();
 
@@ -275,7 +277,7 @@ impl ContentBuilder {
                 )
             },
             glyphs,
-            text
+            text,
         );
 
         self.graphics_states.restore_state();
@@ -306,16 +308,15 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let (_, gid) =
-                sc.map_glyph(glyph.font.clone(), glyph.glyph_id);
+            let (_, gid) = sc.map_glyph(glyph.font.clone(), glyph.glyph_id);
 
             let font_container = sc.font_container_mut(glyph.font.clone());
 
             match font_container {
                 FontContainer::Type3(t3) => {
                     t3.set_cmap_entry(glyph.glyph_id, cur_text.to_string());
-                },
-                FontContainer::CIDFont(cid) => cid.set_cmap_entry(gid.get(), cur_text.to_string())
+                }
+                FontContainer::CIDFont(cid) => cid.set_cmap_entry(gid.get(), cur_text.to_string()),
             }
 
             let font = sc.get_pdf_font(&cur_font).unwrap();
@@ -366,7 +367,7 @@ impl ContentBuilder {
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[Glyph],
-        text: &str
+        text: &str,
     ) {
         let mut cur_x = x;
 
@@ -375,16 +376,17 @@ impl ContentBuilder {
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            let segmented = glyphs.group_by_key(|g| {
-                let (font_resource, _) =
-                    sc.map_glyph(g.font.clone(), g.glyph_id);
-                (font_resource, g.range.clone(), g.size)
-            }).collect::<Vec<_>>();
+            let segmented = glyphs
+                .group_by_key(|g| {
+                    let (font_resource, _) = sc.map_glyph(g.font.clone(), g.glyph_id);
+                    (font_resource, g.range.clone(), g.size)
+                })
+                .collect::<Vec<_>>();
 
             for ((font, range, size), glyphs) in segmented {
                 let text = if let Some(range) = range {
                     &text[range]
-                }   else {
+                } else {
                     ""
                 };
                 sb.encode_single(&mut cur_x, y, font, size, text, sc, glyphs)
@@ -722,26 +724,32 @@ impl ContentBuilder {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct Glyph {
-    font: Font,
-    glyph_id: GlyphId,
-    range: Option<Range<usize>>,
-    x_advance: f32,
-    x_offset: f32,
-    size: f32,
+    pub font: Font,
+    pub glyph_id: GlyphId,
+    pub range: Option<Range<usize>>,
+    pub x_advance: f32,
+    pub x_offset: f32,
+    pub size: f32,
 }
 
 impl Glyph {
-    pub fn new(font: Font, glyph_id: GlyphId, x_advance: f32, x_offset: f32, size: f32, range: Option<Range<usize>>) -> Self {
+    pub fn new(
+        font: Font,
+        glyph_id: GlyphId,
+        x_advance: f32,
+        x_offset: f32,
+        size: f32,
+        range: Option<Range<usize>>,
+    ) -> Self {
         Self {
             font,
             glyph_id,
             x_advance,
             x_offset,
             size,
-            range
+            range,
         }
     }
 }

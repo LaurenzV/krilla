@@ -98,7 +98,7 @@ impl<'a> Surface<'a> {
         y: f32,
         mode: impl Into<FillOrStroke<T>>,
         glyphs: &[Glyph],
-        text: &str
+        text: &str,
     ) where
         T: ColorSpace,
     {

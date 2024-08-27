@@ -221,11 +221,7 @@ impl SerializerContext {
         })
     }
 
-    pub fn map_glyph(
-        &mut self,
-        font: Font,
-        glyph_id: GlyphId,
-    ) -> (FontResource, PDFGlyph) {
+    pub fn map_glyph(&mut self, font: Font, glyph_id: GlyphId) -> (FontResource, PDFGlyph) {
         let font_container = self.font_container_mut(font.clone());
 
         match font_container {
@@ -454,7 +450,8 @@ impl Type3FontMapper {
     }
 
     pub fn set_cmap_entry(&mut self, glyph_id: GlyphId, text: String) -> Option<()> {
-        self.type_3_font(glyph_id).map(|(f, g)| f.set_cmap_entry(g, text))
+        self.type_3_font(glyph_id)
+            .map(|(f, g)| f.set_cmap_entry(g, text))
     }
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {

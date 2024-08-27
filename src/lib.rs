@@ -28,7 +28,7 @@ pub(crate) mod test_utils {
     use crate::font::Font;
     use crate::stream::Glyph;
     use difference::{Changeset, Difference};
-    use rustybuzz::{Direction, UnicodeBuffer};
+    use rustybuzz::{BufferClusterLevel, Direction, UnicodeBuffer};
     use skrifa::GlyphId;
     use std::path::PathBuf;
     use tiny_skia_path::{Path, PathBuilder, Rect};
@@ -113,29 +113,60 @@ pub(crate) mod test_utils {
         let positions = output.glyph_positions();
         let infos = output.glyph_infos();
 
+        let clusters = infos.iter().map(|c| c.cluster).collect::<Vec<_>>();
+
         let mut glyphs = vec![];
 
         for i in 0..output.len() {
             let pos = positions[i];
-            let info = infos[i];
+            let start_info = infos[i];
 
-            let start = info.cluster as usize;
+            let start = start_info.cluster as usize;
 
             let end = if dir == Direction::LeftToRight {
-                i.checked_add(1)
+                let mut e = i.checked_add(1);
+                loop {
+                    if let Some(index) = e {
+                        if let Some(end_info) = infos.get(index) {
+                            if end_info.cluster == start_info.cluster {
+                                e = index.checked_add(1);
+                                continue;
+                            }
+                        }
+                    }
+
+                    break;
+                }
+
+                e
             } else {
-                i.checked_sub(1)
+                let mut e = i.checked_sub(1);
+                loop {
+                    if let Some(index) = e {
+                        if let Some(end_info) = infos.get(index) {
+                            if end_info.cluster == start_info.cluster {
+                                e = index.checked_sub(1);
+                            } else {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                e
             }
             .and_then(|last| infos.get(last))
             .map_or(text.len(), |info| info.cluster as usize);
 
             glyphs.push(Glyph::new(
                 font.clone(),
-                GlyphId::new(info.glyph_id),
+                GlyphId::new(start_info.glyph_id),
                 (pos.x_advance as f32 / font.units_per_em() as f32) * size,
                 (pos.x_offset as f32 / font.units_per_em() as f32) * size,
                 size,
-                Some(start..end)
+                Some(start..end),
             ));
         }
 

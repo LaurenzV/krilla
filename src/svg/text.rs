@@ -71,9 +71,9 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                         0.0,
                         0.0,
                         span.font_size.get(),
-                        Some(0..glyph.text.len())
+                        Some(0..glyph.text.len()),
                     )],
-                    &glyph.text
+                    &glyph.text,
                 );
             };
 
@@ -89,9 +89,9 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                         0.0,
                         0.0,
                         span.font_size.get(),
-                        Some(0..glyph.text.len())
+                        Some(0..glyph.text.len()),
                     )],
-                    &glyph.text
+                    &glyph.text,
                 );
             };
 
