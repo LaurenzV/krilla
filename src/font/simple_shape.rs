@@ -10,7 +10,6 @@ mod tests {
     use skrifa::instance::Location;
     use std::sync::Arc;
 
-    #[ignore]
     #[test]
     fn simple_shape_demo() {
         let mut y = 25.0;

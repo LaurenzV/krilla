@@ -74,6 +74,10 @@ impl CIDFont {
 
         new_id
     }
+
+    pub fn set_cmap_entry(&mut self, glyph_id: u16, text: String) {
+        self.cmap_entries.insert(glyph_id, text);
+    }
 }
 
 impl Object for CIDFont {

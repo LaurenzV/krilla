@@ -14,14 +14,13 @@ use crate::resource::{
     FontResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder,
     XObjectResource,
 };
-use crate::serialize::{PDFGlyph, SerializerContext};
+use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, SliceExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Str};
 use skrifa::GlyphId;
-use std::iter::Peekable;
 use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
@@ -307,9 +306,17 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-
             let (_, gid) =
                 sc.map_glyph(glyph.font.clone(), glyph.glyph_id);
+
+            let font_container = sc.font_container_mut(glyph.font.clone());
+
+            match font_container {
+                FontContainer::Type3(t3) => {
+                    t3.set_cmap_entry(glyph.glyph_id, cur_text.to_string());
+                },
+                FontContainer::CIDFont(cid) => cid.set_cmap_entry(gid.get(), cur_text.to_string())
+            }
 
             let font = sc.get_pdf_font(&cur_font).unwrap();
 

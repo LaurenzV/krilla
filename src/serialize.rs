@@ -208,7 +208,7 @@ impl SerializerContext {
         }
     }
 
-    fn font_container_mut(&mut self, font: Font) -> &mut FontContainer {
+    pub(crate) fn font_container_mut(&mut self, font: Font) -> &mut FontContainer {
         self.font_map.entry(font.clone()).or_insert_with(|| {
             self.font_cache
                 .insert(font.font_info().clone(), font.clone());
@@ -444,12 +444,17 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn type_3_font(&mut self, glyph_id: GlyphId) -> Option<&mut Type3Font> {
+    pub fn type_3_font(&mut self, glyph_id: GlyphId) -> Option<(&mut Type3Font, u8)> {
         if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
-            return Some(&mut self.fonts[index]);
+            let glyph = self.fonts[index].get_glyph(glyph_id)?;
+            return Some((&mut self.fonts[index], glyph));
         }
 
         None
+    }
+
+    pub fn set_cmap_entry(&mut self, glyph_id: GlyphId, text: String) -> Option<()> {
+        self.type_3_font(glyph_id).map(|(f, g)| f.set_cmap_entry(g, text))
     }
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (usize, u8) {

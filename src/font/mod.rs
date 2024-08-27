@@ -10,7 +10,6 @@ use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use skrifa::raw::tables::glyf::Glyph;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 

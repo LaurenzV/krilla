@@ -33,7 +33,7 @@ pub(crate) mod test_utils {
     use std::path::PathBuf;
     use tiny_skia_path::{Path, PathBuilder, Rect};
 
-    const REPLACE: bool = false;
+    const REPLACE: bool = true;
 
     pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
         let mut builder = PathBuilder::new();
