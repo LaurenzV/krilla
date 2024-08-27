@@ -42,7 +42,7 @@ mod tests {
                         g.w,
                         g.x_offset,
                         g.font_size,
-                        Some(g.start..g.end),
+                        g.start..g.end,
                     )
                 })
                 .collect::<Vec<_>>();

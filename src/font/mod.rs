@@ -360,7 +360,7 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
                 0.0,
                 0.0,
                 size as f32,
-                Some(0..text.len()),
+                0..text.len(),
             )],
             &text,
         );

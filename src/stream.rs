@@ -16,9 +16,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{
-    calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, SliceExt, TransformExt,
-};
+use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
@@ -289,7 +287,8 @@ impl ContentBuilder {
         cur_y: f32,
         cur_font: FontResource,
         cur_size: f32,
-        cur_text: &str,
+        text: &str,
+        actual_text: bool,
         sc: &mut SerializerContext,
         glyphs: &[Glyph],
     ) {
@@ -301,13 +300,13 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
-        let use_actual_text = glyphs.len() > 1;
-
-        if use_actual_text {
+        if actual_text {
             let mut actual_text = self
                 .content
                 .begin_marked_content_with_properties(Name(b"Span"));
-            actual_text.properties().actual_text(TextStr(cur_text));
+            actual_text
+                .properties()
+                .actual_text(TextStr(&text[glyphs[0].range.clone()]));
         }
 
         let mut positioned = self.content.show_positioned();
@@ -323,9 +322,11 @@ impl ContentBuilder {
 
             match font_container {
                 FontContainer::Type3(t3) => {
-                    t3.set_cmap_entry(glyph.glyph_id, cur_text.to_string());
+                    t3.set_cmap_entry(glyph.glyph_id, text[glyph.range.clone()].to_string());
                 }
-                FontContainer::CIDFont(cid) => cid.set_cmap_entry(gid.get(), cur_text.to_string()),
+                FontContainer::CIDFont(cid) => {
+                    cid.set_cmap_entry(gid.get(), text[glyph.range.clone()].to_string())
+                }
             }
 
             let font = sc.get_pdf_font(&cur_font).unwrap();
@@ -367,7 +368,7 @@ impl ContentBuilder {
         items.finish();
         positioned.finish();
 
-        if use_actual_text {
+        if actual_text {
             self.content.end_marked_content();
         }
     }
@@ -389,20 +390,10 @@ impl ContentBuilder {
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            let segmented = glyphs
-                .group_by_key(|g| {
-                    let (font_resource, _) = sc.map_glyph(g.font.clone(), g.glyph_id);
-                    (font_resource, g.range.clone(), g.size)
-                })
-                .collect::<Vec<_>>();
+            let segmented = GroupByGlyphs::new(sc, glyphs).collect::<Vec<_>>();
 
-            for ((font, range, size), glyphs) in segmented {
-                let text = if let Some(range) = range {
-                    &text[range]
-                } else {
-                    ""
-                };
-                sb.encode_single(&mut cur_x, y, font, size, text, sc, glyphs)
+            for (size, font, actual_text, glyphs) in segmented {
+                sb.encode_single(&mut cur_x, y, font, size, text, actual_text, sc, glyphs)
             }
             sb.content.end_text();
         })
@@ -741,7 +732,7 @@ impl ContentBuilder {
 pub struct Glyph {
     pub font: Font,
     pub glyph_id: GlyphId,
-    pub range: Option<Range<usize>>,
+    pub range: Range<usize>,
     pub x_advance: f32,
     pub x_offset: f32,
     pub size: f32,
@@ -754,7 +745,7 @@ impl Glyph {
         x_advance: f32,
         x_offset: f32,
         size: f32,
-        range: Option<Range<usize>>,
+        range: Range<usize>,
     ) -> Self {
         Self {
             font,
@@ -785,5 +776,81 @@ impl PdfFont<'_> {
             PdfFont::Type3(t3) => t3.advance_width(glyph as u8),
             PdfFont::CID(cid) => cid.advance_width(glyph),
         }
+    }
+}
+
+pub struct GroupByGlyphs<'a, 'b> {
+    sc: &'b mut SerializerContext,
+    slice: &'a [Glyph],
+}
+
+impl<'a, 'b> GroupByGlyphs<'a, 'b> {
+    pub fn new(sc: &'b mut SerializerContext, slice: &'a [Glyph]) -> Self {
+        Self { sc, slice }
+    }
+}
+
+impl<'a> Iterator for GroupByGlyphs<'a, '_> {
+    type Item = (f32, FontResource, bool, &'a [Glyph]);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        struct TempGlyph {
+            font_resource: FontResource,
+            range: Range<usize>,
+            size: f32,
+        }
+
+        let mut func = |g: &Glyph| {
+            let (font_resource, _) = self.sc.map_glyph(g.font.clone(), g.glyph_id);
+            TempGlyph {
+                font_resource,
+                range: g.range.clone(),
+                size: g.size,
+            }
+        };
+
+        let mut same_range = None;
+        let mut count = 1;
+
+        let mut iter = self.slice.iter();
+        let first = (func)(iter.next()?);
+        let mut last_range = first.range.clone();
+
+        while let Some(next) = iter.next() {
+            let temp_glyph = func(next);
+
+            if first.font_resource != temp_glyph.font_resource || first.size != next.size {
+                break;
+            }
+
+            match same_range {
+                None => {
+                    same_range = Some(last_range == temp_glyph.range);
+                }
+                Some(true) => {
+                    if last_range != temp_glyph.range {
+                        break;
+                    }
+                }
+                Some(false) => {
+                    if last_range == temp_glyph.range {
+                        count -= 1;
+                        break;
+                    }
+                }
+            }
+
+            last_range = next.range.clone();
+            count += 1;
+        }
+
+        let (head, tail) = self.slice.split_at(count);
+        self.slice = tail;
+        Some((
+            first.size,
+            first.font_resource,
+            same_range.unwrap_or(false),
+            head,
+        ))
     }
 }
