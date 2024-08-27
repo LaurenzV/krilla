@@ -36,7 +36,7 @@ pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
         .join("tests/refs")
         .join(name);
 
-    let diffs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let _ = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/diff")
         .join(name);
 
@@ -259,7 +259,7 @@ generate_renderer_tests!(cosmic_text, |renderer| {
                     g.w,
                     g.x_offset,
                     g.font_size,
-                    Some(g.start..g.end),
+                    g.start..g.end,
                 )
             })
             .collect::<Vec<_>>();
