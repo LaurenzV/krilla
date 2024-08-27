@@ -288,7 +288,7 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
-    fn encode_single(
+    fn encode_consecutive_run(
         &mut self,
         cur_x: &mut f32,
         cur_y: f32,
@@ -297,7 +297,8 @@ impl ContentBuilder {
         size: f32,
         text: &str,
         actual_text: bool,
-        // Glyphs are assumed to all have the same font and size.
+        // The y offset is already accounted for when splitting the glyph runs,
+        // so we ignore it here.
         glyphs: &[Glyph],
     ) {
         let font_name = self
@@ -339,7 +340,7 @@ impl ContentBuilder {
 
             let actual_advance = glyph.x_advance / size * 1000.0;
 
-            adjustment += glyph.x_offset;
+            adjustment += glyph.x_offset / size * 1000.0;
 
             if adjustment != 0.0 {
                 if !encoded.is_empty() {
@@ -359,7 +360,7 @@ impl ContentBuilder {
                 }
             }
 
-            if let Some(advance) = font.advance_width(pdf_glyph).map(|f| font.to_font_units(f)) {
+            if let Some(advance) = font.advance_width(pdf_glyph) {
                 adjustment += actual_advance - advance;
             }
 
@@ -405,14 +406,14 @@ impl ContentBuilder {
 
             let segmented = GroupByGlyphs::new(sc, glyphs, font.clone()).collect::<Vec<_>>();
 
-            for (font, actual_text, glyphs) in segmented {
+            for (font, actual_text, glyphs, y_offset) in segmented {
                 let mut font_container = sc.font_container(font.font()).unwrap().borrow_mut();
                 let pdf_font = font_container
                     .get_from_identifier_mut(font.clone())
                     .unwrap();
-                sb.encode_single(
+                sb.encode_consecutive_run(
                     &mut cur_x,
-                    y,
+                    y - y_offset,
                     font,
                     pdf_font,
                     size,
@@ -760,14 +761,22 @@ pub struct Glyph {
     pub range: Range<usize>,
     pub x_advance: f32,
     pub x_offset: f32,
+    pub y_offset: f32,
 }
 
 impl Glyph {
-    pub fn new(glyph_id: GlyphId, x_advance: f32, x_offset: f32, range: Range<usize>) -> Self {
+    pub fn new(
+        glyph_id: GlyphId,
+        x_advance: f32,
+        x_offset: f32,
+        y_offset: f32,
+        range: Range<usize>,
+    ) -> Self {
         Self {
             glyph_id,
             x_advance,
             x_offset,
+            y_offset,
             range,
         }
     }
@@ -841,11 +850,12 @@ impl<'a, 'b> GroupByGlyphs<'a, 'b> {
 }
 
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, bool, &'a [Glyph]);
+    type Item = (FontIdentifier, bool, &'a [Glyph], f32);
 
     fn next(&mut self) -> Option<Self::Item> {
         struct TempGlyph {
             font_identifier: FontIdentifier,
+            y_offset: f32,
             range: Range<usize>,
         }
 
@@ -855,6 +865,7 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
             let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
             TempGlyph {
                 font_identifier,
+                y_offset: g.y_offset,
                 range: g.range.clone(),
             }
         };
@@ -869,7 +880,9 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
         while let Some(next) = iter.next() {
             let temp_glyph = func(next);
 
-            if first.font_identifier != temp_glyph.font_identifier {
+            if first.font_identifier != temp_glyph.font_identifier
+                || first.y_offset != temp_glyph.y_offset
+            {
                 break;
             }
 
@@ -896,6 +909,11 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
-        Some((first.font_identifier, same_range.unwrap_or(false), head))
+        Some((
+            first.font_identifier,
+            same_range.unwrap_or(false),
+            head,
+            first.y_offset,
+        ))
     }
 }

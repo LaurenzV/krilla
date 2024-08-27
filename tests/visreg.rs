@@ -5,6 +5,7 @@ use krilla::document::Document;
 use krilla::rgb::Rgb;
 use krilla::serialize::SerializeSettings;
 use krilla::stream::Glyph;
+use krilla::util::SliceExt;
 use krilla::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -16,7 +17,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tiny_skia_path::{PathBuilder, Rect, Size, Transform};
 use usvg::NormalizedF32;
-use krilla::util::SliceExt;
 
 pub fn render_doc(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
     let options = RenderOptions { scale: 1.0 };
@@ -249,39 +249,40 @@ generate_renderer_tests!(cosmic_text, |renderer| {
 
     // Inspect the output runs
     for run in buffer.layout_runs() {
-            let y_offset = run.line_y;
+        let y_offset = run.line_y;
 
-            let segmented = run
-                .glyphs
-                .group_by_key(|g| (font_map.get(&g.font_id).unwrap().clone(), g.font_size));
+        let segmented = run
+            .glyphs
+            .group_by_key(|g| (font_map.get(&g.font_id).unwrap().clone(), g.font_size));
 
-            let mut x = 0.0;
-            for ((font, size), glyphs) in segmented {
-                let start_x = x;
-                let glyphs = glyphs
-                    .iter()
-                    .map(|glyph| {
-                        x += glyph.w;
-                        Glyph::new(
-                            GlyphId::new(glyph.glyph_id as u32),
-                            glyph.w,
-                            glyph.x_offset,
-                            glyph.start..glyph.end,
-                        )
-                    })
-                    .collect::<Vec<_>>();
+        let mut x = 0.0;
+        for ((font, size), glyphs) in segmented {
+            let start_x = x;
+            let glyphs = glyphs
+                .iter()
+                .map(|glyph| {
+                    x += glyph.w;
+                    Glyph::new(
+                        GlyphId::new(glyph.glyph_id as u32),
+                        glyph.w,
+                        glyph.x_offset,
+                        glyph.y_offset,
+                        glyph.start..glyph.end,
+                    )
+                })
+                .collect::<Vec<_>>();
 
-                surface.draw_glyph_run(
-                    start_x,
-                    y_offset,
-                    Fill::<Rgb>::default(),
-                    &glyphs,
-                    font,
-                    size,
-                    run.text,
-                );
-            }
+            surface.draw_glyph_run(
+                start_x,
+                y_offset,
+                Fill::<Rgb>::default(),
+                &glyphs,
+                font,
+                size,
+                run.text,
+            );
         }
+    }
 
     surface.finish();
     builder.finish();

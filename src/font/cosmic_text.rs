@@ -49,6 +49,7 @@ mod tests {
                             GlyphId::new(glyph.glyph_id as u32),
                             glyph.w,
                             glyph.x_offset,
+                            glyph.y_offset,
                             glyph.start..glyph.end,
                         )
                     })
