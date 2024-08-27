@@ -11,13 +11,15 @@ use skrifa::GlyphId;
 use std::collections::{BTreeMap, BTreeSet};
 use tiny_skia_path::{Rect, Transform};
 
+pub type Gid = u8;
+
 // TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
     widths: Vec<f32>,
-    cmap_entries: BTreeMap<u8, String>,
+    cmap_entries: BTreeMap<Gid, String>,
     glyph_set: BTreeSet<GlyphId>,
 }
 
@@ -55,7 +57,7 @@ impl Type3Font {
         self.glyph_set.contains(&glyph)
     }
 
-    pub fn get_glyph(&mut self, glyph_id: GlyphId) -> Option<u8> {
+    pub fn get_gid(&mut self, glyph_id: GlyphId) -> Option<u8> {
         self.glyphs
             .iter()
             .position(|g| *g == glyph_id)
@@ -63,7 +65,7 @@ impl Type3Font {
     }
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
-        if let Some(pos) = self.get_glyph(glyph_id) {
+        if let Some(pos) = self.get_gid(glyph_id) {
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);
@@ -75,17 +77,21 @@ impl Type3Font {
         }
     }
 
-    pub fn set_cmap_entry(&mut self, glyph_id: u8, text: String) {
-        self.cmap_entries.insert(glyph_id, text);
+    pub fn get_codepoints(&self, gid: Gid) -> Option<&str> {
+        self.cmap_entries.get(&gid).map(|s| s.as_str())
+    }
+
+    pub fn set_codepoints(&mut self, gid: Gid, text: String) {
+        self.cmap_entries.insert(gid, text);
     }
 
     pub fn units_per_em(&self) -> u16 {
         self.font.units_per_em()
     }
 
-    pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
+    pub fn advance_width(&self, gid: Gid) -> Option<f32> {
         self.widths
-            .get(glyph_id as usize)
+            .get(gid as usize)
             .copied()
             .map(|n| self.to_font_units(n))
     }

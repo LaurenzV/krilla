@@ -442,7 +442,7 @@ impl Type3FontMapper {
 impl Type3FontMapper {
     pub fn type_3_font(&mut self, glyph_id: GlyphId) -> Option<(&mut Type3Font, u8)> {
         if let Some(index) = self.fonts.iter().position(|f| f.covers(glyph_id)) {
-            let glyph = self.fonts[index].get_glyph(glyph_id)?;
+            let glyph = self.fonts[index].get_gid(glyph_id)?;
             return Some((&mut self.fonts[index], glyph));
         }
 

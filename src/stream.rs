@@ -325,7 +325,7 @@ impl ContentBuilder {
                     t3.set_cmap_entry(glyph.glyph_id, text[glyph.range.clone()].to_string());
                 }
                 FontContainer::CIDFont(cid) => {
-                    cid.set_cmap_entry(gid.get(), text[glyph.range.clone()].to_string())
+                    cid.set_codepoints(gid.get(), text[glyph.range.clone()].to_string())
                 }
             }
 
