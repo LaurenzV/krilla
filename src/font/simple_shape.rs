@@ -28,6 +28,12 @@ mod tests {
                 14.0,
             ),
             (
+                "NotoSans-Regular.ttf",
+                "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
+                Direction::LeftToRight,
+                14.0,
+            ),
+            (
                 "NotoSansCJKsc-Regular.otf",
                 "你好世界，这是一段很长的测试文章",
                 Direction::LeftToRight,
@@ -55,7 +61,7 @@ mod tests {
 
             surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, text);
 
-            y += size * 1.5;
+            y += size * 2.0;
         }
 
         surface.finish();
