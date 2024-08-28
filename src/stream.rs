@@ -394,8 +394,8 @@ impl ContentBuilder {
                     text,
                 );
 
-                for (font, glyphs, y_offset) in segmented {
-                    sb.encode_consecutive_run(&mut cur_x, y - y_offset, font, size, glyphs)
+                for (font_identifier, glyphs, y_offset) in segmented {
+                    sb.encode_consecutive_run(&mut cur_x, y - y_offset, font_identifier, size, glyphs)
                 }
 
                 if fragment.actual_text().is_some() {
