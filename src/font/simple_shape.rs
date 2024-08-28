@@ -15,42 +15,42 @@ mod tests {
         let mut y = 25.0;
 
         let data = vec![
-            // (
-            //     "NotoSansArabic-Regular.ttf",
-            //     "هذا نص أطول لتجربة القدرات.",
-            //     Direction::RightToLeft,
-            //     14.0,
-            // ),
-            // (
-            //     "NotoSans-Regular.ttf",
-            //     "Hi there, this is a very simple test!",
-            //     Direction::LeftToRight,
-            //     14.0,
-            // ),
-            // (
-            //     "NotoSans-Regular.ttf",
-            //     "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
-            //     Direction::LeftToRight,
-            //     14.0
-            // ),
+            (
+                "NotoSansArabic-Regular.ttf",
+                "هذا نص أطول لتجربة القدرات.",
+                Direction::RightToLeft,
+                14.0,
+            ),
+            (
+                "NotoSans-Regular.ttf",
+                "Hi there, this is a very simple test!",
+                Direction::LeftToRight,
+                14.0,
+            ),
+            (
+                "NotoSans-Regular.ttf",
+                "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
+                Direction::LeftToRight,
+                14.0
+            ),
             (
                 "NotoSans-Regular.ttf",
                 " birth\u{ad}day ",
                 Direction::LeftToRight,
                 14.0,
             ),
-            // (
-            //     "NotoSansCJKsc-Regular.otf",
-            //     "你好世界，这是一段很长的测试文章",
-            //     Direction::LeftToRight,
-            //     14.0,
-            // ),
-            // (
-            //     "NotoSansDevanagari-Regular.ttf",
-            //     "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
-            //     Direction::LeftToRight,
-            //     14.0,
-            // ),
+            (
+                "NotoSansCJKsc-Regular.otf",
+                "你好世界，这是一段很长的测试文章",
+                Direction::LeftToRight,
+                14.0,
+            ),
+            (
+                "NotoSansDevanagari-Regular.ttf",
+                "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
+                Direction::LeftToRight,
+                14.0,
+            ),
         ];
         let page_size = tiny_skia_path::Size::from_wh(200.0, 200.0).unwrap();
         let mut document_builder = Document::new(SerializeSettings::default_test());
