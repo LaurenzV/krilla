@@ -35,7 +35,7 @@ mod tests {
             // ),
             (
                 "NotoSans-Regular.ttf",
-                " birth\u{ad}day",
+                " birth\u{ad}day ",
                 Direction::LeftToRight,
                 14.0,
             ),

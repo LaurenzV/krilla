@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
@@ -22,6 +21,7 @@ use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
+use std::cell::RefCell;
 use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
@@ -369,7 +369,7 @@ impl ContentBuilder {
 
             let font_container = sc.create_or_get_font_container(font.clone());
 
-            let spanned = TextSpanner::new(glyphs, text);
+            let spanned = TextSpanner::new(glyphs, text, font_container);
 
             for fragment in spanned {
                 if let Some(text) = fragment.actual_text() {
@@ -379,11 +379,7 @@ impl ContentBuilder {
                     actual_text.properties().actual_text(TextStr(text));
                 }
 
-                let segmented = GlyphGrouper::new(
-                    font_container,
-                    fragment.glyphs(),
-                    text,
-                );
+                let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
 
                 for glyph_group in segmented {
                     sb.encode_consecutive_glyph_run(
@@ -770,58 +766,54 @@ impl Glyph {
     }
 }
 
-pub enum PdfFont<'a> {
-    Type3(&'a Type3Font),
-    CID(&'a CIDFont),
-}
-
-impl PdfFont<'_> {
-    pub fn identifier(&self) -> FontIdentifier {
-        match self {
-            PdfFont::Type3(t3) => t3.identifier(),
-            PdfFont::CID(cid) => cid.identifier(),
-        }
-    }
-
-    pub fn to_font_units(&self, val: f32) -> f32 {
-        match self {
-            PdfFont::Type3(t3) => t3.to_pdf_font_units(val),
-            PdfFont::CID(cid) => cid.to_pdf_font_units(val),
-        }
-    }
-
-    pub fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
-        match (self, pdf_glyph) {
-            (PdfFont::Type3(t3), PDFGlyph::Type3(gid)) => t3.advance_width(gid),
-            (PdfFont::CID(cid_font), PDFGlyph::CID(cid)) => cid_font.advance_width(cid),
-            _ => None,
-        }
-    }
-}
-
 pub enum PdfFontMut<'a> {
     Type3(&'a mut Type3Font),
     CID(&'a mut CIDFont),
 }
 
-impl PdfFontMut<'_> {
-    fn pdf_font(&self) -> PdfFont {
+impl<'a> PdfFontMut<'a> {
+    pub fn identifier(&self) -> FontIdentifier {
         match self {
-            PdfFontMut::Type3(t3) => PdfFont::Type3(t3),
-            PdfFontMut::CID(cid) => PdfFont::CID(cid),
+            PdfFontMut::Type3(t3) => t3.identifier(),
+            PdfFontMut::CID(cid) => cid.identifier(),
         }
     }
 
-    pub fn identifier(&self) -> FontIdentifier {
-        self.pdf_font().identifier()
-    }
-
     pub fn to_font_units(&self, val: f32) -> f32 {
-        self.pdf_font().to_font_units(val)
+        match self {
+            PdfFontMut::Type3(t3) => t3.to_pdf_font_units(val),
+            PdfFontMut::CID(cid) => cid.to_pdf_font_units(val),
+        }
     }
 
     pub fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
-        self.pdf_font().advance_width(pdf_glyph)
+        match (self, pdf_glyph) {
+            (PdfFontMut::Type3(t3), PDFGlyph::Type3(gid)) => t3.advance_width(gid),
+            (PdfFontMut::CID(cid_font), PDFGlyph::CID(cid)) => cid_font.advance_width(cid),
+            _ => None,
+        }
+    }
+
+    pub fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
+        match (self, pdf_glyph) {
+            (PdfFontMut::Type3(t3), PDFGlyph::Type3(gid)) => t3.get_codepoints(gid),
+            (PdfFontMut::CID(cid_font), PDFGlyph::CID(cid)) => cid_font.get_codepoints(cid),
+            _ => None,
+        }
+    }
+
+    pub fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) -> Option<()> {
+        match (self, pdf_glyph) {
+            (PdfFontMut::Type3(t3), PDFGlyph::Type3(gid)) => {
+                t3.set_codepoints(gid, text);
+                Some(())
+            }
+            (PdfFontMut::CID(cid_font), PDFGlyph::CID(cid)) => {
+                cid_font.set_codepoints(cid, text);
+                Some(())
+            }
+            _ => None,
+        }
     }
 }
 
@@ -846,43 +838,80 @@ impl TextSpan<'_> {
     }
 }
 
-pub struct TextSpanner<'a> {
+pub struct TextSpanner<'a, 'b> {
     slice: &'a [Glyph],
+    font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
 
-impl<'a> TextSpanner<'a> {
-    pub fn new(slice: &'a [Glyph], text: &'a str) -> Self {
-        Self { slice, text }
+impl<'a, 'b> TextSpanner<'a, 'b> {
+    pub fn new(
+        slice: &'a [Glyph],
+        text: &'a str,
+        font_container: &'b RefCell<FontContainer>,
+    ) -> Self {
+        Self {
+            slice,
+            text,
+            font_container,
+        }
     }
 }
 
-impl<'a> Iterator for TextSpanner<'a> {
+impl<'a> Iterator for TextSpanner<'a, '_> {
     type Item = TextSpan<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let func = |g: &Glyph| g.range.clone();
+        let func = |g: &Glyph| {
+            let mut font_container = self.font_container.borrow_mut();
+            let pdf_glyph = font_container.add_glyph(g.glyph_id);
+            let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
+            let mut pdf_font = font_container
+                .get_from_identifier_mut(font_identifier.clone())
+                .unwrap();
 
-        let mut same_range = None;
+            let range = g.range.clone();
+            let text = &self.text[range.clone()];
+            let codepoints = pdf_font.get_codepoints(pdf_glyph);
+            let incompatible_codepoint = codepoints.is_some() && codepoints != Some(text);
+
+            if !incompatible_codepoint {
+                pdf_font.set_codepoints(pdf_glyph, text.to_string());
+            }
+
+            (range, incompatible_codepoint)
+        };
+
+        let mut use_span = None;
         let mut count = 1;
 
         let mut iter = self.slice.iter();
-        let first = (func)(iter.next()?);
-        let mut last_range = first.clone();
+        let (first_range, first_incompatible) = (func)(iter.next()?);
+
+        let mut last_range = first_range.clone();
 
         while let Some(next) = iter.next() {
-            let next_range = func(next);
+            let (next_range, next_incompatible) = func(next);
 
-            match same_range {
+            match use_span {
                 None => {
-                    same_range = Some(last_range == next_range);
+                    if first_incompatible {
+                        use_span = Some(true);
+                        break;
+                    }
+
+                    use_span = Some(last_range == next_range);
                 }
                 Some(true) => {
-                    if last_range != next_range {
+                    if next_incompatible || last_range != next_range {
                         break;
                     }
                 }
                 Some(false) => {
+                    if next_incompatible {
+                        break;
+                    }
+
                     if last_range == next_range {
                         count -= 1;
                         break;
@@ -897,8 +926,8 @@ impl<'a> Iterator for TextSpanner<'a> {
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
 
-        let fragment = match same_range.unwrap_or(false) {
-            true => TextSpan::Spanned(head, &self.text[first]),
+        let fragment = match use_span.unwrap_or(false) {
+            true => TextSpan::Spanned(head, &self.text[first_range]),
             false => TextSpan::Unspanned(head),
         };
         Some(fragment)
@@ -931,15 +960,13 @@ impl GlyphGroup {
 pub struct GlyphGrouper<'a, 'b> {
     font_container: &'b RefCell<FontContainer>,
     slice: &'a [Glyph],
-    text: &'a str,
 }
 
 impl<'a, 'b> GlyphGrouper<'a, 'b> {
-    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph], text: &'a str) -> Self {
+    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph]) -> Self {
         Self {
             font_container,
             slice,
-            text,
         }
     }
 }
@@ -956,8 +983,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
             }
 
             let func = |g: &Glyph| {
-                let mut font_container = self.font_container.borrow_mut();
-                font_container.add_glyph(g.glyph_id);
+                let font_container = self.font_container.borrow_mut();
                 let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
 
                 GlyphProps {
@@ -1003,12 +1029,10 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 let pdf_glyph = match pdf_font {
                     PdfFontMut::Type3(ref mut t3) => {
                         let gid = t3.get_gid(g.glyph_id).unwrap();
-                        t3.set_codepoints(gid, self.text[g.range.clone()].to_string());
                         PDFGlyph::Type3(gid)
                     }
                     PdfFontMut::CID(ref mut cid_font) => {
                         let cid = cid_font.get_cid(g.glyph_id).unwrap();
-                        cid_font.set_codepoints(cid, self.text[g.range.clone()].to_string());
                         PDFGlyph::CID(cid)
                     }
                 };
