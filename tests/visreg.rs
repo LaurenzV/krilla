@@ -268,6 +268,7 @@ generate_renderer_tests!(cosmic_text, |renderer| {
                         glyph.x_offset,
                         glyph.y_offset,
                         glyph.start..glyph.end,
+                        size,
                     )
                 })
                 .collect::<Vec<_>>();
@@ -278,7 +279,6 @@ generate_renderer_tests!(cosmic_text, |renderer| {
                 Fill::<Rgb>::default(),
                 &glyphs,
                 font,
-                size,
                 run.text,
             );
         }

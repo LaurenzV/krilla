@@ -99,7 +99,6 @@ impl<'a> Surface<'a> {
         mode: impl Into<FillOrStroke<T>>,
         glyphs: &[Glyph],
         font: Font,
-        size: f32,
         text: &str,
     ) where
         T: ColorSpace,
@@ -107,11 +106,11 @@ impl<'a> Surface<'a> {
         match mode.into() {
             FillOrStroke::Fill(fill) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_glyph_run(x, y, self.sc, fill, glyphs, font, size, text);
+                    .fill_glyph_run(x, y, self.sc, fill, glyphs, font, text);
             }
             FillOrStroke::Stroke(stroke) => {
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_glyph_run(x, y, self.sc, stroke, glyphs, font, size, text);
+                    .stroke_glyph_run(x, y, self.sc, stroke, glyphs, font, text);
             }
         };
     }

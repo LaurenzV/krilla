@@ -217,7 +217,6 @@ impl ContentBuilder {
         fill: Fill<impl ColorSpace>,
         glyphs: &[Glyph],
         font: Font,
-        size: f32,
         text: &str,
     ) {
         self.graphics_states.save_state();
@@ -242,7 +241,6 @@ impl ContentBuilder {
             },
             glyphs,
             font,
-            size,
             text,
         );
 
@@ -257,7 +255,6 @@ impl ContentBuilder {
         stroke: Stroke<impl ColorSpace>,
         glyphs: &[Glyph],
         font: Font,
-        size: f32,
         text: &str,
     ) {
         self.graphics_states.save_state();
@@ -282,7 +279,6 @@ impl ContentBuilder {
             },
             glyphs,
             font,
-            size,
             text,
         );
 
@@ -361,7 +357,6 @@ impl ContentBuilder {
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[Glyph],
         font: Font,
-        size: f32,
         text: &str,
     ) {
         let mut cur_x = x;
@@ -387,7 +382,7 @@ impl ContentBuilder {
                     text,
                 );
 
-                for (font_identifier, glyphs, y_offset) in segmented {
+                for (font_identifier, glyphs, y_offset, size) in segmented {
                     sb.encode_consecutive_run(
                         &mut cur_x,
                         y - y_offset,
@@ -742,6 +737,7 @@ pub struct Glyph {
     pub x_advance: f32,
     pub x_offset: f32,
     pub y_offset: f32,
+    size: f32,
 }
 
 pub struct InstanceGlyph {
@@ -758,6 +754,7 @@ impl Glyph {
         x_offset: f32,
         y_offset: f32,
         range: Range<usize>,
+        size: f32,
     ) -> Self {
         Self {
             glyph_id,
@@ -765,6 +762,7 @@ impl Glyph {
             x_offset,
             y_offset,
             range,
+            size,
         }
     }
 }
@@ -920,12 +918,13 @@ impl<'a, 'b> GroupByGlyphs<'a, 'b> {
 }
 
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, Vec<InstanceGlyph>, f32);
+    type Item = (FontIdentifier, Vec<InstanceGlyph>, f32, f32);
 
     fn next(&mut self) -> Option<Self::Item> {
         let (head, tail, first) = {
             struct GlyphProps {
                 font_identifier: FontIdentifier,
+                size: f32,
                 y_offset: f32,
             }
 
@@ -935,6 +934,7 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
                 GlyphProps {
                     font_identifier,
+                    size: g.size,
                     y_offset: g.y_offset,
                 }
             };
@@ -949,6 +949,7 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
                 if first.font_identifier != temp_glyph.font_identifier
                     || first.y_offset != temp_glyph.y_offset
+                    || first.size != temp_glyph.size
                 {
                     break;
                 }
@@ -993,6 +994,7 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
                 })
                 .collect::<Vec<_>>(),
             first.y_offset,
+            first.size,
         ))
     }
 }

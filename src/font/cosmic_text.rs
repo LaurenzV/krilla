@@ -51,6 +51,7 @@ mod tests {
                             glyph.x_offset,
                             glyph.y_offset,
                             glyph.start..glyph.end,
+                            size,
                         )
                     })
                     .collect::<Vec<_>>();
@@ -61,7 +62,6 @@ mod tests {
                     Fill::<Rgb>::default(),
                     &glyphs,
                     font,
-                    size,
                     run.text,
                 );
             }

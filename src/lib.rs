@@ -164,6 +164,7 @@ pub(crate) mod test_utils {
                 (pos.x_offset as f32 / font.units_per_em() as f32) * size,
                 (pos.y_offset as f32 / font.units_per_em() as f32) * size,
                 start..end,
+                size,
             ));
         }
 

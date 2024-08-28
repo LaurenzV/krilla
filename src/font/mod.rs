@@ -390,9 +390,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
-            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len())],
+            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
             font.clone(),
-            size as f32,
             &text,
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);

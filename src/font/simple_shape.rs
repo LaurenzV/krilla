@@ -59,7 +59,7 @@ mod tests {
             // eprintln!("{:?}", glyphs.iter().map(|g| g.glyph_id).collect::<Vec<_>>());
             // panic!();
 
-            surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, font, size, text);
+            surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, font, text);
 
             y += size * 2.0;
         }
