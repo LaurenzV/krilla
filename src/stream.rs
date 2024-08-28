@@ -1019,7 +1019,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
             .collect::<Vec<_>>();
 
         let glyph_group =
-            GlyphGroup::new(first.font_identifier, glyphs, first.y_offset, first.size);
+            GlyphGroup::new(first.font_identifier, glyphs, first.size, first.y_offset);
 
         Some(glyph_group)
     }
