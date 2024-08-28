@@ -22,10 +22,10 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::ops::Range;
+use std::slice::Iter;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 use usvg::strict_num::ApproxEq;
-use usvg::ApproxEqUlps;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
@@ -301,7 +301,7 @@ impl ContentBuilder {
         text: &str,
         // The y offset is already accounted for when splitting the glyph runs,
         // so we ignore it here.
-        glyphs: &[Glyph],
+        glyphs: Iter<'_, Glyph>,
     ) {
         let font_name = self
             .rd_builder
@@ -937,7 +937,7 @@ impl<'a, 'b> GroupByGlyphs<'a, 'b> {
 }
 
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, &'a [Glyph], f32);
+    type Item = (FontIdentifier, Iter<'a, Glyph>, f32);
 
     fn next(&mut self) -> Option<Self::Item> {
         struct TempGlyph {
@@ -974,6 +974,6 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
-        Some((first.font_identifier, head, first.y_offset))
+        Some((first.font_identifier, head.iter(), first.y_offset))
     }
 }
