@@ -28,6 +28,12 @@ mod tests {
                 14.0,
             ),
             (
+                "DejaVuSansMono.ttf",
+                "Here with a mono font, some longer text.",
+                Direction::LeftToRight,
+                16.0,
+            ),
+            (
                 "NotoSans-Regular.ttf",
                 "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
                 Direction::LeftToRight,
@@ -52,7 +58,7 @@ mod tests {
                 14.0,
             ),
         ];
-        let page_size = tiny_skia_path::Size::from_wh(200.0, 200.0).unwrap();
+        let page_size = tiny_skia_path::Size::from_wh(200.0, 300.0).unwrap();
         let mut document_builder = Document::new(SerializeSettings::default_test());
         let mut builder = document_builder.start_page(page_size);
         let mut surface = builder.surface();

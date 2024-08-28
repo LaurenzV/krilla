@@ -113,6 +113,16 @@ impl PDFGlyph {
             PDFGlyph::CID(n) => *n,
         }
     }
+
+    pub fn encode_into(&self, slice: &mut Vec<u8>) {
+        match self {
+            PDFGlyph::Type3(cg) => slice.push(*cg),
+            PDFGlyph::CID(cid) => {
+                slice.push((cid >> 8) as u8);
+                slice.push((cid & 0xff) as u8);
+            }
+        }
+    }
 }
 
 impl SerializerContext {

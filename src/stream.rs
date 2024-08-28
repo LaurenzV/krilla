@@ -292,8 +292,6 @@ impl ContentBuilder {
         cur_y: f32,
         font_identifier: FontIdentifier,
         size: f32,
-        // The y offset is already accounted for when splitting the glyph runs,
-        // so we ignore it here.
         glyphs: &[InstanceGlyph],
     ) {
         let font_name = self
@@ -304,6 +302,11 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
+        // Convert from userspace units to PDF font units, where 1em = 1000 units
+        let convert = |val: f32| {
+            val / size * 1000.0
+        };
+
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
 
@@ -311,10 +314,12 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let actual_advance = glyph.x_advance / size * 1000.0;
+            let advance = convert(glyph.x_advance);
+            let offset = convert(glyph.x_offset);
 
-            adjustment += glyph.x_offset / size * 1000.0;
+            adjustment += offset;
 
+            // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
                 if !encoded.is_empty() {
                     items.show(Str(&encoded));
@@ -325,19 +330,14 @@ impl ContentBuilder {
                 adjustment = 0.0;
             }
 
-            match &glyph.pdf_glyph {
-                PDFGlyph::Type3(cg) => encoded.push(*cg),
-                PDFGlyph::CID(cid) => {
-                    encoded.push((cid >> 8) as u8);
-                    encoded.push((cid & 0xff) as u8);
-                }
+            glyph.pdf_glyph.encode_into(&mut encoded);
+
+            if let Some(font_advance) = glyph.font_advance {
+                adjustment += advance - font_advance;
             }
 
-            if let Some(advance) = glyph.font_advance {
-                adjustment += actual_advance - advance;
-            }
-
-            adjustment -= glyph.x_offset / size * 1000.0;
+            adjustment -= offset;
+            // cur_x/cur_y and glyph metrics are in user space units, so don't convert here.
             *cur_x += glyph.x_advance;
         }
 
