@@ -403,8 +403,6 @@ impl ContentBuilder {
                 }
             }
 
-            // panic!();
-
             sb.content.end_text();
         })
     }
