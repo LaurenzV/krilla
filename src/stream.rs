@@ -768,7 +768,6 @@ impl Glyph {
 
 pub trait PdfFont {
     fn identifier(&self) -> FontIdentifier;
-    fn to_font_units(&self, val: f32) -> f32;
     fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32>;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
@@ -778,10 +777,6 @@ pub trait PdfFont {
 impl PdfFont for Type3Font {
     fn identifier(&self) -> FontIdentifier {
         self.identifier()
-    }
-
-    fn to_font_units(&self, val: f32) -> f32 {
-        Type3Font::to_pdf_font_units(self, val)
     }
 
     fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
@@ -813,10 +808,6 @@ impl PdfFont for Type3Font {
 impl PdfFont for CIDFont {
     fn identifier(&self) -> FontIdentifier {
         self.identifier()
-    }
-
-    fn to_font_units(&self, val: f32) -> f32 {
-        CIDFont::to_pdf_font_units(self, val)
     }
 
     fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
