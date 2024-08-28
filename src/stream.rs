@@ -21,8 +21,6 @@ use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
-use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
@@ -390,7 +388,13 @@ impl ContentBuilder {
                 );
 
                 for (font_identifier, glyphs, y_offset) in segmented {
-                    sb.encode_consecutive_run(&mut cur_x, y - y_offset, font_identifier, size, glyphs)
+                    sb.encode_consecutive_run(
+                        &mut cur_x,
+                        y - y_offset,
+                        font_identifier,
+                        size,
+                        glyphs,
+                    )
                 }
 
                 if fragment.actual_text().is_some() {
@@ -901,16 +905,12 @@ impl<'a> Iterator for TextFragments<'a> {
 }
 
 pub struct GroupByGlyphs<'a, 'b> {
-    font_container: &'b RefCell<FontContainer>,
+    font_container: &'b mut FontContainer,
     slice: &'a [Glyph],
     text: &'a str,
 }
 impl<'a, 'b> GroupByGlyphs<'a, 'b> {
-    pub fn new(
-        font_container: &'b RefCell<FontContainer>,
-        slice: &'a [Glyph],
-        text: &'a str,
-    ) -> Self {
+    pub fn new(font_container: &'b mut FontContainer, slice: &'a [Glyph], text: &'a str) -> Self {
         Self {
             font_container,
             slice,
@@ -923,49 +923,51 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
     type Item = (FontIdentifier, Vec<InstanceGlyph>, f32);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut font_container = self.font_container.borrow_mut();
-
-        struct GlyphProps {
-            font_identifier: FontIdentifier,
-            y_offset: f32,
-        }
-
-        let mut func = |g: &Glyph| {
-            font_container.add_glyph(g.glyph_id);
-            let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
-
-            GlyphProps {
-                font_identifier,
-                y_offset: g.y_offset,
+        let (head, tail, first) = {
+            struct GlyphProps {
+                font_identifier: FontIdentifier,
+                y_offset: f32,
             }
+
+            let mut func = |g: &Glyph| {
+                self.font_container.add_glyph(g.glyph_id);
+                let font_identifier = self.font_container.font_identifier(g.glyph_id).unwrap();
+
+                GlyphProps {
+                    font_identifier,
+                    y_offset: g.y_offset,
+                }
+            };
+
+            let mut count = 1;
+
+            let mut iter = self.slice.iter();
+            let first = (func)(iter.next()?);
+
+            while let Some(next) = iter.next() {
+                let temp_glyph = func(next);
+
+                if first.font_identifier != temp_glyph.font_identifier
+                    || first.y_offset != temp_glyph.y_offset
+                {
+                    break;
+                }
+
+                count += 1;
+            }
+
+            let (head, tail) = self.slice.split_at(count);
+            (head, tail, first)
         };
 
-        let mut count = 1;
-
-        let mut iter = self.slice.iter();
-        let first = (func)(iter.next()?);
-
-        while let Some(next) = iter.next() {
-            let temp_glyph = func(next);
-
-            if first.font_identifier != temp_glyph.font_identifier
-                || first.y_offset != temp_glyph.y_offset
-            {
-                break;
-            }
-
-            count += 1;
-        }
-
-        let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
         Some((
             first.font_identifier,
             head.iter()
                 .map(move |g| {
-                    let font_container = font_container.borrow_mut();
-                    let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
-                    let mut pdf_font = font_container
+                    let font_identifier = self.font_container.font_identifier(g.glyph_id).unwrap();
+                    let mut pdf_font = self
+                        .font_container
                         .get_from_identifier_mut(font_identifier.clone())
                         .unwrap();
 
