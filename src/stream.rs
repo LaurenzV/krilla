@@ -285,7 +285,7 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
-    fn encode_consecutive_run(
+    fn encode_consecutive_glyph_run(
         &mut self,
         cur_x: &mut f32,
         cur_y: f32,
@@ -383,7 +383,7 @@ impl ContentBuilder {
                 );
 
                 for glyph_group in segmented {
-                    sb.encode_consecutive_run(
+                    sb.encode_consecutive_glyph_run(
                         &mut cur_x,
                         y - glyph_group.y_offset,
                         glyph_group.font_identifier,
