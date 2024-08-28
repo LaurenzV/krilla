@@ -65,7 +65,6 @@ pub struct FontInfo {
     pub(crate) units_per_em: u16,
     global_bbox: Rect,
     postscript_name: Option<String>,
-    is_type3_font: bool,
     ascent: FiniteF32,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
@@ -138,17 +137,6 @@ impl FontInfo {
             }
         };
 
-        // Right now, we decide whether to embed a font as a Type3 font solely based on whether one of these
-        // tables exist. This is not the most "efficient" method, because it is possible a font has a `COLR` table,
-        // but there are still some glyphs which are not in COLR but still in `glyf` or `CFF`. In this case,
-        // we would still choose a Type3 font for the outlines, even though they could be embedded as a CID font.
-        // For now, we make the simplifying assumption that a font is either mapped to a series of Type3 fonts
-        // or to a single CID font, but not a mix of both.
-        let is_type3_font = font_ref.svg().is_ok()
-            || font_ref.colr().is_ok()
-            || font_ref.sbix().is_ok()
-            || font_ref.cff2().is_ok();
-
         Some(FontInfo {
             index,
             checksum,
@@ -162,7 +150,6 @@ impl FontInfo {
             weight,
             italic_angle,
             global_bbox,
-            is_type3_font,
         })
     }
 }
@@ -247,10 +234,6 @@ impl Font {
 
     pub fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
-    }
-
-    pub fn is_type3_font(&self) -> bool {
-        self.0.font_info.is_type3_font
     }
 
     pub fn font_ref(&self) -> &FontRef {

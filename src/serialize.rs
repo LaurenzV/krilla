@@ -19,6 +19,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
+use skrifa::raw::TableProvider;
 use tiny_skia_path::Rect;
 
 #[derive(Copy, Clone, Debug)]
@@ -41,6 +42,7 @@ pub struct SerializeSettings {
     pub ascii_compatible: bool,
     pub compress_content_streams: bool,
     pub no_device_cs: bool,
+    pub force_type3_fonts: bool,
     pub svg_settings: SvgSettings,
 }
 
@@ -51,6 +53,7 @@ impl SerializeSettings {
             ascii_compatible: true,
             compress_content_streams: false,
             no_device_cs: false,
+            force_type3_fonts: false,
             svg_settings: SvgSettings::default(),
         }
     }
@@ -62,6 +65,7 @@ impl Default for SerializeSettings {
             ascii_compatible: true,
             compress_content_streams: true,
             no_device_cs: false,
+            force_type3_fonts: false,
             svg_settings: SvgSettings::default(),
         }
     }
@@ -211,7 +215,23 @@ impl SerializerContext {
             self.font_cache
                 .insert(font.font_info().clone(), font.clone());
 
-            if font.is_type3_font() {
+            // Right now, we decide whether to embed a font as a Type3 font
+            // solely based on whether one of these tables exist (or if
+            // the settings tell us to force it). This is not the most "efficient"
+            // method, because it is possible a font has a `COLR` table, but
+            // there are still some glyphs which are not in COLR but in `glyf`
+            // or `CFF`. In this case, we would still choose a Type3 font for
+            // the outlines, even though they could be embedded as a CID font.
+            // For now, we make the simplifying assumption that a font is either mapped
+            // to a series of Type3 fonts or to a single CID font, but not a mix of both.
+            let font_ref = font.font_ref();
+            let use_type3 = self.serialize_settings.force_type3_fonts
+                || font_ref.svg().is_ok()
+                || font_ref.colr().is_ok()
+                || font_ref.sbix().is_ok()
+                || font_ref.cff2().is_ok();
+
+            if use_type3 {
                 RefCell::new(FontContainer::Type3(Type3FontMapper::new(font.clone())))
             } else {
                 RefCell::new(FontContainer::CIDFont(CIDFont::new(font.clone())))
