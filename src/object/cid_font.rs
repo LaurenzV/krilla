@@ -90,10 +90,8 @@ impl CIDFont {
     pub fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
-}
 
-impl Object for CIDFont {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();

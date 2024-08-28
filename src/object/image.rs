@@ -1,5 +1,5 @@
 use crate::object::color_space::DEVICE_GRAY;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
 use crate::util::{NameExt, Prehashed};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -40,6 +40,10 @@ impl Image {
 }
 
 impl Object for Image {
+    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.images
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 

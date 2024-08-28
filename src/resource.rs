@@ -8,7 +8,7 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, RegisterableObject, SerializerContext, SipHashable};
+use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::{Chunk, Dict, Finish, Ref};

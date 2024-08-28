@@ -72,7 +72,9 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object {
+pub trait Object: SipHashable where {
+    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap>;
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 
     fn serialize(&self, sc: &mut SerializerContext) -> Chunk {
@@ -85,8 +87,6 @@ pub struct PageInfo {
     pub ref_: Ref,
     pub media_box: Rect,
 }
-
-pub trait RegisterableObject: Object + SipHashable {}
 
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
@@ -132,53 +132,34 @@ const CACHE_REF_START: i32 = 50000000;
 pub type ChunkMap = (Ref, Chunk);
 
 pub struct ChunkContainer {
-    chunks_len: usize,
-    page_labels: Option<ChunkMap>,
-    page_tree: Option<ChunkMap>,
-    outline: Option<ChunkMap>,
+    pub(crate) page_label_tree: Option<ChunkMap>,
+    pub(crate) page_tree: Option<ChunkMap>,
+    pub(crate) outline: Option<ChunkMap>,
 
-    pages: Vec<ChunkMap>,
-    annotations: Vec<ChunkMap>,
-    fonts: Vec<ChunkMap>,
-    color_spaces: Vec<ChunkMap>,
-    destinations: Vec<ChunkMap>,
-    ext_g_states: Vec<ChunkMap>,
-    images: Vec<ChunkMap>,
-    masks: Vec<ChunkMap>,
-    x_objects: Vec<ChunkMap>,
-    shading_functions: Vec<ChunkMap>,
-    patterns: Vec<ChunkMap>,
+    pub(crate) pages: Vec<ChunkMap>,
+    pub(crate) page_labels: Vec<ChunkMap>,
+    pub(crate) annotations: Vec<ChunkMap>,
+    pub(crate) fonts: Vec<ChunkMap>,
+    pub(crate) color_spaces: Vec<ChunkMap>,
+    pub(crate) destinations: Vec<ChunkMap>,
+    pub(crate) ext_g_states: Vec<ChunkMap>,
+    pub(crate) images: Vec<ChunkMap>,
+    pub(crate) masks: Vec<ChunkMap>,
+    pub(crate) x_objects: Vec<ChunkMap>,
+    pub(crate) shading_functions: Vec<ChunkMap>,
+    pub(crate) patterns: Vec<ChunkMap>,
 }
 
-macro_rules! add_multiple {
-    ($(($func_name:ident, $field:ident)),+) => {
-        $(
-            pub fn $func_name(&mut self, ref_: Ref, chunk: Chunk) {
-                Self::add_multiple(ref_, chunk, &mut self.$field, &mut self.chunks_len)
-            }
-        )+
-    };
-}
-
-macro_rules! add_single {
-    ($(($func_name:ident, $field:ident)),+) => {
-        $(
-            pub fn $func_name(&mut self, ref_: Ref, chunk: Chunk) {
-                Self::add_single(ref_, chunk, &mut self.$field, &mut self.chunks_len)
-            }
-        )+
-    };
-}
 
 impl ChunkContainer {
     pub fn new() -> Self {
         Self {
-            chunks_len: 0,
             page_tree: None,
             outline: None,
-            page_labels: None,
+            page_label_tree: None,
 
             pages: vec![],
+            page_labels: vec![],
             annotations: vec![],
             fonts: vec![],
             color_spaces: vec![],
@@ -191,46 +172,6 @@ impl ChunkContainer {
             patterns: vec![],
         }
     }
-
-    pub fn add_single(
-        ref_: Ref,
-        chunk: Chunk,
-        field: &mut Option<ChunkMap>,
-        chunks_len: &mut usize,
-    ) {
-        *chunks_len += chunk.len();
-        *field = Some((ref_, chunk));
-    }
-
-    pub fn add_multiple(
-        ref_: Ref,
-        chunk: Chunk,
-        field: &mut Vec<ChunkMap>,
-        chunks_len: &mut usize,
-    ) {
-        *chunks_len += chunk.len();
-        field.push((ref_, chunk));
-    }
-
-    add_single!(
-        (set_page_tree, page_tree),
-        (set_outline, outline),
-        (set_page_labels, page_labels)
-    );
-
-    add_multiple!(
-        (add_page, pages),
-        (add_annotation, annotations),
-        (add_font, fonts),
-        (add_color_space, color_spaces),
-        (add_destination, destinations),
-        (add_ext_g_state, ext_g_states),
-        (add_image, images),
-        (add_mask, masks),
-        (add_x_object, x_objects),
-        (add_shading_function, shading_functions),
-        (add_pattern, patterns)
-    );
 
     pub fn finish(self, serialize_settings: &SerializeSettings) -> Pdf {
         let mut remapped_ref = Ref::new(1);
@@ -262,7 +203,8 @@ impl ChunkContainer {
 
         // Chunk length is not an exact number because the length might change as we renumber,
         // so we add a bit of a buffer, which should hopefully always be enough
-        let mut pdf = Pdf::with_capacity((self.chunks_len as f32 * 1.1) as usize);
+        // let mut pdf = Pdf::with_capacity((self.chunks_len as f32 * 1.1) as usize);
+        let mut pdf = Pdf::new();
 
         if serialize_settings.ascii_compatible {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
@@ -271,17 +213,17 @@ impl ChunkContainer {
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some() || self.page_labels.is_some() || self.outline.is_some() {
+        if self.page_tree.is_some() || self.page_label_tree.is_some() || self.outline.is_some() {
             let catalog_ref = remapped_ref.bump();
 
             let mut catalog = pdf.catalog(catalog_ref);
-            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_labels);
+            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
 
             if let Some(pt) = &self.page_tree {
                 catalog.pages(pt.0);
             }
 
-            if let Some(pl) = &self.page_labels {
+            if let Some(pl) = &self.page_label_tree {
                 catalog.pair(Name(b"PageLabels"), pl.0);
             }
 
@@ -292,7 +234,7 @@ impl ChunkContainer {
             catalog.finish();
         }
 
-        remap_fields!(self, remapper, remapped_ref; pages, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
+        remap_fields!(self, remapper, remapped_ref; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
 
         macro_rules! write_field {
             ($self:expr, $remapper:expr, $remapped_ref:expr, $pdf:expr; $($field:ident),+) => {
@@ -314,8 +256,8 @@ impl ChunkContainer {
             };
         }
 
-        write_field!(self, remapper, remapped_ref, &mut pdf; page_tree, outline, page_labels);
-        write_fields!(self, remapper, remapped_ref, &mut pdf; pages, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
+        write_field!(self, remapper, remapped_ref, &mut pdf; page_tree, outline, page_label_tree);
+        write_fields!(self, remapper, remapped_ref, &mut pdf; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
 
         pdf
     }

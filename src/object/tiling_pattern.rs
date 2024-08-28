@@ -1,4 +1,4 @@
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
@@ -53,6 +53,10 @@ impl TilingPattern {
 }
 
 impl Object for TilingPattern {
+    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.patterns
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
@@ -82,5 +86,3 @@ impl Object for TilingPattern {
         chunk
     }
 }
-
-impl RegisterableObject for TilingPattern {}

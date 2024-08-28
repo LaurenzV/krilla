@@ -16,6 +16,49 @@ impl Outline {
     pub fn push_child(&mut self, node: OutlineNode) {
         self.children.push(node)
     }
+
+    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        let mut chunk = Chunk::new();
+
+        let mut sub_chunks = vec![];
+
+        let mut outline = chunk.outline(root_ref);
+
+        if !self.children.is_empty() {
+            let first = sc.new_ref();
+            let mut last = first;
+
+            let mut prev = None;
+            let mut cur = Some(first);
+
+            for i in 0..self.children.len() {
+                let next = if i < self.children.len() - 1 {
+                    Some(sc.new_ref())
+                } else {
+                    None
+                };
+
+                last = cur.unwrap();
+
+                sub_chunks.push(self.children[i].serialize_into(sc, root_ref, last, next, prev));
+
+                prev = cur;
+                cur = next;
+            }
+
+            outline.first(first);
+            outline.last(last);
+            outline.count(i32::try_from(self.children.len()).unwrap());
+        }
+
+        outline.finish();
+
+        for sub_chunk in sub_chunks {
+            chunk.extend(&sub_chunk);
+        }
+
+        chunk
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -101,51 +144,6 @@ impl OutlineNode {
         outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
-
-        for sub_chunk in sub_chunks {
-            chunk.extend(&sub_chunk);
-        }
-
-        chunk
-    }
-}
-
-impl Object for Outline {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        let mut chunk = Chunk::new();
-
-        let mut sub_chunks = vec![];
-
-        let mut outline = chunk.outline(root_ref);
-
-        if !self.children.is_empty() {
-            let first = sc.new_ref();
-            let mut last = first;
-
-            let mut prev = None;
-            let mut cur = Some(first);
-
-            for i in 0..self.children.len() {
-                let next = if i < self.children.len() - 1 {
-                    Some(sc.new_ref())
-                } else {
-                    None
-                };
-
-                last = cur.unwrap();
-
-                sub_chunks.push(self.children[i].serialize_into(sc, root_ref, last, next, prev));
-
-                prev = cur;
-                cur = next;
-            }
-
-            outline.first(first);
-            outline.last(last);
-            outline.count(i32::try_from(self.children.len()).unwrap());
-        }
-
-        outline.finish();
 
         for sub_chunk in sub_chunks {
             chunk.extend(&sub_chunk);

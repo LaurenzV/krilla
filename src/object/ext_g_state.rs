@@ -1,5 +1,5 @@
 use crate::object::mask::Mask;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -99,7 +99,6 @@ impl Object for ExtGState {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        // TODO: Avoid mask being cloned here?
         let mask_ref = self
             .0
             .mask
@@ -128,8 +127,6 @@ impl Object for ExtGState {
         chunk
     }
 }
-
-impl RegisterableObject for ExtGState {}
 
 #[cfg(test)]
 mod tests {

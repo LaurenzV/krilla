@@ -1,6 +1,6 @@
 use crate::object::color_space::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::RectExt;
 use crate::{LinearGradient, RadialGradient, SweepGradient};
@@ -196,6 +196,10 @@ impl ShadingFunction {
 }
 
 impl Object for ShadingFunction {
+    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.shading_functions
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
@@ -211,8 +215,6 @@ impl Object for ShadingFunction {
         chunk
     }
 }
-
-impl RegisterableObject for ShadingFunction {}
 
 fn serialize_postscript_shading(
     sc: &mut SerializerContext,

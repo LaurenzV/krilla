@@ -95,10 +95,8 @@ impl Type3Font {
     pub fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
-}
 
-impl Object for Type3Font {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let svg_settings = sc.serialize_settings.svg_settings;
 
@@ -202,7 +200,7 @@ impl Object for Type3Font {
                 1.0 / (self.font.units_per_em()),
                 1.0 / (self.font.units_per_em()),
             )
-            .to_pdf_transform(),
+                .to_pdf_transform(),
         );
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());

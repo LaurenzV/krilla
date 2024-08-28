@@ -1,4 +1,4 @@
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -33,6 +33,10 @@ impl XObject {
 }
 
 impl Object for XObject {
+    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.x_objects
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let cs = sc.rgb();
         let mut chunk = Chunk::new();
@@ -71,5 +75,3 @@ impl Object for XObject {
         chunk
     }
 }
-
-impl RegisterableObject for XObject {}

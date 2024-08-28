@@ -1,5 +1,5 @@
 use crate::object::annotation::Annotation;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
@@ -34,10 +34,8 @@ impl Page {
             annotations,
         }
     }
-}
 
-impl Object for Page {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let stream_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -104,9 +102,7 @@ impl PageLabel {
     pub(crate) fn is_empty(&self) -> bool {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
-}
 
-impl Object for PageLabel {
     fn serialize_into(&self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
@@ -130,8 +126,6 @@ impl Object for PageLabel {
     }
 }
 
-impl RegisterableObject for PageLabel {}
-
 #[derive(Hash)]
 pub struct PageLabelContainer {
     labels: Vec<PageLabel>,
@@ -145,9 +139,7 @@ impl PageLabelContainer {
             Some(PageLabelContainer { labels })
         };
     }
-}
 
-impl Object for PageLabelContainer {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
@@ -184,8 +176,6 @@ impl Object for PageLabelContainer {
         chunk
     }
 }
-
-impl RegisterableObject for PageLabelContainer {}
 
 #[cfg(test)]
 mod tests {
