@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
@@ -366,6 +367,8 @@ impl ContentBuilder {
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
+            let font_container = sc.create_or_get_font_container(font.clone());
+
             let spanned = TextSpanner::new(glyphs, text);
 
             for fragment in spanned {
@@ -377,7 +380,7 @@ impl ContentBuilder {
                 }
 
                 let segmented = GlyphGrouper::new(
-                    sc.create_or_get_font_container(font.clone()),
+                    font_container,
                     fragment.glyphs(),
                     text,
                 );
@@ -926,13 +929,13 @@ impl GlyphGroup {
 }
 
 pub struct GlyphGrouper<'a, 'b> {
-    font_container: &'b mut FontContainer,
+    font_container: &'b RefCell<FontContainer>,
     slice: &'a [Glyph],
     text: &'a str,
 }
 
 impl<'a, 'b> GlyphGrouper<'a, 'b> {
-    pub fn new(font_container: &'b mut FontContainer, slice: &'a [Glyph], text: &'a str) -> Self {
+    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph], text: &'a str) -> Self {
         Self {
             font_container,
             slice,
@@ -952,9 +955,10 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 y_offset: f32,
             }
 
-            let mut func = |g: &Glyph| {
-                self.font_container.add_glyph(g.glyph_id);
-                let font_identifier = self.font_container.font_identifier(g.glyph_id).unwrap();
+            let func = |g: &Glyph| {
+                let mut font_container = self.font_container.borrow_mut();
+                font_container.add_glyph(g.glyph_id);
+                let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
 
                 GlyphProps {
                     font_identifier,
@@ -990,9 +994,9 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
         let glyphs = head
             .iter()
             .map(move |g| {
-                let font_identifier = self.font_container.font_identifier(g.glyph_id).unwrap();
-                let mut pdf_font = self
-                    .font_container
+                let mut font_container = self.font_container.borrow_mut();
+                let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
+                let mut pdf_font = font_container
                     .get_from_identifier_mut(font_identifier.clone())
                     .unwrap();
 

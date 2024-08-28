@@ -15,6 +15,7 @@ use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -84,7 +85,7 @@ pub trait RegisterableObject: Object + SipHashable {}
 
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
-    font_map: HashMap<Font, FontContainer>,
+    font_map: HashMap<Font, RefCell<FontContainer>>,
     catalog_ref: Ref,
     page_tree_ref: Ref,
     page_labels_ref: Option<Ref>,
@@ -195,15 +196,15 @@ impl SerializerContext {
         }
     }
 
-    pub fn create_or_get_font_container(&mut self, font: Font) -> &mut FontContainer {
+    pub fn create_or_get_font_container(&mut self, font: Font) -> &RefCell<FontContainer> {
         self.font_map.entry(font.clone()).or_insert_with(|| {
             self.font_cache
                 .insert(font.font_info().clone(), font.clone());
 
             if font.is_type3_font() {
-                FontContainer::Type3(Type3FontMapper::new(font.clone()))
+                RefCell::new(FontContainer::Type3(Type3FontMapper::new(font.clone())))
             } else {
-                FontContainer::CIDFont(CIDFont::new(font.clone()))
+                RefCell::new(FontContainer::CIDFont(CIDFont::new(font.clone())))
             }
         })
     }
@@ -301,7 +302,7 @@ impl SerializerContext {
         // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
         for font_container in fonts.values() {
-            match font_container {
+            match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
                         let ref_ = self.add_font(t3_font.identifier());

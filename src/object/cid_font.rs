@@ -272,8 +272,10 @@ mod tests {
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
             .add_glyph(GlyphId::new(36));
         sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
             .add_glyph(GlyphId::new(37));
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
@@ -284,12 +286,16 @@ mod tests {
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
             .add_glyph(GlyphId::new(58));
         sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
             .add_glyph(GlyphId::new(54));
         sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
             .add_glyph(GlyphId::new(69));
         sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
             .add_glyph(GlyphId::new(71));
         check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
