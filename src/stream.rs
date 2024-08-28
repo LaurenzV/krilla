@@ -392,8 +392,7 @@ impl ContentBuilder {
                     sc.font_container(font.clone()).unwrap(),
                     fragment.glyphs(),
                     text,
-                )
-                .collect::<Vec<_>>();
+                );
 
                 for (font, glyphs, y_offset) in segmented {
                     sb.encode_consecutive_run(&mut cur_x, y - y_offset, font, size, glyphs)
