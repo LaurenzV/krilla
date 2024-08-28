@@ -15,7 +15,7 @@ mod tests {
     #[test]
     fn cosmic_text_integration() {
         let mut font_system = FontSystem::new_with_fonts([Source::Binary(Arc::new(std::fs::read("/Users/lstampfl/Programming/GitHub/resvg/crates/resvg/tests/fonts/NotoSans-Regular.ttf").unwrap()))]);
-        let metrics = Metrics::new(14.0, 20.0);
+        let metrics = Metrics::new(18.0, 20.0);
         let mut buffer = Buffer::new(&mut font_system, metrics);
         buffer.set_size(&mut font_system, Some(200.0), None);
         let attrs = Attrs::new();
@@ -36,10 +36,10 @@ mod tests {
 
             let segmented = run
                 .glyphs
-                .group_by_key(|g| (font_map.get(&g.font_id).unwrap().clone(), g.font_size));
+                .group_by_key(|g| font_map.get(&g.font_id).unwrap().clone());
 
             let mut x = 0.0;
-            for ((font, size), glyphs) in segmented {
+            for (font, glyphs) in segmented {
                 let start_x = x;
                 let glyphs = glyphs
                     .iter()
@@ -51,7 +51,7 @@ mod tests {
                             glyph.x_offset,
                             glyph.y_offset,
                             glyph.start..glyph.end,
-                            size,
+                            glyph.font_size,
                         )
                     })
                     .collect::<Vec<_>>();
