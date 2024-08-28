@@ -196,7 +196,7 @@ impl ShadingFunction {
 }
 
 impl Object for ShadingFunction {
-    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
         &mut cc.shading_functions
     }
 

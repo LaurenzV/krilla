@@ -40,7 +40,7 @@ impl Image {
 }
 
 impl Object for Image {
-    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
         &mut cc.images
     }
 
@@ -85,8 +85,6 @@ impl Object for Image {
         chunk
     }
 }
-
-impl RegisterableObject for Image {}
 
 fn calculate_bits_per_component(color_type: ColorType) -> i32 {
     (color_type.bits_per_pixel() / color_type.channel_count() as u16) as i32

@@ -2,7 +2,7 @@ use crate::font;
 use crate::font::{Font, FontIdentifier, GlyphType, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::surface::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
@@ -200,7 +200,7 @@ impl Type3Font {
                 1.0 / (self.font.units_per_em()),
                 1.0 / (self.font.units_per_em()),
             )
-                .to_pdf_transform(),
+            .to_pdf_transform(),
         );
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());

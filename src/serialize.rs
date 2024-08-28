@@ -72,8 +72,8 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: SipHashable where {
-    fn chunk_container(cc: &mut ChunkContainer) -> &mut Vec<ChunkMap>;
+pub trait Object: SipHashable {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap>;
 
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 
@@ -149,7 +149,6 @@ pub struct ChunkContainer {
     pub(crate) shading_functions: Vec<ChunkMap>,
     pub(crate) patterns: Vec<ChunkMap>,
 }
-
 
 impl ChunkContainer {
     pub fn new() -> Self {

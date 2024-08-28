@@ -1,5 +1,5 @@
 use crate::object::mask::Mask;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -96,6 +96,10 @@ impl ExtGState {
 }
 
 impl Object for ExtGState {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.ext_g_states
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 

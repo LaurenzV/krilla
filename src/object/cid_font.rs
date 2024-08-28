@@ -1,5 +1,5 @@
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
-use crate::serialize::{Object, SerializerContext, SipHashable};
+use crate::serialize::{SerializerContext, SipHashable};
 use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};

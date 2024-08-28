@@ -1,5 +1,5 @@
 use crate::resource::ColorSpaceEnum;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -26,10 +26,10 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Hash)]
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
-impl Object for ICCBasedColorSpace {
+impl ICCBasedColorSpace {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.new_ref();
 
@@ -85,7 +85,7 @@ impl Color {
 pub mod device_cmyk {
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{Object, SerializerContext};
+    use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
 
     /// A CMYK color.
@@ -135,6 +135,10 @@ pub mod device_cmyk {
     }
 
     impl Object for DeviceCmyk {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+            unreachable!()
+        }
+
         fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
             unreachable!()
         }
@@ -145,7 +149,7 @@ pub mod device_cmyk {
 pub mod rgb {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{Object, SerializerContext};
+    use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
     use std::sync::Arc;
 
     use pdf_writer::{Chunk, Ref};
@@ -219,6 +223,10 @@ pub mod rgb {
     pub struct Srgb;
 
     impl Object for Srgb {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+            &mut cc.color_spaces
+        }
+
         fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
             let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
             icc_based.serialize_into(sc, root_ref)
@@ -234,6 +242,10 @@ pub mod rgb {
     }
 
     impl Object for DeviceRgb {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+            unreachable!()
+        }
+
         fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
             unreachable!()
         }
@@ -244,7 +256,7 @@ pub mod rgb {
 pub mod luma {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{Object, SerializerContext};
+    use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
@@ -310,6 +322,10 @@ pub mod luma {
     pub struct SGray;
 
     impl Object for SGray {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+            &mut cc.color_spaces
+        }
+
         fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
             let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
             icc_based.serialize_into(sc, root_ref)
@@ -325,6 +341,10 @@ pub mod luma {
     }
 
     impl Object for DeviceGray {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+            unreachable!()
+        }
+
         fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
             unreachable!()
         }

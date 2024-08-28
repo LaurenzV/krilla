@@ -8,7 +8,7 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext, SipHashable};
+use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
@@ -61,21 +61,6 @@ pub(crate) enum Resource {
     Font(FontIdentifier),
 }
 
-impl Object for Resource {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        match self {
-            Resource::XObject(x) => x.serialize_into(sc, root_ref),
-            Resource::Pattern(p) => p.serialize_into(sc, root_ref),
-            Resource::ExtGState(e) => e.serialize_into(sc, root_ref),
-            Resource::ColorSpace(x) => x.serialize_into(sc, root_ref),
-            Resource::Shading(s) => s.serialize_into(sc, root_ref),
-            Resource::Font(_) => unreachable!(),
-        }
-    }
-}
-
-impl RegisterableObject for Resource {}
-
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum XObjectResource {
     XObject(XObject),
@@ -93,6 +78,13 @@ impl ResourceTrait for XObjectResource {
 }
 
 impl Object for XObjectResource {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        match self {
+            XObjectResource::XObject(x) => x.chunk_container(cc),
+            XObjectResource::Image(i) => i.chunk_container(cc),
+        }
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
@@ -100,8 +92,6 @@ impl Object for XObjectResource {
         }
     }
 }
-
-impl RegisterableObject for XObjectResource {}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PatternResource {
@@ -120,6 +110,10 @@ impl ResourceTrait for PatternResource {
 }
 
 impl Object for PatternResource {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.patterns
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
@@ -127,8 +121,6 @@ impl Object for PatternResource {
         }
     }
 }
-
-impl RegisterableObject for PatternResource {}
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct ResourceDictionaryBuilder {
@@ -242,7 +234,7 @@ fn write_resource_type<T>(
     resource_list: &ResourceList<T>,
     is_font: bool,
 ) where
-    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject + Clone,
+    T: Hash + Eq + ResourceTrait + Debug + Clone,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
@@ -354,6 +346,10 @@ pub enum ColorSpaceEnum {
 }
 
 impl Object for ColorSpaceEnum {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        &mut cc.color_spaces
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
@@ -364,10 +360,6 @@ impl Object for ColorSpaceEnum {
         }
     }
 }
-
-impl RegisterableObject for ColorSpaceEnum {}
-
-impl RegisterableObject for FontIdentifier {}
 
 impl ResourceTrait for FontIdentifier {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
