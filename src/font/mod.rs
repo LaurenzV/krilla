@@ -237,8 +237,8 @@ impl Font {
         self.0.font_info.italic_angle.get()
     }
 
-    pub fn units_per_em(&self) -> u16 {
-        self.0.font_info.units_per_em
+    pub fn units_per_em(&self) -> f32 {
+        self.0.font_info.units_per_em as f32
     }
 
     pub fn bbox(&self) -> Rect {

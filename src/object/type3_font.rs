@@ -88,15 +88,8 @@ impl Type3Font {
         self.cmap_entries.insert(gid, text);
     }
 
-    pub fn units_per_em(&self) -> u16 {
-        self.font.units_per_em()
-    }
-
-    pub fn advance_width(&self, gid: Gid) -> Option<f32> {
-        self.widths
-            .get(gid as usize)
-            .copied()
-            .map(|n| self.to_pdf_font_units(n))
+    pub fn font(&self) -> Font {
+        self.font.clone()
     }
 
     pub fn identifier(&self) -> FontIdentifier {
@@ -206,8 +199,8 @@ impl Object for Type3Font {
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
-                1.0 / (self.font.units_per_em() as f32),
-                1.0 / (self.font.units_per_em() as f32),
+                1.0 / (self.font.units_per_em()),
+                1.0 / (self.font.units_per_em()),
             )
             .to_pdf_transform(),
         );

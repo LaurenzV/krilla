@@ -302,11 +302,6 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
-        // Convert from userspace units to PDF font units, where 1em = 1000 units
-        let convert = |val: f32| {
-            val / size * 1000.0
-        };
-
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
 
@@ -314,10 +309,7 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let advance = convert(glyph.x_advance);
-            let offset = convert(glyph.x_offset);
-
-            adjustment += offset;
+            adjustment += glyph.x_offset;
 
             // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
@@ -333,12 +325,12 @@ impl ContentBuilder {
             glyph.pdf_glyph.encode_into(&mut encoded);
 
             if let Some(font_advance) = glyph.font_advance {
-                adjustment += advance - font_advance;
+                adjustment += glyph.x_advance - font_advance;
             }
 
-            adjustment -= offset;
+            adjustment -= glyph.x_offset;
             // cur_x/cur_y and glyph metrics are in user space units, so don't convert here.
-            *cur_x += glyph.x_advance;
+            *cur_x += glyph.user_space_x_advance;
         }
 
         if !encoded.is_empty() {
@@ -736,12 +728,13 @@ pub struct Glyph {
     pub x_advance: f32,
     pub x_offset: f32,
     pub y_offset: f32,
-    size: f32,
+    pub size: f32,
 }
 
 pub struct InstanceGlyph {
     pub pdf_glyph: PDFGlyph,
     pub x_advance: f32,
+    pub user_space_x_advance: f32,
     pub font_advance: Option<f32>,
     pub x_offset: f32,
 }
@@ -768,7 +761,8 @@ impl Glyph {
 
 pub trait PdfFont {
     fn identifier(&self) -> FontIdentifier;
-    fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32>;
+    fn to_pdf_font_units(&self, val: f32) -> f32;
+    fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
     fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph>;
@@ -779,11 +773,12 @@ impl PdfFont for Type3Font {
         self.identifier()
     }
 
-    fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
-        match pdf_glyph {
-            PDFGlyph::Type3(t3) => self.advance_width(t3),
-            PDFGlyph::CID(_) => panic!("attempted to pass cid to type 3 font"),
-        }
+    fn to_pdf_font_units(&self, val: f32) -> f32 {
+        Type3Font::to_pdf_font_units(self, val)
+    }
+
+    fn font(&self) -> Font {
+        Type3Font::font(self)
     }
 
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
@@ -810,11 +805,12 @@ impl PdfFont for CIDFont {
         self.identifier()
     }
 
-    fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
-        match pdf_glyph {
-            PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
-            PDFGlyph::CID(cid) => self.advance_width(cid),
-        }
+    fn to_pdf_font_units(&self, val: f32) -> f32 {
+        CIDFont::to_pdf_font_units(self, val)
+    }
+
+    fn font(&self) -> Font {
+        CIDFont::font(self)
     }
 
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
@@ -1049,9 +1045,15 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
                 InstanceGlyph {
                     pdf_glyph,
-                    x_advance: g.x_advance,
-                    font_advance: pdf_font.advance_width(pdf_glyph),
-                    x_offset: g.x_offset,
+                    user_space_x_advance: g.x_advance,
+                    x_advance: pdf_font
+                        .to_pdf_font_units(g.x_advance / g.size * pdf_font.font().units_per_em()),
+                    font_advance: pdf_font
+                        .font()
+                        .advance_width(g.glyph_id)
+                        .map(|n| pdf_font.to_pdf_font_units(n)),
+                    x_offset: pdf_font
+                        .to_pdf_font_units(g.x_offset / g.size * pdf_font.font().units_per_em()),
                 }
             })
             .collect::<Vec<_>>();

@@ -51,18 +51,12 @@ impl CIDFont {
         }
     }
 
-    /// Get the advance width of a glyph, _indexed by its CID_,
-    /// in PDF font units.
-    pub fn advance_width(&self, cid: Cid) -> Option<f32> {
-        self.widths
-            .get(cid as usize)
-            .map(|v| self.to_pdf_font_units(*v))
+    pub fn font(&self) -> Font {
+        self.font.clone()
     }
 
-    /// Rescale a value from the original text-space units to PDF font units.
-    /// Fonts in PDF are processed with a upem of 1000, see section 9.4.4.
     pub fn to_pdf_font_units(&self, val: f32) -> f32 {
-        val / self.font.units_per_em() as f32 * 1000.0
+        val / self.font.units_per_em() * 1000.0
     }
 
     pub fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
