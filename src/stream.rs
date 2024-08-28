@@ -1,3 +1,4 @@
+use std::iter::Map;
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
@@ -25,7 +26,6 @@ use std::ops::Range;
 use std::slice::Iter;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
-use usvg::strict_num::ApproxEq;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
@@ -301,7 +301,7 @@ impl ContentBuilder {
         text: &str,
         // The y offset is already accounted for when splitting the glyph runs,
         // so we ignore it here.
-        glyphs: Iter<'_, Glyph>,
+        glyphs: MapType<'_>,
     ) {
         let font_name = self
             .rd_builder
@@ -771,6 +771,14 @@ pub struct Glyph {
     pub y_offset: f32,
 }
 
+#[derive(Debug, Clone)]
+pub struct InstanceGlyph {
+    pub glyph_id: GlyphId,
+    pub range: Range<usize>,
+    pub x_advance: f32,
+    pub x_offset: f32,
+}
+
 impl Glyph {
     pub fn new(
         glyph_id: GlyphId,
@@ -929,18 +937,28 @@ pub struct GroupByGlyphs<'a, 'b> {
     slice: &'a [Glyph],
     font: Font,
 }
-
 impl<'a, 'b> GroupByGlyphs<'a, 'b> {
     pub fn new(sc: &'b SerializerContext, slice: &'a [Glyph], font: Font) -> Self {
         Self { sc, slice, font }
     }
 }
 
+pub type MapType<'a> = Map<Iter<'a, Glyph>, fn(&Glyph) -> InstanceGlyph>;
+
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, Iter<'a, Glyph>, f32);
+    type Item = (FontIdentifier, MapType<'a>, f32);
 
     fn next(&mut self) -> Option<Self::Item> {
-        struct TempGlyph {
+        fn map_fn(g: &Glyph) -> InstanceGlyph {
+            InstanceGlyph {
+                glyph_id: g.glyph_id,
+                range: g.range.clone(),
+                x_advance: g.x_advance,
+                x_offset: g.x_offset,
+            }
+        }
+
+        struct GlyphProps {
             font_identifier: FontIdentifier,
             y_offset: f32,
         }
@@ -949,7 +967,7 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
             let font = self.font.clone();
             let font_container = self.sc.font_container(font).unwrap().borrow();
             let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
-            TempGlyph {
+            GlyphProps {
                 font_identifier,
                 y_offset: g.y_offset,
             }
@@ -974,6 +992,6 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
-        Some((first.font_identifier, head.iter(), first.y_offset))
+        Some((first.font_identifier, head.iter().map(map_fn), first.y_offset))
     }
 }
