@@ -766,54 +766,82 @@ impl Glyph {
     }
 }
 
-pub enum PdfFontMut<'a> {
-    Type3(&'a mut Type3Font),
-    CID(&'a mut CIDFont),
+pub trait PdfFont {
+    fn identifier(&self) -> FontIdentifier;
+    fn to_font_units(&self, val: f32) -> f32;
+    fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32>;
+    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
+    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph>;
 }
 
-impl<'a> PdfFontMut<'a> {
-    pub fn identifier(&self) -> FontIdentifier {
-        match self {
-            PdfFontMut::Type3(t3) => t3.identifier(),
-            PdfFontMut::CID(cid) => cid.identifier(),
+impl PdfFont for Type3Font {
+    fn identifier(&self) -> FontIdentifier {
+        self.identifier()
+    }
+
+    fn to_font_units(&self, val: f32) -> f32 {
+        Type3Font::to_pdf_font_units(self, val)
+    }
+
+    fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
+        match pdf_glyph {
+            PDFGlyph::Type3(t3) => self.advance_width(t3),
+            PDFGlyph::CID(_) => panic!("attempted to pass cid to type 3 font"),
         }
     }
 
-    pub fn to_font_units(&self, val: f32) -> f32 {
-        match self {
-            PdfFontMut::Type3(t3) => t3.to_pdf_font_units(val),
-            PdfFontMut::CID(cid) => cid.to_pdf_font_units(val),
+    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
+        match pdf_glyph {
+            PDFGlyph::Type3(t3) => self.get_codepoints(t3),
+            PDFGlyph::CID(_) => panic!("attempted to pass cid to type 3 font"),
         }
     }
 
-    pub fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
-        match (self, pdf_glyph) {
-            (PdfFontMut::Type3(t3), PDFGlyph::Type3(gid)) => t3.advance_width(gid),
-            (PdfFontMut::CID(cid_font), PDFGlyph::CID(cid)) => cid_font.advance_width(cid),
-            _ => None,
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) {
+        match pdf_glyph {
+            PDFGlyph::Type3(t3) => self.set_codepoints(t3, text),
+            PDFGlyph::CID(_) => panic!("attempted to pass cid to type 3 font"),
         }
     }
 
-    pub fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
-        match (self, pdf_glyph) {
-            (PdfFontMut::Type3(t3), PDFGlyph::Type3(gid)) => t3.get_codepoints(gid),
-            (PdfFontMut::CID(cid_font), PDFGlyph::CID(cid)) => cid_font.get_codepoints(cid),
-            _ => None,
+    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
+        self.get_gid(gid).map(|g| PDFGlyph::Type3(g))
+    }
+}
+
+impl PdfFont for CIDFont {
+    fn identifier(&self) -> FontIdentifier {
+        self.identifier()
+    }
+
+    fn to_font_units(&self, val: f32) -> f32 {
+        CIDFont::to_pdf_font_units(self, val)
+    }
+
+    fn advance_width(&self, pdf_glyph: PDFGlyph) -> Option<f32> {
+        match pdf_glyph {
+            PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::CID(cid) => self.advance_width(cid),
         }
     }
 
-    pub fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) -> Option<()> {
-        match (self, pdf_glyph) {
-            (PdfFontMut::Type3(t3), PDFGlyph::Type3(gid)) => {
-                t3.set_codepoints(gid, text);
-                Some(())
-            }
-            (PdfFontMut::CID(cid_font), PDFGlyph::CID(cid)) => {
-                cid_font.set_codepoints(cid, text);
-                Some(())
-            }
-            _ => None,
+    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
+        match pdf_glyph {
+            PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::CID(cid) => self.get_codepoints(cid),
         }
+    }
+
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) {
+        match pdf_glyph {
+            PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::CID(cid) => self.set_codepoints(cid, text),
+        }
+    }
+
+    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
+        self.get_cid(gid).map(|g| PDFGlyph::CID(g))
     }
 }
 
@@ -866,7 +894,7 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
             let mut font_container = self.font_container.borrow_mut();
             let pdf_glyph = font_container.add_glyph(g.glyph_id);
             let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
-            let mut pdf_font = font_container
+            let pdf_font = font_container
                 .get_from_identifier_mut(font_identifier.clone())
                 .unwrap();
 
@@ -1022,20 +1050,11 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
             .map(move |g| {
                 let mut font_container = self.font_container.borrow_mut();
                 let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
-                let mut pdf_font = font_container
+                let pdf_font = font_container
                     .get_from_identifier_mut(font_identifier.clone())
                     .unwrap();
 
-                let pdf_glyph = match pdf_font {
-                    PdfFontMut::Type3(ref mut t3) => {
-                        let gid = t3.get_gid(g.glyph_id).unwrap();
-                        PDFGlyph::Type3(gid)
-                    }
-                    PdfFontMut::CID(ref mut cid_font) => {
-                        let cid = cid_font.get_cid(g.glyph_id).unwrap();
-                        PDFGlyph::CID(cid)
-                    }
-                };
+                let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
 
                 InstanceGlyph {
                     pdf_glyph,

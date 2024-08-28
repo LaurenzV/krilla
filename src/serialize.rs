@@ -7,7 +7,7 @@ use crate::object::outline::Outline;
 use crate::object::page::{Page, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
 use crate::resource::ColorSpaceEnum;
-use crate::stream::PdfFontMut;
+use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
 use pdf_writer::{Chunk, Filter, Finish, Name, Pdf, Ref};
@@ -410,18 +410,18 @@ impl FontContainer {
     pub fn get_from_identifier_mut(
         &mut self,
         font_identifier: FontIdentifier,
-    ) -> Option<PdfFontMut> {
+    ) -> Option<&mut dyn PdfFont> {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
-                    return Some(PdfFontMut::Type3(t3_font));
+                    return Some(t3_font);
                 } else {
                     None
                 }
             }
             FontContainer::CIDFont(cid) => {
                 if cid.identifier() == font_identifier {
-                    return Some(PdfFontMut::CID(cid));
+                    return Some(cid);
                 } else {
                     None
                 }

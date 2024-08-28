@@ -31,7 +31,7 @@ mod tests {
                 "NotoSans-Regular.ttf",
                 "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
                 Direction::LeftToRight,
-                14.0
+                14.0,
             ),
             (
                 "NotoSans-Regular.ttf",
