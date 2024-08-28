@@ -1034,7 +1034,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
         self.slice = tail;
 
-        let  font_container = self.font_container.borrow();
+        let font_container = self.font_container.borrow();
         let pdf_font = font_container
             .get_from_identifier(props.font_identifier.clone())
             .unwrap();
@@ -1045,9 +1045,8 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 // Safe because we've already added all glyphs in the text spanner.
                 let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
 
-                let user_units_to_font_units = |val| {
-                    pdf_font.to_pdf_font_units(val / g.size * pdf_font.font().units_per_em())
-                };
+                let user_units_to_font_units =
+                    |val| pdf_font.to_pdf_font_units(val / g.size * pdf_font.font().units_per_em());
 
                 InstanceGlyph {
                     pdf_glyph,
