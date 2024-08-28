@@ -1,6 +1,8 @@
-use crate::serialize::SvgSettings;
+use crate::serialize::{Object, SerializerContext, SvgSettings};
 use crate::surface::Surface;
+use crate::type3_font::Type3ID;
 use crate::util::Prehashed;
+use pdf_writer::{Chunk, Ref};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -63,7 +65,6 @@ pub struct FontInfo {
     pub(crate) units_per_em: u16,
     global_bbox: Rect,
     postscript_name: Option<String>,
-    is_type3_font: bool,
     ascent: FiniteF32,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
@@ -136,17 +137,6 @@ impl FontInfo {
             }
         };
 
-        // Right now, we decide whether to embed a font as a Type3 font solely based on whether one of these
-        // tables exist. This is not the most "efficient" method, because it is possible a font has a `COLR` table,
-        // but there are still some glyphs which are not in COLR but still in `glyf` or `CFF`. In this case,
-        // we would still choose a Type3 font for the outlines, even though they could be embedded as a CID font.
-        // For now, we make the simplifying assumption that a font is either mapped to a series of Type3 fonts
-        // or to a single CID font, but not a mix of both.
-        let is_type3_font = font_ref.svg().is_ok()
-            || font_ref.colr().is_ok()
-            || font_ref.sbix().is_ok()
-            || font_ref.cff2().is_ok();
-
         Some(FontInfo {
             index,
             checksum,
@@ -160,7 +150,6 @@ impl FontInfo {
             weight,
             italic_angle,
             global_bbox,
-            is_type3_font,
         })
     }
 }
@@ -176,6 +165,15 @@ impl Font {
         index: u32,
         location: Location,
     ) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
+
+        Font::new_with_info(data, Arc::new(font_info))
+    }
+
+    pub(crate) fn new_with_info(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        font_info: Arc<FontInfo>,
+    ) -> Option<Self> {
         let font_ref_yoke =
             Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.clone(),
@@ -184,11 +182,9 @@ impl Font {
                 },
             );
 
-        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
-
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_ref_yoke,
-            font_info: Arc::new(font_info),
+            font_info,
         }))))
     }
 
@@ -228,8 +224,8 @@ impl Font {
         self.0.font_info.italic_angle.get()
     }
 
-    pub fn units_per_em(&self) -> u16 {
-        self.0.font_info.units_per_em
+    pub fn units_per_em(&self) -> f32 {
+        self.0.font_info.units_per_em as f32
     }
 
     pub fn bbox(&self) -> Rect {
@@ -238,10 +234,6 @@ impl Font {
 
     pub fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
-    }
-
-    pub fn is_type3_font(&self) -> bool {
-        self.0.font_info.is_type3_font
     }
 
     pub fn font_ref(&self) -> &FontRef {
@@ -286,6 +278,33 @@ pub fn draw_glyph(
     surface.pop();
 
     glyph_type
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct CIDIdentifer(pub Font);
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Type3Identifier(pub Font, pub Type3ID);
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum FontIdentifier {
+    Cid(CIDIdentifer),
+    Type3(Type3Identifier),
+}
+
+impl FontIdentifier {
+    pub fn font(&self) -> Font {
+        match self {
+            FontIdentifier::Cid(cid) => cid.0.clone(),
+            FontIdentifier::Type3(t3) => t3.0.clone(),
+        }
+    }
+}
+
+// TODO: Remove?
+impl Object for FontIdentifier {
+    fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
+        unreachable!()
+    }
 }
 
 #[cfg(test)]
@@ -354,14 +373,8 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
-            &[Glyph::new(
-                font.clone(),
-                i,
-                0.0,
-                0.0,
-                size as f32,
-                0..text.len(),
-            )],
+            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
+            font.clone(),
             &text,
         );
         // let res = single_glyph(&font, GlyphId::new(i), &mut builder);

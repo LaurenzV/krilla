@@ -1,5 +1,5 @@
 use crate::font;
-use crate::font::{Font, GlyphType};
+use crate::font::{Font, FontIdentifier, GlyphType, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{Object, SerializerContext};
@@ -11,14 +11,17 @@ use skrifa::GlyphId;
 use std::collections::{BTreeMap, BTreeSet};
 use tiny_skia_path::{Rect, Transform};
 
+pub type Gid = u8;
+
 // TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
 pub struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
     widths: Vec<f32>,
-    cmap_entries: BTreeMap<u8, String>,
+    cmap_entries: BTreeMap<Gid, String>,
     glyph_set: BTreeSet<GlyphId>,
+    index: usize,
 }
 
 const CMAP_NAME: Name = Name(b"Custom");
@@ -29,17 +32,18 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
 };
 
 impl Type3Font {
-    pub fn new(font: Font) -> Self {
+    pub fn new(font: Font, index: usize) -> Self {
         Self {
             font,
             glyphs: Vec::new(),
             cmap_entries: BTreeMap::new(),
             widths: Vec::new(),
             glyph_set: BTreeSet::new(),
+            index,
         }
     }
 
-    pub fn to_font_units(&self, val: f32) -> f32 {
+    pub fn to_pdf_font_units(&self, val: f32) -> f32 {
         val
     }
 
@@ -55,7 +59,7 @@ impl Type3Font {
         self.glyph_set.contains(&glyph)
     }
 
-    pub fn get_glyph(&mut self, glyph_id: GlyphId) -> Option<u8> {
+    pub fn get_gid(&self, glyph_id: GlyphId) -> Option<u8> {
         self.glyphs
             .iter()
             .position(|g| *g == glyph_id)
@@ -63,11 +67,12 @@ impl Type3Font {
     }
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
-        if let Some(pos) = self.get_glyph(glyph_id) {
+        if let Some(pos) = self.get_gid(glyph_id) {
             return pos;
         } else {
             assert!(self.glyphs.len() < 256);
 
+            self.glyph_set.insert(glyph_id);
             self.glyphs.push(glyph_id);
             self.widths
                 .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
@@ -75,19 +80,20 @@ impl Type3Font {
         }
     }
 
-    pub fn set_cmap_entry(&mut self, glyph_id: u8, text: String) {
-        self.cmap_entries.insert(glyph_id, text);
+    pub fn get_codepoints(&self, gid: Gid) -> Option<&str> {
+        self.cmap_entries.get(&gid).map(|s| s.as_str())
     }
 
-    pub fn units_per_em(&self) -> u16 {
-        self.font.units_per_em()
+    pub fn set_codepoints(&mut self, gid: Gid, text: String) {
+        self.cmap_entries.insert(gid, text);
     }
 
-    pub fn advance_width(&self, glyph_id: u8) -> Option<f32> {
-        self.widths
-            .get(glyph_id as usize)
-            .copied()
-            .map(|n| self.to_font_units(n))
+    pub fn font(&self) -> Font {
+        self.font.clone()
+    }
+
+    pub fn identifier(&self) -> FontIdentifier {
+        FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 }
 
@@ -193,8 +199,8 @@ impl Object for Type3Font {
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
-                1.0 / (self.font.units_per_em() as f32),
-                1.0 / (self.font.units_per_em() as f32),
+                1.0 / (self.font.units_per_em()),
+                1.0 / (self.font.units_per_em()),
             )
             .to_pdf_transform(),
         );
@@ -233,5 +239,81 @@ impl Object for Type3Font {
         chunk.cmap(cmap_ref, &cmap.finish());
 
         chunk
+    }
+}
+
+pub type Type3ID = usize;
+
+#[derive(Debug)]
+pub struct Type3FontMapper {
+    font: Font,
+    fonts: Vec<Type3Font>,
+}
+
+impl Type3FontMapper {
+    pub fn new(font: Font) -> Type3FontMapper {
+        Self {
+            font,
+            fonts: Vec::new(),
+        }
+    }
+}
+
+impl Type3FontMapper {
+    pub fn id_from_glyph(&self, glyph_id: GlyphId) -> Option<FontIdentifier> {
+        self.fonts
+            .iter()
+            .position(|f| f.covers(glyph_id))
+            .map(|p| self.fonts[p].identifier())
+    }
+
+    pub fn font_from_id(&self, identifier: FontIdentifier) -> Option<&Type3Font> {
+        let pos = self
+            .fonts
+            .iter()
+            .position(|f| f.identifier() == identifier)?;
+        self.fonts.get(pos)
+    }
+
+    pub fn font_mut_from_id(&mut self, identifier: FontIdentifier) -> Option<&mut Type3Font> {
+        let pos = self
+            .fonts
+            .iter()
+            .position(|f| f.identifier() == identifier)?;
+        self.fonts.get_mut(pos)
+    }
+
+    pub fn fonts(&self) -> &[Type3Font] {
+        &self.fonts
+    }
+
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (FontIdentifier, Gid) {
+        if let Some(id) = self.id_from_glyph(glyph_id) {
+            let gid = self
+                .font_from_id(id.clone())
+                .unwrap()
+                .get_gid(glyph_id)
+                .unwrap();
+            return (id, gid);
+        }
+
+        if let Some(last_font) = self.fonts.last_mut() {
+            if last_font.is_full() {
+                let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
+                let id = font.identifier();
+                let gid = font.add_glyph(glyph_id);
+                self.fonts.push(font);
+                (id, gid)
+            } else {
+                let id = last_font.identifier();
+                (id, last_font.add_glyph(glyph_id))
+            }
+        } else {
+            let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
+            let id = font.identifier();
+            let gid = font.add_glyph(glyph_id);
+            self.fonts.push(font);
+            (id, gid)
+        }
     }
 }

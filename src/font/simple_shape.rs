@@ -28,6 +28,24 @@ mod tests {
                 14.0,
             ),
             (
+                "DejaVuSansMono.ttf",
+                "Here with a mono font, some longer text.",
+                Direction::LeftToRight,
+                16.0,
+            ),
+            (
+                "NotoSans-Regular.ttf",
+                "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
+                Direction::LeftToRight,
+                14.0,
+            ),
+            (
+                "NotoSans-Regular.ttf",
+                " birth\u{ad}day ",
+                Direction::LeftToRight,
+                14.0,
+            ),
+            (
                 "NotoSansCJKsc-Regular.otf",
                 "你好世界，这是一段很长的测试文章",
                 Direction::LeftToRight,
@@ -40,7 +58,7 @@ mod tests {
                 14.0,
             ),
         ];
-        let page_size = tiny_skia_path::Size::from_wh(200.0, 200.0).unwrap();
+        let page_size = tiny_skia_path::Size::from_wh(200.0, 300.0).unwrap();
         let mut document_builder = Document::new(SerializeSettings::default_test());
         let mut builder = document_builder.start_page(page_size);
         let mut surface = builder.surface();
@@ -48,14 +66,10 @@ mod tests {
         for (font, text, dir, size) in data {
             let font_data = load_font(font);
             let font = Font::new(Arc::new(font_data), 0, Location::default()).unwrap();
-            let glyphs = simple_shape(text, dir, font, size);
+            let glyphs = simple_shape(text, dir, font.clone(), size);
+            surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, font, text);
 
-            // eprintln!("{:?}", glyphs.iter().map(|g| g.glyph_id).collect::<Vec<_>>());
-            // panic!();
-
-            surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, text);
-
-            y += size * 1.5;
+            y += size * 2.0;
         }
 
         surface.finish();

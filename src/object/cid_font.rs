@@ -1,4 +1,4 @@
-use crate::font::Font;
+use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -16,28 +16,31 @@ const SYSTEM_INFO: SystemInfo = SystemInfo {
     supplement: 0,
 };
 
+pub type Cid = u16;
+
 /// A CID-keyed font.
 #[derive(Debug, Clone)]
 pub struct CIDFont {
     /// The _actual_ underlying font of the CID-keyed font.
     font: Font,
-    /// A mapper that maps the original glyph IDs to their corresponding glyph ID in the font
+    /// A mapper that maps GIDs from the original font to CIDs, i.e. the corresponding GID in the font
     /// subset. The subsetter will ensure that for CID-keyed CFF fonts, the CID-to-GID mapping
     /// will be the identity mapping, regardless of what the mapping was in the original font. This
-    /// allows us to index both font types transparently using GIDs instead of having to distinguish
-    /// according to the underlying font. See the PDF reference for more information on how glyphs
-    /// are indexed in a CID-keyed font.
+    /// allows us to index both, CFF and glyf-based fonts, transparently using GIDs,
+    /// instead of having to distinguish according to the underlying font. See section
+    /// 9.7.4.2 for more information on how glyphs are indexed in a CID-keyed font.
     glyph_remapper: GlyphRemapper,
-    /// A mapping from glyph IDs to their string in the original text.
+    /// A mapping from CIDs to their string in the original text.
     cmap_entries: BTreeMap<u16, String>,
-    /// The widths of the glyphs, _index by their new GID_.
+    /// The widths of the glyphs, _index by their CID_.
     widths: Vec<f32>,
 }
 
 impl CIDFont {
-    /// Create a new CID font from a font.
+    /// Create a new CID-keyed font.
     pub fn new(font: Font) -> CIDFont {
-        // Always include the .notdef glyph. Will also always be included by the subsetter.
+        // Always include the .notdef glyph. Will also always be included by the subsetter in
+        // the glyph remapper.
         let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
 
         Self {
@@ -48,26 +51,27 @@ impl CIDFont {
         }
     }
 
-    /// Get the advance width of a glyph, _indexed by the new GID from the subsetted font_,
-    /// in PDF font units.
-    pub fn advance_width(&self, glyph_id: u16) -> Option<f32> {
-        self.widths
-            .get(glyph_id as usize)
-            .map(|v| self.to_pdf_font_units(*v))
+    pub fn font(&self) -> Font {
+        self.font.clone()
     }
 
-    /// Rescale a value from the original text-space units to PDF font units.
-    /// Fonts in PDF are processed with a upem of 1000, see section 9.4.4 of the spec.
     pub fn to_pdf_font_units(&self, val: f32) -> f32 {
-        val / self.font.units_per_em() as f32 * 1000.0
+        val / self.font.units_per_em() * 1000.0
     }
 
-    /// Register a glyph and return its glyph ID in the subsetted version of the font.
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> GlyphId {
-        let new_id = GlyphId::new(self.glyph_remapper.remap(glyph_id.to_u32() as u16) as u32);
+    pub fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
+        self.glyph_remapper
+            .get(u16::try_from(glyph_id.to_u32()).unwrap())
+    }
+
+    /// Add a new glyph (if it has not already been added) and return its CID.
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
+        let new_id = self
+            .glyph_remapper
+            .remap(u16::try_from(glyph_id.to_u32()).unwrap());
 
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
-        if new_id.to_u32() >= self.widths.len() as u32 {
+        if new_id as usize >= self.widths.len() {
             self.widths
                 .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
         }
@@ -75,8 +79,16 @@ impl CIDFont {
         new_id
     }
 
-    pub fn set_cmap_entry(&mut self, glyph_id: u16, text: String) {
-        self.cmap_entries.insert(glyph_id, text);
+    pub fn get_codepoints(&self, cid: Cid) -> Option<&str> {
+        self.cmap_entries.get(&cid).map(|s| s.as_str())
+    }
+
+    pub fn set_codepoints(&mut self, cid: Cid, text: String) {
+        self.cmap_entries.insert(cid, text);
+    }
+
+    pub fn identifier(&self) -> FontIdentifier {
+        FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
 }
 
@@ -253,8 +265,12 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), GlyphId::new(36));
-        sc.map_glyph(font.clone(), GlyphId::new(37));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(36));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(37));
         check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 
@@ -263,10 +279,18 @@ mod tests {
         let mut sc = sc();
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
-        sc.map_glyph(font.clone(), GlyphId::new(58));
-        sc.map_glyph(font.clone(), GlyphId::new(54));
-        sc.map_glyph(font.clone(), GlyphId::new(69));
-        sc.map_glyph(font.clone(), GlyphId::new(71));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(58));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(54));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(69));
+        sc.create_or_get_font_container(font.clone())
+            .borrow_mut()
+            .add_glyph(GlyphId::new(71));
         check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
 }

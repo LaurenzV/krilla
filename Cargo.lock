@@ -433,6 +433,9 @@ name = "float-cmp"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
+dependencies = [
+ "num-traits",
+]
 
 [[package]]
 name = "flume"
@@ -740,6 +743,7 @@ dependencies = [
  "cosmic-text",
  "difference",
  "flate2",
+ "float-cmp",
  "fontdb",
  "image 0.25.2",
  "miniz_oxide",

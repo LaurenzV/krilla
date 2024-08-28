@@ -1,4 +1,4 @@
-use crate::font::Font;
+use crate::font::FontIdentifier;
 use crate::object::color_space::device_cmyk::DeviceCmyk;
 use crate::object::color_space::luma::{DeviceGray, SGray};
 use crate::object::color_space::rgb::{DeviceRgb, Srgb};
@@ -58,7 +58,7 @@ pub(crate) enum Resource {
     ExtGState(ExtGState),
     ColorSpace(ColorSpaceEnum),
     Shading(ShadingFunction),
-    Font(FontResource),
+    Font(FontIdentifier),
 }
 
 impl Object for Resource {
@@ -137,7 +137,7 @@ pub(crate) struct ResourceDictionaryBuilder {
     pub patterns: ResourceMapper<PatternResource>,
     pub x_objects: ResourceMapper<XObjectResource>,
     pub shadings: ResourceMapper<ShadingFunction>,
-    pub fonts: ResourceMapper<FontResource>,
+    pub fonts: ResourceMapper<FontIdentifier>,
 }
 
 impl ResourceDictionaryBuilder {
@@ -178,7 +178,7 @@ impl ResourceDictionaryBuilder {
         self.shadings.remap_with_name(shading)
     }
 
-    fn register_font(&mut self, font: FontResource) -> String {
+    fn register_font(&mut self, font: FontIdentifier) -> String {
         self.fonts.remap_with_name(font)
     }
 
@@ -212,7 +212,7 @@ pub(crate) struct ResourceDictionary {
     pub patterns: ResourceList<PatternResource>,
     pub x_objects: ResourceList<XObjectResource>,
     pub shadings: ResourceList<ShadingFunction>,
-    pub fonts: ResourceList<FontResource>,
+    pub fonts: ResourceList<FontIdentifier>,
 }
 
 impl ResourceDictionary {
@@ -344,25 +344,6 @@ where
 
 pub type ResourceNumber = u32;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct FontResource {
-    pub font: Font,
-    pub pdf_index: usize,
-}
-
-impl FontResource {
-    pub fn new(font: Font, pdf_index: usize) -> Self {
-        Self { font, pdf_index }
-    }
-}
-
-impl Object for FontResource {
-    fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
-        // Fonts are written manually by the serializer in the end, so this should never be called.
-        unreachable!()
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ColorSpaceEnum {
     Srgb(Srgb),
@@ -386,9 +367,9 @@ impl Object for ColorSpaceEnum {
 
 impl RegisterableObject for ColorSpaceEnum {}
 
-impl RegisterableObject for FontResource {}
+impl RegisterableObject for FontIdentifier {}
 
-impl ResourceTrait for FontResource {
+impl ResourceTrait for FontIdentifier {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
         resources.fonts()
     }
