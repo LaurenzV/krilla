@@ -100,6 +100,7 @@ pub struct SerializerContext {
     pub serialize_settings: SerializeSettings,
 }
 
+#[derive(Clone, Copy)]
 pub enum PDFGlyph {
     Type3(u8),
     CID(u16),

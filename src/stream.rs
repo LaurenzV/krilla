@@ -1,4 +1,3 @@
-use std::iter::Map;
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
@@ -14,7 +13,7 @@ use crate::object::xobject::XObject;
 use crate::resource::{
     PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource,
 };
-use crate::serialize::{PDFGlyph, SerializerContext};
+use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
@@ -22,8 +21,9 @@ use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
+use std::borrow::BorrowMut;
+use std::cell::RefCell;
 use std::ops::Range;
-use std::slice::Iter;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
 
@@ -296,12 +296,10 @@ impl ContentBuilder {
         cur_x: &mut f32,
         cur_y: f32,
         font_identifier: FontIdentifier,
-        mut font: PdfFontMut,
         size: f32,
-        text: &str,
         // The y offset is already accounted for when splitting the glyph runs,
         // so we ignore it here.
-        glyphs: MapType<'_>,
+        glyphs: Vec<InstanceGlyph>,
     ) {
         let font_name = self
             .rd_builder
@@ -318,19 +316,6 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let pdf_glyph = match font {
-                PdfFontMut::Type3(ref mut t3) => {
-                    let gid = t3.get_gid(glyph.glyph_id).unwrap();
-                    t3.set_codepoints(gid, text[glyph.range.clone()].to_string());
-                    PDFGlyph::Type3(gid)
-                }
-                PdfFontMut::CID(ref mut cid_font) => {
-                    let cid = cid_font.get_cid(glyph.glyph_id).unwrap();
-                    cid_font.set_codepoints(cid, text[glyph.range.clone()].to_string());
-                    PDFGlyph::CID(cid)
-                }
-            };
-
             let actual_advance = glyph.x_advance / size * 1000.0;
 
             adjustment += glyph.x_offset / size * 1000.0;
@@ -341,23 +326,23 @@ impl ContentBuilder {
                     encoded.clear();
                 }
 
-                items.adjust(font.to_font_units(-adjustment));
+                items.adjust(-adjustment);
                 adjustment = 0.0;
             }
 
-            match pdf_glyph {
-                PDFGlyph::Type3(cg) => encoded.push(cg),
+            match &glyph.pdf_glyph {
+                PDFGlyph::Type3(cg) => encoded.push(*cg),
                 PDFGlyph::CID(cid) => {
                     encoded.push((cid >> 8) as u8);
                     encoded.push((cid & 0xff) as u8);
                 }
             }
 
-            if let Some(advance) = font.advance_width(pdf_glyph) {
+            if let Some(advance) = glyph.font_advance {
                 adjustment += actual_advance - advance;
             }
 
-            adjustment -= glyph.x_offset;
+            adjustment -= glyph.x_offset / size * 1000.0;
             *cur_x += glyph.x_advance;
         }
 
@@ -403,23 +388,15 @@ impl ContentBuilder {
                     actual_text.properties().actual_text(TextStr(text));
                 }
 
-                let segmented =
-                    GroupByGlyphs::new(sc, fragment.glyphs(), font.clone()).collect::<Vec<_>>();
+                let segmented = GroupByGlyphs::new(
+                    sc.font_container(font.clone()).unwrap(),
+                    fragment.glyphs(),
+                    text,
+                )
+                .collect::<Vec<_>>();
 
                 for (font, glyphs, y_offset) in segmented {
-                    let mut font_container = sc.font_container(font.font()).unwrap().borrow_mut();
-                    let pdf_font = font_container
-                        .get_from_identifier_mut(font.clone())
-                        .unwrap();
-                    sb.encode_consecutive_run(
-                        &mut cur_x,
-                        y - y_offset,
-                        font,
-                        pdf_font,
-                        size,
-                        text,
-                        glyphs,
-                    )
+                    sb.encode_consecutive_run(&mut cur_x, y - y_offset, font, size, glyphs)
                 }
 
                 if fragment.actual_text().is_some() {
@@ -771,11 +748,10 @@ pub struct Glyph {
     pub y_offset: f32,
 }
 
-#[derive(Debug, Clone)]
 pub struct InstanceGlyph {
-    pub glyph_id: GlyphId,
-    pub range: Range<usize>,
+    pub pdf_glyph: PDFGlyph,
     pub x_advance: f32,
+    pub font_advance: Option<f32>,
     pub x_offset: f32,
 }
 
@@ -933,30 +909,29 @@ impl<'a> Iterator for TextFragments<'a> {
 }
 
 pub struct GroupByGlyphs<'a, 'b> {
-    sc: &'b SerializerContext,
+    font_container: &'b RefCell<FontContainer>,
     slice: &'a [Glyph],
-    font: Font,
+    text: &'a str,
 }
 impl<'a, 'b> GroupByGlyphs<'a, 'b> {
-    pub fn new(sc: &'b SerializerContext, slice: &'a [Glyph], font: Font) -> Self {
-        Self { sc, slice, font }
+    pub fn new(
+        font_container: &'b RefCell<FontContainer>,
+        slice: &'a [Glyph],
+        text: &'a str,
+    ) -> Self {
+        Self {
+            font_container,
+            slice,
+            text,
+        }
     }
 }
 
-pub type MapType<'a> = Map<Iter<'a, Glyph>, fn(&Glyph) -> InstanceGlyph>;
-
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, MapType<'a>, f32);
+    type Item = (FontIdentifier, Vec<InstanceGlyph>, f32);
 
     fn next(&mut self) -> Option<Self::Item> {
-        fn map_fn(g: &Glyph) -> InstanceGlyph {
-            InstanceGlyph {
-                glyph_id: g.glyph_id,
-                range: g.range.clone(),
-                x_advance: g.x_advance,
-                x_offset: g.x_offset,
-            }
-        }
+        let mut font_container = self.font_container.borrow_mut();
 
         struct GlyphProps {
             font_identifier: FontIdentifier,
@@ -964,9 +939,8 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
         }
 
         let func = |g: &Glyph| {
-            let font = self.font.clone();
-            let font_container = self.sc.font_container(font).unwrap().borrow();
             let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
+
             GlyphProps {
                 font_identifier,
                 y_offset: g.y_offset,
@@ -992,6 +966,38 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
 
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
-        Some((first.font_identifier, head.iter().map(map_fn), first.y_offset))
+        Some((
+            first.font_identifier,
+            head.iter()
+                .map(move |g| {
+                    let font_container = font_container.borrow_mut();
+                    let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
+                    let mut pdf_font = font_container
+                        .get_from_identifier_mut(font_identifier.clone())
+                        .unwrap();
+
+                    let pdf_glyph = match pdf_font {
+                        PdfFontMut::Type3(ref mut t3) => {
+                            let gid = t3.get_gid(g.glyph_id).unwrap();
+                            t3.set_codepoints(gid, self.text[g.range.clone()].to_string());
+                            PDFGlyph::Type3(gid)
+                        }
+                        PdfFontMut::CID(ref mut cid_font) => {
+                            let cid = cid_font.get_cid(g.glyph_id).unwrap();
+                            cid_font.set_codepoints(cid, self.text[g.range.clone()].to_string());
+                            PDFGlyph::CID(cid)
+                        }
+                    };
+
+                    InstanceGlyph {
+                        pdf_glyph,
+                        x_advance: g.x_advance,
+                        font_advance: pdf_font.advance_width(pdf_glyph),
+                        x_offset: g.x_offset,
+                    }
+                })
+                .collect::<Vec<_>>(),
+            first.y_offset,
+        ))
     }
 }

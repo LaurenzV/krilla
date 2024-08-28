@@ -27,7 +27,12 @@ mod tests {
                 Direction::LeftToRight,
                 14.0,
             ),
-            ("NotoSans-Regular.ttf", "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢", Direction::LeftToRight, 14.0),
+            (
+                "NotoSans-Regular.ttf",
+                "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
+                Direction::LeftToRight,
+                14.0,
+            ),
             (
                 "NotoSansCJKsc-Regular.otf",
                 "你好世界，这是一段很长的测试文章",
