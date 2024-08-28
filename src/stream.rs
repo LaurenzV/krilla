@@ -17,12 +17,15 @@ use crate::serialize::{PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
+use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use usvg::strict_num::ApproxEq;
+use usvg::ApproxEqUlps;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
@@ -296,7 +299,6 @@ impl ContentBuilder {
         mut font: PdfFontMut,
         size: f32,
         text: &str,
-        actual_text: bool,
         // The y offset is already accounted for when splitting the glyph runs,
         // so we ignore it here.
         glyphs: &[Glyph],
@@ -308,15 +310,6 @@ impl ContentBuilder {
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
-
-        if actual_text {
-            let mut actual_text = self
-                .content
-                .begin_marked_content_with_properties(Name(b"Span"));
-            actual_text
-                .properties()
-                .actual_text(TextStr(&text[glyphs[0].range.clone()]));
-        }
 
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
@@ -342,7 +335,7 @@ impl ContentBuilder {
 
             adjustment += glyph.x_offset / size * 1000.0;
 
-            if adjustment != 0.0 {
+            if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
                 if !encoded.is_empty() {
                     items.show(Str(&encoded));
                     encoded.clear();
@@ -374,10 +367,6 @@ impl ContentBuilder {
 
         items.finish();
         positioned.finish();
-
-        if actual_text {
-            self.content.end_marked_content();
-        }
     }
 
     fn fill_stroke_glyph_run(
@@ -404,24 +393,42 @@ impl ContentBuilder {
                 font_container.add_glyph(g.glyph_id);
             });
 
-            let segmented = GroupByGlyphs::new(sc, glyphs, font.clone()).collect::<Vec<_>>();
+            let spanned = TextFragments::new(glyphs, text);
 
-            for (font, actual_text, glyphs, y_offset) in segmented {
-                let mut font_container = sc.font_container(font.font()).unwrap().borrow_mut();
-                let pdf_font = font_container
-                    .get_from_identifier_mut(font.clone())
-                    .unwrap();
-                sb.encode_consecutive_run(
-                    &mut cur_x,
-                    y - y_offset,
-                    font,
-                    pdf_font,
-                    size,
-                    text,
-                    actual_text,
-                    glyphs,
-                )
+            for fragment in spanned {
+                if let Some(text) = fragment.actual_text() {
+                    let mut actual_text = sb
+                        .content
+                        .begin_marked_content_with_properties(Name(b"Span"));
+                    actual_text.properties().actual_text(TextStr(text));
+                }
+
+                let segmented =
+                    GroupByGlyphs::new(sc, fragment.glyphs(), font.clone()).collect::<Vec<_>>();
+
+                for (font, glyphs, y_offset) in segmented {
+                    let mut font_container = sc.font_container(font.font()).unwrap().borrow_mut();
+                    let pdf_font = font_container
+                        .get_from_identifier_mut(font.clone())
+                        .unwrap();
+                    sb.encode_consecutive_run(
+                        &mut cur_x,
+                        y - y_offset,
+                        font,
+                        pdf_font,
+                        size,
+                        text,
+                        glyphs,
+                    )
+                }
+
+                if fragment.actual_text().is_some() {
+                    sb.content.end_marked_content();
+                }
             }
+
+            // panic!();
+
             sb.content.end_text();
         })
     }
@@ -837,6 +844,86 @@ impl PdfFontMut<'_> {
     }
 }
 
+pub enum TextFragment<'a> {
+    Unspanned(&'a [Glyph]),
+    Spanned(&'a [Glyph], &'a str),
+}
+
+impl TextFragment<'_> {
+    pub fn glyphs(&self) -> &[Glyph] {
+        match self {
+            TextFragment::Unspanned(glyphs) => glyphs,
+            TextFragment::Spanned(glyphs, _) => glyphs,
+        }
+    }
+
+    pub fn actual_text(&self) -> Option<&str> {
+        match self {
+            TextFragment::Unspanned(_) => None,
+            TextFragment::Spanned(_, text) => Some(text),
+        }
+    }
+}
+
+pub struct TextFragments<'a> {
+    slice: &'a [Glyph],
+    text: &'a str,
+}
+
+impl<'a> TextFragments<'a> {
+    pub fn new(slice: &'a [Glyph], text: &'a str) -> Self {
+        Self { slice, text }
+    }
+}
+
+impl<'a> Iterator for TextFragments<'a> {
+    type Item = TextFragment<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let func = |g: &Glyph| g.range.clone();
+
+        let mut same_range = None;
+        let mut count = 1;
+
+        let mut iter = self.slice.iter();
+        let first = (func)(iter.next()?);
+        let mut last_range = first.clone();
+
+        while let Some(next) = iter.next() {
+            let next_range = func(next);
+
+            match same_range {
+                None => {
+                    same_range = Some(last_range == next_range);
+                }
+                Some(true) => {
+                    if last_range != next_range {
+                        break;
+                    }
+                }
+                Some(false) => {
+                    if last_range == next_range {
+                        count -= 1;
+                        break;
+                    }
+                }
+            }
+
+            last_range = next.range.clone();
+            count += 1;
+        }
+
+        let (head, tail) = self.slice.split_at(count);
+        self.slice = tail;
+
+        let fragment = match same_range.unwrap_or(false) {
+            true => TextFragment::Spanned(head, &self.text[first]),
+            false => TextFragment::Unspanned(head),
+        };
+        Some(fragment)
+    }
+}
+
 pub struct GroupByGlyphs<'a, 'b> {
     sc: &'b SerializerContext,
     slice: &'a [Glyph],
@@ -850,13 +937,12 @@ impl<'a, 'b> GroupByGlyphs<'a, 'b> {
 }
 
 impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, bool, &'a [Glyph], f32);
+    type Item = (FontIdentifier, &'a [Glyph], f32);
 
     fn next(&mut self) -> Option<Self::Item> {
         struct TempGlyph {
             font_identifier: FontIdentifier,
             y_offset: f32,
-            range: Range<usize>,
         }
 
         let func = |g: &Glyph| {
@@ -866,16 +952,13 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
             TempGlyph {
                 font_identifier,
                 y_offset: g.y_offset,
-                range: g.range.clone(),
             }
         };
 
-        let mut same_range = None;
         let mut count = 1;
 
         let mut iter = self.slice.iter();
         let first = (func)(iter.next()?);
-        let mut last_range = first.range.clone();
 
         while let Some(next) = iter.next() {
             let temp_glyph = func(next);
@@ -886,34 +969,11 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
                 break;
             }
 
-            match same_range {
-                None => {
-                    same_range = Some(last_range == temp_glyph.range);
-                }
-                Some(true) => {
-                    if last_range != temp_glyph.range {
-                        break;
-                    }
-                }
-                Some(false) => {
-                    if last_range == temp_glyph.range {
-                        count -= 1;
-                        break;
-                    }
-                }
-            }
-
-            last_range = next.range.clone();
             count += 1;
         }
 
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
-        Some((
-            first.font_identifier,
-            same_range.unwrap_or(false),
-            head,
-            first.y_offset,
-        ))
+        Some((first.font_identifier, head, first.y_offset))
     }
 }
