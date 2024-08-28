@@ -373,11 +373,6 @@ impl ContentBuilder {
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            glyphs.iter().for_each(|g| {
-                let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
-                font_container.add_glyph(g.glyph_id);
-            });
-
             let spanned = TextFragments::new(glyphs, text);
 
             for fragment in spanned {
@@ -389,7 +384,7 @@ impl ContentBuilder {
                 }
 
                 let segmented = GroupByGlyphs::new(
-                    sc.font_container(font.clone()).unwrap(),
+                    sc.create_or_get_font_container(font.clone()),
                     fragment.glyphs(),
                     text,
                 );
@@ -935,7 +930,8 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
             y_offset: f32,
         }
 
-        let func = |g: &Glyph| {
+        let mut func = |g: &Glyph| {
+            font_container.add_glyph(g.glyph_id);
             let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
 
             GlyphProps {
