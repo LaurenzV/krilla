@@ -273,7 +273,6 @@ impl SerializerContext {
                     FontInfo::new(font_data.as_ref().as_ref(), index, location.clone())
                 {
                     let font_info = Arc::new(font_info);
-                    // TODO: Prevent font info from being computed twice?
                     let font = self
                         .font_cache
                         .get(&font_info.clone())
