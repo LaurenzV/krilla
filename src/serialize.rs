@@ -459,10 +459,38 @@ impl FontContainer {
         }
     }
 
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> PDFGlyph {
+    pub fn get_from_identifier(
+        &self,
+        font_identifier: FontIdentifier,
+    ) -> Option<&dyn PdfFont> {
         match self {
-            FontContainer::Type3(t3) => PDFGlyph::Type3(t3.add_glyph(glyph_id).1),
-            FontContainer::CIDFont(cid) => PDFGlyph::CID(cid.add_glyph(glyph_id)),
+            FontContainer::Type3(t3) => {
+                if let Some(t3_font) = t3.font_from_id(font_identifier) {
+                    return Some(t3_font);
+                } else {
+                    None
+                }
+            }
+            FontContainer::CIDFont(cid) => {
+                if cid.identifier() == font_identifier {
+                    return Some(cid);
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (FontIdentifier, PDFGlyph) {
+        match self {
+            FontContainer::Type3(t3) => {
+                let (identifier, gid) = t3.add_glyph(glyph_id);
+                (identifier, PDFGlyph::Type3(gid))
+            },
+            FontContainer::CIDFont(cid_font) => {
+                let cid = cid_font.add_glyph(glyph_id);
+                (cid_font.identifier(), PDFGlyph::CID(cid))
+            },
         }
     }
 }

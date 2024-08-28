@@ -879,10 +879,9 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
     fn next(&mut self) -> Option<Self::Item> {
         let func = |g: &Glyph| {
             let mut font_container = self.font_container.borrow_mut();
-            let pdf_glyph = font_container.add_glyph(g.glyph_id);
-            let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
+            let (identifier, pdf_glyph) = font_container.add_glyph(g.glyph_id);
             let pdf_font = font_container
-                .get_from_identifier_mut(font_identifier.clone())
+                .get_from_identifier_mut(identifier.clone())
                 .unwrap();
 
             let range = g.range.clone();
@@ -990,7 +989,9 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
     type Item = GlyphGroup;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (head, tail, first) = {
+        // Guarantees: All glyphs in `head` have the font identifier that is given in
+        // `props`, the same size and the same y offset.
+        let (head, tail, props) = {
             struct GlyphProps {
                 font_identifier: FontIdentifier,
                 size: f32,
@@ -999,6 +1000,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
             let func = |g: &Glyph| {
                 let font_container = self.font_container.borrow_mut();
+                // Safe because we've already added all glyphs in the text spanner.
                 let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
 
                 GlyphProps {
@@ -1032,34 +1034,36 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
         self.slice = tail;
 
+        let  font_container = self.font_container.borrow();
+        let pdf_font = font_container
+            .get_from_identifier(props.font_identifier.clone())
+            .unwrap();
+
         let glyphs = head
             .iter()
             .map(move |g| {
-                let mut font_container = self.font_container.borrow_mut();
-                let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
-                let pdf_font = font_container
-                    .get_from_identifier_mut(font_identifier.clone())
-                    .unwrap();
-
+                // Safe because we've already added all glyphs in the text spanner.
                 let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
+
+                let user_units_to_font_units = |val| {
+                    pdf_font.to_pdf_font_units(val / g.size * pdf_font.font().units_per_em())
+                };
 
                 InstanceGlyph {
                     pdf_glyph,
                     user_space_x_advance: g.x_advance,
-                    x_advance: pdf_font
-                        .to_pdf_font_units(g.x_advance / g.size * pdf_font.font().units_per_em()),
+                    x_advance: user_units_to_font_units(g.x_advance),
                     font_advance: pdf_font
                         .font()
                         .advance_width(g.glyph_id)
                         .map(|n| pdf_font.to_pdf_font_units(n)),
-                    x_offset: pdf_font
-                        .to_pdf_font_units(g.x_offset / g.size * pdf_font.font().units_per_em()),
+                    x_offset: user_units_to_font_units(g.x_offset),
                 }
             })
             .collect::<Vec<_>>();
 
         let glyph_group =
-            GlyphGroup::new(first.font_identifier, glyphs, first.size, first.y_offset);
+            GlyphGroup::new(props.font_identifier, glyphs, props.size, props.y_offset);
 
         Some(glyph_group)
     }
