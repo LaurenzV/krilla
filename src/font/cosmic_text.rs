@@ -12,6 +12,7 @@ mod tests {
     use skrifa::GlyphId;
     use std::sync::Arc;
 
+    #[ignore]
     #[test]
     fn cosmic_text_integration() {
         let mut font_system = FontSystem::new_with_fonts([Source::Binary(Arc::new(std::fs::read("/Users/lstampfl/Programming/GitHub/resvg/crates/resvg/tests/fonts/NotoSans-Regular.ttf").unwrap()))]);
