@@ -293,7 +293,7 @@ impl ContentBuilder {
         size: f32,
         // The y offset is already accounted for when splitting the glyph runs,
         // so we ignore it here.
-        glyphs: Vec<InstanceGlyph>,
+        glyphs: &[InstanceGlyph],
     ) {
         let font_name = self
             .rd_builder
@@ -366,7 +366,7 @@ impl ContentBuilder {
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            let spanned = TextFragments::new(glyphs, text);
+            let spanned = TextSpanner::new(glyphs, text);
 
             for fragment in spanned {
                 if let Some(text) = fragment.actual_text() {
@@ -376,19 +376,19 @@ impl ContentBuilder {
                     actual_text.properties().actual_text(TextStr(text));
                 }
 
-                let segmented = GroupByGlyphs::new(
+                let segmented = GlyphGrouper::new(
                     sc.create_or_get_font_container(font.clone()),
                     fragment.glyphs(),
                     text,
                 );
 
-                for (font_identifier, glyphs, y_offset, size) in segmented {
+                for glyph_group in segmented {
                     sb.encode_consecutive_run(
                         &mut cur_x,
-                        y - y_offset,
-                        font_identifier,
-                        size,
-                        glyphs,
+                        y - glyph_group.y_offset,
+                        glyph_group.font_identifier,
+                        glyph_group.size,
+                        &glyph_group.glyphs,
                     )
                 }
 
@@ -822,40 +822,40 @@ impl PdfFontMut<'_> {
     }
 }
 
-pub enum TextFragment<'a> {
+pub enum TextSpan<'a> {
     Unspanned(&'a [Glyph]),
     Spanned(&'a [Glyph], &'a str),
 }
 
-impl TextFragment<'_> {
+impl TextSpan<'_> {
     pub fn glyphs(&self) -> &[Glyph] {
         match self {
-            TextFragment::Unspanned(glyphs) => glyphs,
-            TextFragment::Spanned(glyphs, _) => glyphs,
+            TextSpan::Unspanned(glyphs) => glyphs,
+            TextSpan::Spanned(glyphs, _) => glyphs,
         }
     }
 
     pub fn actual_text(&self) -> Option<&str> {
         match self {
-            TextFragment::Unspanned(_) => None,
-            TextFragment::Spanned(_, text) => Some(text),
+            TextSpan::Unspanned(_) => None,
+            TextSpan::Spanned(_, text) => Some(text),
         }
     }
 }
 
-pub struct TextFragments<'a> {
+pub struct TextSpanner<'a> {
     slice: &'a [Glyph],
     text: &'a str,
 }
 
-impl<'a> TextFragments<'a> {
+impl<'a> TextSpanner<'a> {
     pub fn new(slice: &'a [Glyph], text: &'a str) -> Self {
         Self { slice, text }
     }
 }
 
-impl<'a> Iterator for TextFragments<'a> {
-    type Item = TextFragment<'a>;
+impl<'a> Iterator for TextSpanner<'a> {
+    type Item = TextSpan<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let func = |g: &Glyph| g.range.clone();
@@ -895,19 +895,43 @@ impl<'a> Iterator for TextFragments<'a> {
         self.slice = tail;
 
         let fragment = match same_range.unwrap_or(false) {
-            true => TextFragment::Spanned(head, &self.text[first]),
-            false => TextFragment::Unspanned(head),
+            true => TextSpan::Spanned(head, &self.text[first]),
+            false => TextSpan::Unspanned(head),
         };
         Some(fragment)
     }
 }
 
-pub struct GroupByGlyphs<'a, 'b> {
+pub struct GlyphGroup {
+    font_identifier: FontIdentifier,
+    glyphs: Vec<InstanceGlyph>,
+    size: f32,
+    y_offset: f32,
+}
+
+impl GlyphGroup {
+    pub fn new(
+        font_identifier: FontIdentifier,
+        glyphs: Vec<InstanceGlyph>,
+        size: f32,
+        y_offset: f32,
+    ) -> Self {
+        GlyphGroup {
+            font_identifier,
+            glyphs,
+            size,
+            y_offset,
+        }
+    }
+}
+
+pub struct GlyphGrouper<'a, 'b> {
     font_container: &'b mut FontContainer,
     slice: &'a [Glyph],
     text: &'a str,
 }
-impl<'a, 'b> GroupByGlyphs<'a, 'b> {
+
+impl<'a, 'b> GlyphGrouper<'a, 'b> {
     pub fn new(font_container: &'b mut FontContainer, slice: &'a [Glyph], text: &'a str) -> Self {
         Self {
             font_container,
@@ -917,8 +941,8 @@ impl<'a, 'b> GroupByGlyphs<'a, 'b> {
     }
 }
 
-impl<'a> Iterator for GroupByGlyphs<'a, '_> {
-    type Item = (FontIdentifier, Vec<InstanceGlyph>, f32, f32);
+impl<'a> Iterator for GlyphGrouper<'a, '_> {
+    type Item = GlyphGroup;
 
     fn next(&mut self) -> Option<Self::Item> {
         let (head, tail, first) = {
@@ -962,39 +986,41 @@ impl<'a> Iterator for GroupByGlyphs<'a, '_> {
         };
 
         self.slice = tail;
-        Some((
-            first.font_identifier,
-            head.iter()
-                .map(move |g| {
-                    let font_identifier = self.font_container.font_identifier(g.glyph_id).unwrap();
-                    let mut pdf_font = self
-                        .font_container
-                        .get_from_identifier_mut(font_identifier.clone())
-                        .unwrap();
 
-                    let pdf_glyph = match pdf_font {
-                        PdfFontMut::Type3(ref mut t3) => {
-                            let gid = t3.get_gid(g.glyph_id).unwrap();
-                            t3.set_codepoints(gid, self.text[g.range.clone()].to_string());
-                            PDFGlyph::Type3(gid)
-                        }
-                        PdfFontMut::CID(ref mut cid_font) => {
-                            let cid = cid_font.get_cid(g.glyph_id).unwrap();
-                            cid_font.set_codepoints(cid, self.text[g.range.clone()].to_string());
-                            PDFGlyph::CID(cid)
-                        }
-                    };
+        let glyphs = head
+            .iter()
+            .map(move |g| {
+                let font_identifier = self.font_container.font_identifier(g.glyph_id).unwrap();
+                let mut pdf_font = self
+                    .font_container
+                    .get_from_identifier_mut(font_identifier.clone())
+                    .unwrap();
 
-                    InstanceGlyph {
-                        pdf_glyph,
-                        x_advance: g.x_advance,
-                        font_advance: pdf_font.advance_width(pdf_glyph),
-                        x_offset: g.x_offset,
+                let pdf_glyph = match pdf_font {
+                    PdfFontMut::Type3(ref mut t3) => {
+                        let gid = t3.get_gid(g.glyph_id).unwrap();
+                        t3.set_codepoints(gid, self.text[g.range.clone()].to_string());
+                        PDFGlyph::Type3(gid)
                     }
-                })
-                .collect::<Vec<_>>(),
-            first.y_offset,
-            first.size,
-        ))
+                    PdfFontMut::CID(ref mut cid_font) => {
+                        let cid = cid_font.get_cid(g.glyph_id).unwrap();
+                        cid_font.set_codepoints(cid, self.text[g.range.clone()].to_string());
+                        PDFGlyph::CID(cid)
+                    }
+                };
+
+                InstanceGlyph {
+                    pdf_glyph,
+                    x_advance: g.x_advance,
+                    font_advance: pdf_font.advance_width(pdf_glyph),
+                    x_offset: g.x_offset,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let glyph_group =
+            GlyphGroup::new(first.font_identifier, glyphs, first.y_offset, first.size);
+
+        Some(glyph_group)
     }
 }
