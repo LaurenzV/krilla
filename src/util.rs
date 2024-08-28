@@ -2,13 +2,12 @@ use crate::object::color_space::ColorSpace;
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
-use siphasher::sip128::{Hasher128, SipHasher13};
-use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use tiny_skia_path::{Path, PathBuilder, Rect};
+use crate::serialize::SipHashable;
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -120,7 +119,7 @@ pub struct Prehashed<T: ?Sized> {
 impl<T: Hash + 'static> Prehashed<T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        let hash = hash_item(&value);
+        let hash = value.sip_hash();
         Self { hash, value }
     }
 }
@@ -163,15 +162,6 @@ impl<T: Hash + ?Sized + 'static> Hash for Prehashed<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u128(self.hash);
     }
-}
-
-fn hash_item<T: Hash + ?Sized + 'static>(item: &T) -> u128 {
-    // Also hash the TypeId because the type might be converted
-    // through an unsized coercion.
-    let mut state = SipHasher13::new();
-    item.type_id().hash(&mut state);
-    item.hash(&mut state);
-    state.finish128().as_u128()
 }
 
 /// Extra methods for [`[T]`](slice).

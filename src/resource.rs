@@ -302,7 +302,7 @@ where
 
 impl<V> ResourceMapper<V>
 where
-    V: Hash + Eq + ResourceTrait + Debug,
+    V: Hash + Eq + ResourceTrait + Debug + 'static,
 {
     pub fn new() -> Self {
         Self {

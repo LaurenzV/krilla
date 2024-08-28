@@ -1,3 +1,4 @@
+use std::any::Any;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
@@ -398,11 +399,11 @@ pub trait SipHashable {
 
 impl<T> SipHashable for T
 where
-    T: Hash + ?Sized,
+    T: Hash + ?Sized + 'static,
 {
     fn sip_hash(&self) -> u128 {
         let mut state = SipHasher13::new();
-        // TODO: Hash type ID too, like in Typst?
+        self.type_id().hash(&mut state);
         self.hash(&mut state);
         state.finish128().as_u128()
     }

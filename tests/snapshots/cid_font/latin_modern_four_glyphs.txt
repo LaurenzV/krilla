@@ -20,7 +20,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /ZBMOEQ+LMRoman10-Regular-Identity-H
+  /BaseFont /VXUMNV+LMRoman10-Regular-Identity-H
   /Encoding /Identity-H
   /DescendantFonts [4 0 R]
   /ToUnicode 6 0 R
@@ -31,7 +31,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType0
-  /BaseFont /ZBMOEQ+LMRoman10-Regular
+  /BaseFont /VXUMNV+LMRoman10-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -46,7 +46,7 @@ endobj
 5 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /ZBMOEQ+LMRoman10-Regular
+  /FontName /VXUMNV+LMRoman10-Regular
   /Flags 131076
   /FontBBox [-430 -290 987 837]
   /ItalicAngle 0
