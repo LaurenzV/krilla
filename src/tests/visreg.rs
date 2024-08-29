@@ -1,6 +1,5 @@
 use crate::document::Document;
 use crate::rgb::Rgb;
-use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
