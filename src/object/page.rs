@@ -192,7 +192,7 @@ mod tests {
     use tiny_skia_path::{PathBuilder, Rect, Size};
 
     #[snapshot]
-    fn page_simple_(sc: &mut SerializerContext) {
+    fn page_simple(sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 

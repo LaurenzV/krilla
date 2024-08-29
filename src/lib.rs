@@ -35,6 +35,7 @@ pub(crate) mod test_utils {
     use tiny_skia_path::{Path, PathBuilder, Rect};
 
     const REPLACE: bool = true;
+    const STORE: bool = true;
 
     pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
         let mut builder = PathBuilder::new();
@@ -58,11 +59,25 @@ pub(crate) mod test_utils {
         path
     }
 
-    pub fn check_snapshot(name: &str, content: &[u8]) {
+    fn snapshot_store_path(name: &str) -> PathBuf {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store/snapshots");
+
+        std::fs::create_dir_all(&path).unwrap();
+
+        path.push(format!("{}.pdf", name));
+        path
+    }
+
+    pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
         let path = snapshot_path(name);
 
+        if STORE && storable {
+            let store_path = snapshot_store_path(name);
+            std::fs::write(&store_path, &content).unwrap();
+        }
+
         if !path.exists() {
-            std::fs::write(path, &content).unwrap();
+            std::fs::write(&path, &content).unwrap();
             panic!("new snapshot created");
         }
 

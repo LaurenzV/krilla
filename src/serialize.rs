@@ -174,6 +174,10 @@ impl SerializerContext {
         self.pages.push((ref_, page));
     }
 
+    pub fn has_pages(&self) -> bool {
+        !self.page_infos.is_empty()
+    }
+
     pub fn new_ref(&mut self) -> Ref {
         self.cur_ref.bump()
     }

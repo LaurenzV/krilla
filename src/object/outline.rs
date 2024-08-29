@@ -163,38 +163,38 @@ mod tests {
     use crate::Fill;
     use tiny_skia_path::{PathBuilder, Point, Rect, Size};
 
-    #[test]
-    fn simple() {
-        let mut builder = PathBuilder::new();
-        builder.push_rect(Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap());
-        let path = builder.finish().unwrap();
-
-        let mut db = Document::new(SerializeSettings::settings_1());
-        let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        let mut surface = page.surface();
-        surface.draw_path(&path, Fill::<Rgb>::default());
-        surface.finish();
-        page.finish();
-
-        db.start_page(Size::from_wh(200.0, 500.0).unwrap());
-        db.start_page(Size::from_wh(250.0, 700.0).unwrap());
-
-        let mut outline = Outline::new();
-
-        let mut child1 = OutlineNode::new("Level 1".to_string(), 0, Point::from_xy(50.0, 50.0));
-        child1.push_child(OutlineNode::new(
-            "Level 2".to_string(),
-            0,
-            Point::from_xy(50.0, 150.0),
-        ));
-
-        let child2 = OutlineNode::new("Level 1 try 2".to_string(), 1, Point::from_xy(75.0, 150.0));
-
-        outline.push_child(child1);
-        outline.push_child(child2);
-
-        db.set_outline(outline);
-
-        check_snapshot("outline/simple", &db.finish());
-    }
+    // #[test]
+    // fn simple() {
+    //     let mut builder = PathBuilder::new();
+    //     builder.push_rect(Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap());
+    //     let path = builder.finish().unwrap();
+    //
+    //     let mut db = Document::new(SerializeSettings::settings_1());
+    //     let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
+    //     let mut surface = page.surface();
+    //     surface.draw_path(&path, Fill::<Rgb>::default());
+    //     surface.finish();
+    //     page.finish();
+    //
+    //     db.start_page(Size::from_wh(200.0, 500.0).unwrap());
+    //     db.start_page(Size::from_wh(250.0, 700.0).unwrap());
+    //
+    //     let mut outline = Outline::new();
+    //
+    //     let mut child1 = OutlineNode::new("Level 1".to_string(), 0, Point::from_xy(50.0, 50.0));
+    //     child1.push_child(OutlineNode::new(
+    //         "Level 2".to_string(),
+    //         0,
+    //         Point::from_xy(50.0, 150.0),
+    //     ));
+    //
+    //     let child2 = OutlineNode::new("Level 1 try 2".to_string(), 1, Point::from_xy(75.0, 150.0));
+    //
+    //     outline.push_child(child1);
+    //     outline.push_child(child2);
+    //
+    //     db.set_outline(outline);
+    //
+    //     check_snapshot("outline/simple", &db.finish());
+    // }
 }

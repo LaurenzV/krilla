@@ -3,4 +3,5 @@ target
 out
 data
 tests/diff/*
+tests/store/*
 **/.DS_STORE
