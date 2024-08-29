@@ -48,19 +48,3 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
 
     None
 }
-
-#[cfg(test)]
-mod tests {
-
-    use crate::font::draw;
-
-    use std::sync::Arc;
-
-    #[ignore]
-    #[test]
-    fn sbix_apple_color() {
-        let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
-
-        draw(Arc::new(font_data), None, "sbix_apple_color");
-    }
-}

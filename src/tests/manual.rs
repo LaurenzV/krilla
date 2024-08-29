@@ -6,7 +6,7 @@ use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
-use crate::tests::{simple_shape, write_manual_to_store, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, ASSETS_PATH};
+use crate::tests::{simple_shape, write_manual_to_store, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, ASSETS_PATH, COLR_TEST_GLYPHS};
 use crate::util::SliceExt;
 use crate::Fill;
 use rustybuzz::Direction;
@@ -139,9 +139,55 @@ fn cosmic_text_integration() {
 
 #[ignore]
 #[test]
-fn svg_twitter() {
+fn twitter_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
-    all_glyphs_to_pdf(Arc::new(font_data), None, "svg_twitter");
+    all_glyphs_to_pdf(Arc::new(font_data), None, "twitter_color_emoji");
+}
+
+#[ignore]
+#[test]
+fn noto_sans() {
+    let font_data = NOTO_SANS.clone();;
+
+    let glyphs = (0..1000)
+        .map(|n| (GlyphId::new(n), "".to_string()))
+        .collect::<Vec<_>>();
+
+    all_glyphs_to_pdf(font_data, Some(glyphs), "noto_sans");
+}
+
+#[ignore]
+#[test]
+fn apple_color_emoji() {
+    let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
+
+    all_glyphs_to_pdf(Arc::new(font_data), None, "sbix_apple_color");
+}
+
+#[ignore]
+#[test]
+fn colr_test_glyphs() {
+    let font_data = COLR_TEST_GLYPHS.clone();
+
+    let glyphs = (0..=220)
+        .map(|n| (GlyphId::new(n), "".to_string()))
+        .collect::<Vec<_>>();
+
+    all_glyphs_to_pdf(font_data, Some(glyphs), "colr_test_glyphs");
+}
+
+#[ignore]
+#[test]
+fn noto_color_emoji() {
+    let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
+    all_glyphs_to_pdf(Arc::new(font_data), None, "noto_color_emoji");
+}
+
+#[ignore]
+#[test]
+fn segoe_ui_emoji() {
+    let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
+    all_glyphs_to_pdf(Arc::new(font_data), None, "segoe_ui_emoji");
 }
 
 fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
