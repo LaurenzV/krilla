@@ -1,4 +1,5 @@
-use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
+use crate::chunk_container::ChunkContainer;
+use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Ref};
 use std::hash::{Hash, Hasher};
 use tiny_skia_path::{Point, Transform};
@@ -9,7 +10,7 @@ pub enum Destination {
 }
 
 impl Object for Destination {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
         &mut cc.destinations
     }
 
@@ -47,7 +48,7 @@ impl XyzDestination {
 }
 
 impl Object for XyzDestination {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
         &mut cc.destinations
     }
 

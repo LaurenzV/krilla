@@ -1,5 +1,6 @@
+use crate::chunk_container::ChunkContainer;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
-use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -28,7 +29,7 @@ impl ShadingPattern {
 }
 
 impl Object for ShadingPattern {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
         &mut cc.patterns
     }
 

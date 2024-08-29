@@ -83,9 +83,10 @@ impl Color {
 
 /// A module for dealing with device CMYK colors.
 pub mod device_cmyk {
+    use crate::chunk_container::ChunkContainer;
     use crate::object::color_space::{ColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
+    use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
 
     /// A CMYK color.
@@ -135,7 +136,7 @@ pub mod device_cmyk {
     }
 
     impl Object for DeviceCmyk {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
             unreachable!()
         }
 
@@ -149,9 +150,10 @@ pub mod device_cmyk {
 pub mod rgb {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
+    use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
+    use crate::chunk_container::ChunkContainer;
     use pdf_writer::{Chunk, Ref};
 
     /// An RGB color.
@@ -223,7 +225,7 @@ pub mod rgb {
     pub struct Srgb;
 
     impl Object for Srgb {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
             &mut cc.color_spaces
         }
 
@@ -242,7 +244,7 @@ pub mod rgb {
     }
 
     impl Object for DeviceRgb {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
             unreachable!()
         }
 
@@ -254,9 +256,10 @@ pub mod rgb {
 
 /// A module for dealing with device luma (= grayscale) colors.
 pub mod luma {
+    use crate::chunk_container::ChunkContainer;
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
     use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
+    use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
@@ -322,7 +325,7 @@ pub mod luma {
     pub struct SGray;
 
     impl Object for SGray {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
             &mut cc.color_spaces
         }
 
@@ -341,7 +344,7 @@ pub mod luma {
     }
 
     impl Object for DeviceGray {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
             unreachable!()
         }
 

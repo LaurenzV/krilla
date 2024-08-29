@@ -1,3 +1,4 @@
+use crate::chunk_container::ChunkContainer;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
@@ -73,7 +74,7 @@ impl Default for SerializeSettings {
 }
 
 pub trait Object: SipHashable {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap>;
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk>;
 
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 
@@ -98,7 +99,6 @@ pub struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     chunks: Vec<Chunk>,
     cur_ref: Ref,
-    cur_cache_ref: Ref,
     pub serialize_settings: SerializeSettings,
 }
 
@@ -127,150 +127,14 @@ impl PDFGlyph {
     }
 }
 
-const CACHE_REF_START: i32 = 50000000;
-
-pub type ChunkMap = (Ref, Chunk);
-
-pub struct ChunkContainer {
-    pub(crate) page_label_tree: Option<ChunkMap>,
-    pub(crate) page_tree: Option<ChunkMap>,
-    pub(crate) outline: Option<ChunkMap>,
-
-    pub(crate) pages: Vec<ChunkMap>,
-    pub(crate) page_labels: Vec<ChunkMap>,
-    pub(crate) annotations: Vec<ChunkMap>,
-    pub(crate) fonts: Vec<ChunkMap>,
-    pub(crate) color_spaces: Vec<ChunkMap>,
-    pub(crate) destinations: Vec<ChunkMap>,
-    pub(crate) ext_g_states: Vec<ChunkMap>,
-    pub(crate) images: Vec<ChunkMap>,
-    pub(crate) masks: Vec<ChunkMap>,
-    pub(crate) x_objects: Vec<ChunkMap>,
-    pub(crate) shading_functions: Vec<ChunkMap>,
-    pub(crate) patterns: Vec<ChunkMap>,
-}
-
-impl ChunkContainer {
-    pub fn new() -> Self {
-        Self {
-            page_tree: None,
-            outline: None,
-            page_label_tree: None,
-
-            pages: vec![],
-            page_labels: vec![],
-            annotations: vec![],
-            fonts: vec![],
-            color_spaces: vec![],
-            destinations: vec![],
-            ext_g_states: vec![],
-            images: vec![],
-            masks: vec![],
-            x_objects: vec![],
-            shading_functions: vec![],
-            patterns: vec![],
-        }
-    }
-
-    pub fn finish(self, serialize_settings: &SerializeSettings) -> Pdf {
-        let mut remapped_ref = Ref::new(1);
-        let mut remapper = HashMap::new();
-
-        macro_rules! remap_field {
-            ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
-                $(
-                    if let Some($field) = &$self.$field {
-                        debug_assert!($field.0.get() >= CACHE_REF_START);
-
-                        $remapper.insert($field.0, $remapped_ref.bump());
-                    }
-                )+
-            };
-        }
-
-        macro_rules! remap_fields {
-            ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
-                $(
-                    for el in &$self.$field {
-                        debug_assert!(el.0.get() >= CACHE_REF_START);
-
-                        $remapper.insert(el.0, $remapped_ref.bump());
-                    }
-                )+
-            };
-        }
-
-        // Chunk length is not an exact number because the length might change as we renumber,
-        // so we add a bit of a buffer, which should hopefully always be enough
-        // let mut pdf = Pdf::with_capacity((self.chunks_len as f32 * 1.1) as usize);
-        let mut pdf = Pdf::new();
-
-        if serialize_settings.ascii_compatible {
-            pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
-        }
-
-        // We only write a catalog if a page tree exists. Every valid PDF must have one
-        // and krilla ensures that there always is one, but for snapshot tests, it can be
-        // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some() || self.page_label_tree.is_some() || self.outline.is_some() {
-            let catalog_ref = remapped_ref.bump();
-
-            let mut catalog = pdf.catalog(catalog_ref);
-            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
-
-            if let Some(pt) = &self.page_tree {
-                catalog.pages(pt.0);
-            }
-
-            if let Some(pl) = &self.page_label_tree {
-                catalog.pair(Name(b"PageLabels"), pl.0);
-            }
-
-            if let Some(ol) = &self.outline {
-                catalog.outlines(ol.0);
-            }
-
-            catalog.finish();
-        }
-
-        remap_fields!(self, remapper, remapped_ref; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
-
-        macro_rules! write_field {
-            ($self:expr, $remapper:expr, $remapped_ref:expr, $pdf:expr; $($field:ident),+) => {
-                $(
-                    if let Some($field) = $self.$field {
-                        $field.1.renumber_into($pdf, |old| *$remapper.entry(old).or_insert_with(|| $remapped_ref.bump()));
-                    }
-                )+
-            };
-        }
-
-        macro_rules! write_fields {
-            ($self:expr, $remapper:expr, $remapped_ref:expr, $pdf:expr; $($field:ident),+) => {
-                $(
-                    for el in $self.$field {
-                        el.1.renumber_into($pdf, |old| *$remapper.entry(old).or_insert_with(|| $remapped_ref.bump()));
-                    }
-                )+
-            };
-        }
-
-        write_field!(self, remapper, remapped_ref, &mut pdf; page_tree, outline, page_label_tree);
-        write_fields!(self, remapper, remapped_ref, &mut pdf; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
-
-        pdf
-    }
-}
-
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
             cur_ref: Ref::new(1),
-            cur_cache_ref: Ref::new(CACHE_REF_START),
             chunks: Vec::new(),
-            page_tree_ref,
+            page_tree_ref: None,
             outline: None,
             page_infos: vec![],
             pages: vec![],
@@ -303,8 +167,6 @@ impl SerializerContext {
     }
 
     pub fn new_ref(&mut self) -> Ref {
-        assert!(self.cur_ref.get() < CACHE_REF_START);
-
         self.cur_ref.bump()
     }
 
@@ -326,7 +188,7 @@ impl SerializerContext {
 
     pub fn add<T>(&mut self, object: T) -> Ref
     where
-        T: RegisterableObject,
+        T: Object,
     {
         let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
@@ -335,7 +197,6 @@ impl SerializerContext {
             let root_ref = self.new_ref();
             let chunk = object.serialize_into(self, root_ref);
             self.cached_mappings.insert(hash, root_ref);
-            self.chunks_len += chunk.len();
             self.chunks.push(chunk);
             root_ref
         }
@@ -373,7 +234,7 @@ impl SerializerContext {
     // TODO: Don't use generics here
     pub fn add_font<T>(&mut self, object: T) -> Ref
     where
-        T: RegisterableObject,
+        T: Object,
     {
         let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {

@@ -1,6 +1,7 @@
+use crate::chunk_container::ChunkContainer;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{ChunkContainer, ChunkMap, Object, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
@@ -91,7 +92,7 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<ChunkMap> {
+    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
         &mut cc.masks
     }
 
