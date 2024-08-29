@@ -5,9 +5,9 @@ use crate::serialize::{Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
+use crate::util::RectWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
-use crate::util::RectWrapper;
 
 /// A mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
