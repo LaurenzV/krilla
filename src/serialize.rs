@@ -1,4 +1,4 @@
-use std::any::Any;
+use crate::chunk_container::ChunkContainer;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
@@ -7,20 +7,22 @@ use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{Page, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
-use crate::resource::ColorSpaceEnum;
+use crate::page::PageLabel;
+use crate::resource::{ColorSpaceResource, Resource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Filter, Finish, Name, Pdf, Ref};
+use pdf_writer::{Chunk, Filter, Name, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
+use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
+use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
-use skrifa::raw::TableProvider;
 use tiny_skia_path::Rect;
 
 #[derive(Copy, Clone, Debug)]
@@ -72,7 +74,9 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object {
+pub trait Object: SipHashable {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 
     fn serialize(&self, sc: &mut SerializerContext) -> Chunk {
@@ -86,22 +90,16 @@ pub struct PageInfo {
     pub media_box: Rect,
 }
 
-pub trait RegisterableObject: Object + SipHashable {}
-
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
-    catalog_ref: Ref,
-    page_tree_ref: Ref,
-    page_labels_ref: Option<Ref>,
-    outline_ref: Option<Ref>,
+    page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, Page)>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
-    chunks: Vec<Chunk>,
-    chunks_len: usize,
     cur_ref: Ref,
+    chunk_container: ChunkContainer,
     pub serialize_settings: SerializeSettings,
 }
 
@@ -132,22 +130,15 @@ impl PDFGlyph {
 
 impl SerializerContext {
     pub fn new(serialize_settings: SerializeSettings) -> Self {
-        let mut cur_ref = Ref::new(1);
-        let catalog_ref = cur_ref.bump();
-        let page_tree_ref = cur_ref.bump();
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
-            cur_ref,
-            chunks: Vec::new(),
-            page_tree_ref,
-            catalog_ref,
+            cur_ref: Ref::new(1),
+            chunk_container: ChunkContainer::new(),
+            page_tree_ref: None,
             outline: None,
-            outline_ref: None,
-            page_labels_ref: None,
             page_infos: vec![],
             pages: vec![],
-            chunks_len: 0,
             font_map: HashMap::new(),
             serialize_settings,
         }
@@ -161,8 +152,10 @@ impl SerializerContext {
         self.outline = Some(outline);
     }
 
-    pub fn page_tree_ref(&self) -> Ref {
-        self.page_tree_ref
+    pub fn page_tree_ref(&mut self) -> Ref {
+        *self
+            .page_tree_ref
+            .get_or_insert_with(|| self.cur_ref.bump())
     }
 
     pub fn add_page(&mut self, page: Page) {
@@ -180,7 +173,7 @@ impl SerializerContext {
 
     pub fn rgb(&mut self) -> CSWrapper {
         if self.serialize_settings.no_device_cs {
-            CSWrapper::Ref(self.add(ColorSpaceEnum::Srgb(Srgb)))
+            CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb(Srgb)))
         } else {
             CSWrapper::Name(DEVICE_RGB.to_pdf_name())
         }
@@ -188,15 +181,15 @@ impl SerializerContext {
 
     pub fn gray(&mut self) -> CSWrapper {
         if self.serialize_settings.no_device_cs {
-            CSWrapper::Ref(self.add(ColorSpaceEnum::SGray(SGray)))
+            CSWrapper::Ref(self.add_object(ColorSpaceResource::SGray(SGray)))
         } else {
             CSWrapper::Name(DEVICE_GRAY.to_pdf_name())
         }
     }
 
-    pub fn add<T>(&mut self, object: T) -> Ref
+    pub fn add_object<T>(&mut self, object: T) -> Ref
     where
-        T: RegisterableObject,
+        T: Object,
     {
         let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
@@ -205,10 +198,18 @@ impl SerializerContext {
             let root_ref = self.new_ref();
             let chunk = object.serialize_into(self, root_ref);
             self.cached_mappings.insert(hash, root_ref);
-            self.chunks_len += chunk.len();
-            self.chunks.push(chunk);
+            object
+                .chunk_container(&mut self.chunk_container)
+                .push(chunk);
             root_ref
         }
+    }
+
+    pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
+        let ref_ = self.new_ref();
+        let chunk = page_label.serialize_into(ref_);
+        self.chunk_container.page_labels.push(chunk);
+        ref_
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> &RefCell<FontContainer> {
@@ -240,18 +241,23 @@ impl SerializerContext {
         })
     }
 
-    // TODO: Don't use generics here
-    pub fn add_font<T>(&mut self, object: T) -> Ref
-    where
-        T: RegisterableObject,
-    {
-        let hash = object.sip_hash();
-        if let Some(_ref) = self.cached_mappings.get(&hash) {
-            *_ref
-        } else {
-            let root_ref = self.new_ref();
-            self.cached_mappings.insert(hash, root_ref);
-            root_ref
+    pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
+        match resource.into() {
+            Resource::XObject(xr) => self.add_object(xr),
+            Resource::Pattern(pr) => self.add_object(pr),
+            Resource::ExtGState(e) => self.add_object(e),
+            Resource::ColorSpace(csr) => self.add_object(csr),
+            Resource::Shading(s) => self.add_object(s),
+            Resource::Font(f) => {
+                let hash = f.sip_hash();
+                if let Some(_ref) = self.cached_mappings.get(&hash) {
+                    *_ref
+                } else {
+                    let root_ref = self.new_ref();
+                    self.cached_mappings.insert(hash, root_ref);
+                    root_ref
+                }
+            }
         }
     }
 
@@ -286,11 +292,6 @@ impl SerializerContext {
         map
     }
 
-    fn push_chunk(&mut self, chunk: Chunk) {
-        self.chunks_len += chunk.len();
-        self.chunks.push(chunk);
-    }
-
     pub fn get_content_stream<'a>(&self, stream: &'a [u8]) -> (Cow<'a, [u8]>, Option<Filter>) {
         if !self.serialize_settings.compress_content_streams {
             (Cow::Borrowed(stream), None)
@@ -313,82 +314,62 @@ impl SerializerContext {
         // TODO: Get rid of all the clones
 
         if let Some(container) = PageLabelContainer::new(
-            self.pages
+            &self
+                .pages
                 .iter()
                 .map(|(_, p)| p.page_label.clone())
                 .collect::<Vec<_>>(),
         ) {
-            self.page_labels_ref = Some(self.add(container));
+            let page_label_tree_ref = self.new_ref();
+            let chunk = container.serialize_into(&mut self, page_label_tree_ref);
+            self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
-        if let Some(outline) = self.outline.clone() {
+        let outline = std::mem::take(&mut self.outline);
+        if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
-            self.outline_ref = Some(outline_ref);
             let chunk = outline.serialize_into(&mut self, outline_ref);
-            self.push_chunk(chunk);
+            self.chunk_container.outline = Some((outline_ref, chunk));
         }
 
-        // Write fonts
-        // TODO: Make more efficient
         let fonts = std::mem::take(&mut self.font_map);
         for font_container in fonts.values() {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
-                        let ref_ = self.add_font(t3_font.identifier());
+                        let ref_ = self.add_resource(t3_font.identifier());
                         let chunk = t3_font.serialize_into(&mut self, ref_);
-                        self.push_chunk(chunk)
+                        self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.add_font(cid_font.identifier());
+                    let ref_ = self.add_resource(cid_font.identifier());
                     let chunk = cid_font.serialize_into(&mut self, ref_);
-                    self.push_chunk(chunk)
+                    self.chunk_container.fonts.push(chunk);
                 }
             }
         }
 
-        let mut pdf = Pdf::new();
-
-        if self.serialize_settings.ascii_compatible {
-            pdf.set_binary_marker(&[b'A', b'A', b'A', b'A']);
-        }
-
-        let mut page_tree_chunk = Chunk::new();
-
         let pages = std::mem::take(&mut self.pages);
         for (ref_, page) in &pages {
             let chunk = page.serialize_into(&mut self, *ref_);
-            self.push_chunk(chunk);
+            self.chunk_container.pages.push(chunk);
         }
 
-        page_tree_chunk
-            .pages(self.page_tree_ref)
-            .count(pages.len() as i32)
-            .kids(pages.iter().map(|(r, _)| *r));
-
-        self.chunks_len += page_tree_chunk.len();
-
-        let mut catalog = pdf.catalog(self.catalog_ref);
-        catalog.pages(self.page_tree_ref);
-
-        if let Some(plr) = self.page_labels_ref {
-            catalog.pair(Name(b"PageLabels"), plr);
+        if let Some(page_tree_ref) = self.page_tree_ref {
+            let mut page_tree_chunk = Chunk::new();
+            page_tree_chunk
+                .pages(page_tree_ref)
+                .count(pages.len() as i32)
+                .kids(pages.iter().map(|(r, _)| *r));
+            self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
-        if let Some(olr) = self.outline_ref {
-            catalog.outlines(olr);
-        }
+        // Just a sanity check.
+        assert!(self.font_map.is_empty());
+        assert!(self.pages.is_empty());
 
-        catalog.finish();
-
-        pdf.extend(&page_tree_chunk);
-
-        for part_chunk in self.chunks.drain(..) {
-            pdf.extend(&part_chunk);
-        }
-
-        pdf
+        self.chunk_container.finish(self.serialize_settings)
     }
 }
 
@@ -459,10 +440,7 @@ impl FontContainer {
         }
     }
 
-    pub fn get_from_identifier(
-        &self,
-        font_identifier: FontIdentifier,
-    ) -> Option<&dyn PdfFont> {
+    pub fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_from_id(font_identifier) {
@@ -486,11 +464,11 @@ impl FontContainer {
             FontContainer::Type3(t3) => {
                 let (identifier, gid) = t3.add_glyph(glyph_id);
                 (identifier, PDFGlyph::Type3(gid))
-            },
+            }
             FontContainer::CIDFont(cid_font) => {
                 let cid = cid_font.add_glyph(glyph_id);
                 (cid_font.identifier(), PDFGlyph::CID(cid))
-            },
+            }
         }
     }
 }

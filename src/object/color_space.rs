@@ -1,5 +1,7 @@
-use crate::resource::ColorSpaceEnum;
-use crate::serialize::{Object, SerializerContext};
+use crate::color_space::device_cmyk::DeviceCmyk;
+use crate::color_space::luma::{DeviceGray, SGray};
+use crate::rgb::{DeviceRgb, Srgb};
+use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -18,7 +20,7 @@ pub trait InternalColor {
     /// Return the components of the color as a normalized f32.
     fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
     /// Return the color space of the color.
-    fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum;
+    fn color_space(&self, no_device_cs: bool) -> ColorSpaceType;
 }
 
 /// A color space and it's associated color.
@@ -29,7 +31,7 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
 #[derive(Clone)]
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
-impl Object for ICCBasedColorSpace {
+impl ICCBasedColorSpace {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.new_ref();
 
@@ -72,7 +74,7 @@ impl Color {
         }
     }
 
-    pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+    pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpaceType {
         match self {
             Color::Rgb(rgb) => rgb.color_space(no_device_cs),
             Color::Luma(luma) => luma.color_space(no_device_cs),
@@ -83,10 +85,7 @@ impl Color {
 
 /// A module for dealing with device CMYK colors.
 pub mod device_cmyk {
-    use crate::object::color_space::{ColorSpace, InternalColor};
-    use crate::resource::ColorSpaceEnum;
-    use crate::serialize::{Object, SerializerContext};
-    use pdf_writer::{Chunk, Ref};
+    use crate::object::color_space::{ColorSpace, ColorSpaceType, InternalColor};
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -121,8 +120,8 @@ pub mod device_cmyk {
             ]
         }
 
-        fn color_space(&self, _: bool) -> ColorSpaceEnum {
-            ColorSpaceEnum::DeviceCmyk(DeviceCmyk)
+        fn color_space(&self, _: bool) -> ColorSpaceType {
+            ColorSpaceType::DeviceCmyk(DeviceCmyk)
         }
     }
 
@@ -133,21 +132,17 @@ pub mod device_cmyk {
     impl ColorSpace for DeviceCmyk {
         type Color = Color;
     }
-
-    impl Object for DeviceCmyk {
-        fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
-            unreachable!()
-        }
-    }
 }
 
 /// A module for dealing with device RGB colors.
 pub mod rgb {
-    use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
-    use crate::resource::ColorSpaceEnum;
+    use crate::object::color_space::{
+        ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor,
+    };
     use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
+    use crate::chunk_container::ChunkContainer;
     use pdf_writer::{Chunk, Ref};
 
     /// An RGB color.
@@ -192,11 +187,11 @@ pub mod rgb {
             ]
         }
 
-        fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+        fn color_space(&self, no_device_cs: bool) -> ColorSpaceType {
             if no_device_cs {
-                ColorSpaceEnum::Srgb(Srgb)
+                ColorSpaceType::Srgb(Srgb)
             } else {
-                ColorSpaceEnum::DeviceRgb(DeviceRgb)
+                ColorSpaceType::DeviceRgb(DeviceRgb)
             }
         }
     }
@@ -219,6 +214,10 @@ pub mod rgb {
     pub struct Srgb;
 
     impl Object for Srgb {
+        fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+            &mut cc.color_spaces
+        }
+
         fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
             let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
             icc_based.serialize_into(sc, root_ref)
@@ -232,18 +231,14 @@ pub mod rgb {
     impl ColorSpace for DeviceRgb {
         type Color = Color;
     }
-
-    impl Object for DeviceRgb {
-        fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
-            unreachable!()
-        }
-    }
 }
 
 /// A module for dealing with device luma (= grayscale) colors.
 pub mod luma {
-    use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
-    use crate::resource::ColorSpaceEnum;
+    use crate::chunk_container::ChunkContainer;
+    use crate::object::color_space::{
+        ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor,
+    };
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
@@ -283,11 +278,11 @@ pub mod luma {
             [self.0 as f32 / 255.0]
         }
 
-        fn color_space(&self, no_device_cs: bool) -> ColorSpaceEnum {
+        fn color_space(&self, no_device_cs: bool) -> ColorSpaceType {
             if no_device_cs {
-                ColorSpaceEnum::SGray(SGray)
+                ColorSpaceType::SGray(SGray)
             } else {
-                ColorSpaceEnum::DeviceGray(DeviceGray)
+                ColorSpaceType::DeviceGray(DeviceGray)
             }
         }
     }
@@ -310,6 +305,10 @@ pub mod luma {
     pub struct SGray;
 
     impl Object for SGray {
+        fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+            &mut cc.color_spaces
+        }
+
         fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
             let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
             icc_based.serialize_into(sc, root_ref)
@@ -323,19 +322,13 @@ pub mod luma {
     impl ColorSpace for DeviceGray {
         type Color = Color;
     }
-
-    impl Object for DeviceGray {
-        fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
-            unreachable!()
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::object::color_space::luma::SGray;
     use crate::object::color_space::rgb::Srgb;
-    use crate::resource::ColorSpaceEnum;
+    use crate::resource::ColorSpaceResource;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::test_utils::check_snapshot;
 
@@ -347,14 +340,23 @@ mod tests {
     #[test]
     fn sgray() {
         let mut sc = sc();
-        sc.add(ColorSpaceEnum::SGray(SGray));
+        sc.add_object(ColorSpaceResource::SGray(SGray));
         check_snapshot("color_space/sgray", sc.finish().as_bytes());
     }
 
     #[test]
     fn srgb() {
         let mut sc = sc();
-        sc.add(ColorSpaceEnum::Srgb(Srgb));
+        sc.add_object(ColorSpaceResource::Srgb(Srgb));
         check_snapshot("color_space/srgb", sc.finish().as_bytes());
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum ColorSpaceType {
+    Srgb(Srgb),
+    SGray(SGray),
+    DeviceGray(DeviceGray),
+    DeviceRgb(DeviceRgb),
+    DeviceCmyk(DeviceCmyk),
 }

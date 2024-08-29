@@ -1,7 +1,8 @@
+use crate::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::{Color, ColorSpace};
+use crate::object::color_space::{Color, ColorSpace, ColorSpaceType};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -11,7 +12,8 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::type3_font::Type3Font;
 use crate::object::xobject::XObject;
 use crate::resource::{
-    PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource,
+    ColorSpaceResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder,
+    XObjectResource,
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
@@ -562,11 +564,19 @@ impl ContentBuilder {
 
         match paint {
             Paint::Color(c) => {
-                let color_space = self.rd_builder.register_resource(Resource::ColorSpace(
-                    Into::<Color>::into(c)
-                        .color_space(serializer_context.serialize_settings.no_device_cs)
-                        .into(),
-                ));
+                let color_space = match Into::<Color>::into(c)
+                    .color_space(serializer_context.serialize_settings.no_device_cs)
+                {
+                    ColorSpaceType::Srgb(srgb) => self
+                        .rd_builder
+                        .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
+                    ColorSpaceType::SGray(sgray) => self
+                        .rd_builder
+                        .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
+                    ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
+                    ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
+                    ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
+                };
                 set_solid_fn(&mut self.content, color_space, &c.into());
             }
             Paint::LinearGradient(lg) => {
@@ -1034,7 +1044,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
         self.slice = tail;
 
-        let  font_container = self.font_container.borrow();
+        let font_container = self.font_container.borrow();
         let pdf_font = font_container
             .get_from_identifier(props.font_identifier.clone())
             .unwrap();
@@ -1045,9 +1055,8 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 // Safe because we've already added all glyphs in the text spanner.
                 let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
 
-                let user_units_to_font_units = |val| {
-                    pdf_font.to_pdf_font_units(val / g.size * pdf_font.font().units_per_em())
-                };
+                let user_units_to_font_units =
+                    |val| pdf_font.to_pdf_font_units(val / g.size * pdf_font.font().units_per_em());
 
                 InstanceGlyph {
                     pdf_glyph,

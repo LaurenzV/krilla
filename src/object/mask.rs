@@ -1,6 +1,7 @@
+use crate::chunk_container::ChunkContainer;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
@@ -91,10 +92,14 @@ impl MaskType {
 }
 
 impl Object for Mask {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        &mut cc.masks
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let x_ref = sc.add(XObject::new(
+        let x_ref = sc.add_object(XObject::new(
             self.stream.clone(),
             false,
             true,
@@ -111,8 +116,6 @@ impl Object for Mask {
         chunk
     }
 }
-
-impl RegisterableObject for Mask {}
 
 #[cfg(test)]
 mod tests {
@@ -150,7 +153,7 @@ mod tests {
         );
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
-        sc.add(mask);
+        sc.add_object(mask);
 
         check_snapshot(&format!("mask/{}", name), sc.finish().as_bytes());
     }

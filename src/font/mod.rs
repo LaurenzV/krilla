@@ -1,3 +1,4 @@
+use crate::chunk_container::ChunkContainer;
 use crate::serialize::{Object, SerializerContext, SvgSettings};
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
@@ -302,6 +303,10 @@ impl FontIdentifier {
 
 // TODO: Remove?
 impl Object for FontIdentifier {
+    fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        unreachable!()
+    }
+
     fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
         unreachable!()
     }

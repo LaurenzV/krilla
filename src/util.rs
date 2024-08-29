@@ -1,4 +1,5 @@
 use crate::object::color_space::ColorSpace;
+use crate::serialize::SipHashable;
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
@@ -7,7 +8,6 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use tiny_skia_path::{Path, PathBuilder, Rect};
-use crate::serialize::SipHashable;
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;

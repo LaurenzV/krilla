@@ -1,5 +1,6 @@
+use crate::chunk_container::ChunkContainer;
 use crate::object::color_space::DEVICE_GRAY;
-use crate::serialize::{Object, RegisterableObject, SerializerContext};
+use crate::serialize::{Object, SerializerContext};
 use crate::util::{NameExt, Prehashed};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -40,6 +41,10 @@ impl Image {
 }
 
 impl Object for Image {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        &mut cc.images
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
@@ -81,8 +86,6 @@ impl Object for Image {
         chunk
     }
 }
-
-impl RegisterableObject for Image {}
 
 fn calculate_bits_per_component(color_type: ColorType) -> i32 {
     (color_type.bits_per_pixel() / color_type.channel_count() as u16) as i32

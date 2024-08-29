@@ -1,5 +1,5 @@
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
-use crate::serialize::{Object, SerializerContext, SipHashable};
+use crate::serialize::{SerializerContext, SipHashable};
 use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
@@ -90,10 +90,8 @@ impl CIDFont {
     pub fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
-}
 
-impl Object for CIDFont {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();

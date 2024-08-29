@@ -1,12 +1,19 @@
+use crate::chunk_container::ChunkContainer;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Ref};
+use std::hash::{Hash, Hasher};
 use tiny_skia_path::{Point, Transform};
 
+#[derive(Hash)]
 pub enum Destination {
     Xyz(XyzDestination),
 }
 
 impl Object for Destination {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        &mut cc.destinations
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             Destination::Xyz(xyz) => xyz.serialize_into(sc, root_ref),
@@ -18,6 +25,14 @@ impl Object for Destination {
 pub struct XyzDestination {
     page_index: usize,
     point: Point,
+}
+
+impl Hash for XyzDestination {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.page_index.hash(state);
+        self.point.x.to_bits().hash(state);
+        self.point.y.to_bits().hash(state);
+    }
 }
 
 impl Into<Destination> for XyzDestination {
@@ -33,6 +48,10 @@ impl XyzDestination {
 }
 
 impl Object for XyzDestination {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        &mut cc.destinations
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let page_ref = sc.page_infos()[self.page_index].ref_;
         let page_size = sc.page_infos()[self.page_index].media_box.height();

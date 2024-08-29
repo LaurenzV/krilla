@@ -1,22 +1,22 @@
+use crate::chunk_container::ChunkContainer;
 use crate::font::FontIdentifier;
-use crate::object::color_space::device_cmyk::DeviceCmyk;
-use crate::object::color_space::luma::{DeviceGray, SGray};
-use crate::object::color_space::rgb::{DeviceRgb, Srgb};
-use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color_space::luma::SGray;
+use crate::object::color_space::rgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, RegisterableObject, SerializerContext, SipHashable};
+use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
+use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-pub trait ResourceTrait: Object {
+pub trait ResourceTrait: Hash {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
 }
@@ -31,7 +31,7 @@ impl ResourceTrait for ExtGState {
     }
 }
 
-impl ResourceTrait for ColorSpaceEnum {
+impl ResourceTrait for ColorSpaceResource {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
         resources.color_spaces()
     }
@@ -56,25 +56,46 @@ pub(crate) enum Resource {
     XObject(XObjectResource),
     Pattern(PatternResource),
     ExtGState(ExtGState),
-    ColorSpace(ColorSpaceEnum),
+    ColorSpace(ColorSpaceResource),
     Shading(ShadingFunction),
     Font(FontIdentifier),
 }
 
-impl Object for Resource {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        match self {
-            Resource::XObject(x) => x.serialize_into(sc, root_ref),
-            Resource::Pattern(p) => p.serialize_into(sc, root_ref),
-            Resource::ExtGState(e) => e.serialize_into(sc, root_ref),
-            Resource::ColorSpace(x) => x.serialize_into(sc, root_ref),
-            Resource::Shading(s) => s.serialize_into(sc, root_ref),
-            Resource::Font(_) => unreachable!(),
-        }
+impl Into<Resource> for XObjectResource {
+    fn into(self) -> Resource {
+        Resource::XObject(self)
     }
 }
 
-impl RegisterableObject for Resource {}
+impl Into<Resource> for PatternResource {
+    fn into(self) -> Resource {
+        Resource::Pattern(self)
+    }
+}
+
+impl Into<Resource> for ExtGState {
+    fn into(self) -> Resource {
+        Resource::ExtGState(self)
+    }
+}
+
+impl Into<Resource> for ColorSpaceResource {
+    fn into(self) -> Resource {
+        Resource::ColorSpace(self)
+    }
+}
+
+impl Into<Resource> for ShadingFunction {
+    fn into(self) -> Resource {
+        Resource::Shading(self)
+    }
+}
+
+impl Into<Resource> for FontIdentifier {
+    fn into(self) -> Resource {
+        Resource::Font(self)
+    }
+}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum XObjectResource {
@@ -93,6 +114,13 @@ impl ResourceTrait for XObjectResource {
 }
 
 impl Object for XObjectResource {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        match self {
+            XObjectResource::XObject(x) => x.chunk_container(cc),
+            XObjectResource::Image(i) => i.chunk_container(cc),
+        }
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
@@ -100,8 +128,6 @@ impl Object for XObjectResource {
         }
     }
 }
-
-impl RegisterableObject for XObjectResource {}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum PatternResource {
@@ -120,6 +146,10 @@ impl ResourceTrait for PatternResource {
 }
 
 impl Object for PatternResource {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        &mut cc.patterns
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
             PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
@@ -128,11 +158,9 @@ impl Object for PatternResource {
     }
 }
 
-impl RegisterableObject for PatternResource {}
-
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct ResourceDictionaryBuilder {
-    pub color_spaces: ResourceMapper<ColorSpaceEnum>,
+    pub color_spaces: ResourceMapper<ColorSpaceResource>,
     pub ext_g_states: ResourceMapper<ExtGState>,
     pub patterns: ResourceMapper<PatternResource>,
     pub x_objects: ResourceMapper<XObjectResource>,
@@ -152,14 +180,8 @@ impl ResourceDictionaryBuilder {
         }
     }
 
-    fn register_color_space(&mut self, color_space: ColorSpaceEnum) -> String {
-        match color_space {
-            ColorSpaceEnum::DeviceRgb(_) => DEVICE_RGB.to_string(),
-            ColorSpaceEnum::DeviceGray(_) => DEVICE_GRAY.to_string(),
-            ColorSpaceEnum::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
-            ColorSpaceEnum::Srgb(_) => self.color_spaces.remap_with_name(color_space),
-            ColorSpaceEnum::SGray(_) => self.color_spaces.remap_with_name(color_space),
-        }
+    fn register_color_space(&mut self, color_space: ColorSpaceResource) -> String {
+        self.color_spaces.remap_with_name(color_space)
     }
 
     fn register_ext_g_state(&mut self, ext_state: ExtGState) -> String {
@@ -207,7 +229,7 @@ impl ResourceDictionaryBuilder {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct ResourceDictionary {
-    pub color_spaces: ResourceList<ColorSpaceEnum>,
+    pub color_spaces: ResourceList<ColorSpaceResource>,
     pub ext_g_states: ResourceList<ExtGState>,
     pub patterns: ResourceList<PatternResource>,
     pub x_objects: ResourceList<XObjectResource>,
@@ -227,12 +249,12 @@ impl ResourceDictionary {
             ProcSet::ImageColor,
             ProcSet::ImageGrayscale,
         ]);
-        write_resource_type(sc, resources, &self.color_spaces, false);
-        write_resource_type(sc, resources, &self.ext_g_states, false);
-        write_resource_type(sc, resources, &self.patterns, false);
-        write_resource_type(sc, resources, &self.x_objects, false);
-        write_resource_type(sc, resources, &self.shadings, false);
-        write_resource_type(sc, resources, &self.fonts, true);
+        write_resource_type(sc, resources, &self.color_spaces);
+        write_resource_type(sc, resources, &self.ext_g_states);
+        write_resource_type(sc, resources, &self.patterns);
+        write_resource_type(sc, resources, &self.x_objects);
+        write_resource_type(sc, resources, &self.shadings);
+        write_resource_type(sc, resources, &self.fonts);
     }
 }
 
@@ -240,19 +262,14 @@ fn write_resource_type<T>(
     sc: &mut SerializerContext,
     resources: &mut Resources,
     resource_list: &ResourceList<T>,
-    is_font: bool,
 ) where
-    T: Hash + Eq + ResourceTrait + Debug + RegisterableObject + Clone,
+    T: Hash + Eq + ResourceTrait + Into<Resource> + Debug + Clone,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
 
         for (name, entry) in resource_list.get_entries() {
-            if !is_font {
-                dict.pair(name.to_pdf_name(), sc.add(entry));
-            } else {
-                dict.pair(name.to_pdf_name(), sc.add_font(entry));
-            }
+            dict.pair(name.to_pdf_name(), sc.add_resource(entry));
         }
 
         dict.finish();
@@ -330,7 +347,6 @@ where
         Self::name_from_number(self.remap(resource))
     }
 
-    // TODO: Deduplicate
     fn name_from_number(num: ResourceNumber) -> String {
         format!("{}{}", V::get_prefix(), num)
     }
@@ -345,29 +361,23 @@ where
 pub type ResourceNumber = u32;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub enum ColorSpaceEnum {
+pub enum ColorSpaceResource {
     Srgb(Srgb),
     SGray(SGray),
-    DeviceGray(DeviceGray),
-    DeviceRgb(DeviceRgb),
-    DeviceCmyk(DeviceCmyk),
 }
 
-impl Object for ColorSpaceEnum {
+impl Object for ColorSpaceResource {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
+        &mut cc.color_spaces
+    }
+
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
-            ColorSpaceEnum::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
-            ColorSpaceEnum::SGray(sgray) => sgray.serialize_into(sc, root_ref),
-            ColorSpaceEnum::DeviceGray(_) => unreachable!(),
-            ColorSpaceEnum::DeviceRgb(_) => unreachable!(),
-            ColorSpaceEnum::DeviceCmyk(_) => unreachable!(),
+            ColorSpaceResource::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
+            ColorSpaceResource::SGray(sgray) => sgray.serialize_into(sc, root_ref),
         }
     }
 }
-
-impl RegisterableObject for ColorSpaceEnum {}
-
-impl RegisterableObject for FontIdentifier {}
 
 impl ResourceTrait for FontIdentifier {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
@@ -378,8 +388,6 @@ impl ResourceTrait for FontIdentifier {
         "f"
     }
 }
-
-use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {
