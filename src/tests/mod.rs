@@ -17,8 +17,8 @@ use tiny_skia_path::{Path, PathBuilder, Rect};
 mod manual;
 mod visreg;
 
-const REPLACE: bool = true;
-const STORE: bool = true;
+const REPLACE: bool = false;
+const STORE: bool = false;
 
 static ASSETS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
@@ -75,6 +75,8 @@ lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"
 lazy_font!(COLR_TEST_GLYPHS, FONT_PATH.join("colr_test_glyphs.ttf"));
 #[rustfmt::skip]
 lazy_font!(NOTO_COLOR_EMOJI, FONT_PATH.join("NotoColorEmoji.subset.ttf"));
+#[rustfmt::skip]
+lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
