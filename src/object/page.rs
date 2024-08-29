@@ -211,14 +211,9 @@ mod tests {
         sc.add_page(page);
     }
 
-    #[test]
-    fn page_with_resources() {
-        let mut sc = SerializerContext::new(SerializeSettings {
-            no_device_cs: true,
-            ..SerializeSettings::set_1()
-        });
-
-        let mut stream_builder = StreamBuilder::new(&mut sc);
+    #[snapshot(page, settings_2)]
+    fn page_with_resources(sc: &mut SerializerContext) {
+        let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
         let mut builder = PathBuilder::new();
@@ -234,8 +229,6 @@ mod tests {
             vec![],
         );
         sc.add_page(page);
-
-        check_snapshot("page/page_with_resources", sc.finish().as_bytes());
     }
 
     #[snapshot(page)]
@@ -251,7 +244,7 @@ mod tests {
 
     #[test]
     fn page_label_complex() {
-        let mut db = Document::new(SerializeSettings::set_1());
+        let mut db = Document::new(SerializeSettings::settings_1());
         db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(

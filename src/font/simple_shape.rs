@@ -59,7 +59,7 @@ mod tests {
             ),
         ];
         let page_size = tiny_skia_path::Size::from_wh(200.0, 300.0).unwrap();
-        let mut document_builder = Document::new(SerializeSettings::set_1());
+        let mut document_builder = Document::new(SerializeSettings::settings_1());
         let mut builder = document_builder.start_page(page_size);
         let mut surface = builder.surface();
 

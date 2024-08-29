@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn simple() {
-        let mut db = Document::new(SerializeSettings::set_1());
+        let mut db = Document::new(SerializeSettings::settings_1());
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {

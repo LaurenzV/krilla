@@ -51,13 +51,20 @@ pub struct SerializeSettings {
 
 #[cfg(test)]
 impl SerializeSettings {
-    pub fn set_1() -> Self {
+    pub fn settings_1() -> Self {
         Self {
             ascii_compatible: true,
             compress_content_streams: false,
             no_device_cs: false,
             force_type3_fonts: false,
             svg_settings: SvgSettings::default(),
+        }
+    }
+
+    pub fn settings_2() -> Self {
+        Self {
+            no_device_cs: true,
+            ..Self::settings_1()
         }
     }
 }
