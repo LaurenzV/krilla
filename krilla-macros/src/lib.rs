@@ -112,16 +112,40 @@ impl RendererExt for Renderer {
 
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let _ = parse_macro_input!(attr as AttributeInput);
+    let attrs = parse_macro_input!(attr as AttributeInput);
     let serialize_settings = format_ident!("default");
 
-    let pdfium = true;
-    let mupdf = true;
-    let pdfbox = true;
-    let ghostscript = true;
-    let pdfjs = true;
-    let poppler = true;
-    let quartz = true;
+    let mut pdfium = false;
+    let mut mupdf = false;
+    let mut pdfbox = false;
+    let mut ghostscript = false;
+    let mut pdfjs = false;
+    let mut poppler = false;
+    let mut quartz = false;
+
+    if attrs.identifiers.is_empty() {
+        pdfium = true;
+        mupdf = true;
+        pdfbox = true;
+        ghostscript = true;
+        pdfjs = true;
+        poppler = true;
+        quartz = true;
+    }   else {
+        for identifier in attrs.identifiers {
+            let string_ident = identifier.to_string();
+            match string_ident.as_str() {
+                "pdfium" => pdfium = true,
+                "mupdf" => mupdf = true,
+                "pdfbox" => pdfbox = true,
+                "ghostscript" => ghostscript = true,
+                "pdfjs" => pdfjs = true,
+                "poppler" => poppler = true,
+                "quartz" => quartz = true,
+                _ => panic!("unknown renderer {}", &string_ident)
+            }
+        }
+    }
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();

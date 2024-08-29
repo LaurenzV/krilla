@@ -27,12 +27,10 @@ pub fn draw_glyph(
             data = &decoded;
         }
 
-        // Parse XML.
         let xml = std::str::from_utf8(data).ok().unwrap();
         let document = roxmltree::Document::parse(xml).ok().unwrap();
 
         // TODO: Add cache for SVG glyphs
-        // Parse SVG.
         let opts = usvg::Options::default();
         let tree = usvg::Tree::from_xmltree(&document, &opts).unwrap();
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
