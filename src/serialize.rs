@@ -97,6 +97,7 @@ pub struct PageInfo {
     pub media_box: Rect,
 }
 
+#[doc(hidden)]
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,

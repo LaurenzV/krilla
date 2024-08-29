@@ -1,9 +1,14 @@
-use std::path::PathBuf;
+use difference::{Changeset, Difference};
 use rustybuzz::{Direction, UnicodeBuffer};
 use skrifa::GlyphId;
+use std::path::PathBuf;
+use tiny_skia_path::{Path, PathBuilder, Rect};
 use krilla::font::Font;
 use krilla::serialize::{SerializeSettings, SvgSettings};
 use krilla::stream::Glyph;
+
+const REPLACE: bool = true;
+const STORE: bool = true;
 
 pub trait SerializeSettingsExt {
     fn settings_1() -> Self;
@@ -29,9 +34,78 @@ impl SerializeSettingsExt for SerializeSettings {
     }
 }
 
-pub fn store(name: &str, pdf: Vec<u8>) {
-    let _ = std::fs::write(format!("out/simple_shape_demo.pdf"), &pdf);
-    let _ = std::fs::write(format!("out/simple_shape_demo.txt"), &pdf);
+pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
+    let mut builder = PathBuilder::new();
+    builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
+    builder.finish().unwrap()
+}
+
+pub fn load_font(name: &str) -> Vec<u8> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fonts")
+        .join(name);
+    std::fs::read(&path).unwrap()
+}
+
+fn snapshot_path(name: &str) -> PathBuf {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
+
+    std::fs::create_dir_all(&path).unwrap();
+
+    path.push(format!("{}.txt", name));
+    path
+}
+
+fn snapshot_store_path(name: &str) -> PathBuf {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store/snapshots");
+
+    std::fs::create_dir_all(&path).unwrap();
+
+    path.push(format!("{}.pdf", name));
+    path
+}
+
+pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
+    let path = snapshot_path(name);
+
+    if STORE && storable {
+        let store_path = snapshot_store_path(name);
+        std::fs::write(&store_path, &content).unwrap();
+    }
+
+    if !path.exists() {
+        std::fs::write(&path, &content).unwrap();
+        panic!("new snapshot created");
+    }
+
+    let actual = std::fs::read(&path).unwrap();
+
+    if REPLACE && &actual != content {
+        std::fs::write(&path, content).unwrap();
+        panic!("test was replaced");
+    }
+
+    let changeset = Changeset::new(
+        &String::from_utf8_lossy(content),
+        &String::from_utf8_lossy(&actual),
+        "\n",
+    );
+
+    for diff in changeset.diffs {
+        match diff {
+            Difference::Same(ref x) => {
+                println!(" {}", x);
+            }
+            Difference::Add(ref x) => {
+                println!("+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
+            }
+            Difference::Rem(ref x) => {
+                println!("-------------------\n{}\n-------------------", x);
+            }
+        }
+    }
+
+    assert_eq!(changeset.distance, 0);
 }
 
 pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Glyph> {
@@ -105,9 +179,7 @@ pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Gl
     glyphs
 }
 
-pub fn load_font(name: &str) -> Vec<u8> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fonts")
-        .join(name);
-    std::fs::read(&path).unwrap()
+pub fn store(name: &str, pdf: Vec<u8>) {
+    let _ = std::fs::write(format!("out/simple_shape_demo.pdf"), &pdf);
+    let _ = std::fs::write(format!("out/simple_shape_demo.txt"), &pdf);
 }
