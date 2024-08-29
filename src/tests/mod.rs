@@ -60,7 +60,9 @@ macro_rules! lazy_font {
     };
 }
 
+#[rustfmt::skip]
 lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
+#[rustfmt::skip]
 lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
 #[rustfmt::skip]
 lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
@@ -70,6 +72,8 @@ lazy_font!(NOTO_SANS_ARABIC, FONT_PATH.join("NotoSansArabic-Regular.ttf"));
 lazy_font!(NOTO_SANS_CJK, FONT_PATH.join("NotoSansCJKsc-Regular.otf"));
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"));
+#[rustfmt::skip]
+lazy_font!(COLR_TEST_GLYPHS, FONT_PATH.join("colr_test_glyphs.ttf"));
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
