@@ -20,7 +20,6 @@ pub mod bitmap;
 pub mod colr;
 mod cosmic_text;
 pub mod outline;
-mod simple_shape;
 pub mod svg;
 
 struct OutlineBuilder(PathBuilder);

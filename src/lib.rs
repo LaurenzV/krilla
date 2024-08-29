@@ -25,7 +25,7 @@ pub use tiny_skia_path::{Size, Transform};
 // TODO: Add acknowledgements and license files
 
 #[cfg(test)]
-pub(crate) mod test_utils {
+pub mod test_utils {
     use crate::font::Font;
     use crate::stream::Glyph;
     use difference::{Changeset, Difference};
