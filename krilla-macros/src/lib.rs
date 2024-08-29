@@ -158,6 +158,11 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #quartz_snippet
                 #[test]
                 fn #name() {
+                    use crate::tests::{render_doc, check_render};
+                    use crate::Size;
+                    use crate::document::Document;
+                    use crate::serialize::SerializeSettings;
+                    use sitro::Renderer;
                     let renderer = #renderer_ident;
                     #fn_body
                 }

@@ -1,19 +1,18 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::Source;
 
-use rustybuzz::Direction;
-use skrifa::instance::Location;
-use skrifa::GlyphId;
-use std::sync::Arc;
 use crate::document::Document;
-use crate::Fill;
 use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::tests::{load_font, simple_shape, store_manual};
 use crate::util::SliceExt;
-
+use crate::Fill;
+use rustybuzz::Direction;
+use skrifa::instance::Location;
+use skrifa::GlyphId;
+use std::sync::Arc;
 
 #[test]
 fn simple_shape_demo() {
