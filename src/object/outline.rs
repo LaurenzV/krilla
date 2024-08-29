@@ -159,7 +159,7 @@ mod tests {
     use crate::object::outline::{Outline, OutlineNode};
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::test_utils::check_snapshot;
+    use crate::tests::check_snapshot;
     use crate::Fill;
     use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Point, Rect, Size};

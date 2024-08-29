@@ -249,7 +249,7 @@ mod tests {
     use crate::font::Font;
 
     use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::test_utils::{check_snapshot, load_font};
+    use crate::tests::{check_snapshot, load_font};
     use krilla_macros::snapshot;
     use skrifa::instance::Location;
     use skrifa::GlyphId;

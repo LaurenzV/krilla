@@ -81,7 +81,7 @@ mod tests {
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::test_utils::{check_snapshot, rect_path};
+    use crate::tests::{check_snapshot, rect_path};
     use crate::Fill;
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
