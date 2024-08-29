@@ -241,7 +241,7 @@ impl SerializerContext {
         })
     }
 
-    pub fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
+    pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
         match resource.into() {
             Resource::XObject(xr) => self.add_object(xr),
             Resource::Pattern(pr) => self.add_object(pr),
