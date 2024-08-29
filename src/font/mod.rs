@@ -318,4 +318,3 @@ impl FontIdentifier {
         }
     }
 }
-

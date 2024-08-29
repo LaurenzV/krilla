@@ -1,7 +1,10 @@
+use crate::document::Document;
 use crate::rgb::Rgb;
+use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::surface::Surface;
-use crate::tests::{COLR_TEST_GLYPHS, NOTO_SANS, write_manual_to_store};
+use crate::tests::manual::all_glyphs_to_pdf;
+use crate::tests::{COLR_TEST_GLYPHS, NOTO_SANS};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -9,9 +12,6 @@ use fontdb::{Database, Source};
 use krilla_macros::visreg;
 use skrifa::GlyphId;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
-use crate::document::Document;
-use crate::serialize::SerializeSettings;
-use crate::tests::manual::all_glyphs_to_pdf;
 
 #[visreg]
 fn linear_gradient(surface: &mut Surface) {

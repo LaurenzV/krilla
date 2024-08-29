@@ -6,14 +6,17 @@ use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
-use crate::tests::{simple_shape, write_manual_to_store, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, ASSETS_PATH, COLR_TEST_GLYPHS};
+use crate::tests::{
+    simple_shape, write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO,
+    NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
+};
 use crate::util::SliceExt;
 use crate::Fill;
 use rustybuzz::Direction;
 use skrifa::instance::{Location, LocationRef, Size};
+use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use std::sync::Arc;
-use skrifa::raw::TableProvider;
 
 #[ignore]
 #[test]
@@ -40,7 +43,12 @@ fn simple_shape_demo() {
             16.0,
         ),
         (NOTO_SANS.clone(), "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢", Direction::LeftToRight, 14.0),
-        (NOTO_SANS.clone(), " birth\u{ad}day ", Direction::LeftToRight, 14.0),
+        (
+            NOTO_SANS.clone(),
+            " birth\u{ad}day ",
+            Direction::LeftToRight,
+            14.0,
+        ),
         (
             NOTO_SANS_CJK.clone(),
             "你好世界，这是一段很长的测试文章",
@@ -188,7 +196,11 @@ fn segoe_ui_emoji() {
     write_manual_to_store("segoe_ui_emoji", &document.finish());
 }
 
-pub fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, db: &mut Document)  {
+pub fn all_glyphs_to_pdf(
+    font_data: Arc<Vec<u8>>,
+    glyphs: Option<Vec<(GlyphId, String)>>,
+    db: &mut Document,
+) {
     use crate::object::color_space::rgb::Rgb;
     use crate::stream::Glyph;
     use crate::Transform;
@@ -197,8 +209,7 @@ pub fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, S
     let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {
-        let file =
-            std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
+        let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
         let file = std::str::from_utf8(&file).unwrap();
         file.chars()
             .filter_map(|c| {

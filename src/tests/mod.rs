@@ -2,6 +2,7 @@ use crate::font::Font;
 use crate::stream::Glyph;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
+use oxipng::{InFile, OutFile};
 use rustybuzz::{Direction, UnicodeBuffer};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -11,7 +12,6 @@ use skrifa::GlyphId;
 use std::cmp::max;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use oxipng::{InFile, OutFile};
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
 mod manual;
@@ -20,9 +20,8 @@ mod visreg;
 const REPLACE: bool = true;
 const STORE: bool = true;
 
-static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets")
-});
+static ASSETS_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
 
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/snapshots");
@@ -88,6 +87,13 @@ fn write_snapshot_to_store(name: &str, content: &[u8]) {
     std::fs::write(&path, &content).unwrap();
 }
 
+fn write_render_to_store(name: &str, content: &[u8]) {
+    let mut path = STORE_PATH.clone().join("refs");
+    let _ = std::fs::create_dir_all(&path);
+    path.push(format!("{}.pdf", name));
+    std::fs::write(&path, &content).unwrap();
+}
+
 pub fn write_manual_to_store(name: &str, data: &[u8]) {
     let path = STORE_PATH.clone().join("manual");
     let _ = std::fs::create_dir_all(&path);
@@ -140,7 +146,7 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     assert_eq!(changeset.distance, 0);
 }
 
-pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument) {
+pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument, pdf: &[u8]) {
     let refs_path = REFS_PATH.clone();
 
     let check_single = |name: String, page: &RenderedPage| {
@@ -153,7 +159,7 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument)
                 &OutFile::from_path(ref_path),
                 &oxipng::Options::max_compression(),
             )
-                .unwrap();
+            .unwrap();
             panic!("new reference image was created");
         }
 
@@ -172,8 +178,6 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument)
         }
 
         assert_eq!(pixel_diff, 0);
-
-        std::fs::write(&ref_path, page).unwrap();
     };
 
     if document.is_empty() {
@@ -184,6 +188,10 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument)
         for (index, page) in document.iter().enumerate() {
             check_single(format!("{}_{}_{}", name, renderer.name(), index), page);
         }
+    }
+
+    if STORE {
+        write_render_to_store(&name, pdf);
     }
 }
 

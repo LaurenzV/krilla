@@ -132,7 +132,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         pdfjs = true;
         poppler = true;
         quartz = true;
-    }   else {
+    } else {
         for identifier in attrs.identifiers {
             let string_ident = identifier.to_string();
             match string_ident.as_str() {
@@ -144,7 +144,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 "poppler" => poppler = true,
                 "quartz" => quartz = true,
                 "document" => document = true,
-                _ => panic!("unknown renderer {}", &string_ident)
+                _ => panic!("unknown renderer {}", &string_ident),
             }
         }
     }
@@ -163,9 +163,9 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = db.finish();
 
             let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered);
+            check_render(stringify!(#fn_name), &renderer, rendered, &pdf);
         }
-    }   else {
+    } else {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
             let mut db = Document::new(settings);
@@ -177,7 +177,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = db.finish();
 
             let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered);
+            check_render(stringify!(#fn_name), &renderer, rendered, &pdf);
         }
     };
 
