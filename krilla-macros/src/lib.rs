@@ -155,18 +155,30 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
-    let fn_body = quote! {
-        let settings = SerializeSettings::#serialize_settings();
-        let mut db = Document::new(settings);
-        let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        let mut surface = page.surface();
-        #impl_ident(&mut surface);
-        surface.finish();
-        page.finish();
-        let pdf = db.finish();
+    let fn_body = if document {
+        quote! {
+            let settings = SerializeSettings::#serialize_settings();
+            let mut db = Document::new(settings);
+            #impl_ident(&mut db);
+            let pdf = db.finish();
 
-        let rendered = render_document(&pdf, &renderer);
-        check_render(stringify!(#fn_name), &renderer, rendered);
+            let rendered = render_document(&pdf, &renderer);
+            check_render(stringify!(#fn_name), &renderer, rendered);
+        }
+    }   else {
+        quote! {
+            let settings = SerializeSettings::#serialize_settings();
+            let mut db = Document::new(settings);
+            let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
+            let mut surface = page.surface();
+            #impl_ident(&mut surface);
+            surface.finish();
+            page.finish();
+            let pdf = db.finish();
+
+            let rendered = render_document(&pdf, &renderer);
+            check_render(stringify!(#fn_name), &renderer, rendered);
+        }
     };
 
     let renderer_body = |renderer: Renderer, include: bool| {

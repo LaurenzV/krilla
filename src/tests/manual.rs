@@ -172,20 +172,6 @@ fn apple_color_emoji() {
 
 #[ignore]
 #[test]
-fn colr_test_glyphs() {
-    let font_data = COLR_TEST_GLYPHS.clone();
-
-    let glyphs = (0..=220)
-        .map(|n| (GlyphId::new(n), "".to_string()))
-        .collect::<Vec<_>>();
-
-    let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
-    write_manual_to_store("colr_test_glyphs", &document.finish());
-}
-
-#[ignore]
-#[test]
 fn noto_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
     let mut document = Document::new(SerializeSettings::settings_1());

@@ -1,7 +1,7 @@
 use crate::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
-use crate::tests::NOTO_SANS;
+use crate::tests::{COLR_TEST_GLYPHS, NOTO_SANS, write_manual_to_store};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -9,6 +9,9 @@ use fontdb::{Database, Source};
 use krilla_macros::visreg;
 use skrifa::GlyphId;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
+use crate::document::Document;
+use crate::serialize::SerializeSettings;
+use crate::tests::manual::all_glyphs_to_pdf;
 
 #[visreg]
 fn linear_gradient(surface: &mut Surface) {
@@ -104,4 +107,15 @@ fn cosmic_text(surface: &mut Surface) {
             );
         }
     }
+}
+
+#[visreg(pdfium, document)]
+fn colr_test_glyphs(document: &mut Document) {
+    let font_data = COLR_TEST_GLYPHS.clone();
+
+    let glyphs = (0..=220)
+        .map(|n| (GlyphId::new(n), "".to_string()))
+        .collect::<Vec<_>>();
+
+    all_glyphs_to_pdf(font_data, Some(glyphs), document);
 }
