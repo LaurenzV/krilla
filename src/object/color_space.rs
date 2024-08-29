@@ -344,7 +344,7 @@ pub mod luma {
     }
 
     impl Object for DeviceGray {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+        fn chunk_container(&self, _: &mut ChunkContainer) -> &mut Vec<Chunk> {
             unreachable!()
         }
 

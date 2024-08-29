@@ -47,14 +47,21 @@ impl ChunkContainer {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
+        // Two utility macros, that basically traverses the fields in the order that we
+        // will write them and assigns new references as we go. This gives us the advantage
+        // that the PDF will be numbered with monotonically increasing numbers, which,
+        // while it is not a strict requirement for a valid PDF, makes it a lot
+        // cleaner and might make implementing features like object streams easier
+        // down the road.
         macro_rules! remap_field {
             ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
                 $(
-                    if let Some($field) = &$self.$field {
-                        for ref_ in $field.1.object_refs() {
-                            debug_assert!(!remapper.contains(ref_));
+                    if let Some(el) = &$self.$field {
+                        for ref_ in el.1.object_refs() {
+                            debug_assert!(!remapper.contains_key(&ref_));
 
                             $remapper.insert(ref_, $remapped_ref.bump());
+                            el.0 = *remapper.get(&el.0).unwrap();
                         }
                     }
                 )+
@@ -64,9 +71,9 @@ impl ChunkContainer {
         macro_rules! remap_fields {
             ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
                 $(
-                    for el in &$self.$field {
-                        for ref_ in el.object_refs() {
-                            debug_assert!(!remapper.contains(ref_));
+                    for chunk in &$self.$field {
+                        for ref_ in chunk.object_refs() {
+                            debug_assert!(!remapper.contains_key(&ref_));
 
                             $remapper.insert(ref_, $remapped_ref.bump());
                         }
@@ -93,14 +100,6 @@ impl ChunkContainer {
             let mut catalog = pdf.catalog(catalog_ref);
             remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
 
-            if let Some(pt) = &mut self.page_tree {
-                for ref_ in pt.1.object_refs() {
-                    debug_assert!(!remapper.contains(ref_));
-                    remapper.insert(ref_, remapped_ref.bump());
-                    *pt.0 = remapper.get(pt.0);
-                }
-            }
-
             if let Some(pt) = &self.page_tree {
                 catalog.pages(pt.0);
             }
@@ -119,27 +118,27 @@ impl ChunkContainer {
         remap_fields!(self, remapper, remapped_ref; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
 
         macro_rules! write_field {
-            ($self:expr, $remapper:expr, $remapped_ref:expr, $pdf:expr; $($field:ident),+) => {
+            ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    if let Some($field) = $self.$field {
-                        $field.1.renumber_into($pdf, |old| *$remapper.entry(old).or_insert_with(|| $remapped_ref.bump()));
+                    if let Some(el) = $self.$field {
+                        el.1.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
             };
         }
 
         macro_rules! write_fields {
-            ($self:expr, $remapper:expr, $remapped_ref:expr, $pdf:expr; $($field:ident),+) => {
+            ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    for el in $self.$field {
-                        el.1.renumber_into($pdf, |old| *$remapper.entry(old).or_insert_with(|| $remapped_ref.bump()));
+                    for chunk in $self.$field {
+                        chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
             };
         }
 
-        write_field!(self, remapper, remapped_ref, &mut pdf; page_tree, outline, page_label_tree);
-        write_fields!(self, remapper, remapped_ref, &mut pdf; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
+        write_field!(self, remapper, &mut pdf; page_tree, outline, page_label_tree);
+        write_fields!(self, remapper, &mut pdf; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
 
         pdf
     }
