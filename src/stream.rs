@@ -1,3 +1,4 @@
+use crate::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
@@ -10,7 +11,10 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::type3_font::Type3Font;
 use crate::object::xobject::XObject;
-use crate::resource::{ColorSpaceResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource};
+use crate::resource::{
+    ColorSpaceResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder,
+    XObjectResource,
+};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -23,7 +27,6 @@ use std::cell::RefCell;
 use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
-use crate::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
@@ -562,9 +565,14 @@ impl ContentBuilder {
         match paint {
             Paint::Color(c) => {
                 let color_space = match Into::<Color>::into(c)
-                    .color_space(serializer_context.serialize_settings.no_device_cs) {
-                    ColorSpaceType::Srgb(srgb) => self.rd_builder.register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
-                    ColorSpaceType::SGray(sgray) => self.rd_builder.register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
+                    .color_space(serializer_context.serialize_settings.no_device_cs)
+                {
+                    ColorSpaceType::Srgb(srgb) => self
+                        .rd_builder
+                        .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
+                    ColorSpaceType::SGray(sgray) => self
+                        .rd_builder
+                        .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
                     ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
                     ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
                     ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),

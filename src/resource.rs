@@ -1,3 +1,4 @@
+use crate::chunk_container::ChunkContainer;
 use crate::font::FontIdentifier;
 use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
@@ -9,6 +10,7 @@ use crate::object::xobject::XObject;
 use crate::serialize::{Object, SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
+use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
 use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -345,7 +347,6 @@ where
         Self::name_from_number(self.remap(resource))
     }
 
-    // TODO: Deduplicate
     fn name_from_number(num: ResourceNumber) -> String {
         format!("{}{}", V::get_prefix(), num)
     }
@@ -387,9 +388,6 @@ impl ResourceTrait for FontIdentifier {
         "f"
     }
 }
-
-use crate::chunk_container::ChunkContainer;
-use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {
