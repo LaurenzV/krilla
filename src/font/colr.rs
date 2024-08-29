@@ -309,8 +309,8 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        self.canvas_builder.push_isolated();
         self.canvas_builder.push_blend_mode(mode);
+        self.canvas_builder.push_isolated();
     }
 
     fn pop_layer(&mut self) {

@@ -154,6 +154,21 @@ fn twitter_color_emoji() {
     write_manual_to_store("twitter_color_emoji", &document.finish());
 }
 
+
+#[test]
+fn colr_test_glyphs() {
+    let font_data = COLR_TEST_GLYPHS.clone();
+
+    let glyphs = (133..=133)
+        .map(|n| (GlyphId::new(n), "".to_string()))
+        .collect::<Vec<_>>();
+
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
+    write_manual_to_store("colr_test_glyphs", &document.finish());
+}
+
+
 #[ignore]
 #[test]
 fn noto_sans() {

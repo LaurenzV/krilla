@@ -175,6 +175,17 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
             diff_image
                 .save_with_format(&diff_path, image::ImageFormat::Png)
                 .unwrap();
+
+            if REPLACE {
+                std::fs::write(&ref_path, page).unwrap();
+                oxipng::optimize(
+                    &InFile::Path(ref_path.clone()),
+                    &OutFile::from_path(ref_path),
+                    &oxipng::Options::max_compression(),
+                )
+                    .unwrap();
+                panic!("test was replaced");
+            }
         }
 
         assert_eq!(pixel_diff, 0);
