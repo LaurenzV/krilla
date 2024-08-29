@@ -34,7 +34,7 @@ pub fn render_doc(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
     }
 }
 
-pub fn save_refs(name: &str, renderer: &Renderer, document: RenderedDocument) {
+pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument) {
     let refs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/refs")
         .join(name);

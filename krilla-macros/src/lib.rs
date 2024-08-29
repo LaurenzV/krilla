@@ -140,7 +140,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = db.finish();
 
             let rendered = render_doc(&pdf, &renderer);
-            save_refs(stringify!(#fn_name), &renderer, rendered);
+            check_render(stringify!(#fn_name), &renderer, rendered);
     };
 
     let renderer_body = |renderer: Renderer, include: bool| {
