@@ -1,7 +1,6 @@
 use crate::font::FontIdentifier;
 use crate::object::color_space::luma::{DeviceGray, SGray};
 use crate::object::color_space::rgb::{DeviceRgb, Srgb};
-use crate::object::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;

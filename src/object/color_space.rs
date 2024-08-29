@@ -1,4 +1,4 @@
-use crate::resource::{ColorSpaceResource, ColorSpaceType};
+use crate::resource::{ColorSpaceType};
 use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
@@ -84,8 +84,8 @@ impl Color {
 /// A module for dealing with device CMYK colors.
 pub mod device_cmyk {
     use crate::object::color_space::{ColorSpace, InternalColor};
-    use crate::resource::{ColorSpaceResource, ColorSpaceType};
-    use crate::serialize::{Object};
+    use crate::resource::{ColorSpaceType};
+    
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -137,7 +137,7 @@ pub mod device_cmyk {
 /// A module for dealing with device RGB colors.
 pub mod rgb {
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
-    use crate::resource::{ColorSpaceResource, ColorSpaceType};
+    use crate::resource::{ColorSpaceType};
     use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
@@ -236,7 +236,7 @@ pub mod rgb {
 pub mod luma {
     use crate::chunk_container::ChunkContainer;
     use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
-    use crate::resource::{ColorSpaceResource, ColorSpaceType};
+    use crate::resource::{ColorSpaceType};
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;

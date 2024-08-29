@@ -8,7 +8,7 @@ use crate::object::outline::Outline;
 use crate::object::page::{Page, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
 use crate::page::PageLabel;
-use crate::resource::{ColorSpaceResource, PatternResource, Resource, XObjectResource};
+use crate::resource::{ColorSpaceResource, Resource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
