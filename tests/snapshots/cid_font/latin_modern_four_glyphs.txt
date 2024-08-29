@@ -3,31 +3,16 @@
 
 1 0 obj
 <<
-  /Type /Catalog
-  /Pages 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-  /Type /Pages
-  /Count 0
-  /Kids []
->>
-endobj
-
-3 0 obj
-<<
   /Type /Font
   /Subtype /Type0
   /BaseFont /VXUMNV+LMRoman10-Regular-Identity-H
   /Encoding /Identity-H
-  /DescendantFonts [4 0 R]
-  /ToUnicode 6 0 R
+  /DescendantFonts [2 0 R]
+  /ToUnicode 4 0 R
 >>
 endobj
 
-4 0 obj
+2 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType0
@@ -37,13 +22,13 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 5 0 R
+  /FontDescriptor 3 0 R
   /DW 0
   /W [0 0 280 1 1 785 2 2 653 3 3 778 4 4 625]
 >>
 endobj
 
-5 0 obj
+3 0 obj
 <<
   /Type /FontDescriptor
   /FontName /VXUMNV+LMRoman10-Regular
@@ -54,11 +39,11 @@ endobj
   /Descent -290
   /CapHeight 683
   /StemV 95.4
-  /FontFile3 7 0 R
+  /FontFile3 5 0 R
 >>
 endobj
 
-6 0 obj
+4 0 obj
 <<
   /Length 568
   /Type /CMap
@@ -94,7 +79,7 @@ end
 endstream
 endobj
 
-7 0 obj
+5 0 obj
 <<
   /Length 1945
   /Filter /ASCIIHexDecode

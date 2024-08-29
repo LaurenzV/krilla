@@ -2,25 +2,10 @@
 %AAAA
 
 1 0 obj
-<<
-  /Type /Catalog
-  /Pages 2 0 R
->>
+[/ICCBased 2 0 R]
 endobj
 
 2 0 obj
-<<
-  /Type /Pages
-  /Count 0
-  /Kids []
->>
-endobj
-
-3 0 obj
-[/ICCBased 4 0 R]
-endobj
-
-4 0 obj
 <<
   /Length 973
   /N 3
