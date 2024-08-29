@@ -17,7 +17,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, RectWrapper, TransformExt};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
@@ -31,7 +31,7 @@ use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Tr
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
     content: Vec<u8>,
-    bbox: Rect,
+    bbox: RectWrapper,
     resource_dictionary: ResourceDictionary,
 }
 
@@ -46,7 +46,7 @@ impl Stream {
     ) -> Self {
         Self(Arc::new(Repr {
             content,
-            bbox,
+            bbox: RectWrapper(bbox),
             resource_dictionary,
         }))
     }
@@ -56,7 +56,7 @@ impl Stream {
     }
 
     pub(crate) fn bbox(&self) -> Rect {
-        self.0.bbox
+        self.0.bbox.0
     }
 
     pub(crate) fn resource_dictionary(&self) -> &ResourceDictionary {
@@ -66,7 +66,7 @@ impl Stream {
     pub fn empty() -> Self {
         Self(Arc::new(Repr {
             content: vec![],
-            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
+            bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
         }))
     }

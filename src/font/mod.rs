@@ -2,7 +2,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::serialize::{Object, SerializerContext, SvgSettings};
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
-use crate::util::Prehashed;
+use crate::util::{Prehashed, RectWrapper};
 use pdf_writer::{Chunk, Ref};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
@@ -81,7 +81,7 @@ pub struct FontInfo {
     checksum: u32,
     location: LocationWrapper,
     pub(crate) units_per_em: u16,
-    global_bbox: Rect,
+    global_bbox: RectWrapper,
     postscript_name: Option<String>,
     ascent: FiniteF32,
     descent: FiniteF32,
@@ -168,7 +168,7 @@ impl FontInfo {
             is_monospaced,
             weight,
             italic_angle,
-            global_bbox,
+            global_bbox: RectWrapper(global_bbox),
         })
     }
 }
@@ -249,7 +249,7 @@ impl Font {
     }
 
     pub fn bbox(&self) -> Rect {
-        self.0.font_info.global_bbox
+        self.0.font_info.global_bbox.0
     }
 
     pub fn location_ref(&self) -> LocationRef {

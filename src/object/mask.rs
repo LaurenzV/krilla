@@ -7,6 +7,7 @@ use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
+use crate::util::RectWrapper;
 
 /// A mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
@@ -19,7 +20,7 @@ pub struct Mask {
     /// transparencies, we create a custom mask where we call the shading operator. In this case,
     /// we want to manually set the bbox of the underlying XObject to match the shape that the
     /// gradient is being applied to.
-    custom_bbox: Option<Rect>,
+    custom_bbox: Option<RectWrapper>,
 }
 
 impl Mask {
@@ -67,7 +68,7 @@ impl Mask {
         Some(Self {
             stream: shading_stream,
             mask_type: MaskType::Luminosity,
-            custom_bbox: Some(bbox),
+            custom_bbox: Some(RectWrapper(bbox)),
         })
     }
 }
@@ -103,7 +104,7 @@ impl Object for Mask {
             self.stream.clone(),
             false,
             true,
-            self.custom_bbox,
+            self.custom_bbox.map(|c| c.0),
         ));
 
         let mut dict = chunk.indirect(root_ref).dict();

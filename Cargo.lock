@@ -212,6 +212,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.12.1"
+source = "git+https://github.com/LaurenzV/cosmic-text?rev=d8cad28#d8cad281e9bcd6378aea94c0c501a6a248fe4073"
 dependencies = [
  "bitflags 2.6.0",
  "fontdb",
@@ -1436,7 +1437,8 @@ dependencies = [
 [[package]]
 name = "tiny-skia-path"
 version = "0.11.4"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=eec0a47#eec0a4701a8413759a3dd51b443b8851ce4c546a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c9e7fc0c2e86a30b117d0462aa261b72b7a99b7ebd7deb3a14ceda95c5bdc93"
 dependencies = [
  "arrayref",
  "bytemuck",
