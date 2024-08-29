@@ -2,7 +2,6 @@ use crate::font::Font;
 use crate::stream::Glyph;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
-use resvg::render;
 use rustybuzz::{Direction, UnicodeBuffer};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -13,6 +12,7 @@ use std::cell::LazyCell;
 use std::cmp::max;
 use std::path::PathBuf;
 use std::sync::Arc;
+use oxipng::{InFile, OutFile};
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
 mod manual;
@@ -23,27 +23,27 @@ const STORE: bool = true;
 
 const SNAPSHOT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
-    std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::create_dir_all(&path);
     path
 });
 
 const REFS_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/refs");
-    std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::create_dir_all(&path);
     path
 });
 
 const DIFFS_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/diffs");
-    std::fs::remove_dir_all(&path);
-    std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::remove_dir_all(&path);
+    let _ = std::fs::create_dir_all(&path).unwrap();
     path
 });
 
 const STORE_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store");
-    std::fs::remove_dir_all(&path);
-    std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::remove_dir_all(&path);
+    let _ = std::fs::create_dir_all(&path).unwrap();
     path
 });
 
@@ -76,14 +76,14 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("snapshots");
-    std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
     std::fs::write(&path, &content).unwrap();
 }
 
 pub fn write_manual_to_store(name: &str, data: &[u8]) {
-    let mut path = STORE_PATH.clone().join("manual");
-    std::fs::create_dir_all(&path).unwrap();
+    let path = STORE_PATH.clone().join("manual");
+    let _ = std::fs::create_dir_all(&path);
 
     let pdf_path = path.join(format!("{}.pdf", name));
     let txt_path = path.join(format!("{}.txt", name));
@@ -141,6 +141,12 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument)
 
         if !ref_path.exists() {
             std::fs::write(&ref_path, page).unwrap();
+            oxipng::optimize(
+                &InFile::Path(ref_path.clone()),
+                &OutFile::from_path(ref_path),
+                &oxipng::Options::max_compression(),
+            )
+                .unwrap();
             panic!("new reference image was created");
         }
 

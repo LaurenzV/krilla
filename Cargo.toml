@@ -34,6 +34,7 @@ cosmic-text = {git = "https://github.com/LaurenzV/cosmic-text", rev = "d8cad28"}
 quote = "1.0.37"
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 proc-macro2 = "1.0.86"
+oxipng = "9.1.2"
 krilla-macros = {path = "krilla-macros"}
 
 [package]
@@ -71,5 +72,6 @@ rustybuzz = { workspace = true }
 sitro = { workspace = true }
 cosmic-text = { workspace = true }
 krilla-macros = { workspace = true }
+oxipng = { workspace = true }
 
 

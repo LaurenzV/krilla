@@ -8,7 +8,6 @@ use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::{Database, Source};
 use krilla_macros::visreg;
 use skrifa::GlyphId;
-use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
 
 #[visreg]
