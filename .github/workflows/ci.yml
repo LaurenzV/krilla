@@ -169,4 +169,4 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          path: ./assets/diff
+          path: ./assets/diffs
