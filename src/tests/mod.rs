@@ -10,6 +10,7 @@ use sitro::{
 use skrifa::GlyphId;
 use std::cmp::max;
 use std::path::PathBuf;
+use std::cell::LazyCell;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
 mod manual;
@@ -17,6 +18,16 @@ mod visreg;
 
 const REPLACE: bool = true;
 const STORE: bool = true;
+
+const SNAPSHOT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
+    std::fs::create_dir_all(&path).unwrap();
+    path
+});
+
+const FONT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts")
+});
 
 pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
@@ -32,12 +43,7 @@ pub fn load_font(name: &str) -> Vec<u8> {
 }
 
 fn snapshot_path(name: &str) -> PathBuf {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
-
-    std::fs::create_dir_all(&path).unwrap();
-
-    path.push(format!("{}.txt", name));
-    path
+    SNAPSHOT_PATH.clone().join(format!("{}.txt", name))
 }
 
 fn snapshot_store_path(name: &str) -> PathBuf {
