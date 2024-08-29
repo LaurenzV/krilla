@@ -155,11 +155,12 @@ fn twitter_color_emoji() {
 }
 
 
+#[ignore]
 #[test]
 fn colr_test_glyphs() {
     let font_data = COLR_TEST_GLYPHS.clone();
 
-    let glyphs = (133..=133)
+    let glyphs = (180..=180)
         .map(|n| (GlyphId::new(n), "".to_string()))
         .collect::<Vec<_>>();
 

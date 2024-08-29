@@ -1,0 +1,1 @@
+- Noto Color Emoji: `hb-subset --text-file assets/emojis.txt --drop-tables=SVG --output-file=NotoColorEmoji.subset.ttf NotoColorEmoji-Regular.ttf`

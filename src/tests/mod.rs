@@ -73,6 +73,8 @@ lazy_font!(NOTO_SANS_CJK, FONT_PATH.join("NotoSansCJKsc-Regular.otf"));
 lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"));
 #[rustfmt::skip]
 lazy_font!(COLR_TEST_GLYPHS, FONT_PATH.join("colr_test_glyphs.ttf"));
+#[rustfmt::skip]
+lazy_font!(NOTO_COLOR_EMOJI, FONT_PATH.join("NotoColorEmoji.subset.ttf"));
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
