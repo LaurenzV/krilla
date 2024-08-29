@@ -83,8 +83,8 @@ mod tests {
     use crate::serialize::SerializeSettings;
     use crate::test_utils::{check_snapshot, rect_path};
     use crate::Fill;
-    use tiny_skia_path::{Point, Rect, Size};
     use krilla_macros::snapshot;
+    use tiny_skia_path::{Point, Rect, Size};
 
     #[snapshot(annotation, document)]
     fn simple(db: &mut Document) {

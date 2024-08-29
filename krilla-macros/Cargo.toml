@@ -14,3 +14,4 @@ path = "tests/test.rs"
 [dependencies]
 syn = { workspace = true }
 quote = { workspace = true }
+sitro = { workspace = true }
