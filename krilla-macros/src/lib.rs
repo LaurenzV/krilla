@@ -112,16 +112,16 @@ impl RendererExt for Renderer {
 
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let attrs = parse_macro_input!(attr as AttributeInput);
+    let _ = parse_macro_input!(attr as AttributeInput);
     let serialize_settings = format_ident!("default");
 
-    let mut pdfium = true;
-    let mut mupdf = true;
-    let mut pdfbox = true;
-    let mut ghostscript = true;
-    let mut pdfjs = true;
-    let mut poppler = true;
-    let mut quartz = true;
+    let pdfium = true;
+    let mupdf = true;
+    let pdfbox = true;
+    let ghostscript = true;
+    let pdfjs = true;
+    let poppler = true;
+    let quartz = true;
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
