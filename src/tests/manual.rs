@@ -154,7 +154,6 @@ fn twitter_color_emoji() {
     write_manual_to_store("twitter_color_emoji", &document.finish());
 }
 
-
 #[ignore]
 #[test]
 fn colr_test_glyphs() {
@@ -168,7 +167,6 @@ fn colr_test_glyphs() {
     all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
     write_manual_to_store("colr_test_glyphs", &document.finish());
 }
-
 
 #[ignore]
 #[test]

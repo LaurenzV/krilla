@@ -4,7 +4,7 @@ use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
-use crate::tests::{COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI, write_manual_to_store};
+use crate::tests::{COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};

@@ -187,7 +187,7 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
                     &OutFile::from_path(ref_path),
                     &oxipng::Options::max_compression(),
                 )
-                    .unwrap();
+                .unwrap();
                 panic!("test was replaced");
             }
         }
