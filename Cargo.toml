@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+members = ["krilla-macros"]
 
 [workspace.package]
 version = "0.1.0"
@@ -30,6 +31,9 @@ paste = "1.0.15"
 rustybuzz = "0.18.0"
 sitro = {git = "https://github.com/LaurenzV/sitro", rev = "b475ddc3"}
 cosmic-text = {git = "https://github.com/LaurenzV/cosmic-text", rev = "d8cad28"}
+quote = "1.0.37"
+syn = { version = "2.0.76", features = ["full", "extra-traits"] }
+krilla-macros = {path = "krilla-macros"}
 
 [package]
 name = "krilla"
@@ -65,5 +69,6 @@ paste = { workspace = true }
 rustybuzz = { workspace = true }
 sitro = { workspace = true }
 cosmic-text = { workspace = true }
+krilla-macros = { workspace = true }
 
 

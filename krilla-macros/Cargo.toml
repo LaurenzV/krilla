@@ -1,0 +1,16 @@
+[package]
+name = "krilla-macros"
+description = "Proc-macros for krilla."
+edition = {workspace = true}
+version = {workspace = true}
+
+[lib]
+proc-macro = true
+
+[[test]]
+name = "tests"
+path = "tests/test.rs"
+
+[dependencies]
+syn = { workspace = true }
+quote = { workspace = true }
