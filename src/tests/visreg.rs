@@ -52,6 +52,7 @@ fn linear_gradient(surface: &mut Surface) {
     );
 }
 
+#[ignore]
 #[visreg]
 fn cosmic_text(surface: &mut Surface) {
     let mut db = Database::new();

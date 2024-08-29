@@ -14,6 +14,7 @@ use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::sync::Arc;
 
+#[ignore]
 #[test]
 fn simple_shape_demo() {
     let mut y = 25.0;
@@ -83,6 +84,7 @@ fn simple_shape_demo() {
     store_manual("simple_shape", &pdf);
 }
 
+#[ignore]
 #[test]
 fn cosmic_text_integration() {
     let mut font_system = FontSystem::new_with_fonts([Source::Binary(Arc::new(std::fs::read("/Users/lstampfl/Programming/GitHub/resvg/crates/resvg/tests/fonts/NotoSans-Regular.ttf").unwrap()))]);
