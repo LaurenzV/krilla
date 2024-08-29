@@ -29,14 +29,14 @@ impl ShadingPattern {
 }
 
 impl Object for ShadingPattern {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         &mut cc.patterns
     }
 
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let shading_ref = sc.add(self.0.shading_function.clone());
+        let shading_ref = sc.add_object(self.0.shading_function.clone());
         let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.0.to_pdf_transform());

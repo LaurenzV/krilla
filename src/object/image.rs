@@ -41,7 +41,7 @@ impl Image {
 }
 
 impl Object for Image {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         &mut cc.images
     }
 

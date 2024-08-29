@@ -26,7 +26,7 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone)]
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
 impl ICCBasedColorSpace {
@@ -136,7 +136,7 @@ pub mod device_cmyk {
     }
 
     impl Object for DeviceCmyk {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+        fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
             unreachable!()
         }
 
@@ -225,7 +225,7 @@ pub mod rgb {
     pub struct Srgb;
 
     impl Object for Srgb {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+        fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
             &mut cc.color_spaces
         }
 
@@ -244,7 +244,7 @@ pub mod rgb {
     }
 
     impl Object for DeviceRgb {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+        fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
             unreachable!()
         }
 
@@ -325,7 +325,7 @@ pub mod luma {
     pub struct SGray;
 
     impl Object for SGray {
-        fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+        fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
             &mut cc.color_spaces
         }
 
@@ -344,7 +344,7 @@ pub mod luma {
     }
 
     impl Object for DeviceGray {
-        fn chunk_container(&self, _: &mut ChunkContainer) -> &mut Vec<Chunk> {
+        fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
             unreachable!()
         }
 
@@ -370,14 +370,14 @@ mod tests {
     #[test]
     fn sgray() {
         let mut sc = sc();
-        sc.add(ColorSpaceEnum::SGray(SGray));
+        sc.add_object(ColorSpaceEnum::SGray(SGray));
         check_snapshot("color_space/sgray", sc.finish().as_bytes());
     }
 
     #[test]
     fn srgb() {
         let mut sc = sc();
-        sc.add(ColorSpaceEnum::Srgb(Srgb));
+        sc.add_object(ColorSpaceEnum::Srgb(Srgb));
         check_snapshot("color_space/srgb", sc.finish().as_bytes());
     }
 }

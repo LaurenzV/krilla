@@ -8,7 +8,7 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext, SipHashable};
+use crate::serialize::{Object, SerializerContext};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::{Chunk, Dict, Finish, Ref};
@@ -78,7 +78,7 @@ impl ResourceTrait for XObjectResource {
 }
 
 impl Object for XObjectResource {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         match self {
             XObjectResource::XObject(x) => x.chunk_container(cc),
             XObjectResource::Image(i) => i.chunk_container(cc),
@@ -110,7 +110,7 @@ impl ResourceTrait for PatternResource {
 }
 
 impl Object for PatternResource {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         &mut cc.patterns
     }
 
@@ -241,9 +241,9 @@ fn write_resource_type<T>(
 
         for (name, entry) in resource_list.get_entries() {
             if !is_font {
-                dict.pair(name.to_pdf_name(), sc.add(entry));
+                dict.pair(name.to_pdf_name(), sc.add_object(entry));
             } else {
-                dict.pair(name.to_pdf_name(), sc.add_font(entry));
+                dict.pair(name.to_pdf_name(), sc.get_font_ref(entry));
             }
         }
 
@@ -346,7 +346,7 @@ pub enum ColorSpaceEnum {
 }
 
 impl Object for ColorSpaceEnum {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         &mut cc.color_spaces
     }
 

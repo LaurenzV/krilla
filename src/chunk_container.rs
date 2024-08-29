@@ -43,7 +43,7 @@ impl ChunkContainer {
         }
     }
 
-    pub fn finish(mut self, serialize_settings: &SerializeSettings) -> Pdf {
+    pub fn finish(mut self, serialize_settings: SerializeSettings) -> Pdf {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -56,12 +56,12 @@ impl ChunkContainer {
         macro_rules! remap_field {
             ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
                 $(
-                    if let Some(el) = &$self.$field {
-                        for ref_ in el.1.object_refs() {
-                            debug_assert!(!remapper.contains_key(&ref_));
+                    if let Some((original_ref, chunk)) = &mut $self.$field {
+                        for object_ref in chunk.object_refs() {
+                            debug_assert!(!remapper.contains_key(&object_ref));
 
-                            $remapper.insert(ref_, $remapped_ref.bump());
-                            el.0 = *remapper.get(&el.0).unwrap();
+                            $remapper.insert(object_ref, $remapped_ref.bump());
+                            *original_ref = *remapper.get(&object_ref).unwrap();
                         }
                     }
                 )+
@@ -120,8 +120,8 @@ impl ChunkContainer {
         macro_rules! write_field {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    if let Some(el) = $self.$field {
-                        el.1.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
+                    if let Some((_, chunk)) = $self.$field {
+                        chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
             };

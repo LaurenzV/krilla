@@ -97,7 +97,7 @@ impl ExtGState {
 }
 
 impl Object for ExtGState {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         &mut cc.ext_g_states
     }
 
@@ -108,7 +108,7 @@ impl Object for ExtGState {
             .0
             .mask
             .clone()
-            .map(|ma| sc.add(Arc::unwrap_or_clone(ma)));
+            .map(|ma| sc.add_object(Arc::unwrap_or_clone(ma)));
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
@@ -153,7 +153,7 @@ mod tests {
     pub fn empty() {
         let mut sc = sc();
         let ext_state = ExtGState::new();
-        sc.add(ext_state);
+        sc.add_object(ext_state);
         check_snapshot("ext_g_state/empty", sc.finish().as_bytes());
     }
 
@@ -164,7 +164,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
-        sc.add(ext_state);
+        sc.add_object(ext_state);
         check_snapshot("ext_g_state/default_values", sc.finish().as_bytes());
     }
 
@@ -177,7 +177,7 @@ mod tests {
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
             .mask(mask);
-        sc.add(ext_state);
+        sc.add_object(ext_state);
         check_snapshot("ext_g_state/all_set", sc.finish().as_bytes());
     }
 }

@@ -303,7 +303,7 @@ impl FontIdentifier {
 
 // TODO: Remove?
 impl Object for FontIdentifier {
-    fn chunk_container(&self, cc: &mut ChunkContainer) -> &mut Vec<Chunk> {
+    fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         unreachable!()
     }
 
