@@ -1170,6 +1170,7 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 [[package]]
 name = "sitro"
 version = "0.1.0"
+source = "git+https://github.com/LaurenzV/sitro?rev=0dac5126#0dac5126772e52e6f479eb60e046583e21dfca56"
 dependencies = [
  "image 0.24.9",
  "imagesize 0.12.0",
