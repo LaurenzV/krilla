@@ -1,6 +1,7 @@
 use crate::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
+use crate::tests::NOTO_SANS;
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -9,7 +10,6 @@ use krilla_macros::visreg;
 use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
-use crate::tests::NOTO_SANS;
 
 #[visreg]
 fn linear_gradient(surface: &mut Surface) {

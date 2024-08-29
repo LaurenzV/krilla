@@ -139,7 +139,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             page.finish();
             let pdf = db.finish();
 
-            let rendered = render_doc(&pdf, &renderer);
+            let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered);
     };
 
@@ -158,7 +158,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #quartz_snippet
                 #[test]
                 fn #name() {
-                    use crate::tests::{render_doc, check_render};
+                    use crate::tests::{render_document, check_render};
                     use crate::Size;
                     use crate::document::Document;
                     use crate::serialize::SerializeSettings;

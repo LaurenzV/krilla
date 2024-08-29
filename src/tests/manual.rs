@@ -6,7 +6,10 @@ use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
-use crate::tests::{DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, simple_shape, store_manual};
+use crate::tests::{
+    simple_shape, write_manual_to_store, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC,
+    NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
+};
 use crate::util::SliceExt;
 use crate::Fill;
 use rustybuzz::Direction;
@@ -37,18 +40,8 @@ fn simple_shape_demo() {
             Direction::LeftToRight,
             16.0,
         ),
-        (
-            NOTO_SANS,
-            "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢",
-            Direction::LeftToRight,
-            14.0,
-        ),
-        (
-            NOTO_SANS,
-            " birth\u{ad}day ",
-            Direction::LeftToRight,
-            14.0,
-        ),
+        (NOTO_SANS, "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢", Direction::LeftToRight, 14.0),
+        (NOTO_SANS, " birth\u{ad}day ", Direction::LeftToRight, 14.0),
         (
             NOTO_SANS_CJK,
             "你好世界，这是一段很长的测试文章",
@@ -79,7 +72,7 @@ fn simple_shape_demo() {
     builder.finish();
 
     let pdf = document_builder.finish();
-    store_manual("simple_shape", &pdf);
+    write_manual_to_store("simple_shape", &pdf);
 }
 
 #[ignore]
@@ -142,5 +135,5 @@ fn cosmic_text_integration() {
     builder.finish();
 
     let pdf = document_builder.finish();
-    store_manual("cosmic_text", &pdf);
+    write_manual_to_store("cosmic_text", &pdf);
 }

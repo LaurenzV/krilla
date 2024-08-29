@@ -81,7 +81,7 @@ mod tests {
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::tests::{check_snapshot, rect_path};
+    use crate::tests::{check_snapshot, rect_to_path};
     use crate::Fill;
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
@@ -110,9 +110,12 @@ mod tests {
         );
 
         let mut surface = page.surface();
-        surface.draw_path(&rect_path(0.0, 0.0, 100.0, 100.0), Fill::<Rgb>::default());
         surface.draw_path(
-            &rect_path(100.0, 100.0, 200.0, 200.0),
+            &rect_to_path(0.0, 0.0, 100.0, 100.0),
+            Fill::<Rgb>::default(),
+        );
+        surface.draw_path(
+            &rect_to_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
         surface.finish();
@@ -130,7 +133,7 @@ mod tests {
         );
         let mut my_surface = page.surface();
         my_surface.draw_path(
-            &rect_path(100.0, 100.0, 200.0, 200.0),
+            &rect_to_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
 

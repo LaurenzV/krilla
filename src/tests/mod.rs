@@ -8,9 +8,9 @@ use sitro::{
     render_quartz, RenderOptions, RenderedDocument, Renderer,
 };
 use skrifa::GlyphId;
+use std::cell::LazyCell;
 use std::cmp::max;
 use std::path::PathBuf;
-use std::cell::LazyCell;
 use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
@@ -26,27 +26,53 @@ const SNAPSHOT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
     path
 });
 
-const FONT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts")
+const REFS_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/refs");
+    std::fs::create_dir_all(&path).unwrap();
+    path
 });
+
+const DIFFS_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/diffs");
+    std::fs::remove_dir_all(&path);
+    std::fs::create_dir_all(&path).unwrap();
+    path
+});
+
+const STORE_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store");
+    std::fs::remove_dir_all(&path);
+    std::fs::create_dir_all(&path).unwrap();
+    path
+});
+
+const FONT_PATH: LazyCell<PathBuf> =
+    LazyCell::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts"));
 
 macro_rules! lazy_font {
     ($name:ident, $path:expr) => {
-        pub const $name: LazyCell<Arc<Vec<u8>>> = LazyCell::new(|| {
-            Arc::new(std::fs::read($path).unwrap())
-        });
+        pub const $name: LazyCell<Arc<Vec<u8>>> =
+            LazyCell::new(|| Arc::new(std::fs::read($path).unwrap()));
     };
 }
 
 lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
 lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
-lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
-lazy_font!(NOTO_SANS_ARABIC, FONT_PATH.join("NotoSansArabic-Regular.ttf"));
+lazy_font!(
+    LATIN_MODERN_ROMAN,
+    FONT_PATH.join("LatinModernRoman-Regular.otf")
+);
+lazy_font!(
+    NOTO_SANS_ARABIC,
+    FONT_PATH.join("NotoSansArabic-Regular.ttf")
+);
 lazy_font!(NOTO_SANS_CJK, FONT_PATH.join("NotoSansCJKsc-Regular.otf"));
-lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"));
+lazy_font!(
+    NOTO_SANS_DEVANAGARI,
+    FONT_PATH.join("NotoSansDevanagari-Regular.ttf")
+);
 
-
-pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
+pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
     builder.finish().unwrap()
@@ -56,21 +82,28 @@ fn snapshot_path(name: &str) -> PathBuf {
     SNAPSHOT_PATH.clone().join(format!("{}.txt", name))
 }
 
-fn snapshot_store_path(name: &str) -> PathBuf {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store/snapshots");
+fn write_snapshot_to_store(name: &str, content: &[u8]) {
+    let mut path = STORE_PATH.clone().join("snapshots");
+    std::fs::create_dir_all(&path).unwrap();
+    path.push(format!("{}.pdf", name));
+    std::fs::write(&path, &content).unwrap();
+}
 
+pub fn write_manual_to_store(name: &str, data: &[u8]) {
+    let mut path = STORE_PATH.clone().join("manual");
     std::fs::create_dir_all(&path).unwrap();
 
-    path.push(format!("{}.pdf", name));
-    path
+    let pdf_path = path.join(format!("{}.pdf", name));
+    let txt_path = path.join(format!("{}.txt", name));
+    std::fs::write(pdf_path, data).unwrap();
+    std::fs::write(txt_path, data).unwrap();
 }
 
 pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     let path = snapshot_path(name);
 
     if STORE && storable {
-        let store_path = snapshot_store_path(name);
-        std::fs::write(&store_path, &content).unwrap();
+        write_snapshot_to_store(name, content);
     }
 
     if !path.exists() {
@@ -108,16 +141,36 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     assert_eq!(changeset.distance, 0);
 }
 
-pub fn store_manual(name: &str, data: &[u8]) {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store/manual");
+pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument) {
+    let refs_path = REFS_PATH.clone().join(name);
 
-    std::fs::create_dir_all(&path).unwrap();
+    if document.is_empty() {
+        panic!("empty document");
+    } else if document.len() == 1 {
+        let ref_path = refs_path.join(format!("{}.png", renderer.name()));
 
-    let pdf_path = path.join(format!("{}.pdf", name));
-    let txt_path = path.join(format!("{}.txt", name));
+        // let reference = load_from_memory(&std::fs::read(&ref_path).unwrap()).unwrap().into_rgba8();
+        // let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
+        //
+        // let (diff_image, pixel_diff) = get_diff(&reference, &actual);
+        //
+        // if pixel_diff != 0 {
+        //     std::fs::create_dir_all(&diffs_path).unwrap();
+        //     let diff_path = diffs_path.join(format!("{}.png", renderer.name()));
+        //     diff_image
+        //         .save_with_format(&diff_path, image::ImageFormat::Png)
+        //         .unwrap();
+        // }
+        //
+        // assert_eq!(pixel_diff, 0);
 
-    std::fs::write(pdf_path, data).unwrap();
-    std::fs::write(txt_path, data).unwrap();
+        std::fs::write(&ref_path, &document[0]).unwrap();
+    } else {
+        for (index, page) in document.iter().enumerate() {
+            let ref_path = refs_path.join(format!("{}_{}.png", index + 1, renderer.name()));
+            std::fs::write(&ref_path, page).unwrap();
+        }
+    }
 }
 
 pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Glyph> {
@@ -191,7 +244,7 @@ pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Gl
     glyphs
 }
 
-pub fn render_doc(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
+pub fn render_document(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
     let options = RenderOptions { scale: 1.0 };
 
     match renderer {
@@ -202,46 +255,6 @@ pub fn render_doc(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
         Renderer::Pdfjs => render_pdfjs(doc, &options).unwrap(),
         Renderer::Pdfbox => render_pdfbox(doc, &options).unwrap(),
         Renderer::Ghostscript => render_ghostscript(doc, &options).unwrap(),
-    }
-}
-
-pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument) {
-    let refs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/refs")
-        .join(name);
-
-    let _ = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/diff")
-        .join(name);
-
-    std::fs::create_dir_all(&refs_path).unwrap();
-
-    if document.is_empty() {
-        panic!("empty document");
-    } else if document.len() == 1 {
-        let ref_path = refs_path.join(format!("{}.png", renderer.name()));
-
-        // let reference = load_from_memory(&std::fs::read(&ref_path).unwrap()).unwrap().into_rgba8();
-        // let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
-        //
-        // let (diff_image, pixel_diff) = get_diff(&reference, &actual);
-        //
-        // if pixel_diff != 0 {
-        //     std::fs::create_dir_all(&diffs_path).unwrap();
-        //     let diff_path = diffs_path.join(format!("{}.png", renderer.name()));
-        //     diff_image
-        //         .save_with_format(&diff_path, image::ImageFormat::Png)
-        //         .unwrap();
-        // }
-        //
-        // assert_eq!(pixel_diff, 0);
-
-        std::fs::write(&ref_path, &document[0]).unwrap();
-    } else {
-        for (index, page) in document.iter().enumerate() {
-            let ref_path = refs_path.join(format!("{}_{}.png", index + 1, renderer.name()));
-            std::fs::write(&ref_path, page).unwrap();
-        }
     }
 }
 
