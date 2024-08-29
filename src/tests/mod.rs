@@ -11,6 +11,7 @@ use skrifa::GlyphId;
 use std::cmp::max;
 use std::path::PathBuf;
 use std::cell::LazyCell;
+use std::sync::Arc;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
 mod manual;
@@ -29,17 +30,26 @@ const FONT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts")
 });
 
+macro_rules! lazy_font {
+    ($name:ident, $path:expr) => {
+        pub const $name: LazyCell<Arc<Vec<u8>>> = LazyCell::new(|| {
+            Arc::new(std::fs::read($path).unwrap())
+        });
+    };
+}
+
+lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
+lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
+lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
+lazy_font!(NOTO_SANS_ARABIC, FONT_PATH.join("NotoSansArabic-Regular.ttf"));
+lazy_font!(NOTO_SANS_CJK, FONT_PATH.join("NotoSansCJKsc-Regular.otf"));
+lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"));
+
+
 pub fn rect_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
     builder.finish().unwrap()
-}
-
-pub fn load_font(name: &str) -> Vec<u8> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fonts")
-        .join(name);
-    std::fs::read(&path).unwrap()
 }
 
 fn snapshot_path(name: &str) -> PathBuf {

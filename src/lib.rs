@@ -14,7 +14,7 @@ pub mod transform;
 pub mod util;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 pub use fontdb::*;
 pub use object::color_space::rgb;

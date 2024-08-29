@@ -9,6 +9,7 @@ use krilla_macros::visreg;
 use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
+use crate::tests::NOTO_SANS;
 
 #[visreg]
 fn linear_gradient(surface: &mut Surface) {
@@ -52,13 +53,10 @@ fn linear_gradient(surface: &mut Surface) {
     );
 }
 
-#[ignore]
 #[visreg]
 fn cosmic_text(surface: &mut Surface) {
     let mut db = Database::new();
-    db.load_font_source(Source::Binary(Arc::new(include_bytes!(
-        "../../tests/fonts/NotoSans-Regular.ttf"
-    ))));
+    db.load_font_source(Source::Binary(NOTO_SANS.clone()));
     let mut font_system = FontSystem::new_with_locale_and_db("".to_string(), db);
     assert_eq!(font_system.db().len(), 1);
     let metrics = Metrics::new(14.0, 20.0);

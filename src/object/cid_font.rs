@@ -249,16 +249,14 @@ mod tests {
     use crate::font::Font;
 
     use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::tests::{check_snapshot, load_font};
+    use crate::tests::{check_snapshot, NOTO_SANS, LATIN_MODERN_ROMAN};
     use krilla_macros::snapshot;
     use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use std::sync::Arc;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
-        let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
-        let font = Font::new(font_data, 0, Location::default()).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
             .borrow_mut()
             .add_glyph(GlyphId::new(36));
@@ -269,8 +267,7 @@ mod tests {
 
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
-        let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
-        let font = Font::new(font_data, 0, Location::default()).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
             .borrow_mut()
             .add_glyph(GlyphId::new(58));
