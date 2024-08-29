@@ -48,16 +48,3 @@ pub fn draw_glyph(
 
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::font::draw;
-    use std::sync::Arc;
-
-    #[ignore]
-    #[test]
-    fn svg_twitter() {
-        let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
-        draw(Arc::new(font_data), None, "svg_twitter");
-    }
-}

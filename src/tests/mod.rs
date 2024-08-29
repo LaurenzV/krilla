@@ -8,10 +8,9 @@ use sitro::{
     render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
 use skrifa::GlyphId;
-use std::cell::LazyCell;
 use std::cmp::max;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use oxipng::{InFile, OutFile};
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
@@ -21,39 +20,39 @@ mod visreg;
 const REPLACE: bool = true;
 const STORE: bool = true;
 
-const SNAPSHOT_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
-const REFS_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+static REFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/refs");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
-const DIFFS_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+static DIFFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/diffs");
     let _ = std::fs::remove_dir_all(&path);
-    let _ = std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::create_dir_all(&path);
     path
 });
 
-const STORE_PATH: LazyCell<PathBuf> = LazyCell::new(|| {
+static STORE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store");
     let _ = std::fs::remove_dir_all(&path);
-    let _ = std::fs::create_dir_all(&path).unwrap();
+    let _ = std::fs::create_dir_all(&path);
     path
 });
 
-const FONT_PATH: LazyCell<PathBuf> =
-    LazyCell::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts"));
+static FONT_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts"));
 
 macro_rules! lazy_font {
     ($name:ident, $path:expr) => {
-        pub const $name: LazyCell<Arc<Vec<u8>>> =
-            LazyCell::new(|| Arc::new(std::fs::read($path).unwrap()));
+        pub static $name: LazyLock<Arc<Vec<u8>>> =
+            LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()));
     };
 }
 

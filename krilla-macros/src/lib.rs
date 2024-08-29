@@ -3,7 +3,7 @@ use quote::{format_ident, quote};
 use sitro::Renderer;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, parse_quote, Ident, ItemFn, Token};
+use syn::{parse_macro_input, Ident, ItemFn, Token};
 
 struct AttributeInput {
     identifiers: Punctuated<Ident, Token![,]>,

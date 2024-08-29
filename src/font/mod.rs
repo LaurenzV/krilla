@@ -387,10 +387,6 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
                 col as f32 * size as f32,
                 (row + 1) as f32 * size as f32,
             )
-            // .pre_concat(Transform::from_scale(
-            //     size as f32 / units_per_em,
-            //     size as f32 / units_per_em,
-            // ))
         }
 
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
@@ -402,7 +398,6 @@ fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &
             font.clone(),
             &text,
         );
-        // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
         surface.pop();
 
         cur_point += size;
