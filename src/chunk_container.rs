@@ -48,15 +48,19 @@ impl ChunkContainer {
         let mut remapper = HashMap::new();
 
         // Two utility macros, that basically traverses the fields in the order that we
-        // will write them and assigns new references as we go. This gives us the advantage
-        // that the PDF will be numbered with monotonically increasing numbers, which,
-        // while it is not a strict requirement for a valid PDF, makes it a lot
-        // cleaner and might make implementing features like object streams easier
-        // down the road.
+        // will write them to the PDF and assigns new references as we go.
+        // This gives us the advantage that the PDF will be numbered with
+        // monotonically increasing numbers, which, while it is not a strict requirement
+        // for a valid PDF, makes it a lot cleaner and might make implementing features
+        // like object streams easier down the road.
+        //
+        // It also allows us to estimate the capacity we will need for the new PDF.
+        let mut chunks_len = 0;
         macro_rules! remap_field {
             ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
                 $(
                     if let Some((original_ref, chunk)) = &mut $self.$field {
+                        chunks_len += chunk.len();
                         for object_ref in chunk.object_refs() {
                             debug_assert!(!remapper.contains_key(&object_ref));
 
@@ -72,6 +76,7 @@ impl ChunkContainer {
             ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
                 $(
                     for chunk in &$self.$field {
+                        chunks_len += chunk.len();
                         for ref_ in chunk.object_refs() {
                             debug_assert!(!remapper.contains_key(&ref_));
 
@@ -83,9 +88,10 @@ impl ChunkContainer {
         }
 
         // Chunk length is not an exact number because the length might change as we renumber,
-        // so we add a bit of a buffer, which should hopefully always be enough
-        // let mut pdf = Pdf::with_capacity((self.chunks_len as f32 * 1.1) as usize);
-        let mut pdf = Pdf::new();
+        // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
+        // for the document catalog. This hopefully allows us to avoid realloactions in the general
+        // case, and thus give us better performance.
+        let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200) as usize);
 
         if serialize_settings.ascii_compatible {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
