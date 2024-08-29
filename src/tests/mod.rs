@@ -10,6 +10,7 @@ use sitro::{
 };
 use skrifa::GlyphId;
 use std::cmp::max;
+use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{Path, PathBuilder, Rect};
@@ -174,7 +175,15 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
 
         let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
-        if pixel_diff != 0 {
+        // There might be slight pixel differences in CI because of the different OS,
+        // so we assign a threshold of 0.05%.
+        let threshold = if env::var("KRILLA_THRESHOLD").is_ok() {
+            ((reference.width() * reference.height()) as f32 * 0.0005) as u32
+        }   else {
+            0
+        };
+
+        if pixel_diff > threshold {
             let diff_path = DIFFS_PATH.join(format!("{}.png", name));
             diff_image
                 .save_with_format(&diff_path, image::ImageFormat::Png)
@@ -190,9 +199,11 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
                 .unwrap();
                 panic!("test was replaced");
             }
+
+            panic!("pixel diff was {}, while threshold is {}", pixel_diff, threshold);
         }
 
-        assert_eq!(pixel_diff, 0);
+
     };
 
     if document.is_empty() {
@@ -295,7 +306,7 @@ pub fn render_document(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
     }
 }
 
-pub fn get_diff(expected_image: &RgbaImage, actual_image: &RgbaImage) -> (RgbaImage, i32) {
+pub fn get_diff(expected_image: &RgbaImage, actual_image: &RgbaImage) -> (RgbaImage, u32) {
     let width = max(expected_image.width(), actual_image.width());
     let height = max(expected_image.height(), actual_image.height());
 
