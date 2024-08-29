@@ -59,28 +59,19 @@ macro_rules! lazy_font {
 
 lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
 lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
-lazy_font!(
-    LATIN_MODERN_ROMAN,
-    FONT_PATH.join("LatinModernRoman-Regular.otf")
-);
-lazy_font!(
-    NOTO_SANS_ARABIC,
-    FONT_PATH.join("NotoSansArabic-Regular.ttf")
-);
+#[rustfmt::skip]
+lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
+#[rustfmt::skip]
+lazy_font!(NOTO_SANS_ARABIC, FONT_PATH.join("NotoSansArabic-Regular.ttf"));
+#[rustfmt::skip]
 lazy_font!(NOTO_SANS_CJK, FONT_PATH.join("NotoSansCJKsc-Regular.otf"));
-lazy_font!(
-    NOTO_SANS_DEVANAGARI,
-    FONT_PATH.join("NotoSansDevanagari-Regular.ttf")
-);
+#[rustfmt::skip]
+lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"));
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
     builder.finish().unwrap()
-}
-
-fn snapshot_path(name: &str) -> PathBuf {
-    SNAPSHOT_PATH.clone().join(format!("{}.txt", name))
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
@@ -101,7 +92,7 @@ pub fn write_manual_to_store(name: &str, data: &[u8]) {
 }
 
 pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
-    let path = snapshot_path(name);
+    let path = SNAPSHOT_PATH.join(format!("{}.txt", name));
 
     if STORE && storable {
         write_snapshot_to_store(name, content);
