@@ -6,6 +6,8 @@ use skrifa::GlyphId;
 use std::path::PathBuf;
 use tiny_skia_path::{Path, PathBuilder, Rect};
 
+mod manual;
+
 const REPLACE: bool = true;
 const STORE: bool = true;
 
@@ -81,6 +83,18 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     }
 
     assert_eq!(changeset.distance, 0);
+}
+
+pub fn store_manual(name: &str, data: &[u8]) {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store/manual");
+
+    std::fs::create_dir_all(&path).unwrap();
+
+    let pdf_path = path.join(format!("{}.pdf", name));
+    let txt_path = path.join(format!("{}.txt", name));
+
+    std::fs::write(pdf_path, data).unwrap();
+    std::fs::write(txt_path, data).unwrap();
 }
 
 pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Glyph> {

@@ -1,20 +1,19 @@
-use crate::common::store_manual;
-use common::{load_font, simple_shape, SerializeSettingsExt};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::Source;
-use krilla::document::Document;
-use krilla::font::Font;
-use krilla::rgb::Rgb;
-use krilla::serialize::SerializeSettings;
-use krilla::stream::Glyph;
-use krilla::util::SliceExt;
-use krilla::Fill;
+
 use rustybuzz::Direction;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::sync::Arc;
+use crate::document::Document;
+use crate::Fill;
+use crate::font::Font;
+use crate::rgb::Rgb;
+use crate::serialize::SerializeSettings;
+use crate::stream::Glyph;
+use crate::tests::{load_font, simple_shape, store_manual};
+use crate::util::SliceExt;
 
-mod common;
 
 #[test]
 fn simple_shape_demo() {
