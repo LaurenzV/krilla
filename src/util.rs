@@ -7,7 +7,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
-use tiny_skia_path::{Path, PathBuilder, Rect};
+use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size};
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -200,5 +200,48 @@ where
         let (head, tail) = self.slice.split_at(count);
         self.slice = tail;
         Some((key, head))
+    }
+}
+
+// TODO: Remove with new resvg release
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct RectWrapper(pub Rect);
+
+impl Deref for RectWrapper {
+    type Target = Rect;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Eq for RectWrapper {}
+
+impl Hash for RectWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        FiniteF32::new(self.0.left()).unwrap().hash(state);
+        FiniteF32::new(self.0.top()).unwrap().hash(state);
+        FiniteF32::new(self.0.right()).unwrap().hash(state);
+        FiniteF32::new(self.0.bottom()).unwrap().hash(state);
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct SizeWrapper(pub Size);
+
+impl Deref for SizeWrapper {
+    type Target = Size;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Eq for SizeWrapper {}
+
+impl Hash for SizeWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        FiniteF32::new(self.0.width()).unwrap().hash(state);
+        FiniteF32::new(self.0.height()).unwrap().hash(state);
     }
 }

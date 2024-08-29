@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::object::color_space::DEVICE_GRAY;
 use crate::serialize::{Object, SerializerContext};
-use crate::util::{NameExt, Prehashed};
+use crate::util::{NameExt, Prehashed, SizeWrapper};
 use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use tiny_skia_path::Size;
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
     image_data: Vec<u8>,
-    size: Size,
+    size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     color_type: ColorType,
 }
@@ -31,12 +31,12 @@ impl Image {
             image_data,
             mask_data,
             color_type,
-            size,
+            size: SizeWrapper(size),
         })))
     }
 
     pub fn size(&self) -> Size {
-        self.0.size
+        self.0.size.0
     }
 }
 

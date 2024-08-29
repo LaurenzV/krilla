@@ -103,7 +103,8 @@ pub(crate) mod test_utils {
     }
 
     pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Glyph> {
-        let rb_font = rustybuzz::Face::from_slice(font.font_ref().data().as_bytes(), 0).unwrap();
+        let data = font.font_data();
+        let rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), 0).unwrap();
 
         let mut buffer = UnicodeBuffer::new();
         buffer.push_str(text);

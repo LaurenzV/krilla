@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::serialize::{Object, SerializerContext};
 use crate::stream::Stream;
-use crate::util::RectExt;
+use crate::util::{RectExt, RectWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
@@ -10,7 +10,7 @@ pub struct XObject {
     stream: Stream,
     isolated: bool,
     transparency_group_color_space: bool,
-    custom_bbox: Option<Rect>,
+    custom_bbox: Option<RectWrapper>,
 }
 
 impl XObject {
@@ -24,12 +24,12 @@ impl XObject {
             stream,
             isolated,
             transparency_group_color_space,
-            custom_bbox,
+            custom_bbox: custom_bbox.map(|c| RectWrapper(c)),
         }
     }
 
     pub fn bbox(&self) -> Rect {
-        self.custom_bbox.unwrap_or(self.stream.bbox())
+        self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox())
     }
 }
 
@@ -53,7 +53,7 @@ impl Object for XObject {
         self.stream
             .resource_dictionary()
             .to_pdf_resources(sc, &mut x_object);
-        x_object.bbox(self.custom_bbox.unwrap_or(self.stream.bbox()).to_pdf_rect());
+        x_object.bbox(self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox()).to_pdf_rect());
 
         if self.isolated || self.transparency_group_color_space {
             let mut group = x_object.group();

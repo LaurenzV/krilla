@@ -3,7 +3,7 @@ use crate::object::color_space::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::RectExt;
+use crate::util::{RectExt, RectWrapper};
 use crate::{LinearGradient, RadialGradient, SweepGradient};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -36,7 +36,7 @@ pub struct PostScriptGradient {
     pub min: FiniteF32,
     pub max: FiniteF32,
     pub stops: Vec<Stop>,
-    pub domain: Rect,
+    pub domain: RectWrapper,
     pub spread_method: SpreadMethod,
     pub gradient_type: GradientType,
 }
@@ -110,7 +110,7 @@ where
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
-                    domain: get_expanded_bbox(bbox, self.transform.post_concat(ts)),
+                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.post_concat(ts))),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
                 }),
@@ -141,7 +141,7 @@ where
                     .into_iter()
                     .map(|s| s.into())
                     .collect::<Vec<Stop>>(),
-                domain: get_expanded_bbox(bbox, transform),
+                domain: RectWrapper(get_expanded_bbox(bbox, transform)),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
             }),
