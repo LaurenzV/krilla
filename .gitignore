@@ -2,6 +2,6 @@ target
 .idea
 out
 data
-tests/diff/*
-tests/store/*
+assets/diff/*
+assets/store/*
 **/.DS_STORE
