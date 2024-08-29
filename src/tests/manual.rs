@@ -147,7 +147,7 @@ fn twitter_color_emoji() {
 #[ignore]
 #[test]
 fn noto_sans() {
-    let font_data = NOTO_SANS.clone();;
+    let font_data = NOTO_SANS.clone();
 
     let glyphs = (0..1000)
         .map(|n| (GlyphId::new(n), "".to_string()))
@@ -161,7 +161,7 @@ fn noto_sans() {
 fn apple_color_emoji() {
     let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
 
-    all_glyphs_to_pdf(Arc::new(font_data), None, "sbix_apple_color");
+    all_glyphs_to_pdf(Arc::new(font_data), None, "apple_color_emoji");
 }
 
 #[ignore]
