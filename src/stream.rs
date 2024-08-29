@@ -1,7 +1,7 @@
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::{Color, ColorSpace};
+use crate::object::color_space::{Color, ColorSpace, ColorSpaceType};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -10,7 +10,7 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::type3_font::Type3Font;
 use crate::object::xobject::XObject;
-use crate::resource::{ColorSpaceResource, ColorSpaceType, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource};
+use crate::resource::{ColorSpaceResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};

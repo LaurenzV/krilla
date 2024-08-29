@@ -1,9 +1,11 @@
-use crate::resource::{ColorSpaceType};
 use crate::serialize::SerializerContext;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
+use crate::color_space::device_cmyk::DeviceCmyk;
+use crate::color_space::luma::{DeviceGray, SGray};
+use crate::rgb::{DeviceRgb, Srgb};
 
 /// The PDF name for the device RGB color space.
 pub const DEVICE_RGB: &'static str = "DeviceRGB";
@@ -83,9 +85,7 @@ impl Color {
 
 /// A module for dealing with device CMYK colors.
 pub mod device_cmyk {
-    use crate::object::color_space::{ColorSpace, InternalColor};
-    use crate::resource::{ColorSpaceType};
-    
+    use crate::object::color_space::{ColorSpace, ColorSpaceType, InternalColor};
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -136,8 +136,7 @@ pub mod device_cmyk {
 
 /// A module for dealing with device RGB colors.
 pub mod rgb {
-    use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
-    use crate::resource::{ColorSpaceType};
+    use crate::object::color_space::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
     use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
@@ -235,8 +234,7 @@ pub mod rgb {
 /// A module for dealing with device luma (= grayscale) colors.
 pub mod luma {
     use crate::chunk_container::ChunkContainer;
-    use crate::object::color_space::{ColorSpace, ICCBasedColorSpace, InternalColor};
-    use crate::resource::{ColorSpaceType};
+    use crate::object::color_space::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
@@ -327,7 +325,7 @@ mod tests {
     use crate::object::color_space::luma::SGray;
     use crate::object::color_space::rgb::Srgb;
     use crate::resource::ColorSpaceResource;
-    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::serialize::{SerializerContext, SerializeSettings};
     use crate::test_utils::check_snapshot;
 
     fn sc() -> SerializerContext {
@@ -348,4 +346,13 @@ mod tests {
         sc.add_object(ColorSpaceResource::Srgb(Srgb));
         check_snapshot("color_space/srgb", sc.finish().as_bytes());
     }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum ColorSpaceType {
+    Srgb(Srgb),
+    SGray(SGray),
+    DeviceGray(DeviceGray),
+    DeviceRgb(DeviceRgb),
+    DeviceCmyk(DeviceCmyk),
 }

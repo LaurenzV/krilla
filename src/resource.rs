@@ -1,6 +1,6 @@
 use crate::font::FontIdentifier;
-use crate::object::color_space::luma::{DeviceGray, SGray};
-use crate::object::color_space::rgb::{DeviceRgb, Srgb};
+use crate::object::color_space::luma::SGray;
+use crate::object::color_space::rgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
@@ -365,15 +365,6 @@ pub enum ColorSpaceResource {
     SGray(SGray),
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub enum ColorSpaceType {
-    Srgb(Srgb),
-    SGray(SGray),
-    DeviceGray(DeviceGray),
-    DeviceRgb(DeviceRgb),
-    DeviceCmyk(DeviceCmyk),
-}
-
 impl Object for ColorSpaceResource {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         &mut cc.color_spaces
@@ -399,7 +390,6 @@ impl ResourceTrait for FontIdentifier {
 
 use crate::chunk_container::ChunkContainer;
 use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
-use crate::color_space::device_cmyk::DeviceCmyk;
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {
