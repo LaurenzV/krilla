@@ -122,6 +122,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut pdfjs = false;
     let mut poppler = false;
     let mut quartz = false;
+    let mut document = false;
 
     if attrs.identifiers.is_empty() {
         pdfium = true;
@@ -142,6 +143,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 "pdfjs" => pdfjs = true,
                 "poppler" => poppler = true,
                 "quartz" => quartz = true,
+                "document" => document = true,
                 _ => panic!("unknown renderer {}", &string_ident)
             }
         }
@@ -155,16 +157,16 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_body = quote! {
         let settings = SerializeSettings::#serialize_settings();
-            let mut db = Document::new(settings);
-            let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-            let mut surface = page.surface();
-            #impl_ident(&mut surface);
-            surface.finish();
-            page.finish();
-            let pdf = db.finish();
+        let mut db = Document::new(settings);
+        let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
+        let mut surface = page.surface();
+        #impl_ident(&mut surface);
+        surface.finish();
+        page.finish();
+        let pdf = db.finish();
 
-            let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered);
+        let rendered = render_document(&pdf, &renderer);
+        check_render(stringify!(#fn_name), &renderer, rendered);
     };
 
     let renderer_body = |renderer: Renderer, include: bool| {

@@ -141,7 +141,9 @@ fn cosmic_text_integration() {
 #[test]
 fn twitter_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
-    all_glyphs_to_pdf(Arc::new(font_data), None, "twitter_color_emoji");
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    write_manual_to_store("twitter_color_emoji", &document.finish());
 }
 
 #[ignore]
@@ -153,7 +155,9 @@ fn noto_sans() {
         .map(|n| (GlyphId::new(n), "".to_string()))
         .collect::<Vec<_>>();
 
-    all_glyphs_to_pdf(font_data, Some(glyphs), "noto_sans");
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
+    write_manual_to_store("noto_sans", &document.finish());
 }
 
 #[ignore]
@@ -161,7 +165,9 @@ fn noto_sans() {
 fn apple_color_emoji() {
     let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
 
-    all_glyphs_to_pdf(Arc::new(font_data), None, "apple_color_emoji");
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    write_manual_to_store("apple_color_emoji", &document.finish());
 }
 
 #[ignore]
@@ -173,27 +179,31 @@ fn colr_test_glyphs() {
         .map(|n| (GlyphId::new(n), "".to_string()))
         .collect::<Vec<_>>();
 
-    all_glyphs_to_pdf(font_data, Some(glyphs), "colr_test_glyphs");
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
+    write_manual_to_store("colr_test_glyphs", &document.finish());
 }
 
 #[ignore]
 #[test]
 fn noto_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-    all_glyphs_to_pdf(Arc::new(font_data), None, "noto_color_emoji");
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    write_manual_to_store("noto_color_emoji", &document.finish());
 }
 
 #[ignore]
 #[test]
 fn segoe_ui_emoji() {
     let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-    all_glyphs_to_pdf(Arc::new(font_data), None, "segoe_ui_emoji");
+    let mut document = Document::new(SerializeSettings::settings_1());
+    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    write_manual_to_store("segoe_ui_emoji", &document.finish());
 }
 
-fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
-    use crate::document::Document;
+pub fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, db: &mut Document)  {
     use crate::object::color_space::rgb::Rgb;
-    use crate::serialize::SerializeSettings;
     use crate::stream::Glyph;
     use crate::Transform;
 
@@ -226,8 +236,7 @@ fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, Strin
     let mut cur_point = 0;
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut document_builder = Document::new(SerializeSettings::default());
-    let mut builder = document_builder.start_page(page_size);
+    let mut builder = db.start_page(page_size);
     let mut surface = builder.surface();
 
     for (i, text) in glyphs.iter().cloned() {
@@ -262,6 +271,4 @@ fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, Strin
 
     surface.finish();
     builder.finish();
-    let pdf = document_builder.finish();
-    write_manual_to_store(name, &pdf);
 }
