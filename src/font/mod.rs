@@ -18,7 +18,6 @@ use yoke::{Yoke, Yokeable};
 
 pub mod bitmap;
 pub mod colr;
-mod cosmic_text;
 pub mod outline;
 pub mod svg;
 

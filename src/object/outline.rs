@@ -161,8 +161,8 @@ mod tests {
     use crate::serialize::SerializeSettings;
     use crate::test_utils::check_snapshot;
     use crate::Fill;
-    use tiny_skia_path::{PathBuilder, Point, Rect, Size};
     use krilla_macros::snapshot;
+    use tiny_skia_path::{PathBuilder, Point, Rect, Size};
 
     #[snapshot(document)]
     fn outline_simple(db: &mut Document) {

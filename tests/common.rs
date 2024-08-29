@@ -1,11 +1,11 @@
 use difference::{Changeset, Difference};
+use krilla::font::Font;
+use krilla::serialize::{SerializeSettings, SvgSettings};
+use krilla::stream::Glyph;
 use rustybuzz::{Direction, UnicodeBuffer};
 use skrifa::GlyphId;
 use std::path::PathBuf;
 use tiny_skia_path::{Path, PathBuilder, Rect};
-use krilla::font::Font;
-use krilla::serialize::{SerializeSettings, SvgSettings};
-use krilla::stream::Glyph;
 
 const REPLACE: bool = true;
 const STORE: bool = true;
@@ -63,6 +63,18 @@ fn snapshot_store_path(name: &str) -> PathBuf {
 
     path.push(format!("{}.pdf", name));
     path
+}
+
+pub fn store_manual(name: &str, data: &[u8]) {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store/manual");
+
+    std::fs::create_dir_all(&path).unwrap();
+
+    let pdf_path = path.join(format!("{}.pdf", name));
+    let txt_path = path.join(format!("{}.txt", name));
+
+    std::fs::write(pdf_path, data).unwrap();
+    std::fs::write(txt_path, data).unwrap();
 }
 
 pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
@@ -163,8 +175,8 @@ pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Gl
 
             e
         }
-            .and_then(|last| infos.get(last))
-            .map_or(text.len(), |info| info.cluster as usize);
+        .and_then(|last| infos.get(last))
+        .map_or(text.len(), |info| info.cluster as usize);
 
         glyphs.push(Glyph::new(
             GlyphId::new(start_info.glyph_id),
@@ -177,9 +189,4 @@ pub fn simple_shape(text: &str, dir: Direction, font: Font, size: f32) -> Vec<Gl
     }
 
     glyphs
-}
-
-pub fn store(name: &str, pdf: Vec<u8>) {
-    let _ = std::fs::write(format!("out/simple_shape_demo.pdf"), &pdf);
-    let _ = std::fs::write(format!("out/simple_shape_demo.txt"), &pdf);
 }
