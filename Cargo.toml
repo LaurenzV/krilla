@@ -5,20 +5,18 @@ edition = "2021"
 
 [dependencies]
 image = { version = "0.25.1", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
-miniz_oxide = "0.7.4"
+miniz_oxide = "0.8.0"
 once_cell = "1.19.0"
 pdf-writer = {git = "https://github.com/LaurenzV/pdf-writer", rev = "34c991f5"}
-resvg = {git = "https://github.com/LaurenzV/resvg", rev = "1c2b6bd0"}
+resvg = "0.43.0"
 siphasher = "1.0.1"
-skrifa = {git="https://github.com/LaurenzV/fontations", rev="0ed7955"}
+skrifa = "0.21.0"
 tiny-skia = "0.11.4"
 subsetter = {git = "https://github.com/typst/subsetter/", rev="67bde74"}
-tiny-skia-path = {git = "https://github.com/RazrFalcon/tiny-skia", rev="eec0a47"}
-usvg = {git = "https://github.com/LaurenzV/resvg", rev="1c2b6bd0"}
-cosmic-text = {git = "https://github.com/pop-os/cosmic-text", rev = "6f78d23"}
-parley = {git = "https://github.com/linebender/parley", rev = "66979c5"}
+tiny-skia-path = "0.11.4"
+usvg = "0.43.0"
 flate2 = "1.0.30"
-fontdb = "0.20.0"
+fontdb = "0.21.0"
 yoke = { version = "0.7.4", features = ["derive"] }
 float-cmp = "0.9.0"
 
@@ -31,5 +29,6 @@ image = "0.25.1"
 paste = "1.0.15"
 rustybuzz = "0.18.0"
 sitro = {git = "https://github.com/LaurenzV/sitro", rev = "b475ddc3"}
+cosmic-text = {path = "../cosmic-text"}
 
 

@@ -18,7 +18,7 @@ pub fn draw_glyph(
         .svg()
         .and_then(|svg_table| svg_table.glyph_data(glyph))
     {
-        let mut data = svg_data.get();
+        let mut data = svg_data;
 
         let mut decoded = vec![];
         if data.starts_with(&[0x1f, 0x8b]) {

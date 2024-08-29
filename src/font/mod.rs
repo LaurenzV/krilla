@@ -58,11 +58,28 @@ impl OutlinePen for OutlineBuilder {
     }
 }
 
+#[derive(Debug)]
+struct LocationWrapper(Location);
+
+impl Hash for LocationWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.coords().hash(state);
+    }
+}
+
+impl PartialEq for LocationWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.coords().eq(other.0.coords())
+    }
+}
+
+impl Eq for LocationWrapper {}
+
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct FontInfo {
     index: u32,
     checksum: u32,
-    location: Location,
+    location: LocationWrapper,
     pub(crate) units_per_em: u16,
     global_bbox: Rect,
     postscript_name: Option<String>,
@@ -76,6 +93,7 @@ pub struct FontInfo {
 
 struct Repr {
     font_info: Arc<FontInfo>,
+    font_data: Arc<dyn AsRef<[u8]> + Send + Sync>,
     font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
 }
 
@@ -141,7 +159,7 @@ impl FontInfo {
         Some(FontInfo {
             index,
             checksum,
-            location,
+            location: LocationWrapper(location),
             units_per_em,
             postscript_name,
             ascent,
@@ -184,6 +202,7 @@ impl Font {
             );
 
         Some(Font(Arc::new(Prehashed::new(Repr {
+            font_data: data,
             font_ref_yoke,
             font_info,
         }))))
@@ -234,11 +253,15 @@ impl Font {
     }
 
     pub fn location_ref(&self) -> LocationRef {
-        (&self.0.font_info.location).into()
+        (&self.0.font_info.location.0).into()
     }
 
     pub fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
+    }
+
+    pub fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
+        self.0.font_data.clone()
     }
 
     pub fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
