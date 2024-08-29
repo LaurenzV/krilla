@@ -126,7 +126,7 @@ jobs:
 
       - name: Download the pdfium library
         run: |
-          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
+          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F6679/pdfium-linux-x64.tgz
           mkdir pdfium-linux-x64
           tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
           sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
