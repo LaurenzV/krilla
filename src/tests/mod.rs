@@ -1,11 +1,12 @@
 use crate::font::Font;
 use crate::stream::Glyph;
 use difference::{Changeset, Difference};
-use image::{Rgba, RgbaImage};
+use image::{load_from_memory, Rgba, RgbaImage};
+use resvg::render;
 use rustybuzz::{Direction, UnicodeBuffer};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
-    render_quartz, RenderOptions, RenderedDocument, Renderer,
+    render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
 use skrifa::GlyphId;
 use std::cell::LazyCell;
@@ -142,33 +143,42 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
 }
 
 pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument) {
-    let refs_path = REFS_PATH.clone().join(name);
+    let refs_path = REFS_PATH.clone();
+
+    let check_single = |name: String, page: &RenderedPage| {
+        let ref_path = refs_path.join(format!("{}.png", name));
+
+        if !ref_path.exists() {
+            std::fs::write(&ref_path, page).unwrap();
+            panic!("new reference image was created");
+        }
+
+        let reference = load_from_memory(&std::fs::read(&ref_path).unwrap())
+            .unwrap()
+            .into_rgba8();
+        let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
+
+        let (diff_image, pixel_diff) = get_diff(&reference, &actual);
+
+        if pixel_diff != 0 {
+            let diff_path = DIFFS_PATH.join(format!("{}.png", name));
+            diff_image
+                .save_with_format(&diff_path, image::ImageFormat::Png)
+                .unwrap();
+        }
+
+        assert_eq!(pixel_diff, 0);
+
+        std::fs::write(&ref_path, page).unwrap();
+    };
 
     if document.is_empty() {
         panic!("empty document");
     } else if document.len() == 1 {
-        let ref_path = refs_path.join(format!("{}.png", renderer.name()));
-
-        // let reference = load_from_memory(&std::fs::read(&ref_path).unwrap()).unwrap().into_rgba8();
-        // let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
-        //
-        // let (diff_image, pixel_diff) = get_diff(&reference, &actual);
-        //
-        // if pixel_diff != 0 {
-        //     std::fs::create_dir_all(&diffs_path).unwrap();
-        //     let diff_path = diffs_path.join(format!("{}.png", renderer.name()));
-        //     diff_image
-        //         .save_with_format(&diff_path, image::ImageFormat::Png)
-        //         .unwrap();
-        // }
-        //
-        // assert_eq!(pixel_diff, 0);
-
-        std::fs::write(&ref_path, &document[0]).unwrap();
+        check_single(format!("{}_{}", name, renderer.name()), &document[0]);
     } else {
         for (index, page) in document.iter().enumerate() {
-            let ref_path = refs_path.join(format!("{}_{}.png", index + 1, renderer.name()));
-            std::fs::write(&ref_path, page).unwrap();
+            check_single(format!("{}_{}_{}", name, renderer.name(), index), page);
         }
     }
 }
