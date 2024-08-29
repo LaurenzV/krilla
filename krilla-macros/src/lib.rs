@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, FnArg, Ident, ItemFn, LitStr, Type};
+use syn::{parse_macro_input, Ident, ItemFn};
 
 #[proc_macro_attribute]
 pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -9,27 +9,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name = input_fn.sig.ident.clone();
     let snapshot_name = format!("{}/{}", mod_name, fn_name.to_string());
 
-    let mut use_sc = false;
-    match &input_fn.sig.inputs[0] {
-        FnArg::Receiver(_) => panic!(),
-        FnArg::Typed(t) => {
-            if let Type::Reference(r) = t.ty.as_ref() {
-                if let Type::Path(p) = r.elem.as_ref() {
-                    if p.path.segments[0].ident.to_string() == "SerializerContext".to_string() {
-                        use_sc = true;
-                    } else {
-                        panic!();
-                    }
-                } else {
-                    panic!();
-                }
-            } else {
-                panic!();
-            }
-        }
-    };
-
-    let impl_ident = syn::Ident::new(&format!("{}_impl", fn_name), fn_name.span());
+    let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
     let expanded = quote! {
@@ -37,7 +17,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         #[test]
         fn #fn_name() {
-            let settings = SerializeSettings::default_test();
+            let settings = SerializeSettings::set_1();
             let mut sc = SerializerContext::new(settings);
             #impl_ident(&mut sc);
             check_snapshot(#snapshot_name, sc.finish().as_bytes());

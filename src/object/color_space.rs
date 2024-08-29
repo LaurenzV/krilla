@@ -324,34 +324,6 @@ pub mod luma {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::object::color_space::luma::SGray;
-    use crate::object::color_space::rgb::Srgb;
-    use crate::resource::ColorSpaceResource;
-    use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::test_utils::check_snapshot;
-
-    fn sc() -> SerializerContext {
-        let settings = SerializeSettings::default_test();
-        SerializerContext::new(settings)
-    }
-
-    #[test]
-    fn sgray() {
-        let mut sc = sc();
-        sc.add_object(ColorSpaceResource::SGray(SGray));
-        check_snapshot("color_space/sgray", sc.finish().as_bytes());
-    }
-
-    #[test]
-    fn srgb() {
-        let mut sc = sc();
-        sc.add_object(ColorSpaceResource::Srgb(Srgb));
-        check_snapshot("color_space/srgb", sc.finish().as_bytes());
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ColorSpaceType {
     Srgb(Srgb),
@@ -359,4 +331,24 @@ pub enum ColorSpaceType {
     DeviceGray(DeviceGray),
     DeviceRgb(DeviceRgb),
     DeviceCmyk(DeviceCmyk),
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::object::color_space::luma::SGray;
+    use crate::object::color_space::rgb::Srgb;
+    use crate::resource::ColorSpaceResource;
+    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::test_utils::check_snapshot;
+    use krilla_macros::snapshot;
+
+    #[snapshot(color_space)]
+    fn sgray(sc: &mut SerializerContext) {
+        sc.add_object(ColorSpaceResource::SGray(SGray));
+    }
+
+    #[snapshot(color_space)]
+    fn srgb(sc: &mut SerializerContext) {
+        sc.add_object(ColorSpaceResource::Srgb(Srgb));
+    }
 }

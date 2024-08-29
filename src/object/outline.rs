@@ -169,7 +169,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap());
         let path = builder.finish().unwrap();
 
-        let mut db = Document::new(SerializeSettings::default_test());
+        let mut db = Document::new(SerializeSettings::set_1());
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         let mut surface = page.surface();
         surface.draw_path(&path, Fill::<Rgb>::default());

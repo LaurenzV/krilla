@@ -186,15 +186,14 @@ mod tests {
     use crate::surface::StreamBuilder;
     use crate::test_utils::check_snapshot;
     use crate::Fill;
+    use krilla_macros::snapshot;
     use pdf_writer::types::NumberingStyle;
     use std::num::NonZeroU32;
     use tiny_skia_path::{PathBuilder, Rect, Size};
 
-    #[test]
-    fn simple_page() {
-        let mut sc = SerializerContext::new(SerializeSettings::default_test());
-
-        let mut stream_builder = StreamBuilder::new(&mut sc);
+    #[snapshot(page)]
+    fn simple_page(sc: &mut SerializerContext) {
+        let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
         let mut builder = PathBuilder::new();
@@ -210,15 +209,13 @@ mod tests {
             vec![],
         );
         sc.add_page(page);
-
-        check_snapshot("page/simple_page", sc.finish().as_bytes());
     }
 
     #[test]
     fn page_with_resources() {
         let mut sc = SerializerContext::new(SerializeSettings {
             no_device_cs: true,
-            ..SerializeSettings::default_test()
+            ..SerializeSettings::set_1()
         });
 
         let mut stream_builder = StreamBuilder::new(&mut sc);
@@ -241,10 +238,8 @@ mod tests {
         check_snapshot("page/page_with_resources", sc.finish().as_bytes());
     }
 
-    #[test]
-    fn page_label() {
-        let mut sc = SerializerContext::new(SerializeSettings::default_test());
-
+    #[snapshot(page)]
+    fn page_label(sc: &mut SerializerContext) {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),
             Some("P".to_string()),
@@ -252,15 +247,11 @@ mod tests {
         );
 
         sc.add_page_label(page_label);
-
-        check_snapshot("page/page_label", sc.finish().as_bytes());
     }
-
-    // TODO: Fix issue with two duplicate pages not showing up.
 
     #[test]
     fn page_label_complex() {
-        let mut db = Document::new(SerializeSettings::default_test());
+        let mut db = Document::new(SerializeSettings::set_1());
         db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(

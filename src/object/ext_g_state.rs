@@ -141,36 +141,27 @@ mod tests {
     use crate::stream::Stream;
     use crate::test_utils::check_snapshot;
     use crate::MaskType;
+    use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;
     use usvg::NormalizedF32;
 
-    fn sc() -> SerializerContext {
-        let settings = SerializeSettings::default_test();
-        SerializerContext::new(settings)
-    }
-
-    #[test]
-    pub fn empty() {
-        let mut sc = sc();
+    #[snapshot(ext_g_state)]
+    pub fn empty(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new();
         sc.add_object(ext_state);
-        check_snapshot("ext_g_state/empty", sc.finish().as_bytes());
     }
 
-    #[test]
-    pub fn default_values() {
-        let mut sc = sc();
+    #[snapshot(ext_g_state)]
+    pub fn default_values(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
         sc.add_object(ext_state);
-        check_snapshot("ext_g_state/default_values", sc.finish().as_bytes());
     }
 
-    #[test]
-    pub fn all_set() {
-        let mut sc = sc();
+    #[snapshot(ext_g_state)]
+    pub fn all_set(sc: &mut SerializerContext) {
         let mask = Mask::new(Stream::empty(), MaskType::Luminosity);
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())
@@ -178,6 +169,5 @@ mod tests {
             .blend_mode(BlendMode::Difference)
             .mask(mask);
         sc.add_object(ext_state);
-        check_snapshot("ext_g_state/all_set", sc.finish().as_bytes());
     }
 }

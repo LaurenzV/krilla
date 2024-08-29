@@ -49,9 +49,9 @@ pub struct SerializeSettings {
     pub svg_settings: SvgSettings,
 }
 
+#[cfg(test)]
 impl SerializeSettings {
-    #[cfg(test)]
-    pub fn default_test() -> Self {
+    pub fn set_1() -> Self {
         Self {
             ascii_compatible: true,
             compress_content_streams: false,
