@@ -20,6 +20,10 @@ mod visreg;
 const REPLACE: bool = true;
 const STORE: bool = true;
 
+static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets")
+});
+
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/snapshots");
     let _ = std::fs::create_dir_all(&path);

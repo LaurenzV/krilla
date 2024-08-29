@@ -6,10 +6,7 @@ use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
-use crate::tests::{
-    simple_shape, write_manual_to_store, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC,
-    NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
-};
+use crate::tests::{simple_shape, write_manual_to_store, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, ASSETS_PATH};
 use crate::util::SliceExt;
 use crate::Fill;
 use rustybuzz::Direction;
@@ -159,7 +156,7 @@ fn all_glyphs_to_pdf(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, Strin
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file =
-            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/src/font/emojis.txt").unwrap();
+            std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
         let file = std::str::from_utf8(&file).unwrap();
         file.chars()
             .filter_map(|c| {

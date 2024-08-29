@@ -1,6 +1,5 @@
 target
 .idea
-out
 data
 assets/diff/*
 assets/store/*
