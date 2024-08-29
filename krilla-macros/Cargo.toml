@@ -14,4 +14,5 @@ path = "tests/test.rs"
 [dependencies]
 syn = { workspace = true }
 quote = { workspace = true }
+proc-macro2 = { workspace = true }
 sitro = { workspace = true }

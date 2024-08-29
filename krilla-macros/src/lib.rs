@@ -1,10 +1,9 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use sitro::Renderer;
-use syn::__private::Span;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, Ident, ItemFn, Token};
+use syn::{parse_macro_input, parse_quote, Ident, ItemFn, Token};
 
 struct AttributeInput {
     identifiers: Punctuated<Ident, Token![,]>,
@@ -29,7 +28,7 @@ enum SnapshotMode {
 pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mod_name = attrs.identifiers[0].to_string();
-    let mut serialize_settings = Ident::new("settings_1", Span::call_site());
+    let mut serialize_settings = format_ident!("settings_1");
     let mut mode = SnapshotMode::SerializerContext;
 
     for attr in attrs.identifiers.iter().skip(1) {
@@ -94,13 +93,36 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
+trait RendererExt {
+    fn as_token_stream(&self) -> proc_macro2::TokenStream;
+}
+
+impl RendererExt for Renderer {
+    fn as_token_stream(&self) -> proc_macro2::TokenStream {
+        match self {
+            Renderer::Pdfium => quote!(Renderer::Pdfium),
+            Renderer::Mupdf => quote!(Renderer::Mupdf),
+            Renderer::Poppler => quote!(Renderer::Poppler),
+            Renderer::Quartz => quote!(Renderer::Quartz),
+            Renderer::Pdfjs => quote!(Renderer::Pdfjs),
+            Renderer::Pdfbox => quote!(Renderer::Pdfbox),
+            Renderer::Ghostscript => quote!(Renderer::Ghostscript),
+        }
+    }
+}
+
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
-    let serialize_settings = Ident::new("default", Span::call_site());
+    let serialize_settings = format_ident!("default");
 
     let mut pdfium = true;
     let mut mupdf = true;
+    let mut pdfbox = true;
+    let mut ghostscript = true;
+    let mut pdfjs = true;
+    let mut poppler = true;
+    let mut quartz = true;
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
@@ -122,38 +144,48 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             save_refs(stringify!(#fn_name), &renderer, rendered);
     };
 
-    let pdfium_body = if pdfium {
-        let pdfium_name = format_ident!("{}_{}", fn_name.to_string(), "pdfium");
-        quote! {
-            #[test]
-            fn #pdfium_name() {
-                let renderer = Renderer::Pdfium;
-                #fn_body
+    let renderer_body = |renderer: Renderer, include: bool| {
+        let name = format_ident!("{}_{}", fn_name.to_string(), renderer.name());
+        let renderer_ident = renderer.as_token_stream();
+
+        let quartz_snippet = if renderer == Renderer::Quartz {
+            quote! { #[cfg(target_os = "macos")] }
+        } else {
+            quote! {}
+        };
+
+        if include {
+            quote! {
+                #quartz_snippet
+                #[test]
+                fn #name() {
+                    let renderer = #renderer_ident;
+                    #fn_body
+                }
             }
+        } else {
+            quote! {}
         }
-    } else {
-        quote! {}
     };
 
-    let mupdf_body = if mupdf {
-        let pdfium_name = format_ident!("{}_{}", fn_name.to_string(), "mupdf");
-        quote! {
-            #[test]
-            fn #pdfium_name() {
-                let renderer = Renderer::Mupdf;
-                #fn_body
-            }
-        }
-    } else {
-        quote! {}
-    };
+    let pdfium = renderer_body(Renderer::Pdfium, pdfium);
+    let mupdf = renderer_body(Renderer::Mupdf, mupdf);
+    let ghostscript = renderer_body(Renderer::Ghostscript, ghostscript);
+    let pdfbox = renderer_body(Renderer::Pdfbox, pdfbox);
+    let pdfjs = renderer_body(Renderer::Pdfjs, pdfjs);
+    let poppler = renderer_body(Renderer::Poppler, poppler);
+    let quartz = renderer_body(Renderer::Quartz, quartz);
 
     let expanded = quote! {
         #input_fn
 
-        #pdfium_body
-
-        #mupdf_body
+        #pdfium
+        #mupdf
+        #ghostscript
+        #pdfbox
+        #pdfjs
+        #poppler
+        #quartz
     };
 
     expanded.into()

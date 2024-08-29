@@ -421,6 +421,7 @@ dependencies = [
 name = "krilla-macros"
 version = "0.1.0"
 dependencies = [
+ "proc-macro2",
  "quote",
  "sitro",
  "syn",
@@ -836,7 +837,7 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 [[package]]
 name = "sitro"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/sitro?rev=b475ddc3#b475ddc323fe724f3a5377b831dd7100ae75f1ec"
+source = "git+https://github.com/LaurenzV/sitro?rev=2589ce31#2589ce316278ea48e455826789596e21a6265384"
 dependencies = [
  "image 0.24.9",
  "imagesize 0.12.0",
