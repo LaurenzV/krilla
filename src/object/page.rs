@@ -242,9 +242,8 @@ mod tests {
         sc.add_page_label(page_label);
     }
 
-    #[test]
-    fn page_label_complex() {
-        let mut db = Document::new(SerializeSettings::settings_1());
+    #[snapshot(page, document)]
+    fn page_label_complex(db: &mut Document) {
         db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(
@@ -255,7 +254,5 @@ mod tests {
                 NonZeroU32::new(2).unwrap(),
             ),
         );
-
-        check_snapshot("page/page_label_complex", &db.finish());
     }
 }

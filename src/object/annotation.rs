@@ -84,10 +84,10 @@ mod tests {
     use crate::test_utils::{check_snapshot, rect_path};
     use crate::Fill;
     use tiny_skia_path::{Point, Rect, Size};
+    use krilla_macros::snapshot;
 
-    #[test]
-    fn simple() {
-        let mut db = Document::new(SerializeSettings::settings_1());
+    #[snapshot(annotation, document)]
+    fn simple(db: &mut Document) {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {
@@ -133,9 +133,8 @@ mod tests {
             &rect_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
+
         my_surface.finish();
         page.finish();
-
-        check_snapshot("annotation/simple", &db.finish());
     }
 }
