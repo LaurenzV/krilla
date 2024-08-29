@@ -145,14 +145,14 @@ mod tests {
     use pdf_writer::types::BlendMode;
     use usvg::NormalizedF32;
 
-    #[snapshot(ext_g_state)]
-    pub fn empty(sc: &mut SerializerContext) {
+    #[snapshot]
+    pub fn ext_g_state_empty(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new();
         sc.add_object(ext_state);
     }
 
-    #[snapshot(ext_g_state)]
-    pub fn default_values(sc: &mut SerializerContext) {
+    #[snapshot]
+    pub fn ext_g_state_default_values(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
@@ -160,8 +160,8 @@ mod tests {
         sc.add_object(ext_state);
     }
 
-    #[snapshot(ext_g_state)]
-    pub fn all_set(sc: &mut SerializerContext) {
+    #[snapshot]
+    pub fn ext_g_state_all_set(sc: &mut SerializerContext) {
         let mask = Mask::new(Stream::empty(), MaskType::Luminosity);
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())

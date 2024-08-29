@@ -342,13 +342,13 @@ mod tests {
     use crate::test_utils::check_snapshot;
     use krilla_macros::snapshot;
 
-    #[snapshot(color_space)]
-    fn sgray(sc: &mut SerializerContext) {
+    #[snapshot]
+    fn color_space_sgray(sc: &mut SerializerContext) {
         sc.add_object(ColorSpaceResource::SGray(SGray));
     }
 
-    #[snapshot(color_space)]
-    fn srgb(sc: &mut SerializerContext) {
+    #[snapshot]
+    fn color_space_srgb(sc: &mut SerializerContext) {
         sc.add_object(ColorSpaceResource::Srgb(Srgb));
     }
 }

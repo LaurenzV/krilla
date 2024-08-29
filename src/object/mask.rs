@@ -151,13 +151,13 @@ mod tests {
         sc.add_object(mask);
     }
 
-    #[snapshot(mask)]
-    pub fn luminosity(sc: &mut SerializerContext) {
+    #[snapshot]
+    pub fn mask_luminosity(sc: &mut SerializerContext) {
         mask_impl(MaskType::Luminosity, sc);
     }
 
-    #[snapshot(mask)]
-    pub fn alpha(sc: &mut SerializerContext) {
+    #[snapshot]
+    pub fn mask_alpha(sc: &mut SerializerContext) {
         mask_impl(MaskType::Alpha, sc);
     }
 }

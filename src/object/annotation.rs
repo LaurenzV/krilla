@@ -86,8 +86,8 @@ mod tests {
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
 
-    #[snapshot(annotation, document)]
-    fn simple(db: &mut Document) {
+    #[snapshot(document)]
+    fn annotation_simple(db: &mut Document) {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {

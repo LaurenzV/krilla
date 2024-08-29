@@ -191,8 +191,8 @@ mod tests {
     use std::num::NonZeroU32;
     use tiny_skia_path::{PathBuilder, Rect, Size};
 
-    #[snapshot(page)]
-    fn simple_page(sc: &mut SerializerContext) {
+    #[snapshot]
+    fn page_simple_(sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -211,7 +211,7 @@ mod tests {
         sc.add_page(page);
     }
 
-    #[snapshot(page, settings_2)]
+    #[snapshot(settings_2)]
     fn page_with_resources(sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
@@ -231,7 +231,7 @@ mod tests {
         sc.add_page(page);
     }
 
-    #[snapshot(page)]
+    #[snapshot]
     fn page_label(sc: &mut SerializerContext) {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),
@@ -242,7 +242,7 @@ mod tests {
         sc.add_page_label(page_label);
     }
 
-    #[snapshot(page, document)]
+    #[snapshot(document)]
     fn page_label_complex(db: &mut Document) {
         db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
         db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());

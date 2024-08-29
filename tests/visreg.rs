@@ -127,60 +127,8 @@ fn is_pix_diff(pixel1: &Rgba<u8>, pixel2: &Rgba<u8>) -> bool {
         || pixel1.0[3] != pixel2.0[3]
 }
 
-macro_rules! generate_renderer_tests {
-    ($test_name:ident, $test_body:expr) => {
-        paste::item! {
-            #[test]
-            fn [<$test_name _pdfium>]() {
-                let renderer = Renderer::Pdfium;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _mupdf>]() {
-                let renderer = Renderer::Mupdf;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _ghostscript>]() {
-                let renderer = Renderer::Ghostscript;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _poppler>]() {
-                let renderer = Renderer::Poppler;
-                $test_body(renderer);
-            }
-
-            #[cfg(target_os = "macos")]
-            #[test]
-            fn [<$test_name _quartz>]() {
-                let renderer = Renderer::Quartz;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _pdfjs>]() {
-                let renderer = Renderer::Pdfjs;
-                $test_body(renderer);
-            }
-
-            #[test]
-            fn [<$test_name _pdfbox>]() {
-                let renderer = Renderer::Pdfbox;
-                $test_body(renderer);
-            }
-        }
-    };
-}
-
-generate_renderer_tests!(linear_gradient, |renderer| {
-    let mut doc_builder = Document::new(SerializeSettings::default());
-    let mut page = doc_builder.start_page(Size::from_wh(200.0, 200.0).unwrap());
-    let mut surface = page.surface();
-
+#[visreg]
+fn linear_gradient(surface: &mut Surface) {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
     let path = builder.finish().unwrap();
@@ -219,15 +167,10 @@ generate_renderer_tests!(linear_gradient, |renderer| {
             rule: Default::default(),
         },
     );
-    surface.finish();
-    page.finish();
+}
 
-    let pdf = doc_builder.finish();
-    let rendered = render_doc(&pdf, &renderer);
-    save_refs(stringify!(linear_gradient), &renderer, rendered);
-});
-
-generate_renderer_tests!(cosmic_text, |renderer| {
+#[visreg]
+fn cosmic_text(surface: &mut Surface) {
     let mut db = Database::new();
     db.load_font_source(Source::Binary(Arc::new(include_bytes!(
         "fonts/NotoSans-Regular.ttf"
@@ -241,11 +184,6 @@ generate_renderer_tests!(cosmic_text, |renderer| {
     let text = "Some text here. Let's make it a bit longer so that line wrapping kicks in";
     buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(&mut font_system, false);
-
-    let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
-    let mut document_builder = Document::new(SerializeSettings::default());
-    let mut builder = document_builder.start_page(page_size);
-    let mut surface = builder.surface();
 
     let font_map = surface.convert_fontdb(font_system.db_mut(), None);
 
@@ -285,53 +223,4 @@ generate_renderer_tests!(cosmic_text, |renderer| {
             );
         }
     }
-
-    surface.finish();
-    builder.finish();
-
-    let pdf = document_builder.finish();
-    let rendered = render_doc(&pdf, &renderer);
-    save_refs(stringify!(text_rendering), &renderer, rendered);
-});
-
-#[visreg]
-fn linear_gradient_2(surface: &mut Surface) {
-    let mut builder = PathBuilder::new();
-    builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
-    let path = builder.finish().unwrap();
-
-    let gradient = LinearGradient {
-        x1: 20.0,
-        y1: 0.0,
-        x2: 180.0,
-        y2: 0.0,
-        transform: Transform::identity(),
-        spread_method: SpreadMethod::Pad,
-        stops: vec![
-            Stop::<Rgb> {
-                offset: NormalizedF32::new(0.0).unwrap(),
-                color: rgb::Color::new(255, 0, 0),
-                opacity: NormalizedF32::new(1.0).unwrap(),
-            },
-            Stop {
-                offset: NormalizedF32::new(0.5).unwrap(),
-                color: rgb::Color::new(0, 255, 0),
-                opacity: NormalizedF32::new(0.5).unwrap(),
-            },
-            Stop {
-                offset: NormalizedF32::new(1.0).unwrap(),
-                color: rgb::Color::new(0, 0, 255),
-                opacity: NormalizedF32::new(1.0).unwrap(),
-            },
-        ],
-    };
-
-    surface.draw_path(
-        &path,
-        Fill {
-            paint: Paint::LinearGradient(gradient),
-            opacity: NormalizedF32::new(0.5).unwrap(),
-            rule: Default::default(),
-        },
-    );
 }

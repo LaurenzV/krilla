@@ -52,15 +52,9 @@ pub(crate) mod test_utils {
     fn snapshot_path(name: &str) -> PathBuf {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
 
-        let parts = name.split("/").collect::<Vec<_>>();
-
-        for i in 0..parts.len() - 1 {
-            path.push(parts[i]);
-        }
-
         std::fs::create_dir_all(&path).unwrap();
 
-        path.push(format!("{}.txt", parts.last().unwrap()));
+        path.push(format!("{}.txt", name));
         path
     }
 

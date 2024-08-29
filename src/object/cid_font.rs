@@ -255,8 +255,8 @@ mod tests {
     use skrifa::GlyphId;
     use std::sync::Arc;
 
-    #[snapshot(cid_font)]
-    fn noto_sans_two_glyphs(sc: &mut SerializerContext) {
+    #[snapshot]
+    fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
         let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
@@ -267,8 +267,8 @@ mod tests {
             .add_glyph(GlyphId::new(37));
     }
 
-    #[snapshot(cid_font)]
-    fn latin_modern_four_glyphs(sc: &mut SerializerContext) {
+    #[snapshot]
+    fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
         let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
         let font = Font::new(font_data, 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())

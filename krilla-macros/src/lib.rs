@@ -27,11 +27,10 @@ enum SnapshotMode {
 #[proc_macro_attribute]
 pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
-    let mod_name = attrs.identifiers[0].to_string();
     let mut serialize_settings = format_ident!("settings_1");
     let mut mode = SnapshotMode::SerializerContext;
 
-    for attr in attrs.identifiers.iter().skip(1) {
+    for attr in attrs.identifiers {
         let st = attr.to_string();
 
         if st.starts_with("settings") {
@@ -47,7 +46,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
-    let snapshot_name = format!("{}/{}", mod_name, fn_name.to_string());
+    let snapshot_name = fn_name.to_string();
 
     let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
