@@ -1,9 +1,7 @@
-use crate::chunk_container::ChunkContainer;
-use crate::serialize::{Object, SerializerContext, SvgSettings};
+use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
 use crate::util::{Prehashed, RectWrapper};
-use pdf_writer::{Chunk, Ref};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -321,13 +319,3 @@ impl FontIdentifier {
     }
 }
 
-// TODO: Remove?
-impl Object for FontIdentifier {
-    fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        unreachable!()
-    }
-
-    fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
-        unreachable!()
-    }
-}
