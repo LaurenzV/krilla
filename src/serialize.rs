@@ -8,7 +8,7 @@ use crate::object::outline::Outline;
 use crate::object::page::{Page, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
 use crate::page::PageLabel;
-use crate::resource::ColorSpaceEnum;
+use crate::resource::{ColorSpaceResource, PatternResource, Resource, XObjectResource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
@@ -173,7 +173,7 @@ impl SerializerContext {
 
     pub fn rgb(&mut self) -> CSWrapper {
         if self.serialize_settings.no_device_cs {
-            CSWrapper::Ref(self.add_object(ColorSpaceEnum::Srgb(Srgb)))
+            CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb(Srgb)))
         } else {
             CSWrapper::Name(DEVICE_RGB.to_pdf_name())
         }
@@ -181,7 +181,7 @@ impl SerializerContext {
 
     pub fn gray(&mut self) -> CSWrapper {
         if self.serialize_settings.no_device_cs {
-            CSWrapper::Ref(self.add_object(ColorSpaceEnum::SGray(SGray)))
+            CSWrapper::Ref(self.add_object(ColorSpaceResource::SGray(SGray)))
         } else {
             CSWrapper::Name(DEVICE_GRAY.to_pdf_name())
         }
@@ -241,18 +241,23 @@ impl SerializerContext {
         })
     }
 
-    // TODO: Don't use generics here
-    pub fn get_font_ref<T>(&mut self, object: T) -> Ref
-    where
-        T: Object,
-    {
-        let hash = object.sip_hash();
-        if let Some(_ref) = self.cached_mappings.get(&hash) {
-            *_ref
-        } else {
-            let root_ref = self.new_ref();
-            self.cached_mappings.insert(hash, root_ref);
-            root_ref
+    pub fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
+        match resource.into() {
+            Resource::XObject(xr) => self.add_object(xr),
+            Resource::Pattern(pr) => self.add_object(pr),
+            Resource::ExtGState(e) => self.add_object(e),
+            Resource::ColorSpace(csr) => self.add_object(csr),
+            Resource::Shading(s) => self.add_object(s),
+            Resource::Font(f) => {
+                let hash = f.sip_hash();
+                if let Some(_ref) = self.cached_mappings.get(&hash) {
+                    *_ref
+                } else {
+                    let root_ref = self.new_ref();
+                    self.cached_mappings.insert(hash, root_ref);
+                    root_ref
+                }
+            }
         }
     }
 
@@ -332,13 +337,13 @@ impl SerializerContext {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
-                        let ref_ = self.get_font_ref(t3_font.identifier());
+                        let ref_ = self.add_resource(t3_font.identifier());
                         let chunk = t3_font.serialize_into(&mut self, ref_);
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.get_font_ref(cid_font.identifier());
+                    let ref_ = self.add_resource(cid_font.identifier());
                     let chunk = cid_font.serialize_into(&mut self, ref_);
                     self.chunk_container.fonts.push(chunk);
                 }

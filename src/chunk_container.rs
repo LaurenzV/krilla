@@ -91,7 +91,7 @@ impl ChunkContainer {
         // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
         // for the document catalog. This hopefully allows us to avoid realloactions in the general
         // case, and thus give us better performance.
-        let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200) as usize);
+        let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
 
         if serialize_settings.ascii_compatible {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
