@@ -21,33 +21,33 @@ const REPLACE: bool = true;
 const STORE: bool = true;
 
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/snapshots");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static REFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/refs");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/refs");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static DIFFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/diffs");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/diffs");
     let _ = std::fs::remove_dir_all(&path);
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static STORE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/store");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/store");
     let _ = std::fs::remove_dir_all(&path);
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static FONT_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fonts"));
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts"));
 
 macro_rules! lazy_font {
     ($name:ident, $path:expr) => {
