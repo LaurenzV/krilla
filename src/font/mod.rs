@@ -1,9 +1,7 @@
-use crate::chunk_container::ChunkContainer;
-use crate::serialize::{Object, SerializerContext, SvgSettings};
+use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
 use crate::util::{Prehashed, RectWrapper};
-use pdf_writer::{Chunk, Ref};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -18,10 +16,7 @@ use yoke::{Yoke, Yokeable};
 
 pub mod bitmap;
 pub mod colr;
-mod cosmic_text;
 pub mod outline;
-mod parley;
-mod simple_shape;
 pub mod svg;
 
 struct OutlineBuilder(PathBuilder);
@@ -322,98 +317,4 @@ impl FontIdentifier {
             FontIdentifier::Type3(t3) => t3.0.clone(),
         }
     }
-}
-
-// TODO: Remove?
-impl Object for FontIdentifier {
-    fn chunk_container<'a>(&self, _: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        unreachable!()
-    }
-
-    fn serialize_into(&self, _: &mut SerializerContext, _: Ref) -> Chunk {
-        unreachable!()
-    }
-}
-
-#[cfg(test)]
-fn draw(font_data: Arc<Vec<u8>>, glyphs: Option<Vec<(GlyphId, String)>>, name: &str) {
-    use crate::document::Document;
-    use crate::object::color_space::rgb::Rgb;
-    use crate::serialize::SerializeSettings;
-    use crate::stream::Glyph;
-    use crate::Transform;
-
-    let font = Font::new(font_data, 0, Location::default()).unwrap();
-    let font_ref = font.font_ref();
-
-    let glyphs = glyphs.unwrap_or_else(|| {
-        let file =
-            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/src/font/emojis.txt").unwrap();
-        let file = std::str::from_utf8(&file).unwrap();
-        file.chars()
-            .filter_map(|c| {
-                font_ref
-                    .cmap()
-                    .unwrap()
-                    .map_codepoint(c)
-                    .map(|g| (g, c.to_string()))
-            })
-            .collect::<Vec<_>>()
-    });
-
-    let metrics = font_ref.metrics(Size::unscaled(), LocationRef::default());
-    let num_glyphs = glyphs.len();
-    let width = 400;
-
-    let size = 40u32;
-    let num_cols = width / size;
-    let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
-    let units_per_em = metrics.units_per_em as f32;
-    let mut cur_point = 0;
-
-    let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut document_builder = Document::new(SerializeSettings::default());
-    let mut builder = document_builder.start_page(page_size);
-    let mut surface = builder.surface();
-
-    for (i, text) in glyphs.iter().cloned() {
-        fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
-            let el = cur_point / size;
-            let col = el % num_cols;
-            let row = el / num_cols;
-
-            Transform::from_row(
-                1.0,
-                0.0,
-                0.0,
-                1.0,
-                col as f32 * size as f32,
-                (row + 1) as f32 * size as f32,
-            )
-            // .pre_concat(Transform::from_scale(
-            //     size as f32 / units_per_em,
-            //     size as f32 / units_per_em,
-            // ))
-        }
-
-        surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        surface.draw_glyph_run(
-            0.0,
-            0.0,
-            crate::Fill::<Rgb>::default(),
-            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
-            font.clone(),
-            &text,
-        );
-        // let res = single_glyph(&font, GlyphId::new(i), &mut builder);
-        surface.pop();
-
-        cur_point += size;
-    }
-
-    surface.finish();
-    builder.finish();
-    let pdf = document_builder.finish();
-    let _ = std::fs::write(format!("out/{}.pdf", name), &pdf);
-    let _ = std::fs::write(format!("out/{}.txt", name), &pdf);
 }

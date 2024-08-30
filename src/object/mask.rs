@@ -5,9 +5,9 @@ use crate::serialize::{Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
+use crate::util::RectWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
-use crate::util::RectWrapper;
 
 /// A mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
@@ -124,20 +124,14 @@ mod tests {
     use crate::rgb::Rgb;
     use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::StreamBuilder;
-    use crate::test_utils::check_snapshot;
+    use crate::tests::check_snapshot;
     use crate::{rgb, Fill, MaskType, Paint};
+    use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
 
-    fn sc() -> SerializerContext {
-        let settings = SerializeSettings::default_test();
-        SerializerContext::new(settings)
-    }
-
-    fn mask_impl(mask_type: MaskType, name: &str) {
-        let mut sc = sc();
-
-        let mut stream_builder = StreamBuilder::new(&mut sc);
+    fn mask_impl(mask_type: MaskType, sc: &mut SerializerContext) {
+        let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
         let mut builder = PathBuilder::new();
@@ -155,17 +149,15 @@ mod tests {
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
         sc.add_object(mask);
-
-        check_snapshot(&format!("mask/{}", name), sc.finish().as_bytes());
     }
 
-    #[test]
-    pub fn luminosity() {
-        mask_impl(MaskType::Luminosity, "luminosity");
+    #[snapshot]
+    pub fn mask_luminosity(sc: &mut SerializerContext) {
+        mask_impl(MaskType::Luminosity, sc);
     }
 
-    #[test]
-    pub fn alpha() {
-        mask_impl(MaskType::Alpha, "alpha");
+    #[snapshot]
+    pub fn mask_alpha(sc: &mut SerializerContext) {
+        mask_impl(MaskType::Alpha, sc);
     }
 }

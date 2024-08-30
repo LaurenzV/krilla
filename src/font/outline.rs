@@ -27,26 +27,3 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
 
     None
 }
-
-#[cfg(test)]
-mod tests {
-
-    use crate::font::draw;
-
-    use skrifa::GlyphId;
-
-    use std::sync::Arc;
-
-    // This will not use Type3
-    #[ignore]
-    #[test]
-    fn outline_noto_sans() {
-        let font_data = std::fs::read("/Library/Fonts/NotoSans-Regular.ttf").unwrap();
-
-        let glyphs = (0..1000)
-            .map(|n| (GlyphId::new(n), "".to_string()))
-            .collect::<Vec<_>>();
-
-        draw(Arc::new(font_data), Some(glyphs), "outline_noto_sans");
-    }
-}

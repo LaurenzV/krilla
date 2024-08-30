@@ -17,7 +17,9 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::transform::TransformWrapper;
-use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, RectWrapper, TransformExt};
+use crate::util::{
+    calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, RectWrapper, TransformExt,
+};
 use crate::{Fill, FillRule, LineCap, LineJoin, Paint, Stroke};
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;

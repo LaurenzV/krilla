@@ -81,13 +81,13 @@ mod tests {
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::test_utils::{check_snapshot, rect_path};
+    use crate::tests::{check_snapshot, rect_to_path};
     use crate::Fill;
+    use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
 
-    #[test]
-    fn simple() {
-        let mut db = Document::new(SerializeSettings::default_test());
+    #[snapshot(document)]
+    fn annotation_simple(db: &mut Document) {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {
@@ -110,9 +110,12 @@ mod tests {
         );
 
         let mut surface = page.surface();
-        surface.draw_path(&rect_path(0.0, 0.0, 100.0, 100.0), Fill::<Rgb>::default());
         surface.draw_path(
-            &rect_path(100.0, 100.0, 200.0, 200.0),
+            &rect_to_path(0.0, 0.0, 100.0, 100.0),
+            Fill::<Rgb>::default(),
+        );
+        surface.draw_path(
+            &rect_to_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
         surface.finish();
@@ -130,12 +133,11 @@ mod tests {
         );
         let mut my_surface = page.surface();
         my_surface.draw_path(
-            &rect_path(100.0, 100.0, 200.0, 200.0),
+            &rect_to_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
+
         my_surface.finish();
         page.finish();
-
-        check_snapshot("annotation/simple", &db.finish());
     }
 }

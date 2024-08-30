@@ -159,17 +159,17 @@ mod tests {
     use crate::object::outline::{Outline, OutlineNode};
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
-    use crate::test_utils::check_snapshot;
+    use crate::tests::check_snapshot;
     use crate::Fill;
+    use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Point, Rect, Size};
 
-    #[test]
-    fn simple() {
+    #[snapshot(document)]
+    fn outline_simple(db: &mut Document) {
         let mut builder = PathBuilder::new();
         builder.push_rect(Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap());
         let path = builder.finish().unwrap();
 
-        let mut db = Document::new(SerializeSettings::default_test());
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         let mut surface = page.surface();
         surface.draw_path(&path, Fill::<Rgb>::default());
@@ -194,7 +194,5 @@ mod tests {
         outline.push_child(child2);
 
         db.set_outline(outline);
-
-        check_snapshot("outline/simple", &db.finish());
     }
 }

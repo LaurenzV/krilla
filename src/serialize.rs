@@ -49,15 +49,22 @@ pub struct SerializeSettings {
     pub svg_settings: SvgSettings,
 }
 
+#[cfg(test)]
 impl SerializeSettings {
-    #[cfg(test)]
-    pub fn default_test() -> Self {
+    pub fn settings_1() -> Self {
         Self {
             ascii_compatible: true,
             compress_content_streams: false,
             no_device_cs: false,
             force_type3_fonts: false,
             svg_settings: SvgSettings::default(),
+        }
+    }
+
+    pub fn settings_2() -> Self {
+        Self {
+            no_device_cs: true,
+            ..Self::settings_1()
         }
     }
 }
@@ -90,6 +97,7 @@ pub struct PageInfo {
     pub media_box: Rect,
 }
 
+#[doc(hidden)]
 pub struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
@@ -165,6 +173,10 @@ impl SerializerContext {
             media_box: page.media_box,
         });
         self.pages.push((ref_, page));
+    }
+
+    pub fn has_pages(&self) -> bool {
+        !self.page_infos.is_empty()
     }
 
     pub fn new_ref(&mut self) -> Ref {

@@ -309,49 +309,12 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        self.canvas_builder.push_isolated();
         self.canvas_builder.push_blend_mode(mode);
+        self.canvas_builder.push_isolated();
     }
 
     fn pop_layer(&mut self) {
         self.canvas_builder.pop();
         self.canvas_builder.pop();
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::font::draw;
-
-    use skrifa::GlyphId;
-
-    use std::sync::Arc;
-
-    #[ignore]
-    #[test]
-    fn colr_test() {
-        let font_data =
-            std::fs::read("/Users/lstampfl/Programming/GitHub/krilla/test_glyphs-glyf_colr_1.ttf")
-                .unwrap();
-
-        let glyphs = (0..=220)
-            .map(|n| (GlyphId::new(n), "".to_string()))
-            .collect::<Vec<_>>();
-
-        draw(Arc::new(font_data), Some(glyphs), "colr_test");
-    }
-
-    #[ignore]
-    #[test]
-    fn noto_color() {
-        let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-        draw(Arc::new(font_data), None, "colr_noto");
-    }
-
-    #[ignore]
-    #[test]
-    fn segoe_emoji() {
-        let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-        draw(Arc::new(font_data), None, "colr_segoe");
     }
 }

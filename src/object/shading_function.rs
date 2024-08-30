@@ -97,10 +97,10 @@ where
                 TransformWrapper(self.transform),
             )
         } else {
-            let (ts, min, max) = get_point_ts(
-                Point::from_xy(self.x1, self.y1),
-                Point::from_xy(self.x2, self.y2),
-            );
+            let p1 = Point::from_xy(self.x1, self.y1);
+            let p2 = Point::from_xy(self.x2, self.y2);
+
+            let (ts, min, max) = get_point_ts(p1, p2);
             (
                 GradientProperties::PostScriptGradient(PostScriptGradient {
                     min: FiniteF32::new(min).unwrap(),
@@ -110,11 +110,11 @@ where
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
-                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.post_concat(ts))),
+                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
                 }),
-                TransformWrapper(self.transform.post_concat(ts)),
+                TransformWrapper(self.transform.pre_concat(ts)),
             )
         }
     }

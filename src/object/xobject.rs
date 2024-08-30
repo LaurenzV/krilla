@@ -53,7 +53,12 @@ impl Object for XObject {
         self.stream
             .resource_dictionary()
             .to_pdf_resources(sc, &mut x_object);
-        x_object.bbox(self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox()).to_pdf_rect());
+        x_object.bbox(
+            self.custom_bbox
+                .map(|c| c.0)
+                .unwrap_or(self.stream.bbox())
+                .to_pdf_rect(),
+        );
 
         if self.isolated || self.transparency_group_color_space {
             let mut group = x_object.group();

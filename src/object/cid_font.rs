@@ -249,35 +249,25 @@ mod tests {
     use crate::font::Font;
 
     use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::test_utils::{check_snapshot, load_font};
+    use crate::tests::{check_snapshot, LATIN_MODERN_ROMAN, NOTO_SANS};
+    use krilla_macros::snapshot;
     use skrifa::instance::Location;
     use skrifa::GlyphId;
-    use std::sync::Arc;
 
-    fn sc() -> SerializerContext {
-        let settings = SerializeSettings::default_test();
-        SerializerContext::new(settings)
-    }
-
-    #[test]
-    fn noto_sans_two_glyphs() {
-        let mut sc = sc();
-        let font_data = Arc::new(load_font("NotoSans-Regular.ttf"));
-        let font = Font::new(font_data, 0, Location::default()).unwrap();
+    #[snapshot]
+    fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
+        let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
             .borrow_mut()
             .add_glyph(GlyphId::new(36));
         sc.create_or_get_font_container(font.clone())
             .borrow_mut()
             .add_glyph(GlyphId::new(37));
-        check_snapshot("cid_font/noto_sans_two_glyphs", sc.finish().as_bytes());
     }
 
-    #[test]
-    fn latin_modern_four_glyphs() {
-        let mut sc = sc();
-        let font_data = Arc::new(load_font("LatinModernRoman-Regular.otf"));
-        let font = Font::new(font_data, 0, Location::default()).unwrap();
+    #[snapshot]
+    fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
         sc.create_or_get_font_container(font.clone())
             .borrow_mut()
             .add_glyph(GlyphId::new(58));
@@ -290,6 +280,5 @@ mod tests {
         sc.create_or_get_font_container(font.clone())
             .borrow_mut()
             .add_glyph(GlyphId::new(71));
-        check_snapshot("cid_font/latin_modern_four_glyphs", sc.finish().as_bytes());
     }
 }
