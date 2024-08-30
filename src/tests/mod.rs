@@ -18,8 +18,8 @@ use tiny_skia_path::{Path, PathBuilder, Rect};
 mod manual;
 mod visreg;
 
-const REPLACE: bool = false;
-const STORE: bool = false;
+const REPLACE: Option<&str> = option_env!("REPLACE");
+const STORE: Option<&str> = option_env!("STORE");
 
 static ASSETS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
@@ -112,7 +112,7 @@ pub fn write_manual_to_store(name: &str, data: &[u8]) {
 pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     let path = SNAPSHOT_PATH.join(format!("{}.txt", name));
 
-    if STORE && storable {
+    if STORE.is_some() && storable {
         write_snapshot_to_store(name, content);
     }
 
@@ -123,7 +123,7 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
 
     let actual = std::fs::read(&path).unwrap();
 
-    if REPLACE && &actual != content {
+    if REPLACE.is_some() && &actual != content {
         std::fs::write(&path, content).unwrap();
         panic!("test was replaced");
     }
@@ -188,7 +188,7 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
                 .save_with_format(&diff_path, image::ImageFormat::Png)
                 .unwrap();
 
-            if REPLACE {
+            if REPLACE.is_some() {
                 std::fs::write(&ref_path, page).unwrap();
                 oxipng::optimize(
                     &InFile::Path(ref_path.clone()),
@@ -215,7 +215,7 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
         }
     }
 
-    if STORE {
+    if STORE.is_some() {
         write_render_to_store(&name, pdf);
     }
 }
