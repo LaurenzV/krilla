@@ -147,7 +147,7 @@ impl Type3Font {
                     content.finish()
                 };
 
-                let font_stream = FilterStream::new_content(&stream, &sc.serialize_settings);
+                let font_stream = FilterStream::new_from_content_stream(&stream, &sc.serialize_settings);
 
                 let stream_ref = sc.new_ref();
                 let mut stream = chunk.stream(stream_ref, &font_stream.encoded_data());

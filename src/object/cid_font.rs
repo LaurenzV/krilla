@@ -123,7 +123,7 @@ impl CIDFont {
                 data = cff.as_bytes();
             }
 
-            FilterStream::new_binary(data, &sc.serialize_settings)
+            FilterStream::new_from_binary_data(data, &sc.serialize_settings)
         };
 
         let postscript_name = self.font.postscript_name().unwrap_or("unknown");

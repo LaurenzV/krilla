@@ -525,7 +525,7 @@ impl<'a> FilterStream<'a> {
         }
     }
 
-    pub fn new_content(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+    pub fn new_from_content_stream(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
 
         if serialize_settings.compress_content_streams {
@@ -539,7 +539,7 @@ impl<'a> FilterStream<'a> {
         filter_stream
     }
 
-    pub fn new_binary(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+    pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_filter(StreamFilter::FlateDecode);
 
