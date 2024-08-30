@@ -134,16 +134,18 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
         "\n",
     );
 
-    for diff in changeset.diffs {
-        match diff {
-            Difference::Same(ref x) => {
-                println!(" {}", x);
-            }
-            Difference::Add(ref x) => {
-                println!("+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
-            }
-            Difference::Rem(ref x) => {
-                println!("-------------------\n{}\n-------------------", x);
+    if changeset.distance != 0 {
+        for diff in changeset.diffs {
+            match diff {
+                Difference::Same(ref x) => {
+                    eprintln!(" {}", x);
+                }
+                Difference::Add(ref x) => {
+                    eprintln!("+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
+                }
+                Difference::Rem(ref x) => {
+                    eprintln!("-------------------\n{}\n-------------------", x);
+                }
             }
         }
     }
@@ -151,12 +153,18 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     assert_eq!(changeset.distance, 0);
 }
 
-pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument, pdf: &[u8], ignore_renderer: bool) {
+pub fn check_render(
+    name: &str,
+    renderer: &Renderer,
+    document: RenderedDocument,
+    pdf: &[u8],
+    ignore_renderer: bool,
+) {
     let refs_path = REFS_PATH.clone();
 
     let renderer_suffix = if ignore_renderer {
         "".to_string()
-    }   else {
+    } else {
         format!("_{}", renderer.name())
     };
 
@@ -181,7 +189,10 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
 
         let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
-        let threshold = env::var("KRILLA_THRESHOLD").unwrap_or("0".to_string()).parse::<u32>().unwrap();
+        let threshold = env::var("KRILLA_THRESHOLD")
+            .unwrap_or("0".to_string())
+            .parse::<u32>()
+            .unwrap();
         if pixel_diff > threshold {
             let diff_path = DIFFS_PATH.join(format!("{}.png", name));
             diff_image
@@ -199,10 +210,15 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
                 panic!("test was replaced");
             }
 
-            panic!("pixel diff was {}, while threshold is {}", pixel_diff, threshold);
+            panic!(
+                "pixel diff was {}, while threshold is {}",
+                pixel_diff, threshold
+            );
         }
 
-
+        if pixel_diff != 0 {
+            eprintln!("Warning: pixel diff was {} instead of 0", pixel_diff);
+        }
     };
 
     if document.is_empty() {

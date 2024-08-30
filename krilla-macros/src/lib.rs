@@ -126,7 +126,10 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     if !attrs.identifiers.iter().any(|ident| {
         let string_ident = ident.to_string();
-        matches!(string_ident.as_str(), "pdfium" | "mupdf" | "pdfbox" | "ghostscript" | "pdfjs" | "poppler" | "quartz" | "all")
+        matches!(
+            string_ident.as_str(),
+            "pdfium" | "mupdf" | "pdfbox" | "ghostscript" | "pdfjs" | "poppler" | "quartz" | "all"
+        )
     }) {
         pdfium = true;
     }
@@ -155,7 +158,11 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    let ignore_renderer = [pdfium, mupdf, pdfbox, ghostscript, pdfjs, poppler, quartz].iter().filter(|v| **v).count() == 1;
+    let ignore_renderer = [pdfium, mupdf, pdfbox, ghostscript, pdfjs, poppler, quartz]
+        .iter()
+        .filter(|v| **v)
+        .count()
+        == 1;
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();

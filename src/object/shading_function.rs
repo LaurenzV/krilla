@@ -100,10 +100,7 @@ where
             let p1 = Point::from_xy(self.x1, self.y1);
             let p2 = Point::from_xy(self.x2, self.y2);
 
-            let (ts, min, max) = get_point_ts(
-                p1,
-                p2,
-            );
+            let (ts, min, max) = get_point_ts(p1, p2);
             (
                 GradientProperties::PostScriptGradient(PostScriptGradient {
                     min: FiniteF32::new(min).unwrap(),
