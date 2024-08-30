@@ -151,8 +151,14 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     assert_eq!(changeset.distance, 0);
 }
 
-pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument, pdf: &[u8]) {
+pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument, pdf: &[u8], ignore_renderer: bool) {
     let refs_path = REFS_PATH.clone();
+
+    let renderer_suffix = if ignore_renderer {
+        "".to_string()
+    }   else {
+        format!("_{}", renderer.name())
+    };
 
     let check_single = |name: String, page: &RenderedPage| {
         let ref_path = refs_path.join(format!("{}.png", name));
@@ -202,10 +208,10 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
     if document.is_empty() {
         panic!("empty document");
     } else if document.len() == 1 {
-        check_single(format!("{}_{}", name, renderer.name()), &document[0]);
+        check_single(format!("{}{}", name, renderer_suffix), &document[0]);
     } else {
         for (index, page) in document.iter().enumerate() {
-            check_single(format!("{}_{}_{}", name, renderer.name(), index), page);
+            check_single(format!("{}{}_{}", name, renderer_suffix, index), page);
         }
     }
 

@@ -124,30 +124,38 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut quartz = false;
     let mut document = false;
 
-    if attrs.identifiers.is_empty() {
-        pdfium = true;
+    if !attrs.identifiers.iter().any(|ident| {
+        let string_ident = ident.to_string();
+        matches!(string_ident.as_str(), "pdfium" | "mupdf" | "pdfbox" | "ghostscript" | "pdfjs" | "poppler" | "quartz" | "all")
+    }) {
         mupdf = true;
-        pdfbox = true;
-        ghostscript = true;
-        pdfjs = true;
-        poppler = true;
-        quartz = true;
-    } else {
-        for identifier in attrs.identifiers {
-            let string_ident = identifier.to_string();
-            match string_ident.as_str() {
-                "pdfium" => pdfium = true,
-                "mupdf" => mupdf = true,
-                "pdfbox" => pdfbox = true,
-                "ghostscript" => ghostscript = true,
-                "pdfjs" => pdfjs = true,
-                "poppler" => poppler = true,
-                "quartz" => quartz = true,
-                "document" => document = true,
-                _ => panic!("unknown renderer {}", &string_ident),
+    }
+
+    for identifier in attrs.identifiers {
+        let string_ident = identifier.to_string();
+        match string_ident.as_str() {
+            "pdfium" => pdfium = true,
+            "mupdf" => mupdf = true,
+            "pdfbox" => pdfbox = true,
+            "ghostscript" => ghostscript = true,
+            "pdfjs" => pdfjs = true,
+            "poppler" => poppler = true,
+            "quartz" => quartz = true,
+            "document" => document = true,
+            "all" => {
+                pdfium = true;
+                mupdf = true;
+                pdfbox = true;
+                ghostscript = true;
+                pdfjs = true;
+                poppler = true;
+                quartz = true;
             }
+            _ => panic!("unknown renderer {}", &string_ident),
         }
     }
+
+    let ignore_renderer = [pdfium, mupdf, pdfbox, ghostscript, pdfjs, poppler, quartz].iter().filter(|v| **v).count() == 1;
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
@@ -163,7 +171,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = db.finish();
 
             let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered, &pdf);
+            check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
         }
     } else {
         quote! {
@@ -177,7 +185,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = db.finish();
 
             let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered, &pdf);
+            check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
         }
     };
 

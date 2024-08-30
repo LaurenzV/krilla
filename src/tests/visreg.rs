@@ -12,7 +12,7 @@ use krilla_macros::visreg;
 use skrifa::GlyphId;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
 
-#[visreg]
+#[visreg(all)]
 fn linear_gradient(surface: &mut Surface) {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
@@ -54,7 +54,7 @@ fn linear_gradient(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(all)]
 fn cosmic_text(surface: &mut Surface) {
     let mut db = Database::new();
     db.load_font_source(Source::Binary(NOTO_SANS.clone()));
@@ -108,7 +108,7 @@ fn cosmic_text(surface: &mut Surface) {
     }
 }
 
-#[visreg(mupdf, document)]
+#[visreg(document)]
 fn colr_test_glyphs(document: &mut Document) {
     let font_data = COLR_TEST_GLYPHS.clone();
 
@@ -119,13 +119,13 @@ fn colr_test_glyphs(document: &mut Document) {
     all_glyphs_to_pdf(font_data, Some(glyphs), document);
 }
 
-#[visreg(pdfium, document)]
+#[visreg(document)]
 fn noto_color_emoji(document: &mut Document) {
     let font_data = NOTO_COLOR_EMOJI.clone();
     all_glyphs_to_pdf(font_data, None, document);
 }
 
-#[visreg(pdfium, document)]
+#[visreg(document)]
 fn twitter_color_emoji(document: &mut Document) {
     let font_data = TWITTER_COLOR_EMOJI.clone();
     all_glyphs_to_pdf(font_data, None, document);
