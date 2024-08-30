@@ -189,12 +189,12 @@ fn image_rgba16_png(surface: &mut Surface) {
     png_image_impl(surface, "rgba16.png");
 }
 
-#[visreg(all)]
+#[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
 fn image_luma8_jpg(surface: &mut Surface) {
     jpg_image_impl(surface, "luma8.jpg");
 }
 
-#[visreg(all)]
+#[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
 fn image_rgb8_jpg(surface: &mut Surface) {
     jpg_image_impl(surface, "rgb8.jpg");
 }

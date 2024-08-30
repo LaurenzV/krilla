@@ -1,5 +1,10 @@
+use tiny_skia_path::Rect;
+use usvg::ImageKind;
+use crate::FillRule;
+use crate::image::Image;
 use crate::surface::Surface;
-use crate::svg::ProcessContext;
+use crate::svg::{group, ProcessContext};
+use crate::util::RectExt;
 
 /// Render an image into a surface.
 pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut ProcessContext) {
@@ -7,36 +12,30 @@ pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut 
         return;
     }
 
-    unimplemented!();
-    // match image.kind() {
-    //     ImageKind::JPEG(d) => {
-    //         let dynamic_image =
-    //             image::load_from_memory_with_format(d.as_slice(), ImageFormat::Jpeg).unwrap();
-    //         let d_image = Image::new(&dynamic_image);
-    //         surface.draw_image(d_image, image.size());
-    //     }
-    //     ImageKind::PNG(d) => {
-    //         let dynamic_image =
-    //             image::load_from_memory_with_format(d.as_slice(), ImageFormat::Png).unwrap();
-    //         let d_image = Image::new(&dynamic_image);
-    //         surface.draw_image(d_image, image.size());
-    //     }
-    //     ImageKind::GIF(d) => {
-    //         let dynamic_image =
-    //             image::load_from_memory_with_format(d.as_slice(), ImageFormat::Gif).unwrap();
-    //         let d_image = Image::new(&dynamic_image);
-    //         surface.draw_image(d_image, image.size());
-    //     }
-    //     ImageKind::SVG(t) => {
-    //         surface.push_clip_path(
-    //             &Rect::from_xywh(0.0, 0.0, t.size().width(), t.size().height())
-    //                 .unwrap()
-    //                 .to_clip_path(),
-    //             &FillRule::NonZero,
-    //         );
-    //         group::render(t.root(), surface, process_context);
-    //         surface.pop();
-    //     }
-    //     _ => unimplemented!(),
-    // }
+    match image.kind() {
+        ImageKind::JPEG(d) => {
+            // TODO: Remove unwraps
+            let d_image = Image::from_jpeg(&d).unwrap();
+            surface.draw_image(d_image, image.size());
+        }
+        ImageKind::PNG(d) => {
+            let d_image = Image::from_png(&d).unwrap();
+            surface.draw_image(d_image, image.size());
+        }
+        ImageKind::GIF(d) => {
+            let d_image = Image::from_gif(&d).unwrap();
+            surface.draw_image(d_image, image.size());
+        }
+        ImageKind::SVG(t) => {
+            surface.push_clip_path(
+                &Rect::from_xywh(0.0, 0.0, t.size().width(), t.size().height())
+                    .unwrap()
+                    .to_clip_path(),
+                &FillRule::NonZero,
+            );
+            group::render(t.root(), surface, process_context);
+            surface.pop();
+        }
+        _ => unimplemented!(),
+    }
 }
