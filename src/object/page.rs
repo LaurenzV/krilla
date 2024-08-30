@@ -1,3 +1,4 @@
+use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
@@ -36,7 +37,11 @@ impl Page {
         }
     }
 
-    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         let stream_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -46,7 +51,7 @@ impl Page {
         if !self.annotations.is_empty() {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
-                chunk.extend(&annotation.serialize_into(sc, annot_ref, self.media_box.height()));
+                chunk.extend(&annotation.serialize_into(sc, annot_ref, self.media_box.height())?);
                 annotation_refs.push(annot_ref);
             }
         }
@@ -54,7 +59,7 @@ impl Page {
         let mut page = chunk.page(root_ref);
         self.stream
             .resource_dictionary()
-            .to_pdf_resources(sc, &mut page);
+            .to_pdf_resources(sc, &mut page)?;
 
         page.media_box(self.media_box.to_pdf_rect());
         page.parent(sc.page_tree_ref());
@@ -74,7 +79,7 @@ impl Page {
 
         stream.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 
@@ -139,7 +144,7 @@ impl<'a> PageLabelContainer<'a> {
         };
     }
 
-    pub fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -172,7 +177,7 @@ impl<'a> PageLabelContainer<'a> {
         nums.finish();
         num_tree.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 

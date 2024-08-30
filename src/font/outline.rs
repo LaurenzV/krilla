@@ -1,3 +1,4 @@
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::luma::DeviceGray;
 use crate::surface::Surface;
@@ -6,15 +7,22 @@ use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
     if let Some(outline_glyph) = outline_glyphs.get(glyph) {
-        let _ = outline_glyph.draw(
+        let drawn = outline_glyph.draw(
             DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),
             &mut outline_builder,
         );
+
+        if let Err(err) = drawn {
+            return Err(KrillaError::GlyphDrawing(format!(
+                "failed to draw outline glyph: {}",
+                err
+            )));
+        }
     }
 
     if let Some(path) = outline_builder.finish() {
@@ -22,8 +30,8 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
         surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), true);
         surface.pop();
 
-        return Some(());
+        return Ok(Some(()));
     }
 
-    None
+    Ok(None)
 }

@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
@@ -39,7 +40,7 @@ impl Object for XObject {
         &mut cc.x_objects
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let cs = sc.rgb();
         let mut chunk = Chunk::new();
 
@@ -50,7 +51,7 @@ impl Object for XObject {
 
         self.stream
             .resource_dictionary()
-            .to_pdf_resources(sc, &mut x_object);
+            .to_pdf_resources(sc, &mut x_object)?;
         x_object.bbox(
             self.custom_bbox
                 .map(|c| c.0)
@@ -76,6 +77,6 @@ impl Object for XObject {
 
         x_object.finish();
 
-        chunk
+        Ok(chunk)
     }
 }

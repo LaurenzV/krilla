@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::object::color_space::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
 use crate::serialize::{Object, SerializerContext};
@@ -201,7 +202,7 @@ impl Object for ShadingFunction {
         &mut cc.shading_functions
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -213,7 +214,7 @@ impl Object for ShadingFunction {
             }
         }
 
-        chunk
+        Ok(chunk)
     }
 }
 

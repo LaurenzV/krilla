@@ -1,3 +1,4 @@
+use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
@@ -17,7 +18,11 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];
@@ -40,7 +45,7 @@ impl Outline {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize_into(sc, root_ref, last, next, prev));
+                sub_chunks.push(self.children[i].serialize_into(sc, root_ref, last, next, prev)?);
 
                 prev = cur;
                 cur = next;
@@ -57,7 +62,7 @@ impl Outline {
             chunk.extend(&sub_chunk);
         }
 
-        chunk
+        Ok(chunk)
     }
 }
 
@@ -90,7 +95,7 @@ impl OutlineNode {
         root: Ref,
         next: Option<Ref>,
         prev: Option<Ref>,
-    ) -> Chunk {
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];
@@ -122,7 +127,7 @@ impl OutlineNode {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize_into(sc, root, last, next, prev));
+                sub_chunks.push(self.children[i].serialize_into(sc, root, last, next, prev)?);
 
                 prev = cur;
                 cur = next;
@@ -139,7 +144,7 @@ impl OutlineNode {
 
         let dest = XyzDestination::new(self.page_index as usize, self.pos);
         let dest_ref = sc.new_ref();
-        sub_chunks.push(dest.serialize_into(sc, dest_ref));
+        sub_chunks.push(dest.serialize_into(sc, dest_ref)?);
 
         outline_entry.pair(Name(b"Dest"), dest_ref);
 
@@ -149,7 +154,7 @@ impl OutlineNode {
             chunk.extend(&sub_chunk);
         }
 
-        chunk
+        Ok(chunk)
     }
 }
 

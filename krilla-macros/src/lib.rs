@@ -51,31 +51,42 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
+    let common = quote! {
+        use crate::tests::SKIP_SNAPSHOT;
+
+        if SKIP_SNAPSHOT.is_some() {
+            return;
+        }
+    };
+
     let fn_content = match mode {
         SnapshotMode::SerializerContext => {
             quote! {
+                #common
                 let settings = SerializeSettings::#serialize_settings();
                 let mut sc = SerializerContext::new(settings);
                 #impl_ident(&mut sc);
-                check_snapshot(#snapshot_name, sc.finish().as_bytes(), false);
+                check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
             }
         }
         SnapshotMode::SinglePage => {
             quote! {
+                #common
                 let settings = SerializeSettings::#serialize_settings();
                 let mut db = Document::new(settings);
                 let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
                 #impl_ident(&mut page);
                 page.finish();
-                check_snapshot(#snapshot_name, &db.finish(), true);
+                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
             }
         }
         SnapshotMode::Document => {
             quote! {
+                #common
                 let settings = SerializeSettings::#serialize_settings();
                 let mut db = Document::new(settings);
                 #impl_ident(&mut db);
-                check_snapshot(#snapshot_name, &db.finish(), true);
+                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
             }
         }
     };
@@ -113,7 +124,7 @@ impl RendererExt for Renderer {
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
-    let serialize_settings = format_ident!("default");
+    let mut serialize_settings = format_ident!("default");
 
     let mut pdfium = false;
     let mut mupdf = false;
@@ -136,6 +147,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     for identifier in attrs.identifiers {
         let string_ident = identifier.to_string();
+
+        if string_ident.starts_with("settings") {
+            serialize_settings = identifier.clone();
+            continue;
+        }
+
         match string_ident.as_str() {
             "pdfium" => pdfium = true,
             "mupdf" => mupdf = true,
@@ -175,7 +192,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let settings = SerializeSettings::#serialize_settings();
             let mut db = Document::new(settings);
             #impl_ident(&mut db);
-            let pdf = db.finish();
+            let pdf = db.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
@@ -189,7 +206,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             #impl_ident(&mut surface);
             surface.finish();
             page.finish();
-            let pdf = db.finish();
+            let pdf = db.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
@@ -211,12 +228,16 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #quartz_snippet
                 #[test]
                 fn #name() {
-                    use crate::tests::{render_document, check_render};
+                    use crate::tests::{render_document, check_render, SKIP_VISREG};
                     use crate::Size;
                     use crate::document::Document;
                     use crate::serialize::SerializeSettings;
                     use sitro::Renderer;
                     let renderer = #renderer_ident;
+
+                    if SKIP_VISREG.is_some() {
+                        return;
+                    }
                     #fn_body
                 }
             }

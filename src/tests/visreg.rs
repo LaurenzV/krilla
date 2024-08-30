@@ -10,6 +10,7 @@ use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::{Database, Source};
 use krilla_macros::visreg;
 use skrifa::GlyphId;
+use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
 
 #[visreg(all)]
@@ -108,7 +109,7 @@ fn cosmic_text(surface: &mut Surface) {
     }
 }
 
-#[visreg(document)]
+#[visreg(document, settings_3)]
 fn colr_test_glyphs(document: &mut Document) {
     let font_data = COLR_TEST_GLYPHS.clone();
 
@@ -122,6 +123,13 @@ fn colr_test_glyphs(document: &mut Document) {
 #[visreg(document)]
 fn noto_color_emoji(document: &mut Document) {
     let font_data = NOTO_COLOR_EMOJI.clone();
+    all_glyphs_to_pdf(font_data, None, document);
+}
+
+#[visreg(document)]
+#[cfg(target_os = "macos")]
+fn apple_color_emoji(document: &mut Document) {
+    let font_data = Arc::new(std::fs::read("/Library/Fonts/Apple Color Emoji.ttc").unwrap());
     all_glyphs_to_pdf(font_data, None, document);
 }
 
