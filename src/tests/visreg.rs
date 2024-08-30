@@ -4,7 +4,7 @@ use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
 use crate::tests::{
-    load_gif_image, load_jpg_image, load_png_image, load_webp_image, COLR_TEST_GLYPHS,
+    COLR_TEST_GLYPHS,
     NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI,
 };
 use crate::util::SliceExt;
@@ -141,85 +141,6 @@ fn twitter_color_emoji(document: &mut Document) {
     all_glyphs_to_pdf(font_data, None, document);
 }
 
-fn png_image_impl(surface: &mut Surface, name: &str) {
-    let image = load_png_image(name);
-    let size = image.size();
-    surface.draw_image(image, size);
-}
 
-fn jpg_image_impl(surface: &mut Surface, name: &str) {
-    let image = load_jpg_image(name);
-    let size = image.size();
-    surface.draw_image(image, size);
-}
 
-fn gif_image_impl(surface: &mut Surface, name: &str) {
-    let image = load_gif_image(name);
-    let size = image.size();
-    surface.draw_image(image, size);
-}
 
-fn webp_image_impl(surface: &mut Surface, name: &str) {
-    let image = load_webp_image(name);
-    let size = image.size();
-    surface.draw_image(image, size);
-}
-
-#[visreg(all)]
-fn image_luma8_png(surface: &mut Surface) {
-    png_image_impl(surface, "luma8.png");
-}
-
-#[visreg(all)]
-fn image_luma16_png(surface: &mut Surface) {
-    png_image_impl(surface, "luma16.png");
-}
-
-#[visreg(all)]
-fn image_rgb8_png(surface: &mut Surface) {
-    png_image_impl(surface, "rgb8.png");
-}
-
-#[visreg(all)]
-fn image_rgb16_png(surface: &mut Surface) {
-    png_image_impl(surface, "rgb16.png");
-}
-
-#[visreg(all)]
-fn image_rgba8_png(surface: &mut Surface) {
-    png_image_impl(surface, "rgba8.png");
-}
-
-#[visreg(all)]
-fn image_rgba16_png(surface: &mut Surface) {
-    png_image_impl(surface, "rgba16.png");
-}
-
-#[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
-fn image_luma8_jpg(surface: &mut Surface) {
-    jpg_image_impl(surface, "luma8.jpg");
-}
-
-#[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
-fn image_rgb8_jpg(surface: &mut Surface) {
-    jpg_image_impl(surface, "rgb8.jpg");
-}
-
-#[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
-fn image_cmyk_jpg(surface: &mut Surface) {
-    jpg_image_impl(surface, "cmyk.jpg");
-}
-
-#[visreg(all)]
-fn image_rgb8_gif(surface: &mut Surface) {
-    gif_image_impl(surface, "rgb8.gif");
-}
-
-#[visreg(all)]
-fn image_rgba8_gif(surface: &mut Surface) {
-    gif_image_impl(surface, "rgba8.gif");
-}
-#[visreg(all)]
-fn image_rgba8_webp(surface: &mut Surface) {
-    webp_image_impl(surface, "rgba8.webp");
-}

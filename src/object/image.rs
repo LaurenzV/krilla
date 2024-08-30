@@ -322,3 +322,76 @@ fn handle_u16_image<'a>(
 
     (encoded_image, encoded_mask, BitsPerComponent::Sixteen)
 }
+
+#[cfg(test)]
+mod tests {
+    use krilla_macros::visreg;
+    use crate::image::Image;
+    use crate::surface::Surface;
+    use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
+
+    fn image_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
+        let image = load_fn(name);
+        let size = image.size();
+        surface.draw_image(image, size);
+    }
+
+    #[visreg(all)]
+    fn image_luma8_png(surface: &mut Surface) {
+        image_impl(surface, "luma8.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_luma16_png(surface: &mut Surface) {
+        image_impl(surface, "luma16.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgb8_png(surface: &mut Surface) {
+        image_impl(surface, "rgb8.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgb16_png(surface: &mut Surface) {
+        image_impl(surface, "rgb16.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgba8_png(surface: &mut Surface) {
+        image_impl(surface, "rgba8.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgba16_png(surface: &mut Surface) {
+        image_impl(surface, "rgba16.png", load_png_image);
+    }
+
+    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    fn image_luma8_jpg(surface: &mut Surface) {
+        image_impl(surface, "luma8.jpg", load_jpg_image);
+    }
+
+    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    fn image_rgb8_jpg(surface: &mut Surface) {
+        image_impl(surface, "rgb8.jpg", load_jpg_image);
+    }
+
+    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    fn image_cmyk_jpg(surface: &mut Surface) {
+        image_impl(surface, "cmyk.jpg", load_jpg_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgb8_gif(surface: &mut Surface) {
+        image_impl(surface, "rgb8.gif", load_gif_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgba8_gif(surface: &mut Surface) {
+        image_impl(surface, "rgba8.gif", load_gif_image);
+    }
+    #[visreg(all)]
+    fn image_rgba8_webp(surface: &mut Surface) {
+        image_impl(surface, "rgba8.webp", load_webp_image);
+    }
+}
