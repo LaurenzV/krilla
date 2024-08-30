@@ -2,7 +2,7 @@ use crate::error::KrillaResult;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
-use crate::util::{Prehashed, RectWrapper};
+use crate::util::{LocationWrapper, Prehashed, RectWrapper};
 use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -20,6 +20,7 @@ pub mod colr;
 pub mod outline;
 pub mod svg;
 
+/// A wrapper struct for implementing the `OutlinePen` trait.
 struct OutlineBuilder(PathBuilder);
 
 impl OutlineBuilder {
@@ -53,23 +54,6 @@ impl OutlinePen for OutlineBuilder {
         self.0.close()
     }
 }
-
-#[derive(Debug)]
-struct LocationWrapper(Location);
-
-impl Hash for LocationWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.coords().hash(state);
-    }
-}
-
-impl PartialEq for LocationWrapper {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.coords().eq(other.0.coords())
-    }
-}
-
-impl Eq for LocationWrapper {}
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct FontInfo {
@@ -287,7 +271,7 @@ pub fn draw_glyph(
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Colr);
-    } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface)? {
+    } else if let Some(()) = svg::draw_glyph(font.clone(), glyph, surface, svg_settings)? {
         glyph_type = Some(GlyphType::Svg);
     } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Bitmap);

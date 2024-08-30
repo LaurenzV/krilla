@@ -8,6 +8,7 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size};
+use skrifa::instance::Location;
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -245,3 +246,20 @@ impl Hash for SizeWrapper {
         FiniteF32::new(self.0.height()).unwrap().hash(state);
     }
 }
+
+#[derive(Debug)]
+pub struct LocationWrapper(pub Location);
+
+impl Hash for LocationWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.coords().hash(state);
+    }
+}
+
+impl PartialEq for LocationWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.coords().eq(other.0.coords())
+    }
+}
+
+impl Eq for LocationWrapper {}
