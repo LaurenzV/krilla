@@ -48,8 +48,8 @@ pub struct SerializeSettings {
     pub compress_content_streams: bool,
     pub no_device_cs: bool,
     pub svg_settings: SvgSettings,
-    pub(crate) force_type3_fonts: bool,
-    pub(crate) ignore_invalid_glyphs: bool,
+    pub force_type3_fonts: bool,
+    pub ignore_invalid_glyphs: bool,
 }
 
 #[cfg(test)]

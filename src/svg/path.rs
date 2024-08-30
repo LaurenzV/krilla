@@ -30,7 +30,7 @@ pub fn fill_path(path: &usvg::Path, surface: &mut Surface, process_context: &mut
             process_context,
             tiny_skia_path::Transform::identity(),
         );
-        surface.draw_path(&path.data(), fill);
+        surface.fill_path(&path.data(), fill);
     }
 }
 
@@ -43,6 +43,6 @@ pub fn stroke_path(path: &usvg::Path, surface: &mut Surface, process_context: &m
             process_context,
             tiny_skia_path::Transform::identity(),
         );
-        surface.draw_path(&path.data(), stroke);
+        surface.stroke_path(&path.data(), stroke);
     }
 }

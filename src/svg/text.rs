@@ -7,7 +7,7 @@ use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
 use crate::{Fill, Paint, Stroke};
 use skrifa::GlyphId;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{Point, Transform};
 use usvg::{NormalizedF32, PaintOrder};
 
 /// Render a text into a surface.
@@ -60,9 +60,8 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             });
 
             let fill_op = |sb: &mut Surface, fill: Fill<Rgb>, font: Font| {
-                sb.draw_glyph_run(
-                    0.0,
-                    0.0,
+                sb.fill_glyphs(
+                    Point::from_xy(0.0, 0.0),
                     fill,
                     &[Glyph::new(
                         GlyphId::new(glyph.id.0 as u32),
@@ -79,9 +78,8 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             };
 
             let stroke_op = |sb: &mut Surface, stroke: Stroke<Rgb>, font: Font| {
-                sb.draw_glyph_run(
-                    0.0,
-                    0.0,
+                sb.stroke_glyphs(
+                    Point::from_xy(0.0, 0.0),
                     stroke,
                     &[Glyph::new(
                         GlyphId::new(glyph.id.0 as u32),

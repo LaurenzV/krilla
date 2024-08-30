@@ -177,7 +177,7 @@ mod tests {
 
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         let mut surface = page.surface();
-        surface.draw_path(&path, Fill::<Rgb>::default());
+        surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
         page.finish();
 

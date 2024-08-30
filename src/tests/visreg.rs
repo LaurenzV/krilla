@@ -11,7 +11,7 @@ use fontdb::{Database, Source};
 use krilla_macros::visreg;
 use skrifa::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, PathBuilder, Rect, Transform};
+use tiny_skia_path::{NormalizedF32, PathBuilder, Point, Rect, Transform};
 
 #[visreg(all)]
 fn linear_gradient(surface: &mut Surface) {
@@ -45,7 +45,7 @@ fn linear_gradient(surface: &mut Surface) {
         ],
     };
 
-    surface.draw_path(
+    surface.fill_path(
         &path,
         Fill {
             paint: Paint::LinearGradient(gradient),
@@ -97,9 +97,8 @@ fn cosmic_text(surface: &mut Surface) {
                 })
                 .collect::<Vec<_>>();
 
-            surface.draw_glyph_run(
-                start_x,
-                y_offset,
+            surface.fill_glyphs(
+                Point::from_xy(start_x, y_offset),
                 Fill::<Rgb>::default(),
                 &glyphs,
                 font,

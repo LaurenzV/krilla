@@ -116,11 +116,11 @@ mod tests {
         );
 
         let mut surface = page.surface();
-        surface.draw_path(
+        surface.fill_path(
             &rect_to_path(0.0, 0.0, 100.0, 100.0),
             Fill::<Rgb>::default(),
         );
-        surface.draw_path(
+        surface.fill_path(
             &rect_to_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
@@ -138,7 +138,7 @@ mod tests {
             .into(),
         );
         let mut my_surface = page.surface();
-        my_surface.draw_path(
+        my_surface.fill_path(
             &rect_to_path(100.0, 100.0, 200.0, 200.0),
             Fill::<Rgb>::default(),
         );
