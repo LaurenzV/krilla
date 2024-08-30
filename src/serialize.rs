@@ -525,7 +525,10 @@ impl<'a> FilterStream<'a> {
         }
     }
 
-    pub fn new_from_content_stream(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+    pub fn new_from_content_stream(
+        content: &'a [u8],
+        serialize_settings: &SerializeSettings,
+    ) -> Self {
         let mut filter_stream = Self::empty(content);
 
         if serialize_settings.compress_content_streams {

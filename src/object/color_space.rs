@@ -43,7 +43,8 @@ impl ICCBasedColorSpace {
         array.item(icc_ref);
         array.finish();
 
-        let icc_stream = FilterStream::new_from_binary_data(self.0.as_ref().as_ref(), &sc.serialize_settings);
+        let icc_stream =
+            FilterStream::new_from_binary_data(self.0.as_ref().as_ref(), &sc.serialize_settings);
 
         let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
         icc_profile

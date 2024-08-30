@@ -65,7 +65,8 @@ impl Object for Image {
             soft_mask_id
         });
 
-        let image_stream = FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
+        let image_stream =
+            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
 
         let mut image_x_object = chunk.image_xobject(root_ref, &image_stream.encoded_data());
         image_stream.write_filters(image_x_object.deref_mut().deref_mut());

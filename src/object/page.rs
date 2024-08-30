@@ -66,7 +66,8 @@ impl Page {
 
         page.finish();
 
-        let page_stream = FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
+        let page_stream =
+            FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
 
         let mut stream = chunk.stream(stream_ref, &page_stream.encoded_data());
         page_stream.write_filters(stream.deref_mut());
