@@ -3,7 +3,10 @@ use crate::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
-use crate::tests::{load_gif_image, load_jpg_image, load_png_image, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI, load_webp_image};
+use crate::tests::{
+    load_gif_image, load_jpg_image, load_png_image, load_webp_image, COLR_TEST_GLYPHS,
+    NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI,
+};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};

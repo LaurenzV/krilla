@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::color_space::{DEVICE_CMYK, DEVICE_RGB};
 use crate::error::KrillaResult;
 use crate::object::color_space::DEVICE_GRAY;
 use crate::serialize::{FilterStream, Object, SerializerContext};
@@ -8,12 +9,11 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use zune_jpeg::zune_core::options::DecoderOptions;
 use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
-use zune_jpeg::zune_core::options::DecoderOptions;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
-use crate::color_space::{DEVICE_CMYK, DEVICE_RGB};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 enum BitsPerComponent {
@@ -109,7 +109,6 @@ impl Image {
         let decoded = decoder.decode().ok()?;
         let (image_data, _, bits_per_component) = handle_u8_image(decoded, color_space);
 
-
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data: None,
@@ -153,13 +152,12 @@ impl Image {
 
         let color_space = if decoder.has_alpha() {
             ColorSpace::RGBA
-        }   else {
+        } else {
             ColorSpace::RGB
         };
         let image_color_space = color_space.try_into().ok()?;
 
-        let (image_data, mask_data, bits_per_component) =
-            handle_u8_image(first_frame, color_space);
+        let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
 
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
@@ -212,9 +210,13 @@ impl Object for Image {
         image_x_object.height(self.0.size.height() as i32);
 
         match self.0.image_color_space {
-            ImageColorspace::Rgb => {image_x_object.pair(Name(b"ColorSpace"), sc.rgb());},
-            ImageColorspace::Luma => {image_x_object.pair(Name(b"ColorSpace"), sc.gray());},
-            ImageColorspace::Cmyk => {},
+            ImageColorspace::Rgb => {
+                image_x_object.pair(Name(b"ColorSpace"), sc.rgb());
+            }
+            ImageColorspace::Luma => {
+                image_x_object.pair(Name(b"ColorSpace"), sc.gray());
+            }
+            ImageColorspace::Cmyk => {}
         };
 
         image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);

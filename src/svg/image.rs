@@ -1,10 +1,10 @@
-use tiny_skia_path::Rect;
-use usvg::ImageKind;
-use crate::FillRule;
 use crate::image::Image;
 use crate::surface::Surface;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
+use crate::FillRule;
+use tiny_skia_path::Rect;
+use usvg::ImageKind;
 
 /// Render an image into a surface.
 pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut ProcessContext) {
