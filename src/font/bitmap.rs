@@ -2,9 +2,8 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
 use crate::object::image::Image;
 use crate::surface::Surface;
-use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider, Tag};
-use tiny_skia_path::{Size, Transform};
+use skrifa::{GlyphId, MetadataProvider};
+use tiny_skia_path::Transform;
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 
 /// Draw a bitmap-based glyph on a surface.
