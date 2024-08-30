@@ -153,18 +153,43 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
 
         let mut glyph_builder = OutlineBuilder(PathBuilder::new());
         let outline_glyphs = self.font.font_ref().outline_glyphs();
-        let outline_glyph = outline_glyphs.get(glyph_id).unwrap();
-        outline_glyph
+        let Some(outline_glyph) = outline_glyphs.get(glyph_id) else {
+            self.error = Err(KrillaError::GlyphDrawing(format!(
+                "missing outline glyph for glyph {}",
+                glyph_id
+            )));
+            return;
+        };
+
+        let drawn_outline_glyph = outline_glyph
             .draw(
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()),
                 &mut glyph_builder,
             )
-            .unwrap();
-        let path = glyph_builder
+            .map_err(|e| {
+                KrillaError::GlyphDrawing(format!(
+                    "failed to draw outline glyph {}: {}",
+                    glyph_id, e
+                ))
+            });
+
+        match drawn_outline_glyph {
+            Ok(_) => {}
+            Err(e) => {
+                self.error = Err(e);
+                return;
+            }
+        }
+
+        let Some(path) = glyph_builder
             .finish()
-            .unwrap()
-            .transform(*self.transforms.last().unwrap())
-            .unwrap();
+            .and_then(|p| p.transform(*self.transforms.last()?))
+        else {
+            self.error = Err(KrillaError::GlyphDrawing(
+                "failed to build glyph path".to_string(),
+            ));
+            return;
+        };
 
         old.push(path);
 

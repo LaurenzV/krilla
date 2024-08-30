@@ -47,8 +47,9 @@ pub struct SerializeSettings {
     pub ascii_compatible: bool,
     pub compress_content_streams: bool,
     pub no_device_cs: bool,
-    pub force_type3_fonts: bool,
     pub svg_settings: SvgSettings,
+    pub(crate) force_type3_fonts: bool,
+    pub(crate) ignore_invalid_glyphs: bool,
 }
 
 #[cfg(test)]
@@ -60,12 +61,20 @@ impl SerializeSettings {
             no_device_cs: false,
             force_type3_fonts: false,
             svg_settings: SvgSettings::default(),
+            ignore_invalid_glyphs: false,
         }
     }
 
     pub fn settings_2() -> Self {
         Self {
             no_device_cs: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub fn settings_3() -> Self {
+        Self {
+            ignore_invalid_glyphs: true,
             ..Self::settings_1()
         }
     }
@@ -78,6 +87,7 @@ impl Default for SerializeSettings {
             compress_content_streams: true,
             no_device_cs: false,
             force_type3_fonts: false,
+            ignore_invalid_glyphs: false,
             svg_settings: SvgSettings::default(),
         }
     }

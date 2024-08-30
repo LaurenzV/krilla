@@ -124,7 +124,7 @@ impl RendererExt for Renderer {
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
-    let serialize_settings = format_ident!("default");
+    let mut serialize_settings = format_ident!("default");
 
     let mut pdfium = false;
     let mut mupdf = false;
@@ -147,6 +147,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     for identifier in attrs.identifiers {
         let string_ident = identifier.to_string();
+
+        if string_ident.starts_with("settings") {
+            serialize_settings = identifier.clone();
+            continue;
+        }
+
         match string_ident.as_str() {
             "pdfium" => pdfium = true,
             "mupdf" => mupdf = true,

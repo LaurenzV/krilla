@@ -1,3 +1,4 @@
+use crate::error::KrillaResult;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
@@ -266,7 +267,7 @@ impl Font {
     }
 }
 
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum GlyphType {
     Colr,
     Svg,
@@ -279,12 +280,12 @@ pub fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     surface: &mut Surface,
-) -> Option<GlyphType> {
+) -> KrillaResult<Option<GlyphType>> {
     let mut glyph_type = None;
 
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Ok(Some(())) = colr::draw_glyph(font.clone(), glyph, surface) {
+    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Colr);
     } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface) {
         glyph_type = Some(GlyphType::Svg);
@@ -296,7 +297,7 @@ pub fn draw_glyph(
 
     surface.pop();
 
-    glyph_type
+    Ok(glyph_type)
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]

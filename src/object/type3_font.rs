@@ -1,3 +1,4 @@
+use crate::error::KrillaResult;
 use crate::font;
 use crate::font::{Font, FontIdentifier, GlyphType, Type3Identifier};
 use crate::object::xobject::XObject;
@@ -100,6 +101,7 @@ impl Type3Font {
     pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let svg_settings = sc.serialize_settings.svg_settings;
+        let ignore_invalid_glyphs = sc.serialize_settings.ignore_invalid_glyphs;
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
@@ -111,14 +113,29 @@ impl Type3Font {
             .map(|(index, glyph_id)| {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
-                let glyph_type =
-                    font::draw_glyph(self.font.clone(), svg_settings, *glyph_id, &mut surface);
+
+                let glyph_type = match font::draw_glyph(
+                    self.font.clone(),
+                    svg_settings,
+                    *glyph_id,
+                    &mut surface,
+                ) {
+                    Ok(g) => g,
+                    Err(e) => {
+                        if ignore_invalid_glyphs {
+                            surface.reset();
+                            None
+                        } else {
+                            return Err(e);
+                        }
+                    }
+                };
+
                 surface.finish();
                 let stream = stream_surface.finish();
-
                 let mut content = Content::new();
 
-                let stream = if glyph_type == Some(GlyphType::Outline) {
+                let stream = if glyph_type == Some(GlyphType::Outline) || stream.is_empty() {
                     let bbox = stream.bbox();
                     content.start_shape_glyph(
                         self.widths[index],
@@ -154,9 +171,10 @@ impl Type3Font {
                 let mut stream = chunk.stream(stream_ref, &font_stream.encoded_data());
                 font_stream.write_filters(stream.deref_mut());
 
-                stream_ref
+                Ok(stream_ref)
             })
-            .collect::<Vec<_>>();
+            .collect::<KrillaResult<Vec<Ref>>>()
+            .unwrap();
 
         let resource_dictionary = rd_builder.finish();
 

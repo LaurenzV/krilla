@@ -140,6 +140,12 @@ impl<'a> Surface<'a> {
         self.sub_builders.push(ContentBuilder::new());
     }
 
+    pub fn reset(&mut self) {
+        self.push_instructions = vec![];
+        self.sub_builders = vec![];
+        self.root_builder = ContentBuilder::new();
+    }
+
     pub fn push_opacified(&mut self, opacity: NormalizedF32) {
         self.push_instructions
             .push(PushInstruction::Opacity(opacity));
@@ -228,8 +234,8 @@ impl Drop for Surface<'_> {
     fn drop(&mut self) {
         // Replace with a dummy builder.
         let root_builder = std::mem::replace(&mut self.root_builder, ContentBuilder::new());
-        assert!(self.sub_builders.is_empty());
-        assert!(self.push_instructions.is_empty());
+        debug_assert!(self.sub_builders.is_empty());
+        debug_assert!(self.push_instructions.is_empty());
         (self.finish_fn)(root_builder.finish())
     }
 }
