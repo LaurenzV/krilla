@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::object::color_space::DEVICE_GRAY;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
@@ -46,7 +47,7 @@ impl Object for Image {
         &mut cc.images
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
@@ -85,7 +86,7 @@ impl Object for Image {
         }
         image_x_object.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 

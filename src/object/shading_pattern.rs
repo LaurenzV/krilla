@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;
@@ -33,16 +34,16 @@ impl Object for ShadingPattern {
         &mut cc.patterns
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
-        let shading_ref = sc.add_object(self.0.shading_function.clone());
+        let shading_ref = sc.add_object(self.0.shading_function.clone())?;
         let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.0.to_pdf_transform());
 
         shading_pattern.finish();
 
-        chunk
+        Ok(chunk)
     }
 }

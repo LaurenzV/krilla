@@ -1,3 +1,4 @@
+use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::serialize::{Object, SerializerContext};
@@ -16,7 +17,7 @@ impl Annotation {
         sc: &mut SerializerContext,
         root_ref: Ref,
         page_size: f32,
-    ) -> Chunk {
+    ) -> KrillaResult<Chunk> {
         match self {
             Annotation::Link(link) => link.serialize_into(sc, root_ref, page_size),
         }
@@ -40,13 +41,18 @@ impl Into<Annotation> for LinkAnnotation {
 }
 
 impl LinkAnnotation {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref, page_size: f32) -> Chunk {
+    fn serialize_into(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+        page_size: f32,
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let target_ref = sc.new_ref();
 
         match &self.target {
-            Target::Destination(dest) => chunk.extend(&dest.serialize_into(sc, target_ref)),
+            Target::Destination(dest) => chunk.extend(&dest.serialize_into(sc, target_ref)?),
             Target::Action(_) => {}
         };
 
@@ -69,7 +75,7 @@ impl LinkAnnotation {
 
         annotation.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 

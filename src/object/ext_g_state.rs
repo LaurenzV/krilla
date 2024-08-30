@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::object::mask::Mask;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::types::BlendMode;
@@ -101,14 +102,14 @@ impl Object for ExtGState {
         &mut cc.ext_g_states
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
-        let mask_ref = self
-            .0
-            .mask
-            .clone()
-            .map(|ma| sc.add_object(Arc::unwrap_or_clone(ma)));
+        let mask_ref = if let Some(mask) = self.0.mask.clone() {
+            Some(sc.add_object(Arc::unwrap_or_clone(mask))?)
+        } else {
+            None
+        };
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
@@ -129,7 +130,7 @@ impl Object for ExtGState {
 
         ext_st.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 
@@ -148,7 +149,7 @@ mod tests {
     #[snapshot]
     pub fn ext_g_state_empty(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new();
-        sc.add_object(ext_state);
+        sc.add_object(ext_state).unwrap();
     }
 
     #[snapshot]
@@ -157,7 +158,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
-        sc.add_object(ext_state);
+        sc.add_object(ext_state).unwrap();
     }
 
     #[snapshot]
@@ -168,6 +169,6 @@ mod tests {
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
             .mask(mask);
-        sc.add_object(ext_state);
+        sc.add_object(ext_state).unwrap();
     }
 }
