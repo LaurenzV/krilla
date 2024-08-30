@@ -284,7 +284,7 @@ pub fn draw_glyph(
 
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
+    if let Ok(Some(())) = colr::draw_glyph(font.clone(), glyph, surface) {
         glyph_type = Some(GlyphType::Colr);
     } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface) {
         glyph_type = Some(GlyphType::Svg);

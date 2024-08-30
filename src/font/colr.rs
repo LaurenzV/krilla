@@ -1,3 +1,4 @@
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color_space::rgb;
 use crate::object::color_space::rgb::Rgb;
@@ -13,16 +14,26 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
     let colr_glyphs = font.font_ref().color_glyphs();
+
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
         surface.push_transform(&Transform::from_scale(1.0, -1.0));
         let mut colr_canvas = ColrCanvas::new(font.clone(), surface);
-        let _ = colr_glyph.paint(font.location_ref(), &mut colr_canvas);
+        colr_glyph
+            .paint(font.location_ref(), &mut colr_canvas)
+            .map_err(|e| {
+                KrillaError::GlyphDrawing(format!(
+                    "failed to draw glyph COLR glyph {} of font {}: {}",
+                    glyph,
+                    font.postscript_name().unwrap_or("unknown"),
+                    e
+                ))
+            })?;
         surface.pop();
-        return Some(());
+        return Ok(Some(()));
     } else {
-        return None;
+        return Ok(None);
     }
 }
 
@@ -31,6 +42,7 @@ struct ColrCanvas<'a, 'b> {
     clips: Vec<Vec<Path>>,
     canvas_builder: &'b mut Surface<'a>,
     transforms: Vec<Transform>,
+    error: KrillaResult<()>,
 }
 
 impl<'a, 'b> ColrCanvas<'a, 'b> {
@@ -40,6 +52,7 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
             canvas_builder,
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
+            error: Ok(()),
         }
     }
 }
@@ -49,39 +62,45 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
         &self,
         palette_index: u16,
         alpha: f32,
-    ) -> (rgb::Color, NormalizedF32) {
+    ) -> KrillaResult<(rgb::Color, NormalizedF32)> {
         if palette_index != u16::MAX {
             let color = self
                 .font
                 .font_ref()
                 .cpal()
-                .unwrap()
+                .map_err(|_| {
+                    KrillaError::GlyphDrawing("missing CPAL table in COLR font".to_string())
+                })?
                 .color_records_array()
-                .unwrap()
-                .unwrap()[palette_index as usize];
+                .ok_or(KrillaError::GlyphDrawing(
+                    "missing color records array in CPAL table".to_string(),
+                ))?
+                .map_err(|_| KrillaError::GlyphDrawing("unable to read CPAL table".to_string()))?
+                [palette_index as usize];
 
-            (
+            Ok((
                 rgb::Color::new(color.red, color.green, color.blue),
                 NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
-            )
+            ))
         } else {
-            (rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap())
+            Ok((rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap()))
         }
     }
 
-    fn stops(&self, stops: &[ColorStop]) -> Vec<Stop<Rgb>> {
-        stops
-            .iter()
-            .map(|s| {
-                let (color, alpha) = self.palette_index_to_color(s.palette_index, s.alpha);
+    fn stops(&self, stops: &[ColorStop]) -> KrillaResult<Vec<Stop<Rgb>>> {
+        let mut converted_stops = vec![];
 
-                Stop {
-                    offset: NormalizedF32::new(s.offset).unwrap(),
-                    color,
-                    opacity: alpha,
-                }
+        for stop in stops {
+            let (color, alpha) = self.palette_index_to_color(stop.palette_index, stop.alpha)?;
+
+            converted_stops.push(Stop {
+                offset: NormalizedF32::new(stop.offset).unwrap(),
+                color,
+                opacity: alpha,
             })
-            .collect::<Vec<_>>()
+        }
+
+        Ok(converted_stops)
     }
 }
 
@@ -102,18 +121,21 @@ impl ExtendExt for skrifa::color::Extend {
 
 impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     fn push_transform(&mut self, transform: skrifa::color::Transform) {
-        let new_transform = self
-            .transforms
-            .last()
-            .unwrap()
-            .pre_concat(Transform::from_row(
-                transform.xx,
-                transform.yx,
-                transform.xy,
-                transform.yy,
-                transform.dx,
-                transform.dy,
+        let Some(last_transform) = self.transforms.last() else {
+            self.error = Err(KrillaError::GlyphDrawing(
+                "encountered imbalanced transform".to_string(),
             ));
+            return;
+        };
+
+        let new_transform = last_transform.pre_concat(Transform::from_row(
+            transform.xx,
+            transform.yx,
+            transform.xy,
+            transform.yy,
+            transform.dx,
+            transform.dy,
+        ));
         self.transforms.push(new_transform);
     }
 
@@ -122,7 +144,12 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     }
 
     fn push_clip_glyph(&mut self, glyph_id: GlyphId) {
-        let mut old = self.clips.last().unwrap().clone();
+        let Some(mut old) = self.clips.last().cloned() else {
+            self.error = Err(KrillaError::GlyphDrawing(
+                "encountered imbalanced clip".to_string(),
+            ));
+            return;
+        };
 
         let mut glyph_builder = OutlineBuilder(PathBuilder::new());
         let outline_glyphs = self.font.font_ref().outline_glyphs();
@@ -174,7 +201,13 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 palette_index,
                 alpha,
             } => {
-                let (color, alpha) = self.palette_index_to_color(palette_index, alpha);
+                let (color, alpha) = match self.palette_index_to_color(palette_index, alpha) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        self.error = Err(e);
+                        return;
+                    }
+                };
                 Some(Fill {
                     paint: Paint::Color(color),
                     opacity: alpha,
@@ -187,12 +220,20 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 color_stops,
                 extend,
             } => {
+                let stops = match self.stops(color_stops) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        self.error = Err(e);
+                        return;
+                    }
+                };
+
                 let linear = LinearGradient {
                     x1: p0.x,
                     y1: p0.y,
                     x2: p1.x,
                     y2: p1.y,
-                    stops: self.stops(color_stops),
+                    stops,
                     spread_method: extend.to_spread_method(),
                     transform: *self.transforms.last().unwrap(),
                 };
@@ -211,6 +252,14 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 color_stops,
                 extend,
             } => {
+                let stops = match self.stops(color_stops) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        self.error = Err(e);
+                        return;
+                    }
+                };
+
                 let radial = RadialGradient {
                     fx: c0.x,
                     fy: c0.y,
@@ -218,7 +267,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     cx: c1.x,
                     cy: c1.y,
                     cr: r1,
-                    stops: self.stops(color_stops),
+                    stops,
                     spread_method: extend.to_spread_method(),
                     transform: *self.transforms.last().unwrap(),
                 };
@@ -236,31 +285,30 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 color_stops,
                 extend,
             } => {
-                if start_angle == end_angle
-                    && (matches!(
-                        extend,
-                        skrifa::color::Extend::Reflect | skrifa::color::Extend::Repeat
-                    ))
-                {
-                    None
-                } else {
-                    let sweep = SweepGradient {
-                        cx: c0.x,
-                        cy: c0.y,
-                        start_angle,
-                        end_angle,
-                        stops: self.stops(color_stops),
-                        spread_method: extend.to_spread_method(),
-                        // COLR gradients run in the different direction
-                        transform: *self.transforms.last().unwrap(),
-                    };
+                let stops = match self.stops(color_stops) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        self.error = Err(e);
+                        return;
+                    }
+                };
 
-                    Some(Fill {
-                        paint: Paint::SweepGradient(sweep),
-                        opacity: NormalizedF32::ONE,
-                        rule: Default::default(),
-                    })
-                }
+                let sweep = SweepGradient {
+                    cx: c0.x,
+                    cy: c0.y,
+                    start_angle,
+                    end_angle,
+                    stops,
+                    spread_method: extend.to_spread_method(),
+                    // COLR gradients run in the different direction
+                    transform: *self.transforms.last().unwrap(),
+                };
+
+                Some(Fill {
+                    paint: Paint::SweepGradient(sweep),
+                    opacity: NormalizedF32::ONE,
+                    rule: Default::default(),
+                })
             }
         } {
             // The proper implementation would be to apply all clip paths and then draw the
