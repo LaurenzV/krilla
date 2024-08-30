@@ -128,7 +128,7 @@ fn noto_color_emoji(document: &mut Document) {
 #[visreg(document)]
 #[cfg(target_os = "macos")]
 fn apple_color_emoji(document: &mut Document) {
-    let font_data = Arc::new(std::fs::read("/Library/Fonts/Apple Color Emoji.ttc").unwrap());
+    let font_data = Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
     all_glyphs_to_pdf(font_data, None, document);
 }
 

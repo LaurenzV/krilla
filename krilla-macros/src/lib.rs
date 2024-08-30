@@ -52,7 +52,10 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     input_fn.sig.ident = impl_ident.clone();
 
     let common = quote! {
-        use crate::tests::SKIP_SNAPSHOT;
+        use crate::serialize::{SerializeSettings, SerializerContext};
+        use crate::tests::{SKIP_SNAPSHOT, check_snapshot};
+        use crate::document::Document;
+        use crate::Size;
 
         if SKIP_SNAPSHOT.is_some() {
             return;

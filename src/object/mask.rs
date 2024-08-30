@@ -123,9 +123,9 @@ impl Object for Mask {
 mod tests {
     use crate::object::mask::Mask;
     use crate::rgb::Rgb;
-    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
-    use crate::tests::check_snapshot;
+
     use crate::{rgb, Fill, MaskType, Paint};
     use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Rect};

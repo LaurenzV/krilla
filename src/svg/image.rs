@@ -1,9 +1,8 @@
-use crate::object::image::Image;
+use crate::image::Image;
 use crate::surface::Surface;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
 use crate::FillRule;
-use image::ImageFormat;
 use tiny_skia_path::Rect;
 use usvg::ImageKind;
 
@@ -15,21 +14,20 @@ pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut 
 
     match image.kind() {
         ImageKind::JPEG(d) => {
-            let dynamic_image =
-                image::load_from_memory_with_format(d.as_slice(), ImageFormat::Jpeg).unwrap();
-            let d_image = Image::new(&dynamic_image);
+            // TODO: Remove unwraps
+            let d_image = Image::from_jpeg(&d).unwrap();
             surface.draw_image(d_image, image.size());
         }
         ImageKind::PNG(d) => {
-            let dynamic_image =
-                image::load_from_memory_with_format(d.as_slice(), ImageFormat::Png).unwrap();
-            let d_image = Image::new(&dynamic_image);
+            let d_image = Image::from_png(&d).unwrap();
             surface.draw_image(d_image, image.size());
         }
         ImageKind::GIF(d) => {
-            let dynamic_image =
-                image::load_from_memory_with_format(d.as_slice(), ImageFormat::Gif).unwrap();
-            let d_image = Image::new(&dynamic_image);
+            let d_image = Image::from_gif(&d).unwrap();
+            surface.draw_image(d_image, image.size());
+        }
+        ImageKind::WEBP(d) => {
+            let d_image = Image::from_webp(&d).unwrap();
             surface.draw_image(d_image, image.size());
         }
         ImageKind::SVG(t) => {
@@ -42,6 +40,5 @@ pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut 
             group::render(t.root(), surface, process_context);
             surface.pop();
         }
-        _ => unimplemented!(),
     }
 }

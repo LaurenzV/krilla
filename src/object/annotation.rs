@@ -86,8 +86,8 @@ mod tests {
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
-    use crate::serialize::SerializeSettings;
-    use crate::tests::{check_snapshot, rect_to_path};
+
+    use crate::tests::rect_to_path;
     use crate::Fill;
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};

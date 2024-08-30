@@ -1,3 +1,4 @@
+use crate::image::Image;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -81,6 +82,22 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
     builder.finish().unwrap()
+}
+
+pub fn load_png_image(name: &str) -> Image {
+    Image::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+}
+
+pub fn load_jpg_image(name: &str) -> Image {
+    Image::from_jpeg(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+}
+
+pub fn load_gif_image(name: &str) -> Image {
+    Image::from_gif(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+}
+
+pub fn load_webp_image(name: &str) -> Image {
+    Image::from_webp(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
