@@ -3,7 +3,7 @@ use crate::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
-use crate::tests::{COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI};
+use crate::tests::{COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, TWITTER_COLOR_EMOJI};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -121,7 +121,7 @@ fn colr_test_glyphs(document: &mut Document) {
 
 #[visreg(document)]
 fn noto_color_emoji(document: &mut Document) {
-    let font_data = NOTO_COLOR_EMOJI.clone();
+    let font_data = NOTO_COLOR_EMOJI_COLR.clone();
     all_glyphs_to_pdf(font_data, None, document);
 }
 
