@@ -197,7 +197,12 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     }
 
     fn push_clip_box(&mut self, clip_box: BoundingBox<f32>) {
-        let mut old = self.clips.last().unwrap().clone();
+        let Some(mut old) = self.clips.last().cloned() else {
+            self.error = Err(KrillaError::GlyphDrawing(
+                "encountered imbalanced clip".to_string(),
+            ));
+            return;
+        };
 
         let mut path_builder = PathBuilder::new();
         path_builder.move_to(clip_box.x_min, clip_box.y_min);
@@ -206,11 +211,15 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
         path_builder.line_to(clip_box.x_max, clip_box.y_min);
         path_builder.close();
 
-        let path = path_builder
+        let Some(path) = path_builder
             .finish()
-            .unwrap()
-            .transform(*self.transforms.last().unwrap())
-            .unwrap();
+            .and_then(|p| p.transform(*self.transforms.last()?))
+        else {
+            self.error = Err(KrillaError::GlyphDrawing(
+                "failed to build glyph path".to_string(),
+            ));
+            return;
+        };
         old.push(path);
 
         self.clips.push(old);
@@ -253,6 +262,13 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     }
                 };
 
+                let Some(transform) = self.transforms.last().copied() else {
+                    self.error = Err(KrillaError::GlyphDrawing(
+                        "encountered imbalanced transforms".to_string(),
+                    ));
+                    return;
+                };
+
                 let linear = LinearGradient {
                     x1: p0.x,
                     y1: p0.y,
@@ -260,7 +276,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     y2: p1.y,
                     stops,
                     spread_method: extend.to_spread_method(),
-                    transform: *self.transforms.last().unwrap(),
+                    transform,
                 };
 
                 Some(Fill {
@@ -285,6 +301,13 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     }
                 };
 
+                let Some(transform) = self.transforms.last().copied() else {
+                    self.error = Err(KrillaError::GlyphDrawing(
+                        "encountered imbalanced transforms".to_string(),
+                    ));
+                    return;
+                };
+
                 let radial = RadialGradient {
                     fx: c0.x,
                     fy: c0.y,
@@ -294,7 +317,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     cr: r1,
                     stops,
                     spread_method: extend.to_spread_method(),
-                    transform: *self.transforms.last().unwrap(),
+                    transform,
                 };
 
                 Some(Fill {
@@ -318,6 +341,13 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     }
                 };
 
+                let Some(transform) = self.transforms.last().copied() else {
+                    self.error = Err(KrillaError::GlyphDrawing(
+                        "encountered imbalanced transforms".to_string(),
+                    ));
+                    return;
+                };
+
                 let sweep = SweepGradient {
                     cx: c0.x,
                     cy: c0.y,
@@ -325,8 +355,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     end_angle,
                     stops,
                     spread_method: extend.to_spread_method(),
-                    // COLR gradients run in the different direction
-                    transform: *self.transforms.last().unwrap(),
+                    transform,
                 };
 
                 Some(Fill {
@@ -340,13 +369,17 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             // whole "visible" area with the fill. However, this seems to produce artifacts in
             // Google Chrome when zooming. So instead, what we do is that we apply all clip paths except
             // for the last one, and the last one we use to actually perform the fill.
-            let mut clips = self
-                .clips
-                .last()
-                .unwrap()
-                .iter()
-                .map(|p| (p.clone(), FillRule::NonZero))
-                .collect::<Vec<_>>();
+            let Some(mut clips) = self.clips.last().map(|paths| {
+                paths
+                    .iter()
+                    .map(|p| (p.clone(), FillRule::NonZero))
+                    .collect::<Vec<_>>()
+            }) else {
+                self.error = Err(KrillaError::GlyphDrawing(
+                    "failed to apply fill glyph".to_string(),
+                ));
+                return;
+            };
 
             let filled = clips.split_off(clips.len() - 1);
 
