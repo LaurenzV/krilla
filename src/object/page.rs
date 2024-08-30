@@ -186,9 +186,9 @@ mod tests {
     use crate::document::Document;
     use crate::object::page::{Page, PageLabel};
     use crate::rgb::Rgb;
-    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
-    use crate::tests::check_snapshot;
+    
     use crate::Fill;
     use krilla_macros::snapshot;
     use pdf_writer::types::NumberingStyle;

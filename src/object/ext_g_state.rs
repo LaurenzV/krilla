@@ -138,9 +138,9 @@ impl Object for ExtGState {
 mod tests {
     use crate::object::ext_g_state::ExtGState;
     use crate::object::mask::Mask;
-    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::serialize::SerializerContext;
     use crate::stream::Stream;
-    use crate::tests::check_snapshot;
+    
     use crate::MaskType;
     use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;

@@ -3,16 +3,13 @@ use crate::error::KrillaResult;
 use crate::object::color_space::DEVICE_GRAY;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
-use image::{ColorType, DynamicImage, Luma, Rgb, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::borrow::Cow;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Size;
 use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
-use zune_png::zune_core::options::DecoderOptions;
 use zune_png::PngDecoder;
 
 #[derive(Debug, Hash, Eq, PartialEq)]

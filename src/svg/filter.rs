@@ -1,7 +1,6 @@
 use crate::object::image::Image;
 use crate::surface::Surface;
 use crate::svg::ProcessContext;
-use image::ImageFormat;
 use tiny_skia_path::{Size, Transform};
 
 /// Render a filter into a surface by rasterizing it with `resvg` and drawing

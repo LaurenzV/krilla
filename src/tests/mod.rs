@@ -1,6 +1,6 @@
 use crate::image::Image;
 use difference::{Changeset, Difference};
-use image::{load_from_memory, DynamicImage, Rgba, RgbaImage};
+use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,

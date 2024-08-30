@@ -255,8 +255,8 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 mod tests {
     use crate::font::Font;
 
-    use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::tests::{check_snapshot, LATIN_MODERN_ROMAN, NOTO_SANS};
+    use crate::serialize::SerializerContext;
+    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS};
     use krilla_macros::snapshot;
     use skrifa::instance::Location;
     use skrifa::GlyphId;
