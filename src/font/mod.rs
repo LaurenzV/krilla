@@ -287,7 +287,7 @@ pub fn draw_glyph(
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Colr);
-    } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface) {
+    } else if let Some(()) = svg::draw_glyph(font.clone(), svg_settings, glyph, surface)? {
         glyph_type = Some(GlyphType::Svg);
     } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Bitmap);
