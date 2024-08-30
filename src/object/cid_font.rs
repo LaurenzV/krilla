@@ -1,3 +1,4 @@
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{FilterStream, SerializerContext, SipHashable};
 use crate::util::{RectExt, SliceExt};
@@ -92,7 +93,11 @@ impl CIDFont {
         FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
 
-    pub(crate) fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_into(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();
@@ -100,6 +105,7 @@ impl CIDFont {
         let cmap_ref = sc.new_ref();
         let data_ref = sc.new_ref();
 
+        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
         let glyph_remapper = &self.glyph_remapper;
 
         let is_cff = self.font.font_ref().cff().is_ok();
@@ -111,14 +117,18 @@ impl CIDFont {
                 self.font.index(),
                 glyph_remapper,
             )
-            .unwrap()
-        };
+            .map_err(|_| {
+                KrillaError::FontError(format!("failed to subset font {}", postscript_name))
+            })
+        }?;
 
         let font_stream = {
             let mut data = subsetted.as_slice();
 
             // If we have a CFF font, only embed the standalone CFF program.
-            let subsetted_ref = skrifa::FontRef::new(data).unwrap();
+            let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
+                KrillaError::FontError(format!("failed to read font subset of {}", postscript_name))
+            })?;
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
                 data = cff.as_bytes();
             }
@@ -126,7 +136,6 @@ impl CIDFont {
             FilterStream::new_from_binary_data(data, &sc.serialize_settings)
         };
 
-        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
         let subset_tag = subset_tag(font_stream.encoded_data());
 
         let base_font = format!("{subset_tag}+{postscript_name}");
@@ -227,7 +236,7 @@ impl CIDFont {
 
         stream.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 

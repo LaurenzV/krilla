@@ -66,7 +66,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let settings = SerializeSettings::#serialize_settings();
                 let mut sc = SerializerContext::new(settings);
                 #impl_ident(&mut sc);
-                check_snapshot(#snapshot_name, sc.finish().as_bytes(), false);
+                check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
             }
         }
         SnapshotMode::SinglePage => {
@@ -77,7 +77,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
                 #impl_ident(&mut page);
                 page.finish();
-                check_snapshot(#snapshot_name, &db.finish(), true);
+                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
             }
         }
         SnapshotMode::Document => {
@@ -86,7 +86,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let settings = SerializeSettings::#serialize_settings();
                 let mut db = Document::new(settings);
                 #impl_ident(&mut db);
-                check_snapshot(#snapshot_name, &db.finish(), true);
+                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
             }
         }
     };
@@ -186,7 +186,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let settings = SerializeSettings::#serialize_settings();
             let mut db = Document::new(settings);
             #impl_ident(&mut db);
-            let pdf = db.finish();
+            let pdf = db.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
@@ -200,7 +200,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             #impl_ident(&mut surface);
             surface.finish();
             page.finish();
-            let pdf = db.finish();
+            let pdf = db.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);

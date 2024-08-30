@@ -1,3 +1,4 @@
+use crate::error::KrillaResult;
 use crate::object::outline::Outline;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
@@ -31,7 +32,7 @@ impl Document {
         self.serializer_context.set_outline(outline);
     }
 
-    pub fn finish(self) -> Vec<u8> {
-        self.serializer_context.finish().finish()
+    pub fn finish(self) -> KrillaResult<Vec<u8>> {
+        Ok(self.serializer_context.finish()?.finish())
     }
 }

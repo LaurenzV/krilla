@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color_space::luma::SGray;
@@ -306,7 +307,7 @@ impl SerializerContext {
     }
 
     // Always needs to be called.
-    pub fn finish(mut self) -> Pdf {
+    pub fn finish(mut self) -> KrillaResult<Pdf> {
         // TODO: Get rid of all the clones
 
         if let Some(container) = PageLabelContainer::new(
@@ -340,7 +341,7 @@ impl SerializerContext {
                 }
                 FontContainer::CIDFont(cid_font) => {
                     let ref_ = self.add_resource(cid_font.identifier());
-                    let chunk = cid_font.serialize_into(&mut self, ref_);
+                    let chunk = cid_font.serialize_into(&mut self, ref_)?;
                     self.chunk_container.fonts.push(chunk);
                 }
             }
@@ -365,7 +366,7 @@ impl SerializerContext {
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
 
-        self.chunk_container.finish(self.serialize_settings)
+        Ok(self.chunk_container.finish(self.serialize_settings))
     }
 }
 
