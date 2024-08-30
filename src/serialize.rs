@@ -469,25 +469,6 @@ impl FontContainer {
     }
 }
 
-fn deflate(data: &[u8]) -> Vec<u8> {
-    const COMPRESSION_LEVEL: u8 = 6;
-    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
-}
-
-fn hex_encode(data: &[u8]) -> Vec<u8> {
-    data.iter()
-        .enumerate()
-        .map(|(index, byte)| {
-            let mut formatted = format!("{:02X}", byte);
-            if index % 35 == 34 {
-                formatted.push('\n');
-            }
-            formatted
-        })
-        .collect::<String>()
-        .into_bytes()
-}
-
 #[derive(Debug, Copy, Clone)]
 pub enum StreamFilter {
     FlateDecode,
@@ -506,7 +487,7 @@ impl StreamFilter {
 impl StreamFilter {
     pub fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
-            StreamFilter::FlateDecode => deflate(content),
+            StreamFilter::FlateDecode => deflate_encode(content),
             StreamFilter::AsciiHexDecode => hex_encode(content),
         }
     }
@@ -595,4 +576,23 @@ impl<'a> FilterStream<'a> {
             }
         }
     }
+}
+
+fn deflate_encode(data: &[u8]) -> Vec<u8> {
+    const COMPRESSION_LEVEL: u8 = 6;
+    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
+}
+
+fn hex_encode(data: &[u8]) -> Vec<u8> {
+    data.iter()
+        .enumerate()
+        .map(|(index, byte)| {
+            let mut formatted = format!("{:02X}", byte);
+            if index % 35 == 34 {
+                formatted.push('\n');
+            }
+            formatted
+        })
+        .collect::<String>()
+        .into_bytes()
 }
