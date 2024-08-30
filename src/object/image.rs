@@ -133,6 +133,36 @@ impl Image {
         }))))
     }
 
+    pub fn from_webp(data: &[u8]) -> Option<Self> {
+        let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
+        let mut first_frame = vec![0; decoder.output_buffer_size()?];
+        decoder.read_image(&mut first_frame).ok()?;
+
+        let size = {
+            let (w, h) = decoder.dimensions();
+            Size::from_wh(w as f32, h as f32)?
+        };
+
+        let color_space = if decoder.has_alpha() {
+            ColorSpace::RGBA
+        }   else {
+            ColorSpace::RGB
+        };
+        let image_color_space = color_space.try_into().ok()?;
+
+        let (image_data, mask_data, bits_per_component) =
+            handle_u8_image(first_frame, color_space);
+
+        Some(Self(Arc::new(Prehashed::new(Repr {
+            image_data,
+            mask_data,
+            is_dct_encoded: false,
+            bits_per_component,
+            image_color_space,
+            size: SizeWrapper(size),
+        }))))
+    }
+
     pub fn size(&self) -> Size {
         self.0.size.0
     }

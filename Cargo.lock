@@ -614,6 +614,7 @@ dependencies = [
  "fontdb",
  "gif",
  "image 0.25.2",
+ "image-webp",
  "krilla-macros",
  "miniz_oxide 0.8.0",
  "once_cell",
