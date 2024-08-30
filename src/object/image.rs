@@ -7,7 +7,6 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use zune_jpeg::zune_core::options::DecoderOptions;
 use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
@@ -92,8 +91,7 @@ impl Image {
     }
 
     pub fn from_jpeg(data: &[u8]) -> Option<Self> {
-        let options = DecoderOptions::new_cmd().set_strict_mode(true);
-        let mut decoder = JpegDecoder::new_with_options(data, options);
+        let mut decoder = JpegDecoder::new(data);
         decoder.decode_headers().ok()?;
         let size = {
             let dimensions = decoder.dimensions()?;
