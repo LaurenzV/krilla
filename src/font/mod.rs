@@ -15,10 +15,10 @@ use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
-pub mod bitmap;
-pub mod colr;
-pub mod outline;
-pub mod svg;
+pub(crate) mod bitmap;
+pub(crate) mod colr;
+pub(crate) mod outline;
+pub(crate) mod svg;
 
 /// A OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
 /// It holds a reference to the underlying data as well as some basic information
