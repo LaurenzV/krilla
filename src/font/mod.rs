@@ -20,43 +20,125 @@ pub mod colr;
 pub mod outline;
 pub mod svg;
 
-/// A wrapper struct for implementing the `OutlinePen` trait.
-struct OutlineBuilder(PathBuilder);
+/// A OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
+/// It holds a reference to the underlying data as well as some basic information
+/// about the font.
+///
+/// Cloning and hashing this type is cheap.
+///
+/// While an object of this type is associated with an OTF font, it is only associated
+/// with a specific instance, i.e. with specific variation coordinates and with a specific
+/// index for TrueType collections. This means that if you want to use the same font with
+/// different variation axes, you need to create separate instances.
+#[derive(Clone, Hash, Eq, PartialEq)]
+pub struct Font(Arc<Prehashed<Repr>>);
 
-impl OutlineBuilder {
-    pub fn new() -> Self {
-        Self(PathBuilder::new())
+impl Font {
+    /// Create a new font from some data. The `index` indicates the index that should be
+    /// associated with this font for TrueType collections, otherwise this value should be
+    /// set to 0. The location indicates the variation axes that should be associated with
+    /// the font.
+    pub fn new(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        index: u32,
+        location: Location,
+    ) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
+
+        Font::new_with_info(data, Arc::new(font_info))
     }
 
-    pub fn finish(self) -> Option<Path> {
-        self.0.finish()
+    pub(crate) fn new_with_info(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        font_info: Arc<FontInfo>,
+    ) -> Option<Self> {
+        let font_ref_yoke =
+            Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
+                data.clone(),
+                |data| FontRefWrapper {
+                    font_ref: FontRef::from_index(data.as_ref().as_ref(), 0).unwrap(),
+                },
+            );
+
+        Some(Font(Arc::new(Prehashed::new(Repr {
+            font_data: data,
+            font_ref_yoke,
+            font_info,
+        }))))
+    }
+
+    pub(crate) fn postscript_name(&self) -> Option<&str> {
+        self.0.font_info.postscript_name.as_deref()
+    }
+
+    /// Return the index of the font.
+    pub fn index(&self) -> u32 {
+        self.font_info().index
+    }
+
+    pub(crate) fn font_info(&self) -> Arc<FontInfo> {
+        self.0.font_info.clone()
+    }
+
+    pub(crate) fn cap_height(&self) -> Option<f32> {
+        self.0.font_info.cap_height.map(|n| n.get())
+    }
+
+    pub(crate) fn ascent(&self) -> f32 {
+        self.0.font_info.ascent.get()
+    }
+
+    pub(crate) fn weight(&self) -> f32 {
+        self.0.font_info.weight.get()
+    }
+
+    pub(crate) fn descent(&self) -> f32 {
+        self.0.font_info.descent.get()
+    }
+
+    pub(crate) fn is_monospaced(&self) -> bool {
+        self.0.font_info.is_monospaced
+    }
+
+    pub(crate) fn italic_angle(&self) -> f32 {
+        self.0.font_info.italic_angle.get()
+    }
+
+    pub(crate) fn units_per_em(&self) -> f32 {
+        self.0.font_info.units_per_em as f32
+    }
+
+    pub(crate) fn bbox(&self) -> Rect {
+        self.0.font_info.global_bbox.0
+    }
+
+    pub(crate) fn location_ref(&self) -> LocationRef {
+        (&self.0.font_info.location.0).into()
+    }
+
+    pub(crate) fn font_ref(&self) -> &FontRef {
+        &self.0.font_ref_yoke.get().font_ref
+    }
+
+    pub(crate) fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
+        self.0.font_data.clone()
+    }
+
+    pub(crate) fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
+        self.font_ref()
+            .glyph_metrics(Size::unscaled(), self.location_ref())
+            .advance_width(glyph_id)
     }
 }
 
-impl OutlinePen for OutlineBuilder {
-    fn move_to(&mut self, x: f32, y: f32) {
-        self.0.move_to(x, y);
-    }
-
-    fn line_to(&mut self, x: f32, y: f32) {
-        self.0.line_to(x, y);
-    }
-
-    fn quad_to(&mut self, cx0: f32, cy0: f32, x: f32, y: f32) {
-        self.0.quad_to(cx0, cy0, x, y);
-    }
-
-    fn curve_to(&mut self, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x: f32, y: f32) {
-        self.0.cubic_to(cx0, cy0, cx1, cy1, x, y);
-    }
-
-    fn close(&mut self) {
-        self.0.close()
+impl Debug for Font {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Font {{..}}")
     }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub struct FontInfo {
+pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     location: LocationWrapper,
@@ -88,14 +170,7 @@ impl Hash for Repr {
     }
 }
 
-#[derive(Clone, Hash, Eq, PartialEq)]
-pub struct Font(Arc<Prehashed<Repr>>);
 
-impl Debug for Font {
-    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
 
 impl FontInfo {
     pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
@@ -158,99 +233,6 @@ struct FontRefWrapper<'a> {
     pub font_ref: FontRef<'a>,
 }
 
-impl Font {
-    pub fn new(
-        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
-        index: u32,
-        location: Location,
-    ) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
-
-        Font::new_with_info(data, Arc::new(font_info))
-    }
-
-    pub(crate) fn new_with_info(
-        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
-        font_info: Arc<FontInfo>,
-    ) -> Option<Self> {
-        let font_ref_yoke =
-            Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
-                data.clone(),
-                |data| FontRefWrapper {
-                    font_ref: FontRef::from_index(data.as_ref().as_ref(), 0).unwrap(),
-                },
-            );
-
-        Some(Font(Arc::new(Prehashed::new(Repr {
-            font_data: data,
-            font_ref_yoke,
-            font_info,
-        }))))
-    }
-
-    pub fn postscript_name(&self) -> Option<&str> {
-        self.0.font_info.postscript_name.as_deref()
-    }
-
-    pub fn index(&self) -> u32 {
-        self.font_info().index
-    }
-
-    pub fn font_info(&self) -> Arc<FontInfo> {
-        self.0.font_info.clone()
-    }
-
-    pub fn cap_height(&self) -> Option<f32> {
-        self.0.font_info.cap_height.map(|n| n.get())
-    }
-
-    pub fn ascent(&self) -> f32 {
-        self.0.font_info.ascent.get()
-    }
-
-    pub fn weight(&self) -> f32 {
-        self.0.font_info.weight.get()
-    }
-
-    pub fn descent(&self) -> f32 {
-        self.0.font_info.descent.get()
-    }
-
-    pub fn is_monospaced(&self) -> bool {
-        self.0.font_info.is_monospaced
-    }
-
-    pub fn italic_angle(&self) -> f32 {
-        self.0.font_info.italic_angle.get()
-    }
-
-    pub fn units_per_em(&self) -> f32 {
-        self.0.font_info.units_per_em as f32
-    }
-
-    pub fn bbox(&self) -> Rect {
-        self.0.font_info.global_bbox.0
-    }
-
-    pub fn location_ref(&self) -> LocationRef {
-        (&self.0.font_info.location.0).into()
-    }
-
-    pub fn font_ref(&self) -> &FontRef {
-        &self.0.font_ref_yoke.get().font_ref
-    }
-
-    pub fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
-        self.0.font_data.clone()
-    }
-
-    pub fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
-        self.font_ref()
-            .glyph_metrics(Size::unscaled(), self.location_ref())
-            .advance_width(glyph_id)
-    }
-}
-
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum GlyphType {
     Colr,
@@ -301,5 +283,40 @@ impl FontIdentifier {
             FontIdentifier::Cid(cid) => cid.0.clone(),
             FontIdentifier::Type3(t3) => t3.0.clone(),
         }
+    }
+}
+
+/// A wrapper struct for implementing the `OutlinePen` trait.
+struct OutlineBuilder(PathBuilder);
+
+impl OutlineBuilder {
+    pub fn new() -> Self {
+        Self(PathBuilder::new())
+    }
+
+    pub fn finish(self) -> Option<Path> {
+        self.0.finish()
+    }
+}
+
+impl OutlinePen for OutlineBuilder {
+    fn move_to(&mut self, x: f32, y: f32) {
+        self.0.move_to(x, y);
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        self.0.line_to(x, y);
+    }
+
+    fn quad_to(&mut self, cx0: f32, cy0: f32, x: f32, y: f32) {
+        self.0.quad_to(cx0, cy0, x, y);
+    }
+
+    fn curve_to(&mut self, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x: f32, y: f32) {
+        self.0.cubic_to(cx0, cy0, cx1, cy1, x, y);
+    }
+
+    fn close(&mut self) {
+        self.0.close()
     }
 }
