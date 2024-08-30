@@ -17,6 +17,7 @@ use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use std::sync::Arc;
+use tiny_skia_path::Point;
 
 #[ignore]
 #[test]
@@ -70,7 +71,13 @@ fn simple_shape_demo() {
     for (font, text, dir, size) in data {
         let font = Font::new(font.clone(), 0, Location::default()).unwrap();
         let glyphs = simple_shape(text, dir, font.clone(), size);
-        surface.fill_glyphs(0.0, y, Fill::<Rgb>::default(), &glyphs, font, text);
+        surface.fill_glyphs(
+            Point::from_xy(0.0, y),
+            Fill::<Rgb>::default(),
+            &glyphs,
+            font,
+            text,
+        );
 
         y += size * 2.0;
     }
@@ -128,8 +135,7 @@ fn cosmic_text_integration() {
                 .collect::<Vec<_>>();
 
             surface.fill_glyphs(
-                start_x,
-                y_offset,
+                Point::from_xy(start_x, y_offset),
                 Fill::<Rgb>::default(),
                 &glyphs,
                 font,
@@ -268,8 +274,7 @@ pub fn all_glyphs_to_pdf(
 
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         surface.fill_glyphs(
-            0.0,
-            0.0,
+            Point::from_xy(0.0, 0.0),
             crate::Fill::<Rgb>::default(),
             &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
             font.clone(),

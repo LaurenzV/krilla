@@ -11,7 +11,7 @@ use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
 use std::collections::HashMap;
-use tiny_skia_path::{Path, Size, Transform};
+use tiny_skia_path::{Path, Point, Size, Transform};
 use usvg::NormalizedF32;
 
 pub enum PushInstruction {
@@ -68,8 +68,7 @@ impl<'a> Surface<'a> {
 
     pub fn fill_glyphs<'b, T>(
         &mut self,
-        x: f32,
-        y: f32,
+        start: Point,
         fill: Fill<T>,
         glyphs: &[Glyph],
         font: Font,
@@ -78,13 +77,12 @@ impl<'a> Surface<'a> {
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyphs(x, y, self.sc, fill, glyphs, font, text);
+            .fill_glyphs(start, self.sc, fill, glyphs, font, text);
     }
 
     pub fn stroke_glyphs<'b, T>(
         &mut self,
-        x: f32,
-        y: f32,
+        start: Point,
         stroke: Stroke<T>,
         glyphs: &[Glyph],
         font: Font,
@@ -93,7 +91,7 @@ impl<'a> Surface<'a> {
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyphs(x, y, self.sc, stroke, glyphs, font, text);
+            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text);
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {

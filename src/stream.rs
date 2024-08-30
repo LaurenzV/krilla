@@ -28,7 +28,7 @@ use skrifa::GlyphId;
 use std::cell::RefCell;
 use std::ops::Range;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Rect, Size, Transform};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Size, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
@@ -220,14 +220,14 @@ impl ContentBuilder {
 
     pub fn fill_glyphs<'a>(
         &mut self,
-        x: f32,
-        y: f32,
+        start: Point,
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
         glyphs: &[Glyph],
         font: Font,
         text: &str,
     ) {
+        let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -258,14 +258,14 @@ impl ContentBuilder {
 
     pub fn stroke_glyphs<'a>(
         &mut self,
-        x: f32,
-        y: f32,
+        start: Point,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
         glyphs: &[Glyph],
         font: Font,
         text: &str,
     ) {
+        let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
