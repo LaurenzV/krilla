@@ -1,10 +1,11 @@
 use crate::color_space::device_cmyk::DeviceCmyk;
 use crate::color_space::luma::{DeviceGray, SGray};
 use crate::rgb::{DeviceRgb, Srgb};
-use crate::serialize::SerializerContext;
+use crate::serialize::{FilterStream, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::ops::DerefMut;
 use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
@@ -42,13 +43,16 @@ impl ICCBasedColorSpace {
         array.item(icc_ref);
         array.finish();
 
-        let (stream, filter) = sc.get_binary_stream(self.0.as_ref().as_ref());
+        let icc_stream =
+            FilterStream::new_from_binary_data(self.0.as_ref().as_ref(), &sc.serialize_settings);
 
-        chunk
-            .icc_profile(icc_ref, &stream)
+        let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
+        icc_profile
             .n(self.1 as i32)
-            .range([0.0, 1.0].repeat(self.1 as usize))
-            .filter(filter);
+            .range([0.0, 1.0].repeat(self.1 as usize));
+
+        icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
+        icc_profile.finish();
 
         chunk
     }
