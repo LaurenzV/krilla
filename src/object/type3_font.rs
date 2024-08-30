@@ -1,6 +1,6 @@
 use crate::error::KrillaResult;
 use crate::font;
-use crate::font::{Font, FontIdentifier, GlyphType, Type3Identifier};
+use crate::font::{Font, FontIdentifier, GlyphSource, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
@@ -139,7 +139,7 @@ impl Type3Font {
                 let stream = stream_surface.finish();
                 let mut content = Content::new();
 
-                let stream = if glyph_type == Some(GlyphType::Outline) || stream.is_empty() {
+                let stream = if glyph_type == Some(GlyphSource::Outline) || stream.is_empty() {
                     let bbox = stream.bbox();
                     content.start_shape_glyph(
                         self.widths[index],

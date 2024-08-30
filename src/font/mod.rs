@@ -137,12 +137,20 @@ impl Debug for Font {
     }
 }
 
+/// `FontInfo` holds basic information about the font which is necessary
+/// to distinguish a `Font` object from others. The `Hash` implementation
+/// of the `Font` struct solely depends on its `FontInfo` object. The reason
+/// we do this is to avoid hashing the whole font, which can be dozens of megabytes.
+/// Instead, we parse the most basic information as well as additional distinguishing
+/// information, such as the font name and the checksum, and has this instead.
+/// This is much faster, and since we also include the checksum, the odds of two
+/// different fonts ending up with the same hash is pretty much zero.
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     location: LocationWrapper,
-    pub(crate) units_per_em: u16,
+    units_per_em: u16,
     global_bbox: RectWrapper,
     postscript_name: Option<String>,
     ascent: FiniteF32,
@@ -169,8 +177,6 @@ impl Hash for Repr {
         self.font_info.hash(state);
     }
 }
-
-
 
 impl FontInfo {
     pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
@@ -228,13 +234,16 @@ impl FontInfo {
     }
 }
 
+/// A yoke so that we can attach a `FontRef` object to the corresponding `Font`,
+/// without running into lifetime issues.
 #[derive(Yokeable, Clone)]
 struct FontRefWrapper<'a> {
     pub font_ref: FontRef<'a>,
 }
 
+/// The table from which a drawn glyph stems from.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub enum GlyphType {
+pub enum GlyphSource {
     Colr,
     Svg,
     Outline,
@@ -246,31 +255,38 @@ pub fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     surface: &mut Surface,
-) -> KrillaResult<Option<GlyphType>> {
-    let mut glyph_type = None;
+) -> KrillaResult<Option<GlyphSource>> {
+    let mut glyph_source = None;
 
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
-        glyph_type = Some(GlyphType::Colr);
+        glyph_source = Some(GlyphSource::Colr);
     } else if let Some(()) = svg::draw_glyph(font.clone(), glyph, surface, svg_settings)? {
-        glyph_type = Some(GlyphType::Svg);
+        glyph_source = Some(GlyphSource::Svg);
     } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface)? {
-        glyph_type = Some(GlyphType::Bitmap);
+        glyph_source = Some(GlyphSource::Bitmap);
     } else if let Some(()) = outline::draw_glyph(font.clone(), glyph, surface)? {
-        glyph_type = Some(GlyphType::Outline);
+        glyph_source = Some(GlyphSource::Outline);
     }
 
     surface.pop();
 
-    Ok(glyph_type)
+    Ok(glyph_source)
 }
 
+/// A unique CID identifier.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct CIDIdentifer(pub Font);
+
+/// A unique Type3 font identifier. Type3 fonts can only hold 256 glyphs, which
+/// means that we might have to create more than one Type3 font. This is why we
+/// additionally store an index that indicates which specific Type3Font we are
+/// referring to.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Type3Identifier(pub Font, pub Type3ID);
 
+/// A font identifier for a PDF font.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum FontIdentifier {
     Cid(CIDIdentifer),

@@ -218,7 +218,7 @@ pub fn all_glyphs_to_pdf(
     let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {
-        let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
+        let file = std::fs::read(ASSETS_PATH.join("emojis_full.txt")).unwrap();
         let file = std::str::from_utf8(&file).unwrap();
         file.chars()
             .filter_map(|c| {
