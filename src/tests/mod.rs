@@ -181,7 +181,7 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
 
         let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
-        let threshold = 0;
+        let threshold = env::var("KRILLA_THRESHOLD").unwrap_or("0".to_string()).parse::<u32>().unwrap();
         if pixel_diff > threshold {
             let diff_path = DIFFS_PATH.join(format!("{}.png", name));
             diff_image
