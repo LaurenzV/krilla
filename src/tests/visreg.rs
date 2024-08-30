@@ -45,7 +45,7 @@ fn linear_gradient(surface: &mut Surface) {
         ],
     };
 
-    surface.draw_path(
+    surface.fill_path(
         &path,
         Fill {
             paint: Paint::LinearGradient(gradient),
@@ -97,7 +97,7 @@ fn cosmic_text(surface: &mut Surface) {
                 })
                 .collect::<Vec<_>>();
 
-            surface.draw_glyph_run(
+            surface.fill_glyphs(
                 start_x,
                 y_offset,
                 Fill::<Rgb>::default(),

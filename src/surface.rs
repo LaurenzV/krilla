@@ -31,32 +31,6 @@ pub struct Surface<'a> {
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
-pub enum FillOrStroke<T>
-where
-    T: ColorSpace,
-{
-    Fill(Fill<T>),
-    Stroke(Stroke<T>),
-}
-
-impl<T> Into<FillOrStroke<T>> for Stroke<T>
-where
-    T: ColorSpace,
-{
-    fn into(self) -> FillOrStroke<T> {
-        FillOrStroke::Stroke(self)
-    }
-}
-
-impl<T> Into<FillOrStroke<T>> for Fill<T>
-where
-    T: ColorSpace,
-{
-    fn into(self) -> FillOrStroke<T> {
-        FillOrStroke::Fill(self)
-    }
-}
-
 impl<'a> Surface<'a> {
     pub fn new(
         sc: &'a mut SerializerContext,
@@ -76,43 +50,50 @@ impl<'a> Surface<'a> {
         StreamBuilder::new(&mut self.sc)
     }
 
-    pub fn draw_path<T>(&mut self, path: &Path, mode: impl Into<FillOrStroke<T>>)
+    pub fn fill_path<T>(&mut self, path: &Path, fill: Fill<T>)
     where
         T: ColorSpace,
     {
-        match mode.into() {
-            FillOrStroke::Fill(fill) => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_path(path, fill, self.sc);
-            }
-            FillOrStroke::Stroke(stroke) => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_path(path, stroke, self.sc);
-            }
-        }
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path(path, fill, self.sc);
     }
 
-    pub fn draw_glyph_run<'b, T>(
+    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>)
+    where
+        T: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .stroke_path(path, stroke, self.sc);
+    }
+
+    pub fn fill_glyphs<'b, T>(
         &mut self,
         x: f32,
         y: f32,
-        mode: impl Into<FillOrStroke<T>>,
+        fill: Fill<T>,
         glyphs: &[Glyph],
         font: Font,
         text: &str,
     ) where
         T: ColorSpace,
     {
-        match mode.into() {
-            FillOrStroke::Fill(fill) => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .fill_glyph_run(x, y, self.sc, fill, glyphs, font, text);
-            }
-            FillOrStroke::Stroke(stroke) => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .stroke_glyph_run(x, y, self.sc, stroke, glyphs, font, text);
-            }
-        };
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_glyphs(x, y, self.sc, fill, glyphs, font, text);
+    }
+
+    pub fn stroke_glyphs<'b, T>(
+        &mut self,
+        x: f32,
+        y: f32,
+        stroke: Stroke<T>,
+        glyphs: &[Glyph],
+        font: Font,
+        text: &str,
+    ) where
+        T: ColorSpace,
+    {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .stroke_glyphs(x, y, self.sc, stroke, glyphs, font, text);
     }
 
     pub fn push_transform(&mut self, transform: &Transform) {

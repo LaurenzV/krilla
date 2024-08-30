@@ -60,7 +60,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             });
 
             let fill_op = |sb: &mut Surface, fill: Fill<Rgb>, font: Font| {
-                sb.draw_glyph_run(
+                sb.fill_glyphs(
                     0.0,
                     0.0,
                     fill,
@@ -79,7 +79,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             };
 
             let stroke_op = |sb: &mut Surface, stroke: Stroke<Rgb>, font: Font| {
-                sb.draw_glyph_run(
+                sb.stroke_glyphs(
                     0.0,
                     0.0,
                     stroke,

@@ -218,7 +218,7 @@ impl ContentBuilder {
         self.content_restore_state();
     }
 
-    pub fn fill_glyph_run<'a>(
+    pub fn fill_glyphs<'a>(
         &mut self,
         x: f32,
         y: f32,
@@ -256,7 +256,7 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_glyph_run<'a>(
+    pub fn stroke_glyphs<'a>(
         &mut self,
         x: f32,
         y: f32,

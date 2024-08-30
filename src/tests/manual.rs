@@ -70,7 +70,7 @@ fn simple_shape_demo() {
     for (font, text, dir, size) in data {
         let font = Font::new(font.clone(), 0, Location::default()).unwrap();
         let glyphs = simple_shape(text, dir, font.clone(), size);
-        surface.draw_glyph_run(0.0, y, Fill::<Rgb>::default(), &glyphs, font, text);
+        surface.fill_glyphs(0.0, y, Fill::<Rgb>::default(), &glyphs, font, text);
 
         y += size * 2.0;
     }
@@ -127,7 +127,7 @@ fn cosmic_text_integration() {
                 })
                 .collect::<Vec<_>>();
 
-            surface.draw_glyph_run(
+            surface.fill_glyphs(
                 start_x,
                 y_offset,
                 Fill::<Rgb>::default(),
@@ -267,7 +267,7 @@ pub fn all_glyphs_to_pdf(
         }
 
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        surface.draw_glyph_run(
+        surface.fill_glyphs(
             0.0,
             0.0,
             crate::Fill::<Rgb>::default(),
