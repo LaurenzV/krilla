@@ -128,7 +128,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let string_ident = ident.to_string();
         matches!(string_ident.as_str(), "pdfium" | "mupdf" | "pdfbox" | "ghostscript" | "pdfjs" | "poppler" | "quartz" | "all")
     }) {
-        mupdf = true;
+        pdfium = true;
     }
 
     for identifier in attrs.identifiers {
