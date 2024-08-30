@@ -51,9 +51,18 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
+    let common = quote! {
+        use crate::tests::SKIP_SNAPSHOT;
+
+        if SKIP_SNAPSHOT.is_some() {
+            return;
+        }
+    };
+
     let fn_content = match mode {
         SnapshotMode::SerializerContext => {
             quote! {
+                #common
                 let settings = SerializeSettings::#serialize_settings();
                 let mut sc = SerializerContext::new(settings);
                 #impl_ident(&mut sc);
@@ -62,6 +71,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
         SnapshotMode::SinglePage => {
             quote! {
+                #common
                 let settings = SerializeSettings::#serialize_settings();
                 let mut db = Document::new(settings);
                 let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
@@ -72,6 +82,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
         SnapshotMode::Document => {
             quote! {
+                #common
                 let settings = SerializeSettings::#serialize_settings();
                 let mut db = Document::new(settings);
                 #impl_ident(&mut db);
@@ -211,12 +222,16 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #quartz_snippet
                 #[test]
                 fn #name() {
-                    use crate::tests::{render_document, check_render};
+                    use crate::tests::{render_document, check_render, SKIP_VISREG};
                     use crate::Size;
                     use crate::document::Document;
                     use crate::serialize::SerializeSettings;
                     use sitro::Renderer;
                     let renderer = #renderer_ident;
+
+                    if SKIP_VISREG.is_some() {
+                        return;
+                    }
                     #fn_body
                 }
             }
