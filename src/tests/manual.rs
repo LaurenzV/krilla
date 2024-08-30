@@ -7,7 +7,7 @@ use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::tests::{
-    load_jpg_image, write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO,
+    write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO,
     NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
 };
 use crate::util::SliceExt;

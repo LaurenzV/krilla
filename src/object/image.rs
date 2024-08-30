@@ -1,10 +1,8 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color_space::{DEVICE_CMYK, DEVICE_RGB};
 use crate::error::KrillaResult;
 use crate::object::color_space::DEVICE_GRAY;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
-use image::codecs::gif::GifDecoder;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -33,8 +31,7 @@ impl BitsPerComponent {
 #[derive(Debug, Hash, Eq, PartialEq)]
 enum ImageColorspace {
     Rgb,
-    Luma,
-    Cmyk,
+    Luma
 }
 
 impl TryFrom<ColorSpace> for ImageColorspace {
@@ -216,7 +213,6 @@ impl Object for Image {
             ImageColorspace::Luma => {
                 image_x_object.pair(Name(b"ColorSpace"), sc.gray());
             }
-            ImageColorspace::Cmyk => {}
         };
 
         image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);

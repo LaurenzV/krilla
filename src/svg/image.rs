@@ -40,6 +40,5 @@ pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut 
             group::render(t.root(), surface, process_context);
             surface.pop();
         }
-        _ => unimplemented!(),
     }
 }
