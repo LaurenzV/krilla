@@ -3,7 +3,10 @@ use crate::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
-use crate::tests::{load_png_image, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI, load_jpg_image};
+use crate::tests::{
+    load_gif_image, load_jpg_image, load_png_image, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS,
+    TWITTER_COLOR_EMOJI,
+};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -150,6 +153,12 @@ fn jpg_image_impl(surface: &mut Surface, name: &str) {
     surface.draw_image(image, size);
 }
 
+fn gif_image_impl(surface: &mut Surface, name: &str) {
+    let image = load_gif_image(name);
+    let size = image.size();
+    surface.draw_image(image, size);
+}
+
 #[visreg(all)]
 fn image_luma8_png(surface: &mut Surface) {
     png_image_impl(surface, "luma8.png");
@@ -188,4 +197,14 @@ fn image_luma8_jpg(surface: &mut Surface) {
 #[visreg(all)]
 fn image_rgb8_jpg(surface: &mut Surface) {
     jpg_image_impl(surface, "rgb8.jpg");
+}
+
+#[visreg(all)]
+fn image_rgb8_gif(surface: &mut Surface) {
+    gif_image_impl(surface, "rgb8.gif");
+}
+
+#[visreg(all)]
+fn image_rgba8_gif(surface: &mut Surface) {
+    gif_image_impl(surface, "rgba8.gif");
 }

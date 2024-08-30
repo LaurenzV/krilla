@@ -92,6 +92,10 @@ pub fn load_jpg_image(name: &str) -> Image {
     Image::from_jpeg(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
 }
 
+pub fn load_gif_image(name: &str) -> Image {
+    Image::from_gif(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+}
+
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("snapshots");
     let _ = std::fs::create_dir_all(&path);

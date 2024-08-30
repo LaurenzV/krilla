@@ -3,6 +3,7 @@ use crate::error::KrillaResult;
 use crate::object::color_space::DEVICE_GRAY;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
+use image::codecs::gif::GifDecoder;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -111,6 +112,27 @@ impl Image {
         }))))
     }
 
+    pub fn from_gif(data: &[u8]) -> Option<Self> {
+        let mut decoder = gif::DecodeOptions::new();
+        decoder.set_color_output(gif::ColorOutput::RGBA);
+        let mut decoder = decoder.read_info(data).ok()?;
+        let first_frame = decoder.read_next_frame().ok()??;
+
+        let size = Size::from_wh(first_frame.width as f32, first_frame.height as f32)?;
+
+        let (image_data, mask_data, bits_per_component) =
+            handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
+
+        Some(Self(Arc::new(Prehashed::new(Repr {
+            image_data,
+            mask_data,
+            is_dct_encoded: false,
+            bits_per_component,
+            image_color_space: ImageColorspace::Rgb,
+            size: SizeWrapper(size),
+        }))))
+    }
+
     pub fn size(&self) -> Size {
         self.0.size.0
     }
@@ -142,7 +164,7 @@ impl Object for Image {
 
         let image_stream = if self.0.is_dct_encoded {
             FilterStream::new_from_dct_encoded(&self.0.image_data, &sc.serialize_settings)
-        }   else {
+        } else {
             FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings)
         };
 

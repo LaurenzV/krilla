@@ -612,6 +612,7 @@ dependencies = [
  "flate2",
  "float-cmp",
  "fontdb",
+ "gif",
  "image 0.25.2",
  "krilla-macros",
  "miniz_oxide 0.8.0",

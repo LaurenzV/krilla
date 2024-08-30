@@ -67,6 +67,7 @@ yoke = { workspace = true }
 float-cmp = { workspace = true }
 zune-png = "0.4.10"
 zune-jpeg = "0.4.13"
+gif = "0.13.1"
 
 [dev-dependencies]
 difference = { workspace = true }
