@@ -1,5 +1,6 @@
 use crate::color_space::device_cmyk::DeviceCmyk;
 use crate::color_space::luma::{DeviceGray, SGray};
+use crate::error::KrillaResult;
 use crate::rgb::{DeviceRgb, Srgb};
 use crate::serialize::{FilterStream, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -33,7 +34,7 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
 impl ICCBasedColorSpace {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -54,7 +55,7 @@ impl ICCBasedColorSpace {
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 
@@ -147,6 +148,7 @@ pub mod rgb {
     use std::sync::Arc;
 
     use crate::chunk_container::ChunkContainer;
+    use crate::error::KrillaResult;
     use pdf_writer::{Chunk, Ref};
 
     /// An RGB color.
@@ -222,7 +224,7 @@ pub mod rgb {
             &mut cc.color_spaces
         }
 
-        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
             let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
             icc_based.serialize_into(sc, root_ref)
         }
@@ -240,6 +242,7 @@ pub mod rgb {
 /// A module for dealing with device luma (= grayscale) colors.
 pub mod luma {
     use crate::chunk_container::ChunkContainer;
+    use crate::error::KrillaResult;
     use crate::object::color_space::{
         ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor,
     };
@@ -313,7 +316,7 @@ pub mod luma {
             &mut cc.color_spaces
         }
 
-        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
             let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
             icc_based.serialize_into(sc, root_ref)
         }
@@ -348,11 +351,11 @@ mod tests {
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_object(ColorSpaceResource::SGray(SGray));
+        sc.add_object(ColorSpaceResource::SGray(SGray)).unwrap();
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_object(ColorSpaceResource::Srgb(Srgb));
+        sc.add_object(ColorSpaceResource::Srgb(Srgb)).unwrap();
     }
 }

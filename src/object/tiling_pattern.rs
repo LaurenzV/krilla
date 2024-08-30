@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
@@ -59,7 +60,7 @@ impl Object for TilingPattern {
         &mut cc.patterns
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let pattern_stream =
@@ -69,7 +70,7 @@ impl Object for TilingPattern {
 
         self.stream
             .resource_dictionary()
-            .to_pdf_resources(sc, &mut tiling_pattern);
+            .to_pdf_resources(sc, &mut tiling_pattern)?;
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width.get(), self.height.get());
 
@@ -83,6 +84,6 @@ impl Object for TilingPattern {
 
         tiling_pattern.finish();
 
-        chunk
+        Ok(chunk)
     }
 }

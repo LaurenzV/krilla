@@ -1,3 +1,4 @@
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
@@ -12,7 +13,7 @@ pub fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     builder: &mut Surface,
-) -> Option<()> {
+) -> KrillaResult<Option<()>> {
     if let Ok(Some(svg_data)) = font
         .font_ref()
         .svg()
@@ -23,16 +24,22 @@ pub fn draw_glyph(
         let mut decoded = vec![];
         if data.starts_with(&[0x1f, 0x8b]) {
             let mut decoder = flate2::read::GzDecoder::new(data);
-            decoder.read_to_end(&mut decoded).unwrap();
+            decoder.read_to_end(&mut decoded).map_err(|_| {
+                KrillaError::GlyphDrawing("failed to parse SVG for glyph".to_string())
+            })?;
             data = &decoded;
         }
 
-        let xml = std::str::from_utf8(data).ok().unwrap();
-        let document = roxmltree::Document::parse(xml).ok().unwrap();
+        let xml = std::str::from_utf8(data)
+            .map_err(|_| KrillaError::GlyphDrawing("failed to parse SVG for glyph".to_string()))?;
+        let document = roxmltree::Document::parse(xml)
+            .map_err(|_| KrillaError::GlyphDrawing("failed to parse SVG for glyph".to_string()))?;
 
         // TODO: Add cache for SVG glyphs
         let opts = usvg::Options::default();
-        let tree = usvg::Tree::from_xmltree(&document, &opts).unwrap();
+        let tree = usvg::Tree::from_xmltree(&document, &opts).map_err(|_| {
+            KrillaError::GlyphDrawing("failed to convert SVG for glyph".to_string())
+        })?;
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
             svg::render_node(&node, tree.fontdb().clone(), svg_settings, builder)
         } else {
@@ -41,8 +48,8 @@ pub fn draw_glyph(
             svg::render_tree(&tree, svg_settings, builder)
         };
 
-        return Some(());
+        return Ok(Some(()));
     };
 
-    None
+    Ok(None)
 }

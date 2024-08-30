@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::font::FontIdentifier;
 use crate::object::color_space::luma::SGray;
 use crate::object::color_space::rgb::Srgb;
@@ -121,7 +122,7 @@ impl Object for XObjectResource {
         }
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
             XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
             XObjectResource::Image(i) => i.serialize_into(sc, root_ref),
@@ -150,7 +151,7 @@ impl Object for PatternResource {
         &mut cc.patterns
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
             PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
             PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
@@ -238,7 +239,11 @@ pub(crate) struct ResourceDictionary {
 }
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(&self, sc: &mut SerializerContext, parent: &mut T)
+    pub fn to_pdf_resources<T>(
+        &self,
+        sc: &mut SerializerContext,
+        parent: &mut T,
+    ) -> KrillaResult<()>
     where
         T: ResourcesExt,
     {
@@ -249,12 +254,14 @@ impl ResourceDictionary {
             ProcSet::ImageColor,
             ProcSet::ImageGrayscale,
         ]);
-        write_resource_type(sc, resources, &self.color_spaces);
-        write_resource_type(sc, resources, &self.ext_g_states);
-        write_resource_type(sc, resources, &self.patterns);
-        write_resource_type(sc, resources, &self.x_objects);
-        write_resource_type(sc, resources, &self.shadings);
-        write_resource_type(sc, resources, &self.fonts);
+        write_resource_type(sc, resources, &self.color_spaces)?;
+        write_resource_type(sc, resources, &self.ext_g_states)?;
+        write_resource_type(sc, resources, &self.patterns)?;
+        write_resource_type(sc, resources, &self.x_objects)?;
+        write_resource_type(sc, resources, &self.shadings)?;
+        write_resource_type(sc, resources, &self.fonts)?;
+
+        Ok(())
     }
 }
 
@@ -262,18 +269,21 @@ fn write_resource_type<T>(
     sc: &mut SerializerContext,
     resources: &mut Resources,
     resource_list: &ResourceList<T>,
-) where
+) -> KrillaResult<()>
+where
     T: Hash + Eq + ResourceTrait + Into<Resource> + Debug + Clone,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
 
         for (name, entry) in resource_list.get_entries() {
-            dict.pair(name.to_pdf_name(), sc.add_resource(entry));
+            dict.pair(name.to_pdf_name(), sc.add_resource(entry)?);
         }
 
         dict.finish();
     }
+
+    Ok(())
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -371,7 +381,7 @@ impl Object for ColorSpaceResource {
         &mut cc.color_spaces
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
             ColorSpaceResource::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
             ColorSpaceResource::SGray(sgray) => sgray.serialize_into(sc, root_ref),

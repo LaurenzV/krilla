@@ -13,6 +13,7 @@ pub mod svg;
 pub mod transform;
 pub mod util;
 
+mod error;
 #[cfg(test)]
 pub mod tests;
 

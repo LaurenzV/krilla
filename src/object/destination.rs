@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Ref};
 use std::hash::{Hash, Hasher};
@@ -14,7 +15,7 @@ impl Object for Destination {
         &mut cc.destinations
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
             Destination::Xyz(xyz) => xyz.serialize_into(sc, root_ref),
         }
@@ -52,7 +53,7 @@ impl Object for XyzDestination {
         &mut cc.destinations
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let page_ref = sc.page_infos()[self.page_index].ref_;
         let page_size = sc.page_infos()[self.page_index].media_box.height();
 
@@ -68,6 +69,6 @@ impl Object for XyzDestination {
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
 
-        chunk
+        Ok(chunk)
     }
 }

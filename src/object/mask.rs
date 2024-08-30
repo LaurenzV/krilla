@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::serialize::{Object, SerializerContext};
@@ -97,7 +98,7 @@ impl Object for Mask {
         &mut cc.masks
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let x_ref = sc.add_object(XObject::new(
@@ -105,7 +106,7 @@ impl Object for Mask {
             false,
             true,
             self.custom_bbox.map(|c| c.0),
-        ));
+        ))?;
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
@@ -114,7 +115,7 @@ impl Object for Mask {
 
         dict.finish();
 
-        chunk
+        Ok(chunk)
     }
 }
 
@@ -148,7 +149,7 @@ mod tests {
         );
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
-        sc.add_object(mask);
+        sc.add_object(mask).unwrap();
     }
 
     #[snapshot]
