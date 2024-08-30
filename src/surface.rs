@@ -66,7 +66,7 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc);
     }
 
-    pub fn fill_glyphs<'b, T>(
+    pub fn fill_glyphs<T>(
         &mut self,
         start: Point,
         fill: Fill<T>,
@@ -80,7 +80,7 @@ impl<'a> Surface<'a> {
             .fill_glyphs(start, self.sc, fill, glyphs, font, text);
     }
 
-    pub fn stroke_glyphs<'b, T>(
+    pub fn stroke_glyphs<T>(
         &mut self,
         start: Point,
         stroke: Stroke<T>,
