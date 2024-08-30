@@ -7,12 +7,11 @@ use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::tests::{
-    simple_shape, write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO,
-    NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
+    write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS,
+    NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
 };
 use crate::util::SliceExt;
 use crate::Fill;
-use rustybuzz::Direction;
 use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
@@ -28,38 +27,28 @@ fn simple_shape_demo() {
         (
             NOTO_SANS_ARABIC.clone(),
             "هذا نص أطول لتجربة القدرات.",
-            Direction::RightToLeft,
             14.0,
         ),
         (
             NOTO_SANS.clone(),
             "Hi there, this is a very simple test!",
-            Direction::LeftToRight,
             14.0,
         ),
         (
             DEJAVU_SANS_MONO.clone(),
             "Here with a mono font, some longer text.",
-            Direction::LeftToRight,
             16.0,
         ),
-        (NOTO_SANS.clone(), "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢", Direction::LeftToRight, 14.0),
-        (
-            NOTO_SANS.clone(),
-            " birth\u{ad}day ",
-            Direction::LeftToRight,
-            14.0,
-        ),
+        (NOTO_SANS.clone(), "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦̳͆̏̓͢", 14.0),
+        (NOTO_SANS.clone(), " birth\u{ad}day ", 14.0),
         (
             NOTO_SANS_CJK.clone(),
             "你好世界，这是一段很长的测试文章",
-            Direction::LeftToRight,
             14.0,
         ),
         (
             NOTO_SANS_DEVANAGARI.clone(),
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
-            Direction::LeftToRight,
             14.0,
         ),
     ];
@@ -68,14 +57,14 @@ fn simple_shape_demo() {
     let mut builder = document_builder.start_page(page_size);
     let mut surface = builder.surface();
 
-    for (font, text, dir, size) in data {
+    for (font, text, size) in data {
         let font = Font::new(font.clone(), 0, Location::default()).unwrap();
-        let glyphs = simple_shape(text, dir, font.clone(), size);
-        surface.fill_glyphs(
+        surface.fill_text(
             Point::from_xy(0.0, y),
             Fill::<Rgb>::default(),
-            &glyphs,
             font,
+            size,
+            &[],
             text,
         );
 

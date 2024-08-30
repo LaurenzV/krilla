@@ -10,6 +10,8 @@ use crate::stream::{ContentBuilder, Glyph, Stream};
 use crate::{Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
+use rustybuzz::{Direction, Feature, UnicodeBuffer};
+use skrifa::GlyphId;
 use std::collections::HashMap;
 use tiny_skia_path::{Path, Point, Size, Transform};
 use usvg::NormalizedF32;
@@ -78,6 +80,38 @@ impl<'a> Surface<'a> {
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_glyphs(start, self.sc, fill, glyphs, font, text);
+    }
+
+    pub fn fill_text<T>(
+        &mut self,
+        start: Point,
+        fill: Fill<T>,
+        font: Font,
+        font_size: f32,
+        features: &[Feature],
+        text: &str,
+    ) where
+        T: ColorSpace,
+    {
+        let glyphs = naive_shape(text, font.clone(), features, font_size);
+
+        self.fill_glyphs(start, fill, &glyphs, font, text);
+    }
+
+    pub fn stroke_text<T>(
+        &mut self,
+        start: Point,
+        stroke: Stroke<T>,
+        font: Font,
+        font_size: f32,
+        features: &[Feature],
+        text: &str,
+    ) where
+        T: ColorSpace,
+    {
+        let glyphs = naive_shape(text, font.clone(), features, font_size);
+
+        self.stroke_glyphs(start, stroke, &glyphs, font, text);
     }
 
     pub fn stroke_glyphs<T>(
@@ -217,6 +251,79 @@ impl Drop for Surface<'_> {
         debug_assert!(self.push_instructions.is_empty());
         (self.finish_fn)(root_builder.finish())
     }
+}
+
+fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<Glyph> {
+    let data = font.font_data();
+    let rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
+
+    let mut buffer = UnicodeBuffer::new();
+    buffer.push_str(text);
+    buffer.guess_segment_properties();
+
+    let dir = buffer.direction();
+
+    let output = rustybuzz::shape(&rb_font, features, buffer);
+
+    let positions = output.glyph_positions();
+    let infos = output.glyph_infos();
+
+    let mut glyphs = vec![];
+
+    for i in 0..output.len() {
+        let pos = positions[i];
+        let start_info = infos[i];
+
+        let start = start_info.cluster as usize;
+
+        let end = if dir == Direction::LeftToRight {
+            let mut e = i.checked_add(1);
+            loop {
+                if let Some(index) = e {
+                    if let Some(end_info) = infos.get(index) {
+                        if end_info.cluster == start_info.cluster {
+                            e = index.checked_add(1);
+                            continue;
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            e
+        } else {
+            let mut e = i.checked_sub(1);
+            loop {
+                if let Some(index) = e {
+                    if let Some(end_info) = infos.get(index) {
+                        if end_info.cluster == start_info.cluster {
+                            e = index.checked_sub(1);
+                        } else {
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            e
+        }
+        .and_then(|last| infos.get(last))
+        .map_or(text.len(), |info| info.cluster as usize);
+
+        glyphs.push(Glyph::new(
+            GlyphId::new(start_info.glyph_id),
+            (pos.x_advance as f32 / font.units_per_em()) * size,
+            (pos.x_offset as f32 / font.units_per_em()) * size,
+            (pos.y_offset as f32 / font.units_per_em()) * size,
+            start..end,
+            size,
+        ));
+    }
+
+    glyphs
 }
 
 pub struct PageBuilder<'a> {

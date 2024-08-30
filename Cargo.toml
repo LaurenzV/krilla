@@ -58,6 +58,7 @@ siphasher = { workspace = true }
 skrifa = { workspace = true }
 tiny-skia = { workspace = true }
 subsetter = { workspace = true }
+rustybuzz = { workspace = true }
 tiny-skia-path = { workspace = true }
 usvg = { workspace = true }
 flate2 = { workspace = true }
@@ -68,7 +69,6 @@ float-cmp = { workspace = true }
 [dev-dependencies]
 difference = { workspace = true }
 paste = { workspace = true }
-rustybuzz = { workspace = true }
 sitro = { workspace = true }
 cosmic-text = { workspace = true }
 krilla-macros = { workspace = true }
