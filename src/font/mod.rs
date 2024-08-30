@@ -291,7 +291,7 @@ pub fn draw_glyph(
         glyph_type = Some(GlyphType::Svg);
     } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Bitmap);
-    } else if let Some(()) = outline::draw_glyph(font.clone(), glyph, surface) {
+    } else if let Some(()) = outline::draw_glyph(font.clone(), glyph, surface)? {
         glyph_type = Some(GlyphType::Outline);
     }
 
