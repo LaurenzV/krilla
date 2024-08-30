@@ -1,5 +1,6 @@
+use crate::image::Image;
 use difference::{Changeset, Difference};
-use image::{DynamicImage, load_from_memory, Rgba, RgbaImage};
+use image::{load_from_memory, DynamicImage, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -10,7 +11,6 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{Path, PathBuilder, Rect};
-use crate::image::Image;
 
 mod manual;
 mod visreg;
@@ -85,7 +85,7 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
 }
 
 pub fn load_image(name: &str) -> Image {
-    Image::new(&load_from_memory(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap())
+    Image::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap())
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {

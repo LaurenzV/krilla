@@ -65,6 +65,8 @@ flate2 = { workspace = true }
 fontdb = { workspace = true }
 yoke = { workspace = true }
 float-cmp = { workspace = true }
+zune-png = "0.4.10"
+zune-jpeg = "0.4.13"
 
 [dev-dependencies]
 difference = { workspace = true }
