@@ -21,26 +21,12 @@ pub struct Repr {
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: u8,
+    is_rgb: bool
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
 
-trait ColorSpaceExt {
-    fn bits_per_component(&self) -> u8;
-}
-
-impl ColorSpaceExt for ColorSpace {
-    fn bits_per_component(&self) -> u8 {
-        match self {
-            ColorSpace::RGB => 24,
-            ColorSpace::RGBA => 24,
-            ColorSpace::Luma => 8,
-            ColorSpace::LumaA => 8,
-            _ => unreachable!(),
-        }
-    }
-}
 
 // TODO: Improve this so:
 // 1) Users are not forced to pass a dynamic image
@@ -48,7 +34,15 @@ impl ColorSpaceExt for ColorSpace {
 impl Image {
     pub fn from_png(data: &[u8]) -> Self {
         let mut decoder = PngDecoder::new(data);
+        decoder.decode_headers().unwrap();
         let color_space = decoder.get_colorspace().unwrap();
+        let is_rgb = match color_space {
+            ColorSpace::RGB => true,
+            ColorSpace::RGBA => true,
+            ColorSpace::Luma => false,
+            ColorSpace::LumaA => false,
+            _ => unreachable!()
+        };
         // TODO: Use Intsize
         let size = {
             let info = decoder.get_info().unwrap();
@@ -64,7 +58,8 @@ impl Image {
         Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            bits_per_component: color_space.bits_per_component(),
+            bits_per_component: 8,
+            is_rgb,
             size: SizeWrapper(size),
         })))
     }
@@ -116,7 +111,7 @@ impl Object for Image {
         image_x_object.width(self.0.size.width() as i32);
         image_x_object.height(self.0.size.height() as i32);
 
-        if self.0.bits_per_component > 8 {
+        if self.0.is_rgb {
             image_x_object.pair(Name(b"ColorSpace"), sc.rgb());
         } else {
             image_x_object.pair(Name(b"ColorSpace"), sc.gray());
