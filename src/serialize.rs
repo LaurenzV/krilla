@@ -83,7 +83,7 @@ impl SerializeSettings {
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
-            ascii_compatible: true,
+            ascii_compatible: false,
             compress_content_streams: true,
             no_device_cs: false,
             force_type3_fonts: false,

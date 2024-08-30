@@ -10,8 +10,10 @@ use std::sync::Arc;
 use tiny_skia_path::Size;
 use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
+use zune_jpeg::zune_core::options::DecoderOptions;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
+use crate::color_space::{DEVICE_CMYK, DEVICE_RGB};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 enum BitsPerComponent {
@@ -93,20 +95,26 @@ impl Image {
     }
 
     pub fn from_jpeg(data: &[u8]) -> Option<Self> {
-        let mut decoder = JpegDecoder::new(data);
+        let options = DecoderOptions::new_cmd().set_strict_mode(true);
+        let mut decoder = JpegDecoder::new_with_options(data, options);
         decoder.decode_headers().ok()?;
         let size = {
             let dimensions = decoder.dimensions()?;
             Size::from_wh(dimensions.0 as f32, dimensions.1 as f32)?
         };
+
         let color_space = decoder.get_output_colorspace()?;
         let image_color_space = color_space.try_into().ok()?;
 
+        let decoded = decoder.decode().ok()?;
+        let (image_data, _, bits_per_component) = handle_u8_image(decoded, color_space);
+
+
         Some(Self(Arc::new(Prehashed::new(Repr {
-            image_data: data.to_vec(),
+            image_data,
             mask_data: None,
-            is_dct_encoded: true,
-            bits_per_component: BitsPerComponent::Eight,
+            is_dct_encoded: false,
+            bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
         }))))
@@ -204,9 +212,9 @@ impl Object for Image {
         image_x_object.height(self.0.size.height() as i32);
 
         match self.0.image_color_space {
-            ImageColorspace::Rgb => image_x_object.pair(Name(b"ColorSpace"), sc.rgb()),
-            ImageColorspace::Luma => image_x_object.pair(Name(b"ColorSpace"), sc.gray()),
-            ImageColorspace::Cmyk => unimplemented!(),
+            ImageColorspace::Rgb => {image_x_object.pair(Name(b"ColorSpace"), sc.rgb());},
+            ImageColorspace::Luma => {image_x_object.pair(Name(b"ColorSpace"), sc.gray());},
+            ImageColorspace::Cmyk => {},
         };
 
         image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);

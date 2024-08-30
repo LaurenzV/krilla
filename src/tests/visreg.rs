@@ -202,6 +202,11 @@ fn image_rgb8_jpg(surface: &mut Surface) {
     jpg_image_impl(surface, "rgb8.jpg");
 }
 
+#[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+fn image_cmyk_jpg(surface: &mut Surface) {
+    jpg_image_impl(surface, "cmyk.jpg");
+}
+
 #[visreg(all)]
 fn image_rgb8_gif(surface: &mut Surface) {
     gif_image_impl(surface, "rgb8.gif");
