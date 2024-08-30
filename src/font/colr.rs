@@ -14,29 +14,27 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
+/// Draw a COLR-based glyph on a surface.
 pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
     let colr_glyphs = font.font_ref().color_glyphs();
 
     if let Some(colr_glyph) = colr_glyphs.get(glyph) {
         surface.push_transform(&Transform::from_scale(1.0, -1.0));
+
         let mut colr_canvas = ColrCanvas::new(font.clone(), surface);
         colr_glyph
             .paint(font.location_ref(), &mut colr_canvas)
-            .map_err(|e| {
-                KrillaError::GlyphDrawing(format!(
-                    "failed to draw glyph COLR glyph {} of font {}: {}",
-                    glyph,
-                    font.postscript_name().unwrap_or("unknown"),
-                    e
-                ))
-            })?;
+            .map_err(|_| KrillaError::GlyphDrawing("failed to draw colr glyph".to_string()))?;
+
         surface.pop();
+
         return Ok(Some(()));
     } else {
         return Ok(None);
     }
 }
 
+/// The context necessary for drawing a COLR-based glyph.
 struct ColrCanvas<'a, 'b> {
     font: Font,
     clips: Vec<Vec<Path>>,
@@ -68,15 +66,14 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
                 .font
                 .font_ref()
                 .cpal()
-                .map_err(|_| {
-                    KrillaError::GlyphDrawing("missing CPAL table in COLR font".to_string())
-                })?
+                .map_err(|_| KrillaError::GlyphDrawing("missing cpal table".to_string()))?
                 .color_records_array()
                 .ok_or(KrillaError::GlyphDrawing(
-                    "missing color records array in CPAL table".to_string(),
+                    "missing color records array in cpal table".to_string(),
                 ))?
-                .map_err(|_| KrillaError::GlyphDrawing("unable to read CPAL table".to_string()))?
-                [palette_index as usize];
+                .map_err(|_| {
+                    KrillaError::GlyphDrawing("error while reading cpal table".to_string())
+                })?[palette_index as usize];
 
             Ok((
                 rgb::Color::new(color.red, color.green, color.blue),
@@ -154,10 +151,9 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
         let mut glyph_builder = OutlineBuilder(PathBuilder::new());
         let outline_glyphs = self.font.font_ref().outline_glyphs();
         let Some(outline_glyph) = outline_glyphs.get(glyph_id) else {
-            self.error = Err(KrillaError::GlyphDrawing(format!(
-                "missing outline glyph for glyph {}",
-                glyph_id
-            )));
+            self.error = Err(KrillaError::GlyphDrawing(
+                "missing outline glyph".to_string(),
+            ));
             return;
         };
 
@@ -166,12 +162,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()),
                 &mut glyph_builder,
             )
-            .map_err(|e| {
-                KrillaError::GlyphDrawing(format!(
-                    "failed to draw outline glyph {}: {}",
-                    glyph_id, e
-                ))
-            });
+            .map_err(|_| KrillaError::GlyphDrawing("failed to draw outline glyph".to_string()));
 
         match drawn_outline_glyph {
             Ok(_) => {}
@@ -264,7 +255,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
 
                 let Some(transform) = self.transforms.last().copied() else {
                     self.error = Err(KrillaError::GlyphDrawing(
-                        "encountered imbalanced transforms".to_string(),
+                        "encountered imbalanced transform".to_string(),
                     ));
                     return;
                 };
@@ -303,7 +294,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
 
                 let Some(transform) = self.transforms.last().copied() else {
                     self.error = Err(KrillaError::GlyphDrawing(
-                        "encountered imbalanced transforms".to_string(),
+                        "encountered imbalanced transform".to_string(),
                     ));
                     return;
                 };
@@ -343,7 +334,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
 
                 let Some(transform) = self.transforms.last().copied() else {
                     self.error = Err(KrillaError::GlyphDrawing(
-                        "encountered imbalanced transforms".to_string(),
+                        "encountered imbalanced transform".to_string(),
                     ));
                     return;
                 };

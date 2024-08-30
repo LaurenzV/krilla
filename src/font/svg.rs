@@ -8,11 +8,12 @@ use skrifa::GlyphId;
 use std::io::Read;
 use usvg::roxmltree;
 
+/// Draw an SVG-based glyph on a surface.
 pub fn draw_glyph(
     font: Font,
-    svg_settings: SvgSettings,
     glyph: GlyphId,
-    builder: &mut Surface,
+    surface: &mut Surface,
+    svg_settings: SvgSettings,
 ) -> KrillaResult<Option<()>> {
     if let Ok(Some(svg_data)) = font
         .font_ref()
@@ -25,15 +26,15 @@ pub fn draw_glyph(
         if data.starts_with(&[0x1f, 0x8b]) {
             let mut decoder = flate2::read::GzDecoder::new(data);
             decoder.read_to_end(&mut decoded).map_err(|_| {
-                KrillaError::GlyphDrawing("failed to parse SVG for glyph".to_string())
+                KrillaError::GlyphDrawing("failed to parse svg for glyph".to_string())
             })?;
             data = &decoded;
         }
 
         let xml = std::str::from_utf8(data)
-            .map_err(|_| KrillaError::GlyphDrawing("failed to parse SVG for glyph".to_string()))?;
+            .map_err(|_| KrillaError::GlyphDrawing("failed to parse svg for glyph".to_string()))?;
         let document = roxmltree::Document::parse(xml)
-            .map_err(|_| KrillaError::GlyphDrawing("failed to parse SVG for glyph".to_string()))?;
+            .map_err(|_| KrillaError::GlyphDrawing("failed to parse svg for glyph".to_string()))?;
 
         // TODO: Add cache for SVG glyphs
         let opts = usvg::Options::default();
@@ -41,11 +42,11 @@ pub fn draw_glyph(
             KrillaError::GlyphDrawing("failed to convert SVG for glyph".to_string())
         })?;
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
-            svg::render_node(&node, tree.fontdb().clone(), svg_settings, builder)
+            svg::render_node(&node, tree.fontdb().clone(), svg_settings, surface)
         } else {
             // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
             // usvg. So in this case, we simply draw the whole document.
-            svg::render_tree(&tree, svg_settings, builder)
+            svg::render_tree(&tree, svg_settings, surface)
         };
 
         return Ok(Some(()));

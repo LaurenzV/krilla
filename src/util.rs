@@ -3,6 +3,7 @@ use crate::serialize::SipHashable;
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
+use skrifa::instance::Location;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -245,3 +246,20 @@ impl Hash for SizeWrapper {
         FiniteF32::new(self.0.height()).unwrap().hash(state);
     }
 }
+
+#[derive(Debug)]
+pub struct LocationWrapper(pub Location);
+
+impl Hash for LocationWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.coords().hash(state);
+    }
+}
+
+impl PartialEq for LocationWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.coords().eq(other.0.coords())
+    }
+}
+
+impl Eq for LocationWrapper {}
