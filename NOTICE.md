@@ -26,3 +26,10 @@ The following code snippets have been taken/adapted from [`svg2pdf`](https://git
 available under the [Apache 2 license](https://github.com/typst/svg2pdf/blob/main/LICENSE-APACHE):
 
 - The whole implementation of the SVG conversion.
+
+## `vello`
+
+The following code snippets have been taken/adapted from [`vello`](https://github.com/linebender/vello),
+available under the [Apache 2 license](https://github.com/linebender/vello/blob/main/LICENSE-APACHE):
+
+- The logic for bitmap glyphs in `bitmap.rs`.

@@ -255,6 +255,8 @@ impl SerializerContext {
                 || font_ref.svg().is_ok()
                 || font_ref.colr().is_ok()
                 || font_ref.sbix().is_ok()
+                || font_ref.cbdt().is_ok()
+                || font_ref.ebdt().is_ok()
                 || font_ref.cff2().is_ok();
 
             if use_type3 {
