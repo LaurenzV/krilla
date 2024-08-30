@@ -1,10 +1,10 @@
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider, Tag};
 use tiny_skia_path::{Size, Transform};
-use crate::error::{KrillaError, KrillaResult};
 
 pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
     let metrics = font
@@ -23,7 +23,9 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
             let ppem = strike.ppem() as f32;
 
             if data.graphic_type() == Tag::new(b"png ") {
-                let dynamic_image = image::load_from_memory(data.data()).map_err(|_| KrillaError::GlyphDrawing("failed to decode png of glyph ".to_string()))?;
+                let dynamic_image = image::load_from_memory(data.data()).map_err(|_| {
+                    KrillaError::GlyphDrawing("failed to decode png of glyph ".to_string())
+                })?;
                 let size_factor = upem / (ppem);
                 let width = dynamic_image.width() as f32 * size_factor;
                 let height = dynamic_image.height() as f32 * size_factor;
