@@ -21,12 +21,11 @@ pub struct Repr {
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: u8,
-    is_rgb: bool
+    is_rgb: bool,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
-
 
 // TODO: Improve this so:
 // 1) Users are not forced to pass a dynamic image
@@ -41,7 +40,7 @@ impl Image {
             ColorSpace::RGBA => true,
             ColorSpace::Luma => false,
             ColorSpace::LumaA => false,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
         // TODO: Use Intsize
         let size = {
