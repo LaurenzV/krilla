@@ -484,6 +484,7 @@ impl FontContainer {
 pub enum StreamFilter {
     FlateDecode,
     AsciiHexDecode,
+    DctDecode,
 }
 
 impl StreamFilter {
@@ -491,6 +492,7 @@ impl StreamFilter {
         match self {
             Self::AsciiHexDecode => Name(b"ASCIIHexDecode"),
             Self::FlateDecode => Name(b"FlateDecode"),
+            Self::DctDecode => Name(b"DCTDecode"),
         }
     }
 }
@@ -500,6 +502,7 @@ impl StreamFilter {
         match self {
             StreamFilter::FlateDecode => deflate_encode(content),
             StreamFilter::AsciiHexDecode => hex_encode(content),
+            Self::DctDecode => unreachable!(),
         }
     }
 }
@@ -548,6 +551,19 @@ impl<'a> FilterStream<'a> {
             if serialize_settings.ascii_compatible {
                 filter_stream.add_filter(StreamFilter::AsciiHexDecode);
             }
+        }
+
+        filter_stream
+    }
+
+    pub fn new_from_dct_encoded(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self {
+            content: Cow::Borrowed(content),
+            filters: StreamFilters::Single(StreamFilter::DctDecode),
+        };
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
         }
 
         filter_stream

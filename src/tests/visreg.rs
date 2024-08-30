@@ -3,9 +3,7 @@ use crate::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::manual::all_glyphs_to_pdf;
-use crate::tests::{
-    load_image, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI,
-};
+use crate::tests::{load_png_image, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI, NOTO_SANS, TWITTER_COLOR_EMOJI, load_jpg_image};
 use crate::util::SliceExt;
 use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
@@ -140,38 +138,54 @@ fn twitter_color_emoji(document: &mut Document) {
     all_glyphs_to_pdf(font_data, None, document);
 }
 
-fn image_impl(surface: &mut Surface, name: &str) {
-    let image = load_image(name);
+fn png_image_impl(surface: &mut Surface, name: &str) {
+    let image = load_png_image(name);
+    let size = image.size();
+    surface.draw_image(image, size);
+}
+
+fn jpg_image_impl(surface: &mut Surface, name: &str) {
+    let image = load_jpg_image(name);
     let size = image.size();
     surface.draw_image(image, size);
 }
 
 #[visreg(all)]
 fn image_luma8_png(surface: &mut Surface) {
-    image_impl(surface, "luma8.png");
+    png_image_impl(surface, "luma8.png");
 }
 
 #[visreg(all)]
 fn image_luma16_png(surface: &mut Surface) {
-    image_impl(surface, "luma16.png");
+    png_image_impl(surface, "luma16.png");
 }
 
 #[visreg(all)]
 fn image_rgb8_png(surface: &mut Surface) {
-    image_impl(surface, "rgb8.png");
+    png_image_impl(surface, "rgb8.png");
 }
 
 #[visreg(all)]
 fn image_rgb16_png(surface: &mut Surface) {
-    image_impl(surface, "rgb16.png");
+    png_image_impl(surface, "rgb16.png");
 }
 
 #[visreg(all)]
 fn image_rgba8_png(surface: &mut Surface) {
-    image_impl(surface, "rgba8.png");
+    png_image_impl(surface, "rgba8.png");
 }
 
 #[visreg(all)]
 fn image_rgba16_png(surface: &mut Surface) {
-    image_impl(surface, "rgba16.png");
+    png_image_impl(surface, "rgba16.png");
+}
+
+#[visreg(all)]
+fn image_luma8_jpg(surface: &mut Surface) {
+    jpg_image_impl(surface, "luma8.jpg");
+}
+
+#[visreg(all)]
+fn image_rgb8_jpg(surface: &mut Surface) {
+    jpg_image_impl(surface, "rgb8.jpg");
 }

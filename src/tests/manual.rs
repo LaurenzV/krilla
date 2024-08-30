@@ -6,10 +6,7 @@ use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
-use crate::tests::{
-    write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS,
-    NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
-};
+use crate::tests::{write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, load_jpg_image};
 use crate::util::SliceExt;
 use crate::Fill;
 use skrifa::instance::{Location, LocationRef, Size};

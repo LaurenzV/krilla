@@ -34,9 +34,24 @@ enum ImageColorspace {
     Cmyk,
 }
 
+impl TryFrom<ColorSpace> for ImageColorspace {
+    type Error = ();
+
+    fn try_from(value: ColorSpace) -> Result<Self, Self::Error> {
+        match value {
+            ColorSpace::RGB => Ok(ImageColorspace::Rgb),
+            ColorSpace::RGBA => Ok(ImageColorspace::Rgb),
+            ColorSpace::Luma => Ok(ImageColorspace::Luma),
+            ColorSpace::LumaA => Ok(ImageColorspace::Luma),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
     image_data: Vec<u8>,
+    is_dct_encoded: bool,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
@@ -46,22 +61,13 @@ pub struct Repr {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
 
-// TODO: Improve this so:
-// 1) Users are not forced to pass a dynamic image
-// 2) Use the DCT decoder for JPEG images.
 impl Image {
     pub fn from_png(data: &[u8]) -> Option<Self> {
         let mut decoder = PngDecoder::new(data);
         decoder.decode_headers().ok()?;
 
         let color_space = decoder.get_colorspace()?;
-        let image_color_space = match color_space {
-            ColorSpace::RGB => ImageColorspace::Rgb,
-            ColorSpace::RGBA => ImageColorspace::Rgb,
-            ColorSpace::Luma => ImageColorspace::Luma,
-            ColorSpace::LumaA => ImageColorspace::Luma,
-            _ => return None,
-        };
+        let image_color_space = color_space.try_into().ok()?;
 
         let size = {
             let info = decoder.get_info()?;
@@ -78,20 +84,31 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
+            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
         }))))
     }
 
-    pub fn from_jpeg(data: &[u8]) {
+    pub fn from_jpeg(data: &[u8]) -> Option<Self> {
         let mut decoder = JpegDecoder::new(data);
+        decoder.decode_headers().ok()?;
         let size = {
-            let dimensions = decoder.dimensions().unwrap();
-            Size::from_wh(dimensions.0 as f32, dimensions.1 as f32).unwrap()
+            let dimensions = decoder.dimensions()?;
+            Size::from_wh(dimensions.0 as f32, dimensions.1 as f32)?
         };
-        let color_space = decoder.get_output_colorspace().unwrap();
-        let headers = decoder.decode().unwrap();
+        let color_space = decoder.get_output_colorspace()?;
+        let image_color_space = color_space.try_into().ok()?;
+
+        Some(Self(Arc::new(Prehashed::new(Repr {
+            image_data: data.to_vec(),
+            mask_data: None,
+            is_dct_encoded: true,
+            bits_per_component: BitsPerComponent::Eight,
+            image_color_space,
+            size: SizeWrapper(size),
+        }))))
     }
 
     pub fn size(&self) -> Size {
@@ -123,8 +140,11 @@ impl Object for Image {
             soft_mask_id
         });
 
-        let image_stream =
-            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
+        let image_stream = if self.0.is_dct_encoded {
+            FilterStream::new_from_dct_encoded(&self.0.image_data, &sc.serialize_settings)
+        }   else {
+            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings)
+        };
 
         let mut image_x_object = chunk.image_xobject(root_ref, &image_stream.encoded_data());
         image_stream.write_filters(image_x_object.deref_mut().deref_mut());
