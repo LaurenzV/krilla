@@ -1,11 +1,12 @@
 use crate::object::annotation::Annotation;
-use crate::serialize::SerializerContext;
+use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::NonZeroU32;
+use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Size};
 
 /// A page.
@@ -65,13 +66,10 @@ impl Page {
 
         page.finish();
 
-        let (stream, filter) = sc.get_content_stream(self.stream.content());
+        let page_stream = FilterStream::new_content(self.stream.content(), &sc.serialize_settings);
 
-        let mut stream = chunk.stream(stream_ref, &stream);
-
-        if let Some(filter) = filter {
-            stream.filter(filter);
-        }
+        let mut stream = chunk.stream(stream_ref, &page_stream.encoded_data());
+        page_stream.write_filters(stream.deref_mut());
 
         stream.finish();
 

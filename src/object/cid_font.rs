@@ -1,12 +1,13 @@
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
-use crate::serialize::{SerializerContext, SipHashable};
+use crate::serialize::{FilterStream, SerializerContext, SipHashable};
 use crate::util::{RectExt, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
-use pdf_writer::{Chunk, Filter, Finish, Name, Ref, Str};
+use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::GlyphId;
 use std::collections::BTreeMap;
+use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
 
 const CMAP_NAME: Name = Name(b"Custom");
@@ -103,11 +104,30 @@ impl CIDFont {
 
         let is_cff = self.font.font_ref().cff().is_ok();
 
-        let (subsetted_font, filter) =
-            subset_font(sc, &self.font, self.font.index(), &glyph_remapper);
+        let subsetted = {
+            let font_data = self.font.font_data();
+            subsetter::subset(
+                font_data.as_ref().as_ref(),
+                self.font.index(),
+                glyph_remapper,
+            )
+            .unwrap()
+        };
+
+        let font_stream = {
+            let mut data = subsetted.as_slice();
+
+            // If we have a CFF font, only embed the standalone CFF program.
+            let subsetted_ref = skrifa::FontRef::new(data).unwrap();
+            if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
+                data = cff.as_bytes();
+            }
+
+            FilterStream::new_binary(data, &sc.serialize_settings)
+        };
 
         let postscript_name = self.font.postscript_name().unwrap_or("unknown");
-        let subset_tag = subset_tag(&subsetted_font);
+        let subset_tag = subset_tag(font_stream.encoded_data());
 
         let base_font = format!("{subset_tag}+{postscript_name}");
         let base_font_type0 = if is_cff {
@@ -199,8 +219,8 @@ impl CIDFont {
 
         chunk.cmap(cmap_ref, &cmap.finish());
 
-        let mut stream = chunk.stream(data_ref, &subsetted_font);
-        stream.filter(filter);
+        let mut stream = chunk.stream(data_ref, &font_stream.encoded_data());
+        font_stream.write_filters(stream.deref_mut());
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
         }
@@ -209,26 +229,6 @@ impl CIDFont {
 
         chunk
     }
-}
-
-/// Subset a font with the given glyphs.
-fn subset_font(
-    sc: &SerializerContext,
-    font: &Font,
-    index: u32,
-    glyph_remapper: &GlyphRemapper,
-) -> (Vec<u8>, Filter) {
-    let font_data = font.font_data();
-    let subsetted = subsetter::subset(font_data.as_ref().as_ref(), index, glyph_remapper).unwrap();
-    let mut data = subsetted.as_slice();
-
-    // If we have a CFF font, only embed the standalone CFF program.
-    let subsetted_ref = skrifa::FontRef::new(data).unwrap();
-    if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
-        data = cff.as_bytes();
-    }
-
-    sc.get_binary_stream(data)
 }
 
 /// Create a tag for a font subset.

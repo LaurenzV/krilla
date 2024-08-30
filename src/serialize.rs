@@ -12,7 +12,7 @@ use crate::resource::{ColorSpaceResource, Resource};
 use crate::stream::PdfFont;
 use crate::util::NameExt;
 use fontdb::{Database, ID};
-use pdf_writer::{Chunk, Filter, Name, Pdf, Ref};
+use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::raw::TableProvider;
@@ -22,6 +22,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
@@ -304,23 +305,6 @@ impl SerializerContext {
         map
     }
 
-    pub fn get_content_stream<'a>(&self, stream: &'a [u8]) -> (Cow<'a, [u8]>, Option<Filter>) {
-        if !self.serialize_settings.compress_content_streams {
-            (Cow::Borrowed(stream), None)
-        } else {
-            let (stream, filter) = self.get_binary_stream(stream);
-            (Cow::Owned(stream), Some(filter))
-        }
-    }
-
-    pub fn get_binary_stream(&self, stream: &[u8]) -> (Vec<u8>, Filter) {
-        if self.serialize_settings.ascii_compatible {
-            (hex_encode(stream), Filter::AsciiHexDecode)
-        } else {
-            (deflate(stream), Filter::FlateDecode)
-        }
-    }
-
     // Always needs to be called.
     pub fn finish(mut self) -> Pdf {
         // TODO: Get rid of all the clones
@@ -502,4 +486,113 @@ fn hex_encode(data: &[u8]) -> Vec<u8> {
         })
         .collect::<String>()
         .into_bytes()
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum StreamFilter {
+    FlateDecode,
+    AsciiHexDecode,
+}
+
+impl StreamFilter {
+    pub(crate) fn to_name(self) -> Name<'static> {
+        match self {
+            Self::AsciiHexDecode => Name(b"ASCIIHexDecode"),
+            Self::FlateDecode => Name(b"FlateDecode"),
+        }
+    }
+}
+
+impl StreamFilter {
+    pub fn apply(&self, content: &[u8]) -> Vec<u8> {
+        match self {
+            StreamFilter::FlateDecode => deflate(content),
+            StreamFilter::AsciiHexDecode => hex_encode(content),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum StreamFilters {
+    None,
+    Single(StreamFilter),
+    Multiple(Vec<StreamFilter>),
+}
+
+impl StreamFilters {
+    pub fn add(&mut self, stream_filter: StreamFilter) {
+        match self {
+            StreamFilters::None => *self = StreamFilters::Single(stream_filter),
+            StreamFilters::Single(cur) => {
+                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
+            }
+            StreamFilters::Multiple(cur) => cur.push(stream_filter),
+        }
+    }
+}
+
+pub struct FilterStream<'a> {
+    content: Cow<'a, [u8]>,
+    filters: StreamFilters,
+}
+
+impl<'a> FilterStream<'a> {
+    fn empty(content: &'a [u8]) -> Self {
+        Self {
+            content: Cow::Borrowed(content),
+            filters: StreamFilters::None,
+        }
+    }
+
+    pub fn new_content(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+
+        if serialize_settings.compress_content_streams {
+            filter_stream.add_filter(StreamFilter::FlateDecode);
+
+            if serialize_settings.ascii_compatible {
+                filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+            }
+        }
+
+        filter_stream
+    }
+
+    pub fn new_binary(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream.add_filter(StreamFilter::FlateDecode);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+        }
+
+        filter_stream
+    }
+
+    pub fn add_filter(&mut self, filter: StreamFilter) {
+        self.content = Cow::Owned(filter.apply(&self.content));
+        self.filters.add(filter);
+    }
+
+    pub fn encoded_data(&self) -> &[u8] {
+        &self.content
+    }
+
+    pub fn write_filters<'b, T>(&self, mut dict: T)
+    where
+        T: DerefMut<Target = Dict<'b>>,
+    {
+        match &self.filters {
+            StreamFilters::None => {}
+            StreamFilters::Single(filter) => {
+                dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
+            }
+            StreamFilters::Multiple(filters) => {
+                dict.deref_mut()
+                    .insert(Name(b"Filter"))
+                    .start::<Array>()
+                    .items(filters.iter().map(|f| f.to_name()).rev());
+            }
+        }
+    }
 }

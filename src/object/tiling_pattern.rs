@@ -1,11 +1,12 @@
 use crate::chunk_container::ChunkContainer;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
+use std::ops::DerefMut;
 use tiny_skia_path::FiniteF32;
 use usvg::NormalizedF32;
 
@@ -61,12 +62,10 @@ impl Object for TilingPattern {
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let (stream, filter) = sc.get_content_stream(self.stream.content());
-        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &stream);
-
-        if let Some(filter) = filter {
-            tiling_pattern.filter(filter);
-        }
+        let pattern_stream =
+            FilterStream::new_content(self.stream.content(), &sc.serialize_settings);
+        let mut tiling_pattern = chunk.tiling_pattern(root_ref, &pattern_stream.encoded_data());
+        pattern_stream.write_filters(tiling_pattern.deref_mut().deref_mut());
 
         self.stream
             .resource_dictionary()

@@ -1,8 +1,9 @@
 use crate::chunk_container::ChunkContainer;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -42,13 +43,10 @@ impl Object for XObject {
         let cs = sc.rgb();
         let mut chunk = Chunk::new();
 
-        let (stream, filter) = sc.get_content_stream(self.stream.content());
-
-        let mut x_object = chunk.form_xobject(root_ref, &stream);
-
-        if let Some(filter) = filter {
-            x_object.filter(filter);
-        }
+        let x_object_stream =
+            FilterStream::new_content(self.stream.content(), &sc.serialize_settings);
+        let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
+        x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
         self.stream
             .resource_dictionary()

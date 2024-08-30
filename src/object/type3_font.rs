@@ -2,13 +2,14 @@ use crate::font;
 use crate::font::{Font, FontIdentifier, GlyphType, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
-use crate::serialize::SerializerContext;
+use crate::serialize::{FilterStream, SerializerContext};
 use crate::surface::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
 pub type Gid = u8;
@@ -146,10 +147,11 @@ impl Type3Font {
                     content.finish()
                 };
 
-                let (stream, filter) = sc.get_binary_stream(&stream);
+                let font_stream = FilterStream::new_content(&stream, &sc.serialize_settings);
 
                 let stream_ref = sc.new_ref();
-                chunk.stream(stream_ref, &stream).filter(filter);
+                let mut stream = chunk.stream(stream_ref, &font_stream.encoded_data());
+                font_stream.write_filters(stream.deref_mut());
 
                 stream_ref
             })
