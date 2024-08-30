@@ -163,8 +163,7 @@ mod tests {
     use crate::document::Document;
     use crate::object::outline::{Outline, OutlineNode};
     use crate::rgb::Rgb;
-    
-    
+
     use crate::Fill;
     use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Point, Rect, Size};

@@ -13,12 +13,34 @@ use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
+enum BitsPerComponent {
+    Eight,
+    Sixteen,
+}
+
+impl BitsPerComponent {
+    fn as_u8(&self) -> u8 {
+        match self {
+            BitsPerComponent::Eight => 8,
+            BitsPerComponent::Sixteen => 16,
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+enum ImageColorspace {
+    Rgb,
+    Luma,
+    Cmyk,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Repr {
     image_data: Vec<u8>,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
-    bits_per_component: u8,
-    is_rgb: bool,
+    bits_per_component: BitsPerComponent,
+    image_color_space: ImageColorspace,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -28,36 +50,38 @@ pub struct Image(Arc<Prehashed<Repr>>);
 // 1) Users are not forced to pass a dynamic image
 // 2) Use the DCT decoder for JPEG images.
 impl Image {
-    pub fn from_png(data: &[u8]) -> Self {
+    pub fn from_png(data: &[u8]) -> Option<Self> {
         let mut decoder = PngDecoder::new(data);
-        decoder.decode_headers().unwrap();
-        let color_space = decoder.get_colorspace().unwrap();
-        let is_rgb = match color_space {
-            ColorSpace::RGB => true,
-            ColorSpace::RGBA => true,
-            ColorSpace::Luma => false,
-            ColorSpace::LumaA => false,
-            _ => unreachable!(),
+        decoder.decode_headers().ok()?;
+
+        let color_space = decoder.get_colorspace()?;
+        let image_color_space = match color_space {
+            ColorSpace::RGB => ImageColorspace::Rgb,
+            ColorSpace::RGBA => ImageColorspace::Rgb,
+            ColorSpace::Luma => ImageColorspace::Luma,
+            ColorSpace::LumaA => ImageColorspace::Luma,
+            _ => return None,
         };
-        // TODO: Use Intsize
+
         let size = {
-            let info = decoder.get_info().unwrap();
-            Size::from_wh(info.width as f32, info.height as f32).unwrap()
+            let info = decoder.get_info()?;
+            Size::from_wh(info.width as f32, info.height as f32)?
         };
-        let decoded = decoder.decode().unwrap();
+        let decoded = decoder.decode().ok()?;
 
-        let (image_data, mask_data) = match decoded {
-            DecodingResult::U8(u8) => handle_transparent_image(u8, color_space),
-            _ => unreachable!(),
+        let (image_data, mask_data, bits_per_component) = match decoded {
+            DecodingResult::U8(u8) => handle_u8_image(u8, color_space),
+            DecodingResult::U16(u16) => handle_u16_image(u16, color_space),
+            _ => return None,
         };
 
-        Self(Arc::new(Prehashed::new(Repr {
+        Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            bits_per_component: 8,
-            is_rgb,
+            bits_per_component,
+            image_color_space,
             size: SizeWrapper(size),
-        })))
+        }))))
     }
 
     pub fn from_jpeg(data: &[u8]) {
@@ -95,7 +119,7 @@ impl Object for Image {
                 // Mask color space must be device gray -- see Table 145.
                 DEVICE_GRAY.to_pdf_name(),
             );
-            s_mask.bits_per_component(self.0.bits_per_component as i32);
+            s_mask.bits_per_component(self.0.bits_per_component.as_u8() as i32);
             soft_mask_id
         });
 
@@ -107,13 +131,13 @@ impl Object for Image {
         image_x_object.width(self.0.size.width() as i32);
         image_x_object.height(self.0.size.height() as i32);
 
-        if self.0.is_rgb {
-            image_x_object.pair(Name(b"ColorSpace"), sc.rgb());
-        } else {
-            image_x_object.pair(Name(b"ColorSpace"), sc.gray());
-        }
+        match self.0.image_color_space {
+            ImageColorspace::Rgb => image_x_object.pair(Name(b"ColorSpace"), sc.rgb()),
+            ImageColorspace::Luma => image_x_object.pair(Name(b"ColorSpace"), sc.gray()),
+            ImageColorspace::Cmyk => unimplemented!(),
+        };
 
-        image_x_object.bits_per_component(self.0.bits_per_component as i32);
+        image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);
         if let Some(soft_mask_id) = alpha_mask {
             image_x_object.s_mask(soft_mask_id);
         }
@@ -123,9 +147,10 @@ impl Object for Image {
     }
 }
 
-fn handle_transparent_image<'a>(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>) {
-    let mut has_actual_alpha = false;
-
+fn handle_u8_image<'a>(
+    data: Vec<u8>,
+    cs: ColorSpace,
+) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = Vec::new();
 
     let encoded_image = match cs {
@@ -135,7 +160,6 @@ fn handle_transparent_image<'a>(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Opti
             .enumerate()
             .flat_map(|(index, val)| {
                 if index % 4 == 3 {
-                    has_actual_alpha |= *val < 255;
                     alphas.push(*val);
                     None
                 } else {
@@ -149,7 +173,6 @@ fn handle_transparent_image<'a>(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Opti
             .enumerate()
             .flat_map(|(index, val)| {
                 if index % 2 == 1 {
-                    has_actual_alpha |= *val < 255;
                     alphas.push(*val);
                     None
                 } else {
@@ -160,7 +183,64 @@ fn handle_transparent_image<'a>(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Opti
         _ => unimplemented!(),
     };
 
-    let encoded_mask: Option<Vec<u8>> = if has_actual_alpha { Some(alphas) } else { None };
+    let encoded_mask = if !alphas.is_empty() {
+        Some(alphas)
+    } else {
+        None
+    };
 
-    (encoded_image, encoded_mask)
+    (encoded_image, encoded_mask, BitsPerComponent::Eight)
+}
+
+fn handle_u16_image<'a>(
+    data: Vec<u16>,
+    cs: ColorSpace,
+) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
+    let mut alphas = Vec::new();
+
+    let encoded_image = match cs {
+        ColorSpace::RGB => data
+            .iter()
+            .flat_map(|b| b.to_be_bytes())
+            .collect::<Vec<_>>(),
+        ColorSpace::RGBA => data
+            .iter()
+            .enumerate()
+            .flat_map(|(index, val)| {
+                if index % 4 == 3 {
+                    alphas.extend(val.to_be_bytes());
+                    None
+                } else {
+                    Some(*val)
+                }
+            })
+            .flat_map(|n| n.to_be_bytes())
+            .collect::<Vec<_>>(),
+        ColorSpace::Luma => data
+            .iter()
+            .flat_map(|b| b.to_be_bytes())
+            .collect::<Vec<_>>(),
+        ColorSpace::LumaA => data
+            .iter()
+            .enumerate()
+            .flat_map(|(index, val)| {
+                if index % 2 == 1 {
+                    alphas.extend(val.to_be_bytes());
+                    None
+                } else {
+                    Some(*val)
+                }
+            })
+            .flat_map(|n| n.to_be_bytes())
+            .collect::<Vec<_>>(),
+        _ => unimplemented!(),
+    };
+
+    let encoded_mask = if !alphas.is_empty() {
+        Some(alphas)
+    } else {
+        None
+    };
+
+    (encoded_image, encoded_mask, BitsPerComponent::Sixteen)
 }

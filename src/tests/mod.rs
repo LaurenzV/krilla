@@ -85,7 +85,7 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
 }
 
 pub fn load_image(name: &str) -> Image {
-    Image::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap())
+    Image::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {

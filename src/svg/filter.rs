@@ -42,8 +42,7 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &Proc
     );
 
     let encoded_image = pixmap.encode_png().unwrap();
-    // TODO: Optimize, don't re-encode
-    let image = Image::from_png(&encoded_image);
+    let image = Image::from_png(&encoded_image).unwrap();
     surface.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
     surface.draw_image(
         image,

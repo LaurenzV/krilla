@@ -188,7 +188,7 @@ mod tests {
     use crate::rgb::Rgb;
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
-    
+
     use crate::Fill;
     use krilla_macros::snapshot;
     use pdf_writer::types::NumberingStyle;

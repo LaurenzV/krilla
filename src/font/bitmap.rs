@@ -41,7 +41,12 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
                         // This value seems to be pretty close to what is happening on MacOS.
                         .pre_concat(Transform::from_translate(0.0, 0.128 * upem)),
                 );
-                surface.draw_image(Image::from_png(&data.data()), size);
+                surface.draw_image(
+                    Image::from_png(&data.data()).ok_or(KrillaError::GlyphDrawing(
+                        "failed to decode png".to_string(),
+                    ))?,
+                    size,
+                );
                 surface.pop();
 
                 return Ok(Some(()));

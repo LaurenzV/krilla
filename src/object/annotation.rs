@@ -86,7 +86,7 @@ mod tests {
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
     use crate::rgb::Rgb;
-    
+
     use crate::tests::rect_to_path;
     use crate::Fill;
     use krilla_macros::snapshot;

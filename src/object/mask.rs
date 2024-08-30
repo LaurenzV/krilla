@@ -125,7 +125,7 @@ mod tests {
     use crate::rgb::Rgb;
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
-    
+
     use crate::{rgb, Fill, MaskType, Paint};
     use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Rect};

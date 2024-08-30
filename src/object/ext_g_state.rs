@@ -140,7 +140,7 @@ mod tests {
     use crate::object::mask::Mask;
     use crate::serialize::SerializerContext;
     use crate::stream::Stream;
-    
+
     use crate::MaskType;
     use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;

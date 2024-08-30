@@ -346,7 +346,7 @@ mod tests {
     use crate::object::color_space::rgb::Srgb;
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
-    
+
     use krilla_macros::snapshot;
 
     #[snapshot]
