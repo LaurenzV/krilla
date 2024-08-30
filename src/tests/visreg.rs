@@ -108,7 +108,7 @@ fn cosmic_text(surface: &mut Surface) {
     }
 }
 
-#[visreg(pdfium, document)]
+#[visreg(mupdf, document)]
 fn colr_test_glyphs(document: &mut Document) {
     let font_data = COLR_TEST_GLYPHS.clone();
 

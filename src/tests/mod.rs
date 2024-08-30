@@ -175,14 +175,7 @@ pub fn check_render(name: &str, renderer: &Renderer, document: RenderedDocument,
 
         let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
-        // There might be slight pixel differences in CI because of the different OS,
-        // so we assign a threshold of 0.05%.
-        let threshold = if env::var("KRILLA_THRESHOLD").is_ok() {
-            ((reference.width() * reference.height()) as f32 * 0.0005) as u32
-        }   else {
-            0
-        };
-
+        let threshold = 0;
         if pixel_diff > threshold {
             let diff_path = DIFFS_PATH.join(format!("{}.png", name));
             diff_image
