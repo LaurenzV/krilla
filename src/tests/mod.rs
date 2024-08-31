@@ -86,6 +86,10 @@ lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf
 #[rustfmt::skip]
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 
+pub fn default_size() -> crate::Size {
+    crate::Size::from_wh(200.0, 200.0).unwrap()
+}
+
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());

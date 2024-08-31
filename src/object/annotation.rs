@@ -95,12 +95,13 @@ mod tests {
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
 
-    use crate::tests::rect_to_path;
+    use crate::tests::{default_size, rect_to_path};
     use crate::{Fill, Paint, rgb};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
     use usvg::NormalizedF32;
     use crate::rgb::Rgb;
+    use crate::serialize::SerializeSettings;
     use crate::surface::PageBuilder;
 
     #[snapshot(single_page)]
@@ -116,12 +117,29 @@ mod tests {
         );
     }
 
+    #[test]
+    fn annotation_to_invalid_destination() {
+        let mut db = Document::new(SerializeSettings::settings_1());
+        let mut page = db.start_page(default_size());
+        page.add_annotation(
+            LinkAnnotation {
+                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                target: Target::Destination(
+                    XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
+                ),
+            }
+                .into(),
+        );
+        page.finish();
+        assert!(db.finish().is_err())
+    }
+
     #[snapshot(document)]
     fn annotation_to_destination(db: &mut Document) {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {
-                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                rect: Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
                 target: Target::Destination(
                     XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
                 ),
@@ -131,7 +149,7 @@ mod tests {
 
         let mut surface = page.surface();
         surface.fill_path(
-            &rect_to_path(50.0, 50.0, 150.0, 150.0),
+            &rect_to_path(50.0, 0.0, 150.0, 100.0),
             Fill {
                 paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
                 opacity: NormalizedF32::ONE,
@@ -144,7 +162,7 @@ mod tests {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {
-                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                rect: Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),
                 target: Target::Destination(
                     XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into(),
                 ),
@@ -153,7 +171,7 @@ mod tests {
         );
         let mut my_surface = page.surface();
         my_surface.fill_path(
-            &rect_to_path(50.0, 50.0, 150.0, 150.0),
+            &rect_to_path(50.0, 100.0, 150.0, 200.0),
             Fill {
                 paint: Paint::<Rgb>::Color(rgb::Color::new(0, 255, 0)),
                 opacity: NormalizedF32::ONE,

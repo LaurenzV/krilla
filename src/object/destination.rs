@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::{Object, SerializerContext};
 use pdf_writer::{Chunk, Ref};
 use std::hash::{Hash, Hasher};
@@ -54,8 +54,10 @@ impl Object for XyzDestination {
     }
 
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-        let page_ref = sc.page_infos()[self.page_index].ref_;
-        let page_size = sc.page_infos()[self.page_index].media_box.height();
+        let page_info = sc.page_infos().get(self.page_index)
+            .ok_or(KrillaError::UserError("attempted to link to non-existing page".to_string()))?;
+        let page_ref = page_info.ref_;
+        let page_size = page_info.media_box.height();
 
         let mut mapped_point = self.point;
         // Convert to PDF coordinates
