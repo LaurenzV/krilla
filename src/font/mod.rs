@@ -1,4 +1,4 @@
-//! Creating and dealing with fonts.
+//! Creating and using fonts.
 
 use crate::error::KrillaResult;
 use crate::serialize::SvgSettings;
@@ -26,7 +26,8 @@ pub(crate) mod svg;
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
 ///
-/// Cloning and hashing this type is cheap.
+/// Cloning and hashing this type is cheap. Creating it is a little expensive, so if
+/// possible, the font should be cached.
 ///
 /// While an object of this type is associated with an OTF font, it is only associated
 /// with a specific instance, i.e. with specific variation coordinates and with a specific

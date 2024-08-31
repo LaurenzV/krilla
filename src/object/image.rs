@@ -1,3 +1,5 @@
+//! Creating and using bitmap images.
+
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
@@ -48,7 +50,7 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub struct Repr {
+struct Repr {
     image_data: Vec<u8>,
     is_dct_encoded: bool,
     size: SizeWrapper,
@@ -57,10 +59,16 @@ pub struct Repr {
     image_color_space: ImageColorspace,
 }
 
+/// A bitmap image.
+///
+/// This type is cheap to hash and clone, but expensive to create.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
 
 impl Image {
+    /// Create a new bitmap image from a `.png` file.
+    ///
+    /// Returns `None` if krilla was unable to parse the file.
     pub fn from_png(data: &[u8]) -> Option<Self> {
         let mut decoder = PngDecoder::new(data);
         decoder.decode_headers().ok()?;
@@ -90,6 +98,9 @@ impl Image {
         }))))
     }
 
+    /// Create a new bitmap image from a `.jpg` file.
+    ///
+    /// Returns `None` if krilla was unable to parse the file.
     pub fn from_jpeg(data: &[u8]) -> Option<Self> {
         let mut decoder = JpegDecoder::new(data);
         decoder.decode_headers().ok()?;
@@ -114,6 +125,9 @@ impl Image {
         }))))
     }
 
+    /// Create a new bitmap image from a `.gif` file.
+    ///
+    /// Returns `None` if krilla was unable to parse the file.
     pub fn from_gif(data: &[u8]) -> Option<Self> {
         let mut decoder = gif::DecodeOptions::new();
         decoder.set_color_output(gif::ColorOutput::RGBA);
@@ -135,6 +149,9 @@ impl Image {
         }))))
     }
 
+    /// Create a new bitmap image from a `.webp` file.
+    ///
+    /// Returns `None` if krilla was unable to parse the file.
     pub fn from_webp(data: &[u8]) -> Option<Self> {
         let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
         let mut first_frame = vec![0; decoder.output_buffer_size()?];
@@ -164,6 +181,7 @@ impl Image {
         }))))
     }
 
+    /// Returns the dimensions of the image.
     pub fn size(&self) -> Size {
         self.0.size.0
     }
