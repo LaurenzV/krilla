@@ -2,6 +2,8 @@ use crate::serialize::SerializeSettings;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 
+/// Collects all of the chunks that we create while building
+/// the PDF and then writes them out in an orderly manner.
 pub struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
@@ -90,7 +92,7 @@ impl ChunkContainer {
 
         // Chunk length is not an exact number because the length might change as we renumber,
         // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
-        // for the document catalog. This hopefully allows us to avoid realloactions in the general
+        // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
         // case, and thus give us better performance.
         let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
 
@@ -122,7 +124,11 @@ impl ChunkContainer {
             catalog.finish();
         }
 
-        remap_fields!(self, remapper, remapped_ref; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
+        remap_fields!(self, remapper, remapped_ref; pages, page_labels,
+            annotations, fonts, color_spaces, destinations,
+            ext_g_states, images, masks, x_objects, shading_functions,
+            patterns
+        );
 
         macro_rules! write_field {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
@@ -145,7 +151,11 @@ impl ChunkContainer {
         }
 
         write_field!(self, remapper, &mut pdf; page_tree, outline, page_label_tree);
-        write_fields!(self, remapper, &mut pdf; pages, page_labels, annotations, fonts, color_spaces, destinations, ext_g_states, images, masks, x_objects, shading_functions, patterns);
+        write_fields!(self, remapper, &mut pdf; pages, page_labels,
+            annotations, fonts, color_spaces, destinations,
+            ext_g_states, images, masks, x_objects,
+            shading_functions, patterns
+        );
 
         pdf
     }
