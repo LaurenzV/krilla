@@ -1,3 +1,5 @@
+//! Creating and dealing with fonts.
+
 use crate::error::KrillaResult;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
@@ -20,7 +22,7 @@ pub(crate) mod colr;
 pub(crate) mod outline;
 pub(crate) mod svg;
 
-/// A OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
+/// An OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
 ///
@@ -112,15 +114,18 @@ impl Font {
         self.0.font_info.global_bbox.0
     }
 
-    pub(crate) fn location_ref(&self) -> LocationRef {
+    /// Return the `LocationRef` of the font.
+    pub fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location.0).into()
     }
 
-    pub(crate) fn font_ref(&self) -> &FontRef {
+    /// Return the `FontRef` of the font.
+    pub fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }
 
-    pub(crate) fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
+    /// Return the underlying data of the font.
+    pub fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
         self.0.font_data.clone()
     }
 
@@ -179,7 +184,7 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().ok()?.checksum_adjustment();
 
@@ -243,14 +248,14 @@ struct FontRefWrapper<'a> {
 
 /// The table from which a drawn glyph stems from.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub enum GlyphSource {
+pub(crate) enum GlyphSource {
     Colr,
     Svg,
     Outline,
     Bitmap,
 }
 
-pub fn draw_glyph(
+pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
@@ -277,18 +282,18 @@ pub fn draw_glyph(
 
 /// A unique CID identifier.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct CIDIdentifer(pub Font);
+pub(crate) struct CIDIdentifer(pub Font);
 
 /// A unique Type3 font identifier. Type3 fonts can only hold 256 glyphs, which
 /// means that we might have to create more than one Type3 font. This is why we
 /// additionally store an index that indicates which specific Type3Font we are
 /// referring to.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Type3Identifier(pub Font, pub Type3ID);
+pub(crate) struct Type3Identifier(pub Font, pub Type3ID);
 
 /// A font identifier for a PDF font.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub enum FontIdentifier {
+pub(crate) enum FontIdentifier {
     Cid(CIDIdentifer),
     Type3(Type3Identifier),
 }

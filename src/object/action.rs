@@ -1,3 +1,5 @@
+//! A collection of actions, which allow you to add interactivity to the document.
+
 use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
 use pdf_writer::Str;

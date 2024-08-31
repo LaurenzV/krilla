@@ -1,3 +1,5 @@
+//! A collection of annotations, allowing you to specify region-specific behavior, such as links.
+
 use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
