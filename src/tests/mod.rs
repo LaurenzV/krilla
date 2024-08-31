@@ -447,25 +447,23 @@ pub fn all_glyphs_to_pdf(
 }
 
 pub fn stops_with_1_solid() -> Vec<Stop<Rgb>> {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.5).unwrap(),
-            color: rgb::Color::new(255, 0,0),
-            opacity: NormalizedF32::ONE,
-        }
-    ]
+    vec![Stop {
+        offset: NormalizedF32::new(0.5).unwrap(),
+        color: rgb::Color::new(255, 0, 0),
+        opacity: NormalizedF32::ONE,
+    }]
 }
 
 pub fn stops_with_2_solid_1() -> Vec<Stop<Rgb>> {
     vec![
         Stop {
             offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(255, 0,0),
+            color: rgb::Color::new(255, 0, 0),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(255, 255,0),
+            color: rgb::Color::new(255, 255, 0),
             opacity: NormalizedF32::ONE,
         },
     ]
@@ -505,17 +503,17 @@ pub fn stops_with_3_solid_1() -> Vec<Stop<Rgb>> {
     vec![
         Stop {
             offset: NormalizedF32::new(0.1).unwrap(),
-            color: rgb::Color::new(255, 0,0),
+            color: rgb::Color::new(255, 0, 0),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.3).unwrap(),
-            color: rgb::Color::new(255, 255,0),
+            color: rgb::Color::new(255, 255, 0),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(0, 255,255),
+            color: rgb::Color::new(0, 255, 255),
             opacity: NormalizedF32::ONE,
         },
     ]
