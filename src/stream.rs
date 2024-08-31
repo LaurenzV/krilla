@@ -535,7 +535,7 @@ impl ContentBuilder {
         };
 
         let mut write_gradient = |gradient_props: GradientProperties,
-                                  transform: TransformWrapper| {
+                                  transform: TransformWrapper, content_builder: &mut ContentBuilder| {
             let shading_mask = Mask::new_from_shading(
                 gradient_props.clone(),
                 transform,
@@ -546,56 +546,58 @@ impl ContentBuilder {
             let shading_pattern = ShadingPattern::new(
                 gradient_props,
                 TransformWrapper(
-                    self.graphics_states
+                    content_builder.graphics_states
                         .cur()
                         .transform()
                         .pre_concat(transform.0),
                 ),
             );
-            let color_space = self.rd_builder.register_resource(Resource::Pattern(
+            let color_space = content_builder.rd_builder.register_resource(Resource::Pattern(
                 PatternResource::ShadingPattern(shading_pattern),
             ));
 
             if let Some(shading_mask) = shading_mask {
                 let state = ExtGState::new().mask(shading_mask);
 
-                let ext = self
+                let ext = content_builder
                     .rd_builder
                     .register_resource(Resource::ExtGState(state));
-                self.content.set_parameters(ext.to_pdf_name());
+                content_builder.content.set_parameters(ext.to_pdf_name());
             }
 
-            set_pattern_fn(&mut self.content, color_space);
+            set_pattern_fn(&mut content_builder.content, color_space);
+        };
+
+        let color_to_string = |color: Color, no_device_cs: bool, content_builder: &mut ContentBuilder| {
+            match color.color_space(no_device_cs) {
+                ColorSpaceType::Srgb(srgb) => content_builder
+                    .rd_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
+                ColorSpaceType::SGray(sgray) => content_builder
+                    .rd_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
+                ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
+                ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
+                ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
+            }
         };
 
         match paint {
             Paint::Color(c) => {
-                let color_space = match Into::<Color>::into(c)
-                    .color_space(serializer_context.serialize_settings.no_device_cs)
-                {
-                    ColorSpaceType::Srgb(srgb) => self
-                        .rd_builder
-                        .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
-                    ColorSpaceType::SGray(sgray) => self
-                        .rd_builder
-                        .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
-                    ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
-                    ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
-                    ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
-                };
+                let color_space = color_to_string(c.into(), serializer_context.serialize_settings.no_device_cs, self);
                 set_solid_fn(&mut self.content, color_space, &c.into());
             }
             Paint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform);
+                write_gradient(gradient_props, transform, self);
             }
             Paint::RadialGradient(rg) => {
                 let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform);
+                write_gradient(gradient_props, transform, self);
             }
             Paint::SweepGradient(sg) => {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform);
+                write_gradient(gradient_props, transform, self);
             }
             Paint::Pattern(mut pat) => {
                 let transform = pat.transform;

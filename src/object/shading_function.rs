@@ -59,6 +59,9 @@ fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
     bbox
 }
 
+/// WHen writing a PostScript shading, we assume that both points are on a horizontal
+/// line. Here, we calculate by how much we need to rotate the second point so that it
+/// is horizontal to the first point, as well as the position of the rotated point.
 fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     let dist = start.distance(end);
 

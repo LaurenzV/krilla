@@ -353,7 +353,6 @@ mod tests {
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
     use crate::color::rgb::Rgb;
-    use crate::document::Document;
     use crate::Fill;
     use crate::surface::Surface;
 
