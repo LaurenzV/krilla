@@ -18,7 +18,6 @@ mod error;
 pub mod tests;
 
 pub use fontdb::*;
-pub use object::color::rgb;
 pub use object::mask::MaskType;
 pub use object::*;
 pub use paint::*;

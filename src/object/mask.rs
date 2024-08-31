@@ -121,12 +121,13 @@ impl Object for Mask {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb::Rgb;
     use crate::object::mask::Mask;
-    use crate::rgb::Rgb;
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
 
-    use crate::{rgb, Fill, MaskType, Paint};
+    use crate::color::rgb;
+    use crate::{Fill, MaskType, Paint};
     use krilla_macros::snapshot;
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;

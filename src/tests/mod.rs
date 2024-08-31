@@ -1,7 +1,8 @@
+use crate::color::rgb;
 use crate::document::Document;
 use crate::font::Font;
 use crate::image::Image;
-use crate::{rgb, Paint};
+use crate::Paint;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};

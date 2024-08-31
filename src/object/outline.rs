@@ -160,9 +160,9 @@ impl OutlineNode {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb::Rgb;
     use crate::document::Document;
     use crate::object::outline::{Outline, OutlineNode};
-    use crate::rgb::Rgb;
 
     use crate::Fill;
     use krilla_macros::snapshot;

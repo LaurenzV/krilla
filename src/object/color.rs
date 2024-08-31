@@ -1,7 +1,7 @@
 use crate::color::device_cmyk::DeviceCmyk;
 use crate::color::luma::{DeviceGray, SGray};
+use crate::color::rgb::{DeviceRgb, Srgb};
 use crate::error::KrillaResult;
-use crate::rgb::{DeviceRgb, Srgb};
 use crate::serialize::{FilterStream, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;

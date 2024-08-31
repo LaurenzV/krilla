@@ -1,9 +1,9 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::Source;
 
+use crate::color::rgb::Rgb;
 use crate::document::Document;
 use crate::font::Font;
-use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::tests::{

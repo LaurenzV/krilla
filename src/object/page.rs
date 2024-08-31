@@ -187,9 +187,9 @@ impl<'a> PageLabelContainer<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb::Rgb;
     use crate::document::Document;
     use crate::object::page::{Page, PageLabel};
-    use crate::rgb::Rgb;
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
 
