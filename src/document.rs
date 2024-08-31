@@ -21,7 +21,7 @@ use tiny_skia_path::Rect;
 
 /// A PDF document.
 pub struct Document {
-    serializer_context: SerializerContext,
+    pub(crate) serializer_context: SerializerContext,
 }
 
 impl Document {

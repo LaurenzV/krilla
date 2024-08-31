@@ -263,7 +263,6 @@ mod tests {
     use tiny_skia_path::Point;
     use crate::color::rgb::Rgb;
     use crate::Fill;
-    use crate::object::cid_font::CIDFont;
     use crate::surface::Surface;
 
     #[snapshot]
