@@ -99,5 +99,6 @@ where
     LinearGradient(LinearGradient<C>),
     RadialGradient(RadialGradient<C>),
     SweepGradient(SweepGradient<C>),
+    // TODO: When using pattern paint it needs a colorspace...
     Pattern(Pattern),
 }

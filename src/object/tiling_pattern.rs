@@ -87,3 +87,57 @@ impl Object for TilingPattern {
         Ok(chunk)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::color::rgb::Rgb;
+    use crate::serialize::SerializerContext;
+    use crate::surface::{StreamBuilder, Surface};
+    use crate::tests::{basic_pattern_stream, rect_to_path};
+    use crate::tiling_pattern::TilingPattern;
+    use crate::transform::TransformWrapper;
+    use crate::{Fill, Paint, Pattern};
+    use krilla_macros::{snapshot, visreg};
+    use std::sync::Arc;
+    use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
+
+    #[snapshot]
+    fn tiling_pattern_basic(sc: &mut SerializerContext) {
+        let stream_builder = StreamBuilder::new(sc);
+        let pattern_stream = basic_pattern_stream(stream_builder);
+
+        let tiling_pattern = TilingPattern::new(
+            pattern_stream,
+            TransformWrapper(Transform::identity()),
+            NormalizedF32::ONE,
+            FiniteF32::new(20.0).unwrap(),
+            FiniteF32::new(20.0).unwrap(),
+            sc,
+        );
+
+        sc.add_object(tiling_pattern).unwrap();
+    }
+
+    #[visreg(all)]
+    fn tiling_pattern_basic(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let stream_builder = surface.stream_builder();
+        let pattern_stream = basic_pattern_stream(stream_builder);
+
+        let pattern = Pattern {
+            stream: pattern_stream,
+            transform: Default::default(),
+            width: 20.0,
+            height: 20.0,
+        };
+
+        surface.fill_path(
+            &path,
+            Fill {
+                paint: Paint::<Rgb>::Pattern(pattern),
+                opacity: NormalizedF32::new(0.5).unwrap(),
+                rule: Default::default(),
+            },
+        )
+    }
+}

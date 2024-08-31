@@ -3,6 +3,9 @@ use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
+use crate::serialize::SerializerContext;
+use crate::stream::Stream;
+use crate::surface::StreamBuilder;
 use crate::{Fill, Paint, Stop};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
@@ -18,7 +21,7 @@ use std::cmp::max;
 use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
 mod visreg;
@@ -557,4 +560,17 @@ pub fn stops_with_3_opacity() -> Vec<Stop<Rgb>> {
             opacity: NormalizedF32::new(0.1).unwrap(),
         },
     ]
+}
+
+pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
+    let path = rect_to_path(0.0, 0.0, 10.0, 10.0);
+
+    let mut surface = stream_builder.surface();
+    surface.fill_path(&path, red_fill(1.0));
+    surface.push_transform(&Transform::from_translate(10.0, 10.0));
+    surface.fill_path(&path, green_fill(1.0));
+    surface.pop();
+    surface.finish();
+
+    stream_builder.finish()
 }
