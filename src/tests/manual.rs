@@ -193,7 +193,7 @@ fn noto_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
     let mut document = Document::new(SerializeSettings::settings_1());
     all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
-    write_manual_to_store("noto_color_emoji", &document.finish().unwrap());
+    write_manual_to_store("NOTO_COLOR_EMOJI_COLR", &document.finish().unwrap());
 }
 
 #[ignore]

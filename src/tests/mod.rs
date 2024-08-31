@@ -74,7 +74,9 @@ lazy_font!(NOTO_SANS_DEVANAGARI, FONT_PATH.join("NotoSansDevanagari-Regular.ttf"
 #[rustfmt::skip]
 lazy_font!(COLR_TEST_GLYPHS, FONT_PATH.join("colr_test_glyphs.ttf"));
 #[rustfmt::skip]
-lazy_font!(NOTO_COLOR_EMOJI, FONT_PATH.join("NotoColorEmoji.subset.ttf"));
+lazy_font!(NOTO_COLOR_EMOJI_COLR, FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf"));
+#[rustfmt::skip]
+lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf"));
 #[rustfmt::skip]
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 
