@@ -10,12 +10,12 @@
 //! that I try to keep in sync.
 
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
-use skrifa::GlyphId;
-use tiny_skia_path::Point;
 use krilla::color::rgb::Rgb;
-use krilla::{Document, PageSettings};
 use krilla::font::Glyph;
 use krilla::path::Fill;
+use krilla::{Document, PageSettings};
+use skrifa::GlyphId;
+use tiny_skia_path::Point;
 
 fn main() {
     // Set up the font system for cosmic text.

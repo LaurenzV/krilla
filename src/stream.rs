@@ -18,13 +18,13 @@
 //! of your mask/pattern. In the end, you can call `finish`, which will return a `Stream` object.
 //! This `Stream` object contains the encoded instructions of the mask/pattern, which you can
 //! then use to create new `Pattern`/`Mask` objects.
+use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
+use crate::serialize::SerializerContext;
+use crate::surface::Surface;
 use crate::util::RectWrapper;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::content::ContentBuilder;
-use crate::serialize::SerializerContext;
-use crate::surface::Surface;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {

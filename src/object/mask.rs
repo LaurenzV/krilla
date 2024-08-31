@@ -134,11 +134,11 @@ mod tests {
     use crate::mask::MaskType;
     use crate::paint::Paint;
     use crate::path::Fill;
+    use crate::stream::StreamBuilder;
     use crate::tests::{basic_mask, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
-    use crate::stream::StreamBuilder;
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);

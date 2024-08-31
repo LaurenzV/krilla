@@ -4,9 +4,9 @@ use fontdb::Source;
 use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
+use crate::font::Glyph;
 use crate::path::Fill;
 use crate::serialize::SerializeSettings;
-use crate::font::Glyph;
 use crate::tests::{
     all_glyphs_to_pdf, write_manual_to_store, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS,
     NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,

@@ -29,10 +29,10 @@ use skrifa::raw::TableProvider;
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
-use std::ops::Range;
 
 pub(crate) mod bitmap;
 pub(crate) mod colr;

@@ -42,7 +42,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             mode = SnapshotMode::SinglePage
         } else if st == "document" {
             mode = SnapshotMode::Document
-        }  else if st == "stream" {
+        } else if st == "stream" {
             mode = SnapshotMode::Stream
         } else {
             panic!("unknown setting {}", st);

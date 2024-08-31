@@ -95,13 +95,13 @@ mod tests {
     use crate::paint::{Paint, Pattern};
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
+    use crate::stream::StreamBuilder;
     use crate::surface::Surface;
     use crate::tests::{basic_pattern_stream, rect_to_path};
     use crate::tiling_pattern::TilingPattern;
     use crate::util::TransformWrapper;
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
-    use crate::stream::StreamBuilder;
 
     #[snapshot]
     fn tiling_pattern_basic(sc: &mut SerializerContext) {

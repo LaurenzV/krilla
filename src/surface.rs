@@ -425,17 +425,20 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb::Rgb;
+    use crate::font::Font;
+    use crate::mask::MaskType;
+    use crate::path::Fill;
+    use crate::surface::Stroke;
+    use crate::surface::Surface;
+    use crate::tests::{
+        basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path,
+        red_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI,
+    };
+    use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;
     use skrifa::instance::Location;
     use tiny_skia_path::{Point, Transform};
-    use krilla_macros::snapshot;
-    use crate::font::Font;
-    use crate::path::Fill;
-    use crate::color::rgb::Rgb;
-    use crate::mask::MaskType;
-    use crate::surface::Stroke;
-    use crate::surface::Surface;
-    use crate::tests::{basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, NOTO_SANS, NOTO_SANS_DEVANAGARI, rect_to_path, red_fill};
 
     #[snapshot(stream)]
     fn stream_path_single_with_rgb(surface: &mut Surface) {
@@ -507,7 +510,7 @@ mod tests {
             Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap(),
             16.0,
             &[],
-            "hi there"
+            "hi there",
         );
     }
 
@@ -519,7 +522,7 @@ mod tests {
             Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap(),
             16.0,
             &[],
-            "hi there"
+            "hi there",
         );
     }
 
@@ -531,7 +534,7 @@ mod tests {
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, Location::default()).unwrap(),
             16.0,
             &[],
-            "यह कुछ जटिल पाठ है."
+            "यह कुछ जटिल पाठ है.",
         );
     }
 
@@ -539,10 +542,7 @@ mod tests {
     fn stream_image(surface: &mut Surface) {
         let image = load_png_image("rgb8.png");
         let size = image.size();
-        surface.draw_image(
-            image,
-            size
-        );
+        surface.draw_image(image, size);
     }
 
     #[snapshot(stream)]

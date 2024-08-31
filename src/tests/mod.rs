@@ -1,12 +1,16 @@
-use crate::color::{cmyk, luma, rgb};
+use crate::color::cmyk::DeviceCmyk;
+use crate::color::luma::Luma;
 use crate::color::rgb::Rgb;
+use crate::color::{cmyk, luma, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
+use crate::mask::{Mask, MaskType};
 use crate::paint::{Paint, Stop};
 use crate::path::Fill;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
+use crate::surface::Surface;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -22,10 +26,6 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
-use crate::color::cmyk::DeviceCmyk;
-use crate::color::luma::Luma;
-use crate::mask::{Mask, MaskType};
-use crate::surface::Surface;
 
 mod manual;
 mod visreg;
@@ -390,9 +390,9 @@ pub fn all_glyphs_to_pdf(
     color_cycling: bool,
     d: &mut Document,
 ) {
+    use crate::font::Glyph;
     use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
-    use crate::font::Glyph;
 
     let font = Font::new(font_data, 0, Location::default()).unwrap();
     let font_ref = font.font_ref();

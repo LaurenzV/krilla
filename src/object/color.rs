@@ -391,9 +391,9 @@ mod tests {
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 
-    use krilla_macros::{snapshot, visreg};
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path};
+    use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
@@ -409,9 +409,6 @@ mod tests {
     fn cmyk_color(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
-        surface.fill_path(
-            &path,
-            cmyk_fill(1.0),
-        );
+        surface.fill_path(&path, cmyk_fill(1.0));
     }
 }
