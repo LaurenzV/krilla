@@ -20,8 +20,6 @@
 //! then use to create new `Pattern`/`Mask` objects.
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::util::RectWrapper;
-use skrifa::GlyphId;
-use std::ops::Range;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
@@ -73,35 +71,5 @@ impl Stream {
             bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
         }))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Glyph {
-    pub glyph_id: GlyphId,
-    pub range: Range<usize>,
-    pub x_advance: f32,
-    pub x_offset: f32,
-    pub y_offset: f32,
-    pub size: f32,
-}
-
-impl Glyph {
-    pub fn new(
-        glyph_id: GlyphId,
-        x_advance: f32,
-        x_offset: f32,
-        y_offset: f32,
-        range: Range<usize>,
-        size: f32,
-    ) -> Self {
-        Self {
-            glyph_id,
-            x_advance,
-            x_offset,
-            y_offset,
-            range,
-            size,
-        }
     }
 }

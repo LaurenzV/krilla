@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier};
+use crate::text::{Font, FontIdentifier, Glyph};
 use crate::graphics_state::GraphicsStates;
 use crate::image::Image;
 use crate::mask::Mask;
@@ -18,7 +18,7 @@ use crate::resource::{
     ColorSpaceResource, PatternResource, Resource, ResourceDictionaryBuilder, XObjectResource,
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
-use crate::stream::{Glyph, Stream};
+use crate::stream::Stream;
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
     TransformWrapper,

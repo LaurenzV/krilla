@@ -32,6 +32,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
+use std::ops::Range;
 
 pub(crate) mod bitmap;
 pub(crate) mod colr;
@@ -349,5 +350,40 @@ impl OutlinePen for OutlineBuilder {
 
     fn close(&mut self) {
         self.0.close()
+    }
+}
+
+/// A single glyph.
+///
+/// *Note*: The units of `x_advance`, `x_offset` and `y_offset`
+/// are in user space units!
+#[derive(Debug, Clone)]
+pub struct Glyph {
+    pub glyph_id: GlyphId,
+    pub range: Range<usize>,
+    pub x_advance: f32,
+    pub x_offset: f32,
+    pub y_offset: f32,
+    pub size: f32,
+}
+
+impl Glyph {
+    /// Create a new glyph.
+    pub fn new(
+        glyph_id: GlyphId,
+        x_advance: f32,
+        x_offset: f32,
+        y_offset: f32,
+        range: Range<usize>,
+        size: f32,
+    ) -> Self {
+        Self {
+            glyph_id,
+            x_advance,
+            x_offset,
+            y_offset,
+            range,
+            size,
+        }
     }
 }

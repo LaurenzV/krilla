@@ -2,7 +2,7 @@ use crate::color::rgb;
 use crate::color::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, SpreadMethod, Stop};
 use crate::path::Fill;
-use crate::stream::Glyph;
+use crate::text::Glyph;
 use crate::surface::Surface;
 use crate::tests::NOTO_SANS;
 use crate::util::SliceExt;

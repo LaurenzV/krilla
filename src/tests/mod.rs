@@ -1,7 +1,7 @@
 use crate::color::rgb;
 use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
-use crate::font::Font;
+use crate::text::Font;
 use crate::image::Image;
 use crate::paint::{Paint, Stop};
 use crate::path::Fill;
@@ -361,7 +361,7 @@ pub fn all_glyphs_to_pdf(
 ) {
     use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
-    use crate::stream::Glyph;
+    use crate::text::Glyph;
 
     let font = Font::new(font_data, 0, Location::default()).unwrap();
     let font_ref = font.font_ref();
