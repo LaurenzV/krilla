@@ -1,3 +1,5 @@
+///! Creating and using masks.
+
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
@@ -10,7 +12,7 @@ use crate::util::RectWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
-/// A mask.
+/// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub struct Mask {
     /// The stream of the mask.
@@ -25,7 +27,8 @@ pub struct Mask {
 }
 
 impl Mask {
-    /// Create a new mask.
+    /// Create a new mask. `stream` contains the content description
+    /// of the mask, and `mask_type` indicates the type of mask.
     pub fn new(stream: Stream, mask_type: MaskType) -> Self {
         Self {
             stream,
@@ -85,7 +88,7 @@ pub enum MaskType {
 
 impl MaskType {
     /// Return the PDF name of the mask type.
-    pub fn to_name(self) -> Name<'static> {
+    pub(crate) fn to_name(self) -> Name<'static> {
         match self {
             MaskType::Alpha => Name(b"Alpha"),
             MaskType::Luminosity => Name(b"Luminosity"),
@@ -132,7 +135,7 @@ mod tests {
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
 
-    fn mask_impl(mask_type: MaskType, sc: &mut SerializerContext) {
+    fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -155,11 +158,11 @@ mod tests {
 
     #[snapshot]
     pub fn mask_luminosity(sc: &mut SerializerContext) {
-        mask_impl(MaskType::Luminosity, sc);
+        mask_snapshot_impl(MaskType::Luminosity, sc);
     }
 
     #[snapshot]
     pub fn mask_alpha(sc: &mut SerializerContext) {
-        mask_impl(MaskType::Alpha, sc);
+        mask_snapshot_impl(MaskType::Alpha, sc);
     }
 }
