@@ -255,7 +255,7 @@ impl<'a> PageLabelContainer<'a> {
 #[cfg(test)]
 mod tests {
     use crate::color::rgb::Rgb;
-    use crate::document::PageSettings;
+    use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
@@ -311,17 +311,18 @@ mod tests {
         sc.add_page_label(page_label);
     }
 
-    // #[snapshot(document)]
-    // fn page_label_complex(db: &mut Document) {
-    //     db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
-    //     db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
-    //     db.start_page_with(
-    //         Size::from_wh(200.0, 200.0).unwrap(),
-    //         PageLabel::new(
-    //             Some(NumberingStyle::LowerRoman),
-    //             None,
-    //             NonZeroU32::new(2).unwrap(),
-    //         ),
-    //     );
-    // }
+    #[snapshot(document)]
+    fn page_label_complex(d: &mut Document) {
+        d.start_page_with(PageSettings::with_size(200.0, 200.0));
+        d.start_page_with(PageSettings::with_size(250.0, 200.0));
+
+        let mut settings = PageSettings::with_size(250.0, 200.0);
+        settings.page_label = PageLabel::new(
+            Some(NumberingStyle::LowerRoman),
+            None,
+            NonZeroU32::new(2).unwrap(),
+        );
+
+        d.start_page_with(settings);
+    }
 }
