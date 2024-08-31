@@ -347,7 +347,7 @@ mod tests {
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::serialize::{FontContainer, SerializerContext, SerializeSettings};
-    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, red_fill};
     use krilla_macros::{snapshot, visreg};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
@@ -402,6 +402,19 @@ mod tests {
     }
 
     #[visreg(all, settings_4)]
+    fn type3_with_color(surface: &mut Surface) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            red_fill(0.8),
+            font,
+            32.0,
+            &[],
+            "hello world"
+        );
+    }
+
+    #[visreg(all, settings_4)]
     fn type3_noto_arabic_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, Location::default()).unwrap();
         surface.fill_text(
@@ -431,6 +444,29 @@ mod tests {
                 t3_font.set_codepoints(2, "F".to_string());
                 t3_font.set_codepoints(3, "K".to_string());
                 t3_font.set_codepoints(4, "L".to_string());
+            },
+            FontContainer::CIDFont(_) => panic!("expected type 3 font")
+        }
+    }
+
+    #[test]
+    fn type3_more_than_256_glyphs() {
+        let mut sc = SerializerContext::new(SerializeSettings::settings_4());
+        let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
+        let mut font_container = sc.create_or_get_font_container(font.clone())
+            .borrow_mut();
+
+        match &mut *font_container {
+            FontContainer::Type3(t3) => {
+                for i in 2..258 {
+                    t3.add_glyph(GlyphId::new(i));
+                }
+
+                assert_eq!(t3.fonts.len(), 1);
+                assert_eq!(t3.fonts[0].add_glyph(GlyphId::new(20)), 18);
+
+                t3.add_glyph(GlyphId::new(512));
+                assert_eq!(t3.fonts.len(), 2);
             },
             FontContainer::CIDFont(_) => panic!("expected type 3 font")
         }
