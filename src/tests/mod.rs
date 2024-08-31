@@ -357,7 +357,7 @@ pub fn all_glyphs_to_pdf(
     font_data: Arc<Vec<u8>>,
     glyphs: Option<Vec<(GlyphId, String)>>,
     color_cycling: bool,
-    db: &mut Document,
+    d: &mut Document,
 ) {
     use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
@@ -390,7 +390,7 @@ pub fn all_glyphs_to_pdf(
     let units_per_em = metrics.units_per_em as f32;
     let mut cur_point = 0;
 
-    let mut builder = db.start_page_with(PageSettings::with_size(width as f32, height as f32));
+    let mut builder = d.start_page_with(PageSettings::with_size(width as f32, height as f32));
     let mut surface = builder.surface();
 
     let colors = if color_cycling {

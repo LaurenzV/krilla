@@ -120,8 +120,8 @@ mod tests {
 
     #[test]
     fn annotation_to_invalid_destination() {
-        let mut db = Document::new_with(SerializeSettings::settings_1());
-        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut d = Document::new_with(SerializeSettings::settings_1());
+        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
@@ -132,12 +132,12 @@ mod tests {
             .into(),
         );
         page.finish();
-        assert!(db.finish().is_err())
+        assert!(d.finish().is_err())
     }
 
     #[snapshot(document)]
-    fn annotation_to_destination(db: &mut Document) {
-        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+    fn annotation_to_destination(d: &mut Document) {
+        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
@@ -153,7 +153,7 @@ mod tests {
         surface.finish();
         page.finish();
 
-        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),

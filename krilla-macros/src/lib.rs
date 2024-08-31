@@ -77,20 +77,20 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
                 let page_settings = PageSettings::with_size(200.0, 200.0);
-                let mut db = Document::new_with(settings);
-                let mut page = db.start_page_with(page_settings);
+                let mut d = Document::new_with(settings);
+                let mut page = d.start_page_with(page_settings);
                 #impl_ident(&mut page);
                 page.finish();
-                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
+                check_snapshot(#snapshot_name, &d.finish().unwrap(), true);
             }
         }
         SnapshotMode::Document => {
             quote! {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
-                let mut db = Document::new_with(settings);
-                #impl_ident(&mut db);
-                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
+                let mut d = Document::new_with(settings);
+                #impl_ident(&mut d);
+                check_snapshot(#snapshot_name, &d.finish().unwrap(), true);
             }
         }
     };
@@ -203,9 +203,9 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_body = if document {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
-            let mut db = Document::new_with(settings);
-            #impl_ident(&mut db);
-            let pdf = db.finish().unwrap();
+            let mut d = Document::new_with(settings);
+            #impl_ident(&mut d);
+            let pdf = d.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
@@ -213,14 +213,14 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
-            let mut db = Document::new_with(settings);
+            let mut d = Document::new_with(settings);
             let page_settings = PageSettings::with_size(200.0, 200.0);
-            let mut page = db.start_page_with(page_settings);
+            let mut page = d.start_page_with(page_settings);
             let mut surface = page.surface();
             #impl_ident(&mut surface);
             surface.finish();
             page.finish();
-            let pdf = db.finish().unwrap();
+            let pdf = d.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
