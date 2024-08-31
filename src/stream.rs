@@ -1,3 +1,23 @@
+//! Drawing to a non-page context.
+//!
+//! In 90% of the cases, you will not have to use streams. In most cases,
+//! all you need to do when using this crate is to first construct a document,
+//! and then add new pages to the document and use the `surface` method to get
+//! access to the drawing context. However, there are cases when you don't want to
+//! draw on the main page surface, but instead you want to create a "sub-surface"
+//! where you can draw independently of the main page contents. This is what streams
+//! are there for. Currently, there are only two situations where you need to do that:
+//!
+//! - When using masks and defining the contents of the mask.
+//! - When using a pattern fill or stroke and defining the contents of the pattern.
+//!
+//! If you want to do any of the two above, you need to call the `stream_builder` method
+//! of the current surface. The stream builder represents a kind of sub-context that is
+//! independent of the main surface you are working with. Once you have a stream builder, you
+//! can once again invoke the `surface` method, and use this new surface to define the contents
+//! of your mask/pattern. In the end, you can call `finish`, which will return a `Stream` object.
+//! This `Stream` object contains the encoded instructions of the mask/pattern, which you can
+//! then use to create new `Pattern`/`Mask` objects.
 use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
@@ -38,6 +58,9 @@ struct Repr {
     resource_dictionary: ResourceDictionary,
 }
 
+/// A stream.
+///
+/// See the module description for an explanation of its purpose.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stream(Arc<Repr>);
 
@@ -219,7 +242,7 @@ impl ContentBuilder {
         self.content_restore_state();
     }
 
-    pub fn fill_glyphs<'a>(
+    pub fn fill_glyphs(
         &mut self,
         start: Point,
         sc: &mut SerializerContext,
@@ -257,7 +280,7 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
-    pub fn stroke_glyphs<'a>(
+    pub fn stroke_glyphs(
         &mut self,
         start: Point,
         sc: &mut SerializerContext,
@@ -295,6 +318,8 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
+    /// Encode a successive sequence of glyphs that share the same properties and
+    /// can be encoded with one text showing operator.
     fn encode_consecutive_glyph_run(
         &mut self,
         cur_x: &mut f32,
@@ -370,6 +395,8 @@ impl ContentBuilder {
 
             let font_container = sc.create_or_get_font_container(font.clone());
 
+            // Separate into distinct glyph runs that either are encoded using actual text, or are
+            // not.
             let spanned = TextSpanner::new(glyphs, text, font_container);
 
             for fragment in spanned {
@@ -380,6 +407,8 @@ impl ContentBuilder {
                     actual_text.properties().actual_text(TextStr(text));
                 }
 
+                // Segment into glyph runs that can be encoded in one go using a PDF
+                // text showing operator (i.e. no y shift, same Type3 font, etc.)
                 let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
 
                 for glyph_group in segmented {
