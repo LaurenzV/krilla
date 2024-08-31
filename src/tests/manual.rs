@@ -54,7 +54,7 @@ fn simple_shape_demo() {
 
     let page_settings = PageSettings::with_size(200.0, 300.0);
 
-    let mut document_builder = Document::new(SerializeSettings::settings_1());
+    let mut document_builder = Document::new_with(SerializeSettings::settings_1());
     let mut builder = document_builder.start_page_with(page_settings);
     let mut surface = builder.surface();
 
@@ -93,7 +93,7 @@ fn cosmic_text_integration() {
 
     let page_settings = PageSettings::with_size(200.0, 400.0);
 
-    let mut document_builder = Document::new(SerializeSettings::settings_1());
+    let mut document_builder = Document::new_with(SerializeSettings::settings_1());
     let mut builder = document_builder.start_page_with(page_settings);
     let mut surface = builder.surface();
 
@@ -146,7 +146,7 @@ fn cosmic_text_integration() {
 #[test]
 fn twitter_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
-    let mut document = Document::new(SerializeSettings::settings_1());
+    let mut document = Document::new_with(SerializeSettings::settings_1());
     all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("twitter_color_emoji", &document.finish().unwrap());
 }
@@ -160,7 +160,7 @@ fn colr_test_glyphs() {
         .map(|n| (GlyphId::new(n), "".to_string()))
         .collect::<Vec<_>>();
 
-    let mut document = Document::new(SerializeSettings::settings_1());
+    let mut document = Document::new_with(SerializeSettings::settings_1());
     all_glyphs_to_pdf(font_data, Some(glyphs), false, &mut document);
     write_manual_to_store("colr_test_glyphs", &document.finish().unwrap());
 }
@@ -174,7 +174,7 @@ fn noto_sans() {
         .map(|n| (GlyphId::new(n), "".to_string()))
         .collect::<Vec<_>>();
 
-    let mut document = Document::new(SerializeSettings::settings_1());
+    let mut document = Document::new_with(SerializeSettings::settings_1());
     all_glyphs_to_pdf(font_data, Some(glyphs), false, &mut document);
     write_manual_to_store("noto_sans", &document.finish().unwrap());
 }
@@ -184,7 +184,7 @@ fn noto_sans() {
 fn apple_color_emoji() {
     let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
 
-    let mut document = Document::new(SerializeSettings::settings_1());
+    let mut document = Document::new_with(SerializeSettings::settings_1());
     all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("apple_color_emoji", &document.finish().unwrap());
 }
@@ -193,7 +193,7 @@ fn apple_color_emoji() {
 #[test]
 fn noto_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
-    let mut document = Document::new(SerializeSettings::settings_1());
+    let mut document = Document::new_with(SerializeSettings::settings_1());
     all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("NOTO_COLOR_EMOJI_COLR", &document.finish().unwrap());
 }
@@ -202,7 +202,7 @@ fn noto_color_emoji() {
 #[test]
 fn segoe_ui_emoji() {
     let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
-    let mut document = Document::new(SerializeSettings::settings_1());
+    let mut document = Document::new_with(SerializeSettings::settings_1());
     all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("segoe_ui_emoji", &document.finish().unwrap());
 }

@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn annotation_to_invalid_destination() {
-        let mut db = Document::new(SerializeSettings::settings_1());
+        let mut db = Document::new_with(SerializeSettings::settings_1());
         let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
