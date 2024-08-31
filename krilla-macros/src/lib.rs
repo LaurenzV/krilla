@@ -56,7 +56,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let common = quote! {
         use crate::serialize::{SerializeSettings, SerializerContext};
         use crate::tests::{SKIP_SNAPSHOT, check_snapshot};
-        use crate::document::Document;
+        use crate::document::{Document, PageSettings};
         use crate::Size;
 
         if SKIP_SNAPSHOT.is_some() {
@@ -78,8 +78,12 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             quote! {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
+                let page_settings = PageSettings {
+                    media_box: crate::Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),
+                    ..Default::default()
+                };
                 let mut db = Document::new(settings);
-                let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
+                let mut page = db.start_page_with(page_settings);
                 #impl_ident(&mut page);
                 page.finish();
                 check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
@@ -206,7 +210,11 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
             let mut db = Document::new(settings);
-            let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
+            let page_settings = PageSettings {
+                media_box: crate::Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),
+                ..Default::default()
+            };
+            let mut page = db.start_page_with(page_settings);
             let mut surface = page.surface();
             #impl_ident(&mut surface);
             surface.finish();
@@ -235,7 +243,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 fn #name() {
                     use crate::tests::{render_document, check_render, SKIP_VISREG};
                     use crate::Size;
-                    use crate::document::Document;
+                    use crate::document::{Document, PageSettings};
                     use crate::serialize::SerializeSettings;
                     use sitro::Renderer;
                     let renderer = #renderer_ident;

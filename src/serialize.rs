@@ -6,7 +6,7 @@ use crate::object::color::luma::SGray;
 use crate::object::color::rgb::Srgb;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
-use crate::object::page::{Page, PageLabelContainer};
+use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
@@ -117,7 +117,7 @@ pub(crate) struct SerializerContext {
     font_map: HashMap<Font, RefCell<FontContainer>>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
-    pages: Vec<(Ref, Page)>,
+    pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
@@ -173,11 +173,11 @@ impl SerializerContext {
             .get_or_insert_with(|| self.cur_ref.bump())
     }
 
-    pub fn add_page(&mut self, page: Page) {
+    pub fn add_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo {
             ref_,
-            media_box: page.media_box,
+            media_box: page.page_settings.media_box,
         });
         self.pages.push((ref_, page));
     }
@@ -317,7 +317,7 @@ impl SerializerContext {
             &self
                 .pages
                 .iter()
-                .map(|(_, p)| p.page_label.clone())
+                .map(|(_, p)| p.page_settings.page_label.clone())
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();

@@ -2,7 +2,7 @@ use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::Source;
 
 use crate::color::rgb::Rgb;
-use crate::document::Document;
+use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
@@ -15,7 +15,7 @@ use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::Point;
+use tiny_skia_path::{Point, Rect};
 
 #[ignore]
 #[test]
@@ -51,9 +51,14 @@ fn simple_shape_demo() {
             14.0,
         ),
     ];
-    let page_size = tiny_skia_path::Size::from_wh(200.0, 300.0).unwrap();
+
+    let page_settings = PageSettings {
+        media_box: Rect::from_xywh(0.0, 0.0, 200.0, 300.0).unwrap(),
+        page_label: Default::default(),
+    };
+
     let mut document_builder = Document::new(SerializeSettings::settings_1());
-    let mut builder = document_builder.start_page(page_size);
+    let mut builder = document_builder.start_page_with(page_settings);
     let mut surface = builder.surface();
 
     for (font, text, size) in data {
@@ -89,9 +94,15 @@ fn cosmic_text_integration() {
     buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(&mut font_system, false);
 
+
     let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
+    let page_settings = PageSettings {
+        media_box: page_size.to_rect(0.0, 0.0).unwrap(),
+        ..Default::default()
+    };
+
     let mut document_builder = Document::new(SerializeSettings::settings_1());
-    let mut builder = document_builder.start_page(page_size);
+    let mut builder = document_builder.start_page_with(page_settings);
     let mut surface = builder.surface();
 
     let font_map = surface.convert_fontdb(font_system.db_mut(), None);

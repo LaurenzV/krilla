@@ -194,7 +194,7 @@ mod tests {
     use crate::object::outline::{Outline, OutlineNode};
 
     use crate::destination::XyzDestination;
-    use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
+    use crate::tests::{blue_fill, default_page_settings, green_fill, rect_to_path, red_fill};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Size};
 
@@ -204,7 +204,7 @@ mod tests {
         for (index, fill) in fills.into_iter().enumerate() {
             let factor = index as f32 * 50.0;
             let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
-            let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
+            let mut page = db.start_page_with(default_page_settings());
             let mut surface = page.surface();
             surface.fill_path(&path, fill);
             surface.finish();

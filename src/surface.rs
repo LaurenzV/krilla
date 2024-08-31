@@ -1,9 +1,7 @@
 use crate::font::Font;
-use crate::object::annotation::Annotation;
 use crate::object::color::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
-use crate::object::page::{Page, PageLabel};
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
 use crate::stream::{ContentBuilder, Glyph, Stream};
@@ -324,70 +322,6 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
     }
 
     glyphs
-}
-
-pub struct PageBuilder<'a> {
-    sc: &'a mut SerializerContext,
-    size: Size,
-    page_label: PageLabel,
-    page_stream: Stream,
-    annotations: Vec<Annotation>,
-}
-
-impl<'a> PageBuilder<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, size: Size) -> Self {
-        Self {
-            sc,
-            size,
-            page_label: PageLabel::default(),
-            page_stream: Stream::empty(),
-            annotations: vec![],
-        }
-    }
-
-    pub(crate) fn root_transform(&self) -> Transform {
-        Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, self.size.height())
-    }
-
-    pub(crate) fn new_with(
-        sc: &'a mut SerializerContext,
-        size: Size,
-        page_label: PageLabel,
-    ) -> Self {
-        Self {
-            sc,
-            size,
-            page_label,
-            page_stream: Stream::empty(),
-            annotations: vec![],
-        }
-    }
-
-    pub fn add_annotation(&mut self, annotation: Annotation) {
-        self.annotations.push(annotation);
-    }
-
-    pub fn surface(&mut self) -> Surface {
-        let mut root_builder = ContentBuilder::new();
-        // Invert the y-axis.
-        root_builder.concat_transform(&self.root_transform());
-
-        let finish_fn = Box::new(|stream| self.page_stream = stream);
-
-        Surface::new(&mut self.sc, root_builder, finish_fn)
-    }
-
-    pub fn finish(self) {}
-}
-
-impl Drop for PageBuilder<'_> {
-    fn drop(&mut self) {
-        let annotations = std::mem::take(&mut self.annotations);
-
-        let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = Page::new(self.size, stream, self.page_label.clone(), annotations);
-        self.sc.add_page(page);
-    }
 }
 
 pub struct StreamBuilder<'a> {

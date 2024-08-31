@@ -23,6 +23,6 @@ pub use object::*;
 pub use paint::*;
 
 pub use path::*;
-pub use tiny_skia_path::{Size, Transform};
+pub use tiny_skia_path::{Size, Transform, Rect};
 
 // TODO: Add acknowledgements and license files

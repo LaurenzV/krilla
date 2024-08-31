@@ -1,6 +1,6 @@
 use crate::color::rgb;
 use crate::color::rgb::Rgb;
-use crate::document::Document;
+use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
 use crate::{Fill, Paint};
@@ -88,8 +88,11 @@ lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf
 #[rustfmt::skip]
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 
-pub fn default_size() -> crate::Size {
-    crate::Size::from_wh(200.0, 200.0).unwrap()
+pub fn default_page_settings() -> PageSettings {
+    PageSettings {
+        media_box: Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),
+        page_label: Default::default(),
+    }
 }
 
 pub fn green_fill(opacity: f32) -> Fill<Rgb> {
@@ -394,7 +397,7 @@ pub fn all_glyphs_to_pdf(
     let mut cur_point = 0;
 
     let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut builder = db.start_page(page_size);
+    let mut builder = db.start_page_with(PageSettings::with_size(page_size));
     let mut surface = builder.surface();
 
     let colors = if color_cycling {
