@@ -415,3 +415,28 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
         self.canvas_builder.pop();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use skrifa::GlyphId;
+    use krilla_macros::visreg;
+    use crate::document::Document;
+    use crate::tests::{all_glyphs_to_pdf, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR};
+
+    #[visreg(document, settings_3)]
+    fn colr_test_glyphs(document: &mut Document) {
+        let font_data = COLR_TEST_GLYPHS.clone();
+
+        let glyphs = (0..=220)
+            .map(|n| (GlyphId::new(n), "".to_string()))
+            .collect::<Vec<_>>();
+
+        all_glyphs_to_pdf(font_data, Some(glyphs), document);
+    }
+
+    #[visreg(document)]
+    fn noto_color_emoji_colr(document: &mut Document) {
+        let font_data = NOTO_COLOR_EMOJI_COLR.clone();
+        all_glyphs_to_pdf(font_data, None, document);
+    }
+}

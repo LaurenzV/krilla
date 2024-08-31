@@ -440,3 +440,25 @@ mod utils {
         Ebdt,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+    use krilla_macros::visreg;
+    use crate::document::Document;
+    use crate::tests::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
+
+    #[visreg(document)]
+    fn noto_color_emoji_cbdt(document: &mut Document) {
+        let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
+        all_glyphs_to_pdf(font_data, None, document);
+    }
+
+    #[visreg(document)]
+    #[cfg(target_os = "macos")]
+    fn apple_color_emoji(document: &mut Document) {
+        let font_data = Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
+        all_glyphs_to_pdf(font_data, None, document);
+    }
+}
+

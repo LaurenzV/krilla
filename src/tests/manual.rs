@@ -6,15 +6,11 @@ use crate::font::Font;
 use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
-use crate::tests::{
-    write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS,
-    NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
-};
+use crate::tests::{write_manual_to_store, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, all_glyphs_to_pdf};
 use crate::util::SliceExt;
 use crate::Fill;
-use skrifa::instance::{Location, LocationRef, Size};
-use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::instance::{Location};
+use skrifa::{GlyphId};
 use std::sync::Arc;
 use tiny_skia_path::Point;
 
@@ -203,77 +199,4 @@ fn segoe_ui_emoji() {
     let mut document = Document::new(SerializeSettings::settings_1());
     all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
     write_manual_to_store("segoe_ui_emoji", &document.finish().unwrap());
-}
-
-pub fn all_glyphs_to_pdf(
-    font_data: Arc<Vec<u8>>,
-    glyphs: Option<Vec<(GlyphId, String)>>,
-    db: &mut Document,
-) {
-    use crate::object::color_space::rgb::Rgb;
-    use crate::stream::Glyph;
-    use crate::Transform;
-
-    let font = Font::new(font_data, 0, Location::default()).unwrap();
-    let font_ref = font.font_ref();
-
-    let glyphs = glyphs.unwrap_or_else(|| {
-        let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
-        let file = std::str::from_utf8(&file).unwrap();
-        file.chars()
-            .filter_map(|c| {
-                font_ref
-                    .cmap()
-                    .unwrap()
-                    .map_codepoint(c)
-                    .map(|g| (g, c.to_string()))
-            })
-            .collect::<Vec<_>>()
-    });
-
-    let metrics = font_ref.metrics(Size::unscaled(), LocationRef::default());
-    let num_glyphs = glyphs.len();
-    let width = 400;
-
-    let size = 40u32;
-    let num_cols = width / size;
-    let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
-    let units_per_em = metrics.units_per_em as f32;
-    let mut cur_point = 0;
-
-    let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut builder = db.start_page(page_size);
-    let mut surface = builder.surface();
-
-    for (i, text) in glyphs.iter().cloned() {
-        fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
-            let el = cur_point / size;
-            let col = el % num_cols;
-            let row = el / num_cols;
-
-            Transform::from_row(
-                1.0,
-                0.0,
-                0.0,
-                1.0,
-                col as f32 * size as f32,
-                (row + 1) as f32 * size as f32,
-            )
-        }
-
-        surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        surface.fill_glyphs(
-            Point::from_xy(0.0, 0.0),
-            crate::Fill::<Rgb>::default(),
-            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
-            font.clone(),
-            &text,
-        );
-        surface.pop();
-
-        cur_point += size;
-    }
-
-    surface.finish();
-    builder.finish();
 }
