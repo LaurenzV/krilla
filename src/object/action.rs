@@ -45,3 +45,5 @@ impl LinkAction {
             .uri(Str(self.uri.as_bytes()));
     }
 }
+
+// No tests here, because we test through `Annotation`.
