@@ -7,7 +7,9 @@ use pdf_writer::types::AnnotationType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
 
+/// A type of annotation.
 pub enum Annotation {
+    /// A link annotation.
     Link(LinkAnnotation),
 }
 
@@ -24,13 +26,19 @@ impl Annotation {
     }
 }
 
+/// An annotation target.
 pub enum Target {
+    /// A destination within the document.
     Destination(Destination),
+    /// An action to be performed.
     Action(Action),
 }
 
+/// A link annotation.
 pub struct LinkAnnotation {
+    /// The bounding box of the link annotation that it should cover on the page.
     pub rect: Rect,
+    /// The target of the link annotation.
     pub target: Target,
 }
 
@@ -45,6 +53,7 @@ impl LinkAnnotation {
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
+        // TODO: Change how page size is handled here?
         page_size: f32,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
@@ -85,19 +94,34 @@ mod tests {
     use crate::object::action::LinkAction;
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
-    use crate::rgb::Rgb;
 
     use crate::tests::rect_to_path;
-    use crate::Fill;
+    use crate::{Fill, Paint, rgb};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
+    use usvg::NormalizedF32;
+    use crate::rgb::Rgb;
+    use crate::surface::PageBuilder;
+
+    #[snapshot(single_page)]
+    fn annotation_to_link(page: &mut PageBuilder) {
+        page.add_annotation(
+            LinkAnnotation {
+                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                target: Target::Action(
+                    LinkAction::new("https://www.youtube.com".to_string()).into(),
+                ),
+            }
+                .into(),
+        );
+    }
 
     #[snapshot(document)]
-    fn annotation_simple(db: &mut Document) {
+    fn annotation_to_destination(db: &mut Document) {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {
-                rect: Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
+                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
                 target: Target::Destination(
                     XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
                 ),
@@ -105,24 +129,14 @@ mod tests {
             .into(),
         );
 
-        page.add_annotation(
-            LinkAnnotation {
-                rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-                target: Target::Action(
-                    LinkAction::new("https://www.youtube.com".to_string()).into(),
-                ),
-            }
-            .into(),
-        );
-
         let mut surface = page.surface();
         surface.fill_path(
-            &rect_to_path(0.0, 0.0, 100.0, 100.0),
-            Fill::<Rgb>::default(),
-        );
-        surface.fill_path(
-            &rect_to_path(100.0, 100.0, 200.0, 200.0),
-            Fill::<Rgb>::default(),
+            &rect_to_path(50.0, 50.0, 150.0, 150.0),
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
         );
         surface.finish();
         page.finish();
@@ -130,7 +144,7 @@ mod tests {
         let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
         page.add_annotation(
             LinkAnnotation {
-                rect: Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
+                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
                 target: Target::Destination(
                     XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into(),
                 ),
@@ -139,8 +153,12 @@ mod tests {
         );
         let mut my_surface = page.surface();
         my_surface.fill_path(
-            &rect_to_path(100.0, 100.0, 200.0, 200.0),
-            Fill::<Rgb>::default(),
+            &rect_to_path(50.0, 50.0, 150.0, 150.0),
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::new(0, 255, 0)),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
         );
 
         my_surface.finish();

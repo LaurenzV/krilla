@@ -2,7 +2,9 @@ use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
 use pdf_writer::Str;
 
+/// A type of action.
 pub enum Action {
+    /// A link action.
     Link(LinkAction),
 }
 
@@ -18,6 +20,7 @@ impl Action {
     }
 }
 
+/// A link action. Will open a link when clicked.
 pub struct LinkAction {
     uri: String,
 }
@@ -29,6 +32,7 @@ impl Into<Action> for LinkAction {
 }
 
 impl LinkAction {
+    /// Create a new link action that will open a URI when clicked.
     pub fn new(uri: String) -> Self {
         Self { uri }
     }

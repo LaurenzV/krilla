@@ -1,0 +1,131 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Pages
+  /Count 2
+  /Kids [5 0 R 9 0 R]
+>>
+endobj
+
+3 0 obj
+[9 0 R /XYZ 100 100 0]
+endobj
+
+4 0 obj
+<<
+  /Type /Annot
+  /Subtype /Link
+  /Rect [50 50 150 150]
+  /Border [0 0 0]
+  /Dest 3 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 2 0 R
+  /Contents 6 0 R
+  /Annots [4 0 R]
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 85
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/DeviceRGB cs
+1 0 0 scn
+50 50 m
+150 50 l
+150 150 l
+50 150 l
+h
+f
+Q
+endstream
+endobj
+
+7 0 obj
+[5 0 R /XYZ 0 200 0]
+endobj
+
+8 0 obj
+<<
+  /Type /Annot
+  /Subtype /Link
+  /Rect [50 50 150 150]
+  /Border [0 0 0]
+  /Dest 7 0 R
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 2 0 R
+  /Contents 10 0 R
+  /Annots [8 0 R]
+>>
+endobj
+
+10 0 obj
+<<
+  /Length 85
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/DeviceRGB cs
+0 1 0 scn
+50 50 m
+150 50 l
+150 150 l
+50 150 l
+h
+f
+Q
+endstream
+endobj
+
+xref
+0 11
+0000000000 65535 f
+0000000016 00000 n
+0000000070 00000 n
+0000000140 00000 n
+0000000179 00000 n
+0000000289 00000 n
+0000000466 00000 n
+0000000604 00000 n
+0000000641 00000 n
+0000000751 00000 n
+0000000929 00000 n
+trailer
+<<
+  /Size 11
+  /Root 1 0 R
+>>
+startxref
+1068
+%%EOF
