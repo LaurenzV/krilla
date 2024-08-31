@@ -1,16 +1,14 @@
-use crate::document::Document;
-use crate::rgb::Rgb;
+use crate::color::rgb;
+use crate::color::rgb::Rgb;
 use crate::stream::Glyph;
 use crate::surface::Surface;
-use crate::tests::manual::all_glyphs_to_pdf;
-use crate::tests::{COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_CBDT, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, TWITTER_COLOR_EMOJI};
+use crate::tests::NOTO_SANS;
 use crate::util::SliceExt;
-use crate::{rgb, Fill, LinearGradient, Paint, SpreadMethod, Stop};
+use crate::{Fill, LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::{Database, Source};
 use krilla_macros::visreg;
 use skrifa::GlyphId;
-use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, PathBuilder, Point, Rect, Transform};
 
 #[visreg(all)]
@@ -106,39 +104,4 @@ fn cosmic_text(surface: &mut Surface) {
             );
         }
     }
-}
-
-#[visreg(document, settings_3)]
-fn colr_test_glyphs(document: &mut Document) {
-    let font_data = COLR_TEST_GLYPHS.clone();
-
-    let glyphs = (0..=220)
-        .map(|n| (GlyphId::new(n), "".to_string()))
-        .collect::<Vec<_>>();
-
-    all_glyphs_to_pdf(font_data, Some(glyphs), document);
-}
-
-#[visreg(document)]
-fn noto_color_emoji_colr(document: &mut Document) {
-    let font_data = NOTO_COLOR_EMOJI_COLR.clone();
-    all_glyphs_to_pdf(font_data, None, document);
-}
-#[visreg(document)]
-fn noto_color_emoji_cbdt(document: &mut Document) {
-    let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
-    all_glyphs_to_pdf(font_data, None, document);
-}
-
-#[visreg(document)]
-#[cfg(target_os = "macos")]
-fn apple_color_emoji(document: &mut Document) {
-    let font_data = Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
-    all_glyphs_to_pdf(font_data, None, document);
-}
-
-#[visreg(document)]
-fn twitter_color_emoji(document: &mut Document) {
-    let font_data = TWITTER_COLOR_EMOJI.clone();
-    all_glyphs_to_pdf(font_data, None, document);
 }

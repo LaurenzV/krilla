@@ -1,3 +1,4 @@
+///! Creating and using masks.
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
@@ -10,7 +11,7 @@ use crate::util::RectWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
-/// A mask.
+/// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub struct Mask {
     /// The stream of the mask.
@@ -25,7 +26,8 @@ pub struct Mask {
 }
 
 impl Mask {
-    /// Create a new mask.
+    /// Create a new mask. `stream` contains the content description
+    /// of the mask, and `mask_type` indicates the type of mask.
     pub fn new(stream: Stream, mask_type: MaskType) -> Self {
         Self {
             stream,
@@ -85,7 +87,7 @@ pub enum MaskType {
 
 impl MaskType {
     /// Return the PDF name of the mask type.
-    pub fn to_name(self) -> Name<'static> {
+    pub(crate) fn to_name(self) -> Name<'static> {
         match self {
             MaskType::Alpha => Name(b"Alpha"),
             MaskType::Luminosity => Name(b"Luminosity"),
@@ -98,7 +100,7 @@ impl Object for Mask {
         &mut cc.masks
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let x_ref = sc.add_object(XObject::new(
@@ -121,17 +123,19 @@ impl Object for Mask {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb::Rgb;
     use crate::object::mask::Mask;
-    use crate::rgb::Rgb;
     use crate::serialize::SerializerContext;
-    use crate::surface::StreamBuilder;
+    use crate::surface::{StreamBuilder, Surface};
 
-    use crate::{rgb, Fill, MaskType, Paint};
-    use krilla_macros::snapshot;
+    use crate::color::rgb;
+    use crate::tests::{rect_to_path, red_fill};
+    use crate::{Fill, MaskType, Paint};
+    use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
 
-    fn mask_impl(mask_type: MaskType, sc: &mut SerializerContext) {
+    fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -139,26 +143,45 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
-                opacity: NormalizedF32::new(0.5).unwrap(),
-                rule: Default::default(),
-            },
-        );
+        surface.fill_path(&path, red_fill(0.5));
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
         sc.add_object(mask).unwrap();
     }
 
-    #[snapshot]
-    pub fn mask_luminosity(sc: &mut SerializerContext) {
-        mask_impl(MaskType::Luminosity, sc);
+    fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
+        let mut stream_builder = surface.stream_builder();
+        let mut sub_surface = stream_builder.surface();
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+
+        sub_surface.fill_path(&path, red_fill(0.2));
+        sub_surface.finish();
+
+        let mask = Mask::new(stream_builder.finish(), mask_type);
+        surface.push_mask(mask);
+        surface.fill_path(
+            &path,
+            Fill {
+                paint: Paint::<Rgb>::Color(color),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
+        );
+        surface.pop();
     }
 
     #[snapshot]
-    pub fn mask_alpha(sc: &mut SerializerContext) {
-        mask_impl(MaskType::Alpha, sc);
+    pub fn mask_luminosity(sc: &mut SerializerContext) {
+        mask_snapshot_impl(MaskType::Luminosity, sc);
+    }
+
+    #[visreg(all)]
+    pub fn mask_luminosity(surface: &mut Surface) {
+        mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 255, 0));
+    }
+
+    #[visreg(all)]
+    pub fn mask_alpha(surface: &mut Surface) {
+        mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 0, 128));
     }
 }

@@ -2,11 +2,11 @@ use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::luma::SGray;
-use crate::object::color_space::rgb::Srgb;
-use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color::luma::SGray;
+use crate::object::color::rgb::Srgb;
+use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
-use crate::object::page::{Page, PageLabelContainer};
+use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
@@ -78,6 +78,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub fn settings_4() -> Self {
+        Self {
+            force_type3_fonts: true,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -93,15 +100,10 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: SipHashable {
+pub(crate) trait Object: SipHashable {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
-
-    fn serialize(&self, sc: &mut SerializerContext) -> KrillaResult<Chunk> {
-        let root_ref = sc.new_ref();
-        self.serialize_into(sc, root_ref)
-    }
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
 }
 
 pub struct PageInfo {
@@ -110,12 +112,12 @@ pub struct PageInfo {
 }
 
 #[doc(hidden)]
-pub struct SerializerContext {
+pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
-    pages: Vec<(Ref, Page)>,
+    pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
@@ -124,19 +126,12 @@ pub struct SerializerContext {
 }
 
 #[derive(Clone, Copy)]
-pub enum PDFGlyph {
+pub(crate) enum PDFGlyph {
     Type3(u8),
     CID(u16),
 }
 
 impl PDFGlyph {
-    pub fn get(&self) -> u16 {
-        match self {
-            PDFGlyph::Type3(n) => *n as u16,
-            PDFGlyph::CID(n) => *n,
-        }
-    }
-
     pub fn encode_into(&self, slice: &mut Vec<u8>) {
         match self {
             PDFGlyph::Type3(cg) => slice.push(*cg),
@@ -178,17 +173,13 @@ impl SerializerContext {
             .get_or_insert_with(|| self.cur_ref.bump())
     }
 
-    pub fn add_page(&mut self, page: Page) {
+    pub fn add_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo {
             ref_,
-            media_box: page.media_box,
+            media_box: page.page_settings.media_box,
         });
         self.pages.push((ref_, page));
-    }
-
-    pub fn has_pages(&self) -> bool {
-        !self.page_infos.is_empty()
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -220,7 +211,7 @@ impl SerializerContext {
             Ok(*_ref)
         } else {
             let root_ref = self.new_ref();
-            let chunk = object.serialize_into(self, root_ref)?;
+            let chunk = object.serialize(self, root_ref)?;
             self.cached_mappings.insert(hash, root_ref);
             object
                 .chunk_container(&mut self.chunk_container)
@@ -231,7 +222,7 @@ impl SerializerContext {
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize_into(ref_);
+        let chunk = page_label.serialize(ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
     }
@@ -326,18 +317,18 @@ impl SerializerContext {
             &self
                 .pages
                 .iter()
-                .map(|(_, p)| p.page_label.clone())
+                .map(|(_, p)| p.page_settings.page_label.clone())
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();
-            let chunk = container.serialize_into(&mut self, page_label_tree_ref)?;
+            let chunk = container.serialize(&mut self, page_label_tree_ref)?;
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
         let outline = std::mem::take(&mut self.outline);
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
-            let chunk = outline.serialize_into(&mut self, outline_ref)?;
+            let chunk = outline.serialize(&mut self, outline_ref)?;
             self.chunk_container.outline = Some((outline_ref, chunk));
         }
 
@@ -347,13 +338,13 @@ impl SerializerContext {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
                         let ref_ = self.add_resource(t3_font.identifier())?;
-                        let chunk = t3_font.serialize_into(&mut self, ref_)?;
+                        let chunk = t3_font.serialize(&mut self, ref_)?;
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
                     let ref_ = self.add_resource(cid_font.identifier())?;
-                    let chunk = cid_font.serialize_into(&mut self, ref_)?;
+                    let chunk = cid_font.serialize(&mut self, ref_)?;
                     self.chunk_container.fonts.push(chunk);
                 }
             }
@@ -361,7 +352,7 @@ impl SerializerContext {
 
         let pages = std::mem::take(&mut self.pages);
         for (ref_, page) in &pages {
-            let chunk = page.serialize_into(&mut self, *ref_)?;
+            let chunk = page.serialize(&mut self, *ref_)?;
             self.chunk_container.pages.push(chunk);
         }
 
@@ -414,7 +405,7 @@ impl pdf_writer::Primitive for CSWrapper {
 }
 
 #[derive(Debug)]
-pub enum FontContainer {
+pub(crate) enum FontContainer {
     Type3(Type3FontMapper),
     CIDFont(CIDFont),
 }

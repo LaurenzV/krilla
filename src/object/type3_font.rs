@@ -17,7 +17,7 @@ pub type Gid = u8;
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
-pub struct Type3Font {
+pub(crate) struct Type3Font {
     font: Font,
     glyphs: Vec<GlyphId>,
     widths: Vec<f32>,
@@ -98,7 +98,7 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
@@ -267,7 +267,7 @@ impl Type3Font {
 pub type Type3ID = usize;
 
 #[derive(Debug)]
-pub struct Type3FontMapper {
+pub(crate) struct Type3FontMapper {
     font: Font,
     fonts: Vec<Type3Font>,
 }

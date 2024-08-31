@@ -1,24 +1,45 @@
+//! Building document outlines that can be used to navigate a document.
+//!
+//! An outline is a tree-like structure that stores the hierarchical structure of a document.
+//! In particular, in most cases it is used to define the hierarchy of headings in the document.
+//! For example, your document might consist of two first-level headings, which in turn have
+//! more nested headings, which in turn might be nested even further, and so on. The `Outline`
+//! allows you to encode this behavior, and makes it easier to navigate the document in PDF
+//! viewers that support this feature.
+//!
+//! The intended usage is to create a new, empty outline in the very beginning. It represents
+//! the root of the tree. Then, you can create new outline nodes, which you can recursively
+//! nest in any way you wish while processing your document. In the end, you need to push
+//! the first layer of children to the `Outline` object.
+//!
+//! Finally, once you are done building your outline tree, you can use the `set_outline`
+//! function of `Document` to store the outline in the document.
+
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
-use crate::serialize::{Object, SerializerContext};
-use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
-use tiny_skia_path::Point;
+use crate::serialize::SerializerContext;
+use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
+/// An outline.
+///
+/// This represents the root of the outline tree.
 #[derive(Debug, Clone)]
 pub struct Outline {
     children: Vec<OutlineNode>,
 }
 
 impl Outline {
+    /// Create a new, empty outline.
     pub fn new() -> Self {
         Self { children: vec![] }
     }
 
+    /// Push a new child (which may in turn contain other children) to the outline.
     pub fn push_child(&mut self, node: OutlineNode) {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
@@ -45,7 +66,7 @@ impl Outline {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize_into(sc, root_ref, last, next, prev)?);
+                sub_chunks.push(self.children[i].serialize(sc, root_ref, last, next, prev)?);
 
                 prev = cur;
                 cur = next;
@@ -62,33 +83,46 @@ impl Outline {
             chunk.extend(&sub_chunk);
         }
 
+        eprintln!("{}", std::str::from_utf8(&chunk.as_bytes()).unwrap());
+
         Ok(chunk)
     }
 }
 
+/// An outline node.
+///
+/// This represents either an intermediate node in the outline tree, or a leaf node
+/// if it does not contain any further children itself.
 #[derive(Debug, Clone)]
 pub struct OutlineNode {
+    /// The children of the outline node.
     children: Vec<Box<OutlineNode>>,
+    /// The text of the outline entry.
     text: String,
-    page_index: u32,
-    pos: Point,
+    /// The destination of the outline entry.
+    destination: XyzDestination,
 }
 
 impl OutlineNode {
-    pub fn new(text: String, page_index: u32, pos: Point) -> Self {
+    /// Create a new outline node.
+    ///
+    /// `text` is the string that should be displayed in the outline tree, and
+    /// `destination` is the destination that should be jumped to when clicking on
+    /// the outline entry.
+    pub fn new(text: String, destination: XyzDestination) -> Self {
         Self {
             children: vec![],
             text,
-            page_index,
-            pos,
+            destination,
         }
     }
 
+    /// Add a new child to the outline node.
     pub fn push_child(&mut self, node: OutlineNode) {
         self.children.push(Box::new(node))
     }
 
-    pub fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         parent: Ref,
@@ -127,7 +161,7 @@ impl OutlineNode {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize_into(sc, root, last, next, prev)?);
+                sub_chunks.push(self.children[i].serialize(sc, root, last, next, prev)?);
 
                 prev = cur;
                 cur = next;
@@ -142,11 +176,7 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        let dest = XyzDestination::new(self.page_index as usize, self.pos);
-        let dest_ref = sc.new_ref();
-        sub_chunks.push(dest.serialize_into(sc, dest_ref)?);
-
-        outline_entry.pair(Name(b"Dest"), dest_ref);
+        self.destination.serialize(sc, outline_entry.dest())?;
 
         outline_entry.finish();
 
@@ -160,39 +190,41 @@ impl OutlineNode {
 
 #[cfg(test)]
 mod tests {
-    use crate::document::Document;
+    use crate::document::{Document, PageSettings};
     use crate::object::outline::{Outline, OutlineNode};
-    use crate::rgb::Rgb;
 
-    use crate::Fill;
+    use crate::destination::XyzDestination;
+    use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
     use krilla_macros::snapshot;
-    use tiny_skia_path::{PathBuilder, Point, Rect, Size};
+    use tiny_skia_path::Point;
 
     #[snapshot(document)]
     fn outline_simple(db: &mut Document) {
-        let mut builder = PathBuilder::new();
-        builder.push_rect(Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap());
-        let path = builder.finish().unwrap();
-
-        let mut page = db.start_page(Size::from_wh(200.0, 200.0).unwrap());
-        let mut surface = page.surface();
-        surface.fill_path(&path, Fill::<Rgb>::default());
-        surface.finish();
-        page.finish();
-
-        db.start_page(Size::from_wh(200.0, 500.0).unwrap());
-        db.start_page(Size::from_wh(250.0, 700.0).unwrap());
-
+        let fills = [red_fill(1.0), green_fill(1.0), blue_fill(1.0)];
+        for (index, fill) in fills.into_iter().enumerate() {
+            let factor = index as f32 * 50.0;
+            let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
+            let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+            let mut surface = page.surface();
+            surface.fill_path(&path, fill);
+            surface.finish();
+            page.finish();
+        }
         let mut outline = Outline::new();
 
-        let mut child1 = OutlineNode::new("Level 1".to_string(), 0, Point::from_xy(50.0, 50.0));
+        let mut child1 = OutlineNode::new(
+            "Heading 1".to_string(),
+            XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+        );
         child1.push_child(OutlineNode::new(
-            "Level 2".to_string(),
-            0,
-            Point::from_xy(50.0, 150.0),
+            "Heading 1.1".to_string(),
+            XyzDestination::new(1, Point::from_xy(50.0, 50.0)),
         ));
 
-        let child2 = OutlineNode::new("Level 1 try 2".to_string(), 1, Point::from_xy(75.0, 150.0));
+        let child2 = OutlineNode::new(
+            "Heading 2".to_string(),
+            XyzDestination::new(2, Point::from_xy(100.0, 100.0)),
+        );
 
         outline.push_child(child1);
         outline.push_child(child2);

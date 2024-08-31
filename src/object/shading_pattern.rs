@@ -34,7 +34,7 @@ impl Object for ShadingPattern {
         &mut cc.patterns
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let shading_ref = sc.add_object(self.0.shading_function.clone())?;

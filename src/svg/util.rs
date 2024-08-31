@@ -1,5 +1,5 @@
-use crate::object::color_space::rgb;
-use crate::object::color_space::rgb::Rgb;
+use crate::object::color::rgb;
+use crate::object::color::rgb::Rgb;
 use crate::surface::StreamBuilder;
 use crate::svg::{group, ProcessContext};
 use crate::{

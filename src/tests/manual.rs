@@ -1,20 +1,19 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::Source;
 
-use crate::document::Document;
+use crate::color::rgb::Rgb;
+use crate::document::{Document, PageSettings};
 use crate::font::Font;
-use crate::rgb::Rgb;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::tests::{
-    write_manual_to_store, ASSETS_PATH, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS,
+    all_glyphs_to_pdf, write_manual_to_store, COLR_TEST_GLYPHS, DEJAVU_SANS_MONO, NOTO_SANS,
     NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
 };
 use crate::util::SliceExt;
 use crate::Fill;
-use skrifa::instance::{Location, LocationRef, Size};
-use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::instance::Location;
+use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::Point;
 
@@ -52,9 +51,11 @@ fn simple_shape_demo() {
             14.0,
         ),
     ];
-    let page_size = tiny_skia_path::Size::from_wh(200.0, 300.0).unwrap();
+
+    let page_settings = PageSettings::with_size(200.0, 300.0);
+
     let mut document_builder = Document::new(SerializeSettings::settings_1());
-    let mut builder = document_builder.start_page(page_size);
+    let mut builder = document_builder.start_page_with(page_settings);
     let mut surface = builder.surface();
 
     for (font, text, size) in data {
@@ -90,9 +91,10 @@ fn cosmic_text_integration() {
     buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(&mut font_system, false);
 
-    let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
+    let page_settings = PageSettings::with_size(200.0, 400.0);
+
     let mut document_builder = Document::new(SerializeSettings::settings_1());
-    let mut builder = document_builder.start_page(page_size);
+    let mut builder = document_builder.start_page_with(page_settings);
     let mut surface = builder.surface();
 
     let font_map = surface.convert_fontdb(font_system.db_mut(), None);
@@ -145,7 +147,7 @@ fn cosmic_text_integration() {
 fn twitter_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/TwitterColorEmoji-SVGinOT.ttf").unwrap();
     let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("twitter_color_emoji", &document.finish().unwrap());
 }
 
@@ -159,7 +161,7 @@ fn colr_test_glyphs() {
         .collect::<Vec<_>>();
 
     let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
+    all_glyphs_to_pdf(font_data, Some(glyphs), false, &mut document);
     write_manual_to_store("colr_test_glyphs", &document.finish().unwrap());
 }
 
@@ -173,7 +175,7 @@ fn noto_sans() {
         .collect::<Vec<_>>();
 
     let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(font_data, Some(glyphs), &mut document);
+    all_glyphs_to_pdf(font_data, Some(glyphs), false, &mut document);
     write_manual_to_store("noto_sans", &document.finish().unwrap());
 }
 
@@ -183,7 +185,7 @@ fn apple_color_emoji() {
     let font_data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap();
 
     let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("apple_color_emoji", &document.finish().unwrap());
 }
 
@@ -192,7 +194,7 @@ fn apple_color_emoji() {
 fn noto_color_emoji() {
     let font_data = std::fs::read("/Library/Fonts/NotoColorEmoji-Regular.ttf").unwrap();
     let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("NOTO_COLOR_EMOJI_COLR", &document.finish().unwrap());
 }
 
@@ -201,79 +203,6 @@ fn noto_color_emoji() {
 fn segoe_ui_emoji() {
     let font_data = std::fs::read("/Library/Fonts/seguiemj.ttf").unwrap();
     let mut document = Document::new(SerializeSettings::settings_1());
-    all_glyphs_to_pdf(Arc::new(font_data), None, &mut document);
+    all_glyphs_to_pdf(Arc::new(font_data), None, false, &mut document);
     write_manual_to_store("segoe_ui_emoji", &document.finish().unwrap());
-}
-
-pub fn all_glyphs_to_pdf(
-    font_data: Arc<Vec<u8>>,
-    glyphs: Option<Vec<(GlyphId, String)>>,
-    db: &mut Document,
-) {
-    use crate::object::color_space::rgb::Rgb;
-    use crate::stream::Glyph;
-    use crate::Transform;
-
-    let font = Font::new(font_data, 0, Location::default()).unwrap();
-    let font_ref = font.font_ref();
-
-    let glyphs = glyphs.unwrap_or_else(|| {
-        let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
-        let file = std::str::from_utf8(&file).unwrap();
-        file.chars()
-            .filter_map(|c| {
-                font_ref
-                    .cmap()
-                    .unwrap()
-                    .map_codepoint(c)
-                    .map(|g| (g, c.to_string()))
-            })
-            .collect::<Vec<_>>()
-    });
-
-    let metrics = font_ref.metrics(Size::unscaled(), LocationRef::default());
-    let num_glyphs = glyphs.len();
-    let width = 400;
-
-    let size = 40u32;
-    let num_cols = width / size;
-    let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
-    let units_per_em = metrics.units_per_em as f32;
-    let mut cur_point = 0;
-
-    let page_size = tiny_skia_path::Size::from_wh(width as f32, height as f32).unwrap();
-    let mut builder = db.start_page(page_size);
-    let mut surface = builder.surface();
-
-    for (i, text) in glyphs.iter().cloned() {
-        fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
-            let el = cur_point / size;
-            let col = el % num_cols;
-            let row = el / num_cols;
-
-            Transform::from_row(
-                1.0,
-                0.0,
-                0.0,
-                1.0,
-                col as f32 * size as f32,
-                (row + 1) as f32 * size as f32,
-            )
-        }
-
-        surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
-        surface.fill_glyphs(
-            Point::from_xy(0.0, 0.0),
-            crate::Fill::<Rgb>::default(),
-            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
-            font.clone(),
-            &text,
-        );
-        surface.pop();
-
-        cur_point += size;
-    }
-
-    surface.finish();
-    builder.finish();
 }

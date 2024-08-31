@@ -65,8 +65,9 @@ impl ChunkContainer {
                             debug_assert!(!remapper.contains_key(&object_ref));
 
                             $remapper.insert(object_ref, $remapped_ref.bump());
-                            *original_ref = *remapper.get(&object_ref).unwrap();
                         }
+
+                        *original_ref = *remapper.get(&original_ref).unwrap();
                     }
                 )+
             };

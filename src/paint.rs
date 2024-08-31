@@ -1,4 +1,4 @@
-use crate::object::color_space::ColorSpace;
+use crate::object::color::ColorSpace;
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
 

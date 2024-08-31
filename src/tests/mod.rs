@@ -1,4 +1,9 @@
+use crate::color::rgb;
+use crate::color::rgb::Rgb;
+use crate::document::{Document, PageSettings};
+use crate::font::Font;
 use crate::image::Image;
+use crate::{Fill, Paint};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -6,19 +11,20 @@ use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
     render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
+use skrifa::instance::{Location, LocationRef, Size};
+use skrifa::raw::TableProvider;
+use skrifa::{GlyphId, MetadataProvider};
 use std::cmp::max;
 use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use tiny_skia_path::{Path, PathBuilder, Rect};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect};
 
 mod manual;
 mod visreg;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
-pub const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
-pub const SKIP_SNAPSHOT: Option<&str> = option_env!("SKIP_SNAPSHOT");
 
 static ASSETS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
@@ -79,6 +85,30 @@ lazy_font!(NOTO_COLOR_EMOJI_COLR, FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf
 lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf"));
 #[rustfmt::skip]
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
+
+pub fn green_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(0, 255, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(0, 0, 255)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn red_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
@@ -318,4 +348,100 @@ fn is_pix_diff(pixel1: &Rgba<u8>, pixel2: &Rgba<u8>) -> bool {
         || pixel1.0[1] != pixel2.0[1]
         || pixel1.0[2] != pixel2.0[2]
         || pixel1.0[3] != pixel2.0[3]
+}
+
+pub fn all_glyphs_to_pdf(
+    font_data: Arc<Vec<u8>>,
+    glyphs: Option<Vec<(GlyphId, String)>>,
+    color_cycling: bool,
+    db: &mut Document,
+) {
+    use crate::object::color::rgb::Rgb;
+    use crate::stream::Glyph;
+    use crate::Transform;
+
+    let font = Font::new(font_data, 0, Location::default()).unwrap();
+    let font_ref = font.font_ref();
+
+    let glyphs = glyphs.unwrap_or_else(|| {
+        let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
+        let file = std::str::from_utf8(&file).unwrap();
+        file.chars()
+            .filter_map(|c| {
+                font_ref
+                    .cmap()
+                    .unwrap()
+                    .map_codepoint(c)
+                    .map(|g| (g, c.to_string()))
+            })
+            .collect::<Vec<_>>()
+    });
+
+    let metrics = font_ref.metrics(Size::unscaled(), LocationRef::default());
+    let num_glyphs = glyphs.len();
+    let width = 400;
+
+    let size = 40u32;
+    let num_cols = width / size;
+    let height = (num_glyphs as f32 / num_cols as f32).ceil() as u32 * size;
+    let units_per_em = metrics.units_per_em as f32;
+    let mut cur_point = 0;
+
+    let mut builder = db.start_page_with(PageSettings::with_size(width as f32, height as f32));
+    let mut surface = builder.surface();
+
+    let colors = if color_cycling {
+        vec![
+            rgb::Color::new(50, 168, 82),
+            rgb::Color::new(154, 50, 168),
+            rgb::Color::new(232, 21, 56),
+            rgb::Color::new(227, 215, 84),
+            rgb::Color::new(16, 16, 230),
+        ]
+    } else {
+        vec![rgb::Color::new(0, 0, 0)]
+    };
+
+    let mut color_picker = colors.iter().cycle();
+    let mut color = *color_picker.next().unwrap();
+
+    for (i, text) in glyphs.iter().cloned() {
+        fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
+            let el = cur_point / size;
+            let col = el % num_cols;
+            let row = el / num_cols;
+
+            Transform::from_row(
+                1.0,
+                0.0,
+                0.0,
+                1.0,
+                col as f32 * size as f32,
+                (row + 1) as f32 * size as f32,
+            )
+        }
+
+        if (cur_point / size) % num_cols == 0 {
+            color = *color_picker.next().unwrap();
+        }
+
+        surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
+        surface.fill_glyphs(
+            Point::from_xy(0.0, 0.0),
+            crate::Fill::<Rgb> {
+                paint: Paint::Color(color),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
+            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
+            font.clone(),
+            &text,
+        );
+        surface.pop();
+
+        cur_point += size;
+    }
+
+    surface.finish();
+    builder.finish();
 }

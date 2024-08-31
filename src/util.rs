@@ -1,4 +1,4 @@
-use crate::object::color_space::ColorSpace;
+use crate::object::color::ColorSpace;
 use crate::serialize::SipHashable;
 use crate::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};

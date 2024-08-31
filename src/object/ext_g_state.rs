@@ -102,7 +102,7 @@ impl Object for ExtGState {
         &mut cc.ext_g_states
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mask_ref = if let Some(mask) = self.0.mask.clone() {

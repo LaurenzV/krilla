@@ -1,6 +1,6 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
-use crate::object::color_space::luma::DeviceGray;
+use crate::object::color::luma::DeviceGray;
 use crate::surface::Surface;
 use crate::Fill;
 use skrifa::outline::DrawSettings;
@@ -32,4 +32,28 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
     }
 
     Ok(None)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::document::Document;
+    use crate::tests::{all_glyphs_to_pdf, NOTO_SANS};
+    use krilla_macros::visreg;
+    use skrifa::GlyphId;
+
+    #[visreg(document, settings_4)]
+    fn noto_sans_type3_glyphs(document: &mut Document) {
+        let font_data = NOTO_SANS.clone();
+        all_glyphs_to_pdf(
+            font_data,
+            Some(
+                (20..=50)
+                    .into_iter()
+                    .map(|n| (GlyphId::new(n), "".to_string()))
+                    .collect::<Vec<_>>(),
+            ),
+            true,
+            document,
+        );
+    }
 }

@@ -12,7 +12,7 @@ use tiny_skia_path::FiniteF32;
 use usvg::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct TilingPattern {
+pub(crate) struct TilingPattern {
     stream: Stream,
     transform: TransformWrapper,
     base_opacity: NormalizedF32,
@@ -60,7 +60,7 @@ impl Object for TilingPattern {
         &mut cc.patterns
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let pattern_stream =

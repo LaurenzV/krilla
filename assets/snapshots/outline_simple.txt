@@ -5,7 +5,7 @@
 <<
   /Type /Catalog
   /Pages 2 0 R
-  /Outlines 9 0 R
+  /Outlines 3 0 R
 >>
 endobj
 
@@ -13,7 +13,7 @@ endobj
 <<
   /Type /Pages
   /Count 3
-  /Kids [10 0 R 12 0 R 14 0 R]
+  /Kids [7 0 R 9 0 R 11 0 R]
 >>
 endobj
 
@@ -21,7 +21,7 @@ endobj
 <<
   /Type /Outlines
   /First 4 0 R
-  /Last 8 0 R
+  /Last 6 0 R
   /Count 2
 >>
 endobj
@@ -29,45 +29,33 @@ endobj
 4 0 obj
 <<
   /Parent 3 0 R
-  /Next 8 0 R
+  /Next 6 0 R
   /First 5 0 R
   /Last 5 0 R
   /Count -1
-  /Title (Level 1)
-  /Dest 7 0 R
+  /Title (Heading 1)
+  /Dest [7 0 R /XYZ 0 200 0]
 >>
 endobj
 
 5 0 obj
 <<
   /Parent 4 0 R
-  /Title (Level 2)
-  /Dest 6 0 R
+  /Title (Heading 1.1)
+  /Dest [9 0 R /XYZ 50 150 0]
 >>
 endobj
 
 6 0 obj
-[10 0 R /XYZ 50 50 0]
-endobj
-
-7 0 obj
-[10 0 R /XYZ 50 150 0]
-endobj
-
-8 0 obj
 <<
   /Parent 3 0 R
   /Prev 4 0 R
-  /Title (Level 1 try 2)
-  /Dest 9 0 R
+  /Title (Heading 2)
+  /Dest [11 0 R /XYZ 100 100 0]
 >>
 endobj
 
-9 0 obj
-[12 0 R /XYZ 75 350 0]
-endobj
-
-10 0 obj
+7 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -75,11 +63,42 @@ endobj
   >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
-  /Contents 11 0 R
+  /Contents 8 0 R
 >>
 endobj
 
-11 0 obj
+8 0 obj
+<<
+  /Length 81
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/DeviceRGB cs
+1 0 0 scn
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
+endstream
+endobj
+
+9 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 2 0 R
+  /Contents 10 0 R
+>>
+endobj
+
+10 0 obj
 <<
   /Length 85
 >>
@@ -87,7 +106,7 @@ stream
 q
 1 0 0 -1 0 200 cm
 /DeviceRGB cs
-0 0 0 scn
+0 1 0 scn
 50 50 m
 150 50 l
 150 150 l
@@ -98,71 +117,57 @@ Q
 endstream
 endobj
 
+11 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 2 0 R
+  /Contents 12 0 R
+>>
+endobj
+
 12 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
-  /MediaBox [0 0 200 500]
-  /Parent 2 0 R
-  /Contents 13 0 R
->>
-endobj
-
-13 0 obj
-<<
-  /Length 0
+  /Length 89
 >>
 stream
-
-endstream
-endobj
-
-14 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
-  /MediaBox [0 0 250 700]
-  /Parent 2 0 R
-  /Contents 15 0 R
->>
-endobj
-
-15 0 obj
-<<
-  /Length 0
->>
-stream
-
+q
+1 0 0 -1 0 200 cm
+/DeviceRGB cs
+0 0 1 scn
+100 100 m
+200 100 l
+200 200 l
+100 200 l
+h
+f
+Q
 endstream
 endobj
 
 xref
-0 16
+0 13
 0000000000 65535 f
 0000000016 00000 n
 0000000088 00000 n
-0000000167 00000 n
-0000000247 00000 n
-0000000373 00000 n
-0000000444 00000 n
-0000000482 00000 n
-0000000521 00000 n
-0000000612 00000 n
-0000000651 00000 n
-0000000812 00000 n
-0000000951 00000 n
-0000001112 00000 n
-0000001165 00000 n
-0000001326 00000 n
+0000000165 00000 n
+0000000245 00000 n
+0000000388 00000 n
+0000000479 00000 n
+0000000584 00000 n
+0000000743 00000 n
+0000000877 00000 n
+0000001037 00000 n
+0000001176 00000 n
+0000001337 00000 n
 trailer
 <<
-  /Size 16
+  /Size 13
   /Root 1 0 R
 >>
 startxref
-1379
+1480
 %%EOF

@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
-use crate::object::color_space::rgb;
-use crate::object::color_space::rgb::Rgb;
+use crate::object::color::rgb;
+use crate::object::color::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::surface::Surface;
 use crate::{Fill, FillRule};
@@ -413,5 +413,30 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     fn pop_layer(&mut self) {
         self.canvas_builder.pop();
         self.canvas_builder.pop();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::document::Document;
+    use crate::tests::{all_glyphs_to_pdf, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR};
+    use krilla_macros::visreg;
+    use skrifa::GlyphId;
+
+    #[visreg(document, settings_3)]
+    fn colr_test_glyphs(document: &mut Document) {
+        let font_data = COLR_TEST_GLYPHS.clone();
+
+        let glyphs = (0..=220)
+            .map(|n| (GlyphId::new(n), "".to_string()))
+            .collect::<Vec<_>>();
+
+        all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
+    }
+
+    #[visreg(document)]
+    fn noto_color_emoji_colr(document: &mut Document) {
+        let font_data = NOTO_COLOR_EMOJI_COLR.clone();
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 }
