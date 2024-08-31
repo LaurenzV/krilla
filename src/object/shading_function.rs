@@ -49,6 +49,7 @@ pub(crate) enum GradientProperties {
 }
 
 impl GradientProperties {
+    // Check if the gradient could be encoded as a solid fill instead.
     pub fn single_stop_color(&self) -> Option<(Color, Opacity)> {
         match self {
             GradientProperties::RadialAxialGradient(rag) => {
@@ -745,3 +746,5 @@ fn serialize_exponential(
     exp.finish();
     root_ref
 }
+
+// No tests because we test directly via shading pattern.

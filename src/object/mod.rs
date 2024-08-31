@@ -10,7 +10,6 @@ pub mod outline;
 pub mod page;
 pub(crate) mod shading_function;
 pub(crate) mod shading_pattern;
-pub mod structure;
 pub mod tiling_pattern;
 pub(crate) mod type3_font;
 pub(crate) mod xobject;
