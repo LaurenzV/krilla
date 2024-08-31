@@ -1,4 +1,14 @@
 //! Creating and using bitmap images.
+//!
+//! krilla allows you to add bitmap images to your PDF very easily.
+//! The currently supported formats include
+//! - PNG
+//! - JPG
+//! - GIF
+//! - WEBP
+//!
+//! ICC profiles will currently not be embedded, and CMYK images will be naively
+//! converted into the RGB color space.
 
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;

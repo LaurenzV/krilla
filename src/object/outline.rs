@@ -1,4 +1,4 @@
-//! Building document outlines that can be used to navigate a document.
+//! Building outlines for the navigation of the document.
 //!
 //! An outline is a tree-like structure that stores the hierarchical structure of a document.
 //! In particular, in most cases it is used to define the hierarchy of headings in the document.
