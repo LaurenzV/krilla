@@ -1,0 +1,33 @@
+q
+/g0 gs
+/c0 cs
+0 1 0 scn
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
+q
+/g1 gs
+/c0 cs
+0 1 0 scn
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
+q
+/g0 gs
+/c0 cs
+0 1 0 scn
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q

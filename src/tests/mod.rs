@@ -1,4 +1,4 @@
-use crate::color::rgb;
+use crate::color::{cmyk, luma, rgb};
 use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
@@ -22,6 +22,8 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
+use crate::color::cmyk::DeviceCmyk;
+use crate::color::luma::Luma;
 
 mod manual;
 mod visreg;
@@ -108,6 +110,22 @@ pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
 pub fn red_fill(opacity: f32) -> Fill<Rgb> {
     Fill {
         paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn gray_luma(opacity: f32) -> Fill<Luma> {
+    Fill {
+        paint: Paint::Color(luma::Color::new(127)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn cmyk_fill(opacity: f32) -> Fill<DeviceCmyk> {
+    Fill {
+        paint: Paint::Color(cmyk::Color::new(0, 8, 252, 5)),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }

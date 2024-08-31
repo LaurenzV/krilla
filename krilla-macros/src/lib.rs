@@ -21,6 +21,7 @@ impl Parse for AttributeInput {
 enum SnapshotMode {
     SerializerContext,
     SinglePage,
+    Stream,
     Document,
 }
 
@@ -41,6 +42,8 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             mode = SnapshotMode::SinglePage
         } else if st == "document" {
             mode = SnapshotMode::Document
+        }  else if st == "stream" {
+            mode = SnapshotMode::Stream
         } else {
             panic!("unknown setting {}", st);
         }
@@ -70,6 +73,18 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let mut sc = SerializerContext::new(settings);
                 #impl_ident(&mut sc);
                 check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
+            }
+        }
+        SnapshotMode::Stream => {
+            quote! {
+                #common
+                let settings = SerializeSettings::#serialize_settings();
+                let mut sc = SerializerContext::new(settings);
+                let mut stream_builder = crate::stream::StreamBuilder::new(&mut sc);
+                let mut surface = stream_builder.surface();
+                #impl_ident(&mut surface);
+                surface.finish();
+                check_snapshot(#snapshot_name, stream_builder.finish().content(), true);
             }
         }
         SnapshotMode::SinglePage => {

@@ -77,6 +77,7 @@ impl Stream {
     }
 }
 
+/// A builder to create streams.
 pub struct StreamBuilder<'a> {
     sc: &'a mut SerializerContext,
     stream: Stream,
@@ -90,6 +91,7 @@ impl<'a> StreamBuilder<'a> {
         }
     }
 
+    /// Get the surface of the stream builder.
     pub fn surface(&mut self) -> Surface {
         let finish_fn = Box::new(|stream| {
             self.stream = stream;
@@ -98,6 +100,7 @@ impl<'a> StreamBuilder<'a> {
         Surface::new(&mut self.sc, ContentBuilder::new(), finish_fn)
     }
 
+    /// Turn the stream builder into a stream.
     pub fn finish(self) -> Stream {
         self.stream
     }

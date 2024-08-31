@@ -422,3 +422,115 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
 
     glyphs
 }
+
+#[cfg(test)]
+mod tests {
+    use pdf_writer::types::BlendMode;
+    use skrifa::instance::Location;
+    use tiny_skia_path::{Point, Transform};
+    use krilla_macros::snapshot;
+    use crate::font::Font;
+    use crate::path::Fill;
+    use crate::color::rgb::Rgb;
+    use crate::surface::Stroke;
+    use crate::surface::Surface;
+    use crate::tests::{blue_fill, cmyk_fill, gray_luma, green_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI, rect_to_path, red_fill};
+
+    #[snapshot(stream)]
+    fn stream_path_single_with_rgb(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let fill = red_fill(1.0);
+        surface.fill_path(&path, fill);
+    }
+
+    #[snapshot(stream)]
+    fn stream_path_single_with_luma(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let fill = gray_luma(1.0);
+        surface.fill_path(&path, fill);
+    }
+
+    #[snapshot(stream)]
+    fn stream_path_single_with_rgb_and_opacity(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let fill = red_fill(0.5);
+        surface.fill_path(&path, fill);
+    }
+
+    #[snapshot(stream)]
+    fn stream_path_single_with_cmyk(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let fill = cmyk_fill(1.0);
+        surface.fill_path(&path, fill);
+    }
+
+    #[snapshot(stream, settings_2)]
+    fn stream_resource_cache(surface: &mut Surface) {
+        let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+        let path2 = rect_to_path(50.0, 50.0, 150.0, 150.0);
+        let path3 = rect_to_path(100.0, 100.0, 200.0, 200.0);
+
+        surface.fill_path(&path1, green_fill(1.0));
+        surface.fill_path(&path2, red_fill(1.0));
+        surface.fill_path(&path3, blue_fill(1.0));
+    }
+
+    #[snapshot(stream)]
+    fn stream_nested_transforms(surface: &mut Surface) {
+        let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+
+        surface.push_transform(&Transform::from_translate(50.0, 50.0));
+        surface.fill_path(&path1, green_fill(1.0));
+        surface.push_transform(&Transform::from_translate(100.0, 100.0));
+        surface.fill_path(&path1, red_fill(1.0));
+
+        surface.pop();
+        surface.pop();
+    }
+
+    #[snapshot(stream, settings_2)]
+    fn stream_reused_graphics_state(surface: &mut Surface) {
+        let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+        surface.fill_path(&path1, green_fill(0.5));
+        surface.push_blend_mode(BlendMode::ColorBurn);
+        surface.fill_path(&path1, green_fill(0.5));
+        surface.pop();
+        surface.fill_path(&path1, green_fill(0.5));
+    }
+
+    #[snapshot(stream, settings_2)]
+    fn stream_fill_text(surface: &mut Surface) {
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::<Rgb>::default(),
+            Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap(),
+            16.0,
+            &[],
+            "hi there"
+        );
+    }
+
+    #[snapshot(stream, settings_2)]
+    fn stream_stroke_text(surface: &mut Surface) {
+        surface.stroke_text(
+            Point::from_xy(0.0, 50.0),
+            Stroke::<Rgb>::default(),
+            Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap(),
+            16.0,
+            &[],
+            "hi there"
+        );
+    }
+
+    #[snapshot(stream, settings_2)]
+    fn stream_complex_text(surface: &mut Surface) {
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::<Rgb>::default(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, Location::default()).unwrap(),
+            16.0,
+            &[],
+            "यह कुछ जटिल पाठ है."
+        );
+    }
+}
