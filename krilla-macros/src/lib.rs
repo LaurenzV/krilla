@@ -48,7 +48,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name = input_fn.sig.ident.clone();
     let snapshot_name = fn_name.to_string();
 
-    let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
+    let impl_ident = Ident::new(&format!("{}_snapshot_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
     let common = quote! {
@@ -187,7 +187,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
 
-    let impl_ident = Ident::new(&format!("{}_impl", fn_name), fn_name.span());
+    let impl_ident = Ident::new(&format!("{}_visreg_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
     let fn_body = if document {
