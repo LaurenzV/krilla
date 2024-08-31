@@ -1,4 +1,4 @@
-//! Working with pages of a PDF document.
+//! Working with pages in a PDF document.
 
 use crate::document::PageSettings;
 use crate::error::KrillaResult;

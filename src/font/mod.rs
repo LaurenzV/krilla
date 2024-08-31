@@ -1,4 +1,20 @@
-//! Creating and using fonts.
+//! Creating and using OpenType fonts.
+//!
+//! krilla has extensive support for OpenType fonts. It supports CFF-based as well
+//! as glyf-based font OpenType fonts. In addition to that, krilla also supports
+//! all of the major tables used in color fonts, including the `SVG`, `COLR`, `sbix`,
+//! `CBDT`/`EBDT` tables, something that, to the best of my knowledge, no other
+//! Rust crates provides.
+//!
+//! Even better is the fact that you do not need to take care of choosing the right
+//! table for drawing glyphs: All you need to do is to provide the `Font` object with
+//! an appropriate index and variation coordinates,
+//!
+//! krilla, in principle, also supports variable fonts. However, at the moment, variable
+//! fonts are not encoded in the most efficient way (they are stored as Type3 fonts instead
+//! of embedded TTF/CFF fonts, due to the lack of an instancing crate in the Rust ecosystem),
+//! so if possible you should prefer static versions of font. But in principle, using fonts
+//! with non-default variation coordinates should work, too.
 
 use crate::error::KrillaResult;
 use crate::serialize::SvgSettings;
@@ -21,6 +37,8 @@ pub(crate) mod bitmap;
 pub(crate) mod colr;
 pub(crate) mod outline;
 pub(crate) mod svg;
+
+// TODO: Test TrueType collection
 
 /// An OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
 /// It holds a reference to the underlying data as well as some basic information
