@@ -87,14 +87,14 @@ impl LinkAnnotation {
 
 #[cfg(test)]
 mod tests {
-    use crate::document::Document;
+    use crate::document::{Document, PageSettings};
     use crate::object::action::LinkAction;
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
 
-    use crate::serialize::SerializeSettings;
     use crate::object::page::Page;
-    use crate::tests::{default_page_settings, green_fill, rect_to_path, red_fill};
+    use crate::serialize::SerializeSettings;
+    use crate::tests::{green_fill, rect_to_path, red_fill};
 
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn annotation_to_invalid_destination() {
         let mut db = Document::new(SerializeSettings::settings_1());
-        let mut page = db.start_page_with(default_page_settings());
+        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
@@ -131,7 +131,7 @@ mod tests {
 
     #[snapshot(document)]
     fn annotation_to_destination(db: &mut Document) {
-        let mut page = db.start_page_with(default_page_settings());
+        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
@@ -147,7 +147,7 @@ mod tests {
         surface.finish();
         page.finish();
 
-        let mut page = db.start_page_with(default_page_settings());
+        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),

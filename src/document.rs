@@ -1,8 +1,8 @@
 use crate::error::KrillaResult;
 use crate::object::outline::Outline;
+use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
-use crate::object::page::Page;
 use tiny_skia_path::{Rect, Size};
 
 pub struct Document {
@@ -19,13 +19,13 @@ pub struct PageSettings {
     /// The page label of the page.
     ///
     /// **Default**: No page label.
-    pub page_label: PageLabel
+    pub page_label: PageLabel,
 }
 
 impl PageSettings {
-    pub fn with_size(size: Size) -> PageSettings {
+    pub fn with_size(width: f32, height: f32) -> PageSettings {
         PageSettings {
-            media_box: Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap(),
+            media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
             ..Default::default()
         }
     }
@@ -35,7 +35,7 @@ impl Default for PageSettings {
     fn default() -> Self {
         Self {
             media_box: Rect::from_xywh(0.0, 0.0, 595.2765, 841.89108).unwrap(),
-            page_label: PageLabel::default()
+            page_label: PageLabel::default(),
         }
     }
 }

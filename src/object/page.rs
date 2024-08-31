@@ -1,9 +1,11 @@
 //! Working with pages of a PDF document.
 
+use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::{ContentBuilder, Stream};
+use crate::surface::Surface;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
@@ -11,8 +13,6 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
 use tiny_skia_path::Transform;
-use crate::document::PageSettings;
-use crate::surface::Surface;
 
 /// A single page.
 ///
@@ -29,9 +29,7 @@ pub struct Page<'a> {
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext,
-                      page_settings: PageSettings
-    ) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializerContext, page_settings: PageSettings) -> Self {
         Self {
             sc,
             page_settings,
@@ -41,7 +39,14 @@ impl<'a> Page<'a> {
     }
 
     pub(crate) fn root_transform(&self) -> Transform {
-        Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, self.page_settings.media_box.height())
+        Transform::from_row(
+            1.0,
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            self.page_settings.media_box.height(),
+        )
     }
 
     /// Add an annotation to the page.
@@ -86,12 +91,12 @@ impl InternalPage {
     pub(crate) fn new(
         stream: Stream,
         annotations: Vec<Annotation>,
-        page_settings: PageSettings
+        page_settings: PageSettings,
     ) -> Self {
         Self {
             stream,
             annotations,
-            page_settings
+            page_settings,
         }
     }
 
@@ -109,7 +114,11 @@ impl InternalPage {
         if !self.annotations.is_empty() {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
-                chunk.extend(&annotation.serialize(sc, annot_ref, self.page_settings.media_box.height())?);
+                chunk.extend(&annotation.serialize(
+                    sc,
+                    annot_ref,
+                    self.page_settings.media_box.height(),
+                )?);
                 annotation_refs.push(annot_ref);
             }
         }
@@ -266,18 +275,11 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        let page_settings = PageSettings {
-            media_box: Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),
-            page_label: Default::default(),
-        };
+        let page_settings = PageSettings::with_size(200.0, 200.0);
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
-        let page = InternalPage::new(
-            stream_builder.finish(),
-            vec![],
-            page_settings
-        );
+        let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
         sc.add_page(page);
     }
 
@@ -290,18 +292,11 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        let page_settings = PageSettings {
-            media_box: Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),
-            page_label: Default::default(),
-        };
+        let page_settings = PageSettings::with_size(200.0, 200.0);
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
-        let page = InternalPage::new(
-            stream_builder.finish(),
-            vec![],
-            page_settings
-        );
+        let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
         sc.add_page(page);
     }
 

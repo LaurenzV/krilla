@@ -52,10 +52,7 @@ fn simple_shape_demo() {
         ),
     ];
 
-    let page_settings = PageSettings {
-        media_box: Rect::from_xywh(0.0, 0.0, 200.0, 300.0).unwrap(),
-        page_label: Default::default(),
-    };
+    let page_settings = PageSettings::with_size(200.0, 300.0);
 
     let mut document_builder = Document::new(SerializeSettings::settings_1());
     let mut builder = document_builder.start_page_with(page_settings);
@@ -94,12 +91,7 @@ fn cosmic_text_integration() {
     buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(&mut font_system, false);
 
-
-    let page_size = tiny_skia_path::Size::from_wh(200.0, 400.0).unwrap();
-    let page_settings = PageSettings {
-        media_box: page_size.to_rect(0.0, 0.0).unwrap(),
-        ..Default::default()
-    };
+    let page_settings = PageSettings::with_size(200.0, 400.0);
 
     let mut document_builder = Document::new(SerializeSettings::settings_1());
     let mut builder = document_builder.start_page_with(page_settings);
