@@ -434,7 +434,7 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::surface::Stroke;
     use crate::surface::Surface;
-    use crate::tests::{blue_fill, cmyk_fill, gray_luma, green_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI, rect_to_path, red_fill};
+    use crate::tests::{blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, NOTO_SANS, NOTO_SANS_DEVANAGARI, rect_to_path, red_fill};
 
     #[snapshot(stream)]
     fn stream_path_single_with_rgb(surface: &mut Surface) {
@@ -488,7 +488,7 @@ mod tests {
         surface.pop();
     }
 
-    #[snapshot(stream, settings_2)]
+    #[snapshot(stream)]
     fn stream_reused_graphics_state(surface: &mut Surface) {
         let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
         surface.fill_path(&path1, green_fill(0.5));
@@ -498,7 +498,7 @@ mod tests {
         surface.fill_path(&path1, green_fill(0.5));
     }
 
-    #[snapshot(stream, settings_2)]
+    #[snapshot(stream)]
     fn stream_fill_text(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
@@ -510,7 +510,7 @@ mod tests {
         );
     }
 
-    #[snapshot(stream, settings_2)]
+    #[snapshot(stream)]
     fn stream_stroke_text(surface: &mut Surface) {
         surface.stroke_text(
             Point::from_xy(0.0, 50.0),
@@ -522,7 +522,7 @@ mod tests {
         );
     }
 
-    #[snapshot(stream, settings_2)]
+    #[snapshot(stream)]
     fn stream_complex_text(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
@@ -531,6 +531,16 @@ mod tests {
             16.0,
             &[],
             "यह कुछ जटिल पाठ है."
+        );
+    }
+
+    #[snapshot(stream)]
+    fn stream_image(surface: &mut Surface) {
+        let image = load_png_image("rgb8.png");
+        let size = image.size();
+        surface.draw_image(
+            image,
+            size
         );
     }
 }

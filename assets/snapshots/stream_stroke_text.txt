@@ -1,5 +1,5 @@
 q
-/c0 CS
+/DeviceRGB CS
 0 0 0 SCN
 BT
 1 Tr
