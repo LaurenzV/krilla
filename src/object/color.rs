@@ -1,6 +1,49 @@
 //! Dealing with colors and color spaces.
+//!
+//! Unlike other graphics libraries, krilla does not use a single RGB color space that can be
+//! used to draw content with, the reason being that PDF supports much more complex color
+//! management, and krilla tried to expose at least some of that functionality, while still
+//! trying to abstract over the nitty-gritty details that are part of dealing with colors in PDF.
+//!
+//! # Color spaces
+//!
+//! krilla currently supports three color spaces:
+//! - Luma (for greyscale colors)
+//! - Rgb
+//! - CMYK
+//!
+//! Each color space is associated with its specific color type, which you can use to create new
+//! instances of a specific color in that color space.
+//!
+//! # Representation of colors
+//!
+//! When specifying colors, it is important to understand the distinction between device-dependent
+//! and decide-independent color specification. What follows is only a very brief
+//! explanation, if you want to dive into more details, please look for
+//! appropriate resources on the web.
+//!
+//! When specifying colors in a *device-dependent way*, if I instruct the program to draw
+//! the RGB color (145, 120, 45), then the program will use these literal values to activate
+//! the R/G/B lights to achieve displaying a certain color. The problem is that specifying
+//! colors in such a way can lead to slightly different results when actually displaying it,
+//! depending on the screen that is used, since each screen is calibrated differently and
+//! based on different display technologies. This is especially critical for printers, where
+//! different values for CMYK colors might result in different-looking colors when being printed.
+//!
+//! This is why there is also the option to specify colors in a *device-independent* way,
+//! which basically means that the color value (145, 120, 45) is represented in a well-specified
+//! color space, and each screen can then convert the colors so that they match the representation
+//! in the given color space. This should lead to a more accurate color representation across
+//! different screens.
+//!
+//! In most cases, it is totally fine to just use a device-dependent color specification, and it's
+//! what krilla does by default. However, if you do care about that, then you can set the
+//! `no_device_cs` property to true, in which case krilla will embed an ICC profile for the
+//! sgrey and srgb color space (for luma and rgb colors, respectively). At the moment, krilla
+//! does not allow for custom CMYK ICC profiles, so CMYK colors are currently always encoded
+//! in a device-dependent way.
 
-use crate::color::device_cmyk::DeviceCmyk;
+use crate::color::cmyk::DeviceCmyk;
 use crate::color::luma::{DeviceGray, SGray};
 use crate::color::rgb::{DeviceRgb, Srgb};
 use crate::error::KrillaResult;
@@ -70,7 +113,7 @@ pub(crate) enum Color {
     /// A luma-based color.
     Luma(luma::Color),
     /// A device CMYK color.
-    DeviceCmyk(device_cmyk::Color),
+    DeviceCmyk(cmyk::Color),
 }
 
 impl Color {
@@ -91,8 +134,8 @@ impl Color {
     }
 }
 
-/// Device CMYK colors.
-pub mod device_cmyk {
+/// CMYK colors.
+pub mod cmyk {
     use crate::object::color::{ColorSpace, ColorSpaceType, InternalColor};
 
     /// A CMYK color.

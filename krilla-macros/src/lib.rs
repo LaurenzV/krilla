@@ -97,7 +97,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let ignore_snippet = if SKIP_SNAPSHOT.is_some() {
         quote! { #[ignore] }
-    }   else {
+    } else {
         quote! {}
     };
 
@@ -138,7 +138,6 @@ const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mut serialize_settings = format_ident!("default");
-
 
     let mut pdfium = false;
     let mut mupdf = false;
@@ -234,7 +233,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         let ignore_snippet = if SKIP_VISREG.is_some() {
             quote! { #[ignore] }
-        }   else {
+        } else {
             quote! {}
         };
 

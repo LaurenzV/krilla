@@ -1,4 +1,10 @@
-//! A collection of annotations, allowing you to specify region-specific behavior, such as links.
+//! PDF annotations, allowing you to add extra "content" to specific regions.
+//!
+//! PDF has the concept of annotations, which allow you to associate certain regions of
+//! a page with an "annotation". The PDF reference defines many different actions, however,
+//! krilla does not and never will expose all of them. As of right now, the only annotations
+//! that are supported are "link annotations", which allow you associate a certain region of
+//! the page with a link.
 
 use crate::error::KrillaResult;
 use crate::object::action::Action;
