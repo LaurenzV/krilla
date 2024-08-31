@@ -1,5 +1,5 @@
 use crate::error::{KrillaError, KrillaResult};
-use crate::text::{Font, OutlineBuilder};
+use crate::font::{Font, OutlineBuilder};
 use crate::object::color::luma::DeviceGray;
 use crate::path::Fill;
 use crate::surface::Surface;

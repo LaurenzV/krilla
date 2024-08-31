@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
-use crate::text::{Font, FontIdentifier, FontInfo};
+use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
 use crate::object::color::luma::SGray;
 use crate::object::color::rgb::Srgb;

@@ -1,6 +1,6 @@
 use crate::error::KrillaResult;
-use crate::text;
-use crate::text::{Font, FontIdentifier, GlyphSource, Type3Identifier};
+use crate::font;
+use crate::font::{Font, FontIdentifier, GlyphSource, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
@@ -118,7 +118,7 @@ impl Type3Font {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
 
-                let glyph_type = match text::draw_glyph(
+                let glyph_type = match font::draw_glyph(
                     self.font.clone(),
                     svg_settings,
                     *glyph_id,
@@ -344,7 +344,7 @@ impl Type3FontMapper {
 #[cfg(test)]
 mod tests {
     // TODO: Add tests with variable fonts
-    use crate::text::{Font, FontIdentifier, Type3Identifier};
+    use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::color::rgb::Rgb;
     use crate::path::Fill;

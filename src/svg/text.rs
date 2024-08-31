@@ -1,9 +1,9 @@
-use crate::text::Font;
+use crate::font::Font;
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
 use crate::paint::Paint;
 use crate::path::{Fill, Stroke};
-use crate::text::Glyph;
+use crate::font::Glyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};

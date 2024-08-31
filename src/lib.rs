@@ -8,7 +8,7 @@ mod util;
 
 pub mod document;
 pub mod error;
-pub mod text;
+pub mod font;
 pub mod geom;
 pub use object::*;
 pub mod paint;

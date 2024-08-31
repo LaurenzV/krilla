@@ -1,5 +1,5 @@
 use crate::error::{KrillaError, KrillaResult};
-use crate::text::Font;
+use crate::font::Font;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::svg;

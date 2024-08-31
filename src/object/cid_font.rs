@@ -1,5 +1,5 @@
 use crate::error::{KrillaError, KrillaResult};
-use crate::text::{CIDIdentifer, Font, FontIdentifier};
+use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{RectExt, SipHashable, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -253,7 +253,7 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::text::Font;
+    use crate::font::Font;
 
     use crate::color::rgb::Rgb;
     use crate::path::Fill;

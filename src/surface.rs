@@ -1,5 +1,5 @@
 use crate::content::ContentBuilder;
-use crate::text::{Font, Glyph};
+use crate::font::{Font, Glyph};
 use crate::object::color::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;

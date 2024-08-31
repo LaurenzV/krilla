@@ -1,6 +1,6 @@
 use crate::error::{KrillaError, KrillaResult};
-use crate::text::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
-use crate::text::Font;
+use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
+use crate::font::Font;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use skrifa::{GlyphId, MetadataProvider};
