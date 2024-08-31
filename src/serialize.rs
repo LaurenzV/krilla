@@ -27,34 +27,47 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
+/// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
-    pub raster_scale: f32,
-    pub embed_text: bool,
+    /// How much filters, which will be converted to bitmaps, should be scaled. Higher values
+    /// mean better quality, but also bigger file sizes.
+    pub filter_scale: f32
 }
 
 impl Default for SvgSettings {
     fn default() -> Self {
         Self {
-            raster_scale: 1.5,
-            embed_text: true,
+            filter_scale: 1.5
         }
     }
 }
 
+/// Settings that should be applied when creating a PDF document.
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
-    pub ascii_compatible: bool,
+    /// Whether content streams should be compressed.
     pub compress_content_streams: bool,
-    pub no_device_cs: bool,
+    /// The settings for SVG conversion.
     pub svg_settings: SvgSettings,
+    /// Whether device-independent colors should be used instead of
+    /// device-dependent ones.
+    ///
+    /// CMYK colors are currently not affected by this setting.
+    pub no_device_cs: bool,
+    /// Whether the PDF should be ASCII-compatible, i.e. only consist of
+    /// characters in the ASCII range.
+    pub ascii_compatible: bool,
+    /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
+    /// Whether invalid glyphs should be ignored and drawn in blank
+    /// instead of erroring out (applies only to Type3 fonts).
     pub ignore_invalid_glyphs: bool,
 }
 
 #[cfg(test)]
 impl SerializeSettings {
-    pub fn settings_1() -> Self {
+    pub(crate) fn settings_1() -> Self {
         Self {
             ascii_compatible: true,
             compress_content_streams: false,
@@ -65,21 +78,21 @@ impl SerializeSettings {
         }
     }
 
-    pub fn settings_2() -> Self {
+    pub(crate) fn settings_2() -> Self {
         Self {
             no_device_cs: true,
             ..Self::settings_1()
         }
     }
 
-    pub fn settings_3() -> Self {
+    pub(crate) fn settings_3() -> Self {
         Self {
             ignore_invalid_glyphs: true,
             ..Self::settings_1()
         }
     }
 
-    pub fn settings_4() -> Self {
+    pub(crate) fn settings_4() -> Self {
         Self {
             force_type3_fonts: true,
             ..Self::settings_1()
@@ -102,7 +115,6 @@ impl Default for SerializeSettings {
 
 pub(crate) trait Object: SipHashable {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
-
     fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
 }
 

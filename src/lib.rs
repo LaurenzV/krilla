@@ -19,4 +19,5 @@ pub mod surface;
 #[cfg(test)]
 pub mod tests;
 
+pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};

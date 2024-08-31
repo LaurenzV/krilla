@@ -1,3 +1,5 @@
+//! Internal utilities.
+
 use crate::object::color::ColorSpace;
 use crate::path::{LineCap, LineJoin, Stroke};
 use crate::serialize::SipHashable;
