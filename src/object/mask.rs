@@ -127,13 +127,14 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::object::mask::Mask;
     use crate::serialize::SerializerContext;
-    use crate::surface::StreamBuilder;
+    use crate::surface::{StreamBuilder, Surface};
 
     use crate::color::rgb;
     use crate::{Fill, MaskType, Paint};
-    use krilla_macros::snapshot;
+    use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
+    use crate::tests::rect_to_path;
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
@@ -156,13 +157,47 @@ mod tests {
         sc.add_object(mask).unwrap();
     }
 
+    fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
+        let mut stream_builder = surface.stream_builder();
+        let mut sub_surface = stream_builder.surface();
+        let path = rect_to_path(20.0, 20.0, 180.0 ,180.0);
+
+        sub_surface.fill_path(
+            &path,
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+                opacity: NormalizedF32::new(0.2).unwrap(),
+                rule: Default::default(),
+            },
+        );
+        sub_surface.finish();
+
+        let mask = Mask::new(stream_builder.finish(), mask_type);
+        surface.push_mask(mask);
+        surface.fill_path(
+            &path,
+            Fill {
+                paint: Paint::<Rgb>::Color(color),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
+        );
+        surface.pop();
+    }
+
     #[snapshot]
     pub fn mask_luminosity(sc: &mut SerializerContext) {
         mask_snapshot_impl(MaskType::Luminosity, sc);
     }
 
-    #[snapshot]
-    pub fn mask_alpha(sc: &mut SerializerContext) {
-        mask_snapshot_impl(MaskType::Alpha, sc);
+    #[visreg(all)]
+    pub fn mask_luminosity(surface: &mut Surface) {
+        mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 255, 0));
+    }
+
+
+    #[visreg(all)]
+    pub fn mask_alpha(surface: &mut Surface) {
+        mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 0, 128));
     }
 }
