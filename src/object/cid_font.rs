@@ -255,21 +255,20 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 mod tests {
     use crate::font::Font;
 
+    use crate::color::rgb::Rgb;
     use crate::serialize::{FontContainer, SerializerContext};
+    use crate::surface::Surface;
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::Fill;
     use krilla_macros::{snapshot, visreg};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
-    use crate::color::rgb::Rgb;
-    use crate::Fill;
-    use crate::surface::Surface;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone())
-            .borrow_mut();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(_) => panic!("expected CID font"),
@@ -291,7 +290,7 @@ mod tests {
             font,
             32.0,
             &[],
-            "hello world"
+            "hello world",
         );
     }
 
@@ -304,7 +303,7 @@ mod tests {
             font,
             32.0,
             &[],
-            "hello world"
+            "hello world",
         );
     }
 
@@ -317,15 +316,14 @@ mod tests {
             font,
             32.0,
             &[],
-            "مرحبا بالعالم"
+            "مرحبا بالعالم",
         );
     }
 
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone())
-            .borrow_mut();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(_) => panic!("expected CID font"),

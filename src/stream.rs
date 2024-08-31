@@ -530,61 +530,76 @@ impl ContentBuilder {
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
     ) {
+        let no_device_cs = serializer_context.serialize_settings.no_device_cs;
+
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.graphics_states.cur().transform())
         };
 
-        let mut write_gradient = |gradient_props: GradientProperties,
-                                  transform: TransformWrapper, content_builder: &mut ContentBuilder| {
-            let shading_mask = Mask::new_from_shading(
-                gradient_props.clone(),
-                transform,
-                bounds,
-                serializer_context,
-            );
-
-            let shading_pattern = ShadingPattern::new(
-                gradient_props,
-                TransformWrapper(
-                    content_builder.graphics_states
-                        .cur()
-                        .transform()
-                        .pre_concat(transform.0),
-                ),
-            );
-            let color_space = content_builder.rd_builder.register_resource(Resource::Pattern(
-                PatternResource::ShadingPattern(shading_pattern),
-            ));
-
-            if let Some(shading_mask) = shading_mask {
-                let state = ExtGState::new().mask(shading_mask);
-
-                let ext = content_builder
-                    .rd_builder
-                    .register_resource(Resource::ExtGState(state));
-                content_builder.content.set_parameters(ext.to_pdf_name());
-            }
-
-            set_pattern_fn(&mut content_builder.content, color_space);
+        let color_to_string = |color: Color, content_builder: &mut ContentBuilder| match color
+            .color_space(no_device_cs)
+        {
+            ColorSpaceType::Srgb(srgb) => content_builder
+                .rd_builder
+                .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
+            ColorSpaceType::SGray(sgray) => content_builder
+                .rd_builder
+                .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
+            ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
+            ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
+            ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
         };
 
-        let color_to_string = |color: Color, no_device_cs: bool, content_builder: &mut ContentBuilder| {
-            match color.color_space(no_device_cs) {
-                ColorSpaceType::Srgb(srgb) => content_builder
-                    .rd_builder
-                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
-                ColorSpaceType::SGray(sgray) => content_builder
-                    .rd_builder
-                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
-                ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
-                ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
-                ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
-            }
-        };
+        let mut write_gradient =
+            |gradient_props: GradientProperties,
+             transform: TransformWrapper,
+             content_builder: &mut ContentBuilder| {
+                if let Some((color, opacity)) = gradient_props.single_stop_color() {
+                    // Write gradients with one stop as a solid color fill.
+                    content_builder.set_fill_opacity(opacity);
+                    let color_space = color_to_string(color.into(), content_builder);
+                    set_solid_fn(&mut content_builder.content, color_space, &color.into());
+                } else {
+                    let shading_mask = Mask::new_from_shading(
+                        gradient_props.clone(),
+                        transform,
+                        bounds,
+                        serializer_context,
+                    );
+
+                    let shading_pattern = ShadingPattern::new(
+                        gradient_props,
+                        TransformWrapper(
+                            content_builder
+                                .graphics_states
+                                .cur()
+                                .transform()
+                                .pre_concat(transform.0),
+                        ),
+                    );
+                    let color_space =
+                        content_builder
+                            .rd_builder
+                            .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
+                                shading_pattern,
+                            )));
+
+                    if let Some(shading_mask) = shading_mask {
+                        let state = ExtGState::new().mask(shading_mask);
+
+                        let ext = content_builder
+                            .rd_builder
+                            .register_resource(Resource::ExtGState(state));
+                        content_builder.content.set_parameters(ext.to_pdf_name());
+                    }
+
+                    set_pattern_fn(&mut content_builder.content, color_space);
+                }
+            };
 
         match paint {
             Paint::Color(c) => {
-                let color_space = color_to_string(c.into(), serializer_context.serialize_settings.no_device_cs, self);
+                let color_space = color_to_string(c.into(), self);
                 set_solid_fn(&mut self.content, color_space, &c.into());
             }
             Paint::LinearGradient(lg) => {

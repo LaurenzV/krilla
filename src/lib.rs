@@ -23,6 +23,7 @@ pub use object::*;
 pub use paint::*;
 
 pub use path::*;
+pub use serialize::{SerializeSettings, SvgSettings};
 pub use tiny_skia_path::{Rect, Size, Transform};
 
 // TODO: Add acknowledgements and license files

@@ -10,6 +10,7 @@ use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
+use usvg::Opacity;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {
@@ -45,6 +46,25 @@ pub(crate) struct PostScriptGradient {
 pub(crate) enum GradientProperties {
     RadialAxialGradient(RadialAxialGradient),
     PostScriptGradient(PostScriptGradient),
+}
+
+impl GradientProperties {
+    pub fn single_stop_color(&self) -> Option<(Color, Opacity)> {
+        match self {
+            GradientProperties::RadialAxialGradient(rag) => {
+                if rag.stops.len() == 1 {
+                    return Some((rag.stops[0].color, rag.stops[0].opacity));
+                }
+            }
+            GradientProperties::PostScriptGradient(psg) => {
+                if psg.stops.len() == 1 {
+                    return Some((psg.stops[0].color, psg.stops[0].opacity));
+                }
+            }
+        }
+
+        None
+    }
 }
 
 pub(crate) trait GradientPropertiesExt {

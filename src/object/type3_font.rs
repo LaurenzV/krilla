@@ -346,31 +346,32 @@ mod tests {
     // TODO: Add tests with variable fonts
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
-    use crate::serialize::{FontContainer, SerializerContext, SerializeSettings};
-    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, red_fill};
+    use crate::color::rgb::Rgb;
+    use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
+    use crate::surface::Surface;
+    use crate::tests::{red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::Fill;
     use krilla_macros::{snapshot, visreg};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
-    use crate::color::rgb::Rgb;
-    use crate::Fill;
-    use crate::surface::Surface;
 
     #[snapshot(settings_4)]
     fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone())
-            .borrow_mut();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
                 t3.add_glyph(GlyphId::new(36));
                 t3.add_glyph(GlyphId::new(37));
-                let t3_font = t3.font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0))).unwrap();
+                let t3_font = t3
+                    .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
+                    .unwrap();
                 t3_font.set_codepoints(1, "A".to_string());
                 t3_font.set_codepoints(2, "B".to_string());
-            },
-            FontContainer::CIDFont(_) => panic!("expected type 3 font")
+            }
+            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
     }
 
@@ -383,7 +384,7 @@ mod tests {
             font,
             32.0,
             &[],
-            "hello world"
+            "hello world",
         );
     }
 
@@ -396,7 +397,7 @@ mod tests {
             font,
             32.0,
             &[],
-            "hello world"
+            "hello world",
         );
     }
 
@@ -409,7 +410,7 @@ mod tests {
             font,
             32.0,
             &[],
-            "hello world"
+            "hello world",
         );
     }
 
@@ -422,15 +423,14 @@ mod tests {
             font,
             32.0,
             &[],
-            "مرحبا بالعالم"
+            "مرحبا بالعالم",
         );
     }
 
     #[snapshot(settings_4)]
     fn type3_latin_modern_four_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone())
-            .borrow_mut();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
@@ -438,13 +438,15 @@ mod tests {
                 t3.add_glyph(GlyphId::new(54));
                 t3.add_glyph(GlyphId::new(69));
                 t3.add_glyph(GlyphId::new(71));
-                let t3_font = t3.font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0))).unwrap();
+                let t3_font = t3
+                    .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
+                    .unwrap();
                 t3_font.set_codepoints(1, "G".to_string());
                 t3_font.set_codepoints(2, "F".to_string());
                 t3_font.set_codepoints(3, "K".to_string());
                 t3_font.set_codepoints(4, "L".to_string());
-            },
-            FontContainer::CIDFont(_) => panic!("expected type 3 font")
+            }
+            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
     }
 
@@ -452,8 +454,7 @@ mod tests {
     fn type3_more_than_256_glyphs() {
         let mut sc = SerializerContext::new(SerializeSettings::settings_4());
         let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone())
-            .borrow_mut();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
@@ -466,8 +467,8 @@ mod tests {
 
                 t3.add_glyph(GlyphId::new(512));
                 assert_eq!(t3.fonts.len(), 2);
-            },
-            FontContainer::CIDFont(_) => panic!("expected type 3 font")
+            }
+            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
     }
 }
