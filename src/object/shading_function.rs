@@ -15,25 +15,24 @@ use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 pub enum GradientType {
     Sweep,
     Linear,
-    Radial,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub struct Stop {
+pub(crate) struct Stop {
     pub offset: NormalizedF32,
     pub color: Color,
     pub opacity: NormalizedF32,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct RadialAxialGradient {
+pub(crate) struct RadialAxialGradient {
     pub coords: Vec<FiniteF32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct PostScriptGradient {
+pub(crate) struct PostScriptGradient {
     pub min: FiniteF32,
     pub max: FiniteF32,
     pub stops: Vec<Stop>,
@@ -43,12 +42,12 @@ pub struct PostScriptGradient {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum GradientProperties {
+pub(crate) enum GradientProperties {
     RadialAxialGradient(RadialAxialGradient),
     PostScriptGradient(PostScriptGradient),
 }
 
-pub trait GradientPropertiesExt {
+pub(crate) trait GradientPropertiesExt {
     fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper);
 }
 
@@ -186,7 +185,7 @@ struct Repr {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingFunction(Arc<Repr>);
+pub(crate) struct ShadingFunction(Arc<Repr>);
 
 impl ShadingFunction {
     pub fn new(properties: GradientProperties, use_opacities: bool) -> Self {

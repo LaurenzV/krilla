@@ -1,3 +1,5 @@
+//! Dealing with colors and color spaces.
+
 use crate::color::device_cmyk::DeviceCmyk;
 use crate::color::luma::{DeviceGray, SGray};
 use crate::color::rgb::{DeviceRgb, Srgb};
@@ -10,21 +12,22 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
-pub const DEVICE_RGB: &'static str = "DeviceRGB";
+pub(crate) const DEVICE_RGB: &'static str = "DeviceRGB";
 /// The PDF name for the device gray color space.
-pub const DEVICE_GRAY: &'static str = "DeviceGray";
+pub(crate) const DEVICE_GRAY: &'static str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
-pub const DEVICE_CMYK: &'static str = "DeviceCMYK";
+pub(crate) const DEVICE_CMYK: &'static str = "DeviceCMYK";
 
 /// An internal helper trait to more easily deal with colors
 /// of different color spaces.
-pub trait InternalColor {
+pub(crate) trait InternalColor {
     /// Return the components of the color as a normalized f32.
     fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
     /// Return the color space of the color.
     fn color_space(&self, no_device_cs: bool) -> ColorSpaceType;
 }
 
+#[allow(private_bounds)]
 /// A color space and it's associated color.
 pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
@@ -61,7 +64,7 @@ impl ICCBasedColorSpace {
 
 /// A wrapper enum that can hold colors from different color spaces.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub enum Color {
+pub(crate) enum Color {
     /// An RGB-based color.
     Rgb(rgb::Color),
     /// A luma-based color.
@@ -88,7 +91,7 @@ impl Color {
     }
 }
 
-/// A module for dealing with device CMYK colors.
+/// Device CMYK colors.
 pub mod device_cmyk {
     use crate::object::color::{ColorSpace, ColorSpaceType, InternalColor};
 
@@ -139,7 +142,7 @@ pub mod device_cmyk {
     }
 }
 
-/// A module for dealing with device RGB colors.
+/// RGB colors.
 pub mod rgb {
     use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
     use crate::serialize::{Object, SerializerContext};
@@ -215,7 +218,7 @@ pub mod rgb {
 
     /// The SRGB color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Srgb;
+    pub(crate) struct Srgb;
 
     impl Object for Srgb {
         fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
@@ -230,7 +233,7 @@ pub mod rgb {
 
     /// The device RGB color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct DeviceRgb;
+    pub(crate) struct DeviceRgb;
 
     impl ColorSpace for DeviceRgb {
         type Color = Color;
@@ -328,7 +331,7 @@ pub mod luma {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub enum ColorSpaceType {
+pub(crate) enum ColorSpaceType {
     Srgb(Srgb),
     SGray(SGray),
     DeviceGray(DeviceGray),

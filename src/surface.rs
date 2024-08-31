@@ -210,7 +210,7 @@ impl<'a> Surface<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
     }
 
-    pub fn draw_shading(&mut self, shading: &ShadingFunction) {
+    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
     }
 
