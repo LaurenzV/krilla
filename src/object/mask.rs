@@ -1,4 +1,4 @@
-//! Using alpha and luminosity masks.
+//! Alpha and luminosity masks.
 
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;

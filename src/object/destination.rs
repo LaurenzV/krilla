@@ -13,7 +13,7 @@ use tiny_skia_path::{Point, Transform};
 /// The type of destination.
 #[derive(Hash)]
 pub enum Destination {
-    /// An xyz destination.
+    /// An XYZ destination.
     Xyz(XyzDestination),
 }
 

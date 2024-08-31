@@ -1,4 +1,4 @@
-//! PDF annotations, allowing you to add extra "content" to specific regions.
+//! PDF annotations, allowing you to add extra "content" to specific pages.
 //!
 //! PDF has the concept of annotations, which allow you to associate certain regions of
 //! a page with an "annotation". The PDF reference defines many different actions, however,

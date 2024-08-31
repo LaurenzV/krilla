@@ -1,4 +1,4 @@
-//! PDF actions, allowing for adding interactivity to the document.
+//! PDF actions, allowing you to add interactivity to the document.
 //!
 //! PDF has the concept of "actions", which encompass things like navigating to a URL,
 //! opening some file on the system, and so on. The PDF reference defines a whole bunch
