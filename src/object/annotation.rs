@@ -101,7 +101,7 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::serialize::SerializeSettings;
     use crate::surface::PageBuilder;
-    use crate::tests::{default_size, rect_to_path};
+    use crate::tests::{default_size, green_fill, rect_to_path, red_fill};
     use crate::{Fill, Paint};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
@@ -153,11 +153,7 @@ mod tests {
         let mut surface = page.surface();
         surface.fill_path(
             &rect_to_path(50.0, 0.0, 150.0, 100.0),
-            Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
+            red_fill(1.0)
         );
         surface.finish();
         page.finish();
@@ -175,11 +171,7 @@ mod tests {
         let mut my_surface = page.surface();
         my_surface.fill_path(
             &rect_to_path(50.0, 100.0, 150.0, 200.0),
-            Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::new(0, 255, 0)),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
+            green_fill(1.0),
         );
 
         my_surface.finish();

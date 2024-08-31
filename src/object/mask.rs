@@ -134,7 +134,7 @@ mod tests {
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
-    use crate::tests::rect_to_path;
+    use crate::tests::{rect_to_path, red_fill};
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
@@ -146,11 +146,7 @@ mod tests {
 
         surface.fill_path(
             &path,
-            Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
-                opacity: NormalizedF32::new(0.5).unwrap(),
-                rule: Default::default(),
-            },
+            red_fill(0.5),
         );
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
@@ -164,11 +160,7 @@ mod tests {
 
         sub_surface.fill_path(
             &path,
-            Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
-                opacity: NormalizedF32::new(0.2).unwrap(),
-                rule: Default::default(),
-            },
+            red_fill(0.2),
         );
         sub_surface.finish();
 

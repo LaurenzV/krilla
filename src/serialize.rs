@@ -332,6 +332,7 @@ impl SerializerContext {
             self.chunk_container.outline = Some((outline_ref, chunk));
         }
 
+
         let fonts = std::mem::take(&mut self.font_map);
         for font_container in fonts.values() {
             match &*font_container.borrow() {

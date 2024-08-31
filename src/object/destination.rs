@@ -27,7 +27,7 @@ impl Object for Destination {
 }
 
 /// A destination pointing to a specific location at a specific page.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct XyzDestination {
     page_index: usize,
     point: Point,

@@ -2,7 +2,7 @@ use crate::color::rgb;
 use crate::document::Document;
 use crate::font::Font;
 use crate::image::Image;
-use crate::Paint;
+use crate::{Fill, Paint};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -18,6 +18,7 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect};
+use crate::color::rgb::Rgb;
 
 mod manual;
 mod visreg;
@@ -89,6 +90,30 @@ lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 
 pub fn default_size() -> crate::Size {
     crate::Size::from_wh(200.0, 200.0).unwrap()
+}
+
+pub fn green_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(0, 255, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(0, 0, 255)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn red_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
 }
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {

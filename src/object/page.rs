@@ -18,6 +18,7 @@ pub struct Page {
     pub media_box: Rect,
     /// The label of the page.
     pub page_label: PageLabel,
+    /// The annotations of the page.
     pub annotations: Vec<Annotation>,
 }
 
