@@ -8,7 +8,7 @@ use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct XObject {
+pub(crate) struct XObject {
     stream: Stream,
     isolated: bool,
     transparency_group_color_space: bool,
@@ -78,5 +78,28 @@ impl Object for XObject {
         x_object.finish();
 
         Ok(chunk)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use krilla_macros::snapshot;
+    use crate::color::rgb::Rgb;
+    use crate::Fill;
+    use crate::object::xobject::XObject;
+    use crate::serialize::SerializerContext;
+    use crate::surface::StreamBuilder;
+    use crate::tests::rect_to_path;
+
+    #[snapshot]
+    fn x_object_with_transparency(sc: &mut SerializerContext) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let mut sb = StreamBuilder::new(sc);
+        let mut surface = sb.surface();
+        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.finish();
+        let stream = sb.finish();
+        let x_object = XObject::new(stream, true, true, None);
+        sc.add_object(x_object).unwrap();
     }
 }
