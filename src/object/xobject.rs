@@ -83,13 +83,13 @@ impl Object for XObject {
 
 #[cfg(test)]
 mod tests {
-    use krilla_macros::snapshot;
     use crate::color::rgb::Rgb;
-    use crate::Fill;
     use crate::object::xobject::XObject;
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
     use crate::tests::rect_to_path;
+    use crate::Fill;
+    use krilla_macros::snapshot;
 
     #[snapshot]
     fn x_object_with_transparency(sc: &mut SerializerContext) {
