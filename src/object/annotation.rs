@@ -59,14 +59,6 @@ impl LinkAnnotation {
         page_size: f32,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
-
-        let target_ref = sc.new_ref();
-
-        match &self.target {
-            Target::Destination(dest) => chunk.extend(&dest.serialize(sc, target_ref)?),
-            Target::Action(_) => {}
-        };
-
         let mut annotation = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::Annotation>();
@@ -78,8 +70,8 @@ impl LinkAnnotation {
         annotation.border(0.0, 0.0, 0.0, None);
 
         match &self.target {
-            Target::Destination(_) => {
-                annotation.pair(Name(b"Dest"), target_ref);
+            Target::Destination(destination) => {
+                destination.serialize(sc, annotation.insert(Name(b"Dest")).start::<pdf_writer::writers::Destination>())?
             }
             Target::Action(action) => action.serialize(sc, annotation.action()),
         };

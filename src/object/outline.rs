@@ -176,10 +176,7 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        let dest_ref = sc.new_ref();
-        sub_chunks.push(self.destination.serialize(sc, dest_ref)?);
-
-        outline_entry.pair(Name(b"Dest"), dest_ref);
+        self.destination.serialize(sc, outline_entry.dest())?;
 
         outline_entry.finish();
 

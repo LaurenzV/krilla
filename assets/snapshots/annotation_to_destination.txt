@@ -12,25 +12,21 @@ endobj
 <<
   /Type /Pages
   /Count 2
-  /Kids [5 0 R 9 0 R]
+  /Kids [4 0 R 7 0 R]
 >>
 endobj
 
 3 0 obj
-[9 0 R /XYZ 100 100 0]
-endobj
-
-4 0 obj
 <<
   /Type /Annot
   /Subtype /Link
   /Rect [50 100 150 200]
   /Border [0 0 0]
-  /Dest 3 0 R
+  /Dest [7 0 R /XYZ 100 100 0]
 >>
 endobj
 
-5 0 obj
+4 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -38,12 +34,12 @@ endobj
   >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
-  /Contents 6 0 R
-  /Annots [4 0 R]
+  /Contents 5 0 R
+  /Annots [3 0 R]
 >>
 endobj
 
-6 0 obj
+5 0 obj
 <<
   /Length 83
 >>
@@ -62,21 +58,17 @@ Q
 endstream
 endobj
 
-7 0 obj
-[5 0 R /XYZ 0 200 0]
-endobj
-
-8 0 obj
+6 0 obj
 <<
   /Type /Annot
   /Subtype /Link
   /Rect [50 0 150 100]
   /Border [0 0 0]
-  /Dest 7 0 R
+  /Dest [4 0 R /XYZ 0 200 0]
 >>
 endobj
 
-9 0 obj
+7 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -84,12 +76,12 @@ endobj
   >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
-  /Contents 10 0 R
-  /Annots [8 0 R]
+  /Contents 8 0 R
+  /Annots [6 0 R]
 >>
 endobj
 
-10 0 obj
+8 0 obj
 <<
   /Length 87
 >>
@@ -109,23 +101,21 @@ endstream
 endobj
 
 xref
-0 11
+0 9
 0000000000 65535 f
 0000000016 00000 n
 0000000070 00000 n
 0000000140 00000 n
-0000000179 00000 n
-0000000290 00000 n
-0000000467 00000 n
-0000000603 00000 n
-0000000640 00000 n
-0000000749 00000 n
-0000000927 00000 n
+0000000268 00000 n
+0000000445 00000 n
+0000000581 00000 n
+0000000705 00000 n
+0000000882 00000 n
 trailer
 <<
-  /Size 11
+  /Size 9
   /Root 1 0 R
 >>
 startxref
-1068
+1022
 %%EOF

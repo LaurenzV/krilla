@@ -14,14 +14,10 @@ pub enum Destination {
     Xyz(XyzDestination),
 }
 
-impl Object for Destination {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.destinations
-    }
-
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+impl Destination {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, destination: pdf_writer::writers::Destination) -> KrillaResult<()> {
         match self {
-            Destination::Xyz(xyz) => xyz.serialize(sc, root_ref),
+            Destination::Xyz(xyz) => xyz.serialize(sc, destination),
         }
     }
 }
@@ -54,14 +50,8 @@ impl XyzDestination {
     pub fn new(page_index: usize, point: Point) -> Self {
         Self { page_index, point }
     }
-}
 
-impl Object for XyzDestination {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.destinations
-    }
-
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, mut destination: pdf_writer::writers::Destination) -> KrillaResult<()> {
         let page_info = sc
             .page_infos()
             .get(self.page_index)
@@ -76,13 +66,10 @@ impl Object for XyzDestination {
         let invert_transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_size);
         invert_transform.map_point(&mut mapped_point);
 
-        let mut chunk = Chunk::new();
-        chunk
-            .indirect(root_ref)
-            .start::<pdf_writer::writers::Destination>()
+        destination
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
 
-        Ok(chunk)
+        Ok(())
     }
 }

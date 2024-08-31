@@ -13,7 +13,7 @@ endobj
 <<
   /Type /Pages
   /Count 3
-  /Kids [10 0 R 12 0 R 14 0 R]
+  /Kids [7 0 R 9 0 R 11 0 R]
 >>
 endobj
 
@@ -21,7 +21,7 @@ endobj
 <<
   /Type /Outlines
   /First 4 0 R
-  /Last 8 0 R
+  /Last 6 0 R
   /Count 2
 >>
 endobj
@@ -29,12 +29,12 @@ endobj
 4 0 obj
 <<
   /Parent 3 0 R
-  /Next 8 0 R
+  /Next 6 0 R
   /First 5 0 R
   /Last 5 0 R
   /Count -1
   /Title (Heading 1)
-  /Dest 7 0 R
+  /Dest [7 0 R /XYZ 0 200 0]
 >>
 endobj
 
@@ -42,32 +42,20 @@ endobj
 <<
   /Parent 4 0 R
   /Title (Heading 1.1)
-  /Dest 6 0 R
+  /Dest [9 0 R /XYZ 50 150 0]
 >>
 endobj
 
 6 0 obj
-[12 0 R /XYZ 50 150 0]
-endobj
-
-7 0 obj
-[10 0 R /XYZ 0 200 0]
-endobj
-
-8 0 obj
 <<
   /Parent 3 0 R
   /Prev 4 0 R
   /Title (Heading 2)
-  /Dest 9 0 R
+  /Dest [11 0 R /XYZ 100 100 0]
 >>
 endobj
 
-9 0 obj
-[14 0 R /XYZ 100 100 0]
-endobj
-
-10 0 obj
+7 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -75,11 +63,11 @@ endobj
   >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
-  /Contents 11 0 R
+  /Contents 8 0 R
 >>
 endobj
 
-11 0 obj
+8 0 obj
 <<
   /Length 81
 >>
@@ -98,7 +86,7 @@ Q
 endstream
 endobj
 
-12 0 obj
+9 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -106,11 +94,11 @@ endobj
   >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
-  /Contents 13 0 R
+  /Contents 10 0 R
 >>
 endobj
 
-13 0 obj
+10 0 obj
 <<
   /Length 85
 >>
@@ -129,7 +117,7 @@ Q
 endstream
 endobj
 
-14 0 obj
+11 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -137,11 +125,11 @@ endobj
   >>
   /MediaBox [0 0 200 200]
   /Parent 2 0 R
-  /Contents 15 0 R
+  /Contents 12 0 R
 >>
 endobj
 
-15 0 obj
+12 0 obj
 <<
   /Length 89
 >>
@@ -161,28 +149,25 @@ endstream
 endobj
 
 xref
-0 16
+0 13
 0000000000 65535 f
 0000000016 00000 n
 0000000088 00000 n
-0000000167 00000 n
-0000000247 00000 n
-0000000375 00000 n
-0000000450 00000 n
-0000000489 00000 n
-0000000527 00000 n
-0000000614 00000 n
-0000000654 00000 n
-0000000815 00000 n
-0000000950 00000 n
-0000001111 00000 n
-0000001250 00000 n
-0000001411 00000 n
+0000000165 00000 n
+0000000245 00000 n
+0000000388 00000 n
+0000000479 00000 n
+0000000584 00000 n
+0000000743 00000 n
+0000000877 00000 n
+0000001037 00000 n
+0000001176 00000 n
+0000001337 00000 n
 trailer
 <<
-  /Size 16
+  /Size 13
   /Root 1 0 R
 >>
 startxref
-1554
+1480
 %%EOF
