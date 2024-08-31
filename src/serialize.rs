@@ -78,6 +78,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub fn settings_4() -> Self {
+        Self {
+            force_type3_fonts: true,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {

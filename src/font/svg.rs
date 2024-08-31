@@ -57,13 +57,13 @@ pub fn draw_glyph(
 
 #[cfg(test)]
 mod tests {
-    use krilla_macros::visreg;
     use crate::document::Document;
     use crate::tests::{all_glyphs_to_pdf, TWITTER_COLOR_EMOJI};
+    use krilla_macros::visreg;
 
     #[visreg(document)]
     fn twitter_color_emoji(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
-        all_glyphs_to_pdf(font_data, None, document);
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 }

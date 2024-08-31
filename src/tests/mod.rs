@@ -1,4 +1,7 @@
+use crate::document::Document;
+use crate::font::Font;
 use crate::image::Image;
+use crate::{rgb, Paint};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -6,16 +9,14 @@ use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
     render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
+use skrifa::instance::{Location, LocationRef, Size};
+use skrifa::raw::TableProvider;
+use skrifa::{GlyphId, MetadataProvider};
 use std::cmp::max;
 use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use skrifa::{GlyphId, MetadataProvider};
-use skrifa::instance::{Location, LocationRef, Size};
-use skrifa::raw::TableProvider;
-use tiny_skia_path::{Path, PathBuilder, Point, Rect};
-use crate::document::Document;
-use crate::font::Font;
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect};
 
 mod manual;
 mod visreg;
@@ -328,6 +329,7 @@ fn is_pix_diff(pixel1: &Rgba<u8>, pixel2: &Rgba<u8>) -> bool {
 pub fn all_glyphs_to_pdf(
     font_data: Arc<Vec<u8>>,
     glyphs: Option<Vec<(GlyphId, String)>>,
+    color_cycling: bool,
     db: &mut Document,
 ) {
     use crate::object::color_space::rgb::Rgb;
@@ -365,6 +367,21 @@ pub fn all_glyphs_to_pdf(
     let mut builder = db.start_page(page_size);
     let mut surface = builder.surface();
 
+    let colors = if color_cycling {
+        vec![
+            rgb::Color::new(50, 168, 82),
+            rgb::Color::new(154, 50, 168),
+            rgb::Color::new(232, 21, 56),
+            rgb::Color::new(227, 215, 84),
+            rgb::Color::new(16, 16, 230),
+        ]
+    } else {
+        vec![rgb::Color::new(0, 0, 0)]
+    };
+
+    let mut color_picker = colors.iter().cycle();
+    let mut color = *color_picker.next().unwrap();
+
     for (i, text) in glyphs.iter().cloned() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
             let el = cur_point / size;
@@ -381,10 +398,18 @@ pub fn all_glyphs_to_pdf(
             )
         }
 
+        if (cur_point / size) % num_cols == 0 {
+            color = *color_picker.next().unwrap();
+        }
+
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         surface.fill_glyphs(
             Point::from_xy(0.0, 0.0),
-            crate::Fill::<Rgb>::default(),
+            crate::Fill::<Rgb> {
+                paint: Paint::Color(color),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
             &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
             font.clone(),
             &text,

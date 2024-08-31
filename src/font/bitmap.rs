@@ -1,10 +1,10 @@
 use crate::error::{KrillaError, KrillaResult};
+use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::Font;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
-use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 
 /// Draw a bitmap-based glyph on a surface.
 pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
@@ -14,11 +14,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
 
     let bitmap_strikes = BitmapStrikes::new(font.font_ref());
 
-    if let Some(bitmap_glyph) = bitmap_strikes
-        .iter()
-        .filter_map(|s| s.get(glyph))
-        .last()
-    {
+    if let Some(bitmap_glyph) = bitmap_strikes.iter().filter_map(|s| s.get(glyph)).last() {
         let upem = metrics.units_per_em as f32;
 
         match bitmap_glyph.data {
@@ -30,15 +26,17 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
 
                 // Adapted from vello.
                 let scale_factor = upem / (bitmap_glyph.ppem_y);
-                let mut transform = Transform::from_translate(
-                    -bitmap_glyph.bearing_x,
-                    bitmap_glyph.bearing_y
-                ).pre_scale(scale_factor, scale_factor)
-                    .pre_translate(-bitmap_glyph.inner_bearing_x, -bitmap_glyph.inner_bearing_y);
+                let mut transform =
+                    Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
+                        .pre_scale(scale_factor, scale_factor)
+                        .pre_translate(
+                            -bitmap_glyph.inner_bearing_x,
+                            -bitmap_glyph.inner_bearing_y,
+                        );
 
                 transform = match bitmap_glyph.placement_origin {
                     Origin::TopLeft => transform,
-                    Origin::BottomLeft => transform.pre_translate(0.0, -image.size().height())
+                    Origin::BottomLeft => transform.pre_translate(0.0, -image.size().height()),
                 };
 
                 transform = if let Some(format) = bitmap_strikes.format() {
@@ -50,11 +48,12 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
                         // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
                         // We approximate this vertical shift that seems to be produced by it.
                         // This value seems to be pretty close to what is happening on MacOS.
-                        transform.pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
-                    }   else {
+                        transform
+                            .pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
+                    } else {
                         transform
                     }
-                }   else {
+                } else {
                     transform
                 };
 
@@ -65,7 +64,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
                 return Ok(Some(()));
             }
             BitmapData::Bgra(_) => return Ok(None),
-            BitmapData::Mask(_) => return Ok(None)
+            BitmapData::Mask(_) => return Ok(None),
         }
     }
 
@@ -113,7 +112,10 @@ mod utils {
         /// Creates a new `BitmapStrikes` for the given font and format.
         ///
         /// Returns `None` if the requested format is not available.
-        pub fn with_format(font: &(impl TableProvider<'a> + MetadataProvider<'a>), format: BitmapFormat) -> Option<Self> {
+        pub fn with_format(
+            font: &(impl TableProvider<'a> + MetadataProvider<'a>),
+            format: BitmapFormat,
+        ) -> Option<Self> {
             let kind = match format {
                 BitmapFormat::Sbix => StrikesKind::Sbix(
                     font.sbix().ok()?,
@@ -331,20 +333,23 @@ mod utils {
                             BitmapData::Png(bytes)
                         }
                         // 32-bit formats are always byte aligned
-                        bitmap::BitmapContent::Data(bitmap::BitmapDataFormat::ByteAligned, bytes) => {
-                            BitmapData::Bgra(bytes)
-                        }
+                        bitmap::BitmapContent::Data(
+                            bitmap::BitmapDataFormat::ByteAligned,
+                            bytes,
+                        ) => BitmapData::Bgra(bytes),
                         _ => return None,
                     }
                 }
                 1 | 2 | 4 | 8 => {
                     let (data, is_packed) = match &bitmap_data.content {
-                        bitmap::BitmapContent::Data(bitmap::BitmapDataFormat::ByteAligned, bytes) => {
-                            (bytes, false)
-                        }
-                        bitmap::BitmapContent::Data(bitmap::BitmapDataFormat::BitAligned, bytes) => {
-                            (bytes, true)
-                        }
+                        bitmap::BitmapContent::Data(
+                            bitmap::BitmapDataFormat::ByteAligned,
+                            bytes,
+                        ) => (bytes, false),
+                        bitmap::BitmapContent::Data(
+                            bitmap::BitmapDataFormat::BitAligned,
+                            bytes,
+                        ) => (bytes, true),
                         _ => return None,
                     };
                     BitmapData::Mask(MaskData {
@@ -443,22 +448,22 @@ mod utils {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-    use krilla_macros::visreg;
     use crate::document::Document;
     use crate::tests::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
+    use krilla_macros::visreg;
+    use std::sync::Arc;
 
     #[visreg(document)]
     fn noto_color_emoji_cbdt(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
-        all_glyphs_to_pdf(font_data, None, document);
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 
     #[visreg(document)]
     #[cfg(target_os = "macos")]
     fn apple_color_emoji(document: &mut Document) {
-        let font_data = Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
-        all_glyphs_to_pdf(font_data, None, document);
+        let font_data =
+            Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 }
-
