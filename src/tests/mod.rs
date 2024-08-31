@@ -3,7 +3,7 @@ use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
-use crate::{Fill, Paint};
+use crate::{Fill, Paint, Stop};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -444,4 +444,119 @@ pub fn all_glyphs_to_pdf(
 
     surface.finish();
     builder.finish();
+}
+
+pub fn stops_with_1_solid() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.5).unwrap(),
+            color: rgb::Color::new(255, 0,0),
+            opacity: NormalizedF32::ONE,
+        }
+    ]
+}
+
+pub fn stops_with_2_solid_1() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(255, 0,0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(255, 255,0),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_2_solid_2() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_2_opacity() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::new(0.8).unwrap(),
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::new(0.2).unwrap(),
+        },
+    ]
+}
+
+pub fn stops_with_3_solid_1() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.1).unwrap(),
+            color: rgb::Color::new(255, 0,0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.3).unwrap(),
+            color: rgb::Color::new(255, 255,0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(0, 255,255),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_3_solid_2() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.1).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.5).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(1.0).unwrap(),
+            color: rgb::Color::new(235, 52, 110),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_3_opacity() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::new(0.4).unwrap(),
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::new(0.8).unwrap(),
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(235, 52, 110),
+            opacity: NormalizedF32::new(0.1).unwrap(),
+        },
+    ]
 }

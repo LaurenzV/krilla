@@ -1,0 +1,66 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /FunctionType 2
+  /Range [0 1 0 1 0 1]
+  /C0 [1 0 0]
+  /C1 [1 0 0]
+  /Domain [0 1]
+  /N 1
+>>
+endobj
+
+2 0 obj
+<<
+  /FunctionType 2
+  /Range [0 1 0 1 0 1]
+  /C0 [1 0 0]
+  /C1 [1 1 0]
+  /Domain [0 1]
+  /N 1
+>>
+endobj
+
+3 0 obj
+<<
+  /FunctionType 2
+  /Range [0 1 0 1 0 1]
+  /C0 [1 1 0]
+  /C1 [1 1 0]
+  /Domain [0 1]
+  /N 1
+>>
+endobj
+
+4 0 obj
+<<
+  /FunctionType 3
+  /Domain [0 1]
+  /Range [0 1 0 1 0 1]
+  /Functions [1 0 R 2 0 R 3 0 R]
+  /Bounds [0.2 0.8]
+  /Encode [0 1 0 1 0 1]
+>>
+endobj
+
+5 0 obj
+<<
+  /ShadingType 2
+  /ColorSpace /DeviceRGB
+  /Function 4 0 R
+  /Coords [50 0 150 0]
+  /Extend [true true]
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /Pattern
+  /PatternType 2
+  /Shading 5 0 R
+  /Matrix [1 0 0 1 0 0]
+>>
+endobj
+

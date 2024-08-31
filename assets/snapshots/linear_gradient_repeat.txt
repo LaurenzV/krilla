@@ -1,0 +1,33 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Length 593
+  /FunctionType 4
+  /Domain [50 150 50 150]
+  /Range [0 1 0 1 0 1]
+>>
+stream
+{ pop 100 50 2 index 1 index sub dup 3 index div floor exch 1 index 4 index mul sub exch cvi abs 2 mod 0 gt pop add 3 1 roll pop pop dup 70 le {50 sub 70 50 sub div 0 index 1 exch 1 1 sub mul add 1 index 0 exch 0 0 sub mul add 2 index 0 exch 0 0 sub mul add 4 -1 roll pop} {dup 130 le {70 sub 130 70 sub div 0 index 1 exch 1 1 sub mul add 1 index 0 exch 1 0 sub mul add 2 index 0 exch 0 0 sub mul add 4 -1 roll pop} {dup 150 le {130 sub 150 130 sub div 0 index 1 exch 1 1 sub mul add 1 index 1 exch 1 1 sub mul add 2 index 0 exch 0 0 sub mul add 4 -1 roll pop} {1 1 0} ifelse} ifelse} ifelse }
+endstream
+endobj
+
+2 0 obj
+<<
+  /ShadingType 1
+  /ColorSpace /DeviceRGB
+  /Function 1 0 R
+  /Domain [50 150 50 150]
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Pattern
+  /PatternType 2
+  /Shading 2 0 R
+  /Matrix [1 0 0 1 0 0]
+>>
+endobj
+

@@ -47,3 +47,100 @@ impl Object for ShadingPattern {
         Ok(chunk)
     }
 }
+
+mod tests {
+    use tiny_skia_path::Rect;
+    use krilla_macros::snapshot;
+    use crate::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
+    use crate::object::shading_function::GradientPropertiesExt;
+    use crate::object::shading_pattern::ShadingPattern;
+    use crate::serialize::SerializerContext;
+    use crate::tests::stops_with_2_solid_1;
+
+    #[snapshot]
+    fn linear_gradient_pad(sc: &mut SerializerContext) {
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
+
+        let (props, transform) = gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
+        let shading_pattern = ShadingPattern::new(props, transform);
+        sc.add_object(shading_pattern).unwrap();
+    }
+
+    #[snapshot]
+    fn linear_gradient_repeat(sc: &mut SerializerContext) {
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
+
+        let (props, transform) = gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
+        let shading_pattern = ShadingPattern::new(props, transform);
+        sc.add_object(shading_pattern).unwrap();
+    }
+
+    #[snapshot]
+    fn sweep_gradient_pad(sc: &mut SerializerContext) {
+        let gradient = SweepGradient {
+            cx: 100.0,
+            cy: 100.0,
+            start_angle: 0.0,
+            end_angle: 90.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
+
+        let (props, transform) = gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
+        let shading_pattern = ShadingPattern::new(props, transform);
+        sc.add_object(shading_pattern).unwrap();
+    }
+
+    #[snapshot]
+    fn sweep_gradient_repeat(sc: &mut SerializerContext) {
+        let gradient = SweepGradient {
+            cx: 100.0,
+            cy: 100.0,
+            start_angle: 0.0,
+            end_angle: 90.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
+
+        let (props, transform) = gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
+        let shading_pattern = ShadingPattern::new(props, transform);
+        sc.add_object(shading_pattern).unwrap();
+    }
+
+    #[snapshot]
+    fn radial_gradient_pad(sc: &mut SerializerContext) {
+        let gradient = RadialGradient {
+            cx: 100.0,
+            cy: 100.0,
+            cr: 50.0,
+            fx: 120.0,
+            fy: 120.0,
+            fr: 50.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
+
+        let (props, transform) = gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
+        let shading_pattern = ShadingPattern::new(props, transform);
+        sc.add_object(shading_pattern).unwrap();
+    }
+}
