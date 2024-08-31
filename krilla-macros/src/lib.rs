@@ -24,6 +24,8 @@ enum SnapshotMode {
     Document,
 }
 
+const SKIP_SNAPSHOT: Option<&str> = option_env!("SKIP_SNAPSHOT");
+
 #[proc_macro_attribute]
 pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
@@ -55,13 +57,9 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let common = quote! {
         use crate::serialize::{SerializeSettings, SerializerContext};
-        use crate::tests::{SKIP_SNAPSHOT, check_snapshot};
+        use crate::tests::check_snapshot;
         use crate::document::{Document, PageSettings};
         use crate::Size;
-
-        if SKIP_SNAPSHOT.is_some() {
-            return;
-        }
     };
 
     let fn_content = match mode {
@@ -97,9 +95,16 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
+    let ignore_snippet = if SKIP_SNAPSHOT.is_some() {
+        quote! { #[ignore] }
+    }   else {
+        quote! {}
+    };
+
     let expanded = quote! {
         #input_fn
 
+        #ignore_snippet
         #[test]
         fn #fn_name() {
             #fn_content
@@ -127,10 +132,13 @@ impl RendererExt for Renderer {
     }
 }
 
+const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
+
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mut serialize_settings = format_ident!("default");
+
 
     let mut pdfium = false;
     let mut mupdf = false;
@@ -224,6 +232,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
+        let ignore_snippet = if SKIP_VISREG.is_some() {
+            quote! { #[ignore] }
+        }   else {
+            quote! {}
+        };
+
         let quartz_snippet = if renderer == Renderer::Quartz {
             quote! { #[cfg(target_os = "macos")] }
         } else {
@@ -232,19 +246,17 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         if include {
             quote! {
+                #ignore_snippet
                 #quartz_snippet
                 #[test]
                 fn #name() {
-                    use crate::tests::{render_document, check_render, SKIP_VISREG};
+                    use crate::tests::{render_document, check_render};
                     use crate::Size;
                     use crate::document::{Document, PageSettings};
                     use crate::serialize::SerializeSettings;
                     use sitro::Renderer;
                     let renderer = #renderer_ident;
 
-                    if SKIP_VISREG.is_some() {
-                        return;
-                    }
                     #fn_body
                 }
             }

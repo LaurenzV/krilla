@@ -25,8 +25,6 @@ mod visreg;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
-pub const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
-pub const SKIP_SNAPSHOT: Option<&str> = option_env!("SKIP_SNAPSHOT");
 
 static ASSETS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
