@@ -11,18 +11,15 @@ use crate::object::type3_font::Type3FontMapper;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
 use crate::stream::PdfFont;
-use crate::util::NameExt;
+use crate::util::{NameExt, SipHashable};
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
-use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
-use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
@@ -114,7 +111,7 @@ impl Default for SerializeSettings {
     }
 }
 
-pub struct PageInfo {
+pub(crate) struct PageInfo {
     pub ref_: Ref,
     pub media_box: Rect,
 }
@@ -297,6 +294,7 @@ impl SerializerContext {
             // cheaper, and then check whether we already have a corresponding font object in the cache.
             // If not, we still need to construct it.
             if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
+                // fontdb has not support for variable fonts, so assume default variation coordinates.
                 let location = Location::default();
 
                 if let Some(font_info) =
@@ -316,9 +314,10 @@ impl SerializerContext {
         map
     }
 
-    // Always needs to be called.
     pub fn finish(mut self) -> KrillaResult<Pdf> {
-        // TODO: Get rid of all the clones
+        // We need to be careful here that we serialize the objects in the right order,
+        // as in some cases we use `std::mem::take` to remove an object, which means that
+        // no object that is serialized afterwards must depend on it.
 
         if let Some(container) = PageLabelContainer::new(
             &self
@@ -377,22 +376,6 @@ impl SerializerContext {
         assert!(self.pages.is_empty());
 
         Ok(self.chunk_container.finish(self.serialize_settings))
-    }
-}
-
-pub trait SipHashable {
-    fn sip_hash(&self) -> u128;
-}
-
-impl<T> SipHashable for T
-where
-    T: Hash + ?Sized + 'static,
-{
-    fn sip_hash(&self) -> u128 {
-        let mut state = SipHasher13::new();
-        self.type_id().hash(&mut state);
-        self.hash(&mut state);
-        state.finish128().as_u128()
     }
 }
 
@@ -484,7 +467,6 @@ impl FontContainer {
 pub enum StreamFilter {
     FlateDecode,
     AsciiHexDecode,
-    DctDecode,
 }
 
 impl StreamFilter {
@@ -492,7 +474,6 @@ impl StreamFilter {
         match self {
             Self::AsciiHexDecode => Name(b"ASCIIHexDecode"),
             Self::FlateDecode => Name(b"FlateDecode"),
-            Self::DctDecode => Name(b"DCTDecode"),
         }
     }
 }
@@ -502,11 +483,12 @@ impl StreamFilter {
         match self {
             StreamFilter::FlateDecode => deflate_encode(content),
             StreamFilter::AsciiHexDecode => hex_encode(content),
-            Self::DctDecode => unreachable!(),
         }
     }
 }
 
+// Allows us to keep track of the filters that a stream has and
+// apply them in an orderly fashion.
 #[derive(Debug, Clone)]
 pub enum StreamFilters {
     None,
@@ -551,19 +533,6 @@ impl<'a> FilterStream<'a> {
             if serialize_settings.ascii_compatible {
                 filter_stream.add_filter(StreamFilter::AsciiHexDecode);
             }
-        }
-
-        filter_stream
-    }
-
-    pub fn new_from_dct_encoded(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self {
-            content: Cow::Borrowed(content),
-            filters: StreamFilters::Single(StreamFilter::DctDecode),
-        };
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
         }
 
         filter_stream

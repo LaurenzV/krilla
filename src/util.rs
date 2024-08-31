@@ -2,7 +2,6 @@
 
 use crate::object::color::ColorSpace;
 use crate::path::{LineCap, LineJoin, Stroke};
-use crate::serialize::SipHashable;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use skrifa::instance::Location;
@@ -11,6 +10,8 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size, Transform};
+use siphasher::sip128::{Hasher128, SipHasher13};
+use std::any::Any;
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -277,5 +278,21 @@ impl Hash for TransformWrapper {
         self.0.sy.to_bits().hash(state);
         self.0.kx.to_bits().hash(state);
         self.0.ky.to_bits().hash(state);
+    }
+}
+
+pub trait SipHashable {
+    fn sip_hash(&self) -> u128;
+}
+
+impl<T> SipHashable for T
+where
+    T: Hash + ?Sized + 'static,
+{
+    fn sip_hash(&self) -> u128 {
+        let mut state = SipHasher13::new();
+        self.type_id().hash(&mut state);
+        self.hash(&mut state);
+        state.finish128().as_u128()
     }
 }

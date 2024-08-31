@@ -63,7 +63,6 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     image_data: Vec<u8>,
-    is_dct_encoded: bool,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
@@ -102,7 +101,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
@@ -129,7 +127,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data: None,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
@@ -153,7 +150,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space: ImageColorspace::Rgb,
             size: SizeWrapper(size),
@@ -185,7 +181,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
@@ -222,11 +217,7 @@ impl Object for Image {
             soft_mask_id
         });
 
-        let image_stream = if self.0.is_dct_encoded {
-            FilterStream::new_from_dct_encoded(&self.0.image_data, &sc.serialize_settings)
-        } else {
-            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings)
-        };
+        let image_stream = FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
 
         let mut image_x_object = chunk.image_xobject(root_ref, &image_stream.encoded_data());
         image_stream.write_filters(image_x_object.deref_mut().deref_mut());

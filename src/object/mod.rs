@@ -1,7 +1,8 @@
 use pdf_writer::{Chunk, Ref};
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
-use crate::serialize::{SerializerContext, SipHashable};
+use crate::serialize::SerializerContext;
+use crate::util::SipHashable;
 
 pub mod action;
 pub mod annotation;

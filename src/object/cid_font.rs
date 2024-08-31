@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
-use crate::serialize::{FilterStream, SerializerContext, SipHashable};
-use crate::util::{RectExt, SliceExt};
+use crate::serialize::{FilterStream, SerializerContext};
+use crate::util::{RectExt, SipHashable, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
