@@ -1,6 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::color::{Color, ColorSpace};
+use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::serialize::SerializerContext;
@@ -11,7 +12,6 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 use usvg::Opacity;
-use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {

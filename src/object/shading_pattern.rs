@@ -1,12 +1,12 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
+use crate::object::Object;
 use crate::serialize::SerializerContext;
 use crate::util::TransformExt;
 use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
-use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {

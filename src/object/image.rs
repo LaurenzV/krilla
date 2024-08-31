@@ -13,6 +13,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
+use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -23,7 +24,6 @@ use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
-use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 enum BitsPerComponent {
@@ -217,7 +217,8 @@ impl Object for Image {
             soft_mask_id
         });
 
-        let image_stream = FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
+        let image_stream =
+            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
 
         let mut image_x_object = chunk.image_xobject(root_ref, &image_stream.encoded_data());
         image_stream.write_filters(image_x_object.deref_mut().deref_mut());

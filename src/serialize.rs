@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
@@ -8,9 +9,9 @@ use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
+use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
-use crate::stream::PdfFont;
 use crate::util::{NameExt, SipHashable};
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
@@ -23,21 +24,18 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::object::Object;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
     /// How much filters, which will be converted to bitmaps, should be scaled. Higher values
     /// mean better quality, but also bigger file sizes.
-    pub filter_scale: f32
+    pub filter_scale: f32,
 }
 
 impl Default for SvgSettings {
     fn default() -> Self {
-        Self {
-            filter_scale: 1.5
-        }
+        Self { filter_scale: 1.5 }
     }
 }
 

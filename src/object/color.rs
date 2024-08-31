@@ -193,8 +193,8 @@ pub mod rgb {
 
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
-    use pdf_writer::{Chunk, Ref};
     use crate::object::Object;
+    use pdf_writer::{Chunk, Ref};
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -289,10 +289,10 @@ pub mod luma {
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
     use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
+    use crate::object::Object;
     use crate::serialize::SerializerContext;
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
-    use crate::object::Object;
 
     /// An luma color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

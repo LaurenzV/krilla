@@ -1,12 +1,12 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
+use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
-use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct XObject {

@@ -1,3 +1,4 @@
+use crate::content::ContentBuilder;
 use crate::font::Font;
 use crate::object::color::ColorSpace;
 use crate::object::image::Image;
@@ -5,7 +6,7 @@ use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializerContext;
-use crate::stream::{ContentBuilder, Glyph, Stream};
+use crate::stream::{Glyph, Stream};
 use crate::svg;
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;

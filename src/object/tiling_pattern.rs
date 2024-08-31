@@ -1,5 +1,6 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
+use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
@@ -10,7 +11,6 @@ use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::FiniteF32;
 use usvg::NormalizedF32;
-use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct TilingPattern {

@@ -4,14 +4,14 @@ use crate::object::color::ColorSpace;
 use crate::path::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
+use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
+use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size, Transform};
-use siphasher::sip128::{Hasher128, SipHasher13};
-use std::any::Any;
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;

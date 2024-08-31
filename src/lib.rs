@@ -16,9 +16,9 @@ pub mod path;
 pub mod stream;
 pub mod surface;
 
+pub mod content;
 #[cfg(test)]
 pub mod tests;
-pub mod content;
 
 pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};

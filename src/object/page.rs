@@ -1,10 +1,11 @@
 //! Working with pages of a PDF document.
 
+use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::{ContentBuilder, Stream};
+use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
