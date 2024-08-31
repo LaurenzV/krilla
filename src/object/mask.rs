@@ -4,13 +4,14 @@ use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::util::RectWrapper;
 use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
+use crate::object::Object;
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]

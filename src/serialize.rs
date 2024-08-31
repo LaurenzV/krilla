@@ -26,6 +26,7 @@ use std::hash::Hash;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
+use crate::object::Object;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -113,17 +114,11 @@ impl Default for SerializeSettings {
     }
 }
 
-pub(crate) trait Object: SipHashable {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
-}
-
 pub struct PageInfo {
     pub ref_: Ref,
     pub media_box: Rect,
 }
 
-#[doc(hidden)]
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
@@ -134,7 +129,7 @@ pub(crate) struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
-    pub serialize_settings: SerializeSettings,
+    pub(crate) serialize_settings: SerializeSettings,
 }
 
 #[derive(Clone, Copy)]

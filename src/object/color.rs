@@ -188,12 +188,13 @@ pub mod cmyk {
 /// RGB colors.
 pub mod rgb {
     use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
-    use crate::serialize::{Object, SerializerContext};
+    use crate::serialize::SerializerContext;
     use std::sync::Arc;
 
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
     use pdf_writer::{Chunk, Ref};
+    use crate::object::Object;
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -288,9 +289,10 @@ pub mod luma {
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
     use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
-    use crate::serialize::{Object, SerializerContext};
+    use crate::serialize::SerializerContext;
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
+    use crate::object::Object;
 
     /// An luma color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

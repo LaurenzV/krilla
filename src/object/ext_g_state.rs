@@ -1,11 +1,12 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::mask::Mask;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::SerializerContext;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
+use crate::object::Object;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

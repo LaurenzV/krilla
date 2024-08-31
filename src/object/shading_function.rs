@@ -3,7 +3,7 @@ use crate::error::KrillaResult;
 use crate::object::color::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::util::TransformWrapper;
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
@@ -11,6 +11,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
 use usvg::Opacity;
+use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {

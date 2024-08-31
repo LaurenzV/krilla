@@ -13,7 +13,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
-use crate::serialize::{FilterStream, Object, SerializerContext};
+use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
@@ -23,6 +23,7 @@ use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
+use crate::object::Object;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 enum BitsPerComponent {

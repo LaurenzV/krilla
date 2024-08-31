@@ -8,7 +8,7 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext, SipHashable};
+use crate::serialize::{SerializerContext, SipHashable};
 use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
@@ -16,6 +16,7 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use crate::object::Object;
 
 pub(crate) trait ResourceTrait: Hash {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
