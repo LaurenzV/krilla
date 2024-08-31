@@ -1,3 +1,5 @@
+//! Destinations in a PDF document.
+
 use crate::chunk_container::ChunkContainer;
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::{Object, SerializerContext};
@@ -5,8 +7,10 @@ use pdf_writer::{Chunk, Ref};
 use std::hash::{Hash, Hasher};
 use tiny_skia_path::{Point, Transform};
 
+/// The type of destination.
 #[derive(Hash)]
 pub enum Destination {
+    /// An xyz destination.
     Xyz(XyzDestination),
 }
 
@@ -22,6 +26,7 @@ impl Object for Destination {
     }
 }
 
+/// A destination pointing to a specific location at a specific page.
 #[derive(Clone)]
 pub struct XyzDestination {
     page_index: usize,
@@ -43,6 +48,9 @@ impl Into<Destination> for XyzDestination {
 }
 
 impl XyzDestination {
+    /// Create a new XYZ destination. `page_index` should be the index (i.e. number) of the
+    /// target page, and point indicates the specific location on that page that should be
+    /// targeted. If the `page_index` is out of range, export will fail gracefully.
     pub fn new(page_index: usize, point: Point) -> Self {
         Self { page_index, point }
     }
