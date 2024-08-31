@@ -336,7 +336,7 @@ pub fn all_glyphs_to_pdf(
     color_cycling: bool,
     db: &mut Document,
 ) {
-    use crate::object::color_space::rgb::Rgb;
+    use crate::object::color::rgb::Rgb;
     use crate::stream::Glyph;
     use crate::Transform;
 

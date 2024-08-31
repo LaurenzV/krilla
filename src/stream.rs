@@ -1,8 +1,8 @@
-use crate::color_space::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier};
 use crate::graphics_state::GraphicsStates;
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::{Color, ColorSpace, ColorSpaceType};
+use crate::object::color::{Color, ColorSpace, ColorSpaceType};
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -61,7 +61,7 @@ impl Stream {
         self.0.bbox.0
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.content.is_empty()
     }
 
@@ -69,7 +69,7 @@ impl Stream {
         &self.0.resource_dictionary
     }
 
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self(Arc::new(Repr {
             content: vec![],
             bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
@@ -78,7 +78,7 @@ impl Stream {
     }
 }
 
-pub struct ContentBuilder {
+pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
     graphics_states: GraphicsStates,
@@ -747,7 +747,7 @@ pub struct Glyph {
     pub size: f32,
 }
 
-pub struct InstanceGlyph {
+pub(crate) struct InstanceGlyph {
     pub pdf_glyph: PDFGlyph,
     pub x_advance: f32,
     pub user_space_x_advance: f32,
@@ -775,8 +775,7 @@ impl Glyph {
     }
 }
 
-pub trait PdfFont {
-    fn identifier(&self) -> FontIdentifier;
+pub(crate) trait PdfFont {
     fn to_pdf_font_units(&self, val: f32) -> f32;
     fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
@@ -785,10 +784,6 @@ pub trait PdfFont {
 }
 
 impl PdfFont for Type3Font {
-    fn identifier(&self) -> FontIdentifier {
-        self.identifier()
-    }
-
     fn to_pdf_font_units(&self, val: f32) -> f32 {
         Type3Font::to_pdf_font_units(self, val)
     }
@@ -817,10 +812,6 @@ impl PdfFont for Type3Font {
 }
 
 impl PdfFont for CIDFont {
-    fn identifier(&self) -> FontIdentifier {
-        self.identifier()
-    }
-
     fn to_pdf_font_units(&self, val: f32) -> f32 {
         CIDFont::to_pdf_font_units(self, val)
     }
@@ -848,7 +839,7 @@ impl PdfFont for CIDFont {
     }
 }
 
-pub enum TextSpan<'a> {
+pub(crate) enum TextSpan<'a> {
     Unspanned(&'a [Glyph]),
     Spanned(&'a [Glyph], &'a str),
 }
@@ -869,7 +860,7 @@ impl TextSpan<'_> {
     }
 }
 
-pub struct TextSpanner<'a, 'b> {
+pub(crate) struct TextSpanner<'a, 'b> {
     slice: &'a [Glyph],
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
@@ -964,7 +955,7 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
     }
 }
 
-pub struct GlyphGroup {
+pub(crate) struct GlyphGroup {
     font_identifier: FontIdentifier,
     glyphs: Vec<InstanceGlyph>,
     size: f32,
@@ -987,7 +978,7 @@ impl GlyphGroup {
     }
 }
 
-pub struct GlyphGrouper<'a, 'b> {
+pub(crate) struct GlyphGrouper<'a, 'b> {
     font_container: &'b RefCell<FontContainer>,
     slice: &'a [Glyph],
 }

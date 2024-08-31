@@ -1,6 +1,6 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
-use crate::object::color_space::DEVICE_GRAY;
+use crate::object::color::DEVICE_GRAY;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};

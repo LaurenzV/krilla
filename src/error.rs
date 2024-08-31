@@ -4,5 +4,5 @@ pub type KrillaResult<T> = Result<T, KrillaError>;
 pub enum KrillaError {
     Font(String),
     GlyphDrawing(String),
-    UserError(String)
+    UserError(String),
 }

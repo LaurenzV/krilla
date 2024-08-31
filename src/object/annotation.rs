@@ -97,14 +97,14 @@ mod tests {
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
 
-    use crate::tests::{default_size, rect_to_path};
-    use crate::{Fill, Paint, rgb};
-    use krilla_macros::snapshot;
-    use tiny_skia_path::{Point, Rect, Size};
-    use usvg::NormalizedF32;
     use crate::rgb::Rgb;
     use crate::serialize::SerializeSettings;
     use crate::surface::PageBuilder;
+    use crate::tests::{default_size, rect_to_path};
+    use crate::{rgb, Fill, Paint};
+    use krilla_macros::snapshot;
+    use tiny_skia_path::{Point, Rect, Size};
+    use usvg::NormalizedF32;
 
     #[snapshot(single_page)]
     fn annotation_to_link(page: &mut PageBuilder) {
@@ -115,7 +115,7 @@ mod tests {
                     LinkAction::new("https://www.youtube.com".to_string()).into(),
                 ),
             }
-                .into(),
+            .into(),
         );
     }
 
@@ -130,7 +130,7 @@ mod tests {
                     XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
                 ),
             }
-                .into(),
+            .into(),
         );
         page.finish();
         assert!(db.finish().is_err())

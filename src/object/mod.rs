@@ -1,7 +1,7 @@
 pub mod action;
 pub mod annotation;
 pub(crate) mod cid_font;
-pub mod color_space;
+pub mod color;
 pub mod destination;
 pub(crate) mod ext_g_state;
 pub mod image;

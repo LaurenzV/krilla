@@ -2,9 +2,9 @@ use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
-use crate::object::color_space::luma::SGray;
-use crate::object::color_space::rgb::Srgb;
-use crate::object::color_space::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color::luma::SGray;
+use crate::object::color::rgb::Srgb;
+use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{Page, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
@@ -100,15 +100,10 @@ impl Default for SerializeSettings {
     }
 }
 
-pub trait Object: SipHashable {
+pub(crate) trait Object: SipHashable {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
 
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
-
-    fn serialize(&self, sc: &mut SerializerContext) -> KrillaResult<Chunk> {
-        let root_ref = sc.new_ref();
-        self.serialize_into(sc, root_ref)
-    }
 }
 
 pub struct PageInfo {
@@ -117,7 +112,7 @@ pub struct PageInfo {
 }
 
 #[doc(hidden)]
-pub struct SerializerContext {
+pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
     page_tree_ref: Option<Ref>,
@@ -131,19 +126,12 @@ pub struct SerializerContext {
 }
 
 #[derive(Clone, Copy)]
-pub enum PDFGlyph {
+pub(crate) enum PDFGlyph {
     Type3(u8),
     CID(u16),
 }
 
 impl PDFGlyph {
-    pub fn get(&self) -> u16 {
-        match self {
-            PDFGlyph::Type3(n) => *n as u16,
-            PDFGlyph::CID(n) => *n,
-        }
-    }
-
     pub fn encode_into(&self, slice: &mut Vec<u8>) {
         match self {
             PDFGlyph::Type3(cg) => slice.push(*cg),
@@ -192,10 +180,6 @@ impl SerializerContext {
             media_box: page.media_box,
         });
         self.pages.push((ref_, page));
-    }
-
-    pub fn has_pages(&self) -> bool {
-        !self.page_infos.is_empty()
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -421,7 +405,7 @@ impl pdf_writer::Primitive for CSWrapper {
 }
 
 #[derive(Debug)]
-pub enum FontContainer {
+pub(crate) enum FontContainer {
     Type3(Type3FontMapper),
     CIDFont(CIDFont),
 }

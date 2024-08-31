@@ -54,8 +54,12 @@ impl Object for XyzDestination {
     }
 
     fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-        let page_info = sc.page_infos().get(self.page_index)
-            .ok_or(KrillaError::UserError("attempted to link to non-existing page".to_string()))?;
+        let page_info = sc
+            .page_infos()
+            .get(self.page_index)
+            .ok_or(KrillaError::UserError(
+                "attempted to link to non-existing page".to_string(),
+            ))?;
         let page_ref = page_info.ref_;
         let page_size = page_info.media_box.height();
 

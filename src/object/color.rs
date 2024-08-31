@@ -1,5 +1,5 @@
-use crate::color_space::device_cmyk::DeviceCmyk;
-use crate::color_space::luma::{DeviceGray, SGray};
+use crate::color::device_cmyk::DeviceCmyk;
+use crate::color::luma::{DeviceGray, SGray};
 use crate::error::KrillaResult;
 use crate::rgb::{DeviceRgb, Srgb};
 use crate::serialize::{FilterStream, SerializerContext};
@@ -90,7 +90,7 @@ impl Color {
 
 /// A module for dealing with device CMYK colors.
 pub mod device_cmyk {
-    use crate::object::color_space::{ColorSpace, ColorSpaceType, InternalColor};
+    use crate::object::color::{ColorSpace, ColorSpaceType, InternalColor};
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -104,7 +104,7 @@ pub mod device_cmyk {
     }
 
     impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color_space::Color {
+        fn into(self) -> crate::object::color::Color {
             super::Color::DeviceCmyk(self)
         }
     }
@@ -141,9 +141,7 @@ pub mod device_cmyk {
 
 /// A module for dealing with device RGB colors.
 pub mod rgb {
-    use crate::object::color_space::{
-        ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor,
-    };
+    use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
     use crate::serialize::{Object, SerializerContext};
     use std::sync::Arc;
 
@@ -179,7 +177,7 @@ pub mod rgb {
     }
 
     impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color_space::Color {
+        fn into(self) -> crate::object::color::Color {
             super::Color::Rgb(self)
         }
     }
@@ -243,9 +241,7 @@ pub mod rgb {
 pub mod luma {
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
-    use crate::object::color_space::{
-        ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor,
-    };
+    use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
     use crate::serialize::{Object, SerializerContext};
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
@@ -275,7 +271,7 @@ pub mod luma {
     }
 
     impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color_space::Color {
+        fn into(self) -> crate::object::color::Color {
             super::Color::Luma(self)
         }
     }
@@ -342,8 +338,8 @@ pub enum ColorSpaceType {
 
 #[cfg(test)]
 mod tests {
-    use crate::object::color_space::luma::SGray;
-    use crate::object::color_space::rgb::Srgb;
+    use crate::object::color::luma::SGray;
+    use crate::object::color::rgb::Srgb;
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 

@@ -1,6 +1,6 @@
 use crate::font::Font;
 use crate::object::annotation::Annotation;
-use crate::object::color_space::ColorSpace;
+use crate::object::color::ColorSpace;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::page::{Page, PageLabel};
@@ -34,7 +34,7 @@ pub struct Surface<'a> {
 }
 
 impl<'a> Surface<'a> {
-    pub fn new(
+    pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
         finish_fn: Box<dyn FnMut(Stream) + 'a>,

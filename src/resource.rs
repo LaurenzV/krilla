@@ -1,8 +1,8 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::font::FontIdentifier;
-use crate::object::color_space::luma::SGray;
-use crate::object::color_space::rgb::Srgb;
+use crate::object::color::luma::SGray;
+use crate::object::color::rgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-pub trait ResourceTrait: Hash {
+pub(crate) trait ResourceTrait: Hash {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
 }
@@ -99,7 +99,7 @@ impl Into<Resource> for FontIdentifier {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum XObjectResource {
+pub(crate) enum XObjectResource {
     XObject(XObject),
     Image(Image),
 }
@@ -131,7 +131,7 @@ impl Object for XObjectResource {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum PatternResource {
+pub(crate) enum PatternResource {
     ShadingPattern(ShadingPattern),
     TilingPattern(crate::object::tiling_pattern::TilingPattern),
 }
@@ -287,7 +287,7 @@ where
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct ResourceList<V>
+pub(crate) struct ResourceList<V>
 where
     V: Hash + Eq + PartialEq + Debug,
 {
@@ -300,10 +300,6 @@ where
 {
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     fn name_from_number(num: ResourceNumber) -> String {
@@ -319,7 +315,7 @@ where
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ResourceMapper<V>
+pub(crate) struct ResourceMapper<V>
 where
     V: Hash + Eq + PartialEq + Debug + ResourceTrait,
 {
@@ -336,10 +332,6 @@ where
             forward: Vec::new(),
             backward: HashMap::new(),
         }
-    }
-
-    pub fn get(&self, resource: &V) -> Option<ResourceNumber> {
-        self.backward.get(&resource.sip_hash()).copied()
     }
 
     pub fn remap(&mut self, resource: V) -> ResourceNumber {

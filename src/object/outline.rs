@@ -88,7 +88,7 @@ impl OutlineNode {
         self.children.push(Box::new(node))
     }
 
-    pub fn serialize_into(
+    pub(crate) fn serialize_into(
         &self,
         sc: &mut SerializerContext,
         parent: Ref,

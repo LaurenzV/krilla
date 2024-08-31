@@ -298,15 +298,6 @@ pub(crate) enum FontIdentifier {
     Type3(Type3Identifier),
 }
 
-impl FontIdentifier {
-    pub fn font(&self) -> Font {
-        match self {
-            FontIdentifier::Cid(cid) => cid.0.clone(),
-            FontIdentifier::Type3(t3) => t3.0.clone(),
-        }
-    }
-}
-
 /// A wrapper struct for implementing the `OutlinePen` trait.
 struct OutlineBuilder(PathBuilder);
 

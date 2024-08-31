@@ -22,7 +22,7 @@ pub type Cid = u16;
 
 /// A CID-keyed font.
 #[derive(Debug, Clone)]
-pub struct CIDFont {
+pub(crate) struct CIDFont {
     /// The _actual_ underlying font of the CID-keyed font.
     font: Font,
     /// A mapper that maps GIDs from the original font to CIDs, i.e. the corresponding GID in the font

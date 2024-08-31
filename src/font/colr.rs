@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
-use crate::object::color_space::rgb;
-use crate::object::color_space::rgb::Rgb;
+use crate::object::color::rgb;
+use crate::object::color::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::surface::Surface;
 use crate::{Fill, FillRule};

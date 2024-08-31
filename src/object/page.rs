@@ -144,7 +144,11 @@ impl<'a> PageLabelContainer<'a> {
         };
     }
 
-    pub fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize_into(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];

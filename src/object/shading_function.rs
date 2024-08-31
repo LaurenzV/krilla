@@ -1,6 +1,6 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
-use crate::object::color_space::{Color, ColorSpace};
+use crate::object::color::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
 use crate::serialize::{Object, SerializerContext};
 use crate::transform::TransformWrapper;

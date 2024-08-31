@@ -1,4 +1,4 @@
-use crate::object::color_space::ColorSpace;
+use crate::object::color::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
