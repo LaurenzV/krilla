@@ -45,11 +45,13 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     let mut input_fn = parse_macro_input!(item as ItemFn);
-    let fn_name = input_fn.sig.ident.clone();
+    let mut fn_name = input_fn.sig.ident.clone();
     let snapshot_name = fn_name.to_string();
 
     let impl_ident = Ident::new(&format!("{}_snapshot_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
+
+    fn_name = Ident::new(&format!("{}_snapshot", fn_name), fn_name.span());
 
     let common = quote! {
         use crate::serialize::{SerializeSettings, SerializerContext};
@@ -217,7 +219,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let renderer_body = |renderer: Renderer, include: bool| {
-        let name = format_ident!("{}_{}", fn_name.to_string(), renderer.name());
+        let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
         let quartz_snippet = if renderer == Renderer::Quartz {
