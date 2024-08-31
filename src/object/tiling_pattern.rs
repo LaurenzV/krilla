@@ -98,7 +98,6 @@ mod tests {
     use crate::util::TransformWrapper;
     use crate::{Fill, Paint, Pattern};
     use krilla_macros::{snapshot, visreg};
-    use std::sync::Arc;
     use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 
     #[snapshot]

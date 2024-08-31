@@ -3,7 +3,6 @@ use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
-use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
 use crate::{Fill, Paint, Stop};

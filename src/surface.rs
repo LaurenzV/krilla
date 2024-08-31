@@ -5,7 +5,7 @@ use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::serialize::SerializerContext;
 use crate::stream::{ContentBuilder, Glyph, Stream};
-use crate::{Fill, FillRule, Stroke};
+use crate::{svg, Fill, FillRule, Stroke};
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
@@ -206,6 +206,16 @@ impl<'a> Surface<'a> {
 
     pub fn draw_image(&mut self, image: Image, size: Size) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
+    }
+
+    pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) {
+        let transform = Transform::from_scale(
+            tree.size().width() / size.width(),
+            tree.size().height() / size.height(),
+        );
+        self.push_transform(&transform);
+        svg::render_tree(tree, self.sc.serialize_settings.svg_settings, self);
+        self.pop();
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
