@@ -3,9 +3,10 @@ use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
+use crate::path::Fill;
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
-use crate::{Fill, Paint, Stop};
+use crate::{Paint, Stop};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -358,9 +359,9 @@ pub fn all_glyphs_to_pdf(
     color_cycling: bool,
     db: &mut Document,
 ) {
+    use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
     use crate::stream::Glyph;
-    use crate::Transform;
 
     let font = Font::new(font_data, 0, Location::default()).unwrap();
     let font_ref = font.font_ref();
@@ -430,7 +431,7 @@ pub fn all_glyphs_to_pdf(
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         surface.fill_glyphs(
             Point::from_xy(0.0, 0.0),
-            crate::Fill::<Rgb> {
+            Fill::<Rgb> {
                 paint: Paint::Color(color),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),

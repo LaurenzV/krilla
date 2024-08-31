@@ -52,10 +52,11 @@ impl Object for ShadingPattern {
 mod tests {
     use crate::object::shading_function::GradientPropertiesExt;
     use crate::object::shading_pattern::ShadingPattern;
+    use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
     use crate::tests::{rect_to_path, stops_with_2_solid_1, stops_with_3_solid_1};
-    use crate::{Fill, LinearGradient, Paint, RadialGradient, SpreadMethod, SweepGradient};
+    use crate::{LinearGradient, Paint, RadialGradient, SpreadMethod, SweepGradient};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{NormalizedF32, Rect};
 

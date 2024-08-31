@@ -85,10 +85,10 @@ impl Object for XObject {
 mod tests {
     use crate::color::rgb::Rgb;
     use crate::object::xobject::XObject;
+    use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
     use crate::tests::rect_to_path;
-    use crate::Fill;
     use krilla_macros::snapshot;
 
     #[snapshot]

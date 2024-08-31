@@ -1,11 +1,12 @@
 use crate::font::Font;
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
+use crate::path::{Fill, Stroke};
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
-use crate::{Fill, Paint, Stroke};
+use crate::Paint;
 use skrifa::GlyphId;
 use tiny_skia_path::{Point, Transform};
 use usvg::{NormalizedF32, PaintOrder};

@@ -59,7 +59,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         use crate::serialize::{SerializeSettings, SerializerContext};
         use crate::tests::check_snapshot;
         use crate::document::{Document, PageSettings};
-        use crate::Size;
+        use crate::geom::Size;
     };
 
     let fn_content = match mode {
@@ -250,7 +250,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #[test]
                 fn #name() {
                     use crate::tests::{render_document, check_render};
-                    use crate::Size;
+                    use crate::geom::Size;
                     use crate::document::{Document, PageSettings};
                     use crate::serialize::SerializeSettings;
                     use sitro::Renderer;

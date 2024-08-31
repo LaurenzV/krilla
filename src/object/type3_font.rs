@@ -347,10 +347,10 @@ mod tests {
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::color::rgb::Rgb;
+    use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
     use crate::tests::{red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
-    use crate::Fill;
     use krilla_macros::{snapshot, visreg};
     use skrifa::instance::Location;
     use skrifa::GlyphId;

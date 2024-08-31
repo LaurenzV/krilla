@@ -1,10 +1,11 @@
 use crate::color::rgb;
 use crate::color::rgb::Rgb;
+use crate::path::Fill;
 use crate::stream::Glyph;
 use crate::surface::Surface;
 use crate::tests::NOTO_SANS;
 use crate::util::SliceExt;
-use crate::{Fill, LinearGradient, Paint, SpreadMethod, Stop};
+use crate::{LinearGradient, Paint, SpreadMethod, Stop};
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use fontdb::{Database, Source};
 use krilla_macros::visreg;

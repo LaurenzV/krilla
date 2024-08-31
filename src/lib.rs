@@ -9,6 +9,7 @@ mod util;
 pub mod document;
 pub mod error;
 pub mod font;
+pub mod geom;
 pub mod paint;
 pub mod path;
 pub mod stream;
@@ -22,6 +23,4 @@ pub use object::mask::MaskType;
 pub use object::*;
 pub use paint::*;
 
-pub use path::*;
 pub use serialize::{SerializeSettings, SvgSettings};
-pub use tiny_skia_path::{Rect, Size, Transform};

@@ -260,7 +260,7 @@ mod tests {
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
 
-    use crate::Fill;
+    use crate::path::Fill;
     use krilla_macros::snapshot;
     use pdf_writer::types::NumberingStyle;
     use std::num::NonZeroU32;

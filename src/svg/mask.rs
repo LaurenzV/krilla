@@ -1,9 +1,9 @@
 use crate::object::mask::Mask;
+use crate::path::FillRule;
 use crate::surface::Surface;
 use crate::svg::util::convert_mask_type;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
-use crate::FillRule;
 
 /// Render a usvg `Mask` into a surface.
 #[must_use]

@@ -91,12 +91,13 @@ impl Object for TilingPattern {
 #[cfg(test)]
 mod tests {
     use crate::color::rgb::Rgb;
+    use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::{StreamBuilder, Surface};
     use crate::tests::{basic_pattern_stream, rect_to_path};
     use crate::tiling_pattern::TilingPattern;
     use crate::util::TransformWrapper;
-    use crate::{Fill, Paint, Pattern};
+    use crate::{Paint, Pattern};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 

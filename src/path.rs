@@ -1,3 +1,5 @@
+//! Path-related properties.
+
 use crate::object::color::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
@@ -46,7 +48,7 @@ pub struct StrokeDash {
     pub offset: f32,
 }
 
-/// A stroke that can be applied to a path or some text.
+/// A stroke.
 #[derive(Debug, Clone)]
 pub struct Stroke<C>
 where
@@ -129,7 +131,7 @@ impl Default for FillRule {
     }
 }
 
-/// A fill that can be applied to a path or some text.
+/// A fill.
 #[derive(Debug, Clone)]
 pub struct Fill<C>
 where

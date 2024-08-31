@@ -4,6 +4,7 @@ use fontdb::Source;
 use crate::color::rgb::Rgb;
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
+use crate::path::Fill;
 use crate::serialize::SerializeSettings;
 use crate::stream::Glyph;
 use crate::tests::{
@@ -11,7 +12,6 @@ use crate::tests::{
     NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
 };
 use crate::util::SliceExt;
-use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::sync::Arc;

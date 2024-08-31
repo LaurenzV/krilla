@@ -1,8 +1,8 @@
 use crate::image::Image;
+use crate::path::FillRule;
 use crate::surface::Surface;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
-use crate::FillRule;
 use tiny_skia_path::Rect;
 use usvg::ImageKind;
 
