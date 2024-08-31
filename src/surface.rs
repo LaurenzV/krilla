@@ -432,9 +432,10 @@ mod tests {
     use crate::font::Font;
     use crate::path::Fill;
     use crate::color::rgb::Rgb;
+    use crate::mask::MaskType;
     use crate::surface::Stroke;
     use crate::surface::Surface;
-    use crate::tests::{blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, NOTO_SANS, NOTO_SANS_DEVANAGARI, rect_to_path, red_fill};
+    use crate::tests::{basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, NOTO_SANS, NOTO_SANS_DEVANAGARI, rect_to_path, red_fill};
 
     #[snapshot(stream)]
     fn stream_path_single_with_rgb(surface: &mut Surface) {
@@ -542,5 +543,14 @@ mod tests {
             image,
             size
         );
+    }
+
+    #[snapshot(stream)]
+    fn stream_mask(surface: &mut Surface) {
+        let mask = basic_mask(surface, MaskType::Alpha);
+        surface.push_mask(mask);
+        let path = rect_to_path(0.0, 0.0, 100.0, 100.0);
+        surface.fill_path(&path, green_fill(0.5));
+        surface.pop();
     }
 }

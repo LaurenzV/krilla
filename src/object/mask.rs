@@ -134,7 +134,7 @@ mod tests {
     use crate::mask::MaskType;
     use crate::paint::Paint;
     use crate::path::Fill;
-    use crate::tests::{rect_to_path, red_fill};
+    use crate::tests::{basic_mask, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
@@ -152,17 +152,6 @@ mod tests {
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
         sc.add_object(mask).unwrap();
-    }
-
-    pub fn basic_mask(surface: &mut Surface, mask_type: MaskType) -> Mask {
-        let mut stream_builder = surface.stream_builder();
-        let mut sub_surface = stream_builder.surface();
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-
-        sub_surface.fill_path(&path, red_fill(0.2));
-        sub_surface.finish();
-
-        Mask::new(stream_builder.finish(), mask_type)
     }
 
     fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {

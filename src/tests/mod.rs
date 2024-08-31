@@ -24,6 +24,8 @@ use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 use crate::color::cmyk::DeviceCmyk;
 use crate::color::luma::Luma;
+use crate::mask::{Mask, MaskType};
+use crate::surface::Surface;
 
 mod manual;
 mod visreg;
@@ -97,6 +99,17 @@ pub fn green_fill(opacity: f32) -> Fill<Rgb> {
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
+}
+
+pub fn basic_mask(surface: &mut Surface, mask_type: MaskType) -> Mask {
+    let mut stream_builder = surface.stream_builder();
+    let mut sub_surface = stream_builder.surface();
+    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+
+    sub_surface.fill_path(&path, red_fill(0.2));
+    sub_surface.finish();
+
+    Mask::new(stream_builder.finish(), mask_type)
 }
 
 pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
