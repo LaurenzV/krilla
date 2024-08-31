@@ -1,0 +1,33 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Length 67
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [0 0 180 180]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /I true
+    /CS /DeviceRGB
+  >>
+>>
+stream
+q
+/DeviceRGB cs
+0 0 0 scn
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q
+endstream
+endobj
+
