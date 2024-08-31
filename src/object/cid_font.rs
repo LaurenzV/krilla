@@ -256,11 +256,15 @@ mod tests {
     use crate::font::Font;
 
     use crate::serialize::{FontContainer, SerializerContext};
-    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS};
-    use krilla_macros::snapshot;
+    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use krilla_macros::{snapshot, visreg};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
+    use tiny_skia_path::Point;
+    use crate::color::rgb::Rgb;
+    use crate::Fill;
     use crate::object::cid_font::CIDFont;
+    use crate::surface::Surface;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
@@ -277,6 +281,45 @@ mod tests {
                 cid_font.set_codepoints(2, "B".to_string());
             }
         }
+    }
+
+    #[visreg(all)]
+    fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "hello world"
+        );
+    }
+
+    #[visreg(all)]
+    fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "hello world"
+        );
+    }
+
+    #[visreg(all)]
+    fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, Location::default()).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "مرحبا بالعالم"
+        );
     }
 
     #[snapshot]
