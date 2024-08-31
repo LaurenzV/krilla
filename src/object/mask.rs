@@ -1,5 +1,4 @@
 ///! Creating and using masks.
-
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
@@ -130,11 +129,11 @@ mod tests {
     use crate::surface::{StreamBuilder, Surface};
 
     use crate::color::rgb;
+    use crate::tests::{rect_to_path, red_fill};
     use crate::{Fill, MaskType, Paint};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
-    use crate::tests::{rect_to_path, red_fill};
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);
@@ -144,10 +143,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        surface.fill_path(
-            &path,
-            red_fill(0.5),
-        );
+        surface.fill_path(&path, red_fill(0.5));
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
         sc.add_object(mask).unwrap();
@@ -156,12 +152,9 @@ mod tests {
     fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
         let mut stream_builder = surface.stream_builder();
         let mut sub_surface = stream_builder.surface();
-        let path = rect_to_path(20.0, 20.0, 180.0 ,180.0);
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
-        sub_surface.fill_path(
-            &path,
-            red_fill(0.2),
-        );
+        sub_surface.fill_path(&path, red_fill(0.2));
         sub_surface.finish();
 
         let mask = Mask::new(stream_builder.finish(), mask_type);
@@ -186,7 +179,6 @@ mod tests {
     pub fn mask_luminosity(surface: &mut Surface) {
         mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 255, 0));
     }
-
 
     #[visreg(all)]
     pub fn mask_alpha(surface: &mut Surface) {

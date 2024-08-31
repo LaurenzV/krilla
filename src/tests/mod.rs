@@ -1,4 +1,5 @@
 use crate::color::rgb;
+use crate::color::rgb::Rgb;
 use crate::document::Document;
 use crate::font::Font;
 use crate::image::Image;
@@ -18,7 +19,6 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect};
-use crate::color::rgb::Rgb;
 
 mod manual;
 mod visreg;

@@ -3,7 +3,7 @@
 use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
-use crate::serialize::{Object, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::util::RectExt;
 use pdf_writer::types::AnnotationType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -70,9 +70,12 @@ impl LinkAnnotation {
         annotation.border(0.0, 0.0, 0.0, None);
 
         match &self.target {
-            Target::Destination(destination) => {
-                destination.serialize(sc, annotation.insert(Name(b"Dest")).start::<pdf_writer::writers::Destination>())?
-            }
+            Target::Destination(destination) => destination.serialize(
+                sc,
+                annotation
+                    .insert(Name(b"Dest"))
+                    .start::<pdf_writer::writers::Destination>(),
+            )?,
             Target::Action(action) => action.serialize(sc, annotation.action()),
         };
 
@@ -89,15 +92,12 @@ mod tests {
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
 
-    use crate::color::rgb;
-    use crate::color::rgb::Rgb;
     use crate::serialize::SerializeSettings;
     use crate::surface::PageBuilder;
     use crate::tests::{default_size, green_fill, rect_to_path, red_fill};
-    use crate::{Fill, Paint};
+
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect, Size};
-    use usvg::NormalizedF32;
 
     #[snapshot(single_page)]
     fn annotation_to_link(page: &mut PageBuilder) {
@@ -143,10 +143,7 @@ mod tests {
         );
 
         let mut surface = page.surface();
-        surface.fill_path(
-            &rect_to_path(50.0, 0.0, 150.0, 100.0),
-            red_fill(1.0)
-        );
+        surface.fill_path(&rect_to_path(50.0, 0.0, 150.0, 100.0), red_fill(1.0));
         surface.finish();
         page.finish();
 
@@ -161,10 +158,7 @@ mod tests {
             .into(),
         );
         let mut my_surface = page.surface();
-        my_surface.fill_path(
-            &rect_to_path(50.0, 100.0, 150.0, 200.0),
-            green_fill(1.0),
-        );
+        my_surface.fill_path(&rect_to_path(50.0, 100.0, 150.0, 200.0), green_fill(1.0));
 
         my_surface.finish();
         page.finish();

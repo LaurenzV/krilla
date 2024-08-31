@@ -1,9 +1,7 @@
 //! Destinations in a PDF document.
 
-use crate::chunk_container::ChunkContainer;
 use crate::error::{KrillaError, KrillaResult};
-use crate::serialize::{Object, SerializerContext};
-use pdf_writer::{Chunk, Ref};
+use crate::serialize::SerializerContext;
 use std::hash::{Hash, Hasher};
 use tiny_skia_path::{Point, Transform};
 
@@ -15,7 +13,11 @@ pub enum Destination {
 }
 
 impl Destination {
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, destination: pdf_writer::writers::Destination) -> KrillaResult<()> {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        destination: pdf_writer::writers::Destination,
+    ) -> KrillaResult<()> {
         match self {
             Destination::Xyz(xyz) => xyz.serialize(sc, destination),
         }
@@ -51,7 +53,11 @@ impl XyzDestination {
         Self { page_index, point }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, mut destination: pdf_writer::writers::Destination) -> KrillaResult<()> {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        destination: pdf_writer::writers::Destination,
+    ) -> KrillaResult<()> {
         let page_info = sc
             .page_infos()
             .get(self.page_index)

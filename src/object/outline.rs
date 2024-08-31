@@ -17,8 +17,8 @@
 
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
-use crate::serialize::{Object, SerializerContext};
-use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
+use crate::serialize::SerializerContext;
+use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
 /// An outline.
 ///
@@ -100,7 +100,7 @@ pub struct OutlineNode {
     /// The text of the outline entry.
     text: String,
     /// The destination of the outline entry.
-    destination: XyzDestination
+    destination: XyzDestination,
 }
 
 impl OutlineNode {
@@ -193,10 +193,10 @@ mod tests {
     use crate::document::Document;
     use crate::object::outline::{Outline, OutlineNode};
 
-    use krilla_macros::snapshot;
-    use tiny_skia_path::{Point, Size};
     use crate::destination::XyzDestination;
     use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
+    use krilla_macros::snapshot;
+    use tiny_skia_path::{Point, Size};
 
     #[snapshot(document)]
     fn outline_simple(db: &mut Document) {
@@ -212,13 +212,19 @@ mod tests {
         }
         let mut outline = Outline::new();
 
-        let mut child1 = OutlineNode::new("Heading 1".to_string(), XyzDestination::new(0, Point::from_xy(0.0, 0.0)));
+        let mut child1 = OutlineNode::new(
+            "Heading 1".to_string(),
+            XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+        );
         child1.push_child(OutlineNode::new(
             "Heading 1.1".to_string(),
             XyzDestination::new(1, Point::from_xy(50.0, 50.0)),
         ));
 
-        let child2 = OutlineNode::new("Heading 2".to_string(), XyzDestination::new(2, Point::from_xy(100.0, 100.0)));
+        let child2 = OutlineNode::new(
+            "Heading 2".to_string(),
+            XyzDestination::new(2, Point::from_xy(100.0, 100.0)),
+        );
 
         outline.push_child(child1);
         outline.push_child(child2);
