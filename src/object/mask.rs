@@ -130,9 +130,10 @@ mod tests {
     use crate::surface::{StreamBuilder, Surface};
 
     use crate::color::rgb;
+    use crate::mask::MaskType;
+    use crate::paint::Paint;
     use crate::path::Fill;
     use crate::tests::{rect_to_path, red_fill};
-    use crate::{MaskType, Paint};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;

@@ -11,6 +11,7 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::type3_font::Type3Font;
 use crate::object::xobject::XObject;
+use crate::paint::Paint;
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{
     ColorSpaceResource, PatternResource, Resource, ResourceDictionary, ResourceDictionaryBuilder,
@@ -21,7 +22,6 @@ use crate::util::TransformWrapper;
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, RectWrapper, TransformExt,
 };
-use crate::Paint;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};

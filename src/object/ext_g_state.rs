@@ -141,7 +141,7 @@ mod tests {
     use crate::serialize::SerializerContext;
     use crate::stream::Stream;
 
-    use crate::MaskType;
+    use crate::mask::MaskType;
     use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;
     use usvg::NormalizedF32;

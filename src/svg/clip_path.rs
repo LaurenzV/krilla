@@ -1,9 +1,9 @@
+use crate::mask::MaskType;
 use crate::object::mask::Mask;
 use crate::path::FillRule;
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, ProcessContext};
-use crate::MaskType;
 use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
 /// Render a clip path into a surface.
