@@ -386,16 +386,12 @@ pub(crate) enum ColorSpaceType {
 
 #[cfg(test)]
 mod tests {
-    use tiny_skia_path::NormalizedF32;
     use crate::object::color::luma::SGray;
     use crate::object::color::rgb::Srgb;
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 
     use krilla_macros::{snapshot, visreg};
-    use crate::color::cmyk::DeviceCmyk;
-    use crate::paint::Paint;
-    use crate::path::Fill;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path};
 
