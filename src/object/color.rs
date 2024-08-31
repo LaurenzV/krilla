@@ -240,7 +240,7 @@ pub mod rgb {
     }
 }
 
-/// A module for dealing with device luma (= grayscale) colors.
+/// Luma (= gray-scale) colors.
 pub mod luma {
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
@@ -293,12 +293,12 @@ pub mod luma {
         }
     }
 
-    /// The ICC profile for the s-gray color space.
-    pub static GREY_ICC: &[u8] = include_bytes!("../../assets/icc/sGrey-v4.icc");
+    /// The ICC profile for the SGray color space.
+    pub(crate) static GREY_ICC: &[u8] = include_bytes!("../../assets/icc/sGrey-v4.icc");
 
     /// The luma color space. Depending on whether the `no_device_cs` serialize option is set,
     /// this will internally be encoded either using the PDF `DeviceGray` color space, or in the
-    /// s-grey color space using an ICC profile.
+    /// SGray color space using an ICC profile.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Luma;
 
@@ -306,9 +306,9 @@ pub mod luma {
         type Color = Color;
     }
 
-    /// The s-gray color space.
+    /// The SGray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct SGray;
+    pub(crate) struct SGray;
 
     impl Object for SGray {
         fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
@@ -323,7 +323,7 @@ pub mod luma {
 
     /// The device gray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct DeviceGray;
+    pub(crate) struct DeviceGray;
 
     impl ColorSpace for DeviceGray {
         type Color = Color;
