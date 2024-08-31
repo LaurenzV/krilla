@@ -7,7 +7,7 @@ use crate::object::xobject::XObject;
 use crate::object::Object;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
-use crate::surface::StreamBuilder;
+use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
 use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -128,7 +128,7 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::object::mask::Mask;
     use crate::serialize::SerializerContext;
-    use crate::surface::{StreamBuilder, Surface};
+    use crate::surface::Surface;
 
     use crate::color::rgb;
     use crate::mask::MaskType;
@@ -138,6 +138,7 @@ mod tests {
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
+    use crate::stream::StreamBuilder;
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
         let mut stream_builder = StreamBuilder::new(sc);

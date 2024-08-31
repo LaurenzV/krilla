@@ -3,7 +3,7 @@ use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
-use crate::surface::StreamBuilder;
+use crate::stream::StreamBuilder;
 use crate::svg::{group, ProcessContext};
 use pdf_writer::types::BlendMode;
 use tiny_skia_path::{NormalizedF32, Transform};

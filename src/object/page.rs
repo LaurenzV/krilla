@@ -259,7 +259,7 @@ mod tests {
     use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
     use crate::serialize::SerializerContext;
-    use crate::surface::StreamBuilder;
+    use crate::stream::StreamBuilder;
 
     use crate::path::Fill;
     use krilla_macros::snapshot;

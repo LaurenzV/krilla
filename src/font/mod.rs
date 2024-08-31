@@ -1,4 +1,4 @@
-//! Creating and using OpenType fonts.
+//! Text and font font support.
 //!
 //! krilla has extensive support for OpenType fonts. It supports CFF-based as well
 //! as glyf-based font OpenType fonts. In addition to that, krilla also supports

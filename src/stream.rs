@@ -22,6 +22,9 @@ use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::util::RectWrapper;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
+use crate::content::ContentBuilder;
+use crate::serialize::SerializerContext;
+use crate::surface::Surface;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
@@ -71,5 +74,31 @@ impl Stream {
             bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
         }))
+    }
+}
+
+pub struct StreamBuilder<'a> {
+    sc: &'a mut SerializerContext,
+    stream: Stream,
+}
+
+impl<'a> StreamBuilder<'a> {
+    pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
+        Self {
+            sc,
+            stream: Stream::empty(),
+        }
+    }
+
+    pub fn surface(&mut self) -> Surface {
+        let finish_fn = Box::new(|stream| {
+            self.stream = stream;
+        });
+
+        Surface::new(&mut self.sc, ContentBuilder::new(), finish_fn)
+    }
+
+    pub fn finish(self) -> Stream {
+        self.stream
     }
 }

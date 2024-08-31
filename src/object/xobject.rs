@@ -88,7 +88,7 @@ mod tests {
     use crate::object::xobject::XObject;
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
-    use crate::surface::StreamBuilder;
+    use crate::stream::StreamBuilder;
     use crate::tests::rect_to_path;
     use krilla_macros::snapshot;
 

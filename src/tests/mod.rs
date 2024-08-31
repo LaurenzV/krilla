@@ -6,7 +6,7 @@ use crate::image::Image;
 use crate::paint::{Paint, Stop};
 use crate::path::Fill;
 use crate::stream::Stream;
-use crate::surface::StreamBuilder;
+use crate::stream::StreamBuilder;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};

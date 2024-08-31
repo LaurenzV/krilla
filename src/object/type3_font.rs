@@ -4,7 +4,7 @@ use crate::font::{Font, FontIdentifier, GlyphSource, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::surface::StreamBuilder;
+use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
