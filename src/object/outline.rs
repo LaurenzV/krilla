@@ -196,7 +196,7 @@ mod tests {
     use crate::destination::XyzDestination;
     use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
     use krilla_macros::snapshot;
-    use tiny_skia_path::{Point, Size};
+    use tiny_skia_path::Point;
 
     #[snapshot(document)]
     fn outline_simple(db: &mut Document) {

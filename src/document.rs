@@ -3,7 +3,7 @@ use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
-use tiny_skia_path::{Rect, Size};
+use tiny_skia_path::Rect;
 
 pub struct Document {
     serializer_context: SerializerContext,

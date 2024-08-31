@@ -255,7 +255,7 @@ impl<'a> PageLabelContainer<'a> {
 #[cfg(test)]
 mod tests {
     use crate::color::rgb::Rgb;
-    use crate::document::{Document, PageSettings};
+    use crate::document::PageSettings;
     use crate::object::page::{InternalPage, PageLabel};
     use crate::serialize::SerializerContext;
     use crate::surface::StreamBuilder;
@@ -264,7 +264,7 @@ mod tests {
     use krilla_macros::snapshot;
     use pdf_writer::types::NumberingStyle;
     use std::num::NonZeroU32;
-    use tiny_skia_path::{PathBuilder, Rect, Size};
+    use tiny_skia_path::{PathBuilder, Rect};
 
     #[snapshot]
     fn page_simple(sc: &mut SerializerContext) {

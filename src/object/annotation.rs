@@ -97,7 +97,7 @@ mod tests {
     use crate::tests::{green_fill, rect_to_path, red_fill};
 
     use krilla_macros::snapshot;
-    use tiny_skia_path::{Point, Rect, Size};
+    use tiny_skia_path::{Point, Rect};
 
     #[snapshot(single_page)]
     fn annotation_to_link(page: &mut Page) {

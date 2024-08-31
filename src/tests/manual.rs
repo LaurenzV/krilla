@@ -15,7 +15,7 @@ use crate::Fill;
 use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::{Point, Rect};
+use tiny_skia_path::Point;
 
 #[ignore]
 #[test]
