@@ -15,9 +15,9 @@ impl Object for Destination {
         &mut cc.destinations
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
-            Destination::Xyz(xyz) => xyz.serialize_into(sc, root_ref),
+            Destination::Xyz(xyz) => xyz.serialize(sc, root_ref),
         }
     }
 }
@@ -53,7 +53,7 @@ impl Object for XyzDestination {
         &mut cc.destinations
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let page_info = sc
             .page_infos()
             .get(self.page_index)

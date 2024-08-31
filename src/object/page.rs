@@ -37,7 +37,7 @@ impl Page {
         }
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
@@ -51,7 +51,7 @@ impl Page {
         if !self.annotations.is_empty() {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
-                chunk.extend(&annotation.serialize_into(sc, annot_ref, self.media_box.height())?);
+                chunk.extend(&annotation.serialize(sc, annot_ref, self.media_box.height())?);
                 annotation_refs.push(annot_ref);
             }
         }
@@ -107,7 +107,7 @@ impl PageLabel {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 
-    pub fn serialize_into(&self, root_ref: Ref) -> Chunk {
+    pub fn serialize(&self, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)
@@ -144,7 +144,7 @@ impl<'a> PageLabelContainer<'a> {
         };
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,

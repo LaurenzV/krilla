@@ -16,14 +16,14 @@ pub enum Annotation {
 }
 
 impl Annotation {
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
         page_size: f32,
     ) -> KrillaResult<Chunk> {
         match self {
-            Annotation::Link(link) => link.serialize_into(sc, root_ref, page_size),
+            Annotation::Link(link) => link.serialize(sc, root_ref, page_size),
         }
     }
 }
@@ -51,7 +51,7 @@ impl Into<Annotation> for LinkAnnotation {
 }
 
 impl LinkAnnotation {
-    fn serialize_into(
+    fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
@@ -63,7 +63,7 @@ impl LinkAnnotation {
         let target_ref = sc.new_ref();
 
         match &self.target {
-            Target::Destination(dest) => chunk.extend(&dest.serialize_into(sc, target_ref)?),
+            Target::Destination(dest) => chunk.extend(&dest.serialize(sc, target_ref)?),
             Target::Action(_) => {}
         };
 
@@ -81,7 +81,7 @@ impl LinkAnnotation {
             Target::Destination(_) => {
                 annotation.pair(Name(b"Dest"), target_ref);
             }
-            Target::Action(action) => action.serialize_into(sc, annotation.action()),
+            Target::Action(action) => action.serialize(sc, annotation.action()),
         };
 
         annotation.finish();

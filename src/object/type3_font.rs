@@ -98,7 +98,7 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,

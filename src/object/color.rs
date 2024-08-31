@@ -34,7 +34,7 @@ pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
 struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
 impl ICCBasedColorSpace {
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -222,9 +222,9 @@ pub mod rgb {
             &mut cc.color_spaces
         }
 
-        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+        fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
             let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
-            icc_based.serialize_into(sc, root_ref)
+            icc_based.serialize(sc, root_ref)
         }
     }
 
@@ -312,9 +312,9 @@ pub mod luma {
             &mut cc.color_spaces
         }
 
-        fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+        fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
             let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
-            icc_based.serialize_into(sc, root_ref)
+            icc_based.serialize(sc, root_ref)
         }
     }
 

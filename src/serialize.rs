@@ -103,7 +103,7 @@ impl Default for SerializeSettings {
 pub(crate) trait Object: SipHashable {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
 }
 
 pub struct PageInfo {
@@ -211,7 +211,7 @@ impl SerializerContext {
             Ok(*_ref)
         } else {
             let root_ref = self.new_ref();
-            let chunk = object.serialize_into(self, root_ref)?;
+            let chunk = object.serialize(self, root_ref)?;
             self.cached_mappings.insert(hash, root_ref);
             object
                 .chunk_container(&mut self.chunk_container)
@@ -222,7 +222,7 @@ impl SerializerContext {
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize_into(ref_);
+        let chunk = page_label.serialize(ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
     }
@@ -321,14 +321,14 @@ impl SerializerContext {
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();
-            let chunk = container.serialize_into(&mut self, page_label_tree_ref)?;
+            let chunk = container.serialize(&mut self, page_label_tree_ref)?;
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
         let outline = std::mem::take(&mut self.outline);
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
-            let chunk = outline.serialize_into(&mut self, outline_ref)?;
+            let chunk = outline.serialize(&mut self, outline_ref)?;
             self.chunk_container.outline = Some((outline_ref, chunk));
         }
 
@@ -338,13 +338,13 @@ impl SerializerContext {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
                         let ref_ = self.add_resource(t3_font.identifier())?;
-                        let chunk = t3_font.serialize_into(&mut self, ref_)?;
+                        let chunk = t3_font.serialize(&mut self, ref_)?;
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
                     let ref_ = self.add_resource(cid_font.identifier())?;
-                    let chunk = cid_font.serialize_into(&mut self, ref_)?;
+                    let chunk = cid_font.serialize(&mut self, ref_)?;
                     self.chunk_container.fonts.push(chunk);
                 }
             }
@@ -352,7 +352,7 @@ impl SerializerContext {
 
         let pages = std::mem::take(&mut self.pages);
         for (ref_, page) in &pages {
-            let chunk = page.serialize_into(&mut self, *ref_)?;
+            let chunk = page.serialize(&mut self, *ref_)?;
             self.chunk_container.pages.push(chunk);
         }
 

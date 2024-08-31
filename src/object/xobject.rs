@@ -40,7 +40,7 @@ impl Object for XObject {
         &mut cc.x_objects
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let cs = sc.rgb();
         let mut chunk = Chunk::new();
 

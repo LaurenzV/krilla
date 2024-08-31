@@ -11,13 +11,13 @@ pub enum Action {
 }
 
 impl Action {
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         action: pdf_writer::writers::Action,
     ) {
         match self {
-            Action::Link(link) => link.serialize_into(sc, action),
+            Action::Link(link) => link.serialize(sc, action),
         }
     }
 }
@@ -41,7 +41,7 @@ impl LinkAction {
 }
 
 impl LinkAction {
-    fn serialize_into(&self, _: &mut SerializerContext, mut action: pdf_writer::writers::Action) {
+    fn serialize(&self, _: &mut SerializerContext, mut action: pdf_writer::writers::Action) {
         action
             .action_type(ActionType::Uri)
             .uri(Str(self.uri.as_bytes()));

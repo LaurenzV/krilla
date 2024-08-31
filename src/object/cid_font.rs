@@ -93,7 +93,7 @@ impl CIDFont {
         FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,

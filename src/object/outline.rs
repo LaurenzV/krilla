@@ -18,7 +18,7 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
@@ -45,7 +45,7 @@ impl Outline {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize_into(sc, root_ref, last, next, prev)?);
+                sub_chunks.push(self.children[i].serialize(sc, root_ref, last, next, prev)?);
 
                 prev = cur;
                 cur = next;
@@ -88,7 +88,7 @@ impl OutlineNode {
         self.children.push(Box::new(node))
     }
 
-    pub(crate) fn serialize_into(
+    pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
         parent: Ref,
@@ -127,7 +127,7 @@ impl OutlineNode {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize_into(sc, root, last, next, prev)?);
+                sub_chunks.push(self.children[i].serialize(sc, root, last, next, prev)?);
 
                 prev = cur;
                 cur = next;
@@ -144,7 +144,7 @@ impl OutlineNode {
 
         let dest = XyzDestination::new(self.page_index as usize, self.pos);
         let dest_ref = sc.new_ref();
-        sub_chunks.push(dest.serialize_into(sc, dest_ref)?);
+        sub_chunks.push(dest.serialize(sc, dest_ref)?);
 
         outline_entry.pair(Name(b"Dest"), dest_ref);
 

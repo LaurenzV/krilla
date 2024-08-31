@@ -122,10 +122,10 @@ impl Object for XObjectResource {
         }
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
-            XObjectResource::XObject(x) => x.serialize_into(sc, root_ref),
-            XObjectResource::Image(i) => i.serialize_into(sc, root_ref),
+            XObjectResource::XObject(x) => x.serialize(sc, root_ref),
+            XObjectResource::Image(i) => i.serialize(sc, root_ref),
         }
     }
 }
@@ -151,10 +151,10 @@ impl Object for PatternResource {
         &mut cc.patterns
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
-            PatternResource::ShadingPattern(sp) => sp.serialize_into(sc, root_ref),
-            PatternResource::TilingPattern(tp) => tp.serialize_into(sc, root_ref),
+            PatternResource::ShadingPattern(sp) => sp.serialize(sc, root_ref),
+            PatternResource::TilingPattern(tp) => tp.serialize(sc, root_ref),
         }
     }
 }
@@ -373,10 +373,10 @@ impl Object for ColorSpaceResource {
         &mut cc.color_spaces
     }
 
-    fn serialize_into(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
-            ColorSpaceResource::Srgb(srgb) => srgb.serialize_into(sc, root_ref),
-            ColorSpaceResource::SGray(sgray) => sgray.serialize_into(sc, root_ref),
+            ColorSpaceResource::Srgb(srgb) => srgb.serialize(sc, root_ref),
+            ColorSpaceResource::SGray(sgray) => sgray.serialize(sc, root_ref),
         }
     }
 }
