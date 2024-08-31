@@ -83,8 +83,6 @@ impl Outline {
             chunk.extend(&sub_chunk);
         }
 
-        eprintln!("{}", std::str::from_utf8(&chunk.as_bytes()).unwrap());
-
         Ok(chunk)
     }
 }
