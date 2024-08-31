@@ -3,7 +3,7 @@ use crate::error::KrillaResult;
 use crate::object::color::{Color, ColorSpace};
 use crate::paint::SpreadMethod;
 use crate::serialize::{Object, SerializerContext};
-use crate::transform::TransformWrapper;
+use crate::util::TransformWrapper;
 use crate::util::{RectExt, RectWrapper};
 use crate::{LinearGradient, RadialGradient, SweepGradient};
 use pdf_writer::types::FunctionShadingType;

@@ -1,19 +1,19 @@
 mod chunk_container;
-pub mod document;
-pub mod font;
 mod graphics_state;
 mod object;
-pub mod paint;
-pub mod path;
 mod resource;
 mod serialize;
+mod util;
+
+pub mod document;
+pub mod error;
+pub mod font;
+pub mod paint;
+pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod svg;
-pub mod transform;
-mod util;
 
-mod error;
 #[cfg(test)]
 pub mod tests;
 
@@ -25,5 +25,3 @@ pub use paint::*;
 pub use path::*;
 pub use serialize::{SerializeSettings, SvgSettings};
 pub use tiny_skia_path::{Rect, Size, Transform};
-
-// TODO: Add acknowledgements and license files

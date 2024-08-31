@@ -16,7 +16,7 @@ use crate::resource::{
     XObjectResource,
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
-use crate::transform::TransformWrapper;
+use crate::util::TransformWrapper;
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, RectWrapper, TransformExt,
 };

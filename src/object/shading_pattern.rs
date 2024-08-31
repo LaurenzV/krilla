@@ -2,8 +2,8 @@ use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::serialize::{Object, SerializerContext};
-use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
+use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 

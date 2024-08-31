@@ -1,6 +1,6 @@
 use crate::object::ext_g_state;
 use crate::object::ext_g_state::ExtGState;
-use crate::transform::TransformWrapper;
+use crate::util::TransformWrapper;
 use tiny_skia_path::{Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]

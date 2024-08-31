@@ -3,8 +3,8 @@ use crate::error::KrillaResult;
 use crate::serialize::{FilterStream, Object, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::StreamBuilder;
-use crate::transform::TransformWrapper;
 use crate::util::TransformExt;
+use crate::util::TransformWrapper;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::DerefMut;
@@ -95,7 +95,7 @@ mod tests {
     use crate::surface::{StreamBuilder, Surface};
     use crate::tests::{basic_pattern_stream, rect_to_path};
     use crate::tiling_pattern::TilingPattern;
-    use crate::transform::TransformWrapper;
+    use crate::util::TransformWrapper;
     use crate::{Fill, Paint, Pattern};
     use krilla_macros::{snapshot, visreg};
     use std::sync::Arc;
