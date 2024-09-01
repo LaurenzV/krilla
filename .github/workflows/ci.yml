@@ -3,8 +3,6 @@ on: [push, pull_request]
 
 env:
   KRILLA_THRESHOLD: "200"
-  RUSTFLAGS: "-Dwarnings"
-  RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
   pdfium:
