@@ -76,9 +76,6 @@ def main():
 
     test_string += """
 use crate::tests::{ASSETS_PATH, FONTDB};
-use crate::{Document, PageSettings, SerializeSettings};
-use pdf_writer::Finish;
-use sitro::Renderer;
 use krilla_macros::visreg;\n\n
 """
 
