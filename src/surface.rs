@@ -297,8 +297,8 @@ impl<'a> Surface<'a> {
     /// Draw a new SVG image.
     pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) {
         let transform = Transform::from_scale(
-            tree.size().width() / size.width(),
-            tree.size().height() / size.height(),
+            size.width() / tree.size().width(),
+            size.height() / tree.size().height(),
         );
         self.push_transform(&transform);
         svg::render_tree(tree, self.sc.serialize_settings.svg_settings, self);
@@ -433,11 +433,11 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{
         basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path,
-        red_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI,
+        red_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
-    use krilla_macros::snapshot;
+    use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
-    use tiny_skia_path::{Point, Transform};
+    use tiny_skia_path::{Point, Size, Transform};
 
     #[snapshot(stream)]
     fn stream_path_single_with_rgb(surface: &mut Surface) {
@@ -551,5 +551,21 @@ mod tests {
         let path = rect_to_path(0.0, 0.0, 100.0, 100.0);
         surface.fill_path(&path, green_fill(0.5));
         surface.pop();
+    }
+
+    fn sample_svg() -> usvg::Tree {
+        let data = std::fs::read(SVGS_PATH.join("resvg_masking_mask_with_opacity_1.svg")).unwrap();
+        usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
+    }
+
+    #[visreg(pdfium)]
+    fn svg_simple(surface: &mut Surface) {
+        let tree = sample_svg();
+        surface.draw_svg(&tree, tree.size());
+    }
+
+    #[visreg(pdfium)]
+    fn svg_resized(surface: &mut Surface) {
+        surface.draw_svg(&sample_svg(), Size::from_wh(120.0, 80.0).unwrap());
     }
 }

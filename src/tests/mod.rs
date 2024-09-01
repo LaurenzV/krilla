@@ -53,6 +53,9 @@ static REFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     path
 });
 
+pub static SVGS_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/svgs"));
+
 static DIFFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/diffs");
     let _ = std::fs::remove_dir_all(&path);
