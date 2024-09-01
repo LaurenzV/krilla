@@ -3,8 +3,8 @@ on: [push, pull_request]
 
 env:
   KRILLA_THRESHOLD: "200"
-#  RUSTFLAGS: "-Dwarnings"
-#  RUSTDOCFLAGS: "-Dwarnings"
+  RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
   pdfium:
@@ -171,3 +171,16 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./assets/diffs
+
+  checks:
+    name: Check clippy, formatting, and documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-hack
+      - run: cargo clippy
+      - run: cargo fmt --check --all
+      - run: cargo doc --workspace --no-deps
+      - run: cargo hack check --each-feature

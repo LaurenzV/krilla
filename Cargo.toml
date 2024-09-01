@@ -54,40 +54,45 @@ repository = { workspace = true }
 license = { workspace = true }
 
 [features]
+default = ["simple-text", "raster-images"]
+# Allow for rendering SVG images and SVG-based glyphs.
 "svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
+# Allow for rendering simple text without having to shape it yourself.
 "simple-text" = ["dep:rustybuzz"]
+# Add the convenience method for converting fontdb databases.
 "fontdb" = ["dep:fontdb"]
+# Allow for adding raster images to your document.
 "raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp"]
 
 [dependencies]
+flate2 = { workspace = true }
+float-cmp = { workspace = true }
+fontdb = { workspace = true, optional = true }
+gif = { workspace = true, optional = true }
+image-webp = { workspace = true, optional = true }
 miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
 resvg = { workspace = true, optional = true }
+rustybuzz = { workspace = true, optional = true }
 siphasher = { workspace = true }
+subsetter = { workspace = true }
 skrifa = { workspace = true }
 tiny-skia = { workspace = true, optional = true }
-subsetter = { workspace = true }
-rustybuzz = { workspace = true, optional = true }
 tiny-skia-path = { workspace = true }
 usvg = { workspace = true, optional = true }
-flate2 = { workspace = true }
-fontdb = { workspace = true, optional = true }
 yoke = { workspace = true }
-float-cmp = { workspace = true }
 zune-png = { workspace = true, optional = true }
 zune-jpeg = { workspace = true, optional = true }
-gif = { workspace = true, optional = true }
-image-webp = { workspace = true, optional = true }
 
 [dev-dependencies]
-image = { workspace = true }
-difference = { workspace = true }
-paste = { workspace = true }
-sitro = { workspace = true }
 cosmic-text = { workspace = true }
+difference = { workspace = true }
+image = { workspace = true }
 krilla-macros = { workspace = true }
 oxipng = { workspace = true }
 parley = { workspace = true }
+paste = { workspace = true }
+sitro = { workspace = true }
 
 
