@@ -7,7 +7,6 @@ use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
-use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};

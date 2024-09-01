@@ -341,142 +341,136 @@ fn handle_u16_image(
 
 #[cfg(test)]
 mod tests {
-    mod snapshot {
-        use crate::serialize::SerializerContext;
-        use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
-        use krilla_macros::snapshot;
+    use crate::serialize::SerializerContext;
+    use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
+    use krilla_macros::{snapshot, visreg};
+    use crate::image::Image;
+    use crate::surface::Surface;
 
-        #[snapshot]
-        fn image_luma8_png(sc: &mut SerializerContext) {
-            sc.add_object(load_png_image("luma8.png")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_luma16_png(sc: &mut SerializerContext) {
-            sc.add_object(load_png_image("luma16.png")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_rgb8_png(sc: &mut SerializerContext) {
-            sc.add_object(load_png_image("rgb8.png")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_rgb16_png(sc: &mut SerializerContext) {
-            sc.add_object(load_png_image("rgb16.png")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_rgba8_png(sc: &mut SerializerContext) {
-            sc.add_object(load_png_image("rgba8.png")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_rgba16_png(sc: &mut SerializerContext) {
-            sc.add_object(load_png_image("rgba16.png")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_luma8_jpg(sc: &mut SerializerContext) {
-            sc.add_object(load_jpg_image("luma8.jpg")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_rgb8_jpg(sc: &mut SerializerContext) {
-            sc.add_object(load_jpg_image("rgb8.jpg")).unwrap();
-        }
-
-        // Currently gets converted into RGB.
-        #[snapshot]
-        fn image_cmyk_jpg(sc: &mut SerializerContext) {
-            sc.add_object(load_jpg_image("cmyk.jpg")).unwrap();
-        }
-
-        // Currently gets converted into RGBA.
-        #[snapshot]
-        fn image_rgb8_gif(sc: &mut SerializerContext) {
-            sc.add_object(load_gif_image("rgb8.gif")).unwrap();
-        }
-
-        #[snapshot]
-        fn image_rgba8_gif(sc: &mut SerializerContext) {
-            sc.add_object(load_gif_image("rgba8.gif")).unwrap();
-        }
-        #[snapshot]
-        fn image_rgba8_webp(sc: &mut SerializerContext) {
-            sc.add_object(load_webp_image("rgba8.webp")).unwrap();
-        }
+    #[snapshot]
+    fn image_luma8_png(sc: &mut SerializerContext) {
+        sc.add_object(load_png_image("luma8.png")).unwrap();
     }
 
-    mod visreg {
-        use crate::image::Image;
-        use crate::surface::Surface;
-        use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
-        use krilla_macros::visreg;
+    #[snapshot]
+    fn image_luma16_png(sc: &mut SerializerContext) {
+        sc.add_object(load_png_image("luma16.png")).unwrap();
+    }
 
-        fn image_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
-            let image = load_fn(name);
-            let size = image.size();
-            surface.draw_image(image, size);
-        }
+    #[snapshot]
+    fn image_rgb8_png(sc: &mut SerializerContext) {
+        sc.add_object(load_png_image("rgb8.png")).unwrap();
+    }
 
-        #[visreg(all)]
-        fn image_luma8_png(surface: &mut Surface) {
-            image_impl(surface, "luma8.png", load_png_image);
-        }
+    #[snapshot]
+    fn image_rgb16_png(sc: &mut SerializerContext) {
+        sc.add_object(load_png_image("rgb16.png")).unwrap();
+    }
 
-        #[visreg(all)]
-        fn image_luma16_png(surface: &mut Surface) {
-            image_impl(surface, "luma16.png", load_png_image);
-        }
+    #[snapshot]
+    fn image_rgba8_png(sc: &mut SerializerContext) {
+        sc.add_object(load_png_image("rgba8.png")).unwrap();
+    }
 
-        #[visreg(all)]
-        fn image_rgb8_png(surface: &mut Surface) {
-            image_impl(surface, "rgb8.png", load_png_image);
-        }
+    #[snapshot]
+    fn image_rgba16_png(sc: &mut SerializerContext) {
+        sc.add_object(load_png_image("rgba16.png")).unwrap();
+    }
 
-        #[visreg(all)]
-        fn image_rgb16_png(surface: &mut Surface) {
-            image_impl(surface, "rgb16.png", load_png_image);
-        }
+    #[snapshot]
+    fn image_luma8_jpg(sc: &mut SerializerContext) {
+        sc.add_object(load_jpg_image("luma8.jpg")).unwrap();
+    }
 
-        #[visreg(all)]
-        fn image_rgba8_png(surface: &mut Surface) {
-            image_impl(surface, "rgba8.png", load_png_image);
-        }
+    #[snapshot]
+    fn image_rgb8_jpg(sc: &mut SerializerContext) {
+        sc.add_object(load_jpg_image("rgb8.jpg")).unwrap();
+    }
 
-        #[visreg(all)]
-        fn image_rgba16_png(surface: &mut Surface) {
-            image_impl(surface, "rgba16.png", load_png_image);
-        }
+    // Currently gets converted into RGB.
+    #[snapshot]
+    fn image_cmyk_jpg(sc: &mut SerializerContext) {
+        sc.add_object(load_jpg_image("cmyk.jpg")).unwrap();
+    }
 
-        #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
-        fn image_luma8_jpg(surface: &mut Surface) {
-            image_impl(surface, "luma8.jpg", load_jpg_image);
-        }
+    // Currently gets converted into RGBA.
+    #[snapshot]
+    fn image_rgb8_gif(sc: &mut SerializerContext) {
+        sc.add_object(load_gif_image("rgb8.gif")).unwrap();
+    }
 
-        #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
-        fn image_rgb8_jpg(surface: &mut Surface) {
-            image_impl(surface, "rgb8.jpg", load_jpg_image);
-        }
+    #[snapshot]
+    fn image_rgba8_gif(sc: &mut SerializerContext) {
+        sc.add_object(load_gif_image("rgba8.gif")).unwrap();
+    }
+    #[snapshot]
+    fn image_rgba8_webp(sc: &mut SerializerContext) {
+        sc.add_object(load_webp_image("rgba8.webp")).unwrap();
+    }
 
-        #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
-        fn image_cmyk_jpg(surface: &mut Surface) {
-            image_impl(surface, "cmyk.jpg", load_jpg_image);
-        }
 
-        #[visreg(all)]
-        fn image_rgb8_gif(surface: &mut Surface) {
-            image_impl(surface, "rgb8.gif", load_gif_image);
-        }
+    fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
+        let image = load_fn(name);
+        let size = image.size();
+        surface.draw_image(image, size);
+    }
 
-        #[visreg(all)]
-        fn image_rgba8_gif(surface: &mut Surface) {
-            image_impl(surface, "rgba8.gif", load_gif_image);
-        }
-        #[visreg(all)]
-        fn image_rgba8_webp(surface: &mut Surface) {
-            image_impl(surface, "rgba8.webp", load_webp_image);
-        }
+    #[visreg(all)]
+    fn image_luma8_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "luma8.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_luma16_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "luma16.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgb8_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb8.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgb16_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb16.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgba8_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgba8.png", load_png_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgba16_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgba16.png", load_png_image);
+    }
+
+    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    fn image_luma8_jpg(surface: &mut Surface) {
+        image_visreg_impl(surface, "luma8.jpg", load_jpg_image);
+    }
+
+    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    fn image_rgb8_jpg(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb8.jpg", load_jpg_image);
+    }
+
+    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    fn image_cmyk_jpg(surface: &mut Surface) {
+        image_visreg_impl(surface, "cmyk.jpg", load_jpg_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgb8_gif(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb8.gif", load_gif_image);
+    }
+
+    #[visreg(all)]
+    fn image_rgba8_gif(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgba8.gif", load_gif_image);
+    }
+    #[visreg(all)]
+    fn image_rgba8_webp(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgba8.webp", load_webp_image);
     }
 }
