@@ -163,6 +163,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut quartz = false;
     let mut document = false;
     let mut is_svg = false;
+    let mut ignore = false;
 
     if !attrs.identifiers.iter().any(|ident| {
         let string_ident = ident.to_string();
@@ -192,6 +193,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             "quartz" => quartz = true,
             "document" => document = true,
             "svg" => is_svg = true,
+            "ignore" => ignore = true,
             "all" => {
                 pdfium = true;
                 mupdf = true;
@@ -223,7 +225,10 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let mut d = Document::new_with(settings);
             let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", stringify!(#fn_name)));
             let data = std::fs::read(&svg_path).unwrap();
-            let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+            let tree = usvg::Tree::from_data(&data, &usvg::Options {
+                fontdb: FONTDB.clone(),
+                ..Default::default()
+            }).unwrap();
 
             let mut page = d.start_page_with(PageSettings::with_size(tree.size().width(), tree.size().height()));
             let mut surface = page.surface();
@@ -266,7 +271,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
-        let ignore_snippet = if SKIP_VISREG.is_some() {
+        let ignore_snippet = if SKIP_VISREG.is_some() || ignore {
             quote! { #[ignore] }
         } else {
             quote! {}

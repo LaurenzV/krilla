@@ -25,6 +25,7 @@ use std::cmp::max;
 use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
+use once_cell::sync::Lazy;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
@@ -608,3 +609,16 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
 
     stream_builder.finish()
 }
+
+static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
+    let mut fontdb = fontdb::Database::new();
+    fontdb.load_fonts_dir(ASSETS_PATH.join("svg_fonts"));
+
+    fontdb.set_serif_family("Noto Serif");
+    fontdb.set_sans_serif_family("Noto Sans");
+    fontdb.set_cursive_family("Yellowtail");
+    fontdb.set_fantasy_family("Sedgwick Ave Display");
+    fontdb.set_monospace_family("Noto Mono");
+
+    Arc::new(fontdb)
+});
