@@ -55,7 +55,12 @@ impl Document {
     }
 
     /// Attempt to write the document to a PDF.
-    pub fn finish(self) -> KrillaResult<Vec<u8>> {
+    pub fn finish(mut self) -> KrillaResult<Vec<u8>> {
+        // Write empty page if none has been created yet.
+        if self.serializer_context.page_infos().is_empty() {
+            self.start_page();
+        }
+
         Ok(self.serializer_context.finish()?.finish())
     }
 }
@@ -89,4 +94,13 @@ impl Default for PageSettings {
             page_label: PageLabel::default(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Document;
+    use krilla_macros::snapshot;
+
+    #[snapshot(document)]
+    fn empty_document(_: &mut Document) {}
 }

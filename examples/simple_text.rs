@@ -28,6 +28,8 @@ fn main() {
         vec![],
     )
     .unwrap();
+
+    // Let's first write some red-colored text with some English text.
     surface.fill_text(
         Point::from_xy(0.0, 25.0),
         Fill {
@@ -41,6 +43,7 @@ fn main() {
         "This text is filled red and has opacity.",
     );
 
+    // Instead of applying fills, we can also apply strokes!
     surface.stroke_text(
         Point::from_xy(0.0, 50.0),
         Stroke {
@@ -59,6 +62,9 @@ fn main() {
         vec![],
     )
     .unwrap();
+
+    // As mentioned above, complex scripts are supported, you just can't mix them in
+    // one run.
     surface.fill_text(
         Point::from_xy(0.0, 75.0),
         Fill::<Rgb>::default(),
@@ -80,6 +86,8 @@ fn main() {
         vec![("wght".to_string(), 900.0), ("wdth".to_string(), 100.0)],
     ];
 
+    // krilla also supports variable fonts! With the limitation
+    // that it only works with filling, not stroking.
     for coordinates in axes {
         let noto_font_variable = Font::new(
             Arc::new(std::fs::read("assets/fonts/NotoSans_variable.ttf").unwrap()),
@@ -103,11 +111,9 @@ fn main() {
         y += 25.0;
     }
 
-    // Finish up.
     surface.finish();
     page.finish();
     let pdf = document.finish().unwrap();
 
-    // Write the resulting PDF!
     std::fs::write("target/simple_text.pdf", &pdf).unwrap();
 }

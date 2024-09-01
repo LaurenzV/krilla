@@ -81,12 +81,10 @@ fn main() {
         }
     }
 
-    // Finish up.
     surface.finish();
     page.finish();
     let pdf = document.finish().unwrap();
 
-    // Write the resulting PDF!
     std::fs::write("target/cosmic_text.pdf", &pdf).unwrap();
 }
 
