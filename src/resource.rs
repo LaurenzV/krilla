@@ -219,12 +219,12 @@ impl ResourceDictionaryBuilder {
 
     pub fn finish(self) -> ResourceDictionary {
         ResourceDictionary {
-            color_spaces: self.color_spaces.to_resource_list(),
-            ext_g_states: self.ext_g_states.to_resource_list(),
-            patterns: self.patterns.to_resource_list(),
-            x_objects: self.x_objects.to_resource_list(),
-            shadings: self.shadings.to_resource_list(),
-            fonts: self.fonts.to_resource_list(),
+            color_spaces: self.color_spaces.into_resource_list(),
+            ext_g_states: self.ext_g_states.into_resource_list(),
+            patterns: self.patterns.into_resource_list(),
+            x_objects: self.x_objects.into_resource_list(),
+            shadings: self.shadings.into_resource_list(),
+            fonts: self.fonts.into_resource_list(),
         }
     }
 }
@@ -354,7 +354,7 @@ where
         format!("{}{}", V::get_prefix(), num)
     }
 
-    pub fn to_resource_list(self) -> ResourceList<V> {
+    pub fn into_resource_list(self) -> ResourceList<V> {
         ResourceList {
             entries: self.forward,
         }

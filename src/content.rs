@@ -303,6 +303,7 @@ impl ContentBuilder {
         positioned.finish();
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn fill_stroke_glyph_run(
         &mut self,
         x: f32,
@@ -740,14 +741,14 @@ impl PdfFont for Type3Font {
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
         match pdf_glyph {
             PDFGlyph::Type3(t3) => self.get_codepoints(t3),
-            PDFGlyph::CID(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
         }
     }
 
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) {
         match pdf_glyph {
             PDFGlyph::Type3(t3) => self.set_codepoints(t3, text),
-            PDFGlyph::CID(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
         }
     }
 
@@ -768,19 +769,19 @@ impl PdfFont for CIDFont {
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
         match pdf_glyph {
             PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
-            PDFGlyph::CID(cid) => self.get_codepoints(cid),
+            PDFGlyph::Cid(cid) => self.get_codepoints(cid),
         }
     }
 
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) {
         match pdf_glyph {
             PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
-            PDFGlyph::CID(cid) => self.set_codepoints(cid, text),
+            PDFGlyph::Cid(cid) => self.set_codepoints(cid, text),
         }
     }
 
     fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_cid(gid).map(PDFGlyph::CID)
+        self.get_cid(gid).map(PDFGlyph::Cid)
     }
 }
 

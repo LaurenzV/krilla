@@ -103,7 +103,7 @@ impl RectExt for Rect {
 }
 
 pub fn calculate_stroke_bbox(stroke: &Stroke<impl ColorSpace>, path: &Path) -> Option<Rect> {
-    let stroke = stroke.clone().to_tiny_skia();
+    let stroke = stroke.clone().into_tiny_skia();
 
     if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
         return stroked_path.compute_tight_bounds();

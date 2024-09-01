@@ -2,7 +2,6 @@
 //! with a single empty page.
 
 use krilla::{Document, PageSettings};
-use pdf_writer::Finish;
 
 fn main() {
     // First, we create a new document. This represents a single PDF document.

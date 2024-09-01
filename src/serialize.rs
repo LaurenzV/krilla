@@ -129,14 +129,14 @@ pub(crate) struct SerializerContext {
 #[derive(Clone, Copy)]
 pub(crate) enum PDFGlyph {
     Type3(u8),
-    CID(u16),
+    Cid(u16),
 }
 
 impl PDFGlyph {
     pub fn encode_into(&self, slice: &mut Vec<u8>) {
         match self {
             PDFGlyph::Type3(cg) => slice.push(*cg),
-            PDFGlyph::CID(cid) => {
+            PDFGlyph::Cid(cid) => {
                 slice.push((cid >> 8) as u8);
                 slice.push((cid & 0xff) as u8);
             }
@@ -450,7 +450,7 @@ impl FontContainer {
             }
             FontContainer::CIDFont(cid_font) => {
                 let cid = cid_font.add_glyph(glyph_id);
-                (cid_font.identifier(), PDFGlyph::CID(cid))
+                (cid_font.identifier(), PDFGlyph::Cid(cid))
             }
         }
     }

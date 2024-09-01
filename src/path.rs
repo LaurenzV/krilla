@@ -85,7 +85,7 @@ impl<C> Stroke<C>
 where
     C: ColorSpace,
 {
-    pub(crate) fn to_tiny_skia(self) -> tiny_skia_path::Stroke {
+    pub(crate) fn into_tiny_skia(self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
             width: self.width,
             miter_limit: self.miter_limit,

@@ -100,7 +100,7 @@ impl Outline {
 #[derive(Debug, Clone)]
 pub struct OutlineNode {
     /// The children of the outline node.
-    children: Vec<Box<OutlineNode>>,
+    children: Vec<OutlineNode>,
     /// The text of the outline entry.
     text: String,
     /// The destination of the outline entry.
@@ -123,7 +123,7 @@ impl OutlineNode {
 
     /// Add a new child to the outline node.
     pub fn push_child(&mut self, node: OutlineNode) {
-        self.children.push(Box::new(node))
+        self.children.push(node)
     }
 
     pub(crate) fn serialize(

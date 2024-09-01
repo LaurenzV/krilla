@@ -244,7 +244,7 @@ impl Object for Image {
     }
 }
 
-fn handle_u8_image<'a>(
+fn handle_u8_image(
     data: Vec<u8>,
     cs: ColorSpace,
 ) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
@@ -289,7 +289,7 @@ fn handle_u8_image<'a>(
     (encoded_image, encoded_mask, BitsPerComponent::Eight)
 }
 
-fn handle_u16_image<'a>(
+fn handle_u16_image(
     data: Vec<u16>,
     cs: ColorSpace,
 ) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {

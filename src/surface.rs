@@ -42,10 +42,10 @@ pub(crate) enum PushInstruction {
 /// Instead, there are two ways of getting access to a surface, which you can then use to draw on:
 ///
 /// - The first way, and also the most common one you will use, is by creating a new document,
-/// adding a page to it and then invoking the `surface` method. The surface returned as part of
-/// that represents the drawing area of the page.
+///   adding a page to it and then invoking the `surface` method. The surface returned as part of
+///   that represents the drawing area of the page.
 /// - The second way is by calling the `stream_builder` method on the surface, to create a sub-drawing
-/// context. See the documentation of the `stream` module for more information.
+///   context. See the documentation of the `stream` module for more information.
 ///
 /// The surface uses a `push` and `pop` based mechanism for applying certain actions. For example,
 /// there is a `push_transform` method which allows you to concatenate a new transform to the
@@ -129,9 +129,9 @@ impl<'a> Surface<'a> {
     /// then be rendered into a single line. However, this approach has restrictions:
     ///
     /// - It will not perform BIDI resolution and only supports a single script, meaning that you
-    /// must ensure that your text does not contain multiple scripts.
+    ///   must ensure that your text does not contain multiple scripts.
     /// - It will only use the single font you provided to draw the text, no font fallback will
-    /// be performed.
+    ///   be performed.
     ///
     /// If you need more advanced control over how your text looks, but you don't want to
     /// implement your own text processing solution, so you can use the `fill_glyphs` method,
@@ -177,9 +177,9 @@ impl<'a> Surface<'a> {
     /// then be rendered into a single line. However, this approach has restrictions:
     ///
     /// - It will not perform BIDI resolution and only supports a single script, meaning that you
-    /// must ensure that your text does not contain multiple scripts.
+    ///   must ensure that your text does not contain multiple scripts.
     /// - It will only use the single font you provided to draw the text, no font fallback will
-    /// be performed.
+    ///   be performed.
     ///
     /// If you need more advanced control over how your text looks, but you don't want to
     /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
@@ -395,17 +395,13 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
             e
         } else {
             let mut e = i.checked_sub(1);
-            loop {
-                if let Some(index) = e {
-                    if let Some(end_info) = infos.get(index) {
-                        if end_info.cluster == start_info.cluster {
-                            e = index.checked_sub(1);
-                        } else {
-                            break;
-                        }
+            while let Some(index) = e {
+                if let Some(end_info) = infos.get(index) {
+                    if end_info.cluster == start_info.cluster {
+                        e = index.checked_sub(1);
+                    } else {
+                        break;
                     }
-                } else {
-                    break;
                 }
             }
 
