@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>No `width`</title>
+
+    <image id="image1" x="25" y="25" height="150" xlink:href="../../../resources/image.jpg"/>
+
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+    <title>Percent values</title>
+
+    <ellipse id="ellipse1" cx="50%" cy="50%" rx="40%" ry="20%" fill="green"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="98" fill="none" stroke="black"/>
+</svg>

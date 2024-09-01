@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>linear gradient with stop opacities</title>
+
+    <linearGradient id="lg1" gradientTransform="skewX(20)">
+        <stop offset="0" stop-opacity="0" stop-color="red"/>
+        <stop offset="0.5" stop-opacity="0.5" stop-color="green" />
+        <stop offset="1" stop-opacity="1" stop-color="blue" />
+    </linearGradient>
+
+    <rect id="rect1" transform="translate(50 50) scale(0.5) rotate(20)" x="0" y="0" width="200" height="200" fill="url(#lg1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

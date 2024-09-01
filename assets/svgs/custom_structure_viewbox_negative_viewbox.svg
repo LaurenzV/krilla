@@ -1,0 +1,6 @@
+<svg id="svg1" viewBox="-200 -200 200 200" xmlns="http://www.w3.org/2000/svg">
+<title>Negative viewbox</title>
+
+<rect x="-180"  y="-180" width="160" height="160" />
+<rect id="frame" x="-199" y="-199" width="199" height="199" fill="none" stroke="black"/>
+</svg>

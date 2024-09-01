@@ -162,6 +162,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut poppler = false;
     let mut quartz = false;
     let mut document = false;
+    let mut is_svg = false;
 
     if !attrs.identifiers.iter().any(|ident| {
         let string_ident = ident.to_string();
@@ -190,6 +191,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             "poppler" => poppler = true,
             "quartz" => quartz = true,
             "document" => document = true,
+            "svg" => is_svg = true,
             "all" => {
                 pdfium = true;
                 mupdf = true;
@@ -215,7 +217,11 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let impl_ident = Ident::new(&format!("{}_visreg_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
-    let fn_body = if document {
+    let fn_body = if is_svg {
+        quote! {
+
+        }
+    } else if document {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
             let mut d = Document::new_with(settings);

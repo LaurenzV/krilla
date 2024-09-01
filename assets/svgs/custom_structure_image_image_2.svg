@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>embedded svg that exceeds bounding boxes</title>
+
+    <g transform="rotate(25) translate(10 10)">
+        <image id="image1" x="36" y="3" width="128" height="129" xlink:href="data:image/svg+xml;base64,PHN2ZyBpZD0ic3ZnMSIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgICB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8cmVjdCB4PSItMTAwIiB5PSItMTAwIiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0ieWVsbG93Ij48L3JlY3Q+Cjwvc3ZnPgo="/>
+        <rect id="rect1" x="36" y="3" width="128" height="128" fill="none" stroke="black"/>
+    </g>
+</svg>

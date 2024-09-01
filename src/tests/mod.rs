@@ -29,6 +29,7 @@ use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
 mod visreg;
+mod svg;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");

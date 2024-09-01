@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Complex clip path with nested clip path on child</title>
+
+    <clipPath id="clip1"  >
+        <rect width="50" height="50" />
+    </clipPath>
+    <clipPath id="clip2">
+        <rect width="150" height="150" clip-path="url(#clip1)" />
+        <rect x="150" y="150" width="50" height="50"  />
+    </clipPath>
+    <rect id="rect1" x="0" y="0" width="200" height="200" fill="green" clip-path="url(#clip2)"/>
+</svg>
