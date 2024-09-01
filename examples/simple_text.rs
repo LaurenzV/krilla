@@ -19,7 +19,7 @@ use usvg::NormalizedF32;
 fn main() {
     // The usual page setup.
     let mut document = Document::new();
-    let mut page = document.start_page_with(PageSettings::with_size(600.0, 280.0));
+    let mut page = document.start_page_with(PageSettings::new(600.0, 280.0));
     let mut surface = page.surface();
 
     let noto_font = Font::new(

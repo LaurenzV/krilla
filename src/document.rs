@@ -17,7 +17,7 @@ use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {
@@ -71,32 +71,69 @@ impl Document {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// The settings of a page.
 pub struct PageSettings {
-    /// The media box of the page.
-    ///
-    /// **Default**: The dimensions of an A4 page.
-    pub media_box: Rect,
+    /// The media box of the page, which defines the visible area of the surface.
+    media_box: Rect,
     /// The page label of the page.
-    ///
-    /// **Default**: No page label.
-    pub page_label: PageLabel,
+    page_label: PageLabel,
+    /// The size of the surface.
+    surface_size: Size,
 }
 
 impl PageSettings {
-    pub fn with_size(width: f32, height: f32) -> PageSettings {
-        PageSettings {
+    /// Create new page settings and define the size of the page surface.
+    pub fn new(width: f32, height: f32) -> Self {
+        Self {
             media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
+            surface_size: Size::from_wh(width, height).unwrap(),
             ..Default::default()
         }
+    }
+
+    /// Change the media box.
+    ///
+    /// The media box defines the visible area of the page when opening the PDF,
+    /// so it can be distinct from the size of the surface, but in the majority
+    /// of the cases you want them to match in size and align the media box
+    /// at the origin of the coordinate system.
+    pub fn with_media_box(mut self, media_box: Rect) -> PageSettings {
+        self.media_box = media_box;
+        self
+    }
+
+    /// Change the page label.
+    pub fn with_page_label(mut self, page_label: PageLabel) -> PageSettings {
+        self.page_label = page_label;
+        self
+    }
+
+    /// The current media box.
+    pub fn media_box(&self) -> Rect {
+        self.media_box
+    }
+
+    /// The current surface size.
+    pub fn surface_size(&self) -> Size {
+        self.surface_size
+    }
+
+    /// The current page label.
+    pub fn page_label(&self) -> &PageLabel {
+        &self.page_label
     }
 }
 
 impl Default for PageSettings {
     fn default() -> Self {
+        // Default for A4.
+        let width = 595.0;
+        let height = 842.0;
+
         Self {
-            media_box: Rect::from_xywh(0.0, 0.0, 595.2765, 841.89108).unwrap(),
+            media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
+            surface_size: Size::from_wh(width, height).unwrap(),
             page_label: PageLabel::default(),
         }
     }

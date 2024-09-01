@@ -208,7 +208,7 @@ mod tests {
         for (index, fill) in fills.into_iter().enumerate() {
             let factor = index as f32 * 50.0;
             let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
-            let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
+            let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
             let mut surface = page.surface();
             surface.fill_path(&path, fill);
             surface.finish();

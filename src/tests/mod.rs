@@ -428,7 +428,7 @@ pub fn all_glyphs_to_pdf(
     let units_per_em = metrics.units_per_em as f32;
     let mut cur_point = 0;
 
-    let mut builder = d.start_page_with(PageSettings::with_size(width as f32, height as f32));
+    let mut builder = d.start_page_with(PageSettings::new(width as f32, height as f32));
     let mut surface = builder.surface();
 
     let colors = if color_cycling {
@@ -640,10 +640,7 @@ fn svg_impl(name: &str, renderer: Renderer) {
     )
     .unwrap();
 
-    let mut page = d.start_page_with(PageSettings::with_size(
-        tree.size().width(),
-        tree.size().height(),
-    ));
+    let mut page = d.start_page_with(PageSettings::new(tree.size().width(), tree.size().height()));
     let mut surface = page.surface();
     surface.draw_svg(&tree, tree.size());
     surface.finish();

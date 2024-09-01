@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn annotation_to_invalid_destination() {
         let mut d = Document::new_with(SerializeSettings::settings_1());
-        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
@@ -137,7 +137,7 @@ mod tests {
 
     #[snapshot(document)]
     fn annotation_to_destination(d: &mut Document) {
-        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
@@ -153,7 +153,7 @@ mod tests {
         surface.finish();
         page.finish();
 
-        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),

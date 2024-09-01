@@ -22,7 +22,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::Arc;
-use tiny_skia_path::Rect;
+use tiny_skia_path::Size;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -110,7 +110,7 @@ impl Default for SerializeSettings {
 
 pub(crate) struct PageInfo {
     pub ref_: Ref,
-    pub media_box: Rect,
+    pub surface_size: Size,
 }
 
 pub(crate) struct SerializerContext {
@@ -178,7 +178,7 @@ impl SerializerContext {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo {
             ref_,
-            media_box: page.page_settings.media_box,
+            surface_size: page.page_settings.surface_size(),
         });
         self.pages.push((ref_, page));
     }
@@ -316,7 +316,7 @@ impl SerializerContext {
             &self
                 .pages
                 .iter()
-                .map(|(_, p)| p.page_settings.page_label.clone())
+                .map(|(_, p)| p.page_settings.page_label().clone())
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();

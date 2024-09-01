@@ -22,7 +22,7 @@ endobj
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
-  /MediaBox [0 0 595.2765 841.89105]
+  /MediaBox [0 0 595 842]
   /Parent 2 0 R
   /Contents 4 0 R
 >>
@@ -43,12 +43,12 @@ xref
 0000000016 00000 n
 0000000070 00000 n
 0000000134 00000 n
-0000000304 00000 n
+0000000293 00000 n
 trailer
 <<
   /Size 5
   /Root 1 0 R
 >>
 startxref
-356
+345
 %%EOF

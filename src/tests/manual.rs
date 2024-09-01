@@ -51,7 +51,7 @@ fn simple_shape_demo() {
         ),
     ];
 
-    let page_settings = PageSettings::with_size(200.0, 300.0);
+    let page_settings = PageSettings::new(200.0, 300.0);
 
     let mut document_builder = Document::new_with(SerializeSettings::settings_1());
     let mut builder = document_builder.start_page_with(page_settings);
@@ -90,7 +90,7 @@ fn cosmic_text_integration() {
     buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(&mut font_system, false);
 
-    let page_settings = PageSettings::with_size(200.0, 400.0);
+    let page_settings = PageSettings::new(200.0, 400.0);
 
     let mut document_builder = Document::new_with(SerializeSettings::settings_1());
     let mut builder = document_builder.start_page_with(page_settings);

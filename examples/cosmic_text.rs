@@ -33,7 +33,7 @@ fn main() {
 
     // The usual page setup.
     let mut document = Document::new();
-    let mut page = document.start_page_with(PageSettings::with_size(200.0, 200.0));
+    let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
     let mut surface = page.surface();
 
     // Use the `convert_fontdb` method to get a hashmap that maps cosmic-text font IDs to

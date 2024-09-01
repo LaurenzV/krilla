@@ -70,7 +70,7 @@ impl XyzDestination {
                 "attempted to link to non-existing page".to_string(),
             ))?;
         let page_ref = page_info.ref_;
-        let page_size = page_info.media_box.height();
+        let page_size = page_info.surface_size.height();
 
         let mut mapped_point = self.point;
         // Convert to PDF coordinates

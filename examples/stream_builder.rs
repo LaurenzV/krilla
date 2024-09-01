@@ -12,7 +12,7 @@ use tiny_skia_path::{Path, PathBuilder, Rect};
 
 fn main() {
     let mut document = Document::new();
-    let mut page = document.start_page_with(PageSettings::with_size(200.0, 200.0));
+    let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
     let mut surface = page.surface();
 
     // We want to define a pattern with a red rectangle on the top-left and a

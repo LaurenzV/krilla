@@ -46,7 +46,7 @@ impl<'a> Page<'a> {
             0.0,
             -1.0,
             0.0,
-            self.page_settings.media_box.height(),
+            self.page_settings.surface_size().height(),
         )
     }
 
@@ -118,7 +118,7 @@ impl InternalPage {
                 chunk.extend(&annotation.serialize(
                     sc,
                     annot_ref,
-                    self.page_settings.media_box.height(),
+                    self.page_settings.surface_size().height(),
                 )?);
                 annotation_refs.push(annot_ref);
             }
@@ -129,7 +129,13 @@ impl InternalPage {
             .resource_dictionary()
             .to_pdf_resources(sc, &mut page)?;
 
-        page.media_box(self.page_settings.media_box.to_pdf_rect());
+        page.media_box(
+            self.page_settings
+                .surface_size()
+                .to_rect(0.0, 0.0)
+                .unwrap()
+                .to_pdf_rect(),
+        );
         page.parent(sc.page_tree_ref());
         page.contents(stream_ref);
 
@@ -276,7 +282,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        let page_settings = PageSettings::with_size(200.0, 200.0);
+        let page_settings = PageSettings::new(200.0, 200.0);
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
@@ -293,7 +299,7 @@ mod tests {
         builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
         let path = builder.finish().unwrap();
 
-        let page_settings = PageSettings::with_size(200.0, 200.0);
+        let page_settings = PageSettings::new(200.0, 200.0);
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
@@ -314,15 +320,14 @@ mod tests {
 
     #[snapshot(document)]
     fn page_label_complex(d: &mut Document) {
-        d.start_page_with(PageSettings::with_size(200.0, 200.0));
-        d.start_page_with(PageSettings::with_size(250.0, 200.0));
+        d.start_page_with(PageSettings::new(200.0, 200.0));
+        d.start_page_with(PageSettings::new(250.0, 200.0));
 
-        let mut settings = PageSettings::with_size(250.0, 200.0);
-        settings.page_label = PageLabel::new(
+        let settings = PageSettings::new(250.0, 200.0).with_page_label(PageLabel::new(
             Some(NumberingStyle::LowerRoman),
             None,
             NonZeroU32::new(2).unwrap(),
-        );
+        ));
 
         d.start_page_with(settings);
     }
