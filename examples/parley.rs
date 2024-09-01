@@ -1,15 +1,11 @@
-//! This example shows how to use cosmic-text to create advanced layouted text.
+//! This example shows how to use parley to create advanced layouted text.
 //!
-//! It is unfortunately still somewhat hard if you are not familiar with text
-//! shaping/layouting, but using this code as a template should hopefully help
-//! you get started.
-//!
-//! Another important point to mention is that you need to ensure that the
-//! version of `cosmic-text` you use uses the same `fontdb` version as krilla.
-//! For this example, we are using [my fork](https://github.com/LaurenzV/cosmic-text)
-//! that I try to keep in sync.
+//! Similarly to the `cosmic-text` example, it might be a bit hard to grasph if you
+//! are not familiar with text shaping/layouting, but using this code as a template
+//! should hopefully help you get started. It should be noted that this example also
+//! only supports basic glyphs with certain properties (like colors, font weight, etc.)
+//! but not other parley features like underline, strike-through, etc.
 
-use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use krilla::color::rgb;
 use krilla::color::rgb::Rgb;
 use krilla::font::{Font, Glyph};
@@ -21,20 +17,20 @@ use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
 use skrifa::instance::Location;
 use skrifa::GlyphId;
-use std::alloc::Layout;
 use std::collections::HashMap;
 use skrifa::raw::collections::int_set::Domain;
 use tiny_skia_path::Point;
 use usvg::NormalizedF32;
 
 fn main() {
+    // The text that we want to insert into the PDF.
     let text = String::from(
         "This is a long text. We want it to not be wider than 200pt, \
     so that it fits on the page. Let's intersperse some emojis 💩👻💀emojis🦩🌚😁😆\
     as well as complex scripts: हैलो वर्ल्ड and مرحبا بالعالم",
     );
 
-    // The width for line wrapping
+    // Set up the properties of the text. See the documentation of parley for more information.
     let max_advance = Some(200.0);
     let text_color = rgb::Color::new(0, 0, 0);
     let mut font_cx = FontContext::default();
@@ -54,20 +50,25 @@ fn main() {
     builder.push_default(&StyleProperty::LineHeight(1.3));
     builder.push_default(&StyleProperty::FontSize(16.0));
 
-    // Set the first 4 characters to bold
+    // In our case, we set the first four characters to bold and also make some
+    // part of the text red.
     let bold = FontWeight::new(600.0);
     let bold_style = StyleProperty::FontWeight(bold);
     builder.push(&bold_style, 0..4);
 
-    // Set next 4 characters to red.
     let color_style = StyleProperty::Brush(rgb::Color::new(255, 0, 0));
-    builder.push(&color_style, 5..12);
+    builder.push(&color_style, 2..12);
 
     let mut layout = builder.build();
     layout.break_all_lines(max_advance);
     layout.align(max_advance, Alignment::Start);
 
+    // After setting up everything, now starts the actual part where we use krilla to write
+    // the text to a PDF.
+    // We need to setup a font cache that converts from parley fonts to krilla fonts.
     let mut font_cache = HashMap::new();
+
+    // Set up the document, add a page and get the surface.
     let mut document = Document::new();
     let mut page = document.start_page_with(PageSettings::with_size(200.0, 300.0));
     let mut surface = page.surface();
@@ -76,33 +77,75 @@ fn main() {
         let y = line.metrics().baseline;
         let mut x = 0.0;
         for run in line.runs() {
+            let mut cur_x = x;
             let font = run.font().clone();
             let (font_data, id) = font.data.into_raw_parts();
+            // Get the krilla font.
             let krilla_font = font_cache
                 .entry(id)
                 .or_insert_with(|| Font::new(font_data, font.index, Location::default()).unwrap());
             let font_size = run.font_size();
 
+            // This is part is somewhat convoluted, the reason being that each glyph might
+            // have a different style than the previous one. So we always need to keep track
+            // of the current style, and whenever we encounter a new style we "flush" all
+            // current glyphs into the PDF, and build the next sequence of consecutive
+            // glyphs.
+
+            let mut cur_style = None;
             let mut glyphs = vec![];
 
             for cluster in run.visual_clusters() {
                 for glyph in cluster.glyphs() {
-                    glyphs.push(Glyph::new(GlyphId::new(glyph.id.to_u32()), glyph.advance, glyph.x, glyph.y, cluster.text_range(), font_size))
+                    let glyph_style = glyph.style_index;
+
+                    if let Some(style) = cur_style {
+                        if style != glyph_style {
+                            // If style doesn't match, flush all glyphs up to now.
+                            cur_style = Some(glyph_style);
+                            let style = layout.styles()[style as usize].brush;
+                            surface.fill_glyphs(
+                                Point::from_xy(cur_x, y),
+                                Fill {
+                                    paint: (Paint::<Rgb>::Color(style )),
+                                    opacity: NormalizedF32::ONE,
+                                    rule: Default::default(),
+                                },
+                                &glyphs,
+                                krilla_font.clone(),
+                                &text
+                            );
+                            glyphs.clear();
+                            cur_x = x;
+                        }
+                    }   else {
+                        cur_style = Some(glyph_style);
+                    }
+
+                    // Add the current glyph to our buffer of glyphs.
+                    glyphs.push(Glyph::new(GlyphId::new(glyph.id.to_u32()), glyph.advance, glyph.x, glyph.y, cluster.text_range(), font_size));
+                    x += glyph.advance;
                 }
             }
 
-            surface.fill_glyphs(
-                Point::from_xy(x, y),
-                Fill::<Rgb>::default(),
-                &glyphs,
-                krilla_font.clone(),
-                &text
-            );
-
-            x += run.advance()
+            // Flush all remaining glyphs, if existing.
+            if !glyphs.is_empty() {
+                surface.fill_glyphs(
+                    Point::from_xy(cur_x, y),
+                    Fill {
+                        paint: (Paint::<Rgb>::Color(layout.styles()[cur_style.unwrap() as usize].brush)),
+                        opacity: NormalizedF32::ONE,
+                        rule: Default::default(),
+                    },
+                    &glyphs,
+                    krilla_font.clone(),
+                    &text
+                );
+            }
         }
     }
 
+    // Finish up.
     surface.finish();
     page.finish();
 
@@ -110,3 +153,4 @@ fn main() {
     // Write the resulting PDF!
     std::fs::write("target/parley.pdf", &pdf).unwrap();
 }
+
