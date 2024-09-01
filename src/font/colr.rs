@@ -28,9 +28,9 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
 
         surface.pop();
 
-        return Ok(Some(()));
+        Ok(Some(()))
     } else {
-        return Ok(None);
+        Ok(None)
     }
 }
 

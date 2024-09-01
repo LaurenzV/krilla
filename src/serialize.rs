@@ -408,14 +408,14 @@ impl FontContainer {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
-                    return Some(t3_font);
+                    Some(t3_font)
                 } else {
                     None
                 }
             }
             FontContainer::CIDFont(cid) => {
                 if cid.identifier() == font_identifier {
-                    return Some(cid);
+                    Some(cid)
                 } else {
                     None
                 }
@@ -427,14 +427,14 @@ impl FontContainer {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_from_id(font_identifier) {
-                    return Some(t3_font);
+                    Some(t3_font)
                 } else {
                     None
                 }
             }
             FontContainer::CIDFont(cid) => {
                 if cid.identifier() == font_identifier {
-                    return Some(cid);
+                    Some(cid)
                 } else {
                     None
                 }

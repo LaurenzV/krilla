@@ -63,39 +63,39 @@ pub(crate) enum Resource {
     Font(FontIdentifier),
 }
 
-impl Into<Resource> for XObjectResource {
-    fn into(self) -> Resource {
-        Resource::XObject(self)
+impl From<XObjectResource> for Resource {
+    fn from(val: XObjectResource) -> Self {
+        Resource::XObject(val)
     }
 }
 
-impl Into<Resource> for PatternResource {
-    fn into(self) -> Resource {
-        Resource::Pattern(self)
+impl From<PatternResource> for Resource {
+    fn from(val: PatternResource) -> Self {
+        Resource::Pattern(val)
     }
 }
 
-impl Into<Resource> for ExtGState {
-    fn into(self) -> Resource {
-        Resource::ExtGState(self)
+impl From<ExtGState> for Resource {
+    fn from(val: ExtGState) -> Self {
+        Resource::ExtGState(val)
     }
 }
 
-impl Into<Resource> for ColorSpaceResource {
-    fn into(self) -> Resource {
-        Resource::ColorSpace(self)
+impl From<ColorSpaceResource> for Resource {
+    fn from(val: ColorSpaceResource) -> Self {
+        Resource::ColorSpace(val)
     }
 }
 
-impl Into<Resource> for ShadingFunction {
-    fn into(self) -> Resource {
-        Resource::Shading(self)
+impl From<ShadingFunction> for Resource {
+    fn from(val: ShadingFunction) -> Self {
+        Resource::Shading(val)
     }
 }
 
-impl Into<Resource> for FontIdentifier {
-    fn into(self) -> Resource {
-        Resource::Font(self)
+impl From<FontIdentifier> for Resource {
+    fn from(val: FontIdentifier) -> Self {
+        Resource::Font(val)
     }
 }
 

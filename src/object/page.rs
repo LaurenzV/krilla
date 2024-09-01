@@ -64,7 +64,7 @@ impl<'a> Page<'a> {
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
-        Surface::new(&mut self.sc, root_builder, finish_fn)
+        Surface::new(self.sc, root_builder, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.
@@ -142,7 +142,7 @@ impl InternalPage {
         let page_stream =
             FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
 
-        let mut stream = chunk.stream(stream_ref, &page_stream.encoded_data());
+        let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
         page_stream.write_filters(stream.deref_mut());
 
         stream.finish();
@@ -205,11 +205,11 @@ pub struct PageLabelContainer<'a> {
 
 impl<'a> PageLabelContainer<'a> {
     pub fn new(labels: &'a [PageLabel]) -> Option<Self> {
-        return if labels.iter().all(|f| f.is_empty()) {
+        if labels.iter().all(|f| f.is_empty()) {
             None
         } else {
             Some(PageLabelContainer { labels })
-        };
+        }
     }
 
     pub(crate) fn serialize(

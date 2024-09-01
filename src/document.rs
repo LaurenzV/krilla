@@ -24,6 +24,12 @@ pub struct Document {
     pub(crate) serializer_context: SerializerContext,
 }
 
+impl Default for Document {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Document {
     /// Create a new document with default settings.
     pub fn new() -> Self {

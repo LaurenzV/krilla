@@ -44,9 +44,9 @@ impl Hash for XyzDestination {
     }
 }
 
-impl Into<Destination> for XyzDestination {
-    fn into(self) -> Destination {
-        Destination::Xyz(self)
+impl From<XyzDestination> for Destination {
+    fn from(val: XyzDestination) -> Self {
+        Destination::Xyz(val)
     }
 }
 

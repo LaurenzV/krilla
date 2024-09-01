@@ -7,8 +7,10 @@ pub use tiny_skia_path::{Path, PathBuilder};
 
 /// A line cap.
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum LineCap {
     /// The butt line cap.
+    #[default]
     Butt,
     /// The round line cap.
     Round,
@@ -16,16 +18,13 @@ pub enum LineCap {
     Square,
 }
 
-impl Default for LineCap {
-    fn default() -> Self {
-        LineCap::Butt
-    }
-}
 
 /// A line join.
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum LineJoin {
     /// The miter line join.
+    #[default]
     Miter,
     /// The round line join.
     Round,
@@ -33,11 +32,6 @@ pub enum LineJoin {
     Bevel,
 }
 
-impl Default for LineJoin {
-    fn default() -> Self {
-        LineJoin::Miter
-    }
-}
 
 /// A stroke dash.
 #[derive(Debug, Clone)]

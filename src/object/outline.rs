@@ -28,6 +28,12 @@ pub struct Outline {
     children: Vec<OutlineNode>,
 }
 
+impl Default for Outline {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Outline {
     /// Create a new, empty outline.
     pub fn new() -> Self {

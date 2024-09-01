@@ -515,8 +515,8 @@ impl ContentBuilder {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color.into(), content_builder);
-                    set_solid_fn(&mut content_builder.content, color_space, &color.into());
+                    let color_space = color_to_string(color, content_builder);
+                    set_solid_fn(&mut content_builder.content, color_space, &color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
                         gradient_props.clone(),
@@ -752,7 +752,7 @@ impl PdfFont for Type3Font {
     }
 
     fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_gid(gid).map(|g| PDFGlyph::Type3(g))
+        self.get_gid(gid).map(PDFGlyph::Type3)
     }
 }
 
@@ -780,7 +780,7 @@ impl PdfFont for CIDFont {
     }
 
     fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_cid(gid).map(|g| PDFGlyph::CID(g))
+        self.get_cid(gid).map(PDFGlyph::CID)
     }
 }
 
@@ -856,7 +856,7 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
 
         let mut last_range = first_range.clone();
 
-        while let Some(next) = iter.next() {
+        for next in iter {
             let (next_range, next_incompatible) = func(next);
 
             match use_span {
@@ -967,7 +967,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
             let mut iter = self.slice.iter();
             let first = (func)(iter.next()?);
 
-            while let Some(next) = iter.next() {
+            for next in iter {
                 let temp_glyph = func(next);
 
                 if first.font_identifier != temp_glyph.font_identifier

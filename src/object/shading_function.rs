@@ -560,14 +560,11 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
         // for why we check > 0 instead of == 1.
         "0 gt".to_string(),
         // x length min o {(abs(i) % 2) > 0}
-        format!(
-            "{}",
-            if spread_method == SpreadMethod::Reflect {
+        (if spread_method == SpreadMethod::Reflect {
                 "{2 index exch sub} if"
             } else {
                 "pop"
-            }
-        ),
+            }).to_string(),
         // x length min o
         "add".to_string(),
         // x length x_new
@@ -584,16 +581,16 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 /// lies within the stops.
 fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32, use_opacities: bool) -> String {
     // Our algorithm requires the stops to be padded.
-    let mut stops = stops.iter().cloned().collect::<Vec<_>>();
+    let mut stops = stops.to_vec();
 
     if let Some(first) = stops.first() {
-        let mut first = first.clone();
+        let mut first = *first;
         first.offset = NormalizedF32::ZERO;
         stops.insert(0, first);
     }
 
     if let Some(last) = stops.last() {
-        let mut last = last.clone();
+        let mut last = *last;
         last.offset = NormalizedF32::ONE;
         stops.push(last);
     }
@@ -635,7 +632,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         snippets.join(" ")
     };
 
-    return if stops.len() == 1 {
+    if stops.len() == 1 {
         if use_opacities {
             stops[0].opacity.to_string()
         } else {
@@ -683,7 +680,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
             encoded_stops,
             encode_stops_impl(&stops[1..], min, max, use_opacities)
         )
-    };
+    }
 }
 
 fn serialize_stitching(

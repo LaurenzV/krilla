@@ -27,7 +27,7 @@ impl XObject {
             stream,
             isolated,
             transparency_group_color_space,
-            custom_bbox: custom_bbox.map(|c| RectWrapper(c)),
+            custom_bbox: custom_bbox.map(RectWrapper),
         }
     }
 

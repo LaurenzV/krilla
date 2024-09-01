@@ -139,15 +139,15 @@ where
     pub opacity: NormalizedF32,
 }
 
-impl<C> Into<crate::object::shading_function::Stop> for Stop<C>
+impl<C> From<Stop<C>> for crate::object::shading_function::Stop
 where
     C: ColorSpace,
 {
-    fn into(self) -> crate::object::shading_function::Stop {
+    fn from(val: Stop<C>) -> Self {
         crate::object::shading_function::Stop {
-            offset: self.offset,
-            opacity: self.opacity,
-            color: self.color.into(),
+            offset: val.offset,
+            opacity: val.opacity,
+            color: val.color.into(),
         }
     }
 }

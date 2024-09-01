@@ -78,7 +78,7 @@ impl Font {
             Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.clone(),
                 |data| FontRefWrapper {
-                    font_ref: FontRef::from_index(data.as_ref().as_ref(), 0).unwrap(),
+                    font_ref: FontRef::from_index(data.as_ref(), 0).unwrap(),
                 },
             );
 
@@ -247,7 +247,7 @@ impl FontInfo {
                         }
                     }
 
-                    return None;
+                    None
                 })
             } else {
                 return None;

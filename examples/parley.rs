@@ -15,7 +15,6 @@ use krilla::{Document, PageSettings};
 use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
-use skrifa::instance::Location;
 use skrifa::raw::collections::int_set::Domain;
 use skrifa::GlyphId;
 use std::collections::HashMap;

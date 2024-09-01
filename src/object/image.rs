@@ -204,7 +204,7 @@ impl Object for Image {
         let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
             let soft_mask_id = sc.new_ref();
             let mask_stream = FilterStream::new_from_binary_data(mask_data, &sc.serialize_settings);
-            let mut s_mask = chunk.image_xobject(soft_mask_id, &mask_stream.encoded_data());
+            let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
             mask_stream.write_filters(s_mask.deref_mut().deref_mut());
             s_mask.width(self.0.size.width() as i32);
             s_mask.height(self.0.size.height() as i32);
@@ -220,7 +220,7 @@ impl Object for Image {
         let image_stream =
             FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
 
-        let mut image_x_object = chunk.image_xobject(root_ref, &image_stream.encoded_data());
+        let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
         image_stream.write_filters(image_x_object.deref_mut().deref_mut());
         image_x_object.width(self.0.size.width() as i32);
         image_x_object.height(self.0.size.height() as i32);

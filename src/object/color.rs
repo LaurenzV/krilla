@@ -149,9 +149,9 @@ pub mod cmyk {
         }
     }
 
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color::Color {
-            super::Color::DeviceCmyk(self)
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::DeviceCmyk(val)
         }
     }
 
@@ -223,9 +223,9 @@ pub mod rgb {
         }
     }
 
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color::Color {
-            super::Color::Rgb(self)
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::Rgb(val)
         }
     }
 
@@ -318,9 +318,9 @@ pub mod luma {
         }
     }
 
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color::Color {
-            super::Color::Luma(self)
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::Luma(val)
         }
     }
 

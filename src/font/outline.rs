@@ -48,7 +48,6 @@ mod tests {
             font_data,
             Some(
                 (20..=50)
-                    .into_iter()
                     .map(|n| (GlyphId::new(n), "".to_string()))
                     .collect::<Vec<_>>(),
             ),
