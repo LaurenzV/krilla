@@ -3,7 +3,6 @@
 #![allow(non_snake_case)]
 
 
-use crate::tests::{ASSETS_PATH, FONTDB};
 use krilla_macros::visreg;
 
 

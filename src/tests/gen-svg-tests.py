@@ -75,7 +75,6 @@ def main():
     test_string += "#![allow(non_snake_case)]\n\n"
 
     test_string += """
-use crate::tests::{ASSETS_PATH, FONTDB};
 use krilla_macros::visreg;\n\n
 """
 

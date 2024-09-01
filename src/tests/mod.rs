@@ -11,6 +11,7 @@ use crate::path::Fill;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
+use crate::SerializeSettings;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use once_cell::sync::Lazy;
@@ -624,3 +625,31 @@ static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
 
     Arc::new(fontdb)
 });
+
+fn svg_impl(name: &str, renderer: Renderer) {
+    let settings = SerializeSettings::default();
+    let mut d = Document::new_with(settings);
+    let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", name));
+    let data = std::fs::read(&svg_path).unwrap();
+    let tree = usvg::Tree::from_data(
+        &data,
+        &usvg::Options {
+            fontdb: FONTDB.clone(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let mut page = d.start_page_with(PageSettings::with_size(
+        tree.size().width(),
+        tree.size().height(),
+    ));
+    let mut surface = page.surface();
+    surface.draw_svg(&tree, tree.size());
+    surface.finish();
+    page.finish();
+
+    let pdf = d.finish().unwrap();
+    let rendered = render_document(&pdf, &renderer);
+    check_render(&format!("svg_{}", name), &renderer, rendered, &pdf, true);
+}

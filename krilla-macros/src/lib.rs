@@ -148,6 +148,7 @@ impl RendererExt for Renderer {
 }
 
 const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
+const SKIP_SVG: Option<&str> = option_env!("SKIP_SVG");
 
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -221,24 +222,8 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_body = if is_svg {
         quote! {
-            let settings = SerializeSettings::default();
-            let mut d = Document::new_with(settings);
-            let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", stringify!(#fn_name)));
-            let data = std::fs::read(&svg_path).unwrap();
-            let tree = usvg::Tree::from_data(&data, &usvg::Options {
-                fontdb: FONTDB.clone(),
-                ..Default::default()
-            }).unwrap();
-
-            let mut page = d.start_page_with(PageSettings::with_size(tree.size().width(), tree.size().height()));
-            let mut surface = page.surface();
-            surface.draw_svg(&tree, tree.size());
-            surface.finish();
-            page.finish();
-
-            let pdf = d.finish().unwrap();
-            let rendered = render_document(&pdf, &renderer);
-            check_render(&format!("svg_{}", stringify!(#fn_name)), &renderer, rendered, &pdf, true);
+            use crate::tests::svg_impl;
+            svg_impl(stringify!(#fn_name), renderer);
         }
     } else if document {
         quote! {
@@ -271,7 +256,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
-        let ignore_snippet = if SKIP_VISREG.is_some() || ignore {
+        let ignore_snippet = if SKIP_VISREG.is_some() || ignore || (SKIP_SVG.is_some() && is_svg) {
             quote! { #[ignore] }
         } else {
             quote! {}
