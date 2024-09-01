@@ -13,7 +13,7 @@ use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{Transform};
 
 /// A single page.
 ///
@@ -129,13 +129,12 @@ impl InternalPage {
             .resource_dictionary()
             .to_pdf_resources(sc, &mut page)?;
 
-        page.media_box(
-            self.page_settings
-                .surface_size()
-                .to_rect(0.0, 0.0)
-                .unwrap()
-                .to_pdf_rect(),
-        );
+        let media_box = self.page_settings.media_box();
+        // Convert to the proper PDF values
+        page.media_box(pdf_writer::Rect::new(media_box.x(),
+                                             -media_box.height() + (self.page_settings.surface_size().height() - media_box.y()),
+                                             media_box.x() + media_box.width(),
+                                             self.page_settings.surface_size().height() - media_box.y()));
         page.parent(sc.page_tree_ref());
         page.contents(stream_ref);
 
@@ -268,10 +267,11 @@ mod tests {
     use crate::stream::StreamBuilder;
 
     use crate::path::Fill;
-    use krilla_macros::snapshot;
+    use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::NumberingStyle;
     use std::num::NonZeroU32;
     use tiny_skia_path::{PathBuilder, Rect};
+    use crate::tests::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
     #[snapshot]
     fn page_simple(sc: &mut SerializerContext) {
@@ -330,5 +330,39 @@ mod tests {
         ));
 
         d.start_page_with(settings);
+    }
+
+    fn media_box_impl(d: &mut Document, media_box: Rect) {
+        let mut page = d.start_page_with(PageSettings::new(200.0, 200.0).with_media_box(media_box));
+        let mut surface = page.surface();
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(0.5));
+        surface.fill_path(&rect_to_path(100.0, 0.0, 200.0, 100.0), green_fill(0.5));
+        surface.fill_path(&rect_to_path(0.0, 100.0, 100.0, 200.0), blue_fill(0.5));
+        surface.fill_path(&rect_to_path(100.0, 100.0, 200.0, 200.0), purple_fill(0.5));
+    }
+
+    #[visreg(document, pdfium)]
+    fn custom_media_box_top_left(d: &mut Document) {
+        media_box_impl(d, Rect::from_xywh(-100.0, -100.0, 200.0, 200.0).unwrap())
+    }
+
+    #[visreg(document, pdfium)]
+    fn custom_media_box_top_right(d: &mut Document) {
+        media_box_impl(d, Rect::from_xywh(100.0, -100.0, 200.0, 200.0).unwrap())
+    }
+
+    #[visreg(document, pdfium)]
+    fn custom_media_box_bottom_left(d: &mut Document) {
+        media_box_impl(d, Rect::from_xywh(-100.0, 100.0, 200.0, 200.0).unwrap())
+    }
+
+    #[visreg(document, pdfium)]
+    fn custom_media_box_bottom_right(d: &mut Document) {
+        media_box_impl(d, Rect::from_xywh(100.0, 100.0, 200.0, 200.0).unwrap())
+    }
+
+    #[visreg(document, pdfium)]
+    fn custom_media_box_zoomed_out(d: &mut Document) {
+        media_box_impl(d, Rect::from_xywh(-150.0, -200.0, 500.0, 500.0).unwrap())
     }
 }

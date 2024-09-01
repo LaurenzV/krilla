@@ -135,6 +135,14 @@ pub fn red_fill(opacity: f32) -> Fill<Rgb> {
     }
 }
 
+pub fn purple_fill(opacity: f32) -> Fill<Rgb> {
+    Fill {
+        paint: Paint::Color(rgb::Color::new(128, 0, 128)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
 pub fn gray_luma(opacity: f32) -> Fill<Luma> {
     Fill {
         paint: Paint::Color(luma::Color::new(127)),
