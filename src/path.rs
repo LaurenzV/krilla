@@ -6,8 +6,7 @@ use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
 
 /// A line cap.
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
-#[derive(Default)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Default)]
 pub enum LineCap {
     /// The butt line cap.
     #[default]
@@ -18,10 +17,8 @@ pub enum LineCap {
     Square,
 }
 
-
 /// A line join.
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-#[derive(Default)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Default)]
 pub enum LineJoin {
     /// The miter line join.
     #[default]
@@ -31,7 +28,6 @@ pub enum LineJoin {
     /// The bevel line join.
     Bevel,
 }
-
 
 /// A stroke dash.
 #[derive(Debug, Clone)]

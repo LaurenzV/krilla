@@ -8,6 +8,7 @@ The following code snippets have been taken/adapted from [`resvg`](https://githu
 available under the [MPL license](https://github.com/RazrFalcon/resvg/blob/master/LICENSE.txt):
 
 - The contents of the `content_draw_path` method. 
+- The whole resvg test suite in `assets/svgs`.
 
 ## `typst`
 

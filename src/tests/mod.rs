@@ -11,8 +11,10 @@ use crate::path::Fill;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
+use crate::SerializeSettings;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
+use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -28,6 +30,9 @@ use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
+#[allow(dead_code)]
+#[rustfmt::skip]
+mod svg;
 mod visreg;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
@@ -606,4 +611,45 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
     surface.finish();
 
     stream_builder.finish()
+}
+
+static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
+    let mut fontdb = fontdb::Database::new();
+    fontdb.load_fonts_dir(ASSETS_PATH.join("svg_fonts"));
+
+    fontdb.set_serif_family("Noto Serif");
+    fontdb.set_sans_serif_family("Noto Sans");
+    fontdb.set_cursive_family("Yellowtail");
+    fontdb.set_fantasy_family("Sedgwick Ave Display");
+    fontdb.set_monospace_family("Noto Mono");
+
+    Arc::new(fontdb)
+});
+
+fn svg_impl(name: &str, renderer: Renderer) {
+    let settings = SerializeSettings::default();
+    let mut d = Document::new_with(settings);
+    let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", name));
+    let data = std::fs::read(&svg_path).unwrap();
+    let tree = usvg::Tree::from_data(
+        &data,
+        &usvg::Options {
+            fontdb: FONTDB.clone(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let mut page = d.start_page_with(PageSettings::with_size(
+        tree.size().width(),
+        tree.size().height(),
+    ));
+    let mut surface = page.surface();
+    surface.draw_svg(&tree, tree.size());
+    surface.finish();
+    page.finish();
+
+    let pdf = d.finish().unwrap();
+    let rendered = render_document(&pdf, &renderer);
+    check_render(&format!("svg_{}", name), &renderer, rendered, &pdf, true);
 }

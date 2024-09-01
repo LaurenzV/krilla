@@ -58,11 +58,7 @@ pub fn convert_paint(
             y2: lg.y2(),
             transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
             spread_method: convert_spread_method(&lg.spread_method()),
-            stops: lg
-                .stops()
-                .iter()
-                .map(convert_stop)
-                .collect::<Vec<_>>(),
+            stops: lg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
         }),
         usvg::Paint::RadialGradient(rg) => Paint::RadialGradient(RadialGradient {
             cx: rg.cx(),
@@ -73,11 +69,7 @@ pub fn convert_paint(
             fr: 0.0,
             transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
             spread_method: convert_spread_method(&rg.spread_method()),
-            stops: rg
-                .stops()
-                .iter()
-                .map(convert_stop)
-                .collect::<Vec<_>>(),
+            stops: rg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
             let mut surface = stream_builder.surface();
@@ -151,9 +143,9 @@ pub fn convert_stroke(
     additional_transform: Transform,
 ) -> Stroke<Rgb> {
     let dash = stroke.dasharray().map(|dash_array| StrokeDash {
-            offset: stroke.dashoffset(),
-            array: dash_array.to_vec(),
-        });
+        offset: stroke.dashoffset(),
+        array: dash_array.to_vec(),
+    });
 
     Stroke {
         paint: convert_paint(

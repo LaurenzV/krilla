@@ -148,6 +148,7 @@ impl RendererExt for Renderer {
 }
 
 const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
+const SKIP_SVG: Option<&str> = option_env!("SKIP_SVG");
 
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -162,6 +163,8 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut poppler = false;
     let mut quartz = false;
     let mut document = false;
+    let mut is_svg = false;
+    let mut ignore = false;
 
     if !attrs.identifiers.iter().any(|ident| {
         let string_ident = ident.to_string();
@@ -190,6 +193,8 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             "poppler" => poppler = true,
             "quartz" => quartz = true,
             "document" => document = true,
+            "svg" => is_svg = true,
+            "ignore" => ignore = true,
             "all" => {
                 pdfium = true;
                 mupdf = true;
@@ -215,7 +220,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let impl_ident = Ident::new(&format!("{}_visreg_impl", fn_name), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
-    let fn_body = if document {
+    let fn_body = if is_svg {
+        quote! {
+            use crate::tests::svg_impl;
+            svg_impl(stringify!(#fn_name), renderer);
+        }
+    } else if document {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
             let mut d = Document::new_with(settings);
@@ -246,7 +256,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
-        let ignore_snippet = if SKIP_VISREG.is_some() {
+        let ignore_snippet = if SKIP_VISREG.is_some() || ignore || (SKIP_SVG.is_some() && is_svg) {
             quote! { #[ignore] }
         } else {
             quote! {}

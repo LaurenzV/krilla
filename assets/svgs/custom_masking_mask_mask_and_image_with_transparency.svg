@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>mask and image with transparency</title>
+
+    <mask id="mask1" maskUnits="userSpaceOnUse">
+        <rect id="rect1" x="40" y="40" width="120" height="120" fill="white"/>
+    </mask>
+    <g id="g1" mask="url(#mask1)">
+        <rect x="20" y="20" width="160" height="160" fill="red" />
+        <image x="20" y ="20" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgAQMAAACxAfVuAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEXH+7D///+Lop4HAAAAAXRSTlOKTYuyWAAAAAFiS0dEAf8CLd4AAAAHdElNRQfoAg0LJjRQViCCAAAAAW9yTlQBz6J3mgAAABlJREFUSMftwQENAAAAwqD3T+3sARQAAAA3DSAAAVxEEY8AAAAldEVYdGRhdGU6Y3JlYXRlADIwMjQtMDItMTNUMTE6Mzg6NTIrMDA6MDCfNI35AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDI0LTAyLTEzVDExOjM4OjUyKzAwOjAw7mk1RQAAAABJRU5ErkJggg=="/>
+    </g>
+</svg>
