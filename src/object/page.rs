@@ -12,7 +12,7 @@ use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
-use tiny_skia_path::{Transform};
+use tiny_skia_path::Transform;
 
 /// A single page.
 ///
@@ -130,10 +130,12 @@ impl InternalPage {
 
         let media_box = self.page_settings.media_box();
         // Convert to the proper PDF values
-        page.media_box(pdf_writer::Rect::new(media_box.x(),
-                                             -media_box.height() + (self.page_settings.surface_size().height() - media_box.y()),
-                                             media_box.x() + media_box.width(),
-                                             self.page_settings.surface_size().height() - media_box.y()));
+        page.media_box(pdf_writer::Rect::new(
+            media_box.x(),
+            -media_box.height() + (self.page_settings.surface_size().height() - media_box.y()),
+            media_box.x() + media_box.width(),
+            self.page_settings.surface_size().height() - media_box.y(),
+        ));
         page.parent(sc.page_tree_ref());
         page.contents(stream_ref);
 
@@ -266,11 +268,11 @@ mod tests {
     use crate::stream::StreamBuilder;
 
     use crate::path::Fill;
+    use crate::tests::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::NumberingStyle;
     use std::num::NonZeroU32;
     use tiny_skia_path::{PathBuilder, Rect};
-    use crate::tests::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
     #[snapshot]
     fn page_simple(sc: &mut SerializerContext) {
