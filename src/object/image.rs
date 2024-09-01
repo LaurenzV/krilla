@@ -341,11 +341,12 @@ fn handle_u16_image(
 
 #[cfg(test)]
 mod tests {
+    use crate::image::Image;
     use crate::serialize::SerializerContext;
+    use crate::surface::Surface;
     use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
     use krilla_macros::{snapshot, visreg};
-    use crate::image::Image;
-    use crate::surface::Surface;
+    use tiny_skia_path::Size;
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
@@ -408,7 +409,6 @@ mod tests {
         sc.add_object(load_webp_image("rgba8.webp")).unwrap();
     }
 
-
     fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
         let image = load_fn(name);
         let size = image.size();
@@ -469,8 +469,15 @@ mod tests {
     fn image_rgba8_gif(surface: &mut Surface) {
         image_visreg_impl(surface, "rgba8.gif", load_gif_image);
     }
+
     #[visreg(all)]
     fn image_rgba8_webp(surface: &mut Surface) {
         image_visreg_impl(surface, "rgba8.webp", load_webp_image);
+    }
+
+    #[visreg(pdfium)]
+    fn image_resized(surface: &mut Surface) {
+        let image = load_png_image("rgba8.png");
+        surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());
     }
 }
