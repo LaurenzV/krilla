@@ -258,6 +258,9 @@ fn serialize_postscript_shading(
     shading.shading_type(FunctionShadingType::Function);
 
     shading.insert(Name(b"ColorSpace")).primitive(cs);
+    // Write the identity matrix, because ghostscript has a bug where
+    // it thinks the entry is mandatory.
+    shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
 
     shading.function(function_ref);
 

@@ -58,6 +58,7 @@ mod tests {
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
     use crate::tests::{rect_to_path, stops_with_2_solid_1, stops_with_3_solid_1};
+    use crate::SerializeSettings;
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{NormalizedF32, Rect};
 
