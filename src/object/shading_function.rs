@@ -561,10 +561,11 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
         "0 gt".to_string(),
         // x length min o {(abs(i) % 2) > 0}
         (if spread_method == SpreadMethod::Reflect {
-                "{2 index exch sub} if"
-            } else {
-                "pop"
-            }).to_string(),
+            "{2 index exch sub} if"
+        } else {
+            "pop"
+        })
+        .to_string(),
         // x length min o
         "add".to_string(),
         // x length x_new

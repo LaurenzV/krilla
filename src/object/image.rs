@@ -244,10 +244,7 @@ impl Object for Image {
     }
 }
 
-fn handle_u8_image(
-    data: Vec<u8>,
-    cs: ColorSpace,
-) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
+fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = Vec::new();
 
     let encoded_image = match cs {
