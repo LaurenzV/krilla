@@ -13,6 +13,7 @@ use crate::stream::StreamBuilder;
 use crate::surface::Surface;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
+use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
@@ -25,11 +26,11 @@ use std::cmp::max;
 use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use once_cell::sync::Lazy;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
 #[allow(dead_code)]
+#[rustfmt::skip]
 mod svg;
 mod visreg;
 
