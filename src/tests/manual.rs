@@ -59,7 +59,7 @@ fn simple_shape_demo() {
     let mut surface = builder.surface();
 
     for (font, text, size) in data {
-        let font = Font::new(font.clone(), 0, Location::default()).unwrap();
+        let font = Font::new(font.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, y),
             Fill::<Rgb>::default(),

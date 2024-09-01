@@ -18,12 +18,10 @@ use skrifa::GlyphId;
 use tiny_skia_path::Point;
 
 fn main() {
-    // Set up the font system for cosmic text.
-    let mut font_system = FontSystem::new();
-
-    // Add some text to our buffer. See the documentation of cosmic text for more information
+    // Set up `cosmic-text`. See their documentation for more information
     // on how you can configure it further.
     let metrics = Metrics::new(20.0, 22.0);
+    let mut font_system = FontSystem::new();
     let mut buffer = Buffer::new(&mut font_system, metrics);
     buffer.set_size(&mut font_system, Some(200.0), None);
     let attrs = Attrs::new();
@@ -33,7 +31,7 @@ fn main() {
     buffer.set_text(&mut font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(&mut font_system, false);
 
-    // Create a document, add a page and get the page surface.
+    // The usual page setup.
     let mut document = Document::new();
     let mut page = document.start_page_with(PageSettings::with_size(200.0, 200.0));
     let mut surface = page.surface();
@@ -45,7 +43,7 @@ fn main() {
     for run in buffer.layout_runs() {
         let y_offset = run.line_y;
 
-        // A layout run in cosmic text can consists of glyphs from different fonts, but
+        // A layout run in cosmic text can consist of glyphs from different fonts, but
         // in krilla, a glyph run must belong to the same font. Because of this, we need to group
         // the glyphs by font. In this example, we use a slice extension trait to achieve that
         // effect, but you are free to implement your own logic.
@@ -53,7 +51,6 @@ fn main() {
             .glyphs
             .group_by_key(|g| (font_map.get(&g.font_id).unwrap().clone(), g.font_size));
 
-        // Since we are splitting
         let mut x = 0.0;
         // Go over the segmented glyph runs, and convert them into krilla glyphs.
         for ((font, size), glyphs) in segmented {
@@ -73,6 +70,7 @@ fn main() {
                 })
                 .collect::<Vec<_>>();
 
+            // Draw the glyphs using the `fill_glyphs` method!
             surface.fill_glyphs(
                 Point::from_xy(start_x, y_offset),
                 Fill::<Rgb>::default(),

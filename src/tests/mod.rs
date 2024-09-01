@@ -394,7 +394,7 @@ pub fn all_glyphs_to_pdf(
     use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
 
-    let font = Font::new(font_data, 0, Location::default()).unwrap();
+    let font = Font::new(font_data, 0, vec![]).unwrap();
     let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {

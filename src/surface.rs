@@ -17,6 +17,7 @@ use crate::stream::{Stream, StreamBuilder};
 use crate::svg;
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
+use rustybuzz::ttf_parser::Tag;
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use skrifa::GlyphId;
 use std::collections::HashMap;
@@ -352,7 +353,10 @@ impl Drop for Surface<'_> {
 /// Shape some text with a single font.
 fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<Glyph> {
     let data = font.font_data();
-    let rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
+    let mut rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
+    for (tag, val) in font.variations() {
+        rb_font.set_variation(Tag::from_bytes_lossy(tag.as_bytes()), val);
+    }
 
     let mut buffer = UnicodeBuffer::new();
     buffer.push_str(text);
@@ -507,7 +511,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::<Rgb>::default(),
-            Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap(),
+            Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "hi there",
@@ -519,7 +523,7 @@ mod tests {
         surface.stroke_text(
             Point::from_xy(0.0, 50.0),
             Stroke::<Rgb>::default(),
-            Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap(),
+            Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "hi there",
@@ -531,7 +535,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::<Rgb>::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, Location::default()).unwrap(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "यह कुछ जटिल पाठ है.",

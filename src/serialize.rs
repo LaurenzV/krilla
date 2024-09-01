@@ -15,7 +15,6 @@ use crate::resource::{ColorSpaceResource, Resource};
 use crate::util::{NameExt, SipHashable};
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
-use skrifa::instance::Location;
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
 use std::borrow::Cow;
@@ -292,12 +291,7 @@ impl SerializerContext {
             // cheaper, and then check whether we already have a corresponding font object in the cache.
             // If not, we still need to construct it.
             if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-                // fontdb has not support for variable fonts, so assume default variation coordinates.
-                let location = Location::default();
-
-                if let Some(font_info) =
-                    FontInfo::new(font_data.as_ref().as_ref(), index, location.clone())
-                {
+                if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, vec![]) {
                     let font_info = Arc::new(font_info);
                     let font = self
                         .font_cache

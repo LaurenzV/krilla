@@ -21,7 +21,6 @@ use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
 use crate::util::{LocationWrapper, Prehashed, RectWrapper};
-use skrifa::instance::Location;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
@@ -63,9 +62,9 @@ impl Font {
     pub fn new(
         data: Arc<dyn AsRef<[u8]> + Send + Sync>,
         index: u32,
-        location: Location,
+        variations: Vec<(String, f32)>,
     ) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref().as_ref(), index, location)?;
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, variations)?;
 
         Font::new_with_info(data, Arc::new(font_info))
     }
@@ -134,6 +133,14 @@ impl Font {
         self.0.font_info.global_bbox.0
     }
 
+    pub(crate) fn variations(&self) -> impl IntoIterator<Item = (&str, f32)> {
+        self.0
+            .font_info
+            .variations
+            .iter()
+            .map(|v| (v.0.as_str(), v.1.get()))
+    }
+
     /// Return the `LocationRef` of the font.
     pub fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location.0).into()
@@ -174,6 +181,7 @@ impl Debug for Font {
 pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
+    variations: Vec<(String, FiniteF32)>,
     location: LocationWrapper,
     units_per_em: u16,
     global_bbox: RectWrapper,
@@ -204,10 +212,13 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, location: Location) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32, variations: Vec<(String, f32)>) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().ok()?.checksum_adjustment();
 
+        let location = font_ref
+            .axes()
+            .location(variations.iter().map(|n| (n.0.as_str(), n.1)));
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let ascent = FiniteF32::new(metrics.ascent).unwrap();
         let descent = FiniteF32::new(metrics.descent).unwrap();
@@ -242,9 +253,15 @@ impl FontInfo {
             }
         };
 
+        let variations = variations
+            .into_iter()
+            .map(|v| (v.0, FiniteF32::new(v.1).unwrap()))
+            .collect::<Vec<_>>();
+
         Some(FontInfo {
             index,
             checksum,
+            variations,
             location: LocationWrapper(location),
             units_per_em,
             postscript_name,
