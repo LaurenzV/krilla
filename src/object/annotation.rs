@@ -50,9 +50,9 @@ pub struct LinkAnnotation {
     pub target: Target,
 }
 
-impl Into<Annotation> for LinkAnnotation {
-    fn into(self) -> Annotation {
-        Annotation::Link(self)
+impl From<LinkAnnotation> for Annotation {
+    fn from(value: LinkAnnotation) -> Self {
+        Annotation::Link(value)
     }
 }
 

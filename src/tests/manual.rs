@@ -12,7 +12,6 @@ use crate::tests::{
     NOTO_SANS_ARABIC, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
 };
 use crate::util::SliceExt;
-use skrifa::instance::Location;
 use skrifa::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::Point;

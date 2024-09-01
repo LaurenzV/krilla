@@ -441,7 +441,6 @@ mod tests {
     };
     use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;
-    use skrifa::instance::Location;
     use tiny_skia_path::{Point, Transform};
 
     #[snapshot(stream)]

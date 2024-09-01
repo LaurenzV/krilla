@@ -18,7 +18,7 @@ use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
     render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
-use skrifa::instance::{Location, LocationRef, Size};
+use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use std::cmp::max;
@@ -172,14 +172,14 @@ fn write_snapshot_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("snapshots");
     let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
-    std::fs::write(&path, &content).unwrap();
+    std::fs::write(&path, content).unwrap();
 }
 
 fn write_render_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("refs");
     let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
-    std::fs::write(&path, &content).unwrap();
+    std::fs::write(&path, content).unwrap();
 }
 
 pub fn write_manual_to_store(name: &str, data: &[u8]) {
@@ -200,13 +200,13 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     }
 
     if !path.exists() {
-        std::fs::write(&path, &content).unwrap();
+        std::fs::write(&path, content).unwrap();
         panic!("new snapshot created");
     }
 
     let actual = std::fs::read(&path).unwrap();
 
-    if REPLACE.is_some() && &actual != content {
+    if REPLACE.is_some() && actual != content {
         std::fs::write(&path, content).unwrap();
         panic!("test was replaced");
     }
@@ -315,7 +315,7 @@ pub fn check_render(
     }
 
     if STORE.is_some() {
-        write_render_to_store(&name, pdf);
+        write_render_to_store(name, pdf);
     }
 }
 

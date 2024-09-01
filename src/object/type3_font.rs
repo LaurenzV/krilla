@@ -70,7 +70,7 @@ impl Type3Font {
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
         if let Some(pos) = self.get_gid(glyph_id) {
-            return pos;
+            pos
         } else {
             assert!(self.glyphs.len() < 256);
 
@@ -173,7 +173,7 @@ impl Type3Font {
                     FilterStream::new_from_content_stream(&stream, &sc.serialize_settings);
 
                 let stream_ref = sc.new_ref();
-                let mut stream = chunk.stream(stream_ref, &font_stream.encoded_data());
+                let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
                 font_stream.write_filters(stream.deref_mut());
 
                 Ok(stream_ref)
@@ -343,8 +343,6 @@ impl Type3FontMapper {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-    // TODO: Add tests with variable fonts
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::color::rgb;
@@ -357,7 +355,6 @@ mod tests {
         red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
     };
     use krilla_macros::{snapshot, visreg};
-    use skrifa::instance::Location;
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
 

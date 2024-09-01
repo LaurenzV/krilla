@@ -226,7 +226,7 @@ impl CIDFont {
 
         chunk.cmap(cmap_ref, &cmap.finish());
 
-        let mut stream = chunk.stream(data_ref, &font_stream.encoded_data());
+        let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
         font_stream.write_filters(stream.deref_mut());
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
@@ -261,7 +261,6 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
     use krilla_macros::{snapshot, visreg};
-    use skrifa::instance::Location;
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
 

@@ -55,11 +55,11 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
-pub(crate) const DEVICE_RGB: &'static str = "DeviceRGB";
+pub(crate) const DEVICE_RGB: &str = "DeviceRGB";
 /// The PDF name for the device gray color space.
-pub(crate) const DEVICE_GRAY: &'static str = "DeviceGray";
+pub(crate) const DEVICE_GRAY: &str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
-pub(crate) const DEVICE_CMYK: &'static str = "DeviceCMYK";
+pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
 /// An internal helper trait to more easily deal with colors
 /// of different color spaces.
@@ -117,7 +117,7 @@ pub(crate) enum Color {
 }
 
 impl Color {
-    pub(crate) fn to_pdf_color(&self) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(self) -> Vec<f32> {
         match self {
             Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::Luma(luma) => luma.to_pdf_color().into_iter().collect::<Vec<_>>(),

@@ -29,9 +29,9 @@ pub struct LinkAction {
     uri: String,
 }
 
-impl Into<Action> for LinkAction {
-    fn into(self) -> Action {
-        Action::Link(self)
+impl From<LinkAction> for Action {
+    fn from(value: LinkAction) -> Self {
+        Action::Link(value)
     }
 }
 
