@@ -343,6 +343,7 @@ impl Type3FontMapper {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     // TODO: Add tests with variable fonts
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
@@ -350,11 +351,13 @@ mod tests {
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
-    use crate::tests::{red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::tests::{red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE};
     use krilla_macros::{snapshot, visreg};
     use skrifa::instance::Location;
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
+    use crate::color::rgb;
+    use crate::paint::Paint;
 
     #[snapshot(settings_4)]
     fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
@@ -411,6 +414,36 @@ mod tests {
             32.0,
             &[],
             "hello world",
+        );
+    }
+
+    #[visreg]
+    fn variable_font(surface: &mut Surface) {
+        let font1 = Font::new(NOTO_SANS_VARIABLE.clone(), 0, vec![("wght".to_string(), 100.0), ("wdth".to_string(), 62.5)]).unwrap();
+        let font2 = Font::new(NOTO_SANS_VARIABLE.clone(), 0, vec![("wght".to_string(), 900.0), ("wdth".to_string(), 100.0)]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                ..Default::default()
+            },
+            font1.clone(),
+            20.0,
+            &[],
+            "Variable fonts rock!",
+        );
+
+        surface.fill_text(
+            Point::from_xy(0.0, 120.0),
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                ..Default::default()
+            },
+            font2.clone(),
+            20.0,
+            &[],
+            "Variable fonts rock!",
         );
     }
 
