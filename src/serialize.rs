@@ -13,6 +13,7 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
 use crate::util::{NameExt, SipHashable};
+#[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
 use skrifa::raw::TableProvider;
@@ -280,6 +281,7 @@ impl SerializerContext {
         }
     }
 
+    #[cfg(feature = "fontdb")]
     pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
         let mut map = HashMap::new();
 

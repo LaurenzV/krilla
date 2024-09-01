@@ -11,7 +11,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
-image = { version = "0.25.1", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
+image = { version = "0.25.1", default-features = false, features = ["png"] }
 miniz_oxide = "0.8.0"
 once_cell = "1.19.0"
 pdf-writer = {git = "https://github.com/LaurenzV/pdf-writer", rev = "34c991f5"}
@@ -36,7 +36,11 @@ syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 proc-macro2 = "1.0.86"
 oxipng = "9.1.2"
 krilla-macros = {path = "krilla-macros"}
-parley = {git = "https://github.com/linebender/parley"}
+parley = {git = "https://github.com/linebender/parley", rev = "14070d5"}
+zune-png = "0.4.10"
+zune-jpeg = "0.4.13"
+gif = "0.13.1"
+image-webp = "0.1.3"
 
 [package]
 name = "krilla"
@@ -49,35 +53,46 @@ edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 
+[features]
+default = ["simple-text", "raster-images", "svg"]
+# Allow for rendering SVG images and SVG-based glyphs.
+"svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
+# Allow for rendering simple text without having to shape it yourself.
+"simple-text" = ["dep:rustybuzz"]
+# Add the convenience method for converting fontdb databases.
+"fontdb" = ["dep:fontdb"]
+# Allow for adding raster images to your document.
+"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp"]
+
 [dependencies]
-image = { workspace = true }
+flate2 = { workspace = true }
+float-cmp = { workspace = true }
+fontdb = { workspace = true, optional = true }
+gif = { workspace = true, optional = true }
+image-webp = { workspace = true, optional = true }
 miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
-resvg = { workspace = true }
+resvg = { workspace = true, optional = true }
+rustybuzz = { workspace = true, optional = true }
 siphasher = { workspace = true }
-skrifa = { workspace = true }
-tiny-skia = { workspace = true }
 subsetter = { workspace = true }
-rustybuzz = { workspace = true }
+skrifa = { workspace = true }
+tiny-skia = { workspace = true, optional = true }
 tiny-skia-path = { workspace = true }
-usvg = { workspace = true }
-flate2 = { workspace = true }
-fontdb = { workspace = true }
+usvg = { workspace = true, optional = true }
 yoke = { workspace = true }
-float-cmp = { workspace = true }
-zune-png = "0.4.10"
-zune-jpeg = "0.4.13"
-gif = "0.13.1"
-image-webp = "0.1.3"
+zune-png = { workspace = true, optional = true }
+zune-jpeg = { workspace = true, optional = true }
 
 [dev-dependencies]
-difference = { workspace = true }
-paste = { workspace = true }
-sitro = { workspace = true }
 cosmic-text = { workspace = true }
+difference = { workspace = true }
+image = { workspace = true }
 krilla-macros = { workspace = true }
 oxipng = { workspace = true }
 parley = { workspace = true }
+paste = { workspace = true }
+sitro = { workspace = true }
 
 

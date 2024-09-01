@@ -3,6 +3,7 @@
 use crate::color::{Color, ColorSpace, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph};
 use crate::graphics_state::GraphicsStates;
+#[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::mask::Mask;
 use crate::object::cid_font::CIDFont;
@@ -28,7 +29,9 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::cell::RefCell;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Size, Transform};
+#[cfg(feature = "raster-images")]
+use tiny_skia_path::Size;
+use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -395,6 +398,7 @@ impl ContentBuilder {
         self.draw_xobject(x_object, &state);
     }
 
+    #[cfg(feature = "raster-images")]
     pub fn draw_image(&mut self, image: Image, size: Size) {
         self.save_graphics_state();
         // Scale the image from 1x1 to the actual dimensions.

@@ -11,7 +11,9 @@ use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
-use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size, Transform};
+#[cfg(feature = "svg")]
+use tiny_skia_path::PathBuilder;
+use tiny_skia_path::{FiniteF32, Path, Rect, Size, Transform};
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -70,6 +72,7 @@ impl LineJoinExt for LineJoin {
 pub trait RectExt {
     fn expand(&mut self, other: &Rect);
     fn to_pdf_rect(&self) -> pdf_writer::Rect;
+    #[cfg(feature = "svg")]
     fn to_clip_path(&self) -> Path;
 }
 
@@ -91,6 +94,7 @@ impl RectExt for Rect {
         )
     }
 
+    #[cfg(feature = "svg")]
     fn to_clip_path(&self) -> Path {
         let mut path_builder = PathBuilder::new();
         path_builder.move_to(self.left(), self.top());

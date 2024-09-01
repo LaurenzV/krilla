@@ -3,6 +3,7 @@ mod graphics_state;
 mod object;
 mod resource;
 mod serialize;
+#[cfg(feature = "svg")]
 mod svg;
 mod util;
 

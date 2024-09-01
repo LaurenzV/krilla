@@ -11,7 +11,6 @@ use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
-use usvg::Opacity;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {
@@ -51,7 +50,7 @@ pub(crate) enum GradientProperties {
 
 impl GradientProperties {
     // Check if the gradient could be encoded as a solid fill instead.
-    pub fn single_stop_color(&self) -> Option<(Color, Opacity)> {
+    pub fn single_stop_color(&self) -> Option<(Color, NormalizedF32)> {
         match self {
             GradientProperties::RadialAxialGradient(rag) => {
                 if rag.stops.len() == 1 {
