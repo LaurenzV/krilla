@@ -654,8 +654,6 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_text_color_font_mixed_text_rtl() {}
 #[visreg(svg)] fn resvg_text_alignment_baseline_alphabetic() {}
 #[visreg(svg)] fn resvg_text_textPath_startOffset__100() {}
-// need to investigate
-#[visreg(svg, ignore)] fn resvg_text_text_compound_emojis_and_coordinates_list() {}
 #[visreg(svg)] fn resvg_filters_filter_functions_one_invalid_url_in_list() {}
 #[visreg(svg)] fn resvg_painting_stroke_named_color() {}
 #[visreg(svg)] fn resvg_painting_stroke_opacity_on_text() {}
@@ -763,8 +761,6 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_paint_servers_radialGradient_invalid_gradientUnits() {}
 #[visreg(svg)] fn resvg_filters_feFlood_complex_transform() {}
 #[visreg(svg)] fn resvg_masking_mask_maskUnits_userSpaceOnUse_without_rect() {}
-// need to investigate
-#[visreg(svg, ignore)] fn resvg_text_text_emojis() {}
 #[visreg(svg)] fn resvg_shapes_rect_missing_height_attribute_processing() {}
 #[visreg(svg)] fn resvg_painting_stroke_none() {}
 #[visreg(svg)] fn resvg_filters_feGaussianBlur_stdDeviation_with_two_different_values() {}
@@ -778,7 +774,8 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_structure_use_position_inheritance() {}
 #[visreg(svg)] fn resvg_painting_isolation_isolate() {}
 #[visreg(svg)] fn resvg_paint_servers_pattern_attributes_via_xlink_href() {}
-#[visreg(svg)] fn resvg_structure_image_external_webp() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_external_webp() {}
 #[visreg(svg)] fn resvg_text_baseline_shift_inheritance_1() {}
 #[visreg(svg)] fn resvg_structure_image_url_to_png() {}
 #[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_without_k1_4() {}
@@ -1544,8 +1541,6 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_text_text_anchor_on_tspan() {}
 #[visreg(svg)] fn resvg_text_textLength_40mm() {}
 #[visreg(svg)] fn resvg_text_font_size_ex_on_the_root_element() {}
-// need to investigate
-#[visreg(svg, ignore)] fn resvg_text_text_compound_emojis() {}
 #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_13() {}
 #[visreg(svg)] fn resvg_text_font_stretch_extra_condensed() {}
 #[visreg(svg)] fn resvg_filters_feDiffuseLighting_diffuseConstant_0() {}

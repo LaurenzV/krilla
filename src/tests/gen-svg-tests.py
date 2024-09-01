@@ -38,6 +38,7 @@ IGNORE_TESTS = {
     "resvg_structure_image_external_gif.svg": NO_RELATIVE_PATHS,
     "resvg_structure_image_external_jpeg.svg": NO_RELATIVE_PATHS,
     "resvg_structure_image_external_png.svg": NO_RELATIVE_PATHS,
+    "resvg_structure_image_external_webp.svg": NO_RELATIVE_PATHS,
     "resvg_structure_image_external_svg.svg": NO_RELATIVE_PATHS,
     "resvg_structure_image_external_svg_with_transform.svg": NO_RELATIVE_PATHS,
     "resvg_structure_image_external_svgz.svg": NO_RELATIVE_PATHS,
