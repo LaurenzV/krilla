@@ -9,8 +9,7 @@ use crate::util::TransformWrapper;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::DerefMut;
-use tiny_skia_path::FiniteF32;
-use usvg::NormalizedF32;
+use tiny_skia_path::{FiniteF32, NormalizedF32};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct TilingPattern {

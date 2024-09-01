@@ -4,6 +4,7 @@ use crate::font::FontIdentifier;
 use crate::object::color::luma::SGray;
 use crate::object::color::rgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
+#[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
@@ -102,6 +103,7 @@ impl From<FontIdentifier> for Resource {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) enum XObjectResource {
     XObject(XObject),
+    #[cfg(feature = "raster-images")]
     Image(Image),
 }
 
@@ -119,6 +121,7 @@ impl Object for XObjectResource {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
         match self {
             XObjectResource::XObject(x) => x.chunk_container(cc),
+            #[cfg(feature = "raster-images")]
             XObjectResource::Image(i) => i.chunk_container(cc),
         }
     }
@@ -126,6 +129,7 @@ impl Object for XObjectResource {
     fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
             XObjectResource::XObject(x) => x.serialize(sc, root_ref),
+            #[cfg(feature = "raster-images")]
             XObjectResource::Image(i) => i.serialize(sc, root_ref),
         }
     }

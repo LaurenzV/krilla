@@ -10,6 +10,7 @@ pub(crate) mod cid_font;
 pub mod color;
 pub mod destination;
 pub(crate) mod ext_g_state;
+#[cfg(feature = "raster-images")]
 pub mod image;
 pub mod mask;
 pub mod outline;

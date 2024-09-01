@@ -8,21 +8,30 @@
 use crate::content::ContentBuilder;
 use crate::font::{Font, Glyph};
 use crate::object::color::ColorSpace;
+#[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
+#[cfg(feature = "svg")]
 use crate::svg;
+#[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
+#[cfg(feature = "simple-text")]
 use rustybuzz::ttf_parser::Tag;
+#[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
+#[cfg(feature = "simple-text")]
 use skrifa::GlyphId;
+#[cfg(feature = "fontdb")]
 use std::collections::HashMap;
-use tiny_skia_path::{Path, Point, Size, Transform};
-use usvg::NormalizedF32;
+use tiny_skia_path::NormalizedF32;
+#[cfg(feature = "raster-images")]
+use tiny_skia_path::Size;
+use tiny_skia_path::{Path, Point, Transform};
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -136,6 +145,7 @@ impl<'a> Surface<'a> {
     /// If you need more advanced control over how your text looks, but you don't want to
     /// implement your own text processing solution, so you can use the `fill_glyphs` method,
     /// you can use the `cosmic-text` integration to do so.
+    #[cfg(feature = "simple-text")]
     pub fn fill_text<T>(
         &mut self,
         start: Point,
@@ -184,6 +194,7 @@ impl<'a> Surface<'a> {
     /// If you need more advanced control over how your text looks, but you don't want to
     /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
+    #[cfg(feature = "simple-text")]
     pub fn stroke_text<T>(
         &mut self,
         start: Point,
@@ -289,11 +300,13 @@ impl<'a> Surface<'a> {
         }
     }
 
+    #[cfg(feature = "raster-images")]
     /// Draw a new bitmap image.
     pub fn draw_image(&mut self, image: Image, size: Size) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
     }
 
+    #[cfg(feature = "svg")]
     /// Draw a new SVG image.
     pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) {
         let transform = Transform::from_scale(
@@ -311,6 +324,7 @@ impl<'a> Surface<'a> {
 
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
     /// which makes it easier to integrate `cosmic-text` with this library.
+    #[cfg(feature = "fontdb")]
     pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
         self.sc.convert_fontdb(db, ids)
     }
@@ -351,6 +365,7 @@ impl Drop for Surface<'_> {
 }
 
 /// Shape some text with a single font.
+#[cfg(feature = "simple-text")]
 fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<Glyph> {
     let data = font.font_data();
     let mut rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();

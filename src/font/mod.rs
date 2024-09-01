@@ -34,9 +34,11 @@ use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
+#[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;
 pub(crate) mod colr;
 pub(crate) mod outline;
+#[cfg(feature = "svg")]
 pub(crate) mod svg;
 
 // TODO: Test TrueType collection
@@ -134,6 +136,7 @@ impl Font {
         self.0.font_info.global_bbox.0
     }
 
+    #[cfg(feature = "simple-text")]
     pub(crate) fn variations(&self) -> impl IntoIterator<Item = (&str, f32)> {
         self.0
             .font_info
@@ -295,7 +298,8 @@ pub(crate) enum GlyphSource {
 
 pub(crate) fn draw_glyph(
     font: Font,
-    svg_settings: SvgSettings,
+    #[cfg(feature = "svg")] svg_settings: SvgSettings,
+    #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     surface: &mut Surface,
 ) -> KrillaResult<Option<GlyphSource>> {
@@ -305,9 +309,23 @@ pub(crate) fn draw_glyph(
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
         glyph_source = Some(GlyphSource::Colr);
-    } else if let Some(()) = svg::draw_glyph(font.clone(), glyph, surface, svg_settings)? {
+    } else if let Some(()) = {
+        #[cfg(feature = "svg")]
+        let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings)?;
+        #[cfg(not(feature = "svg"))]
+        let res = None;
+
+        res
+    } {
         glyph_source = Some(GlyphSource::Svg);
-    } else if let Some(()) = bitmap::draw_glyph(font.clone(), glyph, surface)? {
+    } else if let Some(()) = {
+        #[cfg(feature = "raster-images")]
+        let res = bitmap::draw_glyph(font.clone(), glyph, surface)?;
+        #[cfg(not(feature = "raster-images"))]
+        let res = None;
+
+        res
+    } {
         glyph_source = Some(GlyphSource::Bitmap);
     } else if let Some(()) = outline::draw_glyph(font.clone(), glyph, surface)? {
         glyph_source = Some(GlyphSource::Outline);

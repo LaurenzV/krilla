@@ -596,7 +596,7 @@ dependencies = [
 [[package]]
 name = "fontique"
 version = "0.1.0"
-source = "git+https://github.com/linebender/parley#14070d547913e407abf8c7cad2d5ca7fcd00cb59"
+source = "git+https://github.com/linebender/parley?rev=14070d5#14070d547913e407abf8c7cad2d5ca7fcd00cb59"
 dependencies = [
  "core-foundation",
  "core-text",
@@ -728,13 +728,8 @@ checksum = "99314c8a2152b8ddb211f924cdae532d8c5e4c8bb54728e12fff1b0cd5963a10"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
- "color_quant",
- "gif",
- "image-webp",
  "num-traits",
  "png",
- "zune-core",
- "zune-jpeg",
 ]
 
 [[package]]
@@ -1040,7 +1035,7 @@ dependencies = [
 [[package]]
 name = "parley"
 version = "0.1.0"
-source = "git+https://github.com/linebender/parley#14070d547913e407abf8c7cad2d5ca7fcd00cb59"
+source = "git+https://github.com/linebender/parley?rev=14070d5#14070d547913e407abf8c7cad2d5ca7fcd00cb59"
 dependencies = [
  "fontique",
  "peniko",
