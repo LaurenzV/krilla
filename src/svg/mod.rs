@@ -62,9 +62,8 @@ fn get_context_from_group(
     let mut ids = HashSet::new();
     get_ids_from_group_impl(group, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
-    let process_context =
-        ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids)), svg_settings);
-    process_context
+    
+    ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids)), svg_settings)
 }
 
 /// Get the `PorcessContext` from a `Node`.
@@ -77,9 +76,8 @@ fn get_context_from_node(
     let mut ids = HashSet::new();
     get_ids_impl(node, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
-    let process_context =
-        ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids)), svg_settings);
-    process_context
+    
+    ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids)), svg_settings)
 }
 
 fn get_ids_from_group_impl(group: &Group, ids: &mut HashSet<fontdb::ID>) {

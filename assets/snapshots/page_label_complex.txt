@@ -71,7 +71,7 @@ endobj
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
-  /MediaBox [0 0 200 200]
+  /MediaBox [0 0 250 200]
   /Parent 2 0 R
   /Contents 9 0 R
 >>

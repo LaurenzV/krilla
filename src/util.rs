@@ -1,14 +1,17 @@
+//! Internal utilities.
+
 use crate::object::color::ColorSpace;
-use crate::serialize::SipHashable;
-use crate::{LineCap, LineJoin, Stroke};
+use crate::path::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
+use siphasher::sip128::{Hasher128, SipHasher13};
 use skrifa::instance::Location;
+use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
-use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size};
+use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Size, Transform};
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -99,11 +102,8 @@ impl RectExt for Rect {
     }
 }
 
-pub fn calculate_stroke_bbox(
-    stroke: &Stroke<impl ColorSpace>,
-    path: &tiny_skia_path::Path,
-) -> Option<Rect> {
-    let stroke = stroke.clone().to_tiny_skia();
+pub fn calculate_stroke_bbox(stroke: &Stroke<impl ColorSpace>, path: &Path) -> Option<Rect> {
+    let stroke = stroke.clone().into_tiny_skia();
 
     if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
         return stroked_path.compute_tight_bounds();
@@ -263,3 +263,36 @@ impl PartialEq for LocationWrapper {
 }
 
 impl Eq for LocationWrapper {}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TransformWrapper(pub(crate) Transform);
+
+// We don't care about NaNs.
+impl Eq for TransformWrapper {}
+
+impl Hash for TransformWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.tx.to_bits().hash(state);
+        self.0.ty.to_bits().hash(state);
+        self.0.sx.to_bits().hash(state);
+        self.0.sy.to_bits().hash(state);
+        self.0.kx.to_bits().hash(state);
+        self.0.ky.to_bits().hash(state);
+    }
+}
+
+pub trait SipHashable {
+    fn sip_hash(&self) -> u128;
+}
+
+impl<T> SipHashable for T
+where
+    T: Hash + ?Sized + 'static,
+{
+    fn sip_hash(&self) -> u128 {
+        let mut state = SipHasher13::new();
+        self.type_id().hash(&mut state);
+        self.hash(&mut state);
+        state.finish128().as_u128()
+    }
+}

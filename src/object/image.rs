@@ -1,9 +1,20 @@
 //! Creating and using bitmap images.
+//!
+//! krilla allows you to add bitmap images to your PDF very easily.
+//! The currently supported formats include
+//! - PNG
+//! - JPG
+//! - GIF
+//! - WEBP
+//!
+//! ICC profiles will currently not be embedded, and CMYK images will be naively
+//! converted into the RGB color space.
 
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
-use crate::serialize::{FilterStream, Object, SerializerContext};
+use crate::object::Object;
+use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
@@ -52,7 +63,6 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     image_data: Vec<u8>,
-    is_dct_encoded: bool,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
@@ -91,7 +101,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
@@ -118,7 +127,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data: None,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
@@ -142,7 +150,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space: ImageColorspace::Rgb,
             size: SizeWrapper(size),
@@ -174,7 +181,6 @@ impl Image {
         Some(Self(Arc::new(Prehashed::new(Repr {
             image_data,
             mask_data,
-            is_dct_encoded: false,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
@@ -198,7 +204,7 @@ impl Object for Image {
         let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
             let soft_mask_id = sc.new_ref();
             let mask_stream = FilterStream::new_from_binary_data(mask_data, &sc.serialize_settings);
-            let mut s_mask = chunk.image_xobject(soft_mask_id, &mask_stream.encoded_data());
+            let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
             mask_stream.write_filters(s_mask.deref_mut().deref_mut());
             s_mask.width(self.0.size.width() as i32);
             s_mask.height(self.0.size.height() as i32);
@@ -211,13 +217,10 @@ impl Object for Image {
             soft_mask_id
         });
 
-        let image_stream = if self.0.is_dct_encoded {
-            FilterStream::new_from_dct_encoded(&self.0.image_data, &sc.serialize_settings)
-        } else {
-            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings)
-        };
+        let image_stream =
+            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
 
-        let mut image_x_object = chunk.image_xobject(root_ref, &image_stream.encoded_data());
+        let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
         image_stream.write_filters(image_x_object.deref_mut().deref_mut());
         image_x_object.width(self.0.size.width() as i32);
         image_x_object.height(self.0.size.height() as i32);
@@ -241,7 +244,7 @@ impl Object for Image {
     }
 }
 
-fn handle_u8_image<'a>(
+fn handle_u8_image(
     data: Vec<u8>,
     cs: ColorSpace,
 ) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
@@ -286,7 +289,7 @@ fn handle_u8_image<'a>(
     (encoded_image, encoded_mask, BitsPerComponent::Eight)
 }
 
-fn handle_u16_image<'a>(
+fn handle_u16_image(
     data: Vec<u16>,
     cs: ColorSpace,
 ) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {

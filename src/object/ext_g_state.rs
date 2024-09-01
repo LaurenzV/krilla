@@ -1,7 +1,8 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::mask::Mask;
-use crate::serialize::{Object, SerializerContext};
+use crate::object::Object;
+use crate::serialize::SerializerContext;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -141,7 +142,7 @@ mod tests {
     use crate::serialize::SerializerContext;
     use crate::stream::Stream;
 
-    use crate::MaskType;
+    use crate::mask::MaskType;
     use krilla_macros::snapshot;
     use pdf_writer::types::BlendMode;
     use usvg::NormalizedF32;

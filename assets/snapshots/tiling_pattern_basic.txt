@@ -1,0 +1,43 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Length 136
+  /Type /Pattern
+  /PatternType 1
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /TilingType 1
+  /PaintType 1
+  /BBox [0 0 20 20]
+  /Matrix [1 0 0 1 0 0]
+  /XStep 20
+  /YStep 20
+>>
+stream
+q
+/DeviceRGB cs
+1 0 0 scn
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+q
+1 0 0 1 10 10 cm
+/DeviceRGB cs
+0 1 0 scn
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+endstream
+endobj
+

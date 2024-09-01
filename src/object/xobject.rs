@@ -1,6 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
-use crate::serialize::{FilterStream, Object, SerializerContext};
+use crate::object::Object;
+use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -8,7 +9,7 @@ use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct XObject {
+pub(crate) struct XObject {
     stream: Stream,
     isolated: bool,
     transparency_group_color_space: bool,
@@ -26,7 +27,7 @@ impl XObject {
             stream,
             isolated,
             transparency_group_color_space,
-            custom_bbox: custom_bbox.map(|c| RectWrapper(c)),
+            custom_bbox: custom_bbox.map(RectWrapper),
         }
     }
 
@@ -78,5 +79,28 @@ impl Object for XObject {
         x_object.finish();
 
         Ok(chunk)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::color::rgb::Rgb;
+    use crate::object::xobject::XObject;
+    use crate::path::Fill;
+    use crate::serialize::SerializerContext;
+    use crate::stream::StreamBuilder;
+    use crate::tests::rect_to_path;
+    use krilla_macros::snapshot;
+
+    #[snapshot]
+    fn x_object_with_transparency(sc: &mut SerializerContext) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let mut sb = StreamBuilder::new(sc);
+        let mut surface = sb.surface();
+        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.finish();
+        let stream = sb.finish();
+        let x_object = XObject::new(stream, true, true, None);
+        sc.add_object(x_object).unwrap();
     }
 }

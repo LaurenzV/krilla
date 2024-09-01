@@ -28,7 +28,7 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut 
     }
 
     surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));
-    surface.push_opacified(group.opacity());
+    surface.push_opacity(group.opacity());
     pop_count += 2;
 
     for child in group.children() {

@@ -42,7 +42,7 @@ pub fn draw_glyph(
             KrillaError::GlyphDrawing("failed to convert SVG for glyph".to_string())
         })?;
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
-            svg::render_node(&node, tree.fontdb().clone(), svg_settings, surface)
+            svg::render_node(node, tree.fontdb().clone(), svg_settings, surface)
         } else {
             // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
             // usvg. So in this case, we simply draw the whole document.

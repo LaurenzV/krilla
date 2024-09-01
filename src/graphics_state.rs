@@ -1,8 +1,11 @@
-use crate::object::ext_g_state;
 use crate::object::ext_g_state::ExtGState;
-use crate::transform::TransformWrapper;
+use crate::util::TransformWrapper;
 use tiny_skia_path::{Rect, Transform};
 
+/// A simulation of the PDF graphics state, so that we
+/// can write our transforms/graphics state all at once
+/// when adding an image/path instead of having to
+/// use `save_state`/`restore_state` excessively.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct GraphicsState {
     ext_g_state: ExtGState,
@@ -19,7 +22,7 @@ impl Default for GraphicsState {
 }
 
 impl GraphicsState {
-    pub fn combine(&mut self, other: &ext_g_state::ExtGState) {
+    pub fn combine(&mut self, other: &ExtGState) {
         self.ext_g_state.combine(other);
     }
 
@@ -36,6 +39,8 @@ impl GraphicsState {
     }
 }
 
+/// A collection of graphics states, simulates the stack-like
+/// structure used.
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct GraphicsStates {
     graphics_states: Vec<GraphicsState>,

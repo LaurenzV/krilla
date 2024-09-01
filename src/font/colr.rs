@@ -3,8 +3,8 @@ use crate::font::{Font, OutlineBuilder};
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
+use crate::path::{Fill, FillRule};
 use crate::surface::Surface;
-use crate::{Fill, FillRule};
 use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
@@ -28,9 +28,9 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaRe
 
         surface.pop();
 
-        return Ok(Some(()));
+        Ok(Some(()))
     } else {
-        return Ok(None);
+        Ok(None)
     }
 }
 

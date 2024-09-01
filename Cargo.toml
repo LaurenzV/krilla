@@ -36,6 +36,7 @@ syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 proc-macro2 = "1.0.86"
 oxipng = "9.1.2"
 krilla-macros = {path = "krilla-macros"}
+parley = {git = "https://github.com/linebender/parley"}
 
 [package]
 name = "krilla"
@@ -77,5 +78,6 @@ sitro = { workspace = true }
 cosmic-text = { workspace = true }
 krilla-macros = { workspace = true }
 oxipng = { workspace = true }
+parley = { workspace = true }
 
 

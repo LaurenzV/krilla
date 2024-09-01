@@ -1,0 +1,11 @@
+q
+/g0 gs
+/DeviceRGB cs
+1 0 0 scn
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q

@@ -1,9 +1,16 @@
-use crate::color::rgb;
+use crate::color::cmyk::DeviceCmyk;
+use crate::color::luma::Luma;
 use crate::color::rgb::Rgb;
+use crate::color::{cmyk, luma, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::Font;
 use crate::image::Image;
-use crate::{Fill, Paint};
+use crate::mask::{Mask, MaskType};
+use crate::paint::{Paint, Stop};
+use crate::path::Fill;
+use crate::stream::Stream;
+use crate::stream::StreamBuilder;
+use crate::surface::Surface;
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use oxipng::{InFile, OutFile};
@@ -11,14 +18,14 @@ use sitro::{
     render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
     render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
-use skrifa::instance::{Location, LocationRef, Size};
+use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use std::cmp::max;
 use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
 mod visreg;
@@ -85,6 +92,8 @@ lazy_font!(NOTO_COLOR_EMOJI_COLR, FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf
 lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf"));
 #[rustfmt::skip]
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
+#[rustfmt::skip]
+lazy_font!(NOTO_SANS_VARIABLE, FONT_PATH.join("NotoSans_variable.ttf"));
 
 pub fn green_fill(opacity: f32) -> Fill<Rgb> {
     Fill {
@@ -92,6 +101,17 @@ pub fn green_fill(opacity: f32) -> Fill<Rgb> {
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
+}
+
+pub fn basic_mask(surface: &mut Surface, mask_type: MaskType) -> Mask {
+    let mut stream_builder = surface.stream_builder();
+    let mut sub_surface = stream_builder.surface();
+    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+
+    sub_surface.fill_path(&path, red_fill(0.2));
+    sub_surface.finish();
+
+    Mask::new(stream_builder.finish(), mask_type)
 }
 
 pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
@@ -105,6 +125,22 @@ pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
 pub fn red_fill(opacity: f32) -> Fill<Rgb> {
     Fill {
         paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn gray_luma(opacity: f32) -> Fill<Luma> {
+    Fill {
+        paint: Paint::Color(luma::Color::new(127)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
+pub fn cmyk_fill(opacity: f32) -> Fill<DeviceCmyk> {
+    Fill {
+        paint: Paint::Color(cmyk::Color::new(0, 8, 252, 5)),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
@@ -136,14 +172,14 @@ fn write_snapshot_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("snapshots");
     let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
-    std::fs::write(&path, &content).unwrap();
+    std::fs::write(&path, content).unwrap();
 }
 
 fn write_render_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("refs");
     let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
-    std::fs::write(&path, &content).unwrap();
+    std::fs::write(&path, content).unwrap();
 }
 
 pub fn write_manual_to_store(name: &str, data: &[u8]) {
@@ -164,13 +200,13 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
     }
 
     if !path.exists() {
-        std::fs::write(&path, &content).unwrap();
+        std::fs::write(&path, content).unwrap();
         panic!("new snapshot created");
     }
 
     let actual = std::fs::read(&path).unwrap();
 
-    if REPLACE.is_some() && &actual != content {
+    if REPLACE.is_some() && actual != content {
         std::fs::write(&path, content).unwrap();
         panic!("test was replaced");
     }
@@ -279,7 +315,7 @@ pub fn check_render(
     }
 
     if STORE.is_some() {
-        write_render_to_store(&name, pdf);
+        write_render_to_store(name, pdf);
     }
 }
 
@@ -354,13 +390,13 @@ pub fn all_glyphs_to_pdf(
     font_data: Arc<Vec<u8>>,
     glyphs: Option<Vec<(GlyphId, String)>>,
     color_cycling: bool,
-    db: &mut Document,
+    d: &mut Document,
 ) {
+    use crate::font::Glyph;
+    use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
-    use crate::stream::Glyph;
-    use crate::Transform;
 
-    let font = Font::new(font_data, 0, Location::default()).unwrap();
+    let font = Font::new(font_data, 0, vec![]).unwrap();
     let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {
@@ -387,7 +423,7 @@ pub fn all_glyphs_to_pdf(
     let units_per_em = metrics.units_per_em as f32;
     let mut cur_point = 0;
 
-    let mut builder = db.start_page_with(PageSettings::with_size(width as f32, height as f32));
+    let mut builder = d.start_page_with(PageSettings::with_size(width as f32, height as f32));
     let mut surface = builder.surface();
 
     let colors = if color_cycling {
@@ -428,7 +464,7 @@ pub fn all_glyphs_to_pdf(
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         surface.fill_glyphs(
             Point::from_xy(0.0, 0.0),
-            crate::Fill::<Rgb> {
+            Fill::<Rgb> {
                 paint: Paint::Color(color),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
@@ -444,4 +480,130 @@ pub fn all_glyphs_to_pdf(
 
     surface.finish();
     builder.finish();
+}
+
+pub fn stops_with_1_solid() -> Vec<Stop<Rgb>> {
+    vec![Stop {
+        offset: NormalizedF32::new(0.5).unwrap(),
+        color: rgb::Color::new(255, 0, 0),
+        opacity: NormalizedF32::ONE,
+    }]
+}
+
+pub fn stops_with_2_solid_1() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(255, 0, 0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(255, 255, 0),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_2_solid_2() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_2_opacity() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::new(0.8).unwrap(),
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::new(0.2).unwrap(),
+        },
+    ]
+}
+
+pub fn stops_with_3_solid_1() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.1).unwrap(),
+            color: rgb::Color::new(255, 0, 0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.3).unwrap(),
+            color: rgb::Color::new(255, 255, 0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(0, 255, 255),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_3_solid_2() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.1).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.5).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(1.0).unwrap(),
+            color: rgb::Color::new(235, 52, 110),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+}
+
+pub fn stops_with_3_opacity() -> Vec<Stop<Rgb>> {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(85, 235, 52),
+            opacity: NormalizedF32::new(0.4).unwrap(),
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(89, 52, 235),
+            opacity: NormalizedF32::new(0.8).unwrap(),
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(235, 52, 110),
+            opacity: NormalizedF32::new(0.1).unwrap(),
+        },
+    ]
+}
+
+pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
+    let path = rect_to_path(0.0, 0.0, 10.0, 10.0);
+
+    let mut surface = stream_builder.surface();
+    surface.fill_path(&path, red_fill(1.0));
+    surface.push_transform(&Transform::from_translate(10.0, 10.0));
+    surface.fill_path(&path, green_fill(1.0));
+    surface.pop();
+    surface.finish();
+
+    stream_builder.finish()
 }

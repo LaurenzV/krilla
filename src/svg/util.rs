@@ -1,11 +1,10 @@
+use crate::mask::MaskType;
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
-use crate::surface::StreamBuilder;
+use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
+use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
+use crate::stream::StreamBuilder;
 use crate::svg::{group, ProcessContext};
-use crate::{
-    Fill, FillRule, LineCap, LineJoin, LinearGradient, MaskType, Paint, Pattern, RadialGradient,
-    SpreadMethod, Stop, Stroke, StrokeDash,
-};
 use pdf_writer::types::BlendMode;
 use tiny_skia_path::{NormalizedF32, Transform};
 
@@ -34,7 +33,7 @@ pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod
 pub fn convert_stop(stop: &usvg::Stop) -> Stop<Rgb> {
     Stop {
         offset: stop.offset(),
-        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
+        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
 }
@@ -51,7 +50,7 @@ pub fn convert_paint(
     additional_transform: Transform,
 ) -> Paint<Rgb> {
     match paint {
-        usvg::Paint::Color(c) => Paint::Color(rgb::Color::new(c.red, c.green, c.blue).into()),
+        usvg::Paint::Color(c) => Paint::Color(rgb::Color::new(c.red, c.green, c.blue)),
         usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
             x1: lg.x1(),
             y1: lg.y1(),
@@ -62,7 +61,7 @@ pub fn convert_paint(
             stops: lg
                 .stops()
                 .iter()
-                .map(|s| convert_stop(s))
+                .map(convert_stop)
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::RadialGradient(rg) => Paint::RadialGradient(RadialGradient {
@@ -77,7 +76,7 @@ pub fn convert_paint(
             stops: rg
                 .stops()
                 .iter()
-                .map(|s| convert_stop(s))
+                .map(convert_stop)
                 .collect::<Vec<_>>(),
         }),
         usvg::Paint::Pattern(pat) => {
@@ -151,14 +150,10 @@ pub fn convert_stroke(
     process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Stroke<Rgb> {
-    let dash = if let Some(dash_array) = stroke.dasharray() {
-        Some(StrokeDash {
+    let dash = stroke.dasharray().map(|dash_array| StrokeDash {
             offset: stroke.dashoffset(),
             array: dash_array.to_vec(),
-        })
-    } else {
-        None
-    };
+        });
 
     Stroke {
         paint: convert_paint(

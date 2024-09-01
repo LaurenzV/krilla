@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
-use crate::serialize::{FilterStream, SerializerContext, SipHashable};
-use crate::util::{RectExt, SliceExt};
+use crate::serialize::{FilterStream, SerializerContext};
+use crate::util::{RectExt, SipHashable, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
@@ -226,7 +226,7 @@ impl CIDFont {
 
         chunk.cmap(cmap_ref, &cmap.finish());
 
-        let mut stream = chunk.stream(data_ref, &font_stream.encoded_data());
+        let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
         font_stream.write_filters(stream.deref_mut());
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
@@ -255,37 +255,87 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 mod tests {
     use crate::font::Font;
 
-    use crate::serialize::SerializerContext;
-    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS};
-    use krilla_macros::snapshot;
-    use skrifa::instance::Location;
+    use crate::color::rgb::Rgb;
+    use crate::path::Fill;
+    use crate::serialize::{FontContainer, SerializerContext};
+    use crate::surface::Surface;
+    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
+    use tiny_skia_path::Point;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(NOTO_SANS.clone(), 0, Location::default()).unwrap();
-        sc.create_or_get_font_container(font.clone())
-            .borrow_mut()
-            .add_glyph(GlyphId::new(36));
-        sc.create_or_get_font_container(font.clone())
-            .borrow_mut()
-            .add_glyph(GlyphId::new(37));
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+
+        match &mut *font_container {
+            FontContainer::Type3(_) => panic!("expected CID font"),
+            FontContainer::CIDFont(cid_font) => {
+                cid_font.add_glyph(GlyphId::new(36));
+                cid_font.add_glyph(GlyphId::new(37));
+                cid_font.set_codepoints(1, "A".to_string());
+                cid_font.set_codepoints(2, "B".to_string());
+            }
+        }
+    }
+
+    #[visreg(all)]
+    fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "hello world",
+        );
+    }
+
+    #[visreg(all)]
+    fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "hello world",
+        );
+    }
+
+    #[visreg(all)]
+    fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "مرحبا بالعالم",
+        );
     }
 
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, Location::default()).unwrap();
-        sc.create_or_get_font_container(font.clone())
-            .borrow_mut()
-            .add_glyph(GlyphId::new(58));
-        sc.create_or_get_font_container(font.clone())
-            .borrow_mut()
-            .add_glyph(GlyphId::new(54));
-        sc.create_or_get_font_container(font.clone())
-            .borrow_mut()
-            .add_glyph(GlyphId::new(69));
-        sc.create_or_get_font_container(font.clone())
-            .borrow_mut()
-            .add_glyph(GlyphId::new(71));
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+
+        match &mut *font_container {
+            FontContainer::Type3(_) => panic!("expected CID font"),
+            FontContainer::CIDFont(cid_font) => {
+                cid_font.add_glyph(GlyphId::new(58));
+                cid_font.add_glyph(GlyphId::new(54));
+                cid_font.add_glyph(GlyphId::new(69));
+                cid_font.add_glyph(GlyphId::new(71));
+                cid_font.set_codepoints(1, "G".to_string());
+                cid_font.set_codepoints(2, "F".to_string());
+                cid_font.set_codepoints(3, "K".to_string());
+                cid_font.set_codepoints(4, "L".to_string());
+            }
+        }
     }
 }

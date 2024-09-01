@@ -1,4 +1,9 @@
 //! Destinations in a PDF document.
+//!
+//! In some cases, you might want to refer to other locations within the same document, for
+//! example when defining the outline, or when link to a different section in the document
+//! from a link. To achieve, this, you can use destinations, which are associated with a page
+//! and a specific location on that page.
 
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializerContext;
@@ -8,7 +13,7 @@ use tiny_skia_path::{Point, Transform};
 /// The type of destination.
 #[derive(Hash)]
 pub enum Destination {
-    /// An xyz destination.
+    /// An XYZ destination.
     Xyz(XyzDestination),
 }
 
@@ -39,9 +44,9 @@ impl Hash for XyzDestination {
     }
 }
 
-impl Into<Destination> for XyzDestination {
-    fn into(self) -> Destination {
-        Destination::Xyz(self)
+impl From<XyzDestination> for Destination {
+    fn from(val: XyzDestination) -> Self {
+        Destination::Xyz(val)
     }
 }
 

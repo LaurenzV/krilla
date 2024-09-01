@@ -21,6 +21,7 @@ impl Parse for AttributeInput {
 enum SnapshotMode {
     SerializerContext,
     SinglePage,
+    Stream,
     Document,
 }
 
@@ -41,6 +42,8 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             mode = SnapshotMode::SinglePage
         } else if st == "document" {
             mode = SnapshotMode::Document
+        } else if st == "stream" {
+            mode = SnapshotMode::Stream
         } else {
             panic!("unknown setting {}", st);
         }
@@ -59,7 +62,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         use crate::serialize::{SerializeSettings, SerializerContext};
         use crate::tests::check_snapshot;
         use crate::document::{Document, PageSettings};
-        use crate::Size;
+        use crate::geom::Size;
     };
 
     let fn_content = match mode {
@@ -72,32 +75,44 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
             }
         }
+        SnapshotMode::Stream => {
+            quote! {
+                #common
+                let settings = SerializeSettings::#serialize_settings();
+                let mut sc = SerializerContext::new(settings);
+                let mut stream_builder = crate::stream::StreamBuilder::new(&mut sc);
+                let mut surface = stream_builder.surface();
+                #impl_ident(&mut surface);
+                surface.finish();
+                check_snapshot(#snapshot_name, stream_builder.finish().content(), true);
+            }
+        }
         SnapshotMode::SinglePage => {
             quote! {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
                 let page_settings = PageSettings::with_size(200.0, 200.0);
-                let mut db = Document::new(settings);
-                let mut page = db.start_page_with(page_settings);
+                let mut d = Document::new_with(settings);
+                let mut page = d.start_page_with(page_settings);
                 #impl_ident(&mut page);
                 page.finish();
-                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
+                check_snapshot(#snapshot_name, &d.finish().unwrap(), true);
             }
         }
         SnapshotMode::Document => {
             quote! {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
-                let mut db = Document::new(settings);
-                #impl_ident(&mut db);
-                check_snapshot(#snapshot_name, &db.finish().unwrap(), true);
+                let mut d = Document::new_with(settings);
+                #impl_ident(&mut d);
+                check_snapshot(#snapshot_name, &d.finish().unwrap(), true);
             }
         }
     };
 
     let ignore_snippet = if SKIP_SNAPSHOT.is_some() {
         quote! { #[ignore] }
-    }   else {
+    } else {
         quote! {}
     };
 
@@ -138,7 +153,6 @@ const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mut serialize_settings = format_ident!("default");
-
 
     let mut pdfium = false;
     let mut mupdf = false;
@@ -204,9 +218,9 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_body = if document {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
-            let mut db = Document::new(settings);
-            #impl_ident(&mut db);
-            let pdf = db.finish().unwrap();
+            let mut d = Document::new_with(settings);
+            #impl_ident(&mut d);
+            let pdf = d.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
@@ -214,14 +228,14 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
-            let mut db = Document::new(settings);
+            let mut d = Document::new_with(settings);
             let page_settings = PageSettings::with_size(200.0, 200.0);
-            let mut page = db.start_page_with(page_settings);
+            let mut page = d.start_page_with(page_settings);
             let mut surface = page.surface();
             #impl_ident(&mut surface);
             surface.finish();
             page.finish();
-            let pdf = db.finish().unwrap();
+            let pdf = d.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
             check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
@@ -234,7 +248,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         let ignore_snippet = if SKIP_VISREG.is_some() {
             quote! { #[ignore] }
-        }   else {
+        } else {
             quote! {}
         };
 
@@ -251,7 +265,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #[test]
                 fn #name() {
                     use crate::tests::{render_document, check_render};
-                    use crate::Size;
+                    use crate::geom::Size;
                     use crate::document::{Document, PageSettings};
                     use crate::serialize::SerializeSettings;
                     use sitro::Renderer;

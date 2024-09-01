@@ -1,11 +1,12 @@
 use crate::font::Font;
+use crate::font::Glyph;
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
-use crate::stream::Glyph;
+use crate::paint::Paint;
+use crate::path::{Fill, Stroke};
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
-use crate::{Fill, Paint, Stroke};
 use skrifa::GlyphId;
 use tiny_skia_path::{Point, Transform};
 use usvg::{NormalizedF32, PaintOrder};
@@ -34,8 +35,8 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             // so we only get the raw transform to account for the glyph position, and the font size
             // is being taken care of by krilla.
             let transform = glyph.transform().pre_concat(Transform::from_scale(
-                upem as f32 / span.font_size.get(),
-                upem as f32 / span.font_size.get(),
+                upem / span.font_size.get(),
+                upem / span.font_size.get(),
             ));
 
             // We need to apply the inverse transform to fill/stroke because we don't
@@ -43,7 +44,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             // of `convert_paint`.
             let fill = span.fill.as_ref().map(|f| {
                 convert_fill(
-                    &f,
+                    f,
                     surface.stream_builder(),
                     process_context,
                     transform.invert().unwrap(),
@@ -52,7 +53,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
 
             let stroke = span.stroke.as_ref().map(|s| {
                 convert_stroke(
-                    &s,
+                    s,
                     surface.stream_builder(),
                     process_context,
                     transform.invert().unwrap(),

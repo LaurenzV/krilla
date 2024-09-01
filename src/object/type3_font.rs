@@ -4,7 +4,7 @@ use crate::font::{Font, FontIdentifier, GlyphSource, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::surface::StreamBuilder;
+use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
@@ -70,7 +70,7 @@ impl Type3Font {
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
         if let Some(pos) = self.get_gid(glyph_id) {
-            return pos;
+            pos
         } else {
             assert!(self.glyphs.len() < 256);
 
@@ -108,7 +108,7 @@ impl Type3Font {
         let ignore_invalid_glyphs = sc.serialize_settings.ignore_invalid_glyphs;
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
-        let mut bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
+        let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
         let glyph_streams = self
             .glyphs
@@ -141,6 +141,7 @@ impl Type3Font {
 
                 let stream = if glyph_type == Some(GlyphSource::Outline) || stream.is_empty() {
                     let bbox = stream.bbox();
+                    font_bbox.expand(&bbox);
                     content.start_shape_glyph(
                         self.widths[index],
                         bbox.left(),
@@ -160,7 +161,7 @@ impl Type3Font {
                     // look messed up. Using XObjects seems like the best choice here.
                     content.start_color_glyph(self.widths[index]);
                     let x_object = XObject::new(stream, false, false, None);
-                    bbox.expand(&x_object.bbox());
+                    font_bbox.expand(&x_object.bbox());
                     let x_name = rd_builder
                         .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
                     content.x_object(x_name.to_pdf_name());
@@ -172,7 +173,7 @@ impl Type3Font {
                     FilterStream::new_from_content_stream(&stream, &sc.serialize_settings);
 
                 let stream_ref = sc.new_ref();
-                let mut stream = chunk.stream(stream_ref, &font_stream.encoded_data());
+                let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
                 font_stream.write_filters(stream.deref_mut());
 
                 Ok(stream_ref)
@@ -199,15 +200,15 @@ impl Type3Font {
         flags.insert(FontFlags::SMALL_CAP);
 
         let italic_angle = self.font.italic_angle();
-        let ascender = bbox.bottom();
-        let descender = bbox.top();
+        let ascender = font_bbox.bottom();
+        let descender = font_bbox.top();
 
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
             .name(Name(postscript_name.unwrap_or("unknown").as_bytes()))
             .flags(flags)
-            .bbox(bbox.to_pdf_rect())
+            .bbox(font_bbox.to_pdf_rect())
             .italic_angle(italic_angle)
             .ascent(ascender)
             .descent(descender);
@@ -217,7 +218,7 @@ impl Type3Font {
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(sc, &mut type3_font)?;
 
-        type3_font.bbox(bbox.to_pdf_rect());
+        type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
             Transform::from_scale(
@@ -336,6 +337,180 @@ impl Type3FontMapper {
             let gid = font.add_glyph(glyph_id);
             self.fonts.push(font);
             (id, gid)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::font::{Font, FontIdentifier, Type3Identifier};
+
+    use crate::color::rgb;
+    use crate::color::rgb::Rgb;
+    use crate::paint::Paint;
+    use crate::path::Fill;
+    use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
+    use crate::surface::Surface;
+    use crate::tests::{
+        red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
+    };
+    use krilla_macros::{snapshot, visreg};
+    use skrifa::GlyphId;
+    use tiny_skia_path::Point;
+
+    #[snapshot(settings_4)]
+    fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+
+        match &mut *font_container {
+            FontContainer::Type3(t3) => {
+                t3.add_glyph(GlyphId::new(36));
+                t3.add_glyph(GlyphId::new(37));
+                let t3_font = t3
+                    .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
+                    .unwrap();
+                t3_font.set_codepoints(1, "A".to_string());
+                t3_font.set_codepoints(2, "B".to_string());
+            }
+            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
+        }
+    }
+
+    #[visreg(all, settings_4)]
+    fn type3_noto_sans_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "hello world",
+        );
+    }
+
+    #[visreg(all, settings_4)]
+    fn type3_latin_modern_simple_text(surface: &mut Surface) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "hello world",
+        );
+    }
+
+    #[visreg(all, settings_4)]
+    fn type3_with_color(surface: &mut Surface) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            red_fill(0.8),
+            font,
+            32.0,
+            &[],
+            "hello world",
+        );
+    }
+
+    #[visreg]
+    fn variable_font(surface: &mut Surface) {
+        let font1 = Font::new(
+            NOTO_SANS_VARIABLE.clone(),
+            0,
+            vec![("wght".to_string(), 100.0), ("wdth".to_string(), 62.5)],
+        )
+        .unwrap();
+        let font2 = Font::new(
+            NOTO_SANS_VARIABLE.clone(),
+            0,
+            vec![("wght".to_string(), 900.0), ("wdth".to_string(), 100.0)],
+        )
+        .unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                ..Default::default()
+            },
+            font1.clone(),
+            20.0,
+            &[],
+            "Variable fonts rock!",
+        );
+
+        surface.fill_text(
+            Point::from_xy(0.0, 120.0),
+            Fill {
+                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                ..Default::default()
+            },
+            font2.clone(),
+            20.0,
+            &[],
+            "Variable fonts rock!",
+        );
+    }
+
+    #[visreg(all, settings_4)]
+    fn type3_noto_arabic_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "مرحبا بالعالم",
+        );
+    }
+
+    #[snapshot(settings_4)]
+    fn type3_latin_modern_four_glyphs(sc: &mut SerializerContext) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+
+        match &mut *font_container {
+            FontContainer::Type3(t3) => {
+                t3.add_glyph(GlyphId::new(58));
+                t3.add_glyph(GlyphId::new(54));
+                t3.add_glyph(GlyphId::new(69));
+                t3.add_glyph(GlyphId::new(71));
+                let t3_font = t3
+                    .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
+                    .unwrap();
+                t3_font.set_codepoints(1, "G".to_string());
+                t3_font.set_codepoints(2, "F".to_string());
+                t3_font.set_codepoints(3, "K".to_string());
+                t3_font.set_codepoints(4, "L".to_string());
+            }
+            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
+        }
+    }
+
+    #[test]
+    fn type3_more_than_256_glyphs() {
+        let mut sc = SerializerContext::new(SerializeSettings::settings_4());
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+
+        match &mut *font_container {
+            FontContainer::Type3(t3) => {
+                for i in 2..258 {
+                    t3.add_glyph(GlyphId::new(i));
+                }
+
+                assert_eq!(t3.fonts.len(), 1);
+                assert_eq!(t3.fonts[0].add_glyph(GlyphId::new(20)), 18);
+
+                t3.add_glyph(GlyphId::new(512));
+                assert_eq!(t3.fonts.len(), 2);
+            }
+            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
     }
 }

@@ -1,4 +1,10 @@
-//! A collection of actions, which allow you to add interactivity to the document.
+//! PDF actions, allowing you to add interactivity to the document.
+//!
+//! PDF has the concept of "actions", which encompass things like navigating to a URL,
+//! opening some file on the system, and so on. The PDF reference defines a whole bunch
+//! of actions, but krilla does not expose nearly all of them, and never will. As of right now,
+//! the only available action is the link action, which allows you to specify a link that
+//! should be opened, when activating the action.
 
 use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
@@ -23,9 +29,9 @@ pub struct LinkAction {
     uri: String,
 }
 
-impl Into<Action> for LinkAction {
-    fn into(self) -> Action {
-        Action::Link(self)
+impl From<LinkAction> for Action {
+    fn from(value: LinkAction) -> Self {
+        Action::Link(value)
     }
 }
 

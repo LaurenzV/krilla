@@ -1,13 +1,15 @@
-///! Creating and using masks.
+//! Alpha and luminosity masks.
+
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext};
+use crate::object::Object;
+use crate::serialize::SerializerContext;
 use crate::stream::Stream;
-use crate::surface::StreamBuilder;
-use crate::transform::TransformWrapper;
+use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
+use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
@@ -126,11 +128,14 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::object::mask::Mask;
     use crate::serialize::SerializerContext;
-    use crate::surface::{StreamBuilder, Surface};
+    use crate::surface::Surface;
 
     use crate::color::rgb;
-    use crate::tests::{rect_to_path, red_fill};
-    use crate::{Fill, MaskType, Paint};
+    use crate::mask::MaskType;
+    use crate::paint::Paint;
+    use crate::path::Fill;
+    use crate::stream::StreamBuilder;
+    use crate::tests::{basic_mask, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
@@ -150,14 +155,8 @@ mod tests {
     }
 
     fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
-        let mut stream_builder = surface.stream_builder();
-        let mut sub_surface = stream_builder.surface();
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-
-        sub_surface.fill_path(&path, red_fill(0.2));
-        sub_surface.finish();
-
-        let mask = Mask::new(stream_builder.finish(), mask_type);
+        let mask = basic_mask(surface, mask_type);
         surface.push_mask(mask);
         surface.fill_path(
             &path,

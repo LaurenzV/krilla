@@ -1,4 +1,10 @@
-//! A collection of annotations, allowing you to specify region-specific behavior, such as links.
+//! PDF annotations, allowing you to add extra "content" to specific pages.
+//!
+//! PDF has the concept of annotations, which allow you to associate certain regions of
+//! a page with an "annotation". The PDF reference defines many different actions, however,
+//! krilla does not and never will expose all of them. As of right now, the only annotations
+//! that are supported are "link annotations", which allow you associate a certain region of
+//! the page with a link.
 
 use crate::error::KrillaResult;
 use crate::object::action::Action;
@@ -44,9 +50,9 @@ pub struct LinkAnnotation {
     pub target: Target,
 }
 
-impl Into<Annotation> for LinkAnnotation {
-    fn into(self) -> Annotation {
-        Annotation::Link(self)
+impl From<LinkAnnotation> for Annotation {
+    fn from(value: LinkAnnotation) -> Self {
+        Annotation::Link(value)
     }
 }
 
@@ -114,8 +120,8 @@ mod tests {
 
     #[test]
     fn annotation_to_invalid_destination() {
-        let mut db = Document::new(SerializeSettings::settings_1());
-        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut d = Document::new_with(SerializeSettings::settings_1());
+        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
@@ -126,12 +132,12 @@ mod tests {
             .into(),
         );
         page.finish();
-        assert!(db.finish().is_err())
+        assert!(d.finish().is_err())
     }
 
     #[snapshot(document)]
-    fn annotation_to_destination(db: &mut Document) {
-        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+    fn annotation_to_destination(d: &mut Document) {
+        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
@@ -147,7 +153,7 @@ mod tests {
         surface.finish();
         page.finish();
 
-        let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+        let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
                 rect: Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),

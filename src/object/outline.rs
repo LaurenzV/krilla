@@ -1,4 +1,4 @@
-//! Building document outlines that can be used to navigate a document.
+//! Building outlines for the navigation of the document.
 //!
 //! An outline is a tree-like structure that stores the hierarchical structure of a document.
 //! In particular, in most cases it is used to define the hierarchy of headings in the document.
@@ -26,6 +26,12 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 #[derive(Debug, Clone)]
 pub struct Outline {
     children: Vec<OutlineNode>,
+}
+
+impl Default for Outline {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Outline {
@@ -83,8 +89,6 @@ impl Outline {
             chunk.extend(&sub_chunk);
         }
 
-        eprintln!("{}", std::str::from_utf8(&chunk.as_bytes()).unwrap());
-
         Ok(chunk)
     }
 }
@@ -96,7 +100,7 @@ impl Outline {
 #[derive(Debug, Clone)]
 pub struct OutlineNode {
     /// The children of the outline node.
-    children: Vec<Box<OutlineNode>>,
+    children: Vec<OutlineNode>,
     /// The text of the outline entry.
     text: String,
     /// The destination of the outline entry.
@@ -119,7 +123,7 @@ impl OutlineNode {
 
     /// Add a new child to the outline node.
     pub fn push_child(&mut self, node: OutlineNode) {
-        self.children.push(Box::new(node))
+        self.children.push(node)
     }
 
     pub(crate) fn serialize(
@@ -199,12 +203,12 @@ mod tests {
     use tiny_skia_path::Point;
 
     #[snapshot(document)]
-    fn outline_simple(db: &mut Document) {
+    fn outline_simple(d: &mut Document) {
         let fills = [red_fill(1.0), green_fill(1.0), blue_fill(1.0)];
         for (index, fill) in fills.into_iter().enumerate() {
             let factor = index as f32 * 50.0;
             let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
-            let mut page = db.start_page_with(PageSettings::with_size(200.0, 200.0));
+            let mut page = d.start_page_with(PageSettings::with_size(200.0, 200.0));
             let mut surface = page.surface();
             surface.fill_path(&path, fill);
             surface.finish();
@@ -229,6 +233,6 @@ mod tests {
         outline.push_child(child1);
         outline.push_child(child2);
 
-        db.set_outline(outline);
+        d.set_outline(outline);
     }
 }

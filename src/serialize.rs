@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
 use crate::object::cid_font::CIDFont;
@@ -8,53 +9,60 @@ use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::Type3FontMapper;
+use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
-use crate::stream::PdfFont;
-use crate::util::NameExt;
+use crate::util::{NameExt, SipHashable};
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
-use siphasher::sip128::{Hasher128, SipHasher13};
-use skrifa::instance::Location;
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
-use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
 
+/// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
-    pub raster_scale: f32,
-    pub embed_text: bool,
+    /// How much filters, which will be converted to bitmaps, should be scaled. Higher values
+    /// mean better quality, but also bigger file sizes.
+    pub filter_scale: f32,
 }
 
 impl Default for SvgSettings {
     fn default() -> Self {
-        Self {
-            raster_scale: 1.5,
-            embed_text: true,
-        }
+        Self { filter_scale: 1.5 }
     }
 }
 
+/// Settings that should be applied when creating a PDF document.
 #[derive(Copy, Clone, Debug)]
 pub struct SerializeSettings {
-    pub ascii_compatible: bool,
+    /// Whether content streams should be compressed.
     pub compress_content_streams: bool,
-    pub no_device_cs: bool,
+    /// The settings for SVG conversion.
     pub svg_settings: SvgSettings,
+    /// Whether device-independent colors should be used instead of
+    /// device-dependent ones.
+    ///
+    /// CMYK colors are currently not affected by this setting.
+    pub no_device_cs: bool,
+    /// Whether the PDF should be ASCII-compatible, i.e. only consist of
+    /// characters in the ASCII range.
+    pub ascii_compatible: bool,
+    /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
+    /// Whether invalid glyphs should be ignored and drawn in blank
+    /// instead of erroring out (applies only to Type3 fonts).
     pub ignore_invalid_glyphs: bool,
 }
 
 #[cfg(test)]
 impl SerializeSettings {
-    pub fn settings_1() -> Self {
+    pub(crate) fn settings_1() -> Self {
         Self {
             ascii_compatible: true,
             compress_content_streams: false,
@@ -65,21 +73,21 @@ impl SerializeSettings {
         }
     }
 
-    pub fn settings_2() -> Self {
+    pub(crate) fn settings_2() -> Self {
         Self {
             no_device_cs: true,
             ..Self::settings_1()
         }
     }
 
-    pub fn settings_3() -> Self {
+    pub(crate) fn settings_3() -> Self {
         Self {
             ignore_invalid_glyphs: true,
             ..Self::settings_1()
         }
     }
 
-    pub fn settings_4() -> Self {
+    pub(crate) fn settings_4() -> Self {
         Self {
             force_type3_fonts: true,
             ..Self::settings_1()
@@ -100,18 +108,11 @@ impl Default for SerializeSettings {
     }
 }
 
-pub(crate) trait Object: SipHashable {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk>;
-
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
-}
-
-pub struct PageInfo {
+pub(crate) struct PageInfo {
     pub ref_: Ref,
     pub media_box: Rect,
 }
 
-#[doc(hidden)]
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
@@ -122,20 +123,20 @@ pub(crate) struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
-    pub serialize_settings: SerializeSettings,
+    pub(crate) serialize_settings: SerializeSettings,
 }
 
 #[derive(Clone, Copy)]
 pub(crate) enum PDFGlyph {
     Type3(u8),
-    CID(u16),
+    Cid(u16),
 }
 
 impl PDFGlyph {
     pub fn encode_into(&self, slice: &mut Vec<u8>) {
         match self {
             PDFGlyph::Type3(cg) => slice.push(*cg),
-            PDFGlyph::CID(cid) => {
+            PDFGlyph::Cid(cid) => {
                 slice.push((cid >> 8) as u8);
                 slice.push((cid & 0xff) as u8);
             }
@@ -243,6 +244,7 @@ impl SerializerContext {
             // to a series of Type3 fonts or to a single CID font, but not a mix of both.
             let font_ref = font.font_ref();
             let use_type3 = self.serialize_settings.force_type3_fonts
+                || !font.location_ref().coords().is_empty()
                 || font_ref.svg().is_ok()
                 || font_ref.colr().is_ok()
                 || font_ref.sbix().is_ok()
@@ -290,11 +292,7 @@ impl SerializerContext {
             // cheaper, and then check whether we already have a corresponding font object in the cache.
             // If not, we still need to construct it.
             if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-                let location = Location::default();
-
-                if let Some(font_info) =
-                    FontInfo::new(font_data.as_ref().as_ref(), index, location.clone())
-                {
+                if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, vec![]) {
                     let font_info = Arc::new(font_info);
                     let font = self
                         .font_cache
@@ -309,9 +307,10 @@ impl SerializerContext {
         map
     }
 
-    // Always needs to be called.
     pub fn finish(mut self) -> KrillaResult<Pdf> {
-        // TODO: Get rid of all the clones
+        // We need to be careful here that we serialize the objects in the right order,
+        // as in some cases we use `std::mem::take` to remove an object, which means that
+        // no object that is serialized afterwards must depend on it.
 
         if let Some(container) = PageLabelContainer::new(
             &self
@@ -373,22 +372,6 @@ impl SerializerContext {
     }
 }
 
-pub trait SipHashable {
-    fn sip_hash(&self) -> u128;
-}
-
-impl<T> SipHashable for T
-where
-    T: Hash + ?Sized + 'static,
-{
-    fn sip_hash(&self) -> u128 {
-        let mut state = SipHasher13::new();
-        self.type_id().hash(&mut state);
-        self.hash(&mut state);
-        state.finish128().as_u128()
-    }
-}
-
 #[derive(Copy, Clone)]
 pub enum CSWrapper {
     Ref(Ref),
@@ -425,14 +408,14 @@ impl FontContainer {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
-                    return Some(t3_font);
+                    Some(t3_font)
                 } else {
                     None
                 }
             }
             FontContainer::CIDFont(cid) => {
                 if cid.identifier() == font_identifier {
-                    return Some(cid);
+                    Some(cid)
                 } else {
                     None
                 }
@@ -444,14 +427,14 @@ impl FontContainer {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_from_id(font_identifier) {
-                    return Some(t3_font);
+                    Some(t3_font)
                 } else {
                     None
                 }
             }
             FontContainer::CIDFont(cid) => {
                 if cid.identifier() == font_identifier {
-                    return Some(cid);
+                    Some(cid)
                 } else {
                     None
                 }
@@ -467,7 +450,7 @@ impl FontContainer {
             }
             FontContainer::CIDFont(cid_font) => {
                 let cid = cid_font.add_glyph(glyph_id);
-                (cid_font.identifier(), PDFGlyph::CID(cid))
+                (cid_font.identifier(), PDFGlyph::Cid(cid))
             }
         }
     }
@@ -477,7 +460,6 @@ impl FontContainer {
 pub enum StreamFilter {
     FlateDecode,
     AsciiHexDecode,
-    DctDecode,
 }
 
 impl StreamFilter {
@@ -485,7 +467,6 @@ impl StreamFilter {
         match self {
             Self::AsciiHexDecode => Name(b"ASCIIHexDecode"),
             Self::FlateDecode => Name(b"FlateDecode"),
-            Self::DctDecode => Name(b"DCTDecode"),
         }
     }
 }
@@ -495,11 +476,12 @@ impl StreamFilter {
         match self {
             StreamFilter::FlateDecode => deflate_encode(content),
             StreamFilter::AsciiHexDecode => hex_encode(content),
-            Self::DctDecode => unreachable!(),
         }
     }
 }
 
+// Allows us to keep track of the filters that a stream has and
+// apply them in an orderly fashion.
 #[derive(Debug, Clone)]
 pub enum StreamFilters {
     None,
@@ -544,19 +526,6 @@ impl<'a> FilterStream<'a> {
             if serialize_settings.ascii_compatible {
                 filter_stream.add_filter(StreamFilter::AsciiHexDecode);
             }
-        }
-
-        filter_stream
-    }
-
-    pub fn new_from_dct_encoded(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self {
-            content: Cow::Borrowed(content),
-            filters: StreamFilters::Single(StreamFilter::DctDecode),
-        };
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
         }
 
         filter_stream

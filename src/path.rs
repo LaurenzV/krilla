@@ -1,3 +1,5 @@
+//! Path-related properties.
+
 use crate::object::color::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
@@ -5,8 +7,10 @@ pub use tiny_skia_path::{Path, PathBuilder};
 
 /// A line cap.
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum LineCap {
     /// The butt line cap.
+    #[default]
     Butt,
     /// The round line cap.
     Round,
@@ -14,16 +18,13 @@ pub enum LineCap {
     Square,
 }
 
-impl Default for LineCap {
-    fn default() -> Self {
-        LineCap::Butt
-    }
-}
 
 /// A line join.
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum LineJoin {
     /// The miter line join.
+    #[default]
     Miter,
     /// The round line join.
     Round,
@@ -31,11 +32,6 @@ pub enum LineJoin {
     Bevel,
 }
 
-impl Default for LineJoin {
-    fn default() -> Self {
-        LineJoin::Miter
-    }
-}
 
 /// A stroke dash.
 #[derive(Debug, Clone)]
@@ -46,7 +42,7 @@ pub struct StrokeDash {
     pub offset: f32,
 }
 
-/// A stroke that can be applied to a path or some text.
+/// A stroke.
 #[derive(Debug, Clone)]
 pub struct Stroke<C>
 where
@@ -89,7 +85,7 @@ impl<C> Stroke<C>
 where
     C: ColorSpace,
 {
-    pub(crate) fn to_tiny_skia(self) -> tiny_skia_path::Stroke {
+    pub(crate) fn into_tiny_skia(self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
             width: self.width,
             miter_limit: self.miter_limit,
@@ -129,7 +125,7 @@ impl Default for FillRule {
     }
 }
 
-/// A fill that can be applied to a path or some text.
+/// A fill.
 #[derive(Debug, Clone)]
 pub struct Fill<C>
 where

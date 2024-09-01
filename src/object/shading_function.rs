@@ -1,15 +1,17 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::color::{Color, ColorSpace};
+use crate::object::Object;
 use crate::paint::SpreadMethod;
-use crate::serialize::{Object, SerializerContext};
-use crate::transform::TransformWrapper;
+use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
+use crate::serialize::SerializerContext;
+use crate::util::TransformWrapper;
 use crate::util::{RectExt, RectWrapper};
-use crate::{LinearGradient, RadialGradient, SweepGradient};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
+use usvg::Opacity;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {
@@ -47,6 +49,26 @@ pub(crate) enum GradientProperties {
     PostScriptGradient(PostScriptGradient),
 }
 
+impl GradientProperties {
+    // Check if the gradient could be encoded as a solid fill instead.
+    pub fn single_stop_color(&self) -> Option<(Color, Opacity)> {
+        match self {
+            GradientProperties::RadialAxialGradient(rag) => {
+                if rag.stops.len() == 1 {
+                    return Some((rag.stops[0].color, rag.stops[0].opacity));
+                }
+            }
+            GradientProperties::PostScriptGradient(psg) => {
+                if psg.stops.len() == 1 {
+                    return Some((psg.stops[0].color, psg.stops[0].opacity));
+                }
+            }
+        }
+
+        None
+    }
+}
+
 pub(crate) trait GradientPropertiesExt {
     fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper);
 }
@@ -59,6 +81,9 @@ fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
     bbox
 }
 
+/// WHen writing a PostScript shading, we assume that both points are on a horizontal
+/// line. Here, we calculate by how much we need to rotate the second point so that it
+/// is horizontal to the first point, as well as the position of the rotated point.
 fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     let dist = start.distance(end);
 
@@ -233,6 +258,9 @@ fn serialize_postscript_shading(
     shading.shading_type(FunctionShadingType::Function);
 
     shading.insert(Name(b"ColorSpace")).primitive(cs);
+    // Write the identity matrix, because ghostscript has a bug where
+    // it thinks the entry is mandatory.
+    shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
 
     shading.function(function_ref);
 
@@ -532,14 +560,11 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
         // for why we check > 0 instead of == 1.
         "0 gt".to_string(),
         // x length min o {(abs(i) % 2) > 0}
-        format!(
-            "{}",
-            if spread_method == SpreadMethod::Reflect {
+        (if spread_method == SpreadMethod::Reflect {
                 "{2 index exch sub} if"
             } else {
                 "pop"
-            }
-        ),
+            }).to_string(),
         // x length min o
         "add".to_string(),
         // x length x_new
@@ -556,16 +581,16 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 /// lies within the stops.
 fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32, use_opacities: bool) -> String {
     // Our algorithm requires the stops to be padded.
-    let mut stops = stops.iter().cloned().collect::<Vec<_>>();
+    let mut stops = stops.to_vec();
 
     if let Some(first) = stops.first() {
-        let mut first = first.clone();
+        let mut first = *first;
         first.offset = NormalizedF32::ZERO;
         stops.insert(0, first);
     }
 
     if let Some(last) = stops.last() {
-        let mut last = last.clone();
+        let mut last = *last;
         last.offset = NormalizedF32::ONE;
         stops.push(last);
     }
@@ -607,7 +632,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         snippets.join(" ")
     };
 
-    return if stops.len() == 1 {
+    if stops.len() == 1 {
         if use_opacities {
             stops[0].opacity.to_string()
         } else {
@@ -655,7 +680,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
             encoded_stops,
             encode_stops_impl(&stops[1..], min, max, use_opacities)
         )
-    };
+    }
 }
 
 fn serialize_stitching(
@@ -722,3 +747,5 @@ fn serialize_exponential(
     exp.finish();
     root_ref
 }
+
+// No tests because we test directly via shading pattern.

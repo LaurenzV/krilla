@@ -1,6 +1,49 @@
 //! Dealing with colors and color spaces.
+//!
+//! Unlike other graphics libraries, krilla does not use a single RGB color space that can be
+//! used to draw content with, the reason being that PDF supports much more complex color
+//! management, and krilla tried to expose at least some of that functionality, while still
+//! trying to abstract over the nitty-gritty details that are part of dealing with colors in PDF.
+//!
+//! # Color spaces
+//!
+//! krilla currently supports three color spaces:
+//! - Luma (for greyscale colors)
+//! - Rgb
+//! - CMYK
+//!
+//! Each color space is associated with its specific color type, which you can use to create new
+//! instances of a specific color in that color space.
+//!
+//! # Representation of colors
+//!
+//! When specifying colors, it is important to understand the distinction between device-dependent
+//! and decide-independent color specification. What follows is only a very brief
+//! explanation, if you want to dive into more details, please look for
+//! appropriate resources on the web.
+//!
+//! When specifying colors in a *device-dependent way*, if I instruct the program to draw
+//! the RGB color (145, 120, 45), then the program will use these literal values to activate
+//! the R/G/B lights to achieve displaying a certain color. The problem is that specifying
+//! colors in such a way can lead to slightly different results when actually displaying it,
+//! depending on the screen that is used, since each screen is calibrated differently and
+//! based on different display technologies. This is especially critical for printers, where
+//! different values for CMYK colors might result in different-looking colors when being printed.
+//!
+//! This is why there is also the option to specify colors in a *device-independent* way,
+//! which basically means that the color value (145, 120, 45) is represented in a well-specified
+//! color space, and each screen can then convert the colors so that they match the representation
+//! in the given color space. This should lead to a more accurate color representation across
+//! different screens.
+//!
+//! In most cases, it is totally fine to just use a device-dependent color specification, and it's
+//! what krilla does by default. However, if you do care about that, then you can set the
+//! `no_device_cs` property to true, in which case krilla will embed an ICC profile for the
+//! sgrey and srgb color space (for luma and rgb colors, respectively). At the moment, krilla
+//! does not allow for custom CMYK ICC profiles, so CMYK colors are currently always encoded
+//! in a device-dependent way.
 
-use crate::color::device_cmyk::DeviceCmyk;
+use crate::color::cmyk::DeviceCmyk;
 use crate::color::luma::{DeviceGray, SGray};
 use crate::color::rgb::{DeviceRgb, Srgb};
 use crate::error::KrillaResult;
@@ -12,11 +55,11 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
-pub(crate) const DEVICE_RGB: &'static str = "DeviceRGB";
+pub(crate) const DEVICE_RGB: &str = "DeviceRGB";
 /// The PDF name for the device gray color space.
-pub(crate) const DEVICE_GRAY: &'static str = "DeviceGray";
+pub(crate) const DEVICE_GRAY: &str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
-pub(crate) const DEVICE_CMYK: &'static str = "DeviceCMYK";
+pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
 /// An internal helper trait to more easily deal with colors
 /// of different color spaces.
@@ -70,11 +113,11 @@ pub(crate) enum Color {
     /// A luma-based color.
     Luma(luma::Color),
     /// A device CMYK color.
-    DeviceCmyk(device_cmyk::Color),
+    DeviceCmyk(cmyk::Color),
 }
 
 impl Color {
-    pub(crate) fn to_pdf_color(&self) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(self) -> Vec<f32> {
         match self {
             Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::Luma(luma) => luma.to_pdf_color().into_iter().collect::<Vec<_>>(),
@@ -91,8 +134,8 @@ impl Color {
     }
 }
 
-/// Device CMYK colors.
-pub mod device_cmyk {
+/// CMYK colors.
+pub mod cmyk {
     use crate::object::color::{ColorSpace, ColorSpaceType, InternalColor};
 
     /// A CMYK color.
@@ -106,9 +149,9 @@ pub mod device_cmyk {
         }
     }
 
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color::Color {
-            super::Color::DeviceCmyk(self)
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::DeviceCmyk(val)
         }
     }
 
@@ -145,11 +188,12 @@ pub mod device_cmyk {
 /// RGB colors.
 pub mod rgb {
     use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
-    use crate::serialize::{Object, SerializerContext};
+    use crate::serialize::SerializerContext;
     use std::sync::Arc;
 
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
+    use crate::object::Object;
     use pdf_writer::{Chunk, Ref};
 
     /// An RGB color.
@@ -179,9 +223,9 @@ pub mod rgb {
         }
     }
 
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color::Color {
-            super::Color::Rgb(self)
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::Rgb(val)
         }
     }
 
@@ -245,7 +289,8 @@ pub mod luma {
     use crate::chunk_container::ChunkContainer;
     use crate::error::KrillaResult;
     use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
-    use crate::serialize::{Object, SerializerContext};
+    use crate::object::Object;
+    use crate::serialize::SerializerContext;
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
@@ -273,9 +318,9 @@ pub mod luma {
         }
     }
 
-    impl Into<super::Color> for Color {
-        fn into(self) -> crate::object::color::Color {
-            super::Color::Luma(self)
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::Luma(val)
         }
     }
 
@@ -346,7 +391,9 @@ mod tests {
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 
-    use krilla_macros::snapshot;
+    use crate::surface::Surface;
+    use crate::tests::{cmyk_fill, rect_to_path};
+    use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
@@ -356,5 +403,12 @@ mod tests {
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
         sc.add_object(ColorSpaceResource::Srgb(Srgb)).unwrap();
+    }
+
+    #[visreg(all)]
+    fn cmyk_color(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+
+        surface.fill_path(&path, cmyk_fill(1.0));
     }
 }

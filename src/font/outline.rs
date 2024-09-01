@@ -1,8 +1,8 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color::luma::DeviceGray;
+use crate::path::Fill;
 use crate::surface::Surface;
-use crate::Fill;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
@@ -48,7 +48,6 @@ mod tests {
             font_data,
             Some(
                 (20..=50)
-                    .into_iter()
                     .map(|n| (GlyphId::new(n), "".to_string()))
                     .collect::<Vec<_>>(),
             ),

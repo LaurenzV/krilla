@@ -1,10 +1,11 @@
-//! Working with pages in a PDF document.
+//! Working with pages of a PDF document.
 
+use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::{ContentBuilder, Stream};
+use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::util::RectExt;
 use pdf_writer::types::NumberingStyle;
@@ -63,7 +64,7 @@ impl<'a> Page<'a> {
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
-        Surface::new(&mut self.sc, root_builder, finish_fn)
+        Surface::new(self.sc, root_builder, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.
@@ -141,7 +142,7 @@ impl InternalPage {
         let page_stream =
             FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
 
-        let mut stream = chunk.stream(stream_ref, &page_stream.encoded_data());
+        let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
         page_stream.write_filters(stream.deref_mut());
 
         stream.finish();
@@ -204,11 +205,11 @@ pub struct PageLabelContainer<'a> {
 
 impl<'a> PageLabelContainer<'a> {
     pub fn new(labels: &'a [PageLabel]) -> Option<Self> {
-        return if labels.iter().all(|f| f.is_empty()) {
+        if labels.iter().all(|f| f.is_empty()) {
             None
         } else {
             Some(PageLabelContainer { labels })
-        };
+        }
     }
 
     pub(crate) fn serialize(
@@ -255,12 +256,12 @@ impl<'a> PageLabelContainer<'a> {
 #[cfg(test)]
 mod tests {
     use crate::color::rgb::Rgb;
-    use crate::document::PageSettings;
+    use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
     use crate::serialize::SerializerContext;
-    use crate::surface::StreamBuilder;
+    use crate::stream::StreamBuilder;
 
-    use crate::Fill;
+    use crate::path::Fill;
     use krilla_macros::snapshot;
     use pdf_writer::types::NumberingStyle;
     use std::num::NonZeroU32;
@@ -311,17 +312,18 @@ mod tests {
         sc.add_page_label(page_label);
     }
 
-    // #[snapshot(document)]
-    // fn page_label_complex(db: &mut Document) {
-    //     db.start_page_with(Size::from_wh(200.0, 200.0).unwrap(), PageLabel::default());
-    //     db.start_page_with(Size::from_wh(250.0, 200.0).unwrap(), PageLabel::default());
-    //     db.start_page_with(
-    //         Size::from_wh(200.0, 200.0).unwrap(),
-    //         PageLabel::new(
-    //             Some(NumberingStyle::LowerRoman),
-    //             None,
-    //             NonZeroU32::new(2).unwrap(),
-    //         ),
-    //     );
-    // }
+    #[snapshot(document)]
+    fn page_label_complex(d: &mut Document) {
+        d.start_page_with(PageSettings::with_size(200.0, 200.0));
+        d.start_page_with(PageSettings::with_size(250.0, 200.0));
+
+        let mut settings = PageSettings::with_size(250.0, 200.0);
+        settings.page_label = PageLabel::new(
+            Some(NumberingStyle::LowerRoman),
+            None,
+            NonZeroU32::new(2).unwrap(),
+        );
+
+        d.start_page_with(settings);
+    }
 }

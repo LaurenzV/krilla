@@ -8,8 +8,9 @@ use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::xobject::XObject;
-use crate::serialize::{Object, SerializerContext, SipHashable};
-use crate::util::NameExt;
+use crate::object::Object;
+use crate::serialize::SerializerContext;
+use crate::util::{NameExt, SipHashable};
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers::{FormXObject, Page, Pages, Resources, TilingPattern, Type3Font};
 use pdf_writer::{Chunk, Dict, Finish, Ref};
@@ -62,39 +63,39 @@ pub(crate) enum Resource {
     Font(FontIdentifier),
 }
 
-impl Into<Resource> for XObjectResource {
-    fn into(self) -> Resource {
-        Resource::XObject(self)
+impl From<XObjectResource> for Resource {
+    fn from(val: XObjectResource) -> Self {
+        Resource::XObject(val)
     }
 }
 
-impl Into<Resource> for PatternResource {
-    fn into(self) -> Resource {
-        Resource::Pattern(self)
+impl From<PatternResource> for Resource {
+    fn from(val: PatternResource) -> Self {
+        Resource::Pattern(val)
     }
 }
 
-impl Into<Resource> for ExtGState {
-    fn into(self) -> Resource {
-        Resource::ExtGState(self)
+impl From<ExtGState> for Resource {
+    fn from(val: ExtGState) -> Self {
+        Resource::ExtGState(val)
     }
 }
 
-impl Into<Resource> for ColorSpaceResource {
-    fn into(self) -> Resource {
-        Resource::ColorSpace(self)
+impl From<ColorSpaceResource> for Resource {
+    fn from(val: ColorSpaceResource) -> Self {
+        Resource::ColorSpace(val)
     }
 }
 
-impl Into<Resource> for ShadingFunction {
-    fn into(self) -> Resource {
-        Resource::Shading(self)
+impl From<ShadingFunction> for Resource {
+    fn from(val: ShadingFunction) -> Self {
+        Resource::Shading(val)
     }
 }
 
-impl Into<Resource> for FontIdentifier {
-    fn into(self) -> Resource {
-        Resource::Font(self)
+impl From<FontIdentifier> for Resource {
+    fn from(val: FontIdentifier) -> Self {
+        Resource::Font(val)
     }
 }
 
@@ -218,12 +219,12 @@ impl ResourceDictionaryBuilder {
 
     pub fn finish(self) -> ResourceDictionary {
         ResourceDictionary {
-            color_spaces: self.color_spaces.to_resource_list(),
-            ext_g_states: self.ext_g_states.to_resource_list(),
-            patterns: self.patterns.to_resource_list(),
-            x_objects: self.x_objects.to_resource_list(),
-            shadings: self.shadings.to_resource_list(),
-            fonts: self.fonts.to_resource_list(),
+            color_spaces: self.color_spaces.into_resource_list(),
+            ext_g_states: self.ext_g_states.into_resource_list(),
+            patterns: self.patterns.into_resource_list(),
+            x_objects: self.x_objects.into_resource_list(),
+            shadings: self.shadings.into_resource_list(),
+            fonts: self.fonts.into_resource_list(),
         }
     }
 }
@@ -353,7 +354,7 @@ where
         format!("{}{}", V::get_prefix(), num)
     }
 
-    pub fn to_resource_list(self) -> ResourceList<V> {
+    pub fn into_resource_list(self) -> ResourceList<V> {
         ResourceList {
             entries: self.forward,
         }

@@ -1,0 +1,22 @@
+q
+1 0 0 1 50 50 cm
+/DeviceRGB cs
+0 1 0 scn
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
+q
+1 0 0 1 150 150 cm
+/DeviceRGB cs
+1 0 0 scn
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
