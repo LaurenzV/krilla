@@ -29,11 +29,9 @@ use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
-mod manual;
 #[allow(dead_code)]
 #[rustfmt::skip]
 mod svg;
-mod visreg;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
