@@ -54,7 +54,7 @@ repository = { workspace = true }
 license = { workspace = true }
 
 [features]
-default = ["simple-text", "raster-images"]
+default = ["simple-text", "raster-images", "svg"]
 # Allow for rendering SVG images and SVG-based glyphs.
 "svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
 # Allow for rendering simple text without having to shape it yourself.
