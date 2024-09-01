@@ -515,731 +515,731 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_structure_use_from_defs() {}
 #[visreg(svg)] fn resvg_text_textPath_m_A_path() {}
 #[visreg(svg)] fn resvg_filters_filter_with_region() {}
-// #[visreg(svg)] fn resvg_text_font_weight_bolder_without_parent() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_lr() {}
-// #[visreg(svg)] fn resvg_filters_filter_everything_via_xlink_href() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_stop_on_the_first_new_2() {}
-// #[visreg(svg)] fn resvg_text_font_size_mixed_values() {}
-// #[visreg(svg)] fn resvg_painting_fill_rgb_0_127_0_0_5() {}
-// #[visreg(svg)] fn resvg_filters_feDropShadow_with_offset_clipped() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_on_a_horizontal_line() {}
-// #[visreg(svg)] fn resvg_text_textLength_150_on_tspan() {}
-// #[visreg(svg)] fn resvg_structure_transform_nested_transforms_1() {}
-// #[visreg(svg)] fn resvg_structure_systemLanguage_on_defs() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_with_a_negative_value_2() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_nested_with_baseline_2() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_linear_with_large_values() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_symbol_via_use_is_not_a_valid_child() {}
-// #[visreg(svg)] fn resvg_structure_systemLanguage_on_clipPath() {}
-// #[visreg(svg)] fn resvg_text_textPath_path_with_subpaths() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_missing_width() {}
-// #[visreg(svg)] fn resvg_structure_svg_preserveAspectRatio_xMinYMin() {}
-// #[visreg(svg)] fn resvg_filters_feTurbulence_type_fractalNoise() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_bias__0_5() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clipPathUnits_objectBoundingBox() {}
-// #[visreg(svg)] fn resvg_filters_feImage_self_recursive() {}
-// // no relative paths supported
-// #[visreg(svg, ignore)] fn resvg_structure_image_external_png() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_50percent() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_underline_with_rotate_list_3() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_display_none_on_child() {}
-// #[visreg(svg)] fn resvg_text_font_family_cursive() {}
-// #[visreg(svg)] fn resvg_painting_marker_with_a_large_stroke() {}
-// #[visreg(svg)] fn resvg_filters_feDropShadow_with_flood_opacity() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_on_sRGB() {}
-// #[visreg(svg)] fn resvg_text_font_font_shorthand() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_no_stop_color() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linecap_open_path_with_square() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_tb() {}
-// #[visreg(svg)] fn resvg_painting_stroke_gradient_with_objectBoundingBox_on_path_without_a_bbox_2() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_kernelMatrix_with_too_many_values() {}
-// #[visreg(svg)] fn resvg_filters_feBlend_mode_screen() {}
-// #[visreg(svg)] fn resvg_painting_display_none_on_tref() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_1() {}
-// #[visreg(svg)] fn custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_targetX_0() {}
-// #[visreg(svg)] fn resvg_painting_fill_opacity_on_parent() {}
-// #[visreg(svg)] fn resvg_filters_feColorMatrix_type_hueRotate_without_an_angle() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_single_light_source_with_desc() {}
-// #[visreg(svg)] fn resvg_text_word_spacing_5percent() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_two_urls() {}
-// #[visreg(svg)] fn resvg_painting_fill_invalid_RRGGBB_2() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_circle_shorthand() {}
-// #[visreg(svg)] fn resvg_text_text_rotate_with_multiple_values_and_complex_text() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_with_mask() {}
-// #[visreg(svg)] fn resvg_filters_filter_primitiveUnits_objectBoundingBox() {}
-// #[visreg(svg)] fn resvg_painting_marker_no_stroke_on_target() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_subregion_1() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing_on_Arabic() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_with_rect_and_percent_values() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_gradientTransform() {}
-// #[visreg(svg)] fn resvg_text_word_spacing_10() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_blur_function_no_values() {}
-// #[visreg(svg)] fn resvg_structure_style_style_after_usage() {}
-// #[visreg(svg)] fn resvg_structure_use_indirect_recursive_1() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_line_is_not_a_valid_child() {}
-// #[visreg(svg)] fn resvg_structure_style_external_CSS() {}
-// // no relative paths supported
-// #[visreg(svg, ignore)] fn resvg_structure_image_no_width_on_svg() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_1() {}
-// #[visreg(svg)] fn resvg_text_text_x_and_y_with_multiple_values() {}
-// #[visreg(svg)] fn resvg_structure_switch_systemLanguage_en() {}
-// #[visreg(svg)] fn resvg_text_text_complex_grapheme_split_by_tspan() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_radius_10_1() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_sequential() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_to_invalid_1() {}
-// #[visreg(svg)] fn resvg_filters_filter_content_outside_the_canvas_2() {}
-// #[visreg(svg)] fn resvg_text_text_x_and_y_with_less_values_than_characters() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_with_patternTransform() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_with_invalid_child_via_use() {}
-// #[visreg(svg)] fn resvg_shapes_rect_negative_rx_and_ry_attributes_resolving() {}
-// #[visreg(svg)] fn resvg_painting_marker_inheritance_1() {}
-// #[visreg(svg)] fn resvg_text_text_x_and_y_with_dx_and_dy() {}
-// #[visreg(svg)] fn resvg_filters_feFlood_with_opacity() {}
-// #[visreg(svg)] fn resvg_painting_fill_inherit() {}
-// #[visreg(svg)] fn resvg_filters_feBlend_mode_darken() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_BackgroundImage() {}
-// #[visreg(svg)] fn resvg_painting_marker_only_marker_end() {}
-// #[visreg(svg)] fn resvg_structure_style_unresolved_class_selector() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_comma_spearated() {}
-// #[visreg(svg)] fn custom_integration_matplotlib_bar_label() {}
-// #[visreg(svg)] fn resvg_text_alignment_baseline_after_edge() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_identity_on_all() {}
-// #[visreg(svg)] fn resvg_filters_filter_with_clip_path() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_3() {}
-// #[visreg(svg)] fn resvg_text_textPath_with_underline() {}
-// #[visreg(svg)] fn resvg_filters_feTurbulence_baseFrequency_0_05__0_01() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_gradientTransform() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_T_S_rel() {}
-// #[visreg(svg)] fn resvg_filters_feFlood_with_opacity_on_target_element() {}
-// #[visreg(svg)] fn resvg_painting_overflow_auto_on_marker() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_tb_with_alignment() {}
-// #[visreg(svg)] fn resvg_structure_use_indirect_recursive_3() {}
-// #[visreg(svg)] fn resvg_text_alignment_baseline_inherit() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_subregion_3() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_A_trimmed() {}
-// #[visreg(svg)] fn resvg_painting_opacity_bBox_impact() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_L_M_Z() {}
-// #[visreg(svg)] fn resvg_painting_stroke_radial_gradient() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_recursive_xlink_href() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_M_rel() {}
-// #[visreg(svg)] fn resvg_structure_switch_systemLanguage_en_GB() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_vertical_lr() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_inheritance_5() {}
-// #[visreg(svg)] fn resvg_filters_feSpecularLighting_with_feSpotLight() {}
-// #[visreg(svg)] fn resvg_filters_filter_transform_on_filter() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_3() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_targetX_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_on_a_vertical_line() {}
-// #[visreg(svg)] fn resvg_painting_stroke_dasharray_percent_units() {}
-// #[visreg(svg)] fn resvg_structure_image_embedded_png() {}
-// // no relative paths supported
-// #[visreg(svg, ignore)] fn resvg_structure_image_no_width_and_height() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_attributes_via_xlink_href_from_rect() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_mixed_types() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_stop_on_the_first_new_1() {}
-// #[visreg(svg)] fn resvg_masking_clip_rule_clip_rule_evenodd() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_radius_with_too_many_values() {}
-// #[visreg(svg)] fn custom_masking_clipPath_complex_clip_path_with_nested_clip_path_on_child() {}
-// #[visreg(svg)] fn resvg_text_textPath_invalid_textPath_in_the_middle() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_nested_with_baseline_1() {}
-// #[visreg(svg)] fn resvg_structure_transform_nested_transforms_2() {}
-// #[visreg(svg)] fn resvg_painting_stroke_radial_gradient_on_text() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_with_a_negative_value_1() {}
-// #[visreg(svg)] fn resvg_structure_symbol_with_viewBox_and_custom_use_rect() {}
-// // no relative paths supported
-// #[visreg(svg, ignore)] fn resvg_structure_image_external_svg_with_transform() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_FillPaint_on_g_without_children() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_no_stops() {}
-// #[visreg(svg)] fn resvg_text_color_font_mixed_text_rtl() {}
-// #[visreg(svg)] fn resvg_text_alignment_baseline_alphabetic() {}
-// #[visreg(svg)] fn resvg_text_textPath_startOffset__100() {}
-// // need to investigate
-// #[visreg(svg, ignore)] fn resvg_text_text_compound_emojis_and_coordinates_list() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_one_invalid_url_in_list() {}
-// #[visreg(svg)] fn resvg_painting_stroke_named_color() {}
-// #[visreg(svg)] fn resvg_painting_stroke_opacity_on_text() {}
-// #[visreg(svg)] fn resvg_filters_feTurbulence_no_attributes() {}
-// #[visreg(svg)] fn resvg_text_textPath_with_text_anchor() {}
-// #[visreg(svg)] fn resvg_painting_stroke_gradient_with_objectBoundingBox_on_path_without_a_bbox_1() {}
-// #[visreg(svg)] fn resvg_text_text_percent_value_on_dx_and_dy() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_blur_function() {}
-// #[visreg(svg)] fn resvg_text_text_rendering_geometricPrecision() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_targetX_3() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_default_attributes() {}
-// #[visreg(svg)] fn resvg_shapes_path_multi_line_data() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_rel_M_rel_implicit_M_rel_implicit() {}
-// #[visreg(svg)] fn resvg_text_glyph_orientation_vertical_simple_case() {}
-// #[visreg(svg)] fn resvg_text_textPath_with_baseline_shift_and_rotate() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_StrokePaint() {}
-// #[visreg(svg)] fn resvg_painting_color_recursive_nested_context() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_inheritance_4() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_blur_function_two_values() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_on_the_root_svg_with_size() {}
-// #[visreg(svg)] fn resvg_painting_fill_invalid_RRGGBB_1() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_2() {}
-// #[visreg(svg)] fn resvg_painting_stroke_miterlimit_default() {}
-// #[visreg(svg)] fn resvg_structure_image_embedded_svg_with_text() {}
-// #[visreg(svg)] fn resvg_text_font_simple_case() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_subregion_2() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_L_Z_A() {}
-// #[visreg(svg)] fn resvg_masking_mask_with_clip_path() {}
-// #[visreg(svg)] fn resvg_structure_use_indirect_recursive_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_invalid_filterUnits() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing_mixed_spacing() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_L_M_L() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_custom_divisor() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_patternContentUnits_with_viewBox() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_2() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_with_viewBox_and_percent_values() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_to_invalid_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_invalid_FuncIRI() {}
-// #[visreg(svg)] fn resvg_text_tref_xml_space() {}
-// #[visreg(svg)] fn resvg_structure_switch_single_child() {}
-// #[visreg(svg)] fn resvg_painting_mix_blend_mode_screen() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_gradientUnits_userSpaceOnUse() {}
-// #[visreg(svg)] fn resvg_painting_context_in_use() {}
-// #[visreg(svg)] fn resvg_filters_filter_subregion_bigger_that_region() {}
-// #[visreg(svg)] fn resvg_structure_transform_skewX() {}
-// #[visreg(svg)] fn resvg_painting_fill_opacity_with_linearGradient() {}
-// #[visreg(svg)] fn resvg_shapes_rect_zero_rx_attribute_resolving() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_with_overflow_auto() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift__50percent() {}
-// #[visreg(svg)] fn resvg_structure_svg_explicit_svg_namespace() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_fx_resolving_1() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_SourceAlpha() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_6() {}
-// #[visreg(svg)] fn resvg_filters_filter_transform_on_shape() {}
-// #[visreg(svg)] fn resvg_masking_mask_with_opacity_3() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_no_children() {}
-// #[visreg(svg)] fn resvg_shapes_path_extra_spaces() {}
-// #[visreg(svg)] fn resvg_text_alignment_baseline_baseline() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_surfaceScale__10() {}
-// #[visreg(svg)] fn resvg_filters_feSpotLight_specularExponent__10() {}
-// #[visreg(svg)] fn resvg_text_unicode_bidi_bidi_override() {}
-// #[visreg(svg)] fn resvg_painting_context_in_nested_use_and_marker() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_with_rect() {}
-// #[visreg(svg)] fn resvg_shapes_rect_negative_width_attribute_processing() {}
-// #[visreg(svg)] fn resvg_text_tspan_mixed_font_size() {}
-// #[visreg(svg)] fn resvg_filters_feBlend_with_subregion_on_input_2() {}
-// #[visreg(svg)] fn resvg_filters_feDistantLight_only_azimuth() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_child_1() {}
-// #[visreg(svg)] fn resvg_text_color_font_colrv1() {}
-// #[visreg(svg)] fn resvg_shapes_polyline_ignore_odd_points() {}
-// #[visreg(svg)] fn resvg_shapes_rect_em_values() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linecap_open_path_with_round() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linecap_zero_length_path_with_butt() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_fill() {}
-// #[visreg(svg)] fn resvg_structure_use_opacity_inheritance() {}
-// #[visreg(svg)] fn resvg_text_font_weight_bold() {}
-// #[visreg(svg)] fn resvg_masking_mask_half_width_region_with_rotation() {}
-// #[visreg(svg)] fn resvg_text_lengthAdjust_spacingAndGlyphs() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_underline_with_rotate_list_4() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_central() {}
-// #[visreg(svg)] fn resvg_shapes_ellipse_missing_cy_attribute() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_line_through() {}
-// #[visreg(svg)] fn resvg_text_tspan_tspan_bbox_1() {}
-// #[visreg(svg)] fn resvg_filters_filter_content_outside_the_canvas() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_L_M() {}
-// #[visreg(svg)] fn resvg_painting_fill_rgb_int_int_int() {}
-// #[visreg(svg)] fn resvg_filters_filter_with_mask_on_parent() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientUnits_userSpaceOnUse() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_discrete_on_blue() {}
-// #[visreg(svg)] fn resvg_painting_stroke_line_as_curve_2() {}
-// #[visreg(svg)] fn resvg_text_text_ligatures_handling_in_mixed_fonts_1() {}
-// #[visreg(svg)] fn resvg_masking_mask_mask_type_invalid() {}
-// #[visreg(svg)] fn resvg_shapes_polyline_not_enough_points() {}
-// // no relative paths supported
-// #[visreg(svg, ignore)] fn resvg_structure_image_no_height_on_svg() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_single_light_source() {}
-// #[visreg(svg)] fn resvg_filters_feBlend_mode_normal() {}
-// #[visreg(svg)] fn resvg_painting_opacity_clamp_value_2() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clip_rule_evenodd() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_operator_in() {}
-// // no relative paths supported
-// #[visreg(svg, ignore)] fn resvg_structure_image_no_height() {}
-// #[visreg(svg)] fn resvg_structure_image_preserveAspectRatio_xMaxYMax_slice_on_svg() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_invalid_gradientUnits() {}
-// #[visreg(svg)] fn resvg_filters_feFlood_complex_transform() {}
-// #[visreg(svg)] fn resvg_masking_mask_maskUnits_userSpaceOnUse_without_rect() {}
-// // need to investigate
-// #[visreg(svg, ignore)] fn resvg_text_text_emojis() {}
-// #[visreg(svg)] fn resvg_shapes_rect_missing_height_attribute_processing() {}
-// #[visreg(svg)] fn resvg_painting_stroke_none() {}
-// #[visreg(svg)] fn resvg_filters_feGaussianBlur_stdDeviation_with_two_different_values() {}
-// #[visreg(svg)] fn resvg_shapes_circle_missing_cx_and_cy_attributes() {}
-// #[visreg(svg)] fn resvg_text_color_font_colrv0() {}
-// #[visreg(svg)] fn resvg_filters_feDropShadow_with_percent_offset() {}
-// #[visreg(svg)] fn resvg_painting_fill_funcIRI_to_a_missing_element_with_a_none_fallback() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_right() {}
-// #[visreg(svg)] fn resvg_filters_filter_region_with_stroke() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_H_H() {}
-// #[visreg(svg)] fn resvg_structure_use_position_inheritance() {}
-// #[visreg(svg)] fn resvg_painting_isolation_isolate() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_attributes_via_xlink_href() {}
-// #[visreg(svg)] fn resvg_structure_image_external_webp() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_inheritance_1() {}
-// #[visreg(svg)] fn resvg_structure_image_url_to_png() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_without_k1_4() {}
-// #[visreg(svg)] fn resvg_shapes_ellipse_simple_case() {}
-// #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_9() {}
-// #[visreg(svg)] fn resvg_text_textPath_startOffset_30() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_stroke_invalid() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_hue_rotate_function_default_value() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_transform_on_parent() {}
-// #[visreg(svg)] fn resvg_shapes_path_negative_sweep_flag_value() {}
-// #[visreg(svg)] fn resvg_painting_stroke_dasharray_multiple_subpaths() {}
-// #[visreg(svg)] fn resvg_painting_fill_pattern_on_text() {}
-// #[visreg(svg)] fn resvg_filters_filter_color_interpolation_filters_sRGB() {}
-// #[visreg(svg)] fn resvg_painting_mix_blend_mode_luminosity() {}
-// #[visreg(svg)] fn resvg_text_text_x_and_y_with_multiple_values_and_arabic_text() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_7() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_edgeMode_wrap_with_matrix_larger_than_target() {}
-// #[visreg(svg)] fn resvg_masking_mask_with_opacity_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_BackgroundAlpha_with_enable_background() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_200percent() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient_9999() {}
-// // need to check how Firefox does it
-// #[visreg(svg, ignore)] fn resvg_painting_stroke_linecap_zero_length_path_with_square() {}
-// #[visreg(svg)] fn resvg_text_textPath_path_with_ClosePath() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_invalid_offset_1() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_with_relative_width_and_height() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing_0() {}
-// #[visreg(svg)] fn resvg_structure_transform_skewY() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_with_opacity() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_fx_resolving_2() {}
-// #[visreg(svg)] fn resvg_shapes_polygon_not_enough_points() {}
-// #[visreg(svg)] fn resvg_painting_visibility_hidden_on_tspan() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clip_path_on_child() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_5() {}
-// #[visreg(svg)] fn resvg_text_font_family_bold_sans_serif() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_subregion_5() {}
-// #[visreg(svg)] fn resvg_filters_feColorMatrix_without_a_type() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient_auto_on_M_L_L_Z_Z_Z() {}
-// #[visreg(svg)] fn resvg_structure_symbol_unused_symbol() {}
-// #[visreg(svg)] fn resvg_filters_feTurbulence_seed_20() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_inheritance() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_inheritance_3() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_different_alignment_baseline_on_tspan() {}
-// #[visreg(svg)] fn resvg_filters_feBlend_with_subregion_on_input_1() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_child_2() {}
-// #[visreg(svg)] fn resvg_structure_image_with_zero_width_and_height() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient_auto_on_M_L_M_C() {}
-// #[visreg(svg)] fn resvg_text_textPath_invalid_link() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_new_with_region() {}
-// #[visreg(svg)] fn resvg_painting_fill_missing_FuncIRI_with_a_currentColor_fallback() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_nested() {}
-// #[visreg(svg)] fn resvg_structure_transform_empty() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_many_stops() {}
-// #[visreg(svg)] fn resvg_painting_fill_rule_evenodd() {}
-// #[visreg(svg)] fn custom_structure_viewbox_negative_viewbox() {}
-// #[visreg(svg)] fn resvg_structure_a_inside_text() {}
-// #[visreg(svg)] fn resvg_text_textPath_startOffset_10percent() {}
-// #[visreg(svg)] fn resvg_text_textLength_arabic_with_lengthAdjust() {}
-// #[visreg(svg)] fn resvg_painting_stroke_pattern_with_objectBoundingBox_on_zero_bbox_shape() {}
-// #[visreg(svg)] fn resvg_text_tspan_with_x_and_y() {}
-// #[visreg(svg)] fn resvg_painting_stroke_miterlimit_value_with_mm() {}
-// #[visreg(svg)] fn resvg_painting_shape_rendering_auto_on_circle() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_linearRGB_color_interpolation() {}
-// #[visreg(svg)] fn resvg_text_tspan_tspan_bbox_2() {}
-// #[visreg(svg)] fn resvg_filters_feSpecularLighting_specularExponent_256() {}
-// #[visreg(svg)] fn resvg_text_text_complex_graphemes() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_divisor_0() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_em_values() {}
-// #[visreg(svg)] fn resvg_shapes_rect_zero_width_attribute_processing() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_tb_with_rotate_and_underline() {}
-// #[visreg(svg)] fn resvg_text_text_ligatures_handling_in_mixed_fonts_2() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_hanging() {}
-// #[visreg(svg)] fn resvg_painting_stroke_line_as_curve_1() {}
-// #[visreg(svg)] fn resvg_painting_stroke_miterlimit_value_with_percent() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_simple_case() {}
-// #[visreg(svg)] fn resvg_shapes_circle_negative_r_attribute() {}
-// #[visreg(svg)] fn resvg_painting_opacity_clamp_value_1() {}
-// #[visreg(svg)] fn resvg_structure_use_with_size() {}
-// #[visreg(svg)] fn resvg_painting_stroke_dasharray_comma_ws_separator() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_4() {}
-// #[visreg(svg)] fn resvg_filters_feTurbulence_baseFrequency_0_05_0_01() {}
-// #[visreg(svg)] fn resvg_painting_fill_opacity_with_opacity() {}
-// #[visreg(svg)] fn resvg_structure_systemLanguage_en_GB() {}
-// #[visreg(svg)] fn resvg_text_font_style_oblique() {}
-// #[visreg(svg)] fn resvg_structure_transform_rotate_at_position() {}
-// #[visreg(svg)] fn resvg_text_text_rotate_with_more_values_than_characters() {}
-// #[visreg(svg)] fn resvg_painting_marker_zero_sized() {}
-// #[visreg(svg)] fn resvg_filters_feSpotLight_complex_transform() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_overlapped_shapes_with_evenodd() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_deeply_nested_super() {}
-// #[visreg(svg)] fn resvg_text_tspan_bidi_reordering() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_child_3() {}
-// #[visreg(svg)] fn resvg_filters_feSpotLight_limitingConeAngle_anti_aliasing() {}
-// #[visreg(svg)] fn resvg_shapes_line_with_transform() {}
-// #[visreg(svg)] fn resvg_structure_svg_no_children() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_transform_on_clipPath() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_markers_stroke() {}
-// #[visreg(svg)] fn resvg_text_text_xml_space() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_viewBox_via_xlink_href() {}
-// #[visreg(svg)] fn resvg_filters_filter_negative_subregion() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_with_use_child() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_inheritance_2() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_accumulate_with_new() {}
-// #[visreg(svg)] fn resvg_shapes_polygon_ignore_odd_points() {}
-// #[visreg(svg)] fn resvg_painting_display_none_on_clipPath() {}
-// #[visreg(svg)] fn resvg_painting_mix_blend_mode_normal() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_on_group() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_subregion_4() {}
-// #[visreg(svg)] fn resvg_painting_context_with_viewbox() {}
-// #[visreg(svg)] fn resvg_structure_svg_xmlns_validation() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_nested_length() {}
-// #[visreg(svg)] fn resvg_text_writing_mode_arabic_with_rl() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_all_types_inline_comma_separated() {}
-// #[visreg(svg)] fn resvg_painting_stroke_dasharray_0_n_with_butt_caps() {}
-// #[visreg(svg)] fn resvg_masking_mask_with_opacity_1() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_4() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing_1mm() {}
-// #[visreg(svg)] fn resvg_text_textLength_on_text_and_tspan() {}
-// #[visreg(svg)] fn resvg_shapes_rect_rx_and_ry_attributes_clamping_order() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_fx_resolving_3() {}
-// #[visreg(svg)] fn resvg_painting_marker_invalid_child() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_invalid_offset_2() {}
-// #[visreg(svg)] fn resvg_painting_mix_blend_mode_saturation() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing_3() {}
-// #[visreg(svg)] fn resvg_text_tspan_with_dy() {}
-// #[visreg(svg)] fn resvg_painting_fill_funcIRI_to_a_missing_element_with_a_fallback_color() {}
-// #[visreg(svg)] fn resvg_text_tref_link_to_a_non_SVG_element() {}
-// #[visreg(svg)] fn resvg_text_direction_rtl() {}
-// #[visreg(svg)] fn resvg_painting_stroke_miterlimit_invalid_value() {}
-// #[visreg(svg)] fn resvg_shapes_line_no_y2_coordinate() {}
-// #[visreg(svg)] fn resvg_filters_feDropShadow_with_flood_color() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_patternUnits_objectBoundingBox() {}
-// #[visreg(svg)] fn resvg_structure_use_style_inheritance_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_url_and_grayscale() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_V_V_implicit() {}
-// #[visreg(svg)] fn resvg_shapes_rect_ry_attribute_clamping() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_FillPaint() {}
-// #[visreg(svg)] fn resvg_painting_mix_blend_mode_hue() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient_1_5rad() {}
-// #[visreg(svg)] fn resvg_text_tspan_nested() {}
-// #[visreg(svg)] fn resvg_shapes_ellipse_percent_values() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_on_text_path() {}
-// #[visreg(svg)] fn resvg_text_textPath_tspan_with_relative_position() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_operator_dilate() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_lighting_color_currentColor_without_color() {}
-// #[visreg(svg)] fn resvg_painting_marker_target_with_subpaths_2() {}
-// #[visreg(svg)] fn resvg_text_textPath_startOffset_9999() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_opacity_50percent() {}
-// #[visreg(svg)] fn resvg_filters_feGaussianBlur_stdDeviation_0_5() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_underline_with_dy_list_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_transform_on_shape_with_filter_region() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_FillPaint_with_pattern() {}
-// #[visreg(svg)] fn resvg_shapes_line_no_x1_and_y1_coordinates() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_4_4() {}
-// #[visreg(svg)] fn resvg_structure_systemLanguage_ru_en() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_length_percent() {}
-// #[visreg(svg)] fn resvg_painting_marker_recursive_5() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_underline_with_y_list() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_self_recursive_on_child() {}
-// #[visreg(svg)] fn resvg_filters_filter_on_group_with_child_outside_of_canvas() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_simple_case() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_no_radius() {}
-// #[visreg(svg)] fn resvg_painting_fill_hsl_360_100percent_25percent() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linecap_open_path_with_butt() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_one_invalid_function_in_list() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient__45() {}
-// #[visreg(svg)] fn resvg_structure_image_preserveAspectRatio_xMidYMid_meet_on_svg() {}
-// #[visreg(svg)] fn resvg_shapes_rect_negative_height_attribute_processing() {}
-// #[visreg(svg)] fn resvg_text_font_size_ex() {}
-// #[visreg(svg)] fn resvg_filters_filter_with_mask() {}
-// #[visreg(svg)] fn resvg_painting_visibility_bbox_impact_3() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linecap_round() {}
-// #[visreg(svg)] fn resvg_painting_marker_marker_with_a_negative_size() {}
-// #[visreg(svg)] fn resvg_structure_a_on_tspan() {}
-// #[visreg(svg)] fn resvg_masking_mask_color_interpolation_linearRGB() {}
-// #[visreg(svg)] fn resvg_text_text_x_and_y_with_more_values_than_characters() {}
-// #[visreg(svg)] fn resvg_shapes_ellipse_missing_cx_attribute() {}
-// #[visreg(svg)] fn resvg_structure_svg_proportional_viewBox() {}
-// #[visreg(svg)] fn resvg_structure_style_universal_selector() {}
-// #[visreg(svg)] fn resvg_filters_feGaussianBlur_complex_transform() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_M_implicit_M_implicit() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_auto() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_with_rect_and_viewBox_and_percent_values() {}
-// #[visreg(svg)] fn resvg_painting_visibility_bbox_impact_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_only_offset() {}
-// #[visreg(svg)] fn resvg_structure_image_with_transform() {}
-// #[visreg(svg)] fn resvg_structure_switch_display_none_on_child() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_with_rotate() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linejoin_miter() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_0() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_preserveAlpha_true() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_recursive_xlink_href_1() {}
-// #[visreg(svg)] fn resvg_painting_visibility_hidden_on_group() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientTransform() {}
-// #[visreg(svg)] fn resvg_shapes_rect_vmin_and_vmax_values() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clip_path_on_child_with_transform() {}
-// #[visreg(svg)] fn resvg_painting_fill_opacity_nested() {}
-// #[visreg(svg)] fn custom_structure_image_embedded_jpeg_as_image_jpeg() {}
-// #[visreg(svg)] fn resvg_painting_marker_recursive_4() {}
-// #[visreg(svg)] fn resvg_painting_stroke_control_points_clamping_1() {}
-// #[visreg(svg)] fn resvg_filters_feBlend_mode_hue() {}
-// #[visreg(svg)] fn resvg_text_textLength_75percent() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clipping_with_complex_text_and_clip_rule() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_normal() {}
-// #[visreg(svg)] fn resvg_structure_symbol_with_viewBox() {}
-// #[visreg(svg)] fn resvg_masking_mask_on_group_with_transform() {}
-// #[visreg(svg)] fn resvg_structure_svg_viewBox_not_at_zero_pos() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_simple_case() {}
-// #[visreg(svg)] fn resvg_structure_switch_with_attributes() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_and_tableValues_1() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_invalid_operator() {}
-// #[visreg(svg)] fn resvg_painting_display_bBox_impact() {}
-// #[visreg(svg)] fn resvg_painting_stroke_miterlimit_valid_value() {}
-// #[visreg(svg)] fn resvg_shapes_rect_vi_and_vb_values() {}
-// #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_6() {}
-// #[visreg(svg)] fn resvg_structure_image_embedded_jpeg_without_mime() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_mixed_nested() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_operator_over() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientTransform_and_transform() {}
-// #[visreg(svg)] fn resvg_text_font_family_fallback_1() {}
-// #[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0__1() {}
-// #[visreg(svg)] fn resvg_structure_symbol_opacity_on_symbol_with_viewBox() {}
-// #[visreg(svg)] fn resvg_painting_marker_with_viewBox_1() {}
-// #[visreg(svg)] fn resvg_painting_fill_uppercase_rgb_color() {}
-// #[visreg(svg)] fn resvg_masking_mask_invisible_child_2() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_zero_radius() {}
-// #[visreg(svg)] fn resvg_text_textPath_with_path() {}
-// #[visreg(svg)] fn resvg_painting_display_none_on_rect() {}
-// #[visreg(svg)] fn resvg_structure_use_style_inheritance_3() {}
-// // spreadMethod repeat not supported
-// #[visreg(svg, ignore)] fn resvg_paint_servers_linearGradient_spreadMethod_repeat() {}
-// #[visreg(svg)] fn resvg_text_font_size_ex_nested_and_mixed() {}
-// #[visreg(svg)] fn resvg_text_font_family_noto_sans() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_on_tspan_with_arabic() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clip_rule_from_parent_node() {}
-// #[visreg(svg)] fn resvg_filters_filter_in_FillPaint_with_gradient() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_invalid_clip_path_on_child() {}
-// #[visreg(svg)] fn resvg_structure_use_style_inheritance_1() {}
-// #[visreg(svg)] fn resvg_text_word_spacing_normal() {}
-// #[visreg(svg)] fn resvg_masking_mask_mask_on_child() {}
-// #[visreg(svg)] fn resvg_text_alignment_baseline_before_edge() {}
-// #[visreg(svg)] fn resvg_shapes_rect_simple_case() {}
-// #[visreg(svg)] fn resvg_painting_stroke_pattern_on_text() {}
-// #[visreg(svg)] fn resvg_text_font_size_named_value() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_duplicates() {}
-// #[visreg(svg)] fn resvg_text_font_variant_small_caps() {}
-// #[visreg(svg)] fn resvg_painting_marker_on_ArcTo() {}
-// #[visreg(svg)] fn resvg_structure_transform_default() {}
-// #[visreg(svg)] fn resvg_painting_context_in_marker() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient_30() {}
-// #[visreg(svg)] fn resvg_painting_context_on_shape_with_zero_size_bbox() {}
-// #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_4() {}
-// #[visreg(svg)] fn resvg_filters_feTurbulence_type_invalid() {}
-// #[visreg(svg)] fn resvg_filters_fePointLight_default_attributes() {}
-// #[visreg(svg)] fn resvg_painting_marker_target_with_subpaths_1() {}
-// #[visreg(svg)] fn resvg_text_tspan_rotate_and_display_none() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_with_filter() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_surfaceScale_5() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_none() {}
-// #[visreg(svg)] fn resvg_painting_fill_radial_gradient_on_shape() {}
-// #[visreg(svg)] fn resvg_structure_transform_scale_without_Y() {}
-// #[visreg(svg)] fn resvg_filters_feColorMatrix_type_matrix_with_not_enough_values() {}
-// #[visreg(svg)] fn resvg_structure_symbol_content_outside_the_viewbox() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_underline_with_dy_list_1() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_coordinates_list() {}
-// #[visreg(svg)] fn resvg_structure_svg_rect_inside_a_non_SVG_element() {}
-// #[visreg(svg)] fn resvg_filters_feOffset_simple_case() {}
-// #[visreg(svg)] fn resvg_masking_mask_mask_on_self_with_mask_type_alpha() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_ideographic() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_with_an_empty_tableValues() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_no_children() {}
-// #[visreg(svg)] fn resvg_structure_systemLanguage_en() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_recursive_xlink_href_3() {}
-// #[visreg(svg)] fn resvg_filters_feSpecularLighting_lighting_color_hsla() {}
-// #[visreg(svg)] fn resvg_structure_defs_style_inheritance() {}
-// #[visreg(svg)] fn resvg_painting_mix_blend_mode_overlay() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_stroke_markers_fill() {}
-// #[visreg(svg)] fn resvg_painting_fill_rule_nonzero() {}
-// #[visreg(svg)] fn resvg_painting_fill_funcIRI_to_an_invalid_element_with_a_none_fallback() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_invalid_type() {}
-// #[visreg(svg)] fn resvg_structure_g_recursive_inheritance() {}
-// #[visreg(svg)] fn resvg_painting_fill_hsl_999_100percent_25percent() {}
-// #[visreg(svg)] fn resvg_painting_marker_marker_on_line() {}
-// #[visreg(svg)] fn resvg_paint_servers_stop_color_simple_case() {}
-// #[visreg(svg)] fn resvg_text_font_size_inheritance() {}
-// #[visreg(svg)] fn resvg_text_direction_rtl_with_vertical_writing_mode() {}
-// // invalid size
-// #[visreg(svg, ignore)] fn resvg_structure_svg_no_size() {}
-// #[visreg(svg)] fn resvg_painting_visibility_bbox_impact_1() {}
-// #[visreg(svg)] fn resvg_painting_paint_order_invalid() {}
-// #[visreg(svg)] fn resvg_shapes_path_empty() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_text_before_edge() {}
-// #[visreg(svg)] fn resvg_painting_fill_opacity_half_opacity() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_on_clippath_objectBoundingBox() {}
-// #[visreg(svg)] fn resvg_painting_fill_rgb_color_with_floats() {}
-// #[visreg(svg)] fn resvg_structure_transform_zeroed_matrix() {}
-// #[visreg(svg)] fn resvg_text_word_spacing__5() {}
-// #[visreg(svg)] fn resvg_text_font_size_em() {}
-// #[visreg(svg)] fn resvg_structure_use_href_without_the_xlink_namespace() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_keyword_length() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_L_L_Z_rel() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_hue_rotate_function_45rad() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_no_kernelMatrix() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_recursive_xlink_href_2() {}
-// #[visreg(svg)] fn resvg_structure_symbol_opacity_on_use() {}
-// #[visreg(svg)] fn custom_structure_image_png_lumaa_16() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_kernelMatrix_with_not_enough_values() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_kernelMatrix_with_zero_sum_and_no_divisor() {}
-// #[visreg(svg)] fn resvg_filters_feImage_link_to_an_invalid_element() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_stops_via_xlink_href_from_linearGradient() {}
-// #[visreg(svg)] fn resvg_painting_stroke_control_points_clamping_2() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_text_anchor_not_on_text_chunk() {}
-// #[visreg(svg)] fn resvg_structure_svg_preserveAspectRatio_none() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_4() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_default_value() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_with_large_k1_4() {}
-// #[visreg(svg)] fn resvg_text_word_spacing_2mm() {}
-// #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_5() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing_large_negative() {}
-// #[visreg(svg)] fn resvg_painting_overflow_visible_on_marker() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_stops_via_xlink_href_from_radialGradient() {}
-// #[visreg(svg)] fn resvg_shapes_path_out_of_range_sweep_flag_value() {}
-// #[visreg(svg)] fn resvg_text_font_family_fallback_2() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_circle_shorthand_with_view_box() {}
-// #[visreg(svg)] fn resvg_painting_marker_with_viewBox_2() {}
-// #[visreg(svg)] fn resvg_shapes_rect_missing_width_attribute_processing() {}
-// #[visreg(svg)] fn resvg_structure_switch_simple_case() {}
-// #[visreg(svg)] fn resvg_structure_defs_ignore_shapes_inside_defs() {}
-// #[visreg(svg)] fn resvg_shapes_rect_ry_attribute_resolving() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_S_S() {}
-// #[visreg(svg)] fn resvg_masking_mask_invisible_child_1() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_sub() {}
-// #[visreg(svg)] fn resvg_masking_mask_recursive_on_child() {}
-// #[visreg(svg)] fn resvg_structure_use_xlink_to_svg_element_with_rect() {}
-// #[visreg(svg)] fn resvg_structure_switch_systemLanguage_ru_Ru() {}
-// #[visreg(svg)] fn resvg_shapes_rect_invalid_coordinates() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_inheritance_1() {}
-// #[visreg(svg)] fn resvg_painting_stroke_pattern_with_objectBoundingBox_fallback_on_zero_bbox_shape() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_circle_shorthand_with_stroke_box() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_empty() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_diffuseConstant__1() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_end_on_text() {}
-// #[visreg(svg)] fn resvg_painting_marker_marker_on_polygon() {}
-// #[visreg(svg)] fn resvg_text_textPath_with_baseline_shift() {}
-// #[visreg(svg)] fn resvg_text_letter_spacing__3() {}
-// // need to check how Chrome does it
-// #[visreg(svg, ignore)] fn resvg_painting_stroke_linecap_zero_length_path_with_round() {}
-// #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_1() {}
-// #[visreg(svg)] fn resvg_structure_transform_extra_spaces() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_only_X_offset() {}
-// #[visreg(svg)] fn resvg_filters_feDiffuseLighting_surfaceScale_0() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_start_on_text() {}
-// #[visreg(svg)] fn resvg_painting_stroke_gradient_with_objectBoundingBox_and_fallback_on_lines() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_0() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_100percent() {}
-// #[visreg(svg)] fn resvg_painting_context_with_pattern_objectBoundingBox_in_use() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_stops_via_xlink_href() {}
-// #[visreg(svg)] fn resvg_painting_fill_radial_gradient_on_text() {}
-// #[visreg(svg)] fn resvg_painting_stroke_width_default() {}
-// #[visreg(svg)] fn resvg_painting_marker_recursive_3() {}
-// #[visreg(svg)] fn resvg_text_font_stretch_narrower() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_mathematical() {}
-// #[visreg(svg)] fn resvg_painting_fill_hsla_with_percentage_s_and_l_values() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_on_pattern_user_space_on_use() {}
-// #[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_4_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_hue_rotate_function_0_25turn() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_on_blue_twice() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_multiple_children() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_L_L_implicit() {}
-// #[visreg(svg)] fn resvg_text_font_family_source_sans_pro() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_on_image() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_stops_via_xlink_href_from_rect() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_gamma_on_blue() {}
-// #[visreg(svg)] fn resvg_painting_fill_opacity_on_text() {}
-// #[visreg(svg)] fn resvg_painting_fill_RGBA() {}
-// #[visreg(svg)] fn resvg_shapes_rect_ex_values() {}
-// #[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0_2() {}
-// #[visreg(svg)] fn resvg_structure_symbol_with_overflow_visible() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_switch_is_not_a_valid_child() {}
-// #[visreg(svg)] fn resvg_text_tspan_pseudo_multi_line() {}
-// #[visreg(svg)] fn resvg_painting_marker_orient_auto_on_M_C_L() {}
-// // spreadMethod reflect not supported
-// #[visreg(svg, ignore)] fn resvg_paint_servers_linearGradient_attributes_via_xlink_href_complex_order() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_focal_point_correction() {}
-// #[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_gradientUnits() {}
-// #[visreg(svg)] fn resvg_structure_svg_nested_svg_one_with_rect_and_one_with_viewBox() {}
-// #[visreg(svg)] fn resvg_filters_feMerge_color_interpolation_filters_linearRGB() {}
-// #[visreg(svg)] fn resvg_text_font_weight_invalid_number_1() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_invalid_patternTransform() {}
-// #[visreg(svg)] fn resvg_shapes_line_no_x1_coordinate() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_x_y_and_protruding_subregion_2() {}
-// #[visreg(svg)] fn custom_structure_image_png_rgb_16() {}
-// #[visreg(svg)] fn resvg_paint_servers_radialGradient_invalid_gradientTransform() {}
-// #[visreg(svg)] fn resvg_structure_use_transform_attribute_2() {}
-// #[visreg(svg)] fn resvg_filters_filter_invalid_primitive_2() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_no_children() {}
-// #[visreg(svg)] fn resvg_painting_visibility_collapse_on_tspan() {}
-// #[visreg(svg)] fn resvg_filters_feImage_with_x_y() {}
-// #[visreg(svg)] fn resvg_painting_stroke_width_percentage() {}
-// #[visreg(svg)] fn resvg_text_word_spacing_0() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_complex() {}
-// #[visreg(svg)] fn resvg_structure_use_simple_case() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clipping_with_complex_text_2() {}
-// #[visreg(svg)] fn resvg_painting_marker_the_marker_property() {}
-// #[visreg(svg)] fn custom_integration_matplotlib_signals() {}
-// #[visreg(svg)] fn resvg_text_tspan_rotate_on_child() {}
-// #[visreg(svg)] fn resvg_filters_feComposite_with_subregion_on_input_2() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_children_via_xlink_href() {}
-// #[visreg(svg)] fn resvg_filters_feImage_link_to_use() {}
-// #[visreg(svg)] fn resvg_painting_stroke_opacity_with_linearGradient() {}
-// #[visreg(svg)] fn resvg_masking_mask_invalid_child() {}
-// #[visreg(svg)] fn resvg_painting_marker_recursive_2() {}
-// #[visreg(svg)] fn resvg_text_tspan_mixed() {}
-// #[visreg(svg)] fn resvg_shapes_path_no_commawsp_between_and_after_arc_flags() {}
-// #[visreg(svg)] fn resvg_structure_use_xlink_to_an_external_file() {}
-// #[visreg(svg)] fn resvg_painting_context_with_pattern_on_marker() {}
-// #[visreg(svg)] fn resvg_text_text_percent_value_on_x_and_y() {}
-// #[visreg(svg)] fn resvg_text_text_dx_and_dy_instead_of_x_and_y() {}
-// #[visreg(svg)] fn resvg_structure_switch_systemLanguage_ru_en() {}
-// #[visreg(svg)] fn resvg_text_text_rotate_with_an_invalid_angle() {}
-// #[visreg(svg)] fn resvg_text_font_weight_inherit() {}
-// #[visreg(svg)] fn resvg_structure_switch_systemLanguage() {}
-// #[visreg(svg)] fn resvg_text_text_decoration_all_types_nested() {}
-// #[visreg(svg)] fn resvg_structure_style_invalid_type() {}
-// #[visreg(svg)] fn resvg_shapes_rect_percentage_values_1() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_0percent() {}
-// #[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0_50percent() {}
-// #[visreg(svg)] fn resvg_structure_transform_origin_right_bottom() {}
-// #[visreg(svg)] fn resvg_shapes_path_M_Q_T() {}
-// #[visreg(svg)] fn resvg_filters_fePointLight_complex_transform() {}
-// #[visreg(svg)] fn resvg_painting_stroke_dasharray_negative_sum() {}
-// #[visreg(svg)] fn resvg_structure_use_fill_opacity_inheritance() {}
-// #[visreg(svg)] fn resvg_structure_defs_nested_defs() {}
-// #[visreg(svg)] fn resvg_text_color_font_cbdt() {}
-// #[visreg(svg)] fn resvg_text_baseline_shift_baseline() {}
-// #[visreg(svg)] fn resvg_masking_mask_nested_objectBoundingBox() {}
-// #[visreg(svg)] fn custom_structure_image_png_lumaa_8() {}
-// #[visreg(svg)] fn resvg_filters_filter_complex_order_and_xlink_href() {}
-// #[visreg(svg)] fn resvg_text_dominant_baseline_alignment_baseline_and_baseline_shift_on_tspans() {}
-// #[visreg(svg)] fn resvg_filters_feImage_embedded_png() {}
-// #[visreg(svg)] fn resvg_filters_feColorMatrix_type_matrix_with_too_many_values() {}
-// #[visreg(svg)] fn resvg_structure_transform_transform_list() {}
-// #[visreg(svg)] fn resvg_text_text_rotate_on_Arabic() {}
-// #[visreg(svg)] fn resvg_shapes_line_percent_units() {}
-// #[visreg(svg)] fn resvg_filters_enable_background_new() {}
-// #[visreg(svg)] fn resvg_text_alignment_baseline_auto() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_inheritance_2() {}
-// #[visreg(svg)] fn resvg_painting_stroke_linejoin_round() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_clip_path_on_self() {}
-// #[visreg(svg)] fn resvg_masking_clipPath_mixed_clip_rule() {}
-// #[visreg(svg)] fn resvg_filters_feOffset_negative_offset() {}
-// #[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_extra_value() {}
-// #[visreg(svg)] fn resvg_structure_switch_requiredFeatures() {}
-// #[visreg(svg)] fn resvg_paint_servers_pattern_missing_height() {}
-// #[visreg(svg)] fn resvg_text_text_anchor_end_with_letter_spacing() {}
-// #[visreg(svg)] fn resvg_painting_fill_inherit_without_parent() {}
-// #[visreg(svg)] fn resvg_filters_feMorphology_source_with_opacity() {}
-// #[visreg(svg)] fn resvg_text_textPath_path_with_subpaths_and_startOffset() {}
-// #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_gamma_with_an_invalid_offset() {}
-// #[visreg(svg)] fn resvg_text_tspan_nested_rotate() {}
-// #[visreg(svg)] fn resvg_text_textPath_very_long_text() {}
+#[visreg(svg)] fn resvg_text_font_weight_bolder_without_parent() {}
+#[visreg(svg)] fn resvg_text_writing_mode_lr() {}
+#[visreg(svg)] fn resvg_filters_filter_everything_via_xlink_href() {}
+#[visreg(svg)] fn resvg_filters_enable_background_stop_on_the_first_new_2() {}
+#[visreg(svg)] fn resvg_text_font_size_mixed_values() {}
+#[visreg(svg)] fn resvg_painting_fill_rgb_0_127_0_0_5() {}
+#[visreg(svg)] fn resvg_filters_feDropShadow_with_offset_clipped() {}
+#[visreg(svg)] fn resvg_masking_clipPath_on_a_horizontal_line() {}
+#[visreg(svg)] fn resvg_text_textLength_150_on_tspan() {}
+#[visreg(svg)] fn resvg_structure_transform_nested_transforms_1() {}
+#[visreg(svg)] fn resvg_structure_systemLanguage_on_defs() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_with_a_negative_value_2() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_nested_with_baseline_2() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_linear_with_large_values() {}
+#[visreg(svg)] fn resvg_masking_clipPath_symbol_via_use_is_not_a_valid_child() {}
+#[visreg(svg)] fn resvg_structure_systemLanguage_on_clipPath() {}
+#[visreg(svg)] fn resvg_text_textPath_path_with_subpaths() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_missing_width() {}
+#[visreg(svg)] fn resvg_structure_svg_preserveAspectRatio_xMinYMin() {}
+#[visreg(svg)] fn resvg_filters_feTurbulence_type_fractalNoise() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_bias__0_5() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clipPathUnits_objectBoundingBox() {}
+#[visreg(svg)] fn resvg_filters_feImage_self_recursive() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_external_png() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_50percent() {}
+#[visreg(svg)] fn resvg_text_text_decoration_underline_with_rotate_list_3() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_display_none_on_child() {}
+#[visreg(svg)] fn resvg_text_font_family_cursive() {}
+#[visreg(svg)] fn resvg_painting_marker_with_a_large_stroke() {}
+#[visreg(svg)] fn resvg_filters_feDropShadow_with_flood_opacity() {}
+#[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_on_sRGB() {}
+#[visreg(svg)] fn resvg_text_font_font_shorthand() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_no_stop_color() {}
+#[visreg(svg)] fn resvg_painting_stroke_linecap_open_path_with_square() {}
+#[visreg(svg)] fn resvg_text_writing_mode_tb() {}
+#[visreg(svg)] fn resvg_painting_stroke_gradient_with_objectBoundingBox_on_path_without_a_bbox_2() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_kernelMatrix_with_too_many_values() {}
+#[visreg(svg)] fn resvg_filters_feBlend_mode_screen() {}
+#[visreg(svg)] fn resvg_painting_display_none_on_tref() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_1() {}
+#[visreg(svg)] fn custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_targetX_0() {}
+#[visreg(svg)] fn resvg_painting_fill_opacity_on_parent() {}
+#[visreg(svg)] fn resvg_filters_feColorMatrix_type_hueRotate_without_an_angle() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_single_light_source_with_desc() {}
+#[visreg(svg)] fn resvg_text_word_spacing_5percent() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_two_urls() {}
+#[visreg(svg)] fn resvg_painting_fill_invalid_RRGGBB_2() {}
+#[visreg(svg)] fn resvg_masking_clipPath_circle_shorthand() {}
+#[visreg(svg)] fn resvg_text_text_rotate_with_multiple_values_and_complex_text() {}
+#[visreg(svg)] fn resvg_filters_enable_background_with_mask() {}
+#[visreg(svg)] fn resvg_filters_filter_primitiveUnits_objectBoundingBox() {}
+#[visreg(svg)] fn resvg_painting_marker_no_stroke_on_target() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_subregion_1() {}
+#[visreg(svg)] fn resvg_text_letter_spacing_on_Arabic() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_with_rect_and_percent_values() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_gradientTransform() {}
+#[visreg(svg)] fn resvg_text_word_spacing_10() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_blur_function_no_values() {}
+#[visreg(svg)] fn resvg_structure_style_style_after_usage() {}
+#[visreg(svg)] fn resvg_structure_use_indirect_recursive_1() {}
+#[visreg(svg)] fn resvg_masking_clipPath_line_is_not_a_valid_child() {}
+#[visreg(svg)] fn resvg_structure_style_external_CSS() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_no_width_on_svg() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_1() {}
+#[visreg(svg)] fn resvg_text_text_x_and_y_with_multiple_values() {}
+#[visreg(svg)] fn resvg_structure_switch_systemLanguage_en() {}
+#[visreg(svg)] fn resvg_text_text_complex_grapheme_split_by_tspan() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_radius_10_1() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_sequential() {}
+#[visreg(svg)] fn resvg_filters_filter_in_to_invalid_1() {}
+#[visreg(svg)] fn resvg_filters_filter_content_outside_the_canvas_2() {}
+#[visreg(svg)] fn resvg_text_text_x_and_y_with_less_values_than_characters() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_with_patternTransform() {}
+#[visreg(svg)] fn resvg_masking_clipPath_with_invalid_child_via_use() {}
+#[visreg(svg)] fn resvg_shapes_rect_negative_rx_and_ry_attributes_resolving() {}
+#[visreg(svg)] fn resvg_painting_marker_inheritance_1() {}
+#[visreg(svg)] fn resvg_text_text_x_and_y_with_dx_and_dy() {}
+#[visreg(svg)] fn resvg_filters_feFlood_with_opacity() {}
+#[visreg(svg)] fn resvg_painting_fill_inherit() {}
+#[visreg(svg)] fn resvg_filters_feBlend_mode_darken() {}
+#[visreg(svg)] fn resvg_filters_filter_in_BackgroundImage() {}
+#[visreg(svg)] fn resvg_painting_marker_only_marker_end() {}
+#[visreg(svg)] fn resvg_structure_style_unresolved_class_selector() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_comma_spearated() {}
+#[visreg(svg)] fn custom_integration_matplotlib_bar_label() {}
+#[visreg(svg)] fn resvg_text_alignment_baseline_after_edge() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_identity_on_all() {}
+#[visreg(svg)] fn resvg_filters_filter_with_clip_path() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_3() {}
+#[visreg(svg)] fn resvg_text_textPath_with_underline() {}
+#[visreg(svg)] fn resvg_filters_feTurbulence_baseFrequency_0_05__0_01() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_gradientTransform() {}
+#[visreg(svg)] fn resvg_shapes_path_M_T_S_rel() {}
+#[visreg(svg)] fn resvg_filters_feFlood_with_opacity_on_target_element() {}
+#[visreg(svg)] fn resvg_painting_overflow_auto_on_marker() {}
+#[visreg(svg)] fn resvg_text_writing_mode_tb_with_alignment() {}
+#[visreg(svg)] fn resvg_structure_use_indirect_recursive_3() {}
+#[visreg(svg)] fn resvg_text_alignment_baseline_inherit() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_subregion_3() {}
+#[visreg(svg)] fn resvg_shapes_path_M_A_trimmed() {}
+#[visreg(svg)] fn resvg_painting_opacity_bBox_impact() {}
+#[visreg(svg)] fn resvg_shapes_path_M_L_M_Z() {}
+#[visreg(svg)] fn resvg_painting_stroke_radial_gradient() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_recursive_xlink_href() {}
+#[visreg(svg)] fn resvg_shapes_path_M_M_rel() {}
+#[visreg(svg)] fn resvg_structure_switch_systemLanguage_en_GB() {}
+#[visreg(svg)] fn resvg_text_writing_mode_vertical_lr() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_inheritance_5() {}
+#[visreg(svg)] fn resvg_filters_feSpecularLighting_with_feSpotLight() {}
+#[visreg(svg)] fn resvg_filters_filter_transform_on_filter() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_3() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_targetX_2() {}
+#[visreg(svg)] fn resvg_filters_filter_on_a_vertical_line() {}
+#[visreg(svg)] fn resvg_painting_stroke_dasharray_percent_units() {}
+#[visreg(svg)] fn resvg_structure_image_embedded_png() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_no_width_and_height() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_attributes_via_xlink_href_from_rect() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_mixed_types() {}
+#[visreg(svg)] fn resvg_filters_enable_background_stop_on_the_first_new_1() {}
+#[visreg(svg)] fn resvg_masking_clip_rule_clip_rule_evenodd() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_radius_with_too_many_values() {}
+#[visreg(svg)] fn custom_masking_clipPath_complex_clip_path_with_nested_clip_path_on_child() {}
+#[visreg(svg)] fn resvg_text_textPath_invalid_textPath_in_the_middle() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_nested_with_baseline_1() {}
+#[visreg(svg)] fn resvg_structure_transform_nested_transforms_2() {}
+#[visreg(svg)] fn resvg_painting_stroke_radial_gradient_on_text() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_with_a_negative_value_1() {}
+#[visreg(svg)] fn resvg_structure_symbol_with_viewBox_and_custom_use_rect() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_external_svg_with_transform() {}
+#[visreg(svg)] fn resvg_filters_filter_in_FillPaint_on_g_without_children() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_no_stops() {}
+#[visreg(svg)] fn resvg_text_color_font_mixed_text_rtl() {}
+#[visreg(svg)] fn resvg_text_alignment_baseline_alphabetic() {}
+#[visreg(svg)] fn resvg_text_textPath_startOffset__100() {}
+// need to investigate
+#[visreg(svg, ignore)] fn resvg_text_text_compound_emojis_and_coordinates_list() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_one_invalid_url_in_list() {}
+#[visreg(svg)] fn resvg_painting_stroke_named_color() {}
+#[visreg(svg)] fn resvg_painting_stroke_opacity_on_text() {}
+#[visreg(svg)] fn resvg_filters_feTurbulence_no_attributes() {}
+#[visreg(svg)] fn resvg_text_textPath_with_text_anchor() {}
+#[visreg(svg)] fn resvg_painting_stroke_gradient_with_objectBoundingBox_on_path_without_a_bbox_1() {}
+#[visreg(svg)] fn resvg_text_text_percent_value_on_dx_and_dy() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_blur_function() {}
+#[visreg(svg)] fn resvg_text_text_rendering_geometricPrecision() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_targetX_3() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_default_attributes() {}
+#[visreg(svg)] fn resvg_shapes_path_multi_line_data() {}
+#[visreg(svg)] fn resvg_shapes_path_M_rel_M_rel_implicit_M_rel_implicit() {}
+#[visreg(svg)] fn resvg_text_glyph_orientation_vertical_simple_case() {}
+#[visreg(svg)] fn resvg_text_textPath_with_baseline_shift_and_rotate() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_2() {}
+#[visreg(svg)] fn resvg_filters_filter_in_StrokePaint() {}
+#[visreg(svg)] fn resvg_painting_color_recursive_nested_context() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_inheritance_4() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_blur_function_two_values() {}
+#[visreg(svg)] fn resvg_masking_clipPath_on_the_root_svg_with_size() {}
+#[visreg(svg)] fn resvg_painting_fill_invalid_RRGGBB_1() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_2() {}
+#[visreg(svg)] fn resvg_painting_stroke_miterlimit_default() {}
+#[visreg(svg)] fn resvg_structure_image_embedded_svg_with_text() {}
+#[visreg(svg)] fn resvg_text_font_simple_case() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_subregion_2() {}
+#[visreg(svg)] fn resvg_shapes_path_M_L_Z_A() {}
+#[visreg(svg)] fn resvg_masking_mask_with_clip_path() {}
+#[visreg(svg)] fn resvg_structure_use_indirect_recursive_2() {}
+#[visreg(svg)] fn resvg_filters_filter_invalid_filterUnits() {}
+#[visreg(svg)] fn resvg_text_letter_spacing_mixed_spacing() {}
+#[visreg(svg)] fn resvg_shapes_path_M_L_M_L() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_custom_divisor() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_patternContentUnits_with_viewBox() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_2() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_with_viewBox_and_percent_values() {}
+#[visreg(svg)] fn resvg_filters_filter_in_to_invalid_2() {}
+#[visreg(svg)] fn resvg_filters_filter_invalid_FuncIRI() {}
+#[visreg(svg)] fn resvg_text_tref_xml_space() {}
+#[visreg(svg)] fn resvg_structure_switch_single_child() {}
+#[visreg(svg)] fn resvg_painting_mix_blend_mode_screen() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_gradientUnits_userSpaceOnUse() {}
+#[visreg(svg)] fn resvg_painting_context_in_use() {}
+#[visreg(svg)] fn resvg_filters_filter_subregion_bigger_that_region() {}
+#[visreg(svg)] fn resvg_structure_transform_skewX() {}
+#[visreg(svg)] fn resvg_painting_fill_opacity_with_linearGradient() {}
+#[visreg(svg)] fn resvg_shapes_rect_zero_rx_attribute_resolving() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_with_overflow_auto() {}
+#[visreg(svg)] fn resvg_text_baseline_shift__50percent() {}
+#[visreg(svg)] fn resvg_structure_svg_explicit_svg_namespace() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_fx_resolving_1() {}
+#[visreg(svg)] fn resvg_filters_filter_in_SourceAlpha() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_6() {}
+#[visreg(svg)] fn resvg_filters_filter_transform_on_shape() {}
+#[visreg(svg)] fn resvg_masking_mask_with_opacity_3() {}
+#[visreg(svg)] fn resvg_masking_clipPath_no_children() {}
+#[visreg(svg)] fn resvg_shapes_path_extra_spaces() {}
+#[visreg(svg)] fn resvg_text_alignment_baseline_baseline() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_surfaceScale__10() {}
+#[visreg(svg)] fn resvg_filters_feSpotLight_specularExponent__10() {}
+#[visreg(svg)] fn resvg_text_unicode_bidi_bidi_override() {}
+#[visreg(svg)] fn resvg_painting_context_in_nested_use_and_marker() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_with_rect() {}
+#[visreg(svg)] fn resvg_shapes_rect_negative_width_attribute_processing() {}
+#[visreg(svg)] fn resvg_text_tspan_mixed_font_size() {}
+#[visreg(svg)] fn resvg_filters_feBlend_with_subregion_on_input_2() {}
+#[visreg(svg)] fn resvg_filters_feDistantLight_only_azimuth() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_child_1() {}
+#[visreg(svg)] fn resvg_text_color_font_colrv1() {}
+#[visreg(svg)] fn resvg_shapes_polyline_ignore_odd_points() {}
+#[visreg(svg)] fn resvg_shapes_rect_em_values() {}
+#[visreg(svg)] fn resvg_painting_stroke_linecap_open_path_with_round() {}
+#[visreg(svg)] fn resvg_painting_stroke_linecap_zero_length_path_with_butt() {}
+#[visreg(svg)] fn resvg_painting_paint_order_fill() {}
+#[visreg(svg)] fn resvg_structure_use_opacity_inheritance() {}
+#[visreg(svg)] fn resvg_text_font_weight_bold() {}
+#[visreg(svg)] fn resvg_masking_mask_half_width_region_with_rotation() {}
+#[visreg(svg)] fn resvg_text_lengthAdjust_spacingAndGlyphs() {}
+#[visreg(svg)] fn resvg_text_text_decoration_underline_with_rotate_list_4() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_central() {}
+#[visreg(svg)] fn resvg_shapes_ellipse_missing_cy_attribute() {}
+#[visreg(svg)] fn resvg_text_text_decoration_line_through() {}
+#[visreg(svg)] fn resvg_text_tspan_tspan_bbox_1() {}
+#[visreg(svg)] fn resvg_filters_filter_content_outside_the_canvas() {}
+#[visreg(svg)] fn resvg_shapes_path_M_L_M() {}
+#[visreg(svg)] fn resvg_painting_fill_rgb_int_int_int() {}
+#[visreg(svg)] fn resvg_filters_filter_with_mask_on_parent() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientUnits_userSpaceOnUse() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_discrete_on_blue() {}
+#[visreg(svg)] fn resvg_painting_stroke_line_as_curve_2() {}
+#[visreg(svg)] fn resvg_text_text_ligatures_handling_in_mixed_fonts_1() {}
+#[visreg(svg)] fn resvg_masking_mask_mask_type_invalid() {}
+#[visreg(svg)] fn resvg_shapes_polyline_not_enough_points() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_no_height_on_svg() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_single_light_source() {}
+#[visreg(svg)] fn resvg_filters_feBlend_mode_normal() {}
+#[visreg(svg)] fn resvg_painting_opacity_clamp_value_2() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clip_rule_evenodd() {}
+#[visreg(svg)] fn resvg_filters_feComposite_operator_in() {}
+// no relative paths supported
+#[visreg(svg, ignore)] fn resvg_structure_image_no_height() {}
+#[visreg(svg)] fn resvg_structure_image_preserveAspectRatio_xMaxYMax_slice_on_svg() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_invalid_gradientUnits() {}
+#[visreg(svg)] fn resvg_filters_feFlood_complex_transform() {}
+#[visreg(svg)] fn resvg_masking_mask_maskUnits_userSpaceOnUse_without_rect() {}
+// need to investigate
+#[visreg(svg, ignore)] fn resvg_text_text_emojis() {}
+#[visreg(svg)] fn resvg_shapes_rect_missing_height_attribute_processing() {}
+#[visreg(svg)] fn resvg_painting_stroke_none() {}
+#[visreg(svg)] fn resvg_filters_feGaussianBlur_stdDeviation_with_two_different_values() {}
+#[visreg(svg)] fn resvg_shapes_circle_missing_cx_and_cy_attributes() {}
+#[visreg(svg)] fn resvg_text_color_font_colrv0() {}
+#[visreg(svg)] fn resvg_filters_feDropShadow_with_percent_offset() {}
+#[visreg(svg)] fn resvg_painting_fill_funcIRI_to_a_missing_element_with_a_none_fallback() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_right() {}
+#[visreg(svg)] fn resvg_filters_filter_region_with_stroke() {}
+#[visreg(svg)] fn resvg_shapes_path_M_H_H() {}
+#[visreg(svg)] fn resvg_structure_use_position_inheritance() {}
+#[visreg(svg)] fn resvg_painting_isolation_isolate() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_attributes_via_xlink_href() {}
+#[visreg(svg)] fn resvg_structure_image_external_webp() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_inheritance_1() {}
+#[visreg(svg)] fn resvg_structure_image_url_to_png() {}
+#[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_without_k1_4() {}
+#[visreg(svg)] fn resvg_shapes_ellipse_simple_case() {}
+#[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_9() {}
+#[visreg(svg)] fn resvg_text_textPath_startOffset_30() {}
+#[visreg(svg)] fn resvg_painting_paint_order_stroke_invalid() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_hue_rotate_function_default_value() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_transform_on_parent() {}
+#[visreg(svg)] fn resvg_shapes_path_negative_sweep_flag_value() {}
+#[visreg(svg)] fn resvg_painting_stroke_dasharray_multiple_subpaths() {}
+#[visreg(svg)] fn resvg_painting_fill_pattern_on_text() {}
+#[visreg(svg)] fn resvg_filters_filter_color_interpolation_filters_sRGB() {}
+#[visreg(svg)] fn resvg_painting_mix_blend_mode_luminosity() {}
+#[visreg(svg)] fn resvg_text_text_x_and_y_with_multiple_values_and_arabic_text() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_7() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_edgeMode_wrap_with_matrix_larger_than_target() {}
+#[visreg(svg)] fn resvg_masking_mask_with_opacity_2() {}
+#[visreg(svg)] fn resvg_filters_filter_in_BackgroundAlpha_with_enable_background() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_200percent() {}
+#[visreg(svg)] fn resvg_painting_marker_orient_9999() {}
+// need to check how Firefox does it
+#[visreg(svg, ignore)] fn resvg_painting_stroke_linecap_zero_length_path_with_square() {}
+#[visreg(svg)] fn resvg_text_textPath_path_with_ClosePath() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_invalid_offset_1() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_with_relative_width_and_height() {}
+#[visreg(svg)] fn resvg_text_letter_spacing_0() {}
+#[visreg(svg)] fn resvg_structure_transform_skewY() {}
+#[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_with_opacity() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_fx_resolving_2() {}
+#[visreg(svg)] fn resvg_shapes_polygon_not_enough_points() {}
+#[visreg(svg)] fn resvg_painting_visibility_hidden_on_tspan() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clip_path_on_child() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_5() {}
+#[visreg(svg)] fn resvg_text_font_family_bold_sans_serif() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_subregion_5() {}
+#[visreg(svg)] fn resvg_filters_feColorMatrix_without_a_type() {}
+#[visreg(svg)] fn resvg_painting_marker_orient_auto_on_M_L_L_Z_Z_Z() {}
+#[visreg(svg)] fn resvg_structure_symbol_unused_symbol() {}
+#[visreg(svg)] fn resvg_filters_feTurbulence_seed_20() {}
+#[visreg(svg)] fn resvg_text_writing_mode_inheritance() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_inheritance_3() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_different_alignment_baseline_on_tspan() {}
+#[visreg(svg)] fn resvg_filters_feBlend_with_subregion_on_input_1() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_child_2() {}
+#[visreg(svg)] fn resvg_structure_image_with_zero_width_and_height() {}
+#[visreg(svg)] fn resvg_painting_marker_orient_auto_on_M_L_M_C() {}
+#[visreg(svg)] fn resvg_text_textPath_invalid_link() {}
+#[visreg(svg)] fn resvg_filters_enable_background_new_with_region() {}
+#[visreg(svg)] fn resvg_painting_fill_missing_FuncIRI_with_a_currentColor_fallback() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_nested() {}
+#[visreg(svg)] fn resvg_structure_transform_empty() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_many_stops() {}
+#[visreg(svg)] fn resvg_painting_fill_rule_evenodd() {}
+#[visreg(svg)] fn custom_structure_viewbox_negative_viewbox() {}
+#[visreg(svg)] fn resvg_structure_a_inside_text() {}
+#[visreg(svg)] fn resvg_text_textPath_startOffset_10percent() {}
+#[visreg(svg)] fn resvg_text_textLength_arabic_with_lengthAdjust() {}
+#[visreg(svg)] fn resvg_painting_stroke_pattern_with_objectBoundingBox_on_zero_bbox_shape() {}
+#[visreg(svg)] fn resvg_text_tspan_with_x_and_y() {}
+#[visreg(svg)] fn resvg_painting_stroke_miterlimit_value_with_mm() {}
+#[visreg(svg)] fn resvg_painting_shape_rendering_auto_on_circle() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_linearRGB_color_interpolation() {}
+#[visreg(svg)] fn resvg_text_tspan_tspan_bbox_2() {}
+#[visreg(svg)] fn resvg_filters_feSpecularLighting_specularExponent_256() {}
+#[visreg(svg)] fn resvg_text_text_complex_graphemes() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_divisor_0() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_em_values() {}
+#[visreg(svg)] fn resvg_shapes_rect_zero_width_attribute_processing() {}
+#[visreg(svg)] fn resvg_text_writing_mode_tb_with_rotate_and_underline() {}
+#[visreg(svg)] fn resvg_text_text_ligatures_handling_in_mixed_fonts_2() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_hanging() {}
+#[visreg(svg)] fn resvg_painting_stroke_line_as_curve_1() {}
+#[visreg(svg)] fn resvg_painting_stroke_miterlimit_value_with_percent() {}
+#[visreg(svg)] fn resvg_masking_clipPath_simple_case() {}
+#[visreg(svg)] fn resvg_shapes_circle_negative_r_attribute() {}
+#[visreg(svg)] fn resvg_painting_opacity_clamp_value_1() {}
+#[visreg(svg)] fn resvg_structure_use_with_size() {}
+#[visreg(svg)] fn resvg_painting_stroke_dasharray_comma_ws_separator() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_stop_color_with_currentColor_4() {}
+#[visreg(svg)] fn resvg_filters_feTurbulence_baseFrequency_0_05_0_01() {}
+#[visreg(svg)] fn resvg_painting_fill_opacity_with_opacity() {}
+#[visreg(svg)] fn resvg_structure_systemLanguage_en_GB() {}
+#[visreg(svg)] fn resvg_text_font_style_oblique() {}
+#[visreg(svg)] fn resvg_structure_transform_rotate_at_position() {}
+#[visreg(svg)] fn resvg_text_text_rotate_with_more_values_than_characters() {}
+#[visreg(svg)] fn resvg_painting_marker_zero_sized() {}
+#[visreg(svg)] fn resvg_filters_feSpotLight_complex_transform() {}
+#[visreg(svg)] fn resvg_masking_clipPath_overlapped_shapes_with_evenodd() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_deeply_nested_super() {}
+#[visreg(svg)] fn resvg_text_tspan_bidi_reordering() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_child_3() {}
+#[visreg(svg)] fn resvg_filters_feSpotLight_limitingConeAngle_anti_aliasing() {}
+#[visreg(svg)] fn resvg_shapes_line_with_transform() {}
+#[visreg(svg)] fn resvg_structure_svg_no_children() {}
+#[visreg(svg)] fn resvg_masking_clipPath_transform_on_clipPath() {}
+#[visreg(svg)] fn resvg_painting_paint_order_markers_stroke() {}
+#[visreg(svg)] fn resvg_text_text_xml_space() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_viewBox_via_xlink_href() {}
+#[visreg(svg)] fn resvg_filters_filter_negative_subregion() {}
+#[visreg(svg)] fn resvg_masking_clipPath_with_use_child() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_inheritance_2() {}
+#[visreg(svg)] fn resvg_filters_enable_background_accumulate_with_new() {}
+#[visreg(svg)] fn resvg_shapes_polygon_ignore_odd_points() {}
+#[visreg(svg)] fn resvg_painting_display_none_on_clipPath() {}
+#[visreg(svg)] fn resvg_painting_mix_blend_mode_normal() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_on_group() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_subregion_4() {}
+#[visreg(svg)] fn resvg_painting_context_with_viewbox() {}
+#[visreg(svg)] fn resvg_structure_svg_xmlns_validation() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_nested_length() {}
+#[visreg(svg)] fn resvg_text_writing_mode_arabic_with_rl() {}
+#[visreg(svg)] fn resvg_text_text_decoration_all_types_inline_comma_separated() {}
+#[visreg(svg)] fn resvg_painting_stroke_dasharray_0_n_with_butt_caps() {}
+#[visreg(svg)] fn resvg_masking_mask_with_opacity_1() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_missing_offset_4() {}
+#[visreg(svg)] fn resvg_text_letter_spacing_1mm() {}
+#[visreg(svg)] fn resvg_text_textLength_on_text_and_tspan() {}
+#[visreg(svg)] fn resvg_shapes_rect_rx_and_ry_attributes_clamping_order() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_fx_resolving_3() {}
+#[visreg(svg)] fn resvg_painting_marker_invalid_child() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_invalid_offset_2() {}
+#[visreg(svg)] fn resvg_painting_mix_blend_mode_saturation() {}
+#[visreg(svg)] fn resvg_text_letter_spacing_3() {}
+#[visreg(svg)] fn resvg_text_tspan_with_dy() {}
+#[visreg(svg)] fn resvg_painting_fill_funcIRI_to_a_missing_element_with_a_fallback_color() {}
+#[visreg(svg)] fn resvg_text_tref_link_to_a_non_SVG_element() {}
+#[visreg(svg)] fn resvg_text_direction_rtl() {}
+#[visreg(svg)] fn resvg_painting_stroke_miterlimit_invalid_value() {}
+#[visreg(svg)] fn resvg_shapes_line_no_y2_coordinate() {}
+#[visreg(svg)] fn resvg_filters_feDropShadow_with_flood_color() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_patternUnits_objectBoundingBox() {}
+#[visreg(svg)] fn resvg_structure_use_style_inheritance_2() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_url_and_grayscale() {}
+#[visreg(svg)] fn resvg_shapes_path_M_V_V_implicit() {}
+#[visreg(svg)] fn resvg_shapes_rect_ry_attribute_clamping() {}
+#[visreg(svg)] fn resvg_filters_filter_in_FillPaint() {}
+#[visreg(svg)] fn resvg_painting_mix_blend_mode_hue() {}
+#[visreg(svg)] fn resvg_painting_marker_orient_1_5rad() {}
+#[visreg(svg)] fn resvg_text_tspan_nested() {}
+#[visreg(svg)] fn resvg_shapes_ellipse_percent_values() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_on_text_path() {}
+#[visreg(svg)] fn resvg_text_textPath_tspan_with_relative_position() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_operator_dilate() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_lighting_color_currentColor_without_color() {}
+#[visreg(svg)] fn resvg_painting_marker_target_with_subpaths_2() {}
+#[visreg(svg)] fn resvg_text_textPath_startOffset_9999() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_opacity_50percent() {}
+#[visreg(svg)] fn resvg_filters_feGaussianBlur_stdDeviation_0_5() {}
+#[visreg(svg)] fn resvg_text_text_decoration_underline_with_dy_list_2() {}
+#[visreg(svg)] fn resvg_filters_filter_transform_on_shape_with_filter_region() {}
+#[visreg(svg)] fn resvg_filters_filter_in_FillPaint_with_pattern() {}
+#[visreg(svg)] fn resvg_shapes_line_no_x1_and_y1_coordinates() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_4_4() {}
+#[visreg(svg)] fn resvg_structure_systemLanguage_ru_en() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_length_percent() {}
+#[visreg(svg)] fn resvg_painting_marker_recursive_5() {}
+#[visreg(svg)] fn resvg_text_text_decoration_underline_with_y_list() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_self_recursive_on_child() {}
+#[visreg(svg)] fn resvg_filters_filter_on_group_with_child_outside_of_canvas() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_simple_case() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_no_radius() {}
+#[visreg(svg)] fn resvg_painting_fill_hsl_360_100percent_25percent() {}
+#[visreg(svg)] fn resvg_painting_stroke_linecap_open_path_with_butt() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_one_invalid_function_in_list() {}
+#[visreg(svg)] fn resvg_painting_marker_orient__45() {}
+#[visreg(svg)] fn resvg_structure_image_preserveAspectRatio_xMidYMid_meet_on_svg() {}
+#[visreg(svg)] fn resvg_shapes_rect_negative_height_attribute_processing() {}
+#[visreg(svg)] fn resvg_text_font_size_ex() {}
+#[visreg(svg)] fn resvg_filters_filter_with_mask() {}
+#[visreg(svg)] fn resvg_painting_visibility_bbox_impact_3() {}
+#[visreg(svg)] fn resvg_painting_stroke_linecap_round() {}
+#[visreg(svg)] fn resvg_painting_marker_marker_with_a_negative_size() {}
+#[visreg(svg)] fn resvg_structure_a_on_tspan() {}
+#[visreg(svg)] fn resvg_masking_mask_color_interpolation_linearRGB() {}
+#[visreg(svg)] fn resvg_text_text_x_and_y_with_more_values_than_characters() {}
+#[visreg(svg)] fn resvg_shapes_ellipse_missing_cx_attribute() {}
+#[visreg(svg)] fn resvg_structure_svg_proportional_viewBox() {}
+#[visreg(svg)] fn resvg_structure_style_universal_selector() {}
+#[visreg(svg)] fn resvg_filters_feGaussianBlur_complex_transform() {}
+#[visreg(svg)] fn resvg_shapes_path_M_M_implicit_M_implicit() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_auto() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_with_rect_and_viewBox_and_percent_values() {}
+#[visreg(svg)] fn resvg_painting_visibility_bbox_impact_2() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_only_offset() {}
+#[visreg(svg)] fn resvg_structure_image_with_transform() {}
+#[visreg(svg)] fn resvg_structure_switch_display_none_on_child() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_with_rotate() {}
+#[visreg(svg)] fn resvg_painting_stroke_linejoin_miter() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_0() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_preserveAlpha_true() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_recursive_xlink_href_1() {}
+#[visreg(svg)] fn resvg_painting_visibility_hidden_on_group() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientTransform() {}
+#[visreg(svg)] fn resvg_shapes_rect_vmin_and_vmax_values() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clip_path_on_child_with_transform() {}
+#[visreg(svg)] fn resvg_painting_fill_opacity_nested() {}
+#[visreg(svg)] fn custom_structure_image_embedded_jpeg_as_image_jpeg() {}
+#[visreg(svg)] fn resvg_painting_marker_recursive_4() {}
+#[visreg(svg)] fn resvg_painting_stroke_control_points_clamping_1() {}
+#[visreg(svg)] fn resvg_filters_feBlend_mode_hue() {}
+#[visreg(svg)] fn resvg_text_textLength_75percent() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clipping_with_complex_text_and_clip_rule() {}
+#[visreg(svg)] fn resvg_painting_paint_order_normal() {}
+#[visreg(svg)] fn resvg_structure_symbol_with_viewBox() {}
+#[visreg(svg)] fn resvg_masking_mask_on_group_with_transform() {}
+#[visreg(svg)] fn resvg_structure_svg_viewBox_not_at_zero_pos() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_simple_case() {}
+#[visreg(svg)] fn resvg_structure_switch_with_attributes() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_and_tableValues_1() {}
+#[visreg(svg)] fn resvg_filters_feComposite_invalid_operator() {}
+#[visreg(svg)] fn resvg_painting_display_bBox_impact() {}
+#[visreg(svg)] fn resvg_painting_stroke_miterlimit_valid_value() {}
+#[visreg(svg)] fn resvg_shapes_rect_vi_and_vb_values() {}
+#[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_6() {}
+#[visreg(svg)] fn resvg_structure_image_embedded_jpeg_without_mime() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_mixed_nested() {}
+#[visreg(svg)] fn resvg_filters_feComposite_operator_over() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientTransform_and_transform() {}
+#[visreg(svg)] fn resvg_text_font_family_fallback_1() {}
+#[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0__1() {}
+#[visreg(svg)] fn resvg_structure_symbol_opacity_on_symbol_with_viewBox() {}
+#[visreg(svg)] fn resvg_painting_marker_with_viewBox_1() {}
+#[visreg(svg)] fn resvg_painting_fill_uppercase_rgb_color() {}
+#[visreg(svg)] fn resvg_masking_mask_invisible_child_2() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_zero_radius() {}
+#[visreg(svg)] fn resvg_text_textPath_with_path() {}
+#[visreg(svg)] fn resvg_painting_display_none_on_rect() {}
+#[visreg(svg)] fn resvg_structure_use_style_inheritance_3() {}
+// spreadMethod repeat not supported
+#[visreg(svg, ignore)] fn resvg_paint_servers_linearGradient_spreadMethod_repeat() {}
+#[visreg(svg)] fn resvg_text_font_size_ex_nested_and_mixed() {}
+#[visreg(svg)] fn resvg_text_font_family_noto_sans() {}
+#[visreg(svg)] fn resvg_text_text_anchor_on_tspan_with_arabic() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clip_rule_from_parent_node() {}
+#[visreg(svg)] fn resvg_filters_filter_in_FillPaint_with_gradient() {}
+#[visreg(svg)] fn resvg_masking_clipPath_invalid_clip_path_on_child() {}
+#[visreg(svg)] fn resvg_structure_use_style_inheritance_1() {}
+#[visreg(svg)] fn resvg_text_word_spacing_normal() {}
+#[visreg(svg)] fn resvg_masking_mask_mask_on_child() {}
+#[visreg(svg)] fn resvg_text_alignment_baseline_before_edge() {}
+#[visreg(svg)] fn resvg_shapes_rect_simple_case() {}
+#[visreg(svg)] fn resvg_painting_stroke_pattern_on_text() {}
+#[visreg(svg)] fn resvg_text_font_size_named_value() {}
+#[visreg(svg)] fn resvg_painting_paint_order_duplicates() {}
+#[visreg(svg)] fn resvg_text_font_variant_small_caps() {}
+#[visreg(svg)] fn resvg_painting_marker_on_ArcTo() {}
+#[visreg(svg)] fn resvg_structure_transform_default() {}
+#[visreg(svg)] fn resvg_painting_context_in_marker() {}
+#[visreg(svg)] fn resvg_painting_marker_orient_30() {}
+#[visreg(svg)] fn resvg_painting_context_on_shape_with_zero_size_bbox() {}
+#[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_4() {}
+#[visreg(svg)] fn resvg_filters_feTurbulence_type_invalid() {}
+#[visreg(svg)] fn resvg_filters_fePointLight_default_attributes() {}
+#[visreg(svg)] fn resvg_painting_marker_target_with_subpaths_1() {}
+#[visreg(svg)] fn resvg_text_tspan_rotate_and_display_none() {}
+#[visreg(svg)] fn resvg_filters_enable_background_with_filter() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_surfaceScale_5() {}
+#[visreg(svg)] fn resvg_masking_clipPath_none() {}
+#[visreg(svg)] fn resvg_painting_fill_radial_gradient_on_shape() {}
+#[visreg(svg)] fn resvg_structure_transform_scale_without_Y() {}
+#[visreg(svg)] fn resvg_filters_feColorMatrix_type_matrix_with_not_enough_values() {}
+#[visreg(svg)] fn resvg_structure_symbol_content_outside_the_viewbox() {}
+#[visreg(svg)] fn resvg_text_text_decoration_underline_with_dy_list_1() {}
+#[visreg(svg)] fn resvg_text_text_anchor_coordinates_list() {}
+#[visreg(svg)] fn resvg_structure_svg_rect_inside_a_non_SVG_element() {}
+#[visreg(svg)] fn resvg_filters_feOffset_simple_case() {}
+#[visreg(svg)] fn resvg_masking_mask_mask_on_self_with_mask_type_alpha() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_ideographic() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_with_an_empty_tableValues() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_no_children() {}
+#[visreg(svg)] fn resvg_structure_systemLanguage_en() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_recursive_xlink_href_3() {}
+#[visreg(svg)] fn resvg_filters_feSpecularLighting_lighting_color_hsla() {}
+#[visreg(svg)] fn resvg_structure_defs_style_inheritance() {}
+#[visreg(svg)] fn resvg_painting_mix_blend_mode_overlay() {}
+#[visreg(svg)] fn resvg_painting_paint_order_stroke_markers_fill() {}
+#[visreg(svg)] fn resvg_painting_fill_rule_nonzero() {}
+#[visreg(svg)] fn resvg_painting_fill_funcIRI_to_an_invalid_element_with_a_none_fallback() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_invalid_type() {}
+#[visreg(svg)] fn resvg_structure_g_recursive_inheritance() {}
+#[visreg(svg)] fn resvg_painting_fill_hsl_999_100percent_25percent() {}
+#[visreg(svg)] fn resvg_painting_marker_marker_on_line() {}
+#[visreg(svg)] fn resvg_paint_servers_stop_color_simple_case() {}
+#[visreg(svg)] fn resvg_text_font_size_inheritance() {}
+#[visreg(svg)] fn resvg_text_direction_rtl_with_vertical_writing_mode() {}
+// invalid size
+#[visreg(svg, ignore)] fn resvg_structure_svg_no_size() {}
+#[visreg(svg)] fn resvg_painting_visibility_bbox_impact_1() {}
+#[visreg(svg)] fn resvg_painting_paint_order_invalid() {}
+#[visreg(svg)] fn resvg_shapes_path_empty() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_text_before_edge() {}
+#[visreg(svg)] fn resvg_painting_fill_opacity_half_opacity() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_on_clippath_objectBoundingBox() {}
+#[visreg(svg)] fn resvg_painting_fill_rgb_color_with_floats() {}
+#[visreg(svg)] fn resvg_structure_transform_zeroed_matrix() {}
+#[visreg(svg)] fn resvg_text_word_spacing__5() {}
+#[visreg(svg)] fn resvg_text_font_size_em() {}
+#[visreg(svg)] fn resvg_structure_use_href_without_the_xlink_namespace() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_keyword_length() {}
+#[visreg(svg)] fn resvg_shapes_path_M_L_L_Z_rel() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_hue_rotate_function_45rad() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_no_kernelMatrix() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_recursive_xlink_href_2() {}
+#[visreg(svg)] fn resvg_structure_symbol_opacity_on_use() {}
+#[visreg(svg)] fn custom_structure_image_png_lumaa_16() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_kernelMatrix_with_not_enough_values() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_kernelMatrix_with_zero_sum_and_no_divisor() {}
+#[visreg(svg)] fn resvg_filters_feImage_link_to_an_invalid_element() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_stops_via_xlink_href_from_linearGradient() {}
+#[visreg(svg)] fn resvg_painting_stroke_control_points_clamping_2() {}
+#[visreg(svg)] fn resvg_text_text_anchor_text_anchor_not_on_text_chunk() {}
+#[visreg(svg)] fn resvg_structure_svg_preserveAspectRatio_none() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_4() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_default_value() {}
+#[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_with_large_k1_4() {}
+#[visreg(svg)] fn resvg_text_word_spacing_2mm() {}
+#[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_5() {}
+#[visreg(svg)] fn resvg_text_letter_spacing_large_negative() {}
+#[visreg(svg)] fn resvg_painting_overflow_visible_on_marker() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_stops_via_xlink_href_from_radialGradient() {}
+#[visreg(svg)] fn resvg_shapes_path_out_of_range_sweep_flag_value() {}
+#[visreg(svg)] fn resvg_text_font_family_fallback_2() {}
+#[visreg(svg)] fn resvg_masking_clipPath_circle_shorthand_with_view_box() {}
+#[visreg(svg)] fn resvg_painting_marker_with_viewBox_2() {}
+#[visreg(svg)] fn resvg_shapes_rect_missing_width_attribute_processing() {}
+#[visreg(svg)] fn resvg_structure_switch_simple_case() {}
+#[visreg(svg)] fn resvg_structure_defs_ignore_shapes_inside_defs() {}
+#[visreg(svg)] fn resvg_shapes_rect_ry_attribute_resolving() {}
+#[visreg(svg)] fn resvg_shapes_path_M_S_S() {}
+#[visreg(svg)] fn resvg_masking_mask_invisible_child_1() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_sub() {}
+#[visreg(svg)] fn resvg_masking_mask_recursive_on_child() {}
+#[visreg(svg)] fn resvg_structure_use_xlink_to_svg_element_with_rect() {}
+#[visreg(svg)] fn resvg_structure_switch_systemLanguage_ru_Ru() {}
+#[visreg(svg)] fn resvg_shapes_rect_invalid_coordinates() {}
+#[visreg(svg)] fn resvg_text_text_anchor_inheritance_1() {}
+#[visreg(svg)] fn resvg_painting_stroke_pattern_with_objectBoundingBox_fallback_on_zero_bbox_shape() {}
+#[visreg(svg)] fn resvg_masking_clipPath_circle_shorthand_with_stroke_box() {}
+#[visreg(svg)] fn resvg_filters_feComposite_empty() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_diffuseConstant__1() {}
+#[visreg(svg)] fn resvg_text_text_anchor_end_on_text() {}
+#[visreg(svg)] fn resvg_painting_marker_marker_on_polygon() {}
+#[visreg(svg)] fn resvg_text_textPath_with_baseline_shift() {}
+#[visreg(svg)] fn resvg_text_letter_spacing__3() {}
+// need to check how Chrome does it
+#[visreg(svg, ignore)] fn resvg_painting_stroke_linecap_zero_length_path_with_round() {}
+#[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_1() {}
+#[visreg(svg)] fn resvg_structure_transform_extra_spaces() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_only_X_offset() {}
+#[visreg(svg)] fn resvg_filters_feDiffuseLighting_surfaceScale_0() {}
+#[visreg(svg)] fn resvg_text_text_anchor_start_on_text() {}
+#[visreg(svg)] fn resvg_painting_stroke_gradient_with_objectBoundingBox_and_fallback_on_lines() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_0() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_100percent() {}
+#[visreg(svg)] fn resvg_painting_context_with_pattern_objectBoundingBox_in_use() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_stops_via_xlink_href() {}
+#[visreg(svg)] fn resvg_painting_fill_radial_gradient_on_text() {}
+#[visreg(svg)] fn resvg_painting_stroke_width_default() {}
+#[visreg(svg)] fn resvg_painting_marker_recursive_3() {}
+#[visreg(svg)] fn resvg_text_font_stretch_narrower() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_mathematical() {}
+#[visreg(svg)] fn resvg_painting_fill_hsla_with_percentage_s_and_l_values() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_on_pattern_user_space_on_use() {}
+#[visreg(svg)] fn resvg_filters_feConvolveMatrix_order_4_2() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_hue_rotate_function_0_25turn() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_on_blue_twice() {}
+#[visreg(svg)] fn resvg_masking_clipPath_multiple_children() {}
+#[visreg(svg)] fn resvg_shapes_path_M_L_L_implicit() {}
+#[visreg(svg)] fn resvg_text_font_family_source_sans_pro() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_on_image() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_stops_via_xlink_href_from_rect() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_gamma_on_blue() {}
+#[visreg(svg)] fn resvg_painting_fill_opacity_on_text() {}
+#[visreg(svg)] fn resvg_painting_fill_RGBA() {}
+#[visreg(svg)] fn resvg_shapes_rect_ex_values() {}
+#[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0_2() {}
+#[visreg(svg)] fn resvg_structure_symbol_with_overflow_visible() {}
+#[visreg(svg)] fn resvg_masking_clipPath_switch_is_not_a_valid_child() {}
+#[visreg(svg)] fn resvg_text_tspan_pseudo_multi_line() {}
+#[visreg(svg)] fn resvg_painting_marker_orient_auto_on_M_C_L() {}
+// spreadMethod reflect not supported
+#[visreg(svg, ignore)] fn resvg_paint_servers_linearGradient_attributes_via_xlink_href_complex_order() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_focal_point_correction() {}
+#[visreg(svg)] fn resvg_paint_servers_linearGradient_invalid_gradientUnits() {}
+#[visreg(svg)] fn resvg_structure_svg_nested_svg_one_with_rect_and_one_with_viewBox() {}
+#[visreg(svg)] fn resvg_filters_feMerge_color_interpolation_filters_linearRGB() {}
+#[visreg(svg)] fn resvg_text_font_weight_invalid_number_1() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_invalid_patternTransform() {}
+#[visreg(svg)] fn resvg_shapes_line_no_x1_coordinate() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_x_y_and_protruding_subregion_2() {}
+#[visreg(svg)] fn custom_structure_image_png_rgb_16() {}
+#[visreg(svg)] fn resvg_paint_servers_radialGradient_invalid_gradientTransform() {}
+#[visreg(svg)] fn resvg_structure_use_transform_attribute_2() {}
+#[visreg(svg)] fn resvg_filters_filter_invalid_primitive_2() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_no_children() {}
+#[visreg(svg)] fn resvg_painting_visibility_collapse_on_tspan() {}
+#[visreg(svg)] fn resvg_filters_feImage_with_x_y() {}
+#[visreg(svg)] fn resvg_painting_stroke_width_percentage() {}
+#[visreg(svg)] fn resvg_text_word_spacing_0() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_complex() {}
+#[visreg(svg)] fn resvg_structure_use_simple_case() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clipping_with_complex_text_2() {}
+#[visreg(svg)] fn resvg_painting_marker_the_marker_property() {}
+#[visreg(svg)] fn custom_integration_matplotlib_signals() {}
+#[visreg(svg)] fn resvg_text_tspan_rotate_on_child() {}
+#[visreg(svg)] fn resvg_filters_feComposite_with_subregion_on_input_2() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_children_via_xlink_href() {}
+#[visreg(svg)] fn resvg_filters_feImage_link_to_use() {}
+#[visreg(svg)] fn resvg_painting_stroke_opacity_with_linearGradient() {}
+#[visreg(svg)] fn resvg_masking_mask_invalid_child() {}
+#[visreg(svg)] fn resvg_painting_marker_recursive_2() {}
+#[visreg(svg)] fn resvg_text_tspan_mixed() {}
+#[visreg(svg)] fn resvg_shapes_path_no_commawsp_between_and_after_arc_flags() {}
+#[visreg(svg)] fn resvg_structure_use_xlink_to_an_external_file() {}
+#[visreg(svg)] fn resvg_painting_context_with_pattern_on_marker() {}
+#[visreg(svg)] fn resvg_text_text_percent_value_on_x_and_y() {}
+#[visreg(svg)] fn resvg_text_text_dx_and_dy_instead_of_x_and_y() {}
+#[visreg(svg)] fn resvg_structure_switch_systemLanguage_ru_en() {}
+#[visreg(svg)] fn resvg_text_text_rotate_with_an_invalid_angle() {}
+#[visreg(svg)] fn resvg_text_font_weight_inherit() {}
+#[visreg(svg)] fn resvg_structure_switch_systemLanguage() {}
+#[visreg(svg)] fn resvg_text_text_decoration_all_types_nested() {}
+#[visreg(svg)] fn resvg_structure_style_invalid_type() {}
+#[visreg(svg)] fn resvg_shapes_rect_percentage_values_1() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_color_adjust_functions_0percent() {}
+#[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0_50percent() {}
+#[visreg(svg)] fn resvg_structure_transform_origin_right_bottom() {}
+#[visreg(svg)] fn resvg_shapes_path_M_Q_T() {}
+#[visreg(svg)] fn resvg_filters_fePointLight_complex_transform() {}
+#[visreg(svg)] fn resvg_painting_stroke_dasharray_negative_sum() {}
+#[visreg(svg)] fn resvg_structure_use_fill_opacity_inheritance() {}
+#[visreg(svg)] fn resvg_structure_defs_nested_defs() {}
+#[visreg(svg)] fn resvg_text_color_font_cbdt() {}
+#[visreg(svg)] fn resvg_text_baseline_shift_baseline() {}
+#[visreg(svg)] fn resvg_masking_mask_nested_objectBoundingBox() {}
+#[visreg(svg)] fn custom_structure_image_png_lumaa_8() {}
+#[visreg(svg)] fn resvg_filters_filter_complex_order_and_xlink_href() {}
+#[visreg(svg)] fn resvg_text_dominant_baseline_alignment_baseline_and_baseline_shift_on_tspans() {}
+#[visreg(svg)] fn resvg_filters_feImage_embedded_png() {}
+#[visreg(svg)] fn resvg_filters_feColorMatrix_type_matrix_with_too_many_values() {}
+#[visreg(svg)] fn resvg_structure_transform_transform_list() {}
+#[visreg(svg)] fn resvg_text_text_rotate_on_Arabic() {}
+#[visreg(svg)] fn resvg_shapes_line_percent_units() {}
+#[visreg(svg)] fn resvg_filters_enable_background_new() {}
+#[visreg(svg)] fn resvg_text_alignment_baseline_auto() {}
+#[visreg(svg)] fn resvg_text_text_anchor_inheritance_2() {}
+#[visreg(svg)] fn resvg_painting_stroke_linejoin_round() {}
+#[visreg(svg)] fn resvg_masking_clipPath_clip_path_on_self() {}
+#[visreg(svg)] fn resvg_masking_clipPath_mixed_clip_rule() {}
+#[visreg(svg)] fn resvg_filters_feOffset_negative_offset() {}
+#[visreg(svg)] fn resvg_filters_filter_functions_drop_shadow_function_extra_value() {}
+#[visreg(svg)] fn resvg_structure_switch_requiredFeatures() {}
+#[visreg(svg)] fn resvg_paint_servers_pattern_missing_height() {}
+#[visreg(svg)] fn resvg_text_text_anchor_end_with_letter_spacing() {}
+#[visreg(svg)] fn resvg_painting_fill_inherit_without_parent() {}
+#[visreg(svg)] fn resvg_filters_feMorphology_source_with_opacity() {}
+#[visreg(svg)] fn resvg_text_textPath_path_with_subpaths_and_startOffset() {}
+#[visreg(svg)] fn resvg_filters_feComponentTransfer_type_gamma_with_an_invalid_offset() {}
+#[visreg(svg)] fn resvg_text_tspan_nested_rotate() {}
+#[visreg(svg)] fn resvg_text_textPath_very_long_text() {}
 // #[visreg(svg)] fn resvg_text_textPath_dy_with_tiny_coordinates() {}
 // #[visreg(svg)] fn resvg_filters_feSpotLight_default_attributes() {}
 // #[visreg(svg)] fn resvg_painting_stroke_linecap_square() {}

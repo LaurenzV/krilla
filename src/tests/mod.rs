@@ -29,6 +29,7 @@ use once_cell::sync::Lazy;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod manual;
+#[allow(dead_code)]
 mod svg;
 mod visreg;
 
