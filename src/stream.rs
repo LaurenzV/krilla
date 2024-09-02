@@ -31,7 +31,6 @@ use crate::surface::Surface;
 use crate::util::RectWrapper;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
-use crate::page::Page;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {
