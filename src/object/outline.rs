@@ -3,17 +3,21 @@
 //! An outline is a tree-like structure that stores the hierarchical structure of a document.
 //! In particular, in most cases it is used to define the hierarchy of headings in the document.
 //! For example, your document might consist of two first-level headings, which in turn have
-//! more nested headings, which in turn might be nested even further, and so on. The `Outline`
+//! more nested headings, which in turn might be nested even further, and so on. The [`Outline`]
 //! allows you to encode this behavior, and makes it easier to navigate the document in PDF
 //! viewers that support this feature.
 //!
 //! The intended usage is to create a new, empty outline in the very beginning. It represents
 //! the root of the tree. Then, you can create new outline nodes, which you can recursively
 //! nest in any way you wish while processing your document. In the end, you need to push
-//! the first layer of children to the `Outline` object.
+//! the first layer of children to the [`Outline`] object.
 //!
-//! Finally, once you are done building your outline tree, you can use the `set_outline`
-//! function of `Document` to store the outline in the document.
+//! Finally, once you are done building your outline tree, you can use the [`Document::set_outline`]
+//! function of [`Document`] to store the outline in the document.
+//!
+//! [`Document`]: crate::Document
+//! [`Document::set_outline`]: crate::Document::set_outline
+
 
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;

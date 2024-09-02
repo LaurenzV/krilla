@@ -2,7 +2,7 @@
 //!
 //! In 90% of the cases, you will not have to use streams. In most cases,
 //! all you need to do when using this crate is to first construct a document,
-//! and then add new pages to the document and use the `surface` method to get
+//! and then add new pages to the document and use the [`Page::surface`] method to get
 //! access to the drawing context. However, there are cases when you don't want to
 //! draw on the main page surface, but instead you want to create a "sub-surface"
 //! where you can draw independently of the main page contents. This is what streams
@@ -11,13 +11,19 @@
 //! - When using masks and defining the contents of the mask.
 //! - When using a pattern fill or stroke and defining the contents of the pattern.
 //!
-//! If you want to do any of the two above, you need to call the `stream_builder` method
+//! If you want to do any of the two above, you need to call the [`Surface::stream_builder`] method
 //! of the current surface. The stream builder represents a kind of sub-context that is
 //! independent of the main surface you are working with. Once you have a stream builder, you
-//! can once again invoke the `surface` method, and use this new surface to define the contents
-//! of your mask/pattern. In the end, you can call `finish`, which will return a `Stream` object.
-//! This `Stream` object contains the encoded instructions of the mask/pattern, which you can
-//! then use to create new `Pattern`/`Mask` objects.
+//! can once again invoke the [`StreamBuilder::surface`] method, and use this new surface to define the contents
+//! of your mask/pattern. In the end, you can call [`StreamBuilder::finish`] which will return a [`Stream`] object.
+//! This [`Stream`] object contains the encoded instructions of the mask/pattern, which you can
+//! then use to create new [`Pattern`]/[`Mask`] objects.
+//!
+//! [`Page::surface`]: crate::page::Page::surface
+//! [`Surface::stream_builder`]: crate::surface::Surface::stream_builder
+//! [`Pattern`]: crate::paint::Pattern
+//! [`Mask`]: crate::mask::Mask
+
 use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
@@ -25,6 +31,7 @@ use crate::surface::Surface;
 use crate::util::RectWrapper;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
+use crate::page::Page;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 struct Repr {

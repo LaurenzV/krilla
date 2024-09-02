@@ -7,7 +7,7 @@
 //! Rust crates provides.
 //!
 //! Even better is the fact that you do not need to take care of choosing the right
-//! table for drawing glyphs: All you need to do is to provide the `Font` object with
+//! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index and variation coordinates,
 //!
 //! krilla, in principle, also supports variable fonts. However, at the moment, variable

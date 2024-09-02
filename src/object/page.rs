@@ -17,10 +17,12 @@ use tiny_skia_path::Transform;
 /// A single page.
 ///
 /// You cannot create an instance of this type yourself. Instead, you should use the
-/// `add_page` (or a related method) to add a new page to a document. In most cases, all
-/// you need to do is to call the `surface` method so you can start drawing on the page.
+/// [`Document::start_page`] (or a related method) to add a new page to a document. In most cases, all
+/// you need to do is to call the [`Page::surface`] method so you can start drawing on the page.
 /// However, there are a few other operations you can perform, such as adding annotations
 /// to a page.
+///
+/// [`Document::start_page`]: crate::Document::start_page
 pub struct Page<'a> {
     sc: &'a mut SerializerContext,
     page_settings: PageSettings,
