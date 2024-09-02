@@ -841,7 +841,7 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
 
-            let range = g.range.clone();
+            let range = g.text_range.clone();
             let text = &self.text[range.clone()];
             let codepoints = pdf_font.get_codepoints(pdf_glyph);
             let incompatible_codepoint = codepoints.is_some() && codepoints != Some(text);
@@ -890,7 +890,7 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
                 }
             }
 
-            last_range = next.range.clone();
+            last_range = next.text_range.clone();
             count += 1;
         }
 
@@ -962,7 +962,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
                 GlyphProps {
                     font_identifier,
-                    size: g.size,
+                    size: g.font_size,
                     y_offset: g.y_offset,
                 }
             };
@@ -1002,8 +1002,9 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 // Safe because we've already added all glyphs in the text spanner.
                 let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
 
-                let user_units_to_font_units =
-                    |val| pdf_font.to_pdf_font_units(val / g.size * pdf_font.font().units_per_em());
+                let user_units_to_font_units = |val| {
+                    pdf_font.to_pdf_font_units(val / g.font_size * pdf_font.font().units_per_em())
+                };
 
                 InstanceGlyph {
                     pdf_glyph,

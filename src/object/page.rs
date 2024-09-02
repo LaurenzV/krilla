@@ -169,6 +169,7 @@ pub struct PageLabel {
 }
 
 impl PageLabel {
+    /// Create a new page label.
     pub fn new(style: Option<NumberingStyle>, prefix: Option<String>, offset: NonZeroU32) -> Self {
         Self {
             style,
@@ -181,7 +182,7 @@ impl PageLabel {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 
-    pub fn serialize(&self, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)
@@ -205,12 +206,12 @@ impl PageLabel {
 }
 
 #[derive(Hash)]
-pub struct PageLabelContainer<'a> {
+pub(crate) struct PageLabelContainer<'a> {
     labels: &'a [PageLabel],
 }
 
 impl<'a> PageLabelContainer<'a> {
-    pub fn new(labels: &'a [PageLabel]) -> Option<Self> {
+    pub(crate) fn new(labels: &'a [PageLabel]) -> Option<Self> {
         if labels.iter().all(|f| f.is_empty()) {
             None
         } else {

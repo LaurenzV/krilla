@@ -73,6 +73,7 @@ pub(crate) trait InternalColor {
 #[allow(private_bounds)]
 /// A color space and it's associated color.
 pub trait ColorSpace: Debug + Hash + Eq + PartialEq + Clone + Copy {
+    /// The associated color type of the color space.
     type Color: InternalColor + Into<Color> + Debug + Clone + Copy + Default;
 }
 
@@ -305,14 +306,17 @@ pub mod luma {
     }
 
     impl Color {
+        /// Create a new luma color.
         pub fn new(lightness: u8) -> Self {
             Color(lightness)
         }
 
+        /// Create a black luma color.
         pub fn black() -> Self {
             Self::new(0)
         }
 
+        /// Create a white luma color.
         pub fn white() -> Self {
             Self::new(255)
         }

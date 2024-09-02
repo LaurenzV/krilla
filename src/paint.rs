@@ -28,6 +28,7 @@ where
     pub stops: Vec<Stop<C>>,
 }
 
+/// A radial gradient.
 #[derive(Debug, Clone)]
 pub struct RadialGradient<C>
 where
@@ -95,16 +96,22 @@ pub struct Pattern {
     pub height: f32,
 }
 
+/// A type of paint.
 #[derive(Debug, Clone)]
 pub enum Paint<C>
 where
     C: ColorSpace,
 {
+    /// A solid color.
     Color(C::Color),
+    /// A linear gradient.
     LinearGradient(LinearGradient<C>),
+    /// A radial gradient.
     RadialGradient(RadialGradient<C>),
+    /// A sweep gradient.
     SweepGradient(SweepGradient<C>),
     // TODO: When using pattern paint it needs a colorspace...
+    /// A pattern.
     Pattern(Pattern),
 }
 
