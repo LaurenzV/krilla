@@ -13,17 +13,19 @@ without having to worry about low-level details.
 ## Features
 krilla supports a good amount of features you would expect from a graphics library, including:
 
-- Support for filling and stroking arbitrary paths.
+- Filling and stroking arbitrary paths.
 - Affine transformations.
 - Alpha and luminosity masks.
 - Clip paths.
-- A high-level text API for drawing simple strings.
-- A low-level API text API for drawing sequences of glyphs.
-- Excellent OpenType font support, supporting all major font types, including color fonts. krilla also has
-  great subsetting support for both, CFF-flavored and TTF-flavored fonts.
+- Blend modes and layer isolation.
+- A high-level text API for rendering strings.
+- A low-level text API for drawing sequences of positioned glyphs.
+- Excellent OpenType font support, supporting all major font types, including color fonts. 
+- Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.
 - Linear, radial and sweep gradients as well as patterns.
 - Embedding bitmap and SVG images.
-- PDF features like outlines, page labels and links.
+- A small number of PDF features like creating outlines, setting page labels and inserting links.
+  More features will be added in future updates.
 
 ## Non-goals
 The PDF specification is huge and supports tons of features with a lot of customization, including
@@ -32,13 +34,13 @@ for all functionality, but just for a specific subset that is commonly used.
 
 ## Testing
 Testing is a major pain point for most PDF-creation libraries. The reason is that it is very hard to do:
-It is very easy to accidentally invalid PDF files, and just testing PDF files in one 
-PDF viewer is not enough to be confident about the correctness. The reason for this 
+It is very easy to accidentally create invalid PDF files, and just testing PDF files in one 
+PDF viewer is not enough to be confident about its correctness. The reason for this 
 is that PDF viewers are often tolerant in what they accept, meaning that it is possible 
 that a PDF just happens to show up fine in one viewer you tested, but fails in all other ones.
 
-Because of this, ensuring proper testing has been **one of my main priorities** when building this crate,
-and is probably one of the main distinguishing features from other crates. krilla has two approaches for testing:
+**Because of this, ensuring proper testing has been one of my main priorities when building this crate,
+and is probably one of the main distinguishing features from other crates.** krilla has two approaches for testing:
 
 ### Snapshot-based tests
 *We currently have 50+ snapshot tests*, which basically contain an ASCII representation of various
@@ -79,15 +81,16 @@ features.
 
 ### Summary
 While `krilla` does have a very extensive test suite, there is still a lot that is untested, and krilla also
-hasn't been used on a wide scale, so there are bound to be bugs. However, I think the current test setup makes
-it very easy to track future bugs and puts krilla in a very good position to ensure that no 
-regressions occur in the future.
+hasn't been used on a wide scale yet, so there are bound to be bugs. However, I think the current test setup makes
+it very easy to track future bugs and puts krilla in a very good spot to ensure that no regressions occur in the future.
 
 ## Future work
-For the future, I plan to at least add support for:
+For the immediate future, I plan to at least add support for:
 - Adding document metadata.
 - Support for tagged PDFs for accessibility.
 - Support for validated PDF export, like for example PDF/UA
+
+Although it will probably take some time until I get to it.
 
 ## Example
 
@@ -99,7 +102,7 @@ Consult the documentation to see all features that are available in krilla.
 
 For more example, feel free to consult the [examples] directory of the GitHub repository.
 
-```
+```rs
 // Create a new document.
 let mut document = Document::new();
 // Load a font.
