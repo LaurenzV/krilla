@@ -18,7 +18,6 @@
 //! [`Document`]: crate::Document
 //! [`Document::set_outline`]: crate::Document::set_outline
 
-
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::SerializerContext;
