@@ -282,7 +282,7 @@ impl SerializerContext {
     }
 
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> Option<HashMap<ID, Font>> {
         let mut map = HashMap::new();
 
         let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
@@ -293,20 +293,18 @@ impl SerializerContext {
             // can go be multiple MB. So instead, we first construct a font info object, which is much
             // cheaper, and then check whether we already have a corresponding font object in the cache.
             // If not, we still need to construct it.
-            if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-                if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, vec![]) {
-                    let font_info = Arc::new(font_info);
-                    let font = self
-                        .font_cache
-                        .get(&font_info.clone())
-                        .cloned()
-                        .unwrap_or(Font::new_with_info(font_data, font_info).unwrap());
-                    map.insert(id, font);
-                }
-            }
+            let (font_data, index) = unsafe { db.make_shared_face_data(id) }?;
+            let font_info = FontInfo::new(font_data.as_ref().as_ref(), index, vec![])?;
+            let font_info = Arc::new(font_info);
+            let font = self
+                .font_cache
+                .get(&font_info.clone())
+                .cloned()
+                .unwrap_or(Font::new_with_info(font_data, font_info).unwrap());
+            map.insert(id, font);
         }
 
-        map
+        Some(map)
     }
 
     pub fn finish(mut self) -> KrillaResult<Pdf> {

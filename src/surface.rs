@@ -28,10 +28,11 @@ use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use skrifa::GlyphId;
 #[cfg(feature = "fontdb")]
 use std::collections::HashMap;
-use tiny_skia_path::NormalizedF32;
+use tiny_skia_path::{NormalizedF32, Rect};
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{Path, Point, Transform};
+use crate::util::RectExt;
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -311,14 +312,23 @@ impl<'a> Surface<'a> {
 
     #[cfg(feature = "svg")]
     /// Draw a new SVG image.
-    pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) {
+    pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) -> Option<()> {
         let transform = Transform::from_scale(
             size.width() / tree.size().width(),
             size.height() / tree.size().height(),
         );
         self.push_transform(&transform);
+        self.push_clip_path(
+            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
+                .unwrap()
+                .to_clip_path(),
+            &FillRule::NonZero,
+        );
         svg::render_tree(tree, self.sc.serialize_settings.svg_settings, self);
         self.pop();
+        self.pop();
+
+        Some(())
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
@@ -328,7 +338,7 @@ impl<'a> Surface<'a> {
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
     /// which makes it easier to integrate `cosmic-text` with this library.
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> Option<HashMap<ID, Font>> {
         self.sc.convert_fontdb(db, ids)
     }
 
@@ -585,5 +595,15 @@ mod tests {
     #[visreg(pdfium)]
     fn svg_resized(surface: &mut Surface) {
         surface.draw_svg(&sample_svg(), Size::from_wh(120.0, 80.0).unwrap());
+    }
+
+    #[visreg(pdfium)]
+    fn svg_should_be_clipped(surface: &mut Surface) {
+        let data = std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
+        let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+
+        surface.push_transform(&Transform::from_translate(100.0, 0.0));
+        surface.draw_svg(&tree, tree.size());
+        surface.pop();
     }
 }

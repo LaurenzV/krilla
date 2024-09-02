@@ -38,7 +38,7 @@ fn main() {
 
     // Use the `convert_fontdb` method to get a hashmap that maps cosmic-text font IDs to
     // krilla fonts.
-    let font_map = surface.convert_fontdb(font_system.db_mut(), None);
+    let font_map = surface.convert_fontdb(font_system.db_mut(), None).unwrap();
 
     for run in buffer.layout_runs() {
         let y_offset = run.line_y;
