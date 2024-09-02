@@ -100,7 +100,7 @@ The example creates a PDF file with two pages. On the first page,
 we add two small pieces of text, and on the second page we embed a full-page SVG.
 Consult the documentation to see all features that are available in krilla.
 
-For more example, feel free to consult the [examples] directory of the GitHub repository.
+For more examples, feel free to consult the [examples](https://github.com/LaurenzV/krilla/tree/main/examples) directory of the GitHub repository.
 
 ```rs
 // Create a new document.
