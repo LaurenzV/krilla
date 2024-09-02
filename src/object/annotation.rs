@@ -61,7 +61,6 @@ impl LinkAnnotation {
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
-        // TODO: Change how page size is handled here?
         page_size: f32,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
