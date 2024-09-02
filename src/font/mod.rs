@@ -26,7 +26,7 @@ use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{FontRef, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
@@ -40,6 +40,8 @@ pub(crate) mod colr;
 pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
+
+pub use skrifa::GlyphId;
 
 // TODO: Test TrueType collection
 
