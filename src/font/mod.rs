@@ -395,12 +395,19 @@ impl OutlinePen for OutlineBuilder {
 /// are in user space units!
 #[derive(Debug, Clone)]
 pub struct Glyph {
+    /// The glyph ID of the glyph.
     pub glyph_id: GlyphId,
-    pub range: Range<usize>,
+    /// The range in the original text that corresponds to the
+    /// cluster of the glyph.
+    pub text_range: Range<usize>,
+    /// The advance of the glyph.
     pub x_advance: f32,
+    /// The x offset of the glyph.
     pub x_offset: f32,
+    /// The y offset of the glyph.
     pub y_offset: f32,
-    pub size: f32,
+    /// The font size of the glyph.
+    pub font_size: f32,
 }
 
 impl Glyph {
@@ -418,8 +425,8 @@ impl Glyph {
             x_advance,
             x_offset,
             y_offset,
-            range,
-            size,
+            text_range: range,
+            font_size: size,
         }
     }
 }

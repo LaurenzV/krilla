@@ -1,3 +1,3 @@
 //! Geometrical helper structs.
 
-pub use tiny_skia_path::{Rect, Size, Transform};
+pub use tiny_skia_path::{Point, Rect, Size, Transform};
