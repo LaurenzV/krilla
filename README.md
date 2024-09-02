@@ -1,3 +1,5 @@
+# krilla
+
 [![Crates.io](https://img.shields.io/crates/v/krilla.svg)](https://crates.io/crates/krilla)
 [![Documentation](https://docs.rs/krilla/badge.svg)](https://docs.rs/krilla)
 
@@ -10,7 +12,7 @@ instead providing an interface with high-level primitives, such
 as fills, strokes, gradient, glyphs and images which can be used and combined easily
 without having to worry about low-level details.
 
-# Features
+## Features
 krilla supports a good amount of features you would expect from a graphics library, including:
 
 - Support for filling and stroking arbitrary paths.
@@ -25,12 +27,12 @@ krilla supports a good amount of features you would expect from a graphics libra
 - Embedding bitmap and SVG images.
 - PDF features like outlines, page labels and links.
 
-# Non-goals
+## Non-goals
 The PDF specification is huge and supports tons of features with a lot of customization, including
 complex color spaces and functions. The goal of krilla is not to expose high-level bindings 
 for all functionality, but just for a specific subset that is commonly used.
 
-# Testing
+## Testing
 Testing is a major pain point for most PDF-creation libraries. The reason is that it is very hard to do:
 It is very easy to accidentally invalid PDF files, and just testing PDF files in one 
 PDF viewer is not enough to be confident about the correctness. The reason for this 
@@ -40,14 +42,14 @@ that a PDF just happens to show up fine in one viewer you tested, but fails in a
 Because of this, ensuring proper testing has been **one of my main priorities** when building this crate,
 and is probably one of the main distinguishing features from other crates. krilla has two approaches for testing:
 
-## Snapshot-based tests
+### Snapshot-based tests
 *We currently have 50+ snapshot tests*, which basically contain an ASCII representation of various
 "PDF snippets" and have been manually checked to ensure they look as expected. This allows us to detect
 regressions in the actual output of our PDFs.
 
-## Visual-based tests
+### Visual-based tests
 
-### Unit tests
+#### Unit tests
 As mentioned above, checking one PDF viewer for correct output is not enough. Because of this, our visual
 regression tests are run against **7 distinct PDF viewers** (although only 6 are run in CI) to ensure that basic 
 krilla features are displayed correctly in all major viewers. The current selection of viewers includes:
@@ -66,30 +68,30 @@ This selection unfortunately does not include Adobe Acrobat, which is arguably t
 The reason for this is simply that it is pretty much impossible to conveniently render PDFs with it. However,
 all tests have been opened at least once with Acrobat to ensure that no errors appear when opening it.
 
-### Integration tests
+#### Integration tests
 Finally, we also have visual integration tests to test distinct features as well as combinations of them
 (like for example gradients with transforms). We use the `resvg` test suite for that, which conveniently
-also allows us to automatically test the accuracy of the SVG conversion of `krilla`. Those tests are
+also allows us to automatically test the accuracy of the SVG conversion of krilla. Those tests are
 only run against one viewer (in most cases `pdfium`), as it would be pretty wasteful to save reference
 images for all of them. 
 
 *Currently, we have over 1500 such tests*, and although they mostly focus on
-testing adherence to the SVG specification, they indirectly also test various interactions of `krilla`-specific
+testing adherence to the SVG specification, they indirectly also test various interactions of krilla-specific
 features.
 
-## Summary
-While `krilla` does have a very extensive test suite, there is still a lot that is untested, and `krilla` also
+### Summary
+While `krilla` does have a very extensive test suite, there is still a lot that is untested, and krilla also
 hasn't been used on a wide scale, so there are bound to be bugs. However, I think the current test setup makes
-it very easy to track future bugs and puts `krilla` in a very good position to ensure that no 
+it very easy to track future bugs and puts krilla in a very good position to ensure that no 
 regressions occur in the future.
 
-# Future work
+## Future work
 For the future, I plan to at least add support for:
 - Adding document metadata.
 - Support for tagged PDFs for accessibility.
 - Support for validated PDF export, like for example PDF/UA
 
-# Example
+## Example
 
 The following example shows some of the features of krilla in full action.
 
