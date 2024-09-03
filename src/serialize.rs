@@ -100,7 +100,7 @@ impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
             ascii_compatible: false,
-            compress_content_streams: true,
+            compress_content_streams: false,
             no_device_cs: false,
             force_type3_fonts: false,
             ignore_invalid_glyphs: false,

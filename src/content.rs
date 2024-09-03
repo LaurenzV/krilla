@@ -127,12 +127,13 @@ impl ContentBuilder {
         path: &Path,
         stroke: Stroke<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
-    ) {
+    ) -> Option<()> {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
-            return;
+            return Some(());
         }
 
-        let stroke_bbox = calculate_stroke_bbox(&stroke, path).unwrap();
+        // TODO: Revisit whether we shouldn't just use a dummy bbox instead.
+        let stroke_bbox = calculate_stroke_bbox(&stroke, path)?;
         self.bbox
             .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
@@ -149,7 +150,8 @@ impl ContentBuilder {
             sb.content.stroke();
         });
 
-        self.graphics_states.restore_state()
+        self.graphics_states.restore_state();
+        Some(())
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {

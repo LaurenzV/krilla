@@ -109,12 +109,12 @@ impl<'a> Surface<'a> {
     }
 
     /// Stroke a path.
-    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>)
+    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>) -> Option<()>
     where
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_path(path, stroke, self.sc);
+            .stroke_path(path, stroke, self.sc)
     }
 
     /// Draw a sequence of glyphs with a fill.
