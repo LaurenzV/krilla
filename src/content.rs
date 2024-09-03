@@ -73,6 +73,16 @@ impl ContentBuilder {
         }
     }
 
+    pub(crate) fn start_marked_content(&mut self, id: i32) {
+        let mut mc = self.content.begin_marked_content_with_properties(Name(b"Span"));
+        let mut properties = mc.properties();
+        properties.pairs([(Name(b"MCID"), id)]);
+    }
+
+    pub(crate) fn end_marked_content(&mut self) {
+        self.content.end_marked_content();
+    }
+
     pub fn fill_path(
         &mut self,
         path: &Path,

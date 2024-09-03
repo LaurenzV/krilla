@@ -76,6 +76,7 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
+    mcid_counter: i32,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
@@ -88,6 +89,7 @@ impl<'a> Surface<'a> {
         Self {
             sc,
             root_builder,
+            mcid_counter: 0,
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,
@@ -268,6 +270,21 @@ impl<'a> Surface<'a> {
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
         self.sub_builders.push(ContentBuilder::new());
+    }
+
+    pub fn start_marked_content(&mut self) -> i32 {
+        let old = self.mcid_counter;
+        self.mcid_counter += 1;
+
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .start_marked_content(old);
+
+        old
+    }
+
+    pub fn end_marked_content(&mut self) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .end_marked_content();
     }
 
     /// Pop the last `push` instruction.
