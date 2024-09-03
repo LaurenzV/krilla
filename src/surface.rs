@@ -277,14 +277,14 @@ impl<'a> Surface<'a> {
         self.sub_builders.push(ContentBuilder::new());
     }
 
-    pub fn start_marked_content(&mut self) -> i32 {
+    pub fn start_marked_content(&mut self) -> Mcid {
         let old = self.mcid_counter;
         self.mcid_counter += 1;
 
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .start_marked_content(old);
 
-        old
+        Mcid(self.page_index, old)
     }
 
     pub fn end_marked_content(&mut self) {
