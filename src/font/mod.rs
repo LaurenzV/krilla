@@ -408,8 +408,6 @@ pub struct Glyph {
     pub x_offset: f32,
     /// The y offset of the glyph.
     pub y_offset: f32,
-    /// The font size of the glyph.
-    pub font_size: f32,
 }
 
 impl Glyph {
@@ -420,7 +418,6 @@ impl Glyph {
         x_offset: f32,
         y_offset: f32,
         range: Range<usize>,
-        size: f32,
     ) -> Self {
         Self {
             glyph_id,
@@ -428,7 +425,6 @@ impl Glyph {
             x_offset,
             y_offset,
             text_range: range,
-            font_size: size,
         }
     }
 }

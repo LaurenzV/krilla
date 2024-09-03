@@ -129,11 +129,12 @@ impl<'a> Surface<'a> {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
+        font_size: f32,
     ) where
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyphs(start, self.sc, fill, glyphs, font, text);
+            .fill_glyphs(start, self.sc, fill, glyphs, font, text, font_size);
     }
 
     /// Draw some text with a fill.
@@ -163,7 +164,7 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.fill_glyphs(start, fill, &glyphs, font, text);
+        self.fill_glyphs(start, fill, &glyphs, font, text, font_size);
     }
 
     /// Draw a sequence of glyphs with a stroke.
@@ -178,11 +179,12 @@ impl<'a> Surface<'a> {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
+        font_size: f32
     ) where
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text);
+            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text, font_size);
     }
 
     /// Draw some text with a stroke.
@@ -212,7 +214,7 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.stroke_glyphs(start, stroke, &glyphs, font, text);
+        self.stroke_glyphs(start, stroke, &glyphs, font, text, font_size);
     }
 
     /// Concatenate a new transform to the current transformation matrix.
@@ -444,7 +446,6 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
             (pos.x_offset as f32 / font.units_per_em()) * size,
             (pos.y_offset as f32 / font.units_per_em()) * size,
             start..end,
-            size,
         ));
     }
 

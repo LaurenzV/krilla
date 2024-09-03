@@ -183,6 +183,7 @@ impl ContentBuilder {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
+        font_size: f32
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -208,6 +209,7 @@ impl ContentBuilder {
             glyphs,
             font,
             text,
+            font_size
         );
 
         self.graphics_states.restore_state();
@@ -221,6 +223,7 @@ impl ContentBuilder {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
+        font_size: f32
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -246,6 +249,7 @@ impl ContentBuilder {
             glyphs,
             font,
             text,
+            font_size
         );
 
         self.graphics_states.restore_state();
@@ -319,6 +323,7 @@ impl ContentBuilder {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
+        font_size: f32
     ) {
         let mut cur_x = x;
 
@@ -343,14 +348,14 @@ impl ContentBuilder {
 
                 // Segment into glyph runs that can be encoded in one go using a PDF
                 // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
+                let segmented = GlyphGrouper::new(font_container, fragment.glyphs(), font_size);
 
                 for glyph_group in segmented {
                     sb.encode_consecutive_glyph_run(
                         &mut cur_x,
                         y - glyph_group.y_offset,
                         glyph_group.font_identifier,
-                        glyph_group.size,
+                        font_size,
                         &glyph_group.glyphs,
                     )
                 }
@@ -910,7 +915,6 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
 pub(crate) struct GlyphGroup {
     font_identifier: FontIdentifier,
     glyphs: Vec<InstanceGlyph>,
-    size: f32,
     y_offset: f32,
 }
 
@@ -918,13 +922,11 @@ impl GlyphGroup {
     pub fn new(
         font_identifier: FontIdentifier,
         glyphs: Vec<InstanceGlyph>,
-        size: f32,
         y_offset: f32,
     ) -> Self {
         GlyphGroup {
             font_identifier,
             glyphs,
-            size,
             y_offset,
         }
     }
@@ -932,14 +934,16 @@ impl GlyphGroup {
 
 pub(crate) struct GlyphGrouper<'a, 'b> {
     font_container: &'b RefCell<FontContainer>,
+    font_size: f32,
     slice: &'a [Glyph],
 }
 
 impl<'a, 'b> GlyphGrouper<'a, 'b> {
-    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph]) -> Self {
+    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph], font_size: f32) -> Self {
         Self {
             font_container,
             slice,
+            font_size
         }
     }
 }
@@ -953,7 +957,6 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
         let (head, tail, props) = {
             struct GlyphProps {
                 font_identifier: FontIdentifier,
-                size: f32,
                 y_offset: f32,
             }
 
@@ -964,7 +967,6 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
                 GlyphProps {
                     font_identifier,
-                    size: g.font_size,
                     y_offset: g.y_offset,
                 }
             };
@@ -979,7 +981,6 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
                 if first.font_identifier != temp_glyph.font_identifier
                     || first.y_offset != temp_glyph.y_offset
-                    || first.size != temp_glyph.size
                 {
                     break;
                 }
@@ -1005,7 +1006,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
 
                 let user_units_to_font_units = |val| {
-                    pdf_font.to_pdf_font_units(val / g.font_size * pdf_font.font().units_per_em())
+                    pdf_font.to_pdf_font_units(val / self.font_size * pdf_font.font().units_per_em())
                 };
 
                 InstanceGlyph {
@@ -1022,7 +1023,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
             .collect::<Vec<_>>();
 
         let glyph_group =
-            GlyphGroup::new(props.font_identifier, glyphs, props.size, props.y_offset);
+            GlyphGroup::new(props.font_identifier, glyphs, props.y_offset);
 
         Some(glyph_group)
     }

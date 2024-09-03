@@ -483,9 +483,10 @@ pub fn all_glyphs_to_pdf(
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
-            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
+            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len())],
             font.clone(),
             &text,
+            size as f32
         );
         surface.pop();
 

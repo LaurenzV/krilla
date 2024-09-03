@@ -65,7 +65,6 @@ fn main() {
                         glyph.x_offset,
                         glyph.y_offset,
                         glyph.start..glyph.end,
-                        size,
                     )
                 })
                 .collect::<Vec<_>>();
@@ -77,6 +76,7 @@ fn main() {
                 &glyphs,
                 font,
                 run.text,
+                size,
             );
         }
     }

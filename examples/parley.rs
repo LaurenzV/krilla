@@ -113,6 +113,7 @@ fn main() {
                                 &glyphs,
                                 krilla_font.clone(),
                                 &text,
+                                font_size
                             );
                             glyphs.clear();
                             cur_x = x;
@@ -128,7 +129,6 @@ fn main() {
                         glyph.x,
                         glyph.y,
                         cluster.text_range(),
-                        font_size,
                     ));
                     // And make sure keep track of the current x position.
                     x += glyph.advance;
@@ -149,6 +149,7 @@ fn main() {
                     &glyphs,
                     krilla_font.clone(),
                     &text,
+                    font_size,
                 );
             }
         }
