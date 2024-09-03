@@ -26,15 +26,17 @@ use tiny_skia_path::Transform;
 pub struct Page<'a> {
     sc: &'a mut SerializerContext,
     page_settings: PageSettings,
+    page_index: usize,
     page_stream: Stream,
     annotations: Vec<Annotation>,
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, page_settings: PageSettings) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializerContext, page_index: usize, page_settings: PageSettings) -> Self {
         Self {
             sc,
             page_settings,
+            page_index,
             page_stream: Stream::empty(),
             annotations: vec![],
         }
@@ -65,7 +67,7 @@ impl<'a> Page<'a> {
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
-        Surface::new(self.sc, root_builder, finish_fn)
+        Surface::new(self.sc, root_builder, self.page_index, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.

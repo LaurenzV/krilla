@@ -77,19 +77,24 @@ pub struct Surface<'a> {
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
     mcid_counter: i32,
+    page_index: usize,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
+
+pub struct Mcid(usize, i32);
 
 impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
+        page_index: usize,
         finish_fn: Box<dyn FnMut(Stream) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
             root_builder,
             mcid_counter: 0,
+            page_index,
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,

@@ -103,7 +103,7 @@ impl<'a> StreamBuilder<'a> {
             self.stream = stream;
         });
 
-        Surface::new(self.sc, ContentBuilder::new(), finish_fn)
+        Surface::new(self.sc, ContentBuilder::new(), usize::MAX, finish_fn)
     }
 
     /// Turn the stream builder into a stream.
