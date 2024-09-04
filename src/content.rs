@@ -280,8 +280,6 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
-
-
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
 
@@ -299,7 +297,7 @@ impl ContentBuilder {
             let font_advance = pdf_font
                 .font()
                 .advance_width(glyph.glyph_id())
-                .map(|n| normalize(n) * pdf_font.units_per_em());
+                .map(|n| (n / pdf_font.font().units_per_em()) * pdf_font.units_per_em());
             let x_offset = normalize(glyph.x_offset()) * pdf_font.units_per_em();
 
             adjustment += x_offset;
@@ -381,7 +379,7 @@ impl ContentBuilder {
 
                     sb.encode_consecutive_glyph_run(
                         &mut cur_x,
-                        y - unit_normalize(glyph_units, pdf_font, font_size, glyph_group.y_offset),
+                        y - unit_normalize(glyph_units, pdf_font, font_size, glyph_group.y_offset) * font_size,
                         glyph_group.font_identifier,
                         pdf_font,
                         font_size,
