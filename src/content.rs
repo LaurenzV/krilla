@@ -358,6 +358,7 @@ impl ContentBuilder {
             let spanned = TextSpanner::new(glyphs, text, font_container);
 
             for fragment in spanned {
+                println!("{:?}, {:?}", fragment.actual_text().is_some(), fragment.glyphs());
                 if let Some(text) = fragment.actual_text() {
                     let mut actual_text = sb
                         .content
@@ -887,7 +888,10 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
                 None => {
                     if first_incompatible {
                         use_span = Some(true);
-                        break;
+
+                        if last_range != next_range {
+                            break;
+                        }
                     }
 
                     use_span = Some(last_range == next_range);
