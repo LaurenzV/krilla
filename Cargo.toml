@@ -47,6 +47,11 @@ name = "krilla"
 description = "A high-level crate for creating PDF files."
 categories = ["graphics", "multimedia"]
 keywords = ["pdf"]
+exclude = [
+    "assets/*",
+    "src/tests",
+    "krilla-macros"
+]
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
