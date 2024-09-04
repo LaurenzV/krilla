@@ -358,7 +358,6 @@ impl ContentBuilder {
             let spanned = TextSpanner::new(glyphs, text, font_container);
 
             for fragment in spanned {
-                println!("{:?}, {:?}", fragment.actual_text().is_some(), fragment.glyphs());
                 if let Some(text) = fragment.actual_text() {
                     let mut actual_text = sb
                         .content
