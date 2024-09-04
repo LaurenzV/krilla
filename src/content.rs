@@ -894,10 +894,14 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
                         }
                     }
 
+                    if next_incompatible && last_range != next_range {
+                        break;
+                    }
+
                     use_span = Some(last_range == next_range);
                 }
                 Some(true) => {
-                    if next_incompatible || last_range != next_range {
+                    if last_range != next_range {
                         break;
                     }
                 }
