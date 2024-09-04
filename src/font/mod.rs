@@ -1,9 +1,9 @@
 //! Text and font font support.
 //!
 //! krilla has extensive support for OpenType fonts. It supports CFF-based as well
-//! as glyf-based font OpenType fonts. In addition to that, krilla also supports
-//! all of the major tables used in color fonts, including the `SVG`, `COLR`, `sbix`,
-//! `CBDT`/`EBDT` tables, something that, to the best of my knowledge, no other
+//! as glyf-based OpenType fonts. In addition to that, krilla also supports
+//! all major tables used in color fonts, including the `SVG`, `COLR`, `sbix` and
+//! `CBDT`/`EBDT` (only PNG) tables, something that, to the best of my knowledge, no other
 //! Rust crates provides.
 //!
 //! Even better is the fact that you do not need to take care of choosing the right
@@ -420,9 +420,6 @@ pub enum GlyphUnits {
 
 /// A glyph type that implements `Glyph`. You can use it if you don't
 /// have your own type of glyph that you want to use.
-///
-/// *Note*: The units of `x_advance`, `x_offset` and `y_offset`
-/// are in user space units!
 #[derive(Debug, Clone)]
 pub struct KrillaGlyph {
     /// The glyph ID of the glyph.

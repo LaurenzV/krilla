@@ -298,14 +298,16 @@ impl SerializerContext {
             // cheaper, and then check whether we already have a corresponding font object in the cache.
             // If not, we still need to construct it.
             let (font_data, index) = unsafe { db.make_shared_face_data(id) }?;
-            let font_info = FontInfo::new(font_data.as_ref().as_ref(), index, vec![])?;
-            let font_info = Arc::new(font_info);
-            let font = self
-                .font_cache
-                .get(&font_info.clone())
-                .cloned()
-                .unwrap_or(Font::new_with_info(font_data, font_info).unwrap());
-            map.insert(id, font);
+
+            if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, vec![]) {
+                let font_info = Arc::new(font_info);
+                let font = self
+                    .font_cache
+                    .get(&font_info.clone())
+                    .cloned()
+                    .unwrap_or(Font::new_with_info(font_data, font_info).unwrap());
+                map.insert(id, font);
+            }
         }
 
         Some(map)

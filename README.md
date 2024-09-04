@@ -81,26 +81,27 @@ features.
 
 ### Summary
 While `krilla` does have a very extensive test suite, there is still a lot that is untested, and krilla also
-hasn't been used on a wide scale yet, so there are bound to be bugs. However, I think the current test setup makes
-it very easy to track future bugs and puts krilla in a very good spot to ensure that no regressions occur in the future.
+has just been released and hasn't been used on a wide scale yet, so there might still be issues. 
+However, I think the current test setup makes it very easy to track future bugs and puts krilla 
+in a very good spot to ensure that no regressions occur in the future.
 
 ## Future work
 For the immediate future, I plan to at least add support for:
 - Adding document metadata.
 - Support for tagged PDFs for accessibility.
-- Support for validated PDF export, like for example PDF/UA
+- Support for validated PDF export, like for example PDF/UA.
 
 Although it will probably take some time until I get to it.
 
 ## Example
 
-The following example shows some of the features of krilla in full action.
+The following example shows some of the features of krilla in action.
 
 The example creates a PDF file with two pages. On the first page,
 we add two small pieces of text, and on the second page we embed a full-page SVG.
 Consult the documentation to see all features that are available in krilla.
 
-For more examples, feel free to consult the [examples](https://github.com/LaurenzV/krilla/tree/main/examples) directory of the GitHub repository.
+For more examples, feel free to take a look at the the [examples](https://github.com/LaurenzV/krilla/tree/main/examples) directory of the GitHub repository.
 
 ```rs
 // Create a new document.

@@ -248,10 +248,10 @@ fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
     let mut alphas = if cs.has_alpha() {
         if cs.num_components() == 2 {
             Vec::with_capacity(data.len() + 1 / 2)
-        }   else {
+        } else {
             Vec::with_capacity(data.len() + 3 / 4)
         }
-    }   else {
+    } else {
         Vec::new()
     };
 

@@ -12,13 +12,13 @@ a document using krilla.
 
 # Example
 
-The following example shows some of the features of krilla in full action.
+The following example shows some of the features of krilla in action.
 
 The example creates a PDF file with two pages. On the first page,
 we add two small pieces of text, and on the second page we embed a full-page SVG.
 Consult the documentation to see all features that are available in krilla.
 
-For more example, feel free to consult the [examples] directory of the GitHub repository.
+For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
 # use krilla::color::rgb;
