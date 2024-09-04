@@ -2,7 +2,7 @@
 A high-level, ergonomic Rust library creating PDF documents.
 
 [krilla] is a high-level Rust crate that allows for the creation of PDF files. It builds
-on top of the excellent [pdf-writer] crate, but abstracts away all complexities that are
+on top of the [pdf-writer] crate, but abstracts away all complexities that are
 involved in creating a PDF file, instead providing an interface with high-level primitives, such
 as fills, strokes, gradient, glyphs and images which can be used and combined easily
 without having to worry about low-level details.
