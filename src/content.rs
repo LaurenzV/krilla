@@ -898,7 +898,11 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
                     }
                 }
                 Some(false) => {
-                    if last_range == next_range || next_incompatible {
+                    if next_incompatible && last_range != next_range {
+                        break;
+                    }
+
+                    if last_range == next_range {
                         count -= 1;
                         break;
                     }
