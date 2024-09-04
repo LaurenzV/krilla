@@ -6,7 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
-use crate::font::{Font, Glyph};
+use crate::font::{Font, GlyphUnits, KrillaGlyph};
 use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -126,15 +126,16 @@ impl<'a> Surface<'a> {
         &mut self,
         start: Point,
         fill: Fill<T>,
-        glyphs: &[Glyph],
+        glyphs: &[KrillaGlyph],
         font: Font,
         text: &str,
         font_size: f32,
+        glyph_units: GlyphUnits
     ) where
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyphs(start, self.sc, fill, glyphs, font, text, font_size);
+            .fill_glyphs(start, self.sc, fill, glyphs, font, text, font_size, glyph_units);
     }
 
     /// Draw some text with a fill.
@@ -164,7 +165,7 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.fill_glyphs(start, fill, &glyphs, font, text, font_size);
+        self.fill_glyphs(start, fill, &glyphs, font, text, font_size, GlyphUnits::UserSpace);
     }
 
     /// Draw a sequence of glyphs with a stroke.
@@ -176,15 +177,16 @@ impl<'a> Surface<'a> {
         &mut self,
         start: Point,
         stroke: Stroke<T>,
-        glyphs: &[Glyph],
+        glyphs: &[KrillaGlyph],
         font: Font,
         text: &str,
         font_size: f32,
+        glyph_units: GlyphUnits
     ) where
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text, font_size);
+            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text, font_size, glyph_units);
     }
 
     /// Draw some text with a stroke.
@@ -214,7 +216,7 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.stroke_glyphs(start, stroke, &glyphs, font, text, font_size);
+        self.stroke_glyphs(start, stroke, &glyphs, font, text, font_size, GlyphUnits::UserSpace);
     }
 
     /// Concatenate a new transform to the current transformation matrix.
@@ -385,7 +387,7 @@ impl Drop for Surface<'_> {
 
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
-fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<Glyph> {
+fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let mut rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
     for (tag, val) in font.variations() {
@@ -444,7 +446,7 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
         .and_then(|last| infos.get(last))
         .map_or(text.len(), |info| info.cluster as usize);
 
-        glyphs.push(Glyph::new(
+        glyphs.push(KrillaGlyph::new(
             GlyphId::new(start_info.glyph_id),
             (pos.x_advance as f32 / font.units_per_em()) * size,
             (pos.x_offset as f32 / font.units_per_em()) * size,

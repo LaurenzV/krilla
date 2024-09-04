@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier, Glyph};
+use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, KrillaGlyph};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -28,8 +28,8 @@ use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
-use std::cell::RefCell;
-use std::ops::Deref;
+use std::cell::{RefCell, RefMut};
+use std::ops::Range;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Transform};
@@ -181,10 +181,11 @@ impl ContentBuilder {
         start: Point,
         sc: &mut SerializerContext,
         fill: Fill<impl ColorSpace>,
-        glyphs: &[Glyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
+        glyph_units: GlyphUnits
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -211,6 +212,7 @@ impl ContentBuilder {
             font,
             text,
             font_size,
+            glyph_units
         );
 
         self.graphics_states.restore_state();
@@ -221,10 +223,11 @@ impl ContentBuilder {
         start: Point,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
-        glyphs: &[Glyph],
+        glyphs: &[KrillaGlyph],
         font: Font,
         text: &str,
         font_size: f32,
+        glyph_units: GlyphUnits
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -251,6 +254,7 @@ impl ContentBuilder {
             font,
             text,
             font_size,
+            glyph_units
         );
 
         self.graphics_states.restore_state();
@@ -263,9 +267,10 @@ impl ContentBuilder {
         cur_x: &mut f32,
         cur_y: f32,
         font_identifier: FontIdentifier,
-        font_container: &FontContainer,
+        pdf_font: &dyn PdfFont,
         size: f32,
-        glyphs: &[Glyph],
+        glyphs: &[impl Glyph],
+        glyph_units: GlyphUnits
     ) {
         let font_name = self
             .rd_builder
@@ -275,9 +280,7 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
-        let pdf_font = font_container
-            .get_from_identifier(font_identifier.clone())
-            .unwrap();
+
 
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
@@ -286,18 +289,18 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let pdf_glyph = pdf_font.get_gid(glyph.glyph_id).unwrap();
+            let pdf_glyph = pdf_font.get_gid(glyph.glyph_id()).unwrap();
 
-            let user_units_to_font_units =
-                |val| pdf_font.to_pdf_font_units(val / size * pdf_font.font().units_per_em());
+            let normalize = |v| {
+                unit_normalize(glyph_units, pdf_font, size, v)
+            };
 
-            let user_space_x_advance = glyph.x_advance;
-            let x_advance = user_units_to_font_units(glyph.x_advance);
+            let x_advance = normalize(glyph.x_advance()) * pdf_font.units_per_em();
             let font_advance = pdf_font
                 .font()
-                .advance_width(glyph.glyph_id)
-                .map(|n| pdf_font.to_pdf_font_units(n));
-            let x_offset = user_units_to_font_units(glyph.x_offset);
+                .advance_width(glyph.glyph_id())
+                .map(|n| normalize(n) * pdf_font.units_per_em());
+            let x_offset = normalize(glyph.x_offset()) * pdf_font.units_per_em();
 
             adjustment += x_offset;
 
@@ -319,8 +322,8 @@ impl ContentBuilder {
             }
 
             adjustment -= x_offset;
-            // cur_x/cur_y and glyph metrics are in user space units, so don't convert here.
-            *cur_x += user_space_x_advance;
+            // cur_x/cur_y and glyph metrics are in user space units.
+            *cur_x += normalize(glyph.x_advance()) * size;
         }
 
         if !encoded.is_empty() {
@@ -339,10 +342,11 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
-        glyphs: &[Glyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
+        glyph_units: GlyphUnits
     ) {
         let mut cur_x = x;
 
@@ -370,13 +374,19 @@ impl ContentBuilder {
                 let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
 
                 for glyph_group in segmented {
+                    let borrowed = font_container.borrow();
+                    let pdf_font = borrowed
+                        .get_from_identifier(glyph_group.font_identifier.clone())
+                        .unwrap();
+
                     sb.encode_consecutive_glyph_run(
                         &mut cur_x,
-                        y - glyph_group.y_offset,
+                        y - unit_normalize(glyph_units, pdf_font, font_size, glyph_group.y_offset),
                         glyph_group.font_identifier,
-                        font_container.borrow().deref(),
+                        pdf_font,
                         font_size,
                         &glyph_group.glyphs,
+                        glyph_units
                     )
                 }
 
@@ -744,8 +754,16 @@ impl ContentBuilder {
     }
 }
 
+fn unit_normalize(glyph_units: GlyphUnits, pdf_font: &dyn PdfFont, size: f32, val: f32) -> f32 {
+    match glyph_units {
+        GlyphUnits::Normalized => val,
+        GlyphUnits::UnitsPerEm => val / pdf_font.font().units_per_em(),
+        GlyphUnits::UserSpace => val / size
+    }
+}
+
 pub(crate) trait PdfFont {
-    fn to_pdf_font_units(&self, val: f32) -> f32;
+    fn units_per_em(&self) -> f32;
     fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
@@ -753,8 +771,8 @@ pub(crate) trait PdfFont {
 }
 
 impl PdfFont for Type3Font {
-    fn to_pdf_font_units(&self, val: f32) -> f32 {
-        Type3Font::to_pdf_font_units(self, val)
+    fn units_per_em(&self) -> f32 {
+        self.unit_per_em()
     }
 
     fn font(&self) -> Font {
@@ -781,8 +799,8 @@ impl PdfFont for Type3Font {
 }
 
 impl PdfFont for CIDFont {
-    fn to_pdf_font_units(&self, val: f32) -> f32 {
-        CIDFont::to_pdf_font_units(self, val)
+    fn units_per_em(&self) -> f32 {
+        self.units_per_em()
     }
 
     fn font(&self) -> Font {
@@ -808,13 +826,13 @@ impl PdfFont for CIDFont {
     }
 }
 
-pub(crate) enum TextSpan<'a> {
-    Unspanned(&'a [Glyph]),
-    Spanned(&'a [Glyph], &'a str),
+pub(crate) enum TextSpan<'a, T> where T: Glyph {
+    Unspanned(&'a [T]),
+    Spanned(&'a [T], &'a str),
 }
 
-impl TextSpan<'_> {
-    pub fn glyphs(&self) -> &[Glyph] {
+impl<T> TextSpan<'_, T> where T: Glyph {
+    pub fn glyphs(&self) -> &[T] {
         match self {
             TextSpan::Unspanned(glyphs) => glyphs,
             TextSpan::Spanned(glyphs, _) => glyphs,
@@ -829,15 +847,15 @@ impl TextSpan<'_> {
     }
 }
 
-pub(crate) struct TextSpanner<'a, 'b> {
-    slice: &'a [Glyph],
+pub(crate) struct TextSpanner<'a, 'b, T> where T: Glyph {
+    slice: &'a [T],
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
 
-impl<'a, 'b> TextSpanner<'a, 'b> {
+impl<'a, 'b, T> TextSpanner<'a, 'b, T> where T: Glyph {
     pub fn new(
-        slice: &'a [Glyph],
+        slice: &'a [T],
         text: &'a str,
         font_container: &'b RefCell<FontContainer>,
     ) -> Self {
@@ -849,19 +867,18 @@ impl<'a, 'b> TextSpanner<'a, 'b> {
     }
 }
 
-impl<'a> Iterator for TextSpanner<'a, '_> {
-    type Item = TextSpan<'a>;
+impl<'a, T> Iterator for TextSpanner<'a, '_, T> where T: Glyph {
+    type Item = TextSpan<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let func = |g: &Glyph| {
-            let mut font_container = self.font_container.borrow_mut();
-            let (identifier, pdf_glyph) = font_container.add_glyph(g.glyph_id);
+        fn func<U>(g: &U, mut font_container: RefMut<FontContainer>, text: &str) -> (Range<usize>, bool) where U: Glyph {
+            let (identifier, pdf_glyph) = font_container.add_glyph(g.glyph_id());
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
 
-            let range = g.text_range.clone();
-            let text = &self.text[range.clone()];
+            let range = g.text_range().clone();
+            let text = &text[range.clone()];
             let codepoints = pdf_font.get_codepoints(pdf_glyph);
             let incompatible_codepoint = codepoints.is_some() && codepoints != Some(text);
 
@@ -870,18 +887,18 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
             }
 
             (range, incompatible_codepoint)
-        };
+        }
 
         let mut use_span = None;
         let mut count = 1;
 
         let mut iter = self.slice.iter();
-        let (first_range, first_incompatible) = (func)(iter.next()?);
+        let (first_range, first_incompatible) = func(iter.next()?, self.font_container.borrow_mut(), self.text);
 
         let mut last_range = first_range.clone();
 
         for next in iter {
-            let (next_range, next_incompatible) = func(next);
+            let (next_range, next_incompatible) = func(next, self.font_container.borrow_mut(), self.text);
 
             match use_span {
                 None => {
@@ -916,7 +933,7 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
                 }
             }
 
-            last_range = next.text_range.clone();
+            last_range = next.text_range().clone();
             count += 1;
         }
 
@@ -931,14 +948,14 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
     }
 }
 
-pub(crate) struct GlyphGroup<'a> {
+pub(crate) struct GlyphGroup<'a, T> where T: Glyph {
     font_identifier: FontIdentifier,
-    glyphs: &'a [Glyph],
+    glyphs: &'a [T],
     y_offset: f32,
 }
 
-impl<'a, 'b> GlyphGroup<'a> {
-    pub fn new(font_identifier: FontIdentifier, glyphs: &'a [Glyph], y_offset: f32) -> Self {
+impl<'a, T> GlyphGroup<'a, T> where T: Glyph {
+    pub fn new(font_identifier: FontIdentifier, glyphs: &'a [T], y_offset: f32) -> Self {
         GlyphGroup {
             font_identifier,
             glyphs,
@@ -947,13 +964,13 @@ impl<'a, 'b> GlyphGroup<'a> {
     }
 }
 
-pub(crate) struct GlyphGrouper<'a, 'b> {
+pub(crate) struct GlyphGrouper<'a, 'b, T> where T: Glyph {
     font_container: &'b RefCell<FontContainer>,
-    slice: &'a [Glyph],
+    slice: &'a [T],
 }
 
-impl<'a, 'b> GlyphGrouper<'a, 'b> {
-    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph]) -> Self {
+impl<'a, 'b, T> GlyphGrouper<'a, 'b, T> where T: Glyph {
+    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [T]) -> Self {
         Self {
             font_container,
             slice,
@@ -961,8 +978,8 @@ impl<'a, 'b> GlyphGrouper<'a, 'b> {
     }
 }
 
-impl<'a> Iterator for GlyphGrouper<'a, '_> {
-    type Item = GlyphGroup<'a>;
+impl<'a, T> Iterator for GlyphGrouper<'a, '_, T> where T: Glyph {
+    type Item = GlyphGroup<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Guarantees: All glyphs in `head` have the font identifier that is given in
@@ -973,24 +990,23 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
                 y_offset: f32,
             }
 
-            let func = |g: &Glyph| {
-                let font_container = self.font_container.borrow_mut();
+            fn func<U>(g: &U, font_container: RefMut<FontContainer>) -> GlyphProps where U: Glyph {
                 // Safe because we've already added all glyphs in the text spanner.
-                let font_identifier = font_container.font_identifier(g.glyph_id).unwrap();
+                let font_identifier = font_container.font_identifier(g.glyph_id()).unwrap();
 
                 GlyphProps {
                     font_identifier,
-                    y_offset: g.y_offset,
+                    y_offset: g.y_offset(),
                 }
-            };
+            }
 
             let mut count = 1;
 
             let mut iter = self.slice.iter();
-            let first = (func)(iter.next()?);
+            let first = func(iter.next()?, self.font_container.borrow_mut());
 
             for next in iter {
-                let temp_glyph = func(next);
+                let temp_glyph = func(next, self.font_container.borrow_mut());
 
                 if first.font_identifier != temp_glyph.font_identifier
                     || first.y_offset != temp_glyph.y_offset

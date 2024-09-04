@@ -57,8 +57,8 @@ impl CIDFont {
         self.font.clone()
     }
 
-    pub fn to_pdf_font_units(&self, val: f32) -> f32 {
-        val / self.font.units_per_em() * 1000.0
+    pub fn units_per_em(&self) -> f32 {
+        1000.0
     }
 
     pub fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
@@ -161,13 +161,17 @@ impl CIDFont {
         cid.font_descriptor(descriptor_ref);
         cid.default_width(0.0);
 
+        let to_pdf_units = |v: f32| {
+            v / self.font.units_per_em() * self.units_per_em()
+        };
+
         let mut first = 0;
         let mut width_writer = cid.widths();
         for (w, group) in self.widths.group_by_key(|&w| w) {
             let end = first + group.len();
             if w != 0.0 {
                 let last = end - 1;
-                width_writer.same(first as u16, last as u16, self.to_pdf_font_units(w));
+                width_writer.same(first as u16, last as u16, to_pdf_units(w));
             }
             first = end;
         }
@@ -185,12 +189,12 @@ impl CIDFont {
         let bbox = self.font.bbox().to_pdf_rect();
 
         let italic_angle = self.font.italic_angle();
-        let ascender = self.to_pdf_font_units(self.font.ascent());
-        let descender = self.to_pdf_font_units(self.font.descent());
+        let ascender = to_pdf_units(self.font.ascent());
+        let descender = to_pdf_units(self.font.descent());
         let cap_height = self
             .font
             .cap_height()
-            .map(|h| self.to_pdf_font_units(h))
+            .map(|h| to_pdf_units(h))
             .unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 

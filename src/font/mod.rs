@@ -391,12 +391,40 @@ impl OutlinePen for OutlineBuilder {
     }
 }
 
-/// A single glyph.
+/// A glyph with certain properties.
+pub trait Glyph {
+    /// The glyph ID of the glyph.
+    fn glyph_id(&self) -> GlyphId;
+    /// The range of bytes in the original text covered by the cluster that the glyph
+    /// belongs to.
+    fn text_range(&self) -> Range<usize>;
+    /// The advance in the x direction of the glyph.
+    fn x_advance(&self) -> f32;
+    /// The offset in the x direction of the glyph.
+    fn x_offset(&self) -> f32;
+    /// The offset in the y direction of the glyph.
+    fn y_offset(&self) -> f32;
+}
+
+/// The units of the metrics of a glyph.
+#[derive(Debug, Copy, Clone)]
+pub enum GlyphUnits {
+    /// The units are normalized, i.e. `val`/`units_per_em`.
+    Normalized,
+    /// The units are given relative the `units_per_em` of the
+    /// corresponding font.
+    UnitsPerEm,
+    /// The units are in user space units, i.e. (`val`/`units_per_em`) * `font_size`
+    UserSpace
+}
+
+/// A glyph type that implements `Glyph`. You can use it if you don't
+/// have your own type of glyph that you want to use.
 ///
 /// *Note*: The units of `x_advance`, `x_offset` and `y_offset`
 /// are in user space units!
 #[derive(Debug, Clone)]
-pub struct Glyph {
+pub struct KrillaGlyph {
     /// The glyph ID of the glyph.
     pub glyph_id: GlyphId,
     /// The range in the original text that corresponds to the
@@ -410,7 +438,29 @@ pub struct Glyph {
     pub y_offset: f32,
 }
 
-impl Glyph {
+impl Glyph for KrillaGlyph {
+    fn glyph_id(&self) -> GlyphId {
+        self.glyph_id
+    }
+
+    fn text_range(&self) -> Range<usize> {
+        self.text_range.clone()
+    }
+
+    fn x_advance(&self) -> f32 {
+        self.x_advance
+    }
+
+    fn x_offset(&self) -> f32 {
+        self.x_offset
+    }
+
+    fn y_offset(&self) -> f32 {
+        self.y_offset
+    }
+}
+
+impl KrillaGlyph {
     /// Create a new glyph.
     pub fn new(
         glyph_id: GlyphId,

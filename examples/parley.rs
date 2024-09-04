@@ -8,7 +8,7 @@
 
 use krilla::color::rgb;
 use krilla::color::rgb::Rgb;
-use krilla::font::{Font, Glyph};
+use krilla::font::{Font, GlyphUnits, KrillaGlyph};
 use krilla::paint::Paint;
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
@@ -114,6 +114,7 @@ fn main() {
                                 krilla_font.clone(),
                                 &text,
                                 font_size,
+                                GlyphUnits::UserSpace
                             );
                             glyphs.clear();
                             cur_x = x;
@@ -123,7 +124,7 @@ fn main() {
                     }
 
                     // Add the current glyph to our buffer of glyphs.
-                    glyphs.push(Glyph::new(
+                    glyphs.push(KrillaGlyph::new(
                         GlyphId::new(glyph.id.to_u32()),
                         glyph.advance,
                         glyph.x,
@@ -150,6 +151,7 @@ fn main() {
                     krilla_font.clone(),
                     &text,
                     font_size,
+                    GlyphUnits::UserSpace
                 );
             }
         }

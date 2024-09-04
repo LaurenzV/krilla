@@ -1,5 +1,5 @@
-use crate::font::Font;
-use crate::font::Glyph;
+use crate::font::{Font, GlyphUnits};
+use crate::font::KrillaGlyph;
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
 use crate::paint::Paint;
@@ -64,7 +64,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 sb.fill_glyphs(
                     Point::from_xy(0.0, 0.0),
                     fill,
-                    &[Glyph::new(
+                    &[KrillaGlyph::new(
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
                         0.0,
@@ -75,6 +75,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     font,
                     &glyph.text,
                     span.font_size.get(),
+                    GlyphUnits::UnitsPerEm
                 );
             };
 
@@ -82,7 +83,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 sb.stroke_glyphs(
                     Point::from_xy(0.0, 0.0),
                     stroke,
-                    &[Glyph::new(
+                    &[KrillaGlyph::new(
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
                         0.0,
@@ -93,6 +94,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     font,
                     &glyph.text,
                     span.font_size.get(),
+                    GlyphUnits::UnitsPerEm
                 );
             };
 

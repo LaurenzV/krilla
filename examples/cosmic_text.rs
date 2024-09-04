@@ -11,7 +11,7 @@
 
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use krilla::color::rgb::Rgb;
-use krilla::font::Glyph;
+use krilla::font::{GlyphUnits, KrillaGlyph};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
 use skrifa::GlyphId;
@@ -59,7 +59,7 @@ fn main() {
                 .iter()
                 .map(|glyph| {
                     x += glyph.w;
-                    Glyph::new(
+                    KrillaGlyph::new(
                         GlyphId::new(glyph.glyph_id as u32),
                         glyph.w,
                         glyph.x_offset,
@@ -77,6 +77,7 @@ fn main() {
                 font,
                 run.text,
                 size,
+                GlyphUnits::UserSpace
             );
         }
     }
