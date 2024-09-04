@@ -161,9 +161,7 @@ impl CIDFont {
         cid.font_descriptor(descriptor_ref);
         cid.default_width(0.0);
 
-        let to_pdf_units = |v: f32| {
-            v / self.font.units_per_em() * self.units_per_em()
-        };
+        let to_pdf_units = |v: f32| v / self.font.units_per_em() * self.units_per_em();
 
         let mut first = 0;
         let mut width_writer = cid.widths();
@@ -191,11 +189,7 @@ impl CIDFont {
         let italic_angle = self.font.italic_angle();
         let ascender = to_pdf_units(self.font.ascent());
         let descender = to_pdf_units(self.font.descent());
-        let cap_height = self
-            .font
-            .cap_height()
-            .map(|h| to_pdf_units(h))
-            .unwrap_or(ascender);
+        let cap_height = self.font.cap_height().map(to_pdf_units).unwrap_or(ascender);
         let stem_v = 10.0 + 0.244 * (self.font.weight() - 50.0);
 
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);

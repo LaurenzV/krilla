@@ -1,5 +1,5 @@
-use crate::font::{Font, GlyphUnits};
 use crate::font::KrillaGlyph;
+use crate::font::{Font, GlyphUnits};
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
 use crate::paint::Paint;
@@ -75,7 +75,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     font,
                     &glyph.text,
                     span.font_size.get(),
-                    GlyphUnits::UnitsPerEm
+                    GlyphUnits::UnitsPerEm,
                 );
             };
 
@@ -94,7 +94,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     font,
                     &glyph.text,
                     span.font_size.get(),
-                    GlyphUnits::UnitsPerEm
+                    GlyphUnits::UnitsPerEm,
                 );
             };
 

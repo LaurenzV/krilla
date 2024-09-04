@@ -114,7 +114,7 @@ fn main() {
                                 krilla_font.clone(),
                                 &text,
                                 font_size,
-                                GlyphUnits::UserSpace
+                                GlyphUnits::UserSpace,
                             );
                             glyphs.clear();
                             cur_x = x;
@@ -151,7 +151,7 @@ fn main() {
                     krilla_font.clone(),
                     &text,
                     font_size,
-                    GlyphUnits::UserSpace
+                    GlyphUnits::UserSpace,
                 );
             }
         }

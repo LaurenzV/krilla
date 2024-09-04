@@ -415,7 +415,7 @@ pub enum GlyphUnits {
     /// corresponding font.
     UnitsPerEm,
     /// The units are in user space units, i.e. (`val`/`units_per_em`) * `font_size`
-    UserSpace
+    UserSpace,
 }
 
 /// A glyph type that implements `Glyph`. You can use it if you don't

@@ -176,6 +176,7 @@ impl ContentBuilder {
         self.content_restore_state();
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_glyphs(
         &mut self,
         start: Point,
@@ -185,7 +186,7 @@ impl ContentBuilder {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits
+        glyph_units: GlyphUnits,
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -212,12 +213,13 @@ impl ContentBuilder {
             font,
             text,
             font_size,
-            glyph_units
+            glyph_units,
         );
 
         self.graphics_states.restore_state();
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn stroke_glyphs(
         &mut self,
         start: Point,
@@ -227,7 +229,7 @@ impl ContentBuilder {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits
+        glyph_units: GlyphUnits,
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -254,7 +256,7 @@ impl ContentBuilder {
             font,
             text,
             font_size,
-            glyph_units
+            glyph_units,
         );
 
         self.graphics_states.restore_state();
@@ -262,6 +264,7 @@ impl ContentBuilder {
 
     /// Encode a successive sequence of glyphs that share the same properties and
     /// can be encoded with one text showing operator.
+    #[allow(clippy::too_many_arguments)]
     fn encode_consecutive_glyph_run(
         &mut self,
         cur_x: &mut f32,
@@ -270,7 +273,7 @@ impl ContentBuilder {
         pdf_font: &dyn PdfFont,
         size: f32,
         glyphs: &[impl Glyph],
-        glyph_units: GlyphUnits
+        glyph_units: GlyphUnits,
     ) {
         let font_name = self
             .rd_builder
@@ -289,9 +292,7 @@ impl ContentBuilder {
         for glyph in glyphs {
             let pdf_glyph = pdf_font.get_gid(glyph.glyph_id()).unwrap();
 
-            let normalize = |v| {
-                unit_normalize(glyph_units, pdf_font, size, v)
-            };
+            let normalize = |v| unit_normalize(glyph_units, pdf_font, size, v);
 
             let x_advance = normalize(glyph.x_advance()) * pdf_font.units_per_em();
             let font_advance = pdf_font
@@ -344,7 +345,7 @@ impl ContentBuilder {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits
+        glyph_units: GlyphUnits,
     ) {
         let mut cur_x = x;
 
@@ -379,12 +380,13 @@ impl ContentBuilder {
 
                     sb.encode_consecutive_glyph_run(
                         &mut cur_x,
-                        y - unit_normalize(glyph_units, pdf_font, font_size, glyph_group.y_offset) * font_size,
+                        y - unit_normalize(glyph_units, pdf_font, font_size, glyph_group.y_offset)
+                            * font_size,
                         glyph_group.font_identifier,
                         pdf_font,
                         font_size,
-                        &glyph_group.glyphs,
-                        glyph_units
+                        glyph_group.glyphs,
+                        glyph_units,
                     )
                 }
 
@@ -756,7 +758,7 @@ fn unit_normalize(glyph_units: GlyphUnits, pdf_font: &dyn PdfFont, size: f32, va
     match glyph_units {
         GlyphUnits::Normalized => val,
         GlyphUnits::UnitsPerEm => val / pdf_font.font().units_per_em(),
-        GlyphUnits::UserSpace => val / size
+        GlyphUnits::UserSpace => val / size,
     }
 }
 
@@ -824,12 +826,18 @@ impl PdfFont for CIDFont {
     }
 }
 
-pub(crate) enum TextSpan<'a, T> where T: Glyph {
+pub(crate) enum TextSpan<'a, T>
+where
+    T: Glyph,
+{
     Unspanned(&'a [T]),
     Spanned(&'a [T], &'a str),
 }
 
-impl<T> TextSpan<'_, T> where T: Glyph {
+impl<T> TextSpan<'_, T>
+where
+    T: Glyph,
+{
     pub fn glyphs(&self) -> &[T] {
         match self {
             TextSpan::Unspanned(glyphs) => glyphs,
@@ -845,18 +853,20 @@ impl<T> TextSpan<'_, T> where T: Glyph {
     }
 }
 
-pub(crate) struct TextSpanner<'a, 'b, T> where T: Glyph {
+pub(crate) struct TextSpanner<'a, 'b, T>
+where
+    T: Glyph,
+{
     slice: &'a [T],
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
 
-impl<'a, 'b, T> TextSpanner<'a, 'b, T> where T: Glyph {
-    pub fn new(
-        slice: &'a [T],
-        text: &'a str,
-        font_container: &'b RefCell<FontContainer>,
-    ) -> Self {
+impl<'a, 'b, T> TextSpanner<'a, 'b, T>
+where
+    T: Glyph,
+{
+    pub fn new(slice: &'a [T], text: &'a str, font_container: &'b RefCell<FontContainer>) -> Self {
         Self {
             slice,
             text,
@@ -865,11 +875,21 @@ impl<'a, 'b, T> TextSpanner<'a, 'b, T> where T: Glyph {
     }
 }
 
-impl<'a, T> Iterator for TextSpanner<'a, '_, T> where T: Glyph {
+impl<'a, T> Iterator for TextSpanner<'a, '_, T>
+where
+    T: Glyph,
+{
     type Item = TextSpan<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        fn func<U>(g: &U, mut font_container: RefMut<FontContainer>, text: &str) -> (Range<usize>, bool) where U: Glyph {
+        fn func<U>(
+            g: &U,
+            mut font_container: RefMut<FontContainer>,
+            text: &str,
+        ) -> (Range<usize>, bool)
+        where
+            U: Glyph,
+        {
             let (identifier, pdf_glyph) = font_container.add_glyph(g.glyph_id());
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
@@ -891,12 +911,14 @@ impl<'a, T> Iterator for TextSpanner<'a, '_, T> where T: Glyph {
         let mut count = 1;
 
         let mut iter = self.slice.iter();
-        let (first_range, first_incompatible) = func(iter.next()?, self.font_container.borrow_mut(), self.text);
+        let (first_range, first_incompatible) =
+            func(iter.next()?, self.font_container.borrow_mut(), self.text);
 
         let mut last_range = first_range.clone();
 
         for next in iter {
-            let (next_range, next_incompatible) = func(next, self.font_container.borrow_mut(), self.text);
+            let (next_range, next_incompatible) =
+                func(next, self.font_container.borrow_mut(), self.text);
 
             match use_span {
                 None => {
@@ -946,13 +968,19 @@ impl<'a, T> Iterator for TextSpanner<'a, '_, T> where T: Glyph {
     }
 }
 
-pub(crate) struct GlyphGroup<'a, T> where T: Glyph {
+pub(crate) struct GlyphGroup<'a, T>
+where
+    T: Glyph,
+{
     font_identifier: FontIdentifier,
     glyphs: &'a [T],
     y_offset: f32,
 }
 
-impl<'a, T> GlyphGroup<'a, T> where T: Glyph {
+impl<'a, T> GlyphGroup<'a, T>
+where
+    T: Glyph,
+{
     pub fn new(font_identifier: FontIdentifier, glyphs: &'a [T], y_offset: f32) -> Self {
         GlyphGroup {
             font_identifier,
@@ -962,12 +990,18 @@ impl<'a, T> GlyphGroup<'a, T> where T: Glyph {
     }
 }
 
-pub(crate) struct GlyphGrouper<'a, 'b, T> where T: Glyph {
+pub(crate) struct GlyphGrouper<'a, 'b, T>
+where
+    T: Glyph,
+{
     font_container: &'b RefCell<FontContainer>,
     slice: &'a [T],
 }
 
-impl<'a, 'b, T> GlyphGrouper<'a, 'b, T> where T: Glyph {
+impl<'a, 'b, T> GlyphGrouper<'a, 'b, T>
+where
+    T: Glyph,
+{
     pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [T]) -> Self {
         Self {
             font_container,
@@ -976,7 +1010,10 @@ impl<'a, 'b, T> GlyphGrouper<'a, 'b, T> where T: Glyph {
     }
 }
 
-impl<'a, T> Iterator for GlyphGrouper<'a, '_, T> where T: Glyph {
+impl<'a, T> Iterator for GlyphGrouper<'a, '_, T>
+where
+    T: Glyph,
+{
     type Item = GlyphGroup<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -988,7 +1025,10 @@ impl<'a, T> Iterator for GlyphGrouper<'a, '_, T> where T: Glyph {
                 y_offset: f32,
             }
 
-            fn func<U>(g: &U, font_container: RefMut<FontContainer>) -> GlyphProps where U: Glyph {
+            fn func<U>(g: &U, font_container: RefMut<FontContainer>) -> GlyphProps
+            where
+                U: Glyph,
+            {
                 // Safe because we've already added all glyphs in the text spanner.
                 let font_identifier = font_container.font_identifier(g.glyph_id()).unwrap();
 

@@ -77,7 +77,7 @@ fn main() {
                 font,
                 run.text,
                 size,
-                GlyphUnits::UserSpace
+                GlyphUnits::UserSpace,
             );
         }
     }

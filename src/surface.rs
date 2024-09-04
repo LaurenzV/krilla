@@ -122,6 +122,7 @@ impl<'a> Surface<'a> {
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_glyphs<T>(
         &mut self,
         start: Point,
@@ -130,12 +131,20 @@ impl<'a> Surface<'a> {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits
+        glyph_units: GlyphUnits,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyphs(start, self.sc, fill, glyphs, font, text, font_size, glyph_units);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
+            start,
+            self.sc,
+            fill,
+            glyphs,
+            font,
+            text,
+            font_size,
+            glyph_units,
+        );
     }
 
     /// Draw some text with a fill.
@@ -165,7 +174,15 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.fill_glyphs(start, fill, &glyphs, font, text, font_size, GlyphUnits::UserSpace);
+        self.fill_glyphs(
+            start,
+            fill,
+            &glyphs,
+            font,
+            text,
+            font_size,
+            GlyphUnits::UserSpace,
+        );
     }
 
     /// Draw a sequence of glyphs with a stroke.
@@ -173,6 +190,7 @@ impl<'a> Surface<'a> {
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
+    #[allow(clippy::too_many_arguments)]
     pub fn stroke_glyphs<T>(
         &mut self,
         start: Point,
@@ -181,12 +199,20 @@ impl<'a> Surface<'a> {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits
+        glyph_units: GlyphUnits,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text, font_size, glyph_units);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
+            start,
+            self.sc,
+            stroke,
+            glyphs,
+            font,
+            text,
+            font_size,
+            glyph_units,
+        );
     }
 
     /// Draw some text with a stroke.
@@ -216,7 +242,15 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.stroke_glyphs(start, stroke, &glyphs, font, text, font_size, GlyphUnits::UserSpace);
+        self.stroke_glyphs(
+            start,
+            stroke,
+            &glyphs,
+            font,
+            text,
+            font_size,
+            GlyphUnits::UserSpace,
+        );
     }
 
     /// Concatenate a new transform to the current transformation matrix.
