@@ -29,6 +29,7 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::cell::RefCell;
+use std::ops::Deref;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Transform};
@@ -183,7 +184,7 @@ impl ContentBuilder {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
-        font_size: f32
+        font_size: f32,
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -209,7 +210,7 @@ impl ContentBuilder {
             glyphs,
             font,
             text,
-            font_size
+            font_size,
         );
 
         self.graphics_states.restore_state();
@@ -223,7 +224,7 @@ impl ContentBuilder {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
-        font_size: f32
+        font_size: f32,
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -249,7 +250,7 @@ impl ContentBuilder {
             glyphs,
             font,
             text,
-            font_size
+            font_size,
         );
 
         self.graphics_states.restore_state();
@@ -262,16 +263,21 @@ impl ContentBuilder {
         cur_x: &mut f32,
         cur_y: f32,
         font_identifier: FontIdentifier,
+        font_container: &FontContainer,
         size: f32,
-        glyphs: &[InstanceGlyph],
+        glyphs: &[Glyph],
     ) {
         let font_name = self
             .rd_builder
-            .register_resource(Resource::Font(font_identifier));
+            .register_resource(Resource::Font(font_identifier.clone()));
         self.content.set_font(font_name.to_pdf_name(), size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
+
+        let pdf_font = font_container
+            .get_from_identifier(font_identifier.clone())
+            .unwrap();
 
         let mut positioned = self.content.show_positioned();
         let mut items = positioned.items();
@@ -280,7 +286,20 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            adjustment += glyph.x_offset;
+            let pdf_glyph = pdf_font.get_gid(glyph.glyph_id).unwrap();
+
+            let user_units_to_font_units =
+                |val| pdf_font.to_pdf_font_units(val / size * pdf_font.font().units_per_em());
+
+            let user_space_x_advance = glyph.x_advance;
+            let x_advance = user_units_to_font_units(glyph.x_advance);
+            let font_advance = pdf_font
+                .font()
+                .advance_width(glyph.glyph_id)
+                .map(|n| pdf_font.to_pdf_font_units(n));
+            let x_offset = user_units_to_font_units(glyph.x_offset);
+
+            adjustment += x_offset;
 
             // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
@@ -293,15 +312,15 @@ impl ContentBuilder {
                 adjustment = 0.0;
             }
 
-            glyph.pdf_glyph.encode_into(&mut encoded);
+            pdf_glyph.encode_into(&mut encoded);
 
-            if let Some(font_advance) = glyph.font_advance {
-                adjustment += glyph.x_advance - font_advance;
+            if let Some(font_advance) = font_advance {
+                adjustment += x_advance - font_advance;
             }
 
-            adjustment -= glyph.x_offset;
+            adjustment -= x_offset;
             // cur_x/cur_y and glyph metrics are in user space units, so don't convert here.
-            *cur_x += glyph.user_space_x_advance;
+            *cur_x += user_space_x_advance;
         }
 
         if !encoded.is_empty() {
@@ -323,7 +342,7 @@ impl ContentBuilder {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
-        font_size: f32
+        font_size: f32,
     ) {
         let mut cur_x = x;
 
@@ -348,13 +367,14 @@ impl ContentBuilder {
 
                 // Segment into glyph runs that can be encoded in one go using a PDF
                 // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                let segmented = GlyphGrouper::new(font_container, fragment.glyphs(), font_size);
+                let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
 
                 for glyph_group in segmented {
                     sb.encode_consecutive_glyph_run(
                         &mut cur_x,
                         y - glyph_group.y_offset,
                         glyph_group.font_identifier,
+                        font_container.borrow().deref(),
                         font_size,
                         &glyph_group.glyphs,
                     )
@@ -724,14 +744,6 @@ impl ContentBuilder {
     }
 }
 
-pub(crate) struct InstanceGlyph {
-    pub pdf_glyph: PDFGlyph,
-    pub x_advance: f32,
-    pub user_space_x_advance: f32,
-    pub font_advance: Option<f32>,
-    pub x_offset: f32,
-}
-
 pub(crate) trait PdfFont {
     fn to_pdf_font_units(&self, val: f32) -> f32;
     fn font(&self) -> Font;
@@ -912,18 +924,14 @@ impl<'a> Iterator for TextSpanner<'a, '_> {
     }
 }
 
-pub(crate) struct GlyphGroup {
+pub(crate) struct GlyphGroup<'a> {
     font_identifier: FontIdentifier,
-    glyphs: Vec<InstanceGlyph>,
+    glyphs: &'a [Glyph],
     y_offset: f32,
 }
 
-impl GlyphGroup {
-    pub fn new(
-        font_identifier: FontIdentifier,
-        glyphs: Vec<InstanceGlyph>,
-        y_offset: f32,
-    ) -> Self {
+impl<'a, 'b> GlyphGroup<'a> {
+    pub fn new(font_identifier: FontIdentifier, glyphs: &'a [Glyph], y_offset: f32) -> Self {
         GlyphGroup {
             font_identifier,
             glyphs,
@@ -934,22 +942,20 @@ impl GlyphGroup {
 
 pub(crate) struct GlyphGrouper<'a, 'b> {
     font_container: &'b RefCell<FontContainer>,
-    font_size: f32,
     slice: &'a [Glyph],
 }
 
 impl<'a, 'b> GlyphGrouper<'a, 'b> {
-    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph], font_size: f32) -> Self {
+    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [Glyph]) -> Self {
         Self {
             font_container,
             slice,
-            font_size
         }
     }
 }
 
 impl<'a> Iterator for GlyphGrouper<'a, '_> {
-    type Item = GlyphGroup;
+    type Item = GlyphGroup<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Guarantees: All glyphs in `head` have the font identifier that is given in
@@ -994,36 +1000,7 @@ impl<'a> Iterator for GlyphGrouper<'a, '_> {
 
         self.slice = tail;
 
-        let font_container = self.font_container.borrow();
-        let pdf_font = font_container
-            .get_from_identifier(props.font_identifier.clone())
-            .unwrap();
-
-        let glyphs = head
-            .iter()
-            .map(move |g| {
-                // Safe because we've already added all glyphs in the text spanner.
-                let pdf_glyph = pdf_font.get_gid(g.glyph_id).unwrap();
-
-                let user_units_to_font_units = |val| {
-                    pdf_font.to_pdf_font_units(val / self.font_size * pdf_font.font().units_per_em())
-                };
-
-                InstanceGlyph {
-                    pdf_glyph,
-                    user_space_x_advance: g.x_advance,
-                    x_advance: user_units_to_font_units(g.x_advance),
-                    font_advance: pdf_font
-                        .font()
-                        .advance_width(g.glyph_id)
-                        .map(|n| pdf_font.to_pdf_font_units(n)),
-                    x_offset: user_units_to_font_units(g.x_offset),
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let glyph_group =
-            GlyphGroup::new(props.font_identifier, glyphs, props.y_offset);
+        let glyph_group = GlyphGroup::new(props.font_identifier, head, props.y_offset);
 
         Some(glyph_group)
     }

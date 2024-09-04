@@ -113,7 +113,7 @@ fn main() {
                                 &glyphs,
                                 krilla_font.clone(),
                                 &text,
-                                font_size
+                                font_size,
                             );
                             glyphs.clear();
                             cur_x = x;

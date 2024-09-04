@@ -486,7 +486,7 @@ pub fn all_glyphs_to_pdf(
             &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len())],
             font.clone(),
             &text,
-            size as f32
+            size as f32,
         );
         surface.pop();
 

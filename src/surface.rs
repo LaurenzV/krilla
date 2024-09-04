@@ -17,6 +17,7 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
+use crate::util::RectExt;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -28,11 +29,10 @@ use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use skrifa::GlyphId;
 #[cfg(feature = "fontdb")]
 use std::collections::HashMap;
-use tiny_skia_path::{NormalizedF32, Rect};
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
+use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
-use crate::util::RectExt;
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -179,7 +179,7 @@ impl<'a> Surface<'a> {
         glyphs: &[Glyph],
         font: Font,
         text: &str,
-        font_size: f32
+        font_size: f32,
     ) where
         T: ColorSpace,
     {
@@ -340,7 +340,11 @@ impl<'a> Surface<'a> {
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
     /// which makes it easier to integrate `cosmic-text` with this library.
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> Option<HashMap<ID, Font>> {
+    pub fn convert_fontdb(
+        &mut self,
+        db: &mut Database,
+        ids: Option<Vec<ID>>,
+    ) -> Option<HashMap<ID, Font>> {
         self.sc.convert_fontdb(db, ids)
     }
 
@@ -600,7 +604,8 @@ mod tests {
 
     #[visreg(pdfium)]
     fn svg_should_be_clipped(surface: &mut Surface) {
-        let data = std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
+        let data =
+            std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
 
         surface.push_transform(&Transform::from_translate(100.0, 0.0));
