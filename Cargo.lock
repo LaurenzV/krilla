@@ -1051,8 +1051,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pdf-writer"
-version = "0.10.0"
-source = "git+https://github.com/LaurenzV/pdf-writer?rev=34c991f5#34c991f58cb4e3a29ef79edad0337435e9cecc6c"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "315bd599c75e149b51ad109a01f05cf887ccbab9a7b18d4852303f5c8823be71"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",
@@ -1529,8 +1530,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subsetter"
-version = "0.11.0"
-source = "git+https://github.com/typst/subsetter/?rev=67bde74#67bde74c76a3d3a27b4f4f3f62cfc553ce965443"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74f98178f34057d4d4de93d68104007c6dea4dfac930204a69ab4622daefa648"
 
 [[package]]
 name = "svgtypes"
