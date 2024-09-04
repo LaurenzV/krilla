@@ -6,7 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
-use crate::font::{Font, GlyphUnits, KrillaGlyph};
+use crate::font::{Font, Glyph, GlyphUnits, KrillaGlyph};
 use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -126,7 +126,7 @@ impl<'a> Surface<'a> {
         &mut self,
         start: Point,
         fill: Fill<T>,
-        glyphs: &[KrillaGlyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
@@ -177,7 +177,7 @@ impl<'a> Surface<'a> {
         &mut self,
         start: Point,
         stroke: Stroke<T>,
-        glyphs: &[KrillaGlyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,

@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, KrillaGlyph};
+use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -223,7 +223,7 @@ impl ContentBuilder {
         start: Point,
         sc: &mut SerializerContext,
         stroke: Stroke<impl ColorSpace>,
-        glyphs: &[KrillaGlyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
