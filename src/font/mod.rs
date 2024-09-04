@@ -1,13 +1,13 @@
 //! Text and font font support.
 //!
 //! krilla has extensive support for OpenType fonts. It supports CFF-based as well
-//! as glyf-based font OpenType fonts. In addition to that, krilla also supports
-//! all of the major tables used in color fonts, including the `SVG`, `COLR`, `sbix`,
-//! `CBDT`/`EBDT` tables, something that, to the best of my knowledge, no other
+//! as glyf-based OpenType fonts. In addition to that, krilla also supports
+//! all major tables used in color fonts, including the `SVG`, `COLR`, `sbix` and
+//! `CBDT`/`EBDT` (only PNG) tables, something that, to the best of my knowledge, no other
 //! Rust crates provides.
 //!
 //! Even better is the fact that you do not need to take care of choosing the right
-//! table for drawing glyphs: All you need to do is to provide the `Font` object with
+//! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index and variation coordinates,
 //!
 //! krilla, in principle, also supports variable fonts. However, at the moment, variable
@@ -26,7 +26,7 @@ use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, GlyphId, MetadataProvider};
+use skrifa::{FontRef, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
@@ -40,6 +40,8 @@ pub(crate) mod colr;
 pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
+
+pub use skrifa::GlyphId;
 
 // TODO: Test TrueType collection
 
@@ -389,12 +391,37 @@ impl OutlinePen for OutlineBuilder {
     }
 }
 
-/// A single glyph.
-///
-/// *Note*: The units of `x_advance`, `x_offset` and `y_offset`
-/// are in user space units!
+/// A glyph with certain properties.
+pub trait Glyph {
+    /// The glyph ID of the glyph.
+    fn glyph_id(&self) -> GlyphId;
+    /// The range of bytes in the original text covered by the cluster that the glyph
+    /// belongs to.
+    fn text_range(&self) -> Range<usize>;
+    /// The advance in the x direction of the glyph.
+    fn x_advance(&self) -> f32;
+    /// The offset in the x direction of the glyph.
+    fn x_offset(&self) -> f32;
+    /// The offset in the y direction of the glyph.
+    fn y_offset(&self) -> f32;
+}
+
+/// The units of the metrics of a glyph.
+#[derive(Debug, Copy, Clone)]
+pub enum GlyphUnits {
+    /// The units are normalized, i.e. `val`/`units_per_em`.
+    Normalized,
+    /// The units are given relative the `units_per_em` of the
+    /// corresponding font.
+    UnitsPerEm,
+    /// The units are in user space units, i.e. (`val`/`units_per_em`) * `font_size`
+    UserSpace,
+}
+
+/// A glyph type that implements `Glyph`. You can use it if you don't
+/// have your own type of glyph that you want to use.
 #[derive(Debug, Clone)]
-pub struct Glyph {
+pub struct KrillaGlyph {
     /// The glyph ID of the glyph.
     pub glyph_id: GlyphId,
     /// The range in the original text that corresponds to the
@@ -406,11 +433,31 @@ pub struct Glyph {
     pub x_offset: f32,
     /// The y offset of the glyph.
     pub y_offset: f32,
-    /// The font size of the glyph.
-    pub font_size: f32,
 }
 
-impl Glyph {
+impl Glyph for KrillaGlyph {
+    fn glyph_id(&self) -> GlyphId {
+        self.glyph_id
+    }
+
+    fn text_range(&self) -> Range<usize> {
+        self.text_range.clone()
+    }
+
+    fn x_advance(&self) -> f32 {
+        self.x_advance
+    }
+
+    fn x_offset(&self) -> f32 {
+        self.x_offset
+    }
+
+    fn y_offset(&self) -> f32 {
+        self.y_offset
+    }
+}
+
+impl KrillaGlyph {
     /// Create a new glyph.
     pub fn new(
         glyph_id: GlyphId,
@@ -418,7 +465,6 @@ impl Glyph {
         x_offset: f32,
         y_offset: f32,
         range: Range<usize>,
-        size: f32,
     ) -> Self {
         Self {
             glyph_id,
@@ -426,7 +472,6 @@ impl Glyph {
             x_offset,
             y_offset,
             text_range: range,
-            font_size: size,
         }
     }
 }

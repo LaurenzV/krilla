@@ -14,21 +14,28 @@ pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut 
 
     match image.kind() {
         ImageKind::JPEG(d) => {
-            // TODO: Remove unwraps
-            let d_image = Image::from_jpeg(d).unwrap();
-            surface.draw_image(d_image, image.size());
+            if let Some(image) = Image::from_jpeg(d) {
+                let size = image.size();
+                surface.draw_image(image, size);
+            }
         }
         ImageKind::PNG(d) => {
-            let d_image = Image::from_png(d).unwrap();
-            surface.draw_image(d_image, image.size());
+            if let Some(image) = Image::from_png(d) {
+                let size = image.size();
+                surface.draw_image(image, size);
+            }
         }
         ImageKind::GIF(d) => {
-            let d_image = Image::from_gif(d).unwrap();
-            surface.draw_image(d_image, image.size());
+            if let Some(image) = Image::from_gif(d) {
+                let size = image.size();
+                surface.draw_image(image, size);
+            }
         }
         ImageKind::WEBP(d) => {
-            let d_image = Image::from_webp(d).unwrap();
-            surface.draw_image(d_image, image.size());
+            if let Some(image) = Image::from_webp(d) {
+                let size = image.size();
+                surface.draw_image(image, size);
+            }
         }
         ImageKind::SVG(t) => {
             surface.push_clip_path(

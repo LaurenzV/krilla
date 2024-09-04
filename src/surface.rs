@@ -1,12 +1,12 @@
 //! Drawing onto a surface.
 //!
-//! This module contains most core part of `krilla`: The `Surface` struct. A surface
+//! This module contains most core part of krilla: The [`Surface`] struct. A surface
 //! represents a drawing area on which you can define the contents of your page. This includes
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
-use crate::font::{Font, Glyph};
+use crate::font::{Font, Glyph, GlyphUnits, KrillaGlyph};
 use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -17,6 +17,7 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
+use crate::util::RectExt;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -28,9 +29,9 @@ use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use skrifa::GlyphId;
 #[cfg(feature = "fontdb")]
 use std::collections::HashMap;
-use tiny_skia_path::NormalizedF32;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
+use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
 pub(crate) enum PushInstruction {
@@ -47,18 +48,18 @@ pub(crate) enum PushInstruction {
 /// Represents a drawing area for defining graphical content. The origin of the
 /// coordinate axis is in the top-left corner.
 ///
-/// You cannot directly create an instance of a `Surface` yourself.
+/// You cannot directly create an instance of a [`Surface`] yourself.
 /// Instead, there are two ways of getting access to a surface, which you can then use to draw on:
 ///
 /// - The first way, and also the most common one you will use, is by creating a new document,
-///   adding a page to it and then invoking the `surface` method. The surface returned as part of
+///   adding a page to it and then invoking the [`Page::surface`] method. The surface returned as part of
 ///   that represents the drawing area of the page.
-/// - The second way is by calling the `stream_builder` method on the surface, to create a sub-drawing
-///   context. See the documentation of the `stream` module for more information.
+/// - The second way is by calling the [`Surface::stream_builder`] method on the surface, to create a sub-drawing
+///   context. See the documentation of the [`stream`] module for more information.
 ///
 /// The surface uses a `push` and `pop` based mechanism for applying certain actions. For example,
-/// there is a `push_transform` method which allows you to concatenate a new transform to the
-/// current transform matrix. There is also a `push_clip_path` method, which allows you to
+/// there is a [`Surface::push_transform`] method which allows you to concatenate a new transform to the
+/// current transform matrix. There is also a [`Surface::push_clip_path`] method, which allows you to
 /// intersect the current drawing area with a clip path. Once you call such a `push` method,
 /// the action that it invokes will be in place until you call the `pop` method, which will then
 /// revert the last `push` operation. This allows you to, for example, define a clipping path area
@@ -67,6 +68,9 @@ pub(crate) enum PushInstruction {
 /// It is important that, for each `push` method you invoke, there must be a corresponding `pop`
 /// invocation that reverts it. If, at the end of the using the surface, the number of pushes/pops is
 /// uneven, the program will panic.
+///
+/// [`stream`]: crate::stream
+/// [`Page::surface`]: crate::page::Page::surface
 pub struct Surface<'a> {
     sc: &'a mut SerializerContext,
     pub(crate) root_builder: ContentBuilder,
@@ -105,12 +109,12 @@ impl<'a> Surface<'a> {
     }
 
     /// Stroke a path.
-    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>)
+    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>) -> Option<()>
     where
         T: ColorSpace,
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_path(path, stroke, self.sc);
+            .stroke_path(path, stroke, self.sc)
     }
 
     /// Draw a sequence of glyphs with a fill.
@@ -118,18 +122,29 @@ impl<'a> Surface<'a> {
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_glyphs<T>(
         &mut self,
         start: Point,
         fill: Fill<T>,
-        glyphs: &[Glyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
+        font_size: f32,
+        glyph_units: GlyphUnits,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_glyphs(start, self.sc, fill, glyphs, font, text);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
+            start,
+            self.sc,
+            fill,
+            glyphs,
+            font,
+            text,
+            font_size,
+            glyph_units,
+        );
     }
 
     /// Draw some text with a fill.
@@ -159,7 +174,15 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.fill_glyphs(start, fill, &glyphs, font, text);
+        self.fill_glyphs(
+            start,
+            fill,
+            &glyphs,
+            font,
+            text,
+            font_size,
+            GlyphUnits::UserSpace,
+        );
     }
 
     /// Draw a sequence of glyphs with a stroke.
@@ -167,18 +190,29 @@ impl<'a> Surface<'a> {
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
+    #[allow(clippy::too_many_arguments)]
     pub fn stroke_glyphs<T>(
         &mut self,
         start: Point,
         stroke: Stroke<T>,
-        glyphs: &[Glyph],
+        glyphs: &[impl Glyph],
         font: Font,
         text: &str,
+        font_size: f32,
+        glyph_units: GlyphUnits,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_glyphs(start, self.sc, stroke, glyphs, font, text);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
+            start,
+            self.sc,
+            stroke,
+            glyphs,
+            font,
+            text,
+            font_size,
+            glyph_units,
+        );
     }
 
     /// Draw some text with a stroke.
@@ -208,7 +242,15 @@ impl<'a> Surface<'a> {
     {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
-        self.stroke_glyphs(start, stroke, &glyphs, font, text);
+        self.stroke_glyphs(
+            start,
+            stroke,
+            &glyphs,
+            font,
+            text,
+            font_size,
+            GlyphUnits::UserSpace,
+        );
     }
 
     /// Concatenate a new transform to the current transformation matrix.
@@ -308,14 +350,23 @@ impl<'a> Surface<'a> {
 
     #[cfg(feature = "svg")]
     /// Draw a new SVG image.
-    pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) {
+    pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) -> Option<()> {
         let transform = Transform::from_scale(
             size.width() / tree.size().width(),
             size.height() / tree.size().height(),
         );
         self.push_transform(&transform);
+        self.push_clip_path(
+            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
+                .unwrap()
+                .to_clip_path(),
+            &FillRule::NonZero,
+        );
         svg::render_tree(tree, self.sc.serialize_settings.svg_settings, self);
         self.pop();
+        self.pop();
+
+        Some(())
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
@@ -325,7 +376,11 @@ impl<'a> Surface<'a> {
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
     /// which makes it easier to integrate `cosmic-text` with this library.
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+    pub fn convert_fontdb(
+        &mut self,
+        db: &mut Database,
+        ids: Option<Vec<ID>>,
+    ) -> Option<HashMap<ID, Font>> {
         self.sc.convert_fontdb(db, ids)
     }
 
@@ -366,7 +421,7 @@ impl Drop for Surface<'_> {
 
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
-fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<Glyph> {
+fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let mut rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
     for (tag, val) in font.variations() {
@@ -425,13 +480,12 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<G
         .and_then(|last| infos.get(last))
         .map_or(text.len(), |info| info.cluster as usize);
 
-        glyphs.push(Glyph::new(
+        glyphs.push(KrillaGlyph::new(
             GlyphId::new(start_info.glyph_id),
             (pos.x_advance as f32 / font.units_per_em()) * size,
             (pos.x_offset as f32 / font.units_per_em()) * size,
             (pos.y_offset as f32 / font.units_per_em()) * size,
             start..end,
-            size,
         ));
     }
 
@@ -553,6 +607,42 @@ mod tests {
     }
 
     #[snapshot(stream)]
+    fn stream_complex_text_2(surface: &mut Surface) {
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::<Rgb>::default(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
+            16.0,
+            &[],
+            "यु॒धा नर॑ ऋ॒ष्वा ",
+        );
+    }
+
+    #[snapshot(stream)]
+    fn stream_complex_text_3(surface: &mut Surface) {
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::<Rgb>::default(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
+            16.0,
+            &[],
+            "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
+        );
+    }
+
+    #[snapshot(stream)]
+    fn stream_complex_text_4(surface: &mut Surface) {
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::<Rgb>::default(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
+            16.0,
+            &[],
+            "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
+        );
+    }
+
+    #[snapshot(stream)]
     fn stream_image(surface: &mut Surface) {
         let image = load_png_image("rgb8.png");
         let size = image.size();
@@ -582,5 +672,16 @@ mod tests {
     #[visreg(pdfium)]
     fn svg_resized(surface: &mut Surface) {
         surface.draw_svg(&sample_svg(), Size::from_wh(120.0, 80.0).unwrap());
+    }
+
+    #[visreg(pdfium)]
+    fn svg_should_be_clipped(surface: &mut Surface) {
+        let data =
+            std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
+        let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+
+        surface.push_transform(&Transform::from_translate(100.0, 0.0));
+        surface.draw_svg(&tree, tree.size());
+        surface.pop();
     }
 }

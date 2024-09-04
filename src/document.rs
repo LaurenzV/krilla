@@ -1,16 +1,18 @@
 //! Creating new PDF documents.
 //!
-//! When using krilla, the starting point is always the creation of a `Document`. A document
+//! When using krilla, the starting point is always the creation of a [`Document`]. A document
 //! represents _one_ PDF document, to which you can add pages or configure them in any
 //! other way you want.
 //!
 //! Unfortunately, creating PDFs always requires some kind of global state to keep track
 //! of different aspects in the creation process, meaning that it is not possible to
 //! generate multiple pages at the same time. Instead, you need to add pages separately
-//! by calling the `add_page` method, which returns a new `Page` object that mutably
+//! by calling the [`Document::start_page`] method, which returns a new [`Page`] object that mutably
 //! borrows the global state from the document. Once the page is dropped, the global
 //! state is passed back to the original document, which you can then use to add even
 //! more pages.
+//!
+//! [`Page`]: crate::page::Page
 
 use crate::error::KrillaResult;
 use crate::object::outline::Outline;

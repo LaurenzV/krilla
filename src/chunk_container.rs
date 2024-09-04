@@ -63,7 +63,7 @@ impl ChunkContainer {
                 $(
                     if let Some((original_ref, chunk)) = &mut $self.$field {
                         chunks_len += chunk.len();
-                        for object_ref in chunk.object_refs() {
+                        for object_ref in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&object_ref));
 
                             $remapper.insert(object_ref, $remapped_ref.bump());
@@ -80,7 +80,7 @@ impl ChunkContainer {
                 $(
                     for chunk in &$self.$field {
                         chunks_len += chunk.len();
-                        for ref_ in chunk.object_refs() {
+                        for ref_ in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&ref_));
 
                             $remapper.insert(ref_, $remapped_ref.bump());

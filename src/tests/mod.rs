@@ -3,7 +3,7 @@ use crate::color::luma::Luma;
 use crate::color::rgb::Rgb;
 use crate::color::{cmyk, luma, rgb};
 use crate::document::{Document, PageSettings};
-use crate::font::Font;
+use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
 use crate::mask::{Mask, MaskType};
 use crate::paint::{Paint, Stop};
@@ -406,7 +406,7 @@ pub fn all_glyphs_to_pdf(
     color_cycling: bool,
     d: &mut Document,
 ) {
-    use crate::font::Glyph;
+    use crate::font::KrillaGlyph;
     use crate::geom::Transform;
     use crate::object::color::rgb::Rgb;
 
@@ -483,9 +483,11 @@ pub fn all_glyphs_to_pdf(
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
-            &[Glyph::new(i, 0.0, 0.0, 0.0, 0..text.len(), size as f32)],
+            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0..text.len())],
             font.clone(),
             &text,
+            size as f32,
+            GlyphUnits::UserSpace,
         );
         surface.pop();
 

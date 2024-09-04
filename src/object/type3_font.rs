@@ -45,8 +45,8 @@ impl Type3Font {
         }
     }
 
-    pub fn to_pdf_font_units(&self, val: f32) -> f32 {
-        val
+    pub fn unit_per_em(&self) -> f32 {
+        self.font.units_per_em()
     }
 
     pub fn is_full(&self) -> bool {

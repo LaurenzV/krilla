@@ -295,7 +295,7 @@ pub mod luma {
     use pdf_writer::{Chunk, Ref};
     use std::sync::Arc;
 
-    /// An luma color.
+    /// A luma color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(u8);
 
@@ -342,12 +342,12 @@ pub mod luma {
         }
     }
 
-    /// The ICC profile for the SGray color space.
+    /// The ICC profile for the sgray color space.
     pub(crate) static GREY_ICC: &[u8] = include_bytes!("../../assets/icc/sGrey-v4.icc");
 
     /// The luma color space. Depending on whether the `no_device_cs` serialize option is set,
     /// this will internally be encoded either using the PDF `DeviceGray` color space, or in the
-    /// SGray color space using an ICC profile.
+    /// sgray color space using an ICC profile.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Luma;
 
@@ -355,7 +355,7 @@ pub mod luma {
         type Color = Color;
     }
 
-    /// The SGray color space.
+    /// The sgray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub(crate) struct SGray;
 

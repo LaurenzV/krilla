@@ -11,7 +11,7 @@
 
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use krilla::color::rgb::Rgb;
-use krilla::font::Glyph;
+use krilla::font::{GlyphUnits, KrillaGlyph};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
 use skrifa::GlyphId;
@@ -38,7 +38,7 @@ fn main() {
 
     // Use the `convert_fontdb` method to get a hashmap that maps cosmic-text font IDs to
     // krilla fonts.
-    let font_map = surface.convert_fontdb(font_system.db_mut(), None);
+    let font_map = surface.convert_fontdb(font_system.db_mut(), None).unwrap();
 
     for run in buffer.layout_runs() {
         let y_offset = run.line_y;
@@ -59,13 +59,12 @@ fn main() {
                 .iter()
                 .map(|glyph| {
                     x += glyph.w;
-                    Glyph::new(
+                    KrillaGlyph::new(
                         GlyphId::new(glyph.glyph_id as u32),
                         glyph.w,
                         glyph.x_offset,
                         glyph.y_offset,
                         glyph.start..glyph.end,
-                        size,
                     )
                 })
                 .collect::<Vec<_>>();
@@ -77,6 +76,8 @@ fn main() {
                 &glyphs,
                 font,
                 run.text,
+                size,
+                GlyphUnits::UserSpace,
             );
         }
     }
