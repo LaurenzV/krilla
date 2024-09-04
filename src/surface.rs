@@ -583,6 +583,18 @@ mod tests {
     }
 
     #[snapshot(stream)]
+    fn stream_complex_text_3(surface: &mut Surface) {
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::<Rgb>::default(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
+            16.0,
+            &[],
+            "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
+        );
+    }
+
+    #[snapshot(stream)]
     fn stream_image(surface: &mut Surface) {
         let image = load_png_image("rgb8.png");
         let size = image.size();
