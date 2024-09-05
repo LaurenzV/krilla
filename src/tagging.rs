@@ -156,6 +156,10 @@ impl StructureGroup {
             }
         }
 
+        struct_children.finish();
+        struct_element.finish();
+        struct_elems.push(chunk);
+
         Reference::Ref(root_ref)
     }
 }

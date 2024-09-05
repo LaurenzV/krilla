@@ -140,11 +140,19 @@ impl ChunkContainer {
             catalog.finish();
         }
 
+        println!(
+            "len: {:}",
+            std::str::from_utf8(&self.struct_elements[0].as_bytes()).unwrap()
+        );
+        println!("len: {:?}", self.struct_elements.len());
+
         remap_fields!(self, remapper, remapped_ref; pages, page_labels, struct_elements,
             annotations, fonts, color_spaces, destinations,
             ext_g_states, images, masks, x_objects, shading_functions,
             patterns
         );
+
+        println!("{:?}", remapper);
 
         macro_rules! write_field {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
@@ -160,7 +168,11 @@ impl ChunkContainer {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
                     for chunk in $self.$field {
-                        chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
+                        println!("{:}", std::str::from_utf8(chunk.as_bytes()).unwrap());
+                        chunk.renumber_into($pdf, |old| {
+                            println!("{:?}", old);
+                            *$remapper.get(&old).unwrap()
+                        });
                     }
                 )+
             };

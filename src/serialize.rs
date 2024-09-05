@@ -16,7 +16,7 @@ use crate::tagging::StructureRoot;
 use crate::util::{NameExt, SipHashable};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
+use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str};
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
 use std::borrow::Cow;
@@ -348,7 +348,11 @@ impl SerializerContext {
                 self.chunk_container.struct_elements = struct_elems;
 
                 let mut chunk = Chunk::new();
-                chunk.indirect(struct_tree_root_ref).start::<Structure>();
+                let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
+                tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
+                tree.insert(Name(b"K")).array().item(document_ref);
+                tree.finish();
+                self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
             }
         }
 
