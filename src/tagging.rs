@@ -1,4 +1,5 @@
-use pdf_writer::Name;
+use crate::serialize::SerializerContext;
+use pdf_writer::{Chunk, Name};
 
 pub enum ContentTag {
     Span,
@@ -44,17 +45,61 @@ impl ContentIdentifier {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum GroupTag {
+pub enum StructureTag {
     Paragraph,
-    Document,
 }
 
-pub struct Group {
-    tag: GroupTag,
+pub struct StructureGroup {
+    tag: StructureTag,
     children: Vec<Node>,
 }
 
+impl StructureGroup {
+    pub fn new(tag: StructureTag) -> Self {
+        Self {
+            tag,
+            children: vec![],
+        }
+    }
+
+    pub fn push(&mut self, child: impl Into<Node>) {
+        self.children.push(child.into())
+    }
+}
+
 pub enum Node {
-    Group(Group),
+    Group(StructureGroup),
     ContentIdentifier(ContentIdentifier),
+}
+
+impl From<StructureGroup> for Node {
+    fn from(value: StructureGroup) -> Self {
+        Node::Group(value)
+    }
+}
+
+impl From<ContentIdentifier> for Node {
+    fn from(value: ContentIdentifier) -> Self {
+        Node::ContentIdentifier(value)
+    }
+}
+
+pub struct StructureRoot {
+    children: Vec<Node>,
+}
+
+impl StructureRoot {
+    pub fn new() -> Self {
+        Self { children: vec![] }
+    }
+
+    pub fn push(&mut self, child: impl Into<Node>) {
+        self.children.push(child.into())
+    }
+
+    pub fn serialize(&self, sc: &mut SerializerContext) -> Option<Chunk> {
+        if !sc.serialize_settings.enable_tagging {
+            return None;
+        }
+    }
 }

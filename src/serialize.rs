@@ -12,6 +12,7 @@ use crate::object::type3_font::Type3FontMapper;
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
+use crate::tagging::StructureRoot;
 use crate::util::{NameExt, SipHashable};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -124,6 +125,7 @@ pub(crate) struct SerializerContext {
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
+    tag_tree: Option<StructureRoot>,
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
@@ -156,6 +158,7 @@ impl SerializerContext {
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
+            tag_tree: None,
             outline: None,
             page_infos: vec![],
             pages: vec![],
@@ -170,6 +173,10 @@ impl SerializerContext {
 
     pub fn set_outline(&mut self, outline: Outline) {
         self.outline = Some(outline);
+    }
+
+    pub fn set_structure_root(&mut self, root: StructureRoot) {
+        self.tag_tree = Some(root)
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {

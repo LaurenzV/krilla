@@ -8,8 +8,10 @@ pub struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
+    pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
 
     pub(crate) pages: Vec<Chunk>,
+    pub(crate) struct_elements: Vec<Chunk>,
     pub(crate) page_labels: Vec<Chunk>,
     pub(crate) annotations: Vec<Chunk>,
     pub(crate) fonts: Vec<Chunk>,
@@ -29,9 +31,11 @@ impl ChunkContainer {
             page_tree: None,
             outline: None,
             page_label_tree: None,
+            struct_tree_root: None,
 
             pages: vec![],
             page_labels: vec![],
+            struct_elements: vec![],
             annotations: vec![],
             fonts: vec![],
             color_spaces: vec![],
@@ -103,11 +107,15 @@ impl ChunkContainer {
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
+        if self.page_tree.is_some()
+            || self.outline.is_some()
+            || self.page_label_tree.is_some()
+            || self.struct_tree_root.is_some()
+        {
             let catalog_ref = remapped_ref.bump();
 
             let mut catalog = pdf.catalog(catalog_ref);
-            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
+            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree, struct_tree_root);
 
             if let Some(pt) = &self.page_tree {
                 catalog.pages(pt.0);
@@ -121,6 +129,10 @@ impl ChunkContainer {
                 catalog.outlines(ol.0);
             }
 
+            if let Some(st) = &self.struct_tree_root {
+                catalog.pair(Name(b"StructTreeRoot"), st.0);
+            }
+
             if serialize_settings.enable_tagging {
                 catalog.mark_info().marked(true);
             }
@@ -128,7 +140,7 @@ impl ChunkContainer {
             catalog.finish();
         }
 
-        remap_fields!(self, remapper, remapped_ref; pages, page_labels,
+        remap_fields!(self, remapper, remapped_ref; pages, page_labels, struct_elements,
             annotations, fonts, color_spaces, destinations,
             ext_g_states, images, masks, x_objects, shading_functions,
             patterns
@@ -154,8 +166,8 @@ impl ChunkContainer {
             };
         }
 
-        write_field!(self, remapper, &mut pdf; page_tree, outline, page_label_tree);
-        write_fields!(self, remapper, &mut pdf; pages, page_labels,
+        write_field!(self, remapper, &mut pdf; page_tree, outline, page_label_tree, struct_tree_root);
+        write_fields!(self, remapper, &mut pdf; pages, page_labels, struct_elements,
             annotations, fonts, color_spaces, destinations,
             ext_g_states, images, masks, x_objects,
             shading_functions, patterns
