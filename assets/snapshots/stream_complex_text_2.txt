@@ -1,0 +1,54 @@
+q
+/DeviceRGB cs
+0 0 0 scn
+BT
+0 Tr
+/Span <<
+  /ActualText <FEFF092F09410952>
+>> BDC
+/f0 16 Tf
+1 0 0 -1 0 50 Tm
+[(\000\001\000\002) 1 (\000\003)] TJ
+EMC
+/Span <<
+  /ActualText <FEFF0927093E>
+>> BDC
+/f0 16 Tf
+1 0 0 -1 9.28 50 Tm
+[(\000\004\000\005)] TJ
+EMC
+/f0 16 Tf
+1 0 0 -1 23.264 50 Tm
+[(\000\006\000\007)] TJ
+/Span <<
+  /ActualText <FEFF09300951>
+>> BDC
+/f0 16 Tf
+1 0 0 -1 36.304 50 Tm
+[(\000\b) 10 (\000\t)] TJ
+EMC
+/f0 16 Tf
+1 0 0 -1 42.848 50 Tm
+[(\000\006)] TJ
+/Span <<
+  /ActualText <FEFF090B0952>
+>> BDC
+/f0 16 Tf
+1 0 0 -1 47.008 50 Tm
+[(\000\n) 170 (\000\013)] TJ
+EMC
+/f0 16 Tf
+1 0 0 -1 60.656 50 Tm
+[(\000\f)] TJ
+/Span <<
+  /ActualText <FEFF0935093E>
+>> BDC
+/f0 16 Tf
+1 0 0 -1 66.287994 50 Tm
+[(\000\r\000\005)] TJ
+EMC
+/f0 16 Tf
+1 0 0 -1 79.32799 50 Tm
+[(\000\006)] TJ
+ET
+Q

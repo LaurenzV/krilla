@@ -112,7 +112,7 @@ endobj
 
 5 0 obj
 <<
-  /Length 612
+  /Length 625
   /Type /CMap
 >>
 stream
@@ -134,6 +134,7 @@ end def
 /CMapName /Custom def
 /CMapVersion 1 def
 /CMapType 0 def
+/WMode 0 def
 1 begincodespacerange
 <00> <FF>
 endcodespacerange

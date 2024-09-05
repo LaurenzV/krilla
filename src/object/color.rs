@@ -249,7 +249,7 @@ pub mod rgb {
     }
 
     /// The ICC profile for the SRGB color space.
-    static SRGB_ICC: &[u8] = include_bytes!("../../assets/icc/sRGB-v4.icc");
+    static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
 
     /// The RGB color space. Depending on whether the `no_device_cs` serialize option is set,
     /// this will internally be encoded either using the PDF `DeviceRgb` color space, or in the
@@ -343,7 +343,7 @@ pub mod luma {
     }
 
     /// The ICC profile for the sgray color space.
-    pub(crate) static GREY_ICC: &[u8] = include_bytes!("../../assets/icc/sGrey-v4.icc");
+    pub(crate) static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
     /// The luma color space. Depending on whether the `no_device_cs` serialize option is set,
     /// this will internally be encoded either using the PDF `DeviceGray` color space, or in the
