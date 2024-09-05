@@ -118,11 +118,16 @@ pub(crate) struct PageInfo {
     pub surface_size: Size,
 }
 
+enum StructParentElement {
+    Page(usize, i32),
+}
+
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, RefCell<FontContainer>>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
+    struct_parents: Vec<StructParentElement>,
     pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
     tag_tree: Option<StructureRoot>,
@@ -157,6 +162,7 @@ impl SerializerContext {
             font_cache: HashMap::new(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
+            struct_parents: Vec::new(),
             page_tree_ref: None,
             tag_tree: None,
             outline: None,
@@ -183,6 +189,21 @@ impl SerializerContext {
         *self
             .page_tree_ref
             .get_or_insert_with(|| self.cur_ref.bump())
+    }
+
+    pub fn get_page_struct_parent(&mut self, index: usize, num_mcids: i32) -> Option<i32> {
+        if self.serialize_settings.enable_tagging {
+            if num_mcids == 0 {
+                return None;
+            }
+
+            let id = self.struct_parents.len() as i32;
+            self.struct_parents
+                .push(StructParentElement::Page(index, num_mcids));
+            Some(id)
+        } else {
+            None
+        }
     }
 
     pub fn add_page(&mut self, page: InternalPage) {

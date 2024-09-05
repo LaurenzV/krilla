@@ -7,7 +7,7 @@ use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
-use crate::tagging::ContentIdentifierEnum;
+use crate::tagging::{ContentIdentifierEnum, RealContentIdentifier};
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
@@ -29,6 +29,7 @@ pub struct Page<'a> {
     page_settings: PageSettings,
     page_index: usize,
     page_stream: Stream,
+    num_mcids: i32,
     annotations: Vec<Annotation>,
 }
 
@@ -43,6 +44,7 @@ impl<'a> Page<'a> {
             page_settings,
             page_index,
             page_stream: Stream::empty(),
+            num_mcids: 0,
             annotations: vec![],
         }
     }
@@ -70,7 +72,10 @@ impl<'a> Page<'a> {
         // Invert the y-axis.
         root_builder.concat_transform(&self.root_transform());
 
-        let finish_fn = Box::new(|stream| self.page_stream = stream);
+        let finish_fn = Box::new(|stream, num_mcids: i32| {
+            self.page_stream = stream;
+            self.num_mcids = num_mcids;
+        });
 
         let mcid = if self.sc.serialize_settings.enable_tagging {
             ContentIdentifierEnum::new(self.page_index)
@@ -91,7 +96,10 @@ impl Drop for Page<'_> {
         let page_settings = std::mem::take(&mut self.page_settings);
 
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(stream, annotations, page_settings);
+        let struct_parent = self
+            .sc
+            .get_page_struct_parent(self.page_index, self.num_mcids);
+        let page = InternalPage::new(stream, annotations, struct_parent, page_settings);
         self.sc.add_page(page);
     }
 }
@@ -99,6 +107,7 @@ impl Drop for Page<'_> {
 pub(crate) struct InternalPage {
     pub stream: Stream,
     pub page_settings: PageSettings,
+    pub struct_parent: Option<i32>,
     pub annotations: Vec<Annotation>,
 }
 
@@ -106,11 +115,13 @@ impl InternalPage {
     pub(crate) fn new(
         stream: Stream,
         annotations: Vec<Annotation>,
+        struct_parent: Option<i32>,
         page_settings: PageSettings,
     ) -> Self {
         Self {
             stream,
             annotations,
+            struct_parent,
             page_settings,
         }
     }
@@ -156,6 +167,10 @@ impl InternalPage {
 
         if !annotation_refs.is_empty() {
             page.annotations(annotation_refs);
+        }
+
+        if let Some(struct_parent) = self.struct_parent {
+            page.struct_parents(struct_parent);
         }
 
         page.finish();

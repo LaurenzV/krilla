@@ -17,7 +17,7 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
-use crate::tagging::{ContentIdentifier, ContentIdentifierEnum, ContentTag};
+use crate::tagging::{ContentIdentifier, ContentIdentifierEnum, ContentTag, RealContentIdentifier};
 use crate::util::RectExt;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -78,7 +78,7 @@ pub struct Surface<'a> {
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
     mcid: ContentIdentifierEnum,
-    finish_fn: Box<dyn FnMut(Stream) + 'a>,
+    finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
 }
 
 impl<'a> Surface<'a> {
@@ -86,7 +86,7 @@ impl<'a> Surface<'a> {
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
         mcid: ContentIdentifierEnum,
-        finish_fn: Box<dyn FnMut(Stream) + 'a>,
+        finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
@@ -427,10 +427,14 @@ impl<'a> Surface<'a> {
 
 impl Drop for Surface<'_> {
     fn drop(&mut self) {
+        let num_mcids = match self.mcid {
+            ContentIdentifierEnum::Real(RealContentIdentifier(_, i)) => i,
+            ContentIdentifierEnum::Dummy => 0,
+        };
         let root_builder = std::mem::replace(&mut self.root_builder, ContentBuilder::new());
         debug_assert!(self.sub_builders.is_empty());
         debug_assert!(self.push_instructions.is_empty());
-        (self.finish_fn)(root_builder.finish())
+        (self.finish_fn)(root_builder.finish(), num_mcids)
     }
 }
 
