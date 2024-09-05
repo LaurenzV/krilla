@@ -17,7 +17,7 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
-use crate::tagging::{ContentIdentifier, ContentTag};
+use crate::tagging::{ContentIdentifier, ContentIdentifierEnum, ContentTag};
 use crate::util::RectExt;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -77,7 +77,7 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
-    mcid: ContentIdentifier,
+    mcid: ContentIdentifierEnum,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
@@ -85,7 +85,7 @@ impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
-        mcid: ContentIdentifier,
+        mcid: ContentIdentifierEnum,
         finish_fn: Box<dyn FnMut(Stream) + 'a>,
     ) -> Surface<'a> {
         Self {
@@ -316,7 +316,7 @@ impl<'a> Surface<'a> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .start_marked_content(self.mcid, tag);
 
-        self.mcid.bump()
+        ContentIdentifier(self.mcid.bump())
     }
 
     pub fn end_tagged(&mut self) {

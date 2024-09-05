@@ -28,7 +28,7 @@ use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
 use crate::surface::Surface;
-use crate::tagging::ContentIdentifier;
+use crate::tagging::ContentIdentifierEnum;
 use crate::util::RectWrapper;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
@@ -107,7 +107,7 @@ impl<'a> StreamBuilder<'a> {
         Surface::new(
             self.sc,
             ContentBuilder::new(),
-            ContentIdentifier::Dummy,
+            ContentIdentifierEnum::Dummy,
             finish_fn,
         )
     }

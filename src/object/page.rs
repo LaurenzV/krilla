@@ -7,7 +7,7 @@ use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
-use crate::tagging::{ContentIdentifier, RealContentIdentifier};
+use crate::tagging::ContentIdentifierEnum;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
@@ -73,9 +73,9 @@ impl<'a> Page<'a> {
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
         let mcid = if self.sc.serialize_settings.enable_tagging {
-            ContentIdentifier::Real(RealContentIdentifier(self.page_index, 0))
+            ContentIdentifierEnum::new(self.page_index)
         } else {
-            ContentIdentifier::Dummy
+            ContentIdentifierEnum::new_dummy()
         };
 
         Surface::new(self.sc, root_builder, mcid, finish_fn)

@@ -175,7 +175,7 @@ impl SerializerContext {
         self.outline = Some(outline);
     }
 
-    pub fn set_structure_root(&mut self, root: StructureRoot) {
+    pub fn set_tag_tree(&mut self, root: StructureRoot) {
         self.tag_tree = Some(root)
     }
 
