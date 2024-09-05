@@ -20,7 +20,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
-use crate::tagging::{ContentTag, ContentIdentifier};
+use crate::tagging::{ContentIdentifier, ContentTag};
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
     TransformWrapper,

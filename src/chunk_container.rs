@@ -121,6 +121,10 @@ impl ChunkContainer {
                 catalog.outlines(ol.0);
             }
 
+            if serialize_settings.enable_tagging {
+                catalog.mark_info().marked(true);
+            }
+
             catalog.finish();
         }
 

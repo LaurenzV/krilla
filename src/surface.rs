@@ -17,8 +17,8 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
+use crate::tagging::{ContentIdentifier, ContentTag};
 use crate::util::RectExt;
-use crate::tagging::{ContentTag, ContentIdentifier};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -312,14 +312,14 @@ impl<'a> Surface<'a> {
         self.sub_builders.push(ContentBuilder::new());
     }
 
-    pub fn start_tagged_content(&mut self, tag: ContentTag) -> ContentIdentifier {
+    pub fn start_tagged(&mut self, tag: ContentTag) -> ContentIdentifier {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .start_marked_content(self.mcid, tag);
 
         self.mcid.bump()
     }
 
-    pub fn end_tagged_content(&mut self) {
+    pub fn end_tagged(&mut self) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
     }
 

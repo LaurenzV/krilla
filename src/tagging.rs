@@ -43,6 +43,18 @@ impl ContentIdentifier {
     }
 }
 
-pub enum ContainerTag {
-    Paragraph
+#[derive(Debug, Clone, Copy)]
+pub enum GroupTag {
+    Paragraph,
+    Document,
+}
+
+pub struct Group {
+    tag: GroupTag,
+    children: Vec<Node>,
+}
+
+pub enum Node {
+    Group(Group),
+    ContentIdentifier(ContentIdentifier),
 }
