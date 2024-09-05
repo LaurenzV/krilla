@@ -19,6 +19,7 @@ use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::tagging::StructureRoot;
 use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
@@ -66,6 +67,10 @@ impl Document {
     /// Set the outline of the document.
     pub fn set_outline(&mut self, outline: Outline) {
         self.serializer_context.set_outline(outline);
+    }
+
+    pub fn set_tag_tree(&mut self, root: StructureRoot) {
+        self.serializer_context.set_tag_tree(root)
     }
 
     /// Attempt to write the document to a PDF.

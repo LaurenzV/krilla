@@ -177,11 +177,7 @@ impl StructureRoot {
         &self,
         sc: &mut SerializerContext,
         struct_tree_ref: Ref,
-    ) -> Option<Vec<Chunk>> {
-        if !sc.serialize_settings.enable_tagging {
-            return None;
-        }
-
+    ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();
         let mut struct_elems = vec![];
 
@@ -220,6 +216,6 @@ impl StructureRoot {
         // of in reverse.
         struct_elems = struct_elems.into_iter().rev().collect::<Vec<_>>();
 
-        Some(struct_elems)
+        (root_ref, struct_elems)
     }
 }

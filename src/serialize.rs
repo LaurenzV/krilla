@@ -340,6 +340,18 @@ impl SerializerContext {
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
+        let tag_tree = std::mem::take(&mut self.tag_tree);
+        if self.serialize_settings.enable_tagging {
+            if let Some(root) = &tag_tree {
+                let struct_tree_root_ref = self.new_ref();
+                let (document_ref, struct_elems) = root.serialize(&mut self, struct_tree_root_ref);
+                self.chunk_container.struct_elements = struct_elems;
+
+                let mut chunk = Chunk::new();
+                chunk.indirect(struct_tree_root_ref).start::<Structure>();
+            }
+        }
+
         let outline = std::mem::take(&mut self.outline);
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
