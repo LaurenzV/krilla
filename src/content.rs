@@ -20,7 +20,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
-use crate::tagging::{ContentIdentifier, ContentTag};
+use crate::tagging::{ContentIdentifier, ContentTag, RealContentIdentifier};
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
     TransformWrapper,
@@ -79,7 +79,7 @@ impl ContentBuilder {
 
     pub fn start_marked_content(&mut self, mcid: ContentIdentifier, tag: ContentTag) {
         match mcid {
-            ContentIdentifier::Normal(_, mcid_id) => {
+            ContentIdentifier::Real(RealContentIdentifier(_, mcid_id)) => {
                 if self.active_mcid.is_some() {
                     panic!("can't start marked content twice");
                 }
@@ -99,7 +99,7 @@ impl ContentBuilder {
         match self.active_mcid {
             None => panic!("can't end marked content when none has been started"),
             Some(mcid) => match mcid {
-                ContentIdentifier::Normal(_, _) => {
+                ContentIdentifier::Real(_) => {
                     self.content.end_marked_content();
                     self.active_mcid = None;
                 }
