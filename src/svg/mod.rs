@@ -34,9 +34,14 @@ impl ProcessContext {
 }
 
 /// Render a usvg `Tree` into a surface.
-pub fn render_tree(tree: &usvg::Tree, svg_settings: SvgSettings, surface: &mut Surface) -> Option<()> {
+pub fn render_tree(
+    tree: &usvg::Tree,
+    svg_settings: SvgSettings,
+    surface: &mut Surface,
+) -> Option<()> {
     let mut db = tree.fontdb().clone();
-    let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root(), surface)?;
+    let mut fc =
+        get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root(), surface)?;
     group::render(tree.root(), surface, &mut fc);
 
     Some(())
@@ -67,7 +72,10 @@ fn get_context_from_group(
     get_ids_from_group_impl(group, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
 
-    Some(ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids))?, svg_settings))
+    Some(ProcessContext::new(
+        surface.convert_fontdb(tree_fontdb, Some(ids))?,
+        svg_settings,
+    ))
 }
 
 /// Get the `PorcessContext` from a `Node`.
@@ -81,7 +89,10 @@ fn get_context_from_node(
     get_ids_impl(node, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
 
-    Some(ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids))?, svg_settings))
+    Some(ProcessContext::new(
+        surface.convert_fontdb(tree_fontdb, Some(ids))?,
+        svg_settings,
+    ))
 }
 
 fn get_ids_from_group_impl(group: &Group, ids: &mut HashSet<fontdb::ID>) {

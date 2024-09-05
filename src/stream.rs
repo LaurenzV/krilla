@@ -28,6 +28,7 @@ use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
 use crate::surface::Surface;
+use crate::tagging::MarkedContentIdentifier;
 use crate::util::RectWrapper;
 use std::sync::Arc;
 use tiny_skia_path::Rect;
@@ -103,7 +104,12 @@ impl<'a> StreamBuilder<'a> {
             self.stream = stream;
         });
 
-        Surface::new(self.sc, ContentBuilder::new(), usize::MAX, finish_fn)
+        Surface::new(
+            self.sc,
+            ContentBuilder::new(),
+            MarkedContentIdentifier::Dummy,
+            finish_fn,
+        )
     }
 
     /// Turn the stream builder into a stream.

@@ -7,6 +7,7 @@ use crate::object::annotation::Annotation;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
+use crate::tagging::MarkedContentIdentifier;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
@@ -32,7 +33,11 @@ pub struct Page<'a> {
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, page_index: usize, page_settings: PageSettings) -> Self {
+    pub(crate) fn new(
+        sc: &'a mut SerializerContext,
+        page_index: usize,
+        page_settings: PageSettings,
+    ) -> Self {
         Self {
             sc,
             page_settings,
@@ -67,7 +72,13 @@ impl<'a> Page<'a> {
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
-        Surface::new(self.sc, root_builder, self.page_index, finish_fn)
+        let mcid = if self.sc.serialize_settings.enable_tagging {
+            MarkedContentIdentifier::Normal(self.page_index, 0)
+        } else {
+            MarkedContentIdentifier::Dummy
+        };
+
+        Surface::new(self.sc, root_builder, mcid, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.

@@ -17,6 +17,8 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
+use crate::tagging::{ContentTag, MarkedContentIdentifier};
+use crate::util::RectExt;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -28,11 +30,10 @@ use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use skrifa::GlyphId;
 #[cfg(feature = "fontdb")]
 use std::collections::HashMap;
-use tiny_skia_path::{NormalizedF32, Rect};
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
+use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
-use crate::util::RectExt;
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -76,25 +77,21 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
-    mcid_counter: i32,
-    page_index: usize,
+    mcid: MarkedContentIdentifier,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
-
-pub struct Mcid(usize, i32);
 
 impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
-        page_index: usize,
+        mcid: MarkedContentIdentifier,
         finish_fn: Box<dyn FnMut(Stream) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
             root_builder,
-            mcid_counter: 0,
-            page_index,
+            mcid,
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,
@@ -277,19 +274,15 @@ impl<'a> Surface<'a> {
         self.sub_builders.push(ContentBuilder::new());
     }
 
-    pub fn start_marked_content(&mut self) -> Mcid {
-        let old = self.mcid_counter;
-        self.mcid_counter += 1;
-
+    pub fn start_marked_content(&mut self, tag: ContentTag) -> MarkedContentIdentifier {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .start_marked_content(old);
+            .start_marked_content(self.mcid, tag);
 
-        Mcid(self.page_index, old)
+        self.mcid.bump()
     }
 
     pub fn end_marked_content(&mut self) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .end_marked_content();
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
     }
 
     /// Pop the last `push` instruction.
@@ -360,7 +353,11 @@ impl<'a> Surface<'a> {
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
     /// which makes it easier to integrate `cosmic-text` with this library.
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> Option<HashMap<ID, Font>> {
+    pub fn convert_fontdb(
+        &mut self,
+        db: &mut Database,
+        ids: Option<Vec<ID>>,
+    ) -> Option<HashMap<ID, Font>> {
         self.sc.convert_fontdb(db, ids)
     }
 
@@ -621,7 +618,8 @@ mod tests {
 
     #[visreg(pdfium)]
     fn svg_should_be_clipped(surface: &mut Surface) {
-        let data = std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
+        let data =
+            std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
 
         surface.push_transform(&Transform::from_translate(100.0, 0.0));

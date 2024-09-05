@@ -51,6 +51,7 @@ pub struct SerializeSettings {
     ///
     /// CMYK colors are currently not affected by this setting.
     pub no_device_cs: bool,
+    pub enable_tagging: bool,
     /// Whether the PDF should be ASCII-compatible, i.e. only consist of
     /// characters in the ASCII range.
     pub ascii_compatible: bool,
@@ -69,6 +70,7 @@ impl SerializeSettings {
             compress_content_streams: false,
             no_device_cs: false,
             force_type3_fonts: false,
+            enable_tagging: false,
             svg_settings: SvgSettings::default(),
             ignore_invalid_glyphs: false,
         }
@@ -104,6 +106,7 @@ impl Default for SerializeSettings {
             no_device_cs: false,
             force_type3_fonts: false,
             ignore_invalid_glyphs: false,
+            enable_tagging: true,
             svg_settings: SvgSettings::default(),
         }
     }
@@ -282,7 +285,11 @@ impl SerializerContext {
     }
 
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> Option<HashMap<ID, Font>> {
+    pub fn convert_fontdb(
+        &mut self,
+        db: &mut Database,
+        ids: Option<Vec<ID>>,
+    ) -> Option<HashMap<ID, Font>> {
         let mut map = HashMap::new();
 
         let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());

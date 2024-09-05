@@ -20,6 +20,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
+use crate::tagging::{ContentTag, MarkedContentIdentifier};
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
     TransformWrapper,
@@ -38,6 +39,7 @@ pub(crate) struct ContentBuilder {
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
+    active_mcid: Option<MarkedContentIdentifier>,
 }
 
 impl ContentBuilder {
@@ -46,6 +48,7 @@ impl ContentBuilder {
             rd_builder: ResourceDictionaryBuilder::new(),
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
+            active_mcid: None,
             bbox: Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
         }
     }
@@ -73,14 +76,35 @@ impl ContentBuilder {
         }
     }
 
-    pub(crate) fn start_marked_content(&mut self, id: i32) {
-        let mut mc = self.content.begin_marked_content_with_properties(Name(b"Span"));
-        let mut properties = mc.properties();
-        properties.pairs([(Name(b"MCID"), id)]);
+    pub fn start_marked_content(&mut self, mcid: MarkedContentIdentifier, tag: ContentTag) {
+        match mcid {
+            MarkedContentIdentifier::Normal(_, mcid_id) => {
+                if self.active_mcid.is_some() {
+                    panic!("can't start marked content twice");
+                }
+
+                self.active_mcid = Some(mcid);
+                let mut mc = self
+                    .content
+                    .begin_marked_content_with_properties(tag.name());
+                let mut properties = mc.properties();
+                properties.pairs([(Name(b"MCID"), mcid_id)]);
+            }
+            MarkedContentIdentifier::Dummy => {}
+        }
     }
 
     pub(crate) fn end_marked_content(&mut self) {
-        self.content.end_marked_content();
+        match self.active_mcid {
+            None => panic!("can't end marked content when none has been started"),
+            Some(mcid) => match mcid {
+                MarkedContentIdentifier::Normal(_, _) => {
+                    self.content.end_marked_content();
+                    self.active_mcid = None;
+                }
+                MarkedContentIdentifier::Dummy => {}
+            },
+        }
     }
 
     pub fn fill_path(
