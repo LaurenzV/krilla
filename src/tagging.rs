@@ -15,12 +15,12 @@ impl ContentTag {
 }
 
 #[derive(Copy, Clone)]
-pub enum MarkedContentIdentifier {
+pub enum ContentIdentifier {
     Normal(usize, i32),
     Dummy,
 }
 
-impl MarkedContentIdentifier {
+impl ContentIdentifier {
     pub fn new(page_index: usize) -> Self {
         Self::Normal(page_index, 0)
     }
@@ -29,16 +29,20 @@ impl MarkedContentIdentifier {
         Self::Dummy
     }
 
-    pub fn bump(&mut self) -> MarkedContentIdentifier {
+    pub fn bump(&mut self) -> ContentIdentifier {
         let old = *self;
 
         match self {
-            MarkedContentIdentifier::Normal(_, num) => {
+            ContentIdentifier::Normal(_, num) => {
                 *num = num.checked_add(1).unwrap();
             }
-            MarkedContentIdentifier::Dummy => {}
+            ContentIdentifier::Dummy => {}
         }
 
         old
     }
+}
+
+pub enum ContainerTag {
+    Paragraph
 }

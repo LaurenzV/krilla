@@ -122,7 +122,7 @@ pub mod stream;
 pub mod surface;
 
 pub mod content;
-mod tagging;
+pub mod tagging;
 #[cfg(test)]
 pub mod tests;
 

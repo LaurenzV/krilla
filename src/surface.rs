@@ -18,8 +18,7 @@ use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
 use crate::util::RectExt;
-use crate::tagging::{ContentTag, MarkedContentIdentifier};
-use crate::util::RectExt;
+use crate::tagging::{ContentTag, ContentIdentifier};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -78,7 +77,7 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
-    mcid: MarkedContentIdentifier,
+    mcid: ContentIdentifier,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
@@ -86,7 +85,7 @@ impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
-        mcid: MarkedContentIdentifier,
+        mcid: ContentIdentifier,
         finish_fn: Box<dyn FnMut(Stream) + 'a>,
     ) -> Surface<'a> {
         Self {
@@ -313,14 +312,14 @@ impl<'a> Surface<'a> {
         self.sub_builders.push(ContentBuilder::new());
     }
 
-    pub fn start_marked_content(&mut self, tag: ContentTag) -> MarkedContentIdentifier {
+    pub fn start_tagged_content(&mut self, tag: ContentTag) -> ContentIdentifier {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .start_marked_content(self.mcid, tag);
 
         self.mcid.bump()
     }
 
-    pub fn end_marked_content(&mut self) {
+    pub fn end_tagged_content(&mut self) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
     }
 

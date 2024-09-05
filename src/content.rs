@@ -20,7 +20,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
-use crate::tagging::{ContentTag, MarkedContentIdentifier};
+use crate::tagging::{ContentTag, ContentIdentifier};
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
     TransformWrapper,
@@ -40,7 +40,7 @@ pub(crate) struct ContentBuilder {
     content: Content,
     graphics_states: GraphicsStates,
     bbox: Rect,
-    active_mcid: Option<MarkedContentIdentifier>,
+    active_mcid: Option<ContentIdentifier>,
 }
 
 impl ContentBuilder {
@@ -77,9 +77,9 @@ impl ContentBuilder {
         }
     }
 
-    pub fn start_marked_content(&mut self, mcid: MarkedContentIdentifier, tag: ContentTag) {
+    pub fn start_marked_content(&mut self, mcid: ContentIdentifier, tag: ContentTag) {
         match mcid {
-            MarkedContentIdentifier::Normal(_, mcid_id) => {
+            ContentIdentifier::Normal(_, mcid_id) => {
                 if self.active_mcid.is_some() {
                     panic!("can't start marked content twice");
                 }
@@ -91,7 +91,7 @@ impl ContentBuilder {
                 let mut properties = mc.properties();
                 properties.pairs([(Name(b"MCID"), mcid_id)]);
             }
-            MarkedContentIdentifier::Dummy => {}
+            ContentIdentifier::Dummy => {}
         }
     }
 
@@ -99,11 +99,11 @@ impl ContentBuilder {
         match self.active_mcid {
             None => panic!("can't end marked content when none has been started"),
             Some(mcid) => match mcid {
-                MarkedContentIdentifier::Normal(_, _) => {
+                ContentIdentifier::Normal(_, _) => {
                     self.content.end_marked_content();
                     self.active_mcid = None;
                 }
-                MarkedContentIdentifier::Dummy => {}
+                ContentIdentifier::Dummy => {}
             },
         }
     }
