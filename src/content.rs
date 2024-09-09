@@ -148,7 +148,7 @@ impl ContentBuilder {
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
-        self.content_save_state();
+        self.content.save_state();
         self.content_draw_path(
             path.clone()
                 .transform(self.graphics_states.cur().transform())
@@ -165,7 +165,7 @@ impl ContentBuilder {
     }
 
     pub fn pop_clip_path(&mut self) {
-        self.content_restore_state();
+        self.content.restore_state();
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -476,28 +476,16 @@ impl ContentBuilder {
 
     fn apply_isolated_op(&mut self, prep: impl FnOnce(&mut Self), op: impl FnOnce(&mut Self)) {
         self.save_graphics_state();
+        self.content.save_state();
 
         prep(self);
 
-        self.content_save_state();
-        self.content_set_transform();
-        self.content_set_ext_state();
+        let transform = self.graphics_states.cur().transform();
 
-        op(self);
+        if transform != Transform::identity() {
+            self.content.transform(transform.to_pdf_transform());
+        }
 
-        self.content_restore_state();
-        self.restore_graphics_state();
-    }
-
-    fn content_save_state(&mut self) {
-        self.content.save_state();
-    }
-
-    fn content_restore_state(&mut self) {
-        self.content.restore_state();
-    }
-
-    fn content_set_ext_state(&mut self) {
         let state = self.graphics_states.cur().ext_g_state().clone();
 
         if !state.empty() {
@@ -506,14 +494,11 @@ impl ContentBuilder {
                 .register_resource(Resource::ExtGState(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
-    }
 
-    fn content_set_transform(&mut self) {
-        let transform = self.graphics_states.cur().transform();
+        op(self);
 
-        if transform != Transform::identity() {
-            self.content.transform(transform.to_pdf_transform());
-        }
+        self.content.restore_state();
+        self.restore_graphics_state();
     }
 
     fn content_set_fill_stroke_properties(
