@@ -99,10 +99,11 @@ impl ContentBuilder {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
-        self.graphics_states.save_state();
-        self.set_fill_opacity(fill.opacity);
+        let fill_opacity = fill.opacity;
 
         self.apply_isolated_op(|sb| {
+            sb.set_fill_opacity(fill_opacity);
+        }, |sb| {
             let fill_rule = fill.rule;
             if !no_fill {
                 sb.content_set_fill_properties(path.bounds(), fill, serializer_context);
@@ -114,8 +115,6 @@ impl ContentBuilder {
                 FillRule::EvenOdd => sb.content.fill_even_odd(),
             };
         });
-
-        self.graphics_states.restore_state();
     }
 
     pub fn stroke_path(
@@ -133,16 +132,16 @@ impl ContentBuilder {
         self.bbox
             .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
-        self.graphics_states.save_state();
-        self.set_stroke_opacity(stroke.opacity);
+        let stroke_opacity = stroke.opacity;
 
         self.apply_isolated_op(|sb| {
+            sb.set_stroke_opacity(stroke_opacity);
+        }, |sb| {
             sb.content_set_stroke_properties(stroke_bbox, stroke, serializer_context);
             sb.content_draw_path(path.segments());
             sb.content.stroke();
         });
 
-        self.graphics_states.restore_state();
         Some(())
     }
 
@@ -330,7 +329,7 @@ impl ContentBuilder {
     ) {
         let mut cur_x = x;
 
-        self.apply_isolated_op(|sb| {
+        self.apply_isolated_op(|_| {}, |sb| {
             action(sb, sc);
             sb.content.begin_text();
             sb.content.set_text_rendering_mode(text_rendering_mode);
@@ -386,7 +385,7 @@ impl ContentBuilder {
 
         self.bbox.expand(&x_object.bbox());
 
-        self.apply_isolated_op(move |sb| {
+        self.apply_isolated_op(|_| {}, move |sb| {
             let x_object_name = sb
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
@@ -429,7 +428,7 @@ impl ContentBuilder {
                 .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
         );
 
-        self.apply_isolated_op(move |sb| {
+        self.apply_isolated_op(|_| {}, move |sb| {
             let image_name = sb
                 .rd_builder
                 .register_resource(Resource::XObject(XObjectResource::Image(image)));
@@ -441,7 +440,7 @@ impl ContentBuilder {
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        self.apply_isolated_op(move |sb| {
+        self.apply_isolated_op(|_| {}, move |sb| {
             let sh = sb
                 .rd_builder
                 .register_resource(Resource::Shading(shading.clone()));
@@ -463,8 +462,11 @@ impl ContentBuilder {
         }
     }
 
-    fn apply_isolated_op(&mut self, op: impl FnOnce(&mut Self)) {
+    fn apply_isolated_op(&mut self, prep: impl FnOnce(&mut Self), op: impl FnOnce(&mut Self)) {
         self.save_graphics_state();
+
+        prep(self);
+
         self.content_save_state();
         self.content_set_transform();
         self.content_set_ext_state();
