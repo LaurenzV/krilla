@@ -3,17 +3,19 @@ use crate::error::KrillaResult;
 use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
+use crate::stream::StreamBuilder;
 use crate::util::TransformExt;
 use crate::util::TransformWrapper;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::DerefMut;
-use tiny_skia_path::FiniteF32;
+use tiny_skia_path::{FiniteF32, NormalizedF32};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct TilingPattern {
     stream: Stream,
     transform: TransformWrapper,
+    base_opacity: NormalizedF32,
     width: FiniteF32,
     height: FiniteF32,
 }
@@ -22,12 +24,31 @@ impl TilingPattern {
     pub fn new(
         stream: Stream,
         transform: TransformWrapper,
+        base_opacity: NormalizedF32,
         width: FiniteF32,
         height: FiniteF32,
+        serializer_context: &mut SerializerContext,
     ) -> Self {
+        // stroke/fill opacity doesn't work consistently across different viewers for patterns,
+        // so instead we simulate it ourselves.
+        let pattern_stream = if base_opacity == NormalizedF32::ONE {
+            stream
+        } else {
+            let stream = {
+                let mut builder = StreamBuilder::new(serializer_context);
+                let mut surface = builder.surface();
+                surface.draw_opacified_stream(base_opacity, stream);
+                surface.finish();
+                builder.finish()
+            };
+
+            stream
+        };
+
         Self {
-            stream,
+            stream: pattern_stream,
             transform,
+            base_opacity,
             width,
             height,
         }
@@ -89,8 +110,10 @@ mod tests {
         let tiling_pattern = TilingPattern::new(
             pattern_stream,
             TransformWrapper(Transform::identity()),
+            NormalizedF32::ONE,
             FiniteF32::new(20.0).unwrap(),
             FiniteF32::new(20.0).unwrap(),
+            sc,
         );
 
         sc.add_object(tiling_pattern).unwrap();
@@ -113,7 +136,7 @@ mod tests {
             &path,
             Fill {
                 paint: Paint::<Rgb>::Pattern(pattern),
-                opacity: NormalizedF32::new(1.0).unwrap(),
+                opacity: NormalizedF32::new(0.5).unwrap(),
                 rule: Default::default(),
             },
         )
