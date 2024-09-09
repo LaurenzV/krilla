@@ -398,10 +398,10 @@ impl<'a> Surface<'a> {
         &mut self,
         path: &Path,
         fill: Fill<impl ColorSpace>,
-        no_fill: bool,
+        fill_props: bool,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path_impl(path, fill, self.sc, no_fill)
+            .fill_path_impl(path, fill, self.sc, fill_props)
     }
 }
 

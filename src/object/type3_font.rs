@@ -352,7 +352,8 @@ mod tests {
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
     use crate::tests::{
-        red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
+        blue_stroke, purple_fill, red_fill, red_stroke, LATIN_MODERN_ROMAN, NOTO_SANS,
+        NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
     };
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
@@ -389,6 +390,47 @@ mod tests {
             "hello world",
         );
     }
+
+    // #[visreg(all, settings_4)]
+    // fn type3_noto_sans_different_actions(surface: &mut Surface) {
+    //     let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+    //
+    //     surface.fill_text(
+    //         Point::from_xy(0.0, 25.0),
+    //         purple_fill(0.5),
+    //         font.clone(),
+    //         32.0,
+    //         &[],
+    //         "hello world",
+    //     );
+    //
+    //     surface.stroke_text(
+    //         Point::from_xy(0.0, 50.0),
+    //         red_stroke(0.5),
+    //         font.clone(),
+    //         32.0,
+    //         &[],
+    //         "hello world",
+    //     );
+    //
+    //     surface.fill_text(
+    //         Point::from_xy(0.0, 75.0),
+    //         red_fill(1.0),
+    //         font.clone(),
+    //         32.0,
+    //         &[],
+    //         "hello world",
+    //     );
+    //
+    //     surface.stroke_text(
+    //         Point::from_xy(0.0, 100.0),
+    //         blue_stroke(1.0),
+    //         font.clone(),
+    //         32.0,
+    //         &[],
+    //         "hello world",
+    //     );
+    // }
 
     #[visreg(all, settings_4)]
     fn type3_latin_modern_simple_text(surface: &mut Surface) {

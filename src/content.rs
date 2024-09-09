@@ -80,7 +80,7 @@ impl ContentBuilder {
         fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
     ) {
-        self.fill_path_impl(path, fill, serializer_context, false);
+        self.fill_path_impl(path, fill, serializer_context, true);
     }
 
     pub(crate) fn fill_path_impl(
@@ -89,33 +89,35 @@ impl ContentBuilder {
         fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
         // This is only needed because when creating a Type3 glyph, we don't want to apply a
-        // fill color for outline glyphs, so that they are taken from wherever the glyph is shown.
-        no_fill: bool,
+        // fill properties for outline glyphs, so that they are taken from wherever the glyph is shown.
+        fill_props: bool,
     ) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
 
-        self.bbox
-            .expand(&self.graphics_states.transform_bbox(path.bounds()));
+        self.apply_isolated_op(
+            |sb| {
+                sb.bbox
+                    .expand(&sb.graphics_states.transform_bbox(path.bounds()));
 
-        self.graphics_states.save_state();
-        self.set_fill_opacity(fill.opacity);
+                if fill_props {
+                    sb.set_fill_opacity(fill.opacity);
+                }
+            },
+            |sb| {
+                let fill_rule = fill.rule;
+                if fill_props {
+                    sb.content_set_fill_properties(path.bounds(), &fill, serializer_context);
+                }
+                sb.content_draw_path(path.segments());
 
-        self.apply_isolated_op(|sb| {
-            let fill_rule = fill.rule;
-            if !no_fill {
-                sb.content_set_fill_properties(path.bounds(), fill, serializer_context);
-            }
-            sb.content_draw_path(path.segments());
-
-            match fill_rule {
-                FillRule::NonZero => sb.content.fill_nonzero(),
-                FillRule::EvenOdd => sb.content.fill_even_odd(),
-            };
-        });
-
-        self.graphics_states.restore_state();
+                match fill_rule {
+                    FillRule::NonZero => sb.content.fill_nonzero(),
+                    FillRule::EvenOdd => sb.content.fill_even_odd(),
+                };
+            },
+        );
     }
 
     pub fn stroke_path(
@@ -130,24 +132,25 @@ impl ContentBuilder {
 
         // TODO: Revisit whether we shouldn't just use a dummy bbox instead.
         let stroke_bbox = calculate_stroke_bbox(&stroke, path)?;
-        self.bbox
-            .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
-        self.graphics_states.save_state();
-        self.set_stroke_opacity(stroke.opacity);
+        self.apply_isolated_op(
+            |sb| {
+                sb.bbox
+                    .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
+                sb.set_stroke_opacity(stroke.opacity);
+            },
+            |sb| {
+                sb.content_set_stroke_properties(stroke_bbox, &stroke, serializer_context);
+                sb.content_draw_path(path.segments());
+                sb.content.stroke();
+            },
+        );
 
-        self.apply_isolated_op(|sb| {
-            sb.content_set_stroke_properties(stroke_bbox, stroke, serializer_context);
-            sb.content_draw_path(path.segments());
-            sb.content.stroke();
-        });
-
-        self.graphics_states.restore_state();
         Some(())
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
-        self.content_save_state();
+        self.content.save_state();
         self.content_draw_path(
             path.clone()
                 .transform(self.graphics_states.cur().transform())
@@ -164,7 +167,7 @@ impl ContentBuilder {
     }
 
     pub fn pop_clip_path(&mut self) {
-        self.content_restore_state();
+        self.content.restore_state();
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -191,7 +194,7 @@ impl ContentBuilder {
             move |sb, sc| {
                 sb.content_set_fill_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    fill,
+                    &fill,
                     sc,
                 )
             },
@@ -229,7 +232,7 @@ impl ContentBuilder {
             |sb, sc| {
                 sb.content_set_stroke_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    stroke,
+                    &stroke,
                     sc,
                 )
             },
@@ -328,72 +331,79 @@ impl ContentBuilder {
         font_size: f32,
         glyph_units: GlyphUnits,
     ) {
-        let mut cur_x = x;
+        self.apply_isolated_op(
+            |_| {},
+            |sb| {
+                let mut cur_x = x;
 
-        self.apply_isolated_op(|sb| {
-            action(sb, sc);
-            sb.content.begin_text();
-            sb.content.set_text_rendering_mode(text_rendering_mode);
+                action(sb, sc);
+                sb.content.begin_text();
+                sb.content.set_text_rendering_mode(text_rendering_mode);
 
-            let font_container = sc.create_or_get_font_container(font.clone());
+                let font_container = sc.create_or_get_font_container(font.clone());
 
-            // Separate into distinct glyph runs that either are encoded using actual text, or are
-            // not.
-            let spanned = TextSpanner::new(glyphs, text, font_container);
+                // Separate into distinct glyph runs that either are encoded using actual text, or are
+                // not.
+                let spanned = TextSpanner::new(glyphs, text, font_container);
 
-            for fragment in spanned {
-                if let Some(text) = fragment.actual_text() {
-                    let mut actual_text = sb
-                        .content
-                        .begin_marked_content_with_properties(Name(b"Span"));
-                    actual_text.properties().actual_text(TextStr(text));
+                for fragment in spanned {
+                    if let Some(text) = fragment.actual_text() {
+                        let mut actual_text = sb
+                            .content
+                            .begin_marked_content_with_properties(Name(b"Span"));
+                        actual_text.properties().actual_text(TextStr(text));
+                    }
+
+                    // Segment into glyph runs that can be encoded in one go using a PDF
+                    // text showing operator (i.e. no y shift, same Type3 font, etc.)
+                    let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
+
+                    for glyph_group in segmented {
+                        let borrowed = font_container.borrow();
+                        let pdf_font = borrowed
+                            .get_from_identifier(glyph_group.font_identifier.clone())
+                            .unwrap();
+
+                        sb.encode_consecutive_glyph_run(
+                            &mut cur_x,
+                            y - unit_normalize(
+                                glyph_units,
+                                pdf_font,
+                                font_size,
+                                glyph_group.y_offset,
+                            ) * font_size,
+                            glyph_group.font_identifier,
+                            pdf_font,
+                            font_size,
+                            glyph_group.glyphs,
+                            glyph_units,
+                        )
+                    }
+
+                    if fragment.actual_text().is_some() {
+                        sb.content.end_marked_content();
+                    }
                 }
 
-                // Segment into glyph runs that can be encoded in one go using a PDF
-                // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
-
-                for glyph_group in segmented {
-                    let borrowed = font_container.borrow();
-                    let pdf_font = borrowed
-                        .get_from_identifier(glyph_group.font_identifier.clone())
-                        .unwrap();
-
-                    sb.encode_consecutive_glyph_run(
-                        &mut cur_x,
-                        y - unit_normalize(glyph_units, pdf_font, font_size, glyph_group.y_offset)
-                            * font_size,
-                        glyph_group.font_identifier,
-                        pdf_font,
-                        font_size,
-                        glyph_group.glyphs,
-                        glyph_units,
-                    )
-                }
-
-                if fragment.actual_text().is_some() {
-                    sb.content.end_marked_content();
-                }
-            }
-
-            sb.content.end_text();
-        })
+                sb.content.end_text();
+            },
+        )
     }
 
     pub(crate) fn draw_xobject(&mut self, x_object: XObject, state: &ExtGState) {
-        self.graphics_states.save_state();
-        self.graphics_states.combine(state);
-
-        self.bbox.expand(&x_object.bbox());
-
-        self.apply_isolated_op(move |sb| {
-            let x_object_name = sb
-                .rd_builder
-                .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-            sb.content.x_object(x_object_name.to_pdf_name());
-        });
-
-        self.graphics_states.restore_state();
+        let bbox = x_object.bbox();
+        self.apply_isolated_op(
+            |sb| {
+                sb.graphics_states.combine(state);
+                sb.bbox.expand(&bbox);
+            },
+            move |sb| {
+                let x_object_name = sb
+                    .rd_builder
+                    .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+                sb.content.x_object(x_object_name.to_pdf_name());
+            },
+        );
     }
 
     pub fn draw_masked(&mut self, mask: Mask, stream: Stream) {
@@ -418,35 +428,37 @@ impl ContentBuilder {
 
     #[cfg(feature = "raster-images")]
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        self.save_graphics_state();
-        // Scale the image from 1x1 to the actual dimensions.
-        let transform =
-            Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
-        self.concat_transform(&transform);
-        self.bbox.expand(
-            &self
-                .graphics_states
-                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+        self.apply_isolated_op(
+            |sb| {
+                // Scale the image from 1x1 to the actual dimensions.
+                let transform =
+                    Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
+                sb.concat_transform(&transform);
+                sb.bbox.expand(
+                    &sb.graphics_states
+                        .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+                );
+            },
+            move |sb| {
+                let image_name = sb
+                    .rd_builder
+                    .register_resource(Resource::XObject(XObjectResource::Image(image)));
+
+                sb.content.x_object(image_name.to_pdf_name());
+            },
         );
-
-        self.apply_isolated_op(move |sb| {
-            let image_name = sb
-                .rd_builder
-                .register_resource(Resource::XObject(XObjectResource::Image(image)));
-
-            sb.content.x_object(image_name.to_pdf_name());
-        });
-
-        self.restore_graphics_state();
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        self.apply_isolated_op(move |sb| {
-            let sh = sb
-                .rd_builder
-                .register_resource(Resource::Shading(shading.clone()));
-            sb.content.shading(sh.to_pdf_name());
-        })
+        self.apply_isolated_op(
+            |_| {},
+            move |sb| {
+                let sh = sb
+                    .rd_builder
+                    .register_resource(Resource::Shading(shading.clone()));
+                sb.content.shading(sh.to_pdf_name());
+            },
+        )
     }
 
     fn set_fill_opacity(&mut self, alpha: NormalizedF32) {
@@ -463,27 +475,18 @@ impl ContentBuilder {
         }
     }
 
-    fn apply_isolated_op(&mut self, op: impl FnOnce(&mut Self)) {
+    fn apply_isolated_op(&mut self, prep: impl FnOnce(&mut Self), op: impl FnOnce(&mut Self)) {
         self.save_graphics_state();
-        self.content_save_state();
-        self.content_set_transform();
-        self.content_set_ext_state();
-
-        op(self);
-
-        self.content_restore_state();
-        self.restore_graphics_state();
-    }
-
-    fn content_save_state(&mut self) {
         self.content.save_state();
-    }
 
-    fn content_restore_state(&mut self) {
-        self.content.restore_state();
-    }
+        prep(self);
 
-    fn content_set_ext_state(&mut self) {
+        let transform = self.graphics_states.cur().transform();
+
+        if transform != Transform::identity() {
+            self.content.transform(transform.to_pdf_transform());
+        }
+
         let state = self.graphics_states.cur().ext_g_state().clone();
 
         if !state.empty() {
@@ -492,23 +495,20 @@ impl ContentBuilder {
                 .register_resource(Resource::ExtGState(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
-    }
 
-    fn content_set_transform(&mut self) {
-        let transform = self.graphics_states.cur().transform();
+        op(self);
 
-        if transform != Transform::identity() {
-            self.content.transform(transform.to_pdf_transform());
-        }
+        self.content.restore_state();
+        self.restore_graphics_state();
     }
 
     fn content_set_fill_stroke_properties(
         &mut self,
         bounds: Rect,
-        paint: Paint<impl ColorSpace>,
+        paint: &Paint<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
-        mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
+        mut set_solid_fn: impl FnMut(&mut Content, String, Color),
     ) {
         let no_device_cs = serializer_context.serialize_settings.no_device_cs;
 
@@ -539,7 +539,7 @@ impl ContentBuilder {
                     // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
                     let color_space = color_to_string(color, content_builder);
-                    set_solid_fn(&mut content_builder.content, color_space, &color);
+                    set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
                         gradient_props.clone(),
@@ -580,8 +580,8 @@ impl ContentBuilder {
 
         match paint {
             Paint::Color(c) => {
-                let color_space = color_to_string(c.into(), self);
-                set_solid_fn(&mut self.content, color_space, &c.into());
+                let color_space = color_to_string((*c).into(), self);
+                set_solid_fn(&mut self.content, color_space, (*c).into());
             }
             Paint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
@@ -595,7 +595,8 @@ impl ContentBuilder {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::Pattern(mut pat) => {
+            Paint::Pattern(pat) => {
+                let mut pat = pat.clone();
                 let transform = pat.transform;
 
                 pat.transform = pattern_transform(transform);
@@ -616,7 +617,7 @@ impl ContentBuilder {
     fn content_set_fill_properties(
         &mut self,
         bounds: Rect,
-        fill: Fill<impl ColorSpace>,
+        fill: &Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
@@ -624,14 +625,14 @@ impl ContentBuilder {
             content.set_fill_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: String, color: &Color) {
+        fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_fill_color_space(color_space.to_pdf_name());
             content.set_fill_color(color.to_pdf_color());
         }
 
         self.content_set_fill_stroke_properties(
             bounds,
-            fill.paint,
+            &fill.paint,
             serializer_context,
             set_pattern_fn,
             set_solid_fn,
@@ -641,7 +642,7 @@ impl ContentBuilder {
     fn content_set_stroke_properties(
         &mut self,
         bounds: Rect,
-        stroke: Stroke<impl ColorSpace>,
+        stroke: &Stroke<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
@@ -649,14 +650,14 @@ impl ContentBuilder {
             content.set_stroke_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: String, color: &Color) {
+        fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_stroke_color_space(color_space.to_pdf_name());
             content.set_stroke_color(color.to_pdf_color());
         }
 
         self.content_set_fill_stroke_properties(
             bounds,
-            stroke.paint,
+            &stroke.paint,
             serializer_context,
             set_pattern_fn,
             set_solid_fn,
