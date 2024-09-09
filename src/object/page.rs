@@ -318,7 +318,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), vec![], None, page_settings);
         sc.add_page(page);
     }
 
@@ -335,7 +335,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::<Rgb>::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), vec![], None, page_settings);
         sc.add_page(page);
     }
 

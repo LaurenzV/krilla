@@ -12,16 +12,17 @@ use crate::object::type3_font::Type3FontMapper;
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
-use crate::tagging::StructureRoot;
+use crate::tagging::{RealContentIdentifier, StructureRoot};
 use crate::util::{NameExt, SipHashable};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
+use pdf_writer::writers::NumberTree;
 use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str};
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Size;
@@ -361,22 +362,6 @@ impl SerializerContext {
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
-        let tag_tree = std::mem::take(&mut self.tag_tree);
-        if self.serialize_settings.enable_tagging {
-            if let Some(root) = &tag_tree {
-                let struct_tree_root_ref = self.new_ref();
-                let (document_ref, struct_elems) = root.serialize(&mut self, struct_tree_root_ref);
-                self.chunk_container.struct_elements = struct_elems;
-
-                let mut chunk = Chunk::new();
-                let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
-                tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
-                tree.insert(Name(b"K")).array().item(document_ref);
-                tree.finish();
-                self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
-            }
-        }
-
         let outline = std::mem::take(&mut self.outline);
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
@@ -415,6 +400,61 @@ impl SerializerContext {
                 .count(pages.len() as i32)
                 .kids(pages.iter().map(|(r, _)| *r));
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
+        }
+
+        let tag_tree = std::mem::take(&mut self.tag_tree);
+        let struct_parents = std::mem::take(&mut self.struct_parents);
+        if self.serialize_settings.enable_tagging {
+            if let Some(root) = &tag_tree {
+                let mut parent_tree_map = BTreeMap::new();
+                let struct_tree_root_ref = self.new_ref();
+                let (document_ref, struct_elems) =
+                    root.serialize(&mut self, &mut parent_tree_map, struct_tree_root_ref);
+                println!("{:?}", parent_tree_map);
+                self.chunk_container.struct_elements = struct_elems;
+
+                let mut chunk = Chunk::new();
+                let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
+                tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
+                tree.insert(Name(b"K")).array().item(document_ref);
+
+                let mut sub_chunks = vec![];
+                let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
+                let mut tree_nums = parent_tree.nums();
+
+                for (index, struct_parent) in struct_parents.iter().enumerate() {
+                    let mut list_chunk = Chunk::new();
+                    let list_ref = self.new_ref();
+
+                    let mut refs = list_chunk.indirect(list_ref).array();
+
+                    match struct_parent {
+                        StructParentElement::Page(index, num_mcids) => {
+                            for mcid in 0..*num_mcids {
+                                let rci = RealContentIdentifier(*index, mcid);
+                                refs.item(parent_tree_map.get(&rci).unwrap());
+                            }
+                        }
+                    }
+                    refs.finish();
+
+                    sub_chunks.push(list_chunk);
+                    tree_nums.insert(index as i32, list_ref);
+                }
+
+                tree_nums.finish();
+                parent_tree.finish();
+
+                tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
+
+                tree.finish();
+
+                for sub_chunk in sub_chunks {
+                    chunk.extend(&sub_chunk);
+                }
+
+                self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
+            }
         }
 
         // Just a sanity check.

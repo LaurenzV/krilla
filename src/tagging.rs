@@ -2,6 +2,7 @@ use crate::serialize::SerializerContext;
 use pdf_writer::types::StructRole;
 use pdf_writer::writers::StructElement;
 use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::collections::{BTreeMap, HashMap};
 
 pub enum ContentTag {
     Span,
@@ -17,7 +18,7 @@ impl ContentTag {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug, Ord, PartialOrd)]
 pub(crate) struct RealContentIdentifier(pub usize, pub i32);
 
 #[derive(Copy, Clone)]
@@ -74,11 +75,12 @@ impl Node {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
+        parent_tree_map: &mut BTreeMap<RealContentIdentifier, Ref>,
         parent: Ref,
         struct_elems: &mut Vec<Chunk>,
     ) -> Option<Reference> {
         match self {
-            Node::Group(g) => Some(g.serialize(sc, parent, struct_elems)),
+            Node::Group(g) => Some(g.serialize(sc, parent_tree_map, parent, struct_elems)),
             Node::ContentIdentifier(ci) => match ci.0 {
                 ContentIdentifierEnum::Real(rci) => Some(Reference::ContentIdentifier(rci)),
                 ContentIdentifierEnum::Dummy => None,
@@ -125,6 +127,7 @@ impl StructureGroup {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
+        parent_tree_map: &mut BTreeMap<RealContentIdentifier, Ref>,
         parent: Ref,
         struct_elems: &mut Vec<Chunk>,
     ) -> Reference {
@@ -132,7 +135,7 @@ impl StructureGroup {
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, parent, struct_elems))
+            .flat_map(|n| n.serialize(sc, parent_tree_map, parent, struct_elems))
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -147,6 +150,7 @@ impl StructureGroup {
                     struct_children.struct_element(r);
                 }
                 Reference::ContentIdentifier(rci) => {
+                    parent_tree_map.insert(rci, root_ref);
                     struct_children
                         .marked_content_ref()
                         .marked_content_id(rci.1)
@@ -180,6 +184,7 @@ impl StructureRoot {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
+        parent_tree_map: &mut BTreeMap<RealContentIdentifier, Ref>,
         struct_tree_ref: Ref,
     ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();
@@ -188,7 +193,7 @@ impl StructureRoot {
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, root_ref, &mut struct_elems))
+            .flat_map(|n| n.serialize(sc, parent_tree_map, root_ref, &mut struct_elems))
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -203,6 +208,7 @@ impl StructureRoot {
                     struct_children.struct_element(r);
                 }
                 Reference::ContentIdentifier(rci) => {
+                    parent_tree_map.insert(rci, root_ref);
                     struct_children
                         .marked_content_ref()
                         .marked_content_id(rci.1)
