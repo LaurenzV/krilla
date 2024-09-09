@@ -387,6 +387,11 @@ impl<'a> Surface<'a> {
     /// A convenience method for dropping the current surface.
     pub fn finish(self) {}
 
+    pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_opacified(opacity, stream)
+    }
+
     fn cur_builder<'b>(
         root_builder: &'b mut ContentBuilder,
         sub_builders: &'b mut [ContentBuilder],

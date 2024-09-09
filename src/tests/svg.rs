@@ -1240,8 +1240,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_filters_feComponentTransfer_type_table_and_tableValues_1px() {}
 #[visreg(svg)] fn custom_paint_servers_linearGradient_linear_gradient_2() {}
 #[visreg(svg)] fn resvg_structure_image_preserveAspectRatio_xMinYMin_slice_on_svg() {}
-// chrome bug
-#[visreg(svg, ignore)] fn resvg_painting_stroke_opacity_with_pattern() {}
+#[visreg(svg)] fn resvg_painting_stroke_opacity_with_pattern() {}
 #[visreg(svg)] fn resvg_filters_feDropShadow_only_stdDeviation() {}
 #[visreg(svg)] fn resvg_painting_fill_RRGGBBAA() {}
 #[visreg(svg)] fn resvg_structure_symbol_with_transform_on_use() {}
@@ -1613,14 +1612,12 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_shapes_path_invalid_transform() {}
 #[visreg(svg)] fn resvg_paint_servers_stop_offset_clamping() {}
 #[visreg(svg)] fn resvg_painting_marker_the_marker_property_in_CSS() {}
-// chrome bug
-#[visreg(svg, ignore)] fn custom_paint_servers_pattern_patterns_11() {}
+#[visreg(svg)] fn custom_paint_servers_pattern_patterns_11() {}
 #[visreg(svg)] fn resvg_text_font_family_font_list() {}
 #[visreg(svg)] fn resvg_text_font_size_em_nested_and_mixed() {}
 #[visreg(svg)] fn resvg_filters_feImage_link_to_an_element_outside_defs_1() {}
 #[visreg(svg)] fn resvg_structure_systemLanguage_on_svg() {}
-// chrome bug
-#[visreg(svg, ignore)] fn custom_paint_servers_pattern_patterns_10() {}
+#[visreg(svg)] fn custom_paint_servers_pattern_patterns_10() {}
 #[visreg(svg)] fn resvg_text_font_weight_normal() {}
 #[visreg(svg)] fn resvg_masking_clipPath_clip_path_with_transform_on_text() {}
 #[visreg(svg)] fn resvg_text_lengthAdjust_vertical() {}
@@ -1731,8 +1728,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_filters_filter_with_region_and_subregion() {}
 #[visreg(svg)] fn resvg_structure_transform_rotate() {}
 #[visreg(svg)] fn resvg_paint_servers_linearGradient_gradientUnits_objectBoundingBox_with_percent() {}
-// chrome bug
-#[visreg(svg, ignore)] fn custom_paint_servers_pattern_patterns_12() {}
+#[visreg(svg)] fn custom_paint_servers_pattern_patterns_12() {}
 #[visreg(svg)] fn resvg_text_lengthAdjust_with_underline() {}
 #[visreg(svg)] fn resvg_text_writing_mode_tb_with_dy_on_second_tspan() {}
 #[visreg(svg)] fn resvg_painting_marker_orient_40grad() {}

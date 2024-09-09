@@ -67,16 +67,6 @@ IGNORE_TESTS = {
     "resvg_paint_servers_radialGradient_spreadMethod_repeat.svg": NO_REPEAT,
     "resvg_painting_stroke_linecap_zero_length_path_with_round.svg": "need to check how Chrome does it",
     "resvg_painting_stroke_linecap_zero_length_path_with_square.svg": "need to check how Firefox does it",
-
-    # Chrome bugs
-    "custom_paint_servers_pattern_patterns_10.svg": "chrome bug",
-    "custom_paint_servers_pattern_patterns_11.svg": "chrome bug",
-    "custom_paint_servers_pattern_patterns_12.svg": "chrome bug",
-    "resvg_painting_stroke_opacity_with_pattern.svg": "chrome bug",
-}
-
-RENDERERS = {
-    "custom_paint_servers_pattern_patterns_10.svg": "ghost"
 }
 
 
