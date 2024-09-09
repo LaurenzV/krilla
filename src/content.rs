@@ -100,12 +100,7 @@ impl ContentBuilder {
             .expand(&self.graphics_states.transform_bbox(path.bounds()));
 
         self.graphics_states.save_state();
-
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(fill.paint, Paint::Pattern(_)) {
-            self.set_fill_opacity(fill.opacity);
-        }
+        self.set_fill_opacity(fill.opacity);
 
         self.apply_isolated_op(|sb| {
             let fill_rule = fill.rule;
@@ -139,11 +134,7 @@ impl ContentBuilder {
             .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
         self.graphics_states.save_state();
-
-        // See comment in `set_fill_properties`
-        if !matches!(stroke.paint, Paint::Pattern(_)) {
-            self.set_stroke_opacity(stroke.opacity);
-        }
+        self.set_stroke_opacity(stroke.opacity);
 
         self.apply_isolated_op(|sb| {
             sb.content_set_stroke_properties(stroke_bbox, stroke, serializer_context);
@@ -190,12 +181,7 @@ impl ContentBuilder {
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
-
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&fill.paint, &Paint::Pattern(_)) {
-            self.set_fill_opacity(fill.opacity);
-        }
+        self.set_fill_opacity(fill.opacity);
 
         self.fill_stroke_glyph_run(
             x,
@@ -233,12 +219,7 @@ impl ContentBuilder {
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
-
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&stroke.paint, &Paint::Pattern(_)) {
-            self.set_stroke_opacity(stroke.opacity);
-        }
+        self.set_stroke_opacity(stroke.opacity);
 
         self.fill_stroke_glyph_run(
             x,
@@ -525,7 +506,6 @@ impl ContentBuilder {
         &mut self,
         bounds: Rect,
         paint: Paint<impl ColorSpace>,
-        opacity: NormalizedF32,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, &Color),
@@ -556,6 +536,7 @@ impl ContentBuilder {
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
+                    // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
                     let color_space = color_to_string(color, content_builder);
                     set_solid_fn(&mut content_builder.content, color_space, &color);
@@ -623,10 +604,8 @@ impl ContentBuilder {
                     PatternResource::TilingPattern(TilingPattern::new(
                         pat.stream,
                         TransformWrapper(pat.transform),
-                        opacity,
                         FiniteF32::new(pat.width).unwrap(),
                         FiniteF32::new(pat.height).unwrap(),
-                        serializer_context,
                     )),
                 ));
                 set_pattern_fn(&mut self.content, color_space);
@@ -653,7 +632,6 @@ impl ContentBuilder {
         self.content_set_fill_stroke_properties(
             bounds,
             fill.paint,
-            fill.opacity,
             serializer_context,
             set_pattern_fn,
             set_solid_fn,
@@ -679,7 +657,6 @@ impl ContentBuilder {
         self.content_set_fill_stroke_properties(
             bounds,
             stroke.paint,
-            stroke.opacity,
             serializer_context,
             set_pattern_fn,
             set_solid_fn,
