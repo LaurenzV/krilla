@@ -103,8 +103,8 @@ impl SerializeSettings {
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
-            ascii_compatible: true,
-            compress_content_streams: false,
+            ascii_compatible: false,
+            compress_content_streams: true,
             no_device_cs: false,
             force_type3_fonts: false,
             ignore_invalid_glyphs: false,
@@ -410,7 +410,6 @@ impl SerializerContext {
                 let struct_tree_root_ref = self.new_ref();
                 let (document_ref, struct_elems) =
                     root.serialize(&mut self, &mut parent_tree_map, struct_tree_root_ref);
-                println!("{:?}", parent_tree_map);
                 self.chunk_container.struct_elements = struct_elems;
 
                 let mut chunk = Chunk::new();

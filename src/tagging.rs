@@ -56,12 +56,28 @@ impl ContentIdentifierEnum {
 #[derive(Debug, Clone, Copy)]
 pub enum StructureTag {
     Paragraph,
+    TOC,
+    List,
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
 }
 
 impl From<StructureTag> for StructRole {
     fn from(value: StructureTag) -> Self {
         match value {
             StructureTag::Paragraph => StructRole::P,
+            StructureTag::TOC => StructRole::TOC,
+            StructureTag::H1 => StructRole::H1,
+            StructureTag::H2 => StructRole::H2,
+            StructureTag::H3 => StructRole::H3,
+            StructureTag::H4 => StructRole::H4,
+            StructureTag::H5 => StructRole::H5,
+            StructureTag::H6 => StructRole::H6,
+            StructureTag::List => StructRole::L,
         }
     }
 }
