@@ -429,19 +429,18 @@ impl ContentBuilder {
 
     #[cfg(feature = "raster-images")]
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        self.save_graphics_state();
-        // Scale the image from 1x1 to the actual dimensions.
-        let transform =
-            Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
-        self.concat_transform(&transform);
-        self.bbox.expand(
-            &self
-                .graphics_states
-                .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
-        );
-
         self.apply_isolated_op(
-            |_| {},
+            |sb| {
+                // Scale the image from 1x1 to the actual dimensions.
+                let transform =
+                    Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
+                sb.concat_transform(&transform);
+                sb.bbox.expand(
+                    &sb
+                        .graphics_states
+                        .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+                );
+            },
             move |sb| {
                 let image_name = sb
                     .rd_builder
@@ -450,8 +449,6 @@ impl ContentBuilder {
                 sb.content.x_object(image_name.to_pdf_name());
             },
         );
-
-        self.restore_graphics_state();
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
