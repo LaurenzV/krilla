@@ -298,7 +298,7 @@ pub(crate) enum GlyphSource {
     Bitmap,
 }
 
-pub(crate) fn draw_glyph(
+pub(crate) fn draw_color_glyph(
     font: Font,
     #[cfg(feature = "svg")] svg_settings: SvgSettings,
     #[cfg(not(feature = "svg"))] _: SvgSettings,
@@ -329,11 +329,26 @@ pub(crate) fn draw_glyph(
         res
     } {
         glyph_source = Some(GlyphSource::Bitmap);
-    } else if let Some(()) = outline::draw_glyph(font.clone(), glyph, surface)? {
-        glyph_source = Some(GlyphSource::Outline);
     }
 
     surface.pop();
+
+    Ok(glyph_source)
+}
+
+pub(crate) fn draw_glyph(
+    font: Font,
+    svg_settings: SvgSettings,
+    glyph: GlyphId,
+    surface: &mut Surface,
+) -> KrillaResult<Option<GlyphSource>> {
+    let mut glyph_source = draw_color_glyph(font.clone(), svg_settings, glyph, surface)?;
+
+    if glyph_source.is_none() {
+        if let Some(()) = outline::draw_glyph(font, glyph, surface)? {
+            glyph_source = Some(GlyphSource::Outline);
+        }
+    }
 
     Ok(glyph_source)
 }

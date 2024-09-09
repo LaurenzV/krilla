@@ -5,7 +5,7 @@ use crate::path::Fill;
 use crate::surface::Surface;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
-use tiny_skia_path::{Path, Transform};
+use tiny_skia_path::Path;
 
 pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
     let outline_glyphs = font.font_ref().outline_glyphs();
@@ -22,9 +22,7 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
             })?;
     }
 
-    Ok(outline_builder
-        .finish()
-        .and_then(|p| p.transform(Transform::from_scale(1.0, -1.0))))
+    Ok(outline_builder.finish())
 }
 
 /// Draw an outline-based glyph on a surface.
