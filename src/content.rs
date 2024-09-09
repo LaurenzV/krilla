@@ -91,7 +91,9 @@ impl ContentBuilder {
                 let mut properties = mc.properties();
                 properties.pairs([(Name(b"MCID"), mcid_id)]);
             }
-            ContentIdentifierEnum::Dummy => {}
+            ContentIdentifierEnum::Dummy => {
+                self.active_mcid = Some(mcid);
+            }
         }
     }
 
