@@ -30,7 +30,7 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
 /// Draw an outline-based glyph on a surface.
 pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
     if let Some(path) = glyph_path(font, glyph)? {
-        surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), true);
+        surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), false);
 
         return Ok(Some(()));
     }

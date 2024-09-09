@@ -80,7 +80,7 @@ impl ContentBuilder {
         fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
     ) {
-        self.fill_path_impl(path, fill, serializer_context, false);
+        self.fill_path_impl(path, fill, serializer_context, true);
     }
 
     pub(crate) fn fill_path_impl(
@@ -89,8 +89,8 @@ impl ContentBuilder {
         fill: Fill<impl ColorSpace>,
         serializer_context: &mut SerializerContext,
         // This is only needed because when creating a Type3 glyph, we don't want to apply a
-        // fill color for outline glyphs, so that they are taken from wherever the glyph is shown.
-        no_fill: bool,
+        // fill properties for outline glyphs, so that they are taken from wherever the glyph is shown.
+        fill_props: bool,
     ) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
@@ -101,11 +101,13 @@ impl ContentBuilder {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(path.bounds()));
 
-                sb.set_fill_opacity(fill.opacity);
+                if fill_props {
+                    sb.set_fill_opacity(fill.opacity);
+                }
             },
             |sb| {
                 let fill_rule = fill.rule;
-                if !no_fill {
+                if fill_props {
                     sb.content_set_fill_properties(path.bounds(), &fill, serializer_context);
                 }
                 sb.content_draw_path(path.segments());

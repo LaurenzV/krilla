@@ -334,6 +334,10 @@ pub fn check_render(
         }
     };
 
+    if STORE.is_some() {
+        write_render_to_store(name, pdf);
+    }
+
     if document.is_empty() {
         panic!("empty document");
     } else if document.len() == 1 {
@@ -344,9 +348,6 @@ pub fn check_render(
         }
     }
 
-    if STORE.is_some() {
-        write_render_to_store(name, pdf);
-    }
 }
 
 pub fn render_document(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
