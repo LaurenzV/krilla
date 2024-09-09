@@ -435,8 +435,7 @@ impl ContentBuilder {
                     Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
                 sb.concat_transform(&transform);
                 sb.bbox.expand(
-                    &sb
-                        .graphics_states
+                    &sb.graphics_states
                         .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
                 );
             },

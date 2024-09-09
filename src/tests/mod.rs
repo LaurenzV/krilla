@@ -347,7 +347,6 @@ pub fn check_render(
             check_single(format!("{}{}_{}", name, renderer_suffix, index), page);
         }
     }
-
 }
 
 pub fn render_document(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
