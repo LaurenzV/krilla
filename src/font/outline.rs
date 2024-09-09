@@ -22,7 +22,9 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
             })?;
     }
 
-    Ok(outline_builder.finish().and_then(|p| p.transform(Transform::from_scale(1.0, -1.0))))
+    Ok(outline_builder
+        .finish()
+        .and_then(|p| p.transform(Transform::from_scale(1.0, -1.0))))
 }
 
 /// Draw an outline-based glyph on a surface.
