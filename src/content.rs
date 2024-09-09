@@ -96,11 +96,11 @@ impl ContentBuilder {
             return;
         }
 
-        self.bbox
-            .expand(&self.graphics_states.transform_bbox(path.bounds()));
-
         self.apply_isolated_op(
             |sb| {
+                sb.bbox
+                    .expand(&sb.graphics_states.transform_bbox(path.bounds()));
+
                 sb.set_fill_opacity(fill.opacity);
             },
             |sb| {
@@ -130,11 +130,11 @@ impl ContentBuilder {
 
         // TODO: Revisit whether we shouldn't just use a dummy bbox instead.
         let stroke_bbox = calculate_stroke_bbox(&stroke, path)?;
-        self.bbox
-            .expand(&self.graphics_states.transform_bbox(stroke_bbox));
 
         self.apply_isolated_op(
             |sb| {
+                sb.bbox
+                    .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
                 sb.set_stroke_opacity(stroke.opacity);
             },
             |sb| {
@@ -329,11 +329,11 @@ impl ContentBuilder {
         font_size: f32,
         glyph_units: GlyphUnits,
     ) {
-        let mut cur_x = x;
-
         self.apply_isolated_op(
             |_| {},
             |sb| {
+                let mut cur_x = x;
+
                 action(sb, sc);
                 sb.content.begin_text();
                 sb.content.set_text_rendering_mode(text_rendering_mode);
@@ -389,13 +389,12 @@ impl ContentBuilder {
     }
 
     pub(crate) fn draw_xobject(&mut self, x_object: XObject, state: &ExtGState) {
-        self.graphics_states.save_state();
-        self.graphics_states.combine(state);
-
-        self.bbox.expand(&x_object.bbox());
-
+        let bbox = x_object.bbox();
         self.apply_isolated_op(
-            |_| {},
+            |sb| {
+                sb.graphics_states.combine(state);
+                sb.bbox.expand(&bbox);
+            },
             move |sb| {
                 let x_object_name = sb
                     .rd_builder
@@ -403,8 +402,6 @@ impl ContentBuilder {
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
         );
-
-        self.graphics_states.restore_state();
     }
 
     pub fn draw_masked(&mut self, mask: Mask, stream: Stream) {
