@@ -113,7 +113,7 @@ mod tests {
             &path,
             Fill {
                 paint: Paint::<Rgb>::Pattern(pattern),
-                opacity: NormalizedF32::new(0.5).unwrap(),
+                opacity: NormalizedF32::new(1.0).unwrap(),
                 rule: Default::default(),
             },
         )
