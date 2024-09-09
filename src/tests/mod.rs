@@ -7,7 +7,7 @@ use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
 use crate::mask::{Mask, MaskType};
 use crate::paint::{Paint, Stop};
-use crate::path::Fill;
+use crate::path::{Fill, Stroke};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
@@ -128,11 +128,27 @@ pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
     }
 }
 
+pub fn blue_stroke(opacity: f32) -> Stroke<Rgb> {
+    Stroke {
+        paint: Paint::Color(rgb::Color::new(0, 0, 255)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        ..Stroke::default()
+    }
+}
+
 pub fn red_fill(opacity: f32) -> Fill<Rgb> {
     Fill {
         paint: Paint::Color(rgb::Color::new(255, 0, 0)),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
+    }
+}
+
+pub fn red_stroke(opacity: f32) -> Stroke<Rgb> {
+    Stroke {
+        paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        ..Stroke::default()
     }
 }
 
