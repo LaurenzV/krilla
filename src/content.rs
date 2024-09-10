@@ -294,7 +294,8 @@ impl ContentBuilder {
         for glyph in glyphs {
             let pdf_glyph = pdf_font.get_gid(glyph.glyph_id()).unwrap();
 
-            let normalize = |v| unit_normalize(glyph_units, pdf_font, size, v);
+            let normalize =
+                |v| unit_normalize(glyph_units, pdf_font.font().units_per_em(), size, v);
 
             let x_advance = normalize(glyph.x_advance()) * pdf_font.units_per_em();
             let font_advance = pdf_font
@@ -386,7 +387,7 @@ impl ContentBuilder {
                             &mut cur_x,
                             y - unit_normalize(
                                 glyph_units,
-                                pdf_font,
+                                pdf_font.font().units_per_em(),
                                 font_size,
                                 glyph_group.y_offset,
                             ) * font_size,
@@ -755,10 +756,10 @@ impl ContentBuilder {
     }
 }
 
-fn unit_normalize(glyph_units: GlyphUnits, pdf_font: &dyn PdfFont, size: f32, val: f32) -> f32 {
+pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {
     match glyph_units {
         GlyphUnits::Normalized => val,
-        GlyphUnits::UnitsPerEm => val / pdf_font.font().units_per_em(),
+        GlyphUnits::UnitsPerEm => val / upem,
         GlyphUnits::UserSpace => val / size,
     }
 }

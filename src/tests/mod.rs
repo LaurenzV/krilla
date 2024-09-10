@@ -504,6 +504,7 @@ pub fn all_glyphs_to_pdf(
             &text,
             size as f32,
             GlyphUnits::UserSpace,
+            false,
         );
         surface.pop();
 

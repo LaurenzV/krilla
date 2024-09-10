@@ -1,6 +1,7 @@
+use crate::color::rgb::Rgb;
 use crate::error::KrillaResult;
 use crate::font;
-use crate::font::{Font, FontIdentifier, GlyphSource, Type3Identifier};
+use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
@@ -105,6 +106,7 @@ impl Type3Font {
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
         let svg_settings = sc.serialize_settings.svg_settings;
+        // TODO: Remove this?
         let ignore_invalid_glyphs = sc.serialize_settings.ignore_invalid_glyphs;
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
@@ -122,6 +124,7 @@ impl Type3Font {
                     self.font.clone(),
                     svg_settings,
                     *glyph_id,
+                    None::<OutlineMode<Rgb>>,
                     &mut surface,
                 ) {
                     Ok(g) => g,
@@ -388,6 +391,7 @@ mod tests {
             32.0,
             &[],
             "hello world",
+            false,
         );
     }
 
@@ -442,6 +446,7 @@ mod tests {
             32.0,
             &[],
             "hello world",
+            false,
         );
     }
 
@@ -455,6 +460,7 @@ mod tests {
             32.0,
             &[],
             "hello world",
+            false,
         );
     }
 
@@ -483,6 +489,7 @@ mod tests {
             20.0,
             &[],
             "Variable fonts rock!",
+            false,
         );
 
         surface.fill_text(
@@ -495,6 +502,7 @@ mod tests {
             20.0,
             &[],
             "Variable fonts rock!",
+            false,
         );
     }
 
@@ -508,6 +516,7 @@ mod tests {
             32.0,
             &[],
             "مرحبا بالعالم",
+            false,
         );
     }
 

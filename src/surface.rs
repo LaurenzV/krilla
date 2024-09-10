@@ -5,8 +5,8 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-use crate::content::ContentBuilder;
-use crate::font::{Font, Glyph, GlyphUnits, KrillaGlyph};
+use crate::content::{unit_normalize, ContentBuilder};
+use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
 use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -18,6 +18,7 @@ use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
 use crate::util::RectExt;
+use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -117,6 +118,42 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc)
     }
 
+    fn outline_glyphs(
+        &mut self,
+        glyphs: &[impl Glyph],
+        start: Point,
+        font: Font,
+        font_size: f32,
+        glyph_units: GlyphUnits,
+        outline_mode: OutlineMode<impl ColorSpace>,
+    ) {
+        // TODO: What to do with invalid COLR glyphs?
+        let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
+        let (mut cur_x, y) = (start.x, start.y);
+
+        for glyph in glyphs {
+            self.push_transform(&Transform::from_translate(
+                cur_x + normalize(glyph.x_offset()) * font_size,
+                y + normalize(glyph.y_offset()) * font_size,
+            ));
+            self.push_transform(&Transform::from_scale(
+                font_size / font.units_per_em(),
+                -font_size / font.units_per_em(),
+            ));
+            draw_glyph(
+                font.clone(),
+                SvgSettings::default(),
+                glyph.glyph_id(),
+                Some(outline_mode.clone()),
+                self,
+            )
+            .unwrap();
+            self.pop();
+            self.pop();
+            cur_x += normalize(glyph.x_advance()) * font_size;
+        }
+    }
+
     /// Draw a sequence of glyphs with a fill.
     ///
     /// This is a very low-level method, which gives you full control over how to place
@@ -132,19 +169,31 @@ impl<'a> Surface<'a> {
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
-            start,
-            self.sc,
-            fill,
-            glyphs,
-            font,
-            text,
-            font_size,
-            glyph_units,
-        );
+        if outlined {
+            self.outline_glyphs(
+                glyphs,
+                start,
+                font,
+                font_size,
+                glyph_units,
+                OutlineMode::Fill(fill),
+            );
+        } else {
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
+                start,
+                self.sc,
+                fill,
+                glyphs,
+                font,
+                text,
+                font_size,
+                glyph_units,
+            );
+        }
     }
 
     /// Draw some text with a fill.
@@ -169,6 +218,7 @@ impl<'a> Surface<'a> {
         font_size: f32,
         features: &[Feature],
         text: &str,
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
@@ -182,6 +232,7 @@ impl<'a> Surface<'a> {
             text,
             font_size,
             GlyphUnits::UserSpace,
+            outlined,
         );
     }
 
@@ -200,19 +251,31 @@ impl<'a> Surface<'a> {
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
-            start,
-            self.sc,
-            stroke,
-            glyphs,
-            font,
-            text,
-            font_size,
-            glyph_units,
-        );
+        if outlined {
+            self.outline_glyphs(
+                glyphs,
+                start,
+                font,
+                font_size,
+                glyph_units,
+                OutlineMode::Stroke(stroke),
+            );
+        } else {
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
+                start,
+                self.sc,
+                stroke,
+                glyphs,
+                font,
+                text,
+                font_size,
+                glyph_units,
+            );
+        }
     }
 
     /// Draw some text with a stroke.
@@ -237,6 +300,7 @@ impl<'a> Surface<'a> {
         font_size: f32,
         features: &[Feature],
         text: &str,
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
@@ -250,6 +314,7 @@ impl<'a> Surface<'a> {
             text,
             font_size,
             GlyphUnits::UserSpace,
+            outlined,
         );
     }
 
@@ -501,8 +566,9 @@ mod tests {
     use crate::surface::Stroke;
     use crate::surface::Surface;
     use crate::tests::{
-        basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path,
-        red_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH,
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_luma, green_fill, load_png_image,
+        rect_to_path, red_fill, red_stroke, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI,
+        SVGS_PATH,
     };
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
@@ -579,6 +645,7 @@ mod tests {
             16.0,
             &[],
             "hi there",
+            false,
         );
     }
 
@@ -591,6 +658,7 @@ mod tests {
             16.0,
             &[],
             "hi there",
+            false,
         );
     }
 
@@ -603,6 +671,7 @@ mod tests {
             16.0,
             &[],
             "यह कुछ जटिल पाठ है.",
+            false,
         );
     }
 
@@ -615,6 +684,7 @@ mod tests {
             16.0,
             &[],
             "यु॒धा नर॑ ऋ॒ष्वा ",
+            false,
         );
     }
 
@@ -627,6 +697,7 @@ mod tests {
             16.0,
             &[],
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
+            false,
         );
     }
 
@@ -639,6 +710,7 @@ mod tests {
             16.0,
             &[],
             "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
+            false,
         );
     }
 
@@ -663,18 +735,18 @@ mod tests {
         usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn svg_simple(surface: &mut Surface) {
         let tree = sample_svg();
         surface.draw_svg(&tree, tree.size());
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn svg_resized(surface: &mut Surface) {
         surface.draw_svg(&sample_svg(), Size::from_wh(120.0, 80.0).unwrap());
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn svg_should_be_clipped(surface: &mut Surface) {
         let data =
             std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
@@ -683,5 +755,77 @@ mod tests {
         surface.push_transform(&Transform::from_translate(100.0, 0.0));
         surface.draw_svg(&tree, tree.size());
         surface.pop();
+    }
+
+    #[visreg]
+    fn text_outlined_with_fill(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 80.0),
+            red_fill(0.5),
+            font.clone(),
+            20.0,
+            &[],
+            "red outlined text",
+            true,
+        );
+
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            blue_fill(0.8),
+            font,
+            20.0,
+            &[],
+            "blue outlined text",
+            true,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 120.0),
+            blue_fill(0.8),
+            font,
+            20.0,
+            &[],
+            "😄😁😆",
+            true,
+        );
+    }
+
+    #[visreg]
+    fn text_outlined_with_stroke(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.stroke_text(
+            Point::from_xy(0.0, 80.0),
+            red_stroke(0.5),
+            font.clone(),
+            20.0,
+            &[],
+            "red outlined text",
+            true,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 100.0),
+            blue_stroke(0.8),
+            font,
+            20.0,
+            &[],
+            "blue outlined text",
+            true,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 120.0),
+            blue_stroke(0.8),
+            font,
+            20.0,
+            &[],
+            "😄😁😆",
+            true,
+        );
     }
 }

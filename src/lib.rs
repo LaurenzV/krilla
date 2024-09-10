@@ -54,6 +54,7 @@ surface.fill_text(
     14.0,
     &[],
     "This text has font size 14!",
+    false
 );
 // Draw some more text, in a different color with an opacity and bigger font size.
 surface.fill_text(
@@ -67,6 +68,7 @@ surface.fill_text(
     16.0,
     &[],
     "This text has font size 16!",
+    false
 );
 
 // Finish the page.

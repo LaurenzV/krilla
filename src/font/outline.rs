@@ -1,11 +1,12 @@
+use crate::color::ColorSpace;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, OutlineBuilder};
+use crate::font::{Font, OutlineBuilder, OutlineMode};
 use crate::object::color::luma::DeviceGray;
 use crate::path::Fill;
 use crate::surface::Surface;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
-use tiny_skia_path::{Path, Transform};
+use tiny_skia_path::Path;
 
 pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
     let outline_glyphs = font.font_ref().outline_glyphs();
@@ -22,15 +23,26 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
             })?;
     }
 
-    Ok(outline_builder
-        .finish()
-        .and_then(|p| p.transform(Transform::from_scale(1.0, -1.0))))
+    Ok(outline_builder.finish())
 }
 
 /// Draw an outline-based glyph on a surface.
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
+pub fn draw_glyph(
+    font: Font,
+    glyph: GlyphId,
+    outline_mode: Option<OutlineMode<impl ColorSpace>>,
+    surface: &mut Surface,
+) -> KrillaResult<Option<()>> {
     if let Some(path) = glyph_path(font, glyph)? {
-        surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), false);
+        match outline_mode {
+            None => surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), false),
+            Some(m) => match m {
+                OutlineMode::Fill(f) => surface.fill_path(&path, f),
+                OutlineMode::Stroke(s) => {
+                    surface.stroke_path(&path, s);
+                }
+            },
+        }
 
         return Ok(Some(()));
     }
