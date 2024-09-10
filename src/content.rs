@@ -536,19 +536,20 @@ impl ContentBuilder {
             transform.post_concat(self.graphics_states.cur().transform())
         };
 
-        let color_to_string = |color: Color, content_builder: &mut ContentBuilder| match color
-            .color_space(no_device_cs)
-        {
-            ColorSpaceType::Srgb(srgb) => content_builder
-                .rd_builder
-                .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
-            ColorSpaceType::SGray(sgray) => content_builder
-                .rd_builder
-                .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
-            ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
-            ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
-            ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
-        };
+        let color_to_string =
+            |color: Color, content_builder: &mut ContentBuilder, is_gradient: bool| match color
+                .color_space(no_device_cs, is_gradient)
+            {
+                ColorSpaceType::Srgb(srgb) => content_builder
+                    .rd_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
+                ColorSpaceType::SGray(sgray) => content_builder
+                    .rd_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
+                ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
+                ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
+                ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
+            };
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
@@ -558,7 +559,7 @@ impl ContentBuilder {
                     // Write gradients with one stop as a solid color fill.
                     // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder);
+                    let color_space = color_to_string(color, content_builder, true);
                     set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
@@ -600,7 +601,7 @@ impl ContentBuilder {
 
         match paint {
             Paint::Color(c) => {
-                let color_space = color_to_string((*c).into(), self);
+                let color_space = color_to_string((*c).into(), self, false);
                 set_solid_fn(&mut self.content, color_space, (*c).into());
             }
             Paint::LinearGradient(lg) => {
@@ -649,7 +650,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_fill_color_space(color_space.to_pdf_name());
-            content.set_fill_color(color.to_pdf_color());
+            content.set_fill_color(color.to_pdf_color(false));
         }
 
         self.content_set_fill_stroke_properties(
@@ -675,7 +676,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_stroke_color_space(color_space.to_pdf_name());
-            content.set_stroke_color(color.to_pdf_color());
+            content.set_stroke_color(color.to_pdf_color(false));
         }
 
         self.content_set_fill_stroke_properties(

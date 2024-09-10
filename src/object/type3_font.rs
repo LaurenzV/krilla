@@ -355,8 +355,7 @@ mod tests {
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
     use crate::tests::{
-        blue_stroke, purple_fill, red_fill, red_stroke, LATIN_MODERN_ROMAN, NOTO_SANS,
-        NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
+        red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
     };
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;

@@ -1,7 +1,6 @@
 use crate::color::cmyk::DeviceCmyk;
-use crate::color::luma::Luma;
 use crate::color::rgb::Rgb;
-use crate::color::{cmyk, luma, rgb};
+use crate::color::{cmyk, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
@@ -160,9 +159,9 @@ pub fn purple_fill(opacity: f32) -> Fill<Rgb> {
     }
 }
 
-pub fn gray_luma(opacity: f32) -> Fill<Luma> {
+pub fn gray_fill(opacity: f32) -> Fill<Rgb> {
     Fill {
-        paint: Paint::Color(luma::Color::new(127)),
+        paint: Paint::Color(rgb::Color::gray(127)),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }

@@ -566,7 +566,7 @@ mod tests {
     use crate::surface::Stroke;
     use crate::surface::Surface;
     use crate::tests::{
-        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_luma, green_fill, load_png_image,
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
         rect_to_path, red_fill, red_stroke, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI,
         SVGS_PATH,
     };
@@ -584,7 +584,7 @@ mod tests {
     #[snapshot(stream)]
     fn stream_path_single_with_luma(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let fill = gray_luma(1.0);
+        let fill = gray_fill(1.0);
         surface.fill_path(&path, fill);
     }
 

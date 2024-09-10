@@ -11,6 +11,7 @@
 //! converted into the RGB color space.
 
 use crate::chunk_container::ChunkContainer;
+use crate::color::DEVICE_RGB;
 use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
 use crate::object::Object;
@@ -227,10 +228,10 @@ impl Object for Image {
 
         match self.0.image_color_space {
             ImageColorspace::Rgb => {
-                image_x_object.pair(Name(b"ColorSpace"), sc.rgb());
+                image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
             }
             ImageColorspace::Luma => {
-                image_x_object.pair(Name(b"ColorSpace"), sc.gray());
+                image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
             }
         };
 

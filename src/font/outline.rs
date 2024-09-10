@@ -1,7 +1,7 @@
+use crate::color::rgb::Rgb;
 use crate::color::ColorSpace;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder, OutlineMode};
-use crate::object::color::luma::DeviceGray;
 use crate::path::Fill;
 use crate::surface::Surface;
 use skrifa::outline::DrawSettings;
@@ -35,7 +35,7 @@ pub fn draw_glyph(
 ) -> KrillaResult<Option<()>> {
     if let Some(path) = glyph_path(font, glyph)? {
         match outline_mode {
-            None => surface.fill_path_impl(&path, Fill::<DeviceGray>::default(), false),
+            None => surface.fill_path_impl(&path, Fill::<Rgb>::default(), false),
             Some(m) => match m {
                 OutlineMode::Fill(f) => surface.fill_path(&path, f),
                 OutlineMode::Stroke(s) => {
