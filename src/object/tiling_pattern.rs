@@ -135,7 +135,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::<Rgb>::Pattern(pattern),
+                paint: pattern.into(),
                 opacity: NormalizedF32::new(0.5).unwrap(),
                 rule: Default::default(),
             },

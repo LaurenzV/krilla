@@ -102,7 +102,7 @@ lazy_font!(NOTO_SANS_VARIABLE, FONT_PATH.join("NotoSans_variable.ttf"));
 
 pub fn green_fill(opacity: f32) -> Fill {
     Fill {
-        paint: Paint::Color(rgb::Color::new(0, 255, 0)),
+        paint: rgb::Color::new(0, 255, 0).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
@@ -121,7 +121,7 @@ pub fn basic_mask(surface: &mut Surface, mask_type: MaskType) -> Mask {
 
 pub fn blue_fill(opacity: f32) -> Fill {
     Fill {
-        paint: Paint::Color(rgb::Color::new(0, 0, 255)),
+        paint: rgb::Color::new(0, 0, 255).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
@@ -129,7 +129,7 @@ pub fn blue_fill(opacity: f32) -> Fill {
 
 pub fn blue_stroke(opacity: f32) -> Stroke {
     Stroke {
-        paint: Paint::Color(rgb::Color::new(0, 0, 255)),
+        paint: rgb::Color::new(0, 0, 255).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         ..Stroke::default()
     }
@@ -137,7 +137,7 @@ pub fn blue_stroke(opacity: f32) -> Stroke {
 
 pub fn red_fill(opacity: f32) -> Fill {
     Fill {
-        paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        paint: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
@@ -145,7 +145,7 @@ pub fn red_fill(opacity: f32) -> Fill {
 
 pub fn red_stroke(opacity: f32) -> Stroke {
     Stroke {
-        paint: Paint::Color(rgb::Color::new(255, 0, 0)),
+        paint: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         ..Stroke::default()
     }
@@ -153,7 +153,7 @@ pub fn red_stroke(opacity: f32) -> Stroke {
 
 pub fn purple_fill(opacity: f32) -> Fill {
     Fill {
-        paint: Paint::Color(rgb::Color::new(128, 0, 128)),
+        paint: rgb::Color::new(128, 0, 128).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
@@ -161,15 +161,15 @@ pub fn purple_fill(opacity: f32) -> Fill {
 
 pub fn gray_fill(opacity: f32) -> Fill {
     Fill {
-        paint: Paint::Color(rgb::Color::gray(127)),
+        paint: rgb::Color::gray(127).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
 }
 
-pub fn cmyk_fill(opacity: f32) -> Fill<DeviceCmyk> {
+pub fn cmyk_fill(opacity: f32) -> Fill {
     Fill {
-        paint: Paint::Color(cmyk::Color::new(0, 8, 252, 5)),
+        paint: cmyk::Color::new(0, 8, 252, 5).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }
@@ -493,8 +493,8 @@ pub fn all_glyphs_to_pdf(
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
         surface.fill_glyphs(
             Point::from_xy(0.0, 0.0),
-            Fill::<Rgb> {
-                paint: Paint::Color(color),
+            Fill {
+                paint: color.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },

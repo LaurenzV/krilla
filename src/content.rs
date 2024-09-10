@@ -13,7 +13,7 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::type3_font::Type3Font;
 use crate::object::xobject::XObject;
-use crate::paint::Paint;
+use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{
     ColorSpaceResource, PatternResource, Resource, ResourceDictionaryBuilder, XObjectResource,
@@ -104,7 +104,7 @@ impl ContentBuilder {
                 if fill_props {
                     // PDF viewers don't show patterns with fill/stroke opacities consistently.
                     // Because of this, the opacity is accounted for in the pattern itself.
-                    if !matches!(fill.paint, Paint::Pattern(_)) {
+                    if !matches!(fill.paint.0, InnerPaint::Pattern(_)) {
                         sb.set_fill_opacity(fill.opacity);
                     }
                 }
@@ -143,7 +143,7 @@ impl ContentBuilder {
                     .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
 
                 // See comment in `set_fill_properties`
-                if !matches!(stroke.paint, Paint::Pattern(_)) {
+                if !matches!(stroke.paint.0, InnerPaint::Pattern(_)) {
                     sb.set_stroke_opacity(stroke.opacity);
                 }
             },
@@ -195,7 +195,7 @@ impl ContentBuilder {
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&fill.paint, &Paint::Pattern(_)) {
+        if !matches!(&fill.paint.0, &InnerPaint::Pattern(_)) {
             self.set_fill_opacity(fill.opacity);
         }
 
@@ -238,7 +238,7 @@ impl ContentBuilder {
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&stroke.paint, &Paint::Pattern(_)) {
+        if !matches!(&stroke.paint.0, &InnerPaint::Pattern(_)) {
             self.set_stroke_opacity(stroke.opacity);
         }
 
@@ -599,24 +599,40 @@ impl ContentBuilder {
                 }
             };
 
-        match paint {
-            Paint::Color(c) => {
+        match &paint.0 {
+            InnerPaint::RgbColor(c) => {
                 let color_space = color_to_string((*c).into(), self, false);
                 set_solid_fn(&mut self.content, color_space, (*c).into());
             }
-            Paint::LinearGradient(lg) => {
+            InnerPaint::CmykColor(c) => {
+                let color_space = color_to_string((*c).into(), self, false);
+                set_solid_fn(&mut self.content, color_space, (*c).into());
+            }
+            InnerPaint::RgbLinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::RadialGradient(rg) => {
+            InnerPaint::CmykLinearGradient(lg) => {
+                let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
+                write_gradient(gradient_props, transform, self);
+            }
+            InnerPaint::RgbRadialGradient(rg) => {
                 let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::SweepGradient(sg) => {
+            InnerPaint::CmykRadialGradient(rg) => {
+                let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
+                write_gradient(gradient_props, transform, self);
+            }
+            InnerPaint::RgbSweepGradient(sg) => {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::Pattern(pat) => {
+            InnerPaint::CmykSweepGradient(sg) => {
+                let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
+                write_gradient(gradient_props, transform, self);
+            }
+            InnerPaint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
 

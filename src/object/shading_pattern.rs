@@ -113,7 +113,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::LinearGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -136,7 +136,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::LinearGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -195,7 +195,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::SweepGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -218,7 +218,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::SweepGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -263,7 +263,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::RadialGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },

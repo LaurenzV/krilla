@@ -161,7 +161,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::<Rgb>::Color(color),
+                paint: color.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },

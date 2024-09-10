@@ -112,7 +112,7 @@ pub(crate) enum InnerPaint
 }
 
 #[derive(Debug, Clone)]
-pub struct Paint(InnerPaint);
+pub struct Paint(pub(crate) InnerPaint);
 
 impl From<rgb::Color> for Paint {
     fn from(value: rgb::Color) -> Self {

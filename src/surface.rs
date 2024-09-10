@@ -281,7 +281,7 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[cfg(feature = "simple-text")]
-    pub fn stroke_text<T>(
+    pub fn stroke_text(
         &mut self,
         start: Point,
         stroke: Stroke,
@@ -627,7 +627,7 @@ mod tests {
     fn stream_fill_text(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -640,7 +640,7 @@ mod tests {
     fn stream_stroke_text(surface: &mut Surface) {
         surface.stroke_text(
             Point::from_xy(0.0, 50.0),
-            Stroke::<Rgb>::default(),
+            Stroke::default(),
             Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -653,7 +653,7 @@ mod tests {
     fn stream_complex_text(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -666,7 +666,7 @@ mod tests {
     fn stream_complex_text_2(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -679,7 +679,7 @@ mod tests {
     fn stream_complex_text_3(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -692,7 +692,7 @@ mod tests {
     fn stream_complex_text_4(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -821,7 +821,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -835,7 +835,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
