@@ -169,11 +169,11 @@ impl<'a> Surface<'a> {
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
-        outline: bool,
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
-        if outline {
+        if outlined {
             self.outline_glyphs(
                 glyphs,
                 start,
