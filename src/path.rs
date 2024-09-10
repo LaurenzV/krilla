@@ -1,7 +1,6 @@
 //! Path-related properties.
 
 use crate::color::rgb;
-use crate::object::color::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};

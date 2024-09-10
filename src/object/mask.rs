@@ -125,14 +125,14 @@ impl Object for Mask {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
+    
     use crate::object::mask::Mask;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
 
     use crate::color::rgb;
     use crate::mask::MaskType;
-    use crate::paint::Paint;
+    
     use crate::path::Fill;
     use crate::stream::StreamBuilder;
     use crate::tests::{basic_mask, rect_to_path, red_fill};

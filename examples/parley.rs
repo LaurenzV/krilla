@@ -7,9 +7,7 @@
 //! but not other parley features like underline, strike-through, etc.
 
 use krilla::color::rgb;
-use krilla::color::rgb::Rgb;
 use krilla::font::{Font, GlyphUnits, KrillaGlyph};
-use krilla::paint::Paint;
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
 use parley::layout::Alignment;
@@ -106,7 +104,7 @@ fn main() {
                             surface.fill_glyphs(
                                 Point::from_xy(cur_x, y),
                                 Fill {
-                                    paint: (Paint::<Rgb>::Color(style)),
+                                    paint: style.into(),
                                     opacity: NormalizedF32::ONE,
                                     rule: Default::default(),
                                 },
@@ -142,9 +140,7 @@ fn main() {
                 surface.fill_glyphs(
                     Point::from_xy(cur_x, y),
                     Fill {
-                        paint: (Paint::<Rgb>::Color(
-                            layout.styles()[cur_style.unwrap() as usize].brush,
-                        )),
+                        paint: layout.styles()[cur_style.unwrap() as usize].brush.into(),
                         opacity: NormalizedF32::ONE,
                         rule: Default::default(),
                     },

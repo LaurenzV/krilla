@@ -1,8 +1,6 @@
 use crate::font::KrillaGlyph;
 use crate::font::{Font, GlyphUnits};
 use crate::object::color::rgb;
-use crate::object::color::rgb::Rgb;
-use crate::paint::Paint;
 use crate::path::{Fill, Stroke};
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};

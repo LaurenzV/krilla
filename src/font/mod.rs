@@ -41,7 +41,6 @@ pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
 
-use crate::color::ColorSpace;
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
 // TODO: Test TrueType collection

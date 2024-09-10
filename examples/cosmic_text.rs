@@ -10,7 +10,6 @@
 //! that I try to keep in sync.
 
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
-use krilla::color::rgb::Rgb;
 use krilla::font::{GlyphUnits, KrillaGlyph};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
@@ -72,7 +71,7 @@ fn main() {
             // Draw the glyphs using the `fill_glyphs` method!
             surface.fill_glyphs(
                 Point::from_xy(start_x, y_offset),
-                Fill::<Rgb>::default(),
+                Fill::default(),
                 &glyphs,
                 font,
                 run.text,

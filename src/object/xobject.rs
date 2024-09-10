@@ -85,7 +85,7 @@ impl Object for XObject {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
+    
     use crate::object::xobject::XObject;
     use crate::path::Fill;
     use crate::serialize::SerializerContext;

@@ -1,4 +1,3 @@
-use crate::color::rgb::Rgb;
 use crate::error::KrillaResult;
 use crate::font;
 use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
@@ -349,8 +348,8 @@ mod tests {
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::color::rgb;
-    use crate::color::rgb::Rgb;
-    use crate::paint::Paint;
+    
+    
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;

@@ -1,6 +1,6 @@
 //! Paints that can be used for filling and stroking text or paths.
 
-use crate::color::{cmyk, rgb, Color};
+use crate::color::{cmyk, rgb};
 use crate::object::color::ColorSpace;
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
@@ -110,6 +110,7 @@ pub(crate) enum InnerPaint {
     Pattern(Pattern),
 }
 
+/// A paint.
 #[derive(Debug, Clone)]
 pub struct Paint(pub(crate) InnerPaint);
 

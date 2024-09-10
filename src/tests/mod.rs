@@ -1,11 +1,10 @@
-use crate::color::cmyk::DeviceCmyk;
 use crate::color::rgb::Rgb;
 use crate::color::{cmyk, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
 use crate::mask::{Mask, MaskType};
-use crate::paint::{Paint, Stop};
+use crate::paint::Stop;
 use crate::path::{Fill, Stroke};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -423,7 +422,7 @@ pub fn all_glyphs_to_pdf(
 ) {
     use crate::font::KrillaGlyph;
     use crate::geom::Transform;
-    use crate::object::color::rgb::Rgb;
+    
 
     let font = Font::new(font_data, 0, vec![]).unwrap();
     let font_ref = font.font_ref();

@@ -53,7 +53,7 @@ impl Object for ShadingPattern {
 mod tests {
     use crate::object::shading_function::GradientPropertiesExt;
     use crate::object::shading_pattern::ShadingPattern;
-    use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, SweepGradient};
+    use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;

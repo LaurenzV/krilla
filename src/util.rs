@@ -1,6 +1,5 @@
 //! Internal utilities.
 
-use crate::object::color::ColorSpace;
 use crate::path::{LineCap, LineJoin, Stroke};
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;

@@ -1,5 +1,3 @@
-use crate::color::rgb::Rgb;
-use crate::color::ColorSpace;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder, OutlineMode};
 use crate::path::Fill;

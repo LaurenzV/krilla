@@ -7,7 +7,6 @@
 
 use crate::content::{unit_normalize, ContentBuilder};
 use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
-use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -540,7 +539,7 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<K
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
+    
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::path::Fill;
