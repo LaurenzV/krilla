@@ -134,7 +134,7 @@ impl<'a> Surface<'a> {
         for glyph in glyphs {
             self.push_transform(&Transform::from_translate(
                 cur_x + normalize(glyph.x_offset()) * font_size,
-                y + normalize(glyph.y_offset()) * font_size,
+                y - normalize(glyph.y_offset()) * font_size,
             ));
             self.push_transform(&Transform::from_scale(
                 font_size / font.units_per_em(),
@@ -826,6 +826,34 @@ mod tests {
             &[],
             "😄😁😆",
             true,
+        );
+    }
+
+    #[visreg]
+    fn text_zalgo(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
+            false
+        );
+    }
+
+    #[visreg]
+    fn text_zalgo_outlined(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::<Rgb>::default(),
+            font,
+            32.0,
+            &[],
+            "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
+            true
         );
     }
 }
