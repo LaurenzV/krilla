@@ -2,7 +2,7 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
-use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
+use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
 use crate::surface::Surface;
 use pdf_writer::types::BlendMode;
@@ -234,7 +234,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                     }
                 };
                 Some(Fill {
-                    paint: Paint::Color(color),
+                    paint: color.into(),
                     opacity: alpha,
                     rule: Default::default(),
                 })
@@ -271,7 +271,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 };
 
                 Some(Fill {
-                    paint: Paint::LinearGradient(linear),
+                    paint: linear.into(),
                     opacity: NormalizedF32::ONE,
                     rule: Default::default(),
                 })
@@ -312,7 +312,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 };
 
                 Some(Fill {
-                    paint: Paint::RadialGradient(radial),
+                    paint: radial.into(),
                     opacity: NormalizedF32::ONE,
                     rule: Default::default(),
                 })
@@ -350,7 +350,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 };
 
                 Some(Fill {
-                    paint: Paint::SweepGradient(sweep),
+                    paint: sweep.into(),
                     opacity: NormalizedF32::ONE,
                     rule: Default::default(),
                 })

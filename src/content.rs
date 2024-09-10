@@ -1,6 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::{Color, ColorSpace, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::{Color, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -13,7 +13,7 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::object::type3_font::Type3Font;
 use crate::object::xobject::XObject;
-use crate::paint::Paint;
+use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{
     ColorSpaceResource, PatternResource, Resource, ResourceDictionaryBuilder, XObjectResource,
@@ -77,7 +77,7 @@ impl ContentBuilder {
     pub fn fill_path(
         &mut self,
         path: &Path,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         serializer_context: &mut SerializerContext,
     ) {
         self.fill_path_impl(path, fill, serializer_context, true);
@@ -86,7 +86,7 @@ impl ContentBuilder {
     pub(crate) fn fill_path_impl(
         &mut self,
         path: &Path,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         serializer_context: &mut SerializerContext,
         // This is only needed because when creating a Type3 glyph, we don't want to apply a
         // fill properties for outline glyphs, so that they are taken from wherever the glyph is shown.
@@ -104,7 +104,7 @@ impl ContentBuilder {
                 if fill_props {
                     // PDF viewers don't show patterns with fill/stroke opacities consistently.
                     // Because of this, the opacity is accounted for in the pattern itself.
-                    if !matches!(fill.paint, Paint::Pattern(_)) {
+                    if !matches!(fill.paint.0, InnerPaint::Pattern(_)) {
                         sb.set_fill_opacity(fill.opacity);
                     }
                 }
@@ -127,7 +127,7 @@ impl ContentBuilder {
     pub fn stroke_path(
         &mut self,
         path: &Path,
-        stroke: Stroke<impl ColorSpace>,
+        stroke: Stroke,
         serializer_context: &mut SerializerContext,
     ) -> Option<()> {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
@@ -143,7 +143,7 @@ impl ContentBuilder {
                     .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
 
                 // See comment in `set_fill_properties`
-                if !matches!(stroke.paint, Paint::Pattern(_)) {
+                if !matches!(stroke.paint.0, InnerPaint::Pattern(_)) {
                     sb.set_stroke_opacity(stroke.opacity);
                 }
             },
@@ -183,7 +183,7 @@ impl ContentBuilder {
         &mut self,
         start: Point,
         sc: &mut SerializerContext,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -195,7 +195,7 @@ impl ContentBuilder {
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&fill.paint, &Paint::Pattern(_)) {
+        if !matches!(&fill.paint.0, &InnerPaint::Pattern(_)) {
             self.set_fill_opacity(fill.opacity);
         }
 
@@ -226,7 +226,7 @@ impl ContentBuilder {
         &mut self,
         start: Point,
         sc: &mut SerializerContext,
-        stroke: Stroke<impl ColorSpace>,
+        stroke: Stroke,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -238,7 +238,7 @@ impl ContentBuilder {
 
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&stroke.paint, &Paint::Pattern(_)) {
+        if !matches!(&stroke.paint.0, &InnerPaint::Pattern(_)) {
             self.set_stroke_opacity(stroke.opacity);
         }
 
@@ -524,7 +524,7 @@ impl ContentBuilder {
     fn content_set_fill_stroke_properties(
         &mut self,
         bounds: Rect,
-        paint: &Paint<impl ColorSpace>,
+        paint: &Paint,
         opacity: NormalizedF32,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
@@ -536,19 +536,20 @@ impl ContentBuilder {
             transform.post_concat(self.graphics_states.cur().transform())
         };
 
-        let color_to_string = |color: Color, content_builder: &mut ContentBuilder| match color
-            .color_space(no_device_cs)
-        {
-            ColorSpaceType::Srgb(srgb) => content_builder
-                .rd_builder
-                .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
-            ColorSpaceType::SGray(sgray) => content_builder
-                .rd_builder
-                .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
-            ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
-            ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
-            ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
-        };
+        let color_to_string =
+            |color: Color, content_builder: &mut ContentBuilder, is_gradient: bool| match color
+                .color_space(no_device_cs, is_gradient)
+            {
+                ColorSpaceType::Srgb(srgb) => content_builder
+                    .rd_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
+                ColorSpaceType::SGray(sgray) => content_builder
+                    .rd_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
+                ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
+                ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
+                ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
+            };
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
@@ -558,7 +559,7 @@ impl ContentBuilder {
                     // Write gradients with one stop as a solid color fill.
                     // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder);
+                    let color_space = color_to_string(color, content_builder, true);
                     set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
@@ -598,24 +599,40 @@ impl ContentBuilder {
                 }
             };
 
-        match paint {
-            Paint::Color(c) => {
-                let color_space = color_to_string((*c).into(), self);
+        match &paint.0 {
+            InnerPaint::RgbColor(c) => {
+                let color_space = color_to_string((*c).into(), self, false);
                 set_solid_fn(&mut self.content, color_space, (*c).into());
             }
-            Paint::LinearGradient(lg) => {
+            InnerPaint::CmykColor(c) => {
+                let color_space = color_to_string((*c).into(), self, false);
+                set_solid_fn(&mut self.content, color_space, (*c).into());
+            }
+            InnerPaint::RgbLinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::RadialGradient(rg) => {
+            InnerPaint::CmykLinearGradient(lg) => {
+                let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
+                write_gradient(gradient_props, transform, self);
+            }
+            InnerPaint::RgbRadialGradient(rg) => {
                 let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::SweepGradient(sg) => {
+            InnerPaint::CmykRadialGradient(rg) => {
+                let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
+                write_gradient(gradient_props, transform, self);
+            }
+            InnerPaint::RgbSweepGradient(sg) => {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            Paint::Pattern(pat) => {
+            InnerPaint::CmykSweepGradient(sg) => {
+                let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
+                write_gradient(gradient_props, transform, self);
+            }
+            InnerPaint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
 
@@ -639,7 +656,7 @@ impl ContentBuilder {
     fn content_set_fill_properties(
         &mut self,
         bounds: Rect,
-        fill: &Fill<impl ColorSpace>,
+        fill: &Fill,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
@@ -649,7 +666,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_fill_color_space(color_space.to_pdf_name());
-            content.set_fill_color(color.to_pdf_color());
+            content.set_fill_color(color.to_pdf_color(false));
         }
 
         self.content_set_fill_stroke_properties(
@@ -665,7 +682,7 @@ impl ContentBuilder {
     fn content_set_stroke_properties(
         &mut self,
         bounds: Rect,
-        stroke: &Stroke<impl ColorSpace>,
+        stroke: &Stroke,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
@@ -675,7 +692,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_stroke_color_space(color_space.to_pdf_name());
-            content.set_stroke_color(color.to_pdf_color());
+            content.set_stroke_color(color.to_pdf_color(false));
         }
 
         self.content_set_fill_stroke_properties(

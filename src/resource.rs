@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
+use crate::color::rgb::SGray;
 use crate::error::KrillaResult;
 use crate::font::FontIdentifier;
-use crate::object::color::luma::SGray;
 use crate::object::color::rgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
 #[cfg(feature = "raster-images")]

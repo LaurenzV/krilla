@@ -1,4 +1,3 @@
-use crate::color::rgb::Rgb;
 use crate::error::KrillaResult;
 use crate::font;
 use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
@@ -124,7 +123,7 @@ impl Type3Font {
                     self.font.clone(),
                     svg_settings,
                     *glyph_id,
-                    None::<OutlineMode<Rgb>>,
+                    None::<OutlineMode>,
                     &mut surface,
                 ) {
                     Ok(g) => g,
@@ -349,14 +348,12 @@ mod tests {
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::color::rgb;
-    use crate::color::rgb::Rgb;
-    use crate::paint::Paint;
+
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
     use crate::tests::{
-        blue_stroke, purple_fill, red_fill, red_stroke, LATIN_MODERN_ROMAN, NOTO_SANS,
-        NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
+        red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
     };
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
@@ -386,7 +383,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -441,7 +438,7 @@ mod tests {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -482,7 +479,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                paint: rgb::Color::black().into(),
                 ..Default::default()
             },
             font1.clone(),
@@ -495,7 +492,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 120.0),
             Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                paint: rgb::Color::black().into(),
                 ..Default::default()
             },
             font2.clone(),
@@ -511,7 +508,7 @@ mod tests {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],

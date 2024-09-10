@@ -1,5 +1,6 @@
 //! Paints that can be used for filling and stroking text or paths.
 
+use crate::color::{cmyk, rgb};
 use crate::object::color::ColorSpace;
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
@@ -96,23 +97,79 @@ pub struct Pattern {
     pub height: f32,
 }
 
-/// A type of paint.
 #[derive(Debug, Clone)]
-pub enum Paint<C>
-where
-    C: ColorSpace,
-{
-    /// A solid color.
-    Color(C::Color),
-    /// A linear gradient.
-    LinearGradient(LinearGradient<C>),
-    /// A radial gradient.
-    RadialGradient(RadialGradient<C>),
-    /// A sweep gradient.
-    SweepGradient(SweepGradient<C>),
-    // TODO: When using pattern paint it needs a colorspace...
-    /// A pattern.
+pub(crate) enum InnerPaint {
+    RgbColor(rgb::Color),
+    CmykColor(cmyk::Color),
+    RgbLinearGradient(LinearGradient<rgb::Rgb>),
+    CmykLinearGradient(LinearGradient<cmyk::DeviceCmyk>),
+    RgbRadialGradient(RadialGradient<rgb::Rgb>),
+    CmykRadialGradient(RadialGradient<cmyk::DeviceCmyk>),
+    RgbSweepGradient(SweepGradient<rgb::Rgb>),
+    CmykSweepGradient(SweepGradient<cmyk::DeviceCmyk>),
     Pattern(Pattern),
+}
+
+/// A paint.
+///
+/// You cannot construct this type directly, but instead can convert
+/// into it by calling `into` on the various types of paint, such as linear
+/// gradients and patterns.
+#[derive(Debug, Clone)]
+pub struct Paint(pub(crate) InnerPaint);
+
+impl From<rgb::Color> for Paint {
+    fn from(value: rgb::Color) -> Self {
+        Paint(InnerPaint::RgbColor(value))
+    }
+}
+
+impl From<cmyk::Color> for Paint {
+    fn from(value: cmyk::Color) -> Self {
+        Paint(InnerPaint::CmykColor(value))
+    }
+}
+
+impl From<LinearGradient<rgb::Rgb>> for Paint {
+    fn from(value: LinearGradient<rgb::Rgb>) -> Self {
+        Paint(InnerPaint::RgbLinearGradient(value))
+    }
+}
+
+impl From<LinearGradient<cmyk::DeviceCmyk>> for Paint {
+    fn from(value: LinearGradient<cmyk::DeviceCmyk>) -> Self {
+        Paint(InnerPaint::CmykLinearGradient(value))
+    }
+}
+
+impl From<RadialGradient<rgb::Rgb>> for Paint {
+    fn from(value: RadialGradient<rgb::Rgb>) -> Self {
+        Paint(InnerPaint::RgbRadialGradient(value))
+    }
+}
+
+impl From<RadialGradient<cmyk::DeviceCmyk>> for Paint {
+    fn from(value: RadialGradient<cmyk::DeviceCmyk>) -> Self {
+        Paint(InnerPaint::CmykRadialGradient(value))
+    }
+}
+
+impl From<SweepGradient<rgb::Rgb>> for Paint {
+    fn from(value: SweepGradient<rgb::Rgb>) -> Self {
+        Paint(InnerPaint::RgbSweepGradient(value))
+    }
+}
+
+impl From<SweepGradient<cmyk::DeviceCmyk>> for Paint {
+    fn from(value: SweepGradient<cmyk::DeviceCmyk>) -> Self {
+        Paint(InnerPaint::CmykSweepGradient(value))
+    }
+}
+
+impl From<Pattern> for Paint {
+    fn from(value: Pattern) -> Self {
+        Paint(InnerPaint::Pattern(value))
+    }
 }
 
 /// A spread method.

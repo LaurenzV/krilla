@@ -1,8 +1,6 @@
 use crate::font::KrillaGlyph;
 use crate::font::{Font, GlyphUnits};
 use crate::object::color::rgb;
-use crate::object::color::rgb::Rgb;
-use crate::paint::Paint;
 use crate::path::{Fill, Stroke};
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
@@ -60,7 +58,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 )
             });
 
-            let fill_op = |sb: &mut Surface, fill: Fill<Rgb>, font: Font| {
+            let fill_op = |sb: &mut Surface, fill: Fill, font: Font| {
                 sb.fill_glyphs(
                     Point::from_xy(0.0, 0.0),
                     fill,
@@ -80,7 +78,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 );
             };
 
-            let stroke_op = |sb: &mut Surface, stroke: Stroke<Rgb>, font: Font| {
+            let stroke_op = |sb: &mut Surface, stroke: Stroke, font: Font| {
                 sb.stroke_glyphs(
                     Point::from_xy(0.0, 0.0),
                     stroke,
@@ -123,7 +121,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 (None, None) => fill_op(
                     surface,
                     Fill {
-                        paint: Paint::Color(rgb::Color::new(0, 0, 0)),
+                        paint: rgb::Color::new(0, 0, 0).into(),
                         opacity: NormalizedF32::ZERO,
                         rule: Default::default(),
                     },

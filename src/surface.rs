@@ -7,7 +7,6 @@
 
 use crate::content::{unit_normalize, ContentBuilder};
 use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
-use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -101,19 +100,13 @@ impl<'a> Surface<'a> {
     }
 
     /// Fill a path.
-    pub fn fill_path<T>(&mut self, path: &Path, fill: Fill<T>)
-    where
-        T: ColorSpace,
-    {
+    pub fn fill_path(&mut self, path: &Path, fill: Fill) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path(path, fill, self.sc);
     }
 
     /// Stroke a path.
-    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>) -> Option<()>
-    where
-        T: ColorSpace,
-    {
+    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc)
     }
@@ -125,7 +118,7 @@ impl<'a> Surface<'a> {
         font: Font,
         font_size: f32,
         glyph_units: GlyphUnits,
-        outline_mode: OutlineMode<impl ColorSpace>,
+        outline_mode: OutlineMode,
     ) {
         // TODO: What to do with invalid COLR glyphs?
         let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
@@ -160,19 +153,17 @@ impl<'a> Surface<'a> {
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
     #[allow(clippy::too_many_arguments)]
-    pub fn fill_glyphs<T>(
+    pub fn fill_glyphs(
         &mut self,
         start: Point,
-        fill: Fill<T>,
+        fill: Fill,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         if outlined {
             self.outline_glyphs(
                 glyphs,
@@ -210,18 +201,16 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `fill_glyphs` method,
     /// you can use the `cosmic-text` integration to do so.
     #[cfg(feature = "simple-text")]
-    pub fn fill_text<T>(
+    pub fn fill_text(
         &mut self,
         start: Point,
-        fill: Fill<T>,
+        fill: Fill,
         font: Font,
         font_size: f32,
         features: &[Feature],
         text: &str,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
         self.fill_glyphs(
@@ -242,19 +231,17 @@ impl<'a> Surface<'a> {
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[allow(clippy::too_many_arguments)]
-    pub fn stroke_glyphs<T>(
+    pub fn stroke_glyphs(
         &mut self,
         start: Point,
-        stroke: Stroke<T>,
+        stroke: Stroke,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         if outlined {
             self.outline_glyphs(
                 glyphs,
@@ -292,18 +279,16 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[cfg(feature = "simple-text")]
-    pub fn stroke_text<T>(
+    pub fn stroke_text(
         &mut self,
         start: Point,
-        stroke: Stroke<T>,
+        stroke: Stroke,
         font: Font,
         font_size: f32,
         features: &[Feature],
         text: &str,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
         self.stroke_glyphs(
@@ -464,12 +449,7 @@ impl<'a> Surface<'a> {
         sub_builders.last_mut().unwrap_or(root_builder)
     }
 
-    pub(crate) fn fill_path_impl(
-        &mut self,
-        path: &Path,
-        fill: Fill<impl ColorSpace>,
-        fill_props: bool,
-    ) {
+    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: Fill, fill_props: bool) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path_impl(path, fill, self.sc, fill_props)
     }
@@ -559,14 +539,14 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<K
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
+
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::path::Fill;
     use crate::surface::Stroke;
     use crate::surface::Surface;
     use crate::tests::{
-        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_luma, green_fill, load_png_image,
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
         rect_to_path, red_fill, red_stroke, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI,
         SVGS_PATH,
     };
@@ -584,7 +564,7 @@ mod tests {
     #[snapshot(stream)]
     fn stream_path_single_with_luma(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let fill = gray_luma(1.0);
+        let fill = gray_fill(1.0);
         surface.fill_path(&path, fill);
     }
 
@@ -640,7 +620,7 @@ mod tests {
     fn stream_fill_text(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -653,7 +633,7 @@ mod tests {
     fn stream_stroke_text(surface: &mut Surface) {
         surface.stroke_text(
             Point::from_xy(0.0, 50.0),
-            Stroke::<Rgb>::default(),
+            Stroke::default(),
             Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -666,7 +646,7 @@ mod tests {
     fn stream_complex_text(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -679,7 +659,7 @@ mod tests {
     fn stream_complex_text_2(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -692,7 +672,7 @@ mod tests {
     fn stream_complex_text_3(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -705,7 +685,7 @@ mod tests {
     fn stream_complex_text_4(surface: &mut Surface) {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
@@ -834,7 +814,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -848,7 +828,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],

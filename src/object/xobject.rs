@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::color::rgb::Rgb;
 use crate::error::KrillaResult;
 use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
@@ -42,7 +43,6 @@ impl Object for XObject {
     }
 
     fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-        let cs = sc.rgb();
         let mut chunk = Chunk::new();
 
         let x_object_stream =
@@ -69,7 +69,8 @@ impl Object for XObject {
             }
 
             if self.transparency_group_color_space {
-                transparency.pair(Name(b"CS"), cs);
+                let cs = Rgb::color_space(sc.serialize_settings.no_device_cs);
+                transparency.pair(Name(b"CS"), sc.add_cs(cs));
             }
 
             transparency.finish();
@@ -84,7 +85,7 @@ impl Object for XObject {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
+
     use crate::object::xobject::XObject;
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
@@ -97,7 +98,7 @@ mod tests {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let mut sb = StreamBuilder::new(sc);
         let mut surface = sb.surface();
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.fill_path(&path, Fill::default());
         surface.finish();
         let stream = sb.finish();
         let x_object = XObject::new(stream, true, true, None);

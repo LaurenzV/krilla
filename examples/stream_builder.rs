@@ -3,9 +3,8 @@
 //! when defining patterns or mask.
 
 use krilla::color::rgb;
-use krilla::color::rgb::Rgb;
 use krilla::geom::Transform;
-use krilla::paint::{Paint, Pattern};
+use krilla::paint::Pattern;
 use krilla::path::{Fill, Stroke};
 use krilla::{Document, PageSettings};
 use tiny_skia_path::{Path, PathBuilder, Rect};
@@ -27,7 +26,7 @@ fn main() {
     pattern_surface.fill_path(
         &rect_to_path(0.0, 0.0, 10.0, 10.0),
         Fill {
-            paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+            paint: rgb::Color::new(255, 0, 0).into(),
             ..Default::default()
         },
     );
@@ -36,7 +35,7 @@ fn main() {
     pattern_surface.fill_path(
         &rect_to_path(10.0, 10.0, 20.0, 20.0),
         Fill {
-            paint: Paint::<Rgb>::Color(rgb::Color::new(0, 0, 255)),
+            paint: rgb::Color::new(0, 0, 255).into(),
             ..Default::default()
         },
     );
@@ -63,10 +62,7 @@ fn main() {
     surface.fill_path(
         &rect_path,
         Fill {
-            // Note: The actual color space you use here doesn't matter, it has no
-            // effect on the output. It's just a current limitation in the API of
-            // krilla that you need to define something.
-            paint: Paint::<Rgb>::Pattern(pattern),
+            paint: pattern.into(),
             ..Default::default()
         },
     );
@@ -75,10 +71,7 @@ fn main() {
     surface.stroke_path(
         &rect_path,
         Stroke {
-            // Note: The actual color space you use here doesn't matter, it has no
-            // effect on the output. It's just a current limitation in the API of
-            // krilla that you need to define something.
-            paint: Paint::<Rgb>::Color(rgb::Color::black()),
+            paint: rgb::Color::black().into(),
             ..Default::default()
         },
     );

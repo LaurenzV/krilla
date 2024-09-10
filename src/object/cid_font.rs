@@ -253,7 +253,6 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 mod tests {
     use crate::font::Font;
 
-    use crate::color::rgb::Rgb;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializerContext};
     use crate::surface::Surface;
@@ -283,7 +282,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -297,7 +296,7 @@ mod tests {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -311,7 +310,7 @@ mod tests {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],

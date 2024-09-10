@@ -41,7 +41,6 @@ pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
 
-use crate::color::ColorSpace;
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
 // TODO: Test TrueType collection
@@ -338,19 +337,16 @@ pub(crate) fn draw_color_glyph(
 }
 
 #[derive(Clone)]
-pub(crate) enum OutlineMode<T>
-where
-    T: ColorSpace,
-{
-    Fill(Fill<T>),
-    Stroke(Stroke<T>),
+pub(crate) enum OutlineMode {
+    Fill(Fill),
+    Stroke(Stroke),
 }
 
 pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
-    outline_mode: Option<OutlineMode<impl ColorSpace>>,
+    outline_mode: Option<OutlineMode>,
     surface: &mut Surface,
 ) -> KrillaResult<Option<GlyphSource>> {
     let mut glyph_source = draw_color_glyph(font.clone(), svg_settings, glyph, surface)?;

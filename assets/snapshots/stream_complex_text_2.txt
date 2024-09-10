@@ -1,6 +1,6 @@
 q
-/DeviceRGB cs
-0 0 0 scn
+/DeviceGray cs
+0 scn
 BT
 0 Tr
 /Span <<

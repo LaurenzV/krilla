@@ -7,9 +7,7 @@
 //! instead of font fallback.
 
 use krilla::color::rgb;
-use krilla::color::rgb::Rgb;
 use krilla::font::Font;
-use krilla::paint::Paint;
 use krilla::path::{Fill, Stroke};
 use krilla::{Document, PageSettings};
 use std::sync::Arc;
@@ -33,7 +31,7 @@ fn main() {
     surface.fill_text(
         Point::from_xy(0.0, 25.0),
         Fill {
-            paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+            paint: rgb::Color::new(255, 0, 0).into(),
             opacity: NormalizedF32::new(0.5).unwrap(),
             rule: Default::default(),
         },
@@ -48,7 +46,7 @@ fn main() {
     surface.stroke_text(
         Point::from_xy(0.0, 50.0),
         Stroke {
-            paint: Paint::<Rgb>::Color(rgb::Color::new(0, 255, 0)),
+            paint: rgb::Color::new(0, 255, 0).into(),
             ..Default::default()
         },
         noto_font.clone(),
@@ -69,7 +67,7 @@ fn main() {
     // one run.
     surface.fill_text(
         Point::from_xy(0.0, 75.0),
-        Fill::<Rgb>::default(),
+        Fill::default(),
         noto_arabic_font.clone(),
         25.0,
         &[],
@@ -102,7 +100,7 @@ fn main() {
         surface.fill_text(
             Point::from_xy(0.0, y),
             Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::new(0, 0, 255)),
+                paint: rgb::Color::new(0, 0, 255).into(),
                 ..Default::default()
             },
             noto_font_variable.clone(),

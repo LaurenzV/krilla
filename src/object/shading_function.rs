@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::color::rgb::Luma;
 use crate::error::KrillaResult;
 use crate::object::color::{Color, ColorSpace};
 use crate::object::Object;
@@ -251,12 +252,18 @@ fn serialize_postscript_shading(
     let domain = post_script_gradient.domain;
 
     let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
-    let cs = if use_opacities { sc.gray() } else { sc.rgb() };
+    let cs = if use_opacities {
+        Luma::color_space(sc.serialize_settings.no_device_cs)
+    } else {
+        post_script_gradient.stops[0]
+            .color
+            .color_space(sc.serialize_settings.no_device_cs, true)
+    };
 
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
 
-    shading.insert(Name(b"ColorSpace")).primitive(cs);
+    shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
     shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
@@ -276,7 +283,13 @@ fn serialize_axial_radial_shading(
 ) {
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
-    let cs_ref = if use_opacities { sc.gray() } else { sc.rgb() };
+    let cs = if use_opacities {
+        Luma::color_space(sc.serialize_settings.no_device_cs)
+    } else {
+        radial_axial_gradient.stops[0]
+            .color
+            .color_space(sc.serialize_settings.no_device_cs, true)
+    };
 
     let mut shading = chunk.function_shading(root_ref);
     if radial_axial_gradient.shading_type == FunctionShadingType::Radial {
@@ -284,7 +297,7 @@ fn serialize_axial_radial_shading(
     } else {
         shading.shading_type(FunctionShadingType::Axial);
     }
-    shading.insert(Name(b"ColorSpace")).primitive(cs_ref);
+    shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
 
     shading.function(function_ref);
     shading.coords(radial_axial_gradient.coords.iter().map(|n| n.get()));
@@ -330,12 +343,12 @@ fn select_axial_radial_function(
             serialize_exponential(
                 stops[0]
                     .color
-                    .to_pdf_color()
+                    .to_pdf_color(true)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops[1]
                     .color
-                    .to_pdf_color()
+                    .to_pdf_color(true)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 chunk,
@@ -638,7 +651,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         } else {
             stops[0]
                 .color
-                .to_pdf_color()
+                .to_pdf_color(true)
                 .into_iter()
                 .map(|n| n.to_string())
                 .collect::<Vec<_>>()
@@ -661,12 +674,12 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
             encode_two_stops(
                 &stops[0]
                     .color
-                    .to_pdf_color()
+                    .to_pdf_color(true)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 &stops[1]
                     .color
-                    .to_pdf_color()
+                    .to_pdf_color(true)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops_min,
@@ -703,8 +716,16 @@ fn serialize_stitching(
             (vec![first.opacity.get()], vec![second.opacity.get()])
         } else {
             (
-                first.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
-                second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                first
+                    .color
+                    .to_pdf_color(true)
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+                second
+                    .color
+                    .to_pdf_color(true)
+                    .into_iter()
+                    .collect::<Vec<_>>(),
             )
         };
         debug_assert!(c0_components.len() == c1_components.len());

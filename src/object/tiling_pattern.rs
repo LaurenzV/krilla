@@ -90,8 +90,8 @@ impl Object for TilingPattern {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
-    use crate::paint::{Paint, Pattern};
+
+    use crate::paint::Pattern;
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::stream::StreamBuilder;
@@ -135,7 +135,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::<Rgb>::Pattern(pattern),
+                paint: pattern.into(),
                 opacity: NormalizedF32::new(0.5).unwrap(),
                 rule: Default::default(),
             },

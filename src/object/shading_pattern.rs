@@ -53,7 +53,7 @@ impl Object for ShadingPattern {
 mod tests {
     use crate::object::shading_function::GradientPropertiesExt;
     use crate::object::shading_pattern::ShadingPattern;
-    use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, SweepGradient};
+    use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
@@ -113,7 +113,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::LinearGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -136,7 +136,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::LinearGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -195,7 +195,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::SweepGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -218,7 +218,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::SweepGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
@@ -263,7 +263,7 @@ mod tests {
         surface.fill_path(
             &path,
             Fill {
-                paint: Paint::RadialGradient(gradient),
+                paint: gradient.into(),
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },

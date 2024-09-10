@@ -44,8 +44,7 @@
 //! in a device-dependent way.
 
 use crate::color::cmyk::DeviceCmyk;
-use crate::color::luma::{DeviceGray, SGray};
-use crate::color::rgb::{DeviceRgb, Srgb};
+use crate::color::rgb::{DeviceGray, DeviceRgb, SGray, Srgb};
 use crate::error::KrillaResult;
 use crate::serialize::{FilterStream, SerializerContext};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -65,9 +64,9 @@ pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 /// of different color spaces.
 pub(crate) trait InternalColor {
     /// Return the components of the color as a normalized f32.
-    fn to_pdf_color(&self) -> impl IntoIterator<Item = f32>;
+    fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32>;
     /// Return the color space of the color.
-    fn color_space(&self, no_device_cs: bool) -> ColorSpaceType;
+    fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpaceType;
 }
 
 #[allow(private_bounds)]
@@ -111,26 +110,28 @@ impl ICCBasedColorSpace {
 pub(crate) enum Color {
     /// An RGB-based color.
     Rgb(rgb::Color),
-    /// A luma-based color.
-    Luma(luma::Color),
     /// A device CMYK color.
     DeviceCmyk(cmyk::Color),
 }
 
 impl Color {
-    pub(crate) fn to_pdf_color(self) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(self, is_gradient: bool) -> Vec<f32> {
         match self {
-            Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::Luma(luma) => luma.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::DeviceCmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Rgb(rgb) => rgb
+                .to_pdf_color(is_gradient)
+                .into_iter()
+                .collect::<Vec<_>>(),
+            Color::DeviceCmyk(cmyk) => cmyk
+                .to_pdf_color(is_gradient)
+                .into_iter()
+                .collect::<Vec<_>>(),
         }
     }
 
-    pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpaceType {
+    pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpaceType {
         match self {
-            Color::Rgb(rgb) => rgb.color_space(no_device_cs),
-            Color::Luma(luma) => luma.color_space(no_device_cs),
-            Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs),
+            Color::Rgb(rgb) => rgb.color_space(no_device_cs, is_gradient),
+            Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs, is_gradient),
         }
     }
 }
@@ -163,7 +164,7 @@ pub mod cmyk {
     }
 
     impl InternalColor for Color {
-        fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
+        fn to_pdf_color(&self, _: bool) -> impl IntoIterator<Item = f32> {
             [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
@@ -172,7 +173,7 @@ pub mod cmyk {
             ]
         }
 
-        fn color_space(&self, _: bool) -> ColorSpaceType {
+        fn color_space(&self, _: bool, _: bool) -> ColorSpaceType {
             ColorSpaceType::DeviceCmyk(DeviceCmyk)
         }
     }
@@ -222,6 +223,15 @@ pub mod rgb {
         pub fn white() -> Self {
             Self::new(255, 255, 255)
         }
+
+        /// Create a gray RGB color.
+        pub fn gray(lightness: u8) -> Self {
+            Self::new(lightness, lightness, lightness)
+        }
+
+        fn is_gray_scale(&self) -> bool {
+            self.0 == self.1 && self.1 == self.2
+        }
     }
 
     impl From<Color> for super::Color {
@@ -231,25 +241,31 @@ pub mod rgb {
     }
 
     impl InternalColor for Color {
-        fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
-            [
-                self.0 as f32 / 255.0,
-                self.1 as f32 / 255.0,
-                self.2 as f32 / 255.0,
-            ]
+        fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32> {
+            if self.is_gray_scale() && !is_gradient {
+                vec![self.0 as f32 / 255.0]
+            } else {
+                vec![
+                    self.0 as f32 / 255.0,
+                    self.1 as f32 / 255.0,
+                    self.2 as f32 / 255.0,
+                ]
+            }
         }
 
-        fn color_space(&self, no_device_cs: bool) -> ColorSpaceType {
-            if no_device_cs {
-                ColorSpaceType::Srgb(Srgb)
+        fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpaceType {
+            if self.is_gray_scale() && !is_gradient {
+                Luma::color_space(no_device_cs)
             } else {
-                ColorSpaceType::DeviceRgb(DeviceRgb)
+                Rgb::color_space(no_device_cs)
             }
         }
     }
 
     /// The ICC profile for the SRGB color space.
     static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
+    /// The ICC profile for the sgray color space.
+    static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
 
     /// The RGB color space. Depending on whether the `no_device_cs` serialize option is set,
     /// this will internally be encoded either using the PDF `DeviceRgb` color space, or in the
@@ -259,6 +275,28 @@ pub mod rgb {
 
     impl ColorSpace for Rgb {
         type Color = Color;
+    }
+
+    impl Rgb {
+        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpaceType {
+            if no_device_cs {
+                ColorSpaceType::Srgb(Srgb)
+            } else {
+                ColorSpaceType::DeviceRgb(DeviceRgb)
+            }
+        }
+    }
+
+    pub(crate) struct Luma;
+
+    impl Luma {
+        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpaceType {
+            if no_device_cs {
+                ColorSpaceType::SGray(SGray)
+            } else {
+                ColorSpaceType::DeviceGray(DeviceGray)
+            }
+        }
     }
 
     /// The SRGB color space.
@@ -283,77 +321,6 @@ pub mod rgb {
     impl ColorSpace for DeviceRgb {
         type Color = Color;
     }
-}
-
-/// Luma (= gray-scale) colors.
-pub mod luma {
-    use crate::chunk_container::ChunkContainer;
-    use crate::error::KrillaResult;
-    use crate::object::color::{ColorSpace, ColorSpaceType, ICCBasedColorSpace, InternalColor};
-    use crate::object::Object;
-    use crate::serialize::SerializerContext;
-    use pdf_writer::{Chunk, Ref};
-    use std::sync::Arc;
-
-    /// A luma color.
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(u8);
-
-    impl Default for Color {
-        fn default() -> Self {
-            Color::black()
-        }
-    }
-
-    impl Color {
-        /// Create a new luma color.
-        pub fn new(lightness: u8) -> Self {
-            Color(lightness)
-        }
-
-        /// Create a black luma color.
-        pub fn black() -> Self {
-            Self::new(0)
-        }
-
-        /// Create a white luma color.
-        pub fn white() -> Self {
-            Self::new(255)
-        }
-    }
-
-    impl From<Color> for super::Color {
-        fn from(val: Color) -> Self {
-            super::Color::Luma(val)
-        }
-    }
-
-    impl InternalColor for Color {
-        fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
-            [self.0 as f32 / 255.0]
-        }
-
-        fn color_space(&self, no_device_cs: bool) -> ColorSpaceType {
-            if no_device_cs {
-                ColorSpaceType::SGray(SGray)
-            } else {
-                ColorSpaceType::DeviceGray(DeviceGray)
-            }
-        }
-    }
-
-    /// The ICC profile for the sgray color space.
-    pub(crate) static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
-
-    /// The luma color space. Depending on whether the `no_device_cs` serialize option is set,
-    /// this will internally be encoded either using the PDF `DeviceGray` color space, or in the
-    /// sgray color space using an ICC profile.
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Luma;
-
-    impl ColorSpace for Luma {
-        type Color = Color;
-    }
 
     /// The sgray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -373,10 +340,6 @@ pub mod luma {
     /// The device gray color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub(crate) struct DeviceGray;
-
-    impl ColorSpace for DeviceGray {
-        type Color = Color;
-    }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -390,11 +353,11 @@ pub(crate) enum ColorSpaceType {
 
 #[cfg(test)]
 mod tests {
-    use crate::object::color::luma::SGray;
     use crate::object::color::rgb::Srgb;
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 
+    use crate::color::rgb::SGray;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path};
     use krilla_macros::{snapshot, visreg};

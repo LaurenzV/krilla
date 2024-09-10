@@ -49,7 +49,7 @@ let mut surface = page.surface();
 // Draw some text.
 surface.fill_text(
     Point::from_xy(0.0, 25.0),
-    Fill::<Rgb>::default(),
+    Fill::default(),
     font.clone(),
     14.0,
     &[],
@@ -60,7 +60,7 @@ surface.fill_text(
 surface.fill_text(
     Point::from_xy(0.0, 50.0),
     Fill {
-        paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+        paint: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::new(0.5).unwrap(),
         rule: Default::default(),
     },

@@ -264,7 +264,7 @@ impl<'a> PageLabelContainer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb::Rgb;
+
     use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
     use crate::serialize::SerializerContext;
@@ -288,7 +288,7 @@ mod tests {
 
         let page_settings = PageSettings::new(200.0, 200.0);
 
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.fill_path(&path, Fill::default());
         surface.finish();
         let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
         sc.add_page(page);
@@ -305,7 +305,7 @@ mod tests {
 
         let page_settings = PageSettings::new(200.0, 200.0);
 
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.fill_path(&path, Fill::default());
         surface.finish();
         let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
         sc.add_page(page);
