@@ -253,7 +253,6 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 mod tests {
     use crate::font::Font;
 
-    
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializerContext};
     use crate::surface::Surface;

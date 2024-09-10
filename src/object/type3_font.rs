@@ -348,8 +348,7 @@ mod tests {
     use crate::font::{Font, FontIdentifier, Type3Identifier};
 
     use crate::color::rgb;
-    
-    
+
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;

@@ -111,6 +111,10 @@ pub(crate) enum InnerPaint {
 }
 
 /// A paint.
+///
+/// You cannot construct this type directly, but instead can convert
+/// into it by calling `into` on the various types of paint, such as linear
+/// gradients and patterns.
 #[derive(Debug, Clone)]
 pub struct Paint(pub(crate) InnerPaint);
 

@@ -264,7 +264,7 @@ impl<'a> PageLabelContainer<'a> {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
     use crate::serialize::SerializerContext;

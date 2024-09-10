@@ -539,7 +539,7 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<K
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::path::Fill;

@@ -90,7 +90,7 @@ impl Object for TilingPattern {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::paint::Pattern;
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
