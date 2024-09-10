@@ -96,6 +96,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     &glyph.text,
                     span.font_size.get(),
                     GlyphUnits::UnitsPerEm,
+                    false
                 );
             };
 

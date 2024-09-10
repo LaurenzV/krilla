@@ -231,19 +231,48 @@ impl<'a> Surface<'a> {
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
+        outlined: bool
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
-            start,
-            self.sc,
-            stroke,
-            glyphs,
-            font,
-            text,
-            font_size,
-            glyph_units,
-        );
+        if outlined {
+            // TODO: What to do with invalid COLR glyphs?
+            let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
+            let (mut cur_x, y) = (start.x, start.y);
+
+            for glyph in glyphs {
+                self.push_transform(&Transform::from_translate(
+                    cur_x + normalize(glyph.x_offset()) * font_size,
+                    y + normalize(glyph.y_offset()) * font_size,
+                ));
+                self.push_transform(&Transform::from_scale(
+                    font_size / font.units_per_em(),
+                    -font_size / font.units_per_em(),
+                ));
+                draw_glyph(
+                    font.clone(),
+                    SvgSettings::default(),
+                    glyph.glyph_id(),
+                    Some(OutlineMode::Stroke(stroke.clone())),
+                    self,
+                );
+                self.pop();
+                self.pop();
+                cur_x += normalize(glyph.x_advance()) * font_size;
+            }
+        } else {
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
+                start,
+                self.sc,
+                stroke,
+                glyphs,
+                font,
+                text,
+                font_size,
+                glyph_units,
+            );
+        }
+
     }
 
     /// Draw some text with a stroke.
@@ -268,6 +297,7 @@ impl<'a> Surface<'a> {
         font_size: f32,
         features: &[Feature],
         text: &str,
+        outlined: bool
     ) where
         T: ColorSpace,
     {
@@ -281,6 +311,7 @@ impl<'a> Surface<'a> {
             text,
             font_size,
             GlyphUnits::UserSpace,
+            outlined
         );
     }
 
@@ -531,10 +562,7 @@ mod tests {
     use crate::path::Fill;
     use crate::surface::Stroke;
     use crate::surface::Surface;
-    use crate::tests::{
-        basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path,
-        red_fill, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH,
-    };
+    use crate::tests::{basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path, red_fill, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH, red_stroke, blue_stroke};
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
     use tiny_skia_path::{Point, Size, Transform};
@@ -623,6 +651,7 @@ mod tests {
             16.0,
             &[],
             "hi there",
+            false
         );
     }
 
@@ -722,7 +751,7 @@ mod tests {
     }
 
     #[visreg]
-    fn text_outlined(surface: &mut Surface) {
+    fn text_outlined_with_fill(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 80.0),
@@ -749,6 +778,42 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 120.0),
             blue_fill(0.8),
+            font,
+            20.0,
+            &[],
+            "😄😁😆",
+            true,
+        );
+    }
+
+    #[visreg]
+    fn text_outlined_with_stroke(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.stroke_text(
+            Point::from_xy(0.0, 80.0),
+            red_stroke(0.5),
+            font.clone(),
+            20.0,
+            &[],
+            "red outlined text",
+            true,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 100.0),
+            blue_stroke(0.8),
+            font,
+            20.0,
+            &[],
+            "blue outlined text",
+            true,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 120.0),
+            blue_stroke(0.8),
             font,
             20.0,
             &[],
