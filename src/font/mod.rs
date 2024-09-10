@@ -338,19 +338,17 @@ pub(crate) fn draw_color_glyph(
 }
 
 #[derive(Clone)]
-pub(crate) enum OutlineMode<T>
-where
-    T: ColorSpace,
+pub(crate) enum OutlineMode
 {
-    Fill(Fill<T>),
-    Stroke(Stroke<T>),
+    Fill(Fill),
+    Stroke(Stroke),
 }
 
 pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
-    outline_mode: Option<OutlineMode<impl ColorSpace>>,
+    outline_mode: Option<OutlineMode>,
     surface: &mut Surface,
 ) -> KrillaResult<Option<GlyphSource>> {
     let mut glyph_source = draw_color_glyph(font.clone(), svg_settings, glyph, surface)?;

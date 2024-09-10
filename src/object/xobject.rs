@@ -98,7 +98,7 @@ mod tests {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let mut sb = StreamBuilder::new(sc);
         let mut surface = sb.surface();
-        surface.fill_path(&path, Fill::<Rgb>::default());
+        surface.fill_path(&path, Fill::default());
         surface.finish();
         let stream = sb.finish();
         let x_object = XObject::new(stream, true, true, None);

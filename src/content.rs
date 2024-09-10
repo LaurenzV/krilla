@@ -77,7 +77,7 @@ impl ContentBuilder {
     pub fn fill_path(
         &mut self,
         path: &Path,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         serializer_context: &mut SerializerContext,
     ) {
         self.fill_path_impl(path, fill, serializer_context, true);
@@ -86,7 +86,7 @@ impl ContentBuilder {
     pub(crate) fn fill_path_impl(
         &mut self,
         path: &Path,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         serializer_context: &mut SerializerContext,
         // This is only needed because when creating a Type3 glyph, we don't want to apply a
         // fill properties for outline glyphs, so that they are taken from wherever the glyph is shown.
@@ -127,7 +127,7 @@ impl ContentBuilder {
     pub fn stroke_path(
         &mut self,
         path: &Path,
-        stroke: Stroke<impl ColorSpace>,
+        stroke: Stroke,
         serializer_context: &mut SerializerContext,
     ) -> Option<()> {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
@@ -183,7 +183,7 @@ impl ContentBuilder {
         &mut self,
         start: Point,
         sc: &mut SerializerContext,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -226,7 +226,7 @@ impl ContentBuilder {
         &mut self,
         start: Point,
         sc: &mut SerializerContext,
-        stroke: Stroke<impl ColorSpace>,
+        stroke: Stroke,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -524,7 +524,7 @@ impl ContentBuilder {
     fn content_set_fill_stroke_properties(
         &mut self,
         bounds: Rect,
-        paint: &Paint<impl ColorSpace>,
+        paint: &Paint,
         opacity: NormalizedF32,
         serializer_context: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
@@ -640,7 +640,7 @@ impl ContentBuilder {
     fn content_set_fill_properties(
         &mut self,
         bounds: Rect,
-        fill: &Fill<impl ColorSpace>,
+        fill: &Fill,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
@@ -666,7 +666,7 @@ impl ContentBuilder {
     fn content_set_stroke_properties(
         &mut self,
         bounds: Rect,
-        stroke: &Stroke<impl ColorSpace>,
+        stroke: &Stroke,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {

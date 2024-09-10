@@ -124,7 +124,7 @@ impl Type3Font {
                     self.font.clone(),
                     svg_settings,
                     *glyph_id,
-                    None::<OutlineMode<Rgb>>,
+                    None::<OutlineMode>,
                     &mut surface,
                 ) {
                     Ok(g) => g,
@@ -385,7 +385,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -440,7 +440,7 @@ mod tests {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],
@@ -481,7 +481,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                paint: rgb::Color::black().into(),
                 ..Default::default()
             },
             font1.clone(),
@@ -494,7 +494,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 120.0),
             Fill {
-                paint: Paint::<Rgb>::Color(rgb::Color::black()),
+                paint: rgb::Color::black().into(),
                 ..Default::default()
             },
             font2.clone(),
@@ -510,7 +510,7 @@ mod tests {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::<Rgb>::default(),
+            Fill::default(),
             font,
             32.0,
             &[],

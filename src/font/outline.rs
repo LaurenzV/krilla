@@ -30,12 +30,12 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
 pub fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    outline_mode: Option<OutlineMode<impl ColorSpace>>,
+    outline_mode: Option<OutlineMode>,
     surface: &mut Surface,
 ) -> KrillaResult<Option<()>> {
     if let Some(path) = glyph_path(font, glyph)? {
         match outline_mode {
-            None => surface.fill_path_impl(&path, Fill::<Rgb>::default(), false),
+            None => surface.fill_path_impl(&path, Fill::default(), false),
             Some(m) => match m {
                 OutlineMode::Fill(f) => surface.fill_path(&path, f),
                 OutlineMode::Stroke(s) => {

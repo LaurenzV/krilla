@@ -48,10 +48,10 @@ pub fn convert_paint(
     // to be shifted for each glyph we draw (since we draw them separately instead of in a glyph run),
     // so we need to apply an additional inverse transform to counter that effect.
     additional_transform: Transform,
-) -> Paint<Rgb> {
+) -> Paint {
     match paint {
-        usvg::Paint::Color(c) => Paint::Color(rgb::Color::new(c.red, c.green, c.blue)),
-        usvg::Paint::LinearGradient(lg) => Paint::LinearGradient(LinearGradient {
+        usvg::Paint::Color(c) => rgb::Color::new(c.red, c.green, c.blue).into(),
+        usvg::Paint::LinearGradient(lg) => LinearGradient {
             x1: lg.x1(),
             y1: lg.y1(),
             x2: lg.x2(),
@@ -59,8 +59,8 @@ pub fn convert_paint(
             transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
             spread_method: convert_spread_method(&lg.spread_method()),
             stops: lg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
-        }),
-        usvg::Paint::RadialGradient(rg) => Paint::RadialGradient(RadialGradient {
+        }.into(),
+        usvg::Paint::RadialGradient(rg) => RadialGradient {
             cx: rg.cx(),
             cy: rg.cy(),
             cr: rg.r().get(),
@@ -70,21 +70,21 @@ pub fn convert_paint(
             transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
             spread_method: convert_spread_method(&rg.spread_method()),
             stops: rg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
-        }),
+        }.into(),
         usvg::Paint::Pattern(pat) => {
             let mut surface = stream_builder.surface();
             group::render(pat.root(), &mut surface, process_context);
             surface.finish();
             let stream = stream_builder.finish();
 
-            Paint::Pattern(Pattern {
+            Pattern {
                 stream,
                 transform: additional_transform
                     .pre_concat(pat.transform())
                     .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
                 width: pat.rect().width(),
                 height: pat.rect().height(),
-            })
+            }.into()
         }
     }
 }
@@ -122,7 +122,7 @@ pub fn convert_fill(
     stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     additional_transform: Transform,
-) -> Fill<Rgb> {
+) -> Fill {
     Fill {
         paint: convert_paint(
             fill.paint(),
@@ -141,7 +141,7 @@ pub fn convert_stroke(
     stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
     additional_transform: Transform,
-) -> Stroke<Rgb> {
+) -> Stroke {
     let dash = stroke.dasharray().map(|dash_array| StrokeDash {
         offset: stroke.dashoffset(),
         array: dash_array.to_vec(),

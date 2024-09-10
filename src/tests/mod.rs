@@ -100,7 +100,7 @@ lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS_VARIABLE, FONT_PATH.join("NotoSans_variable.ttf"));
 
-pub fn green_fill(opacity: f32) -> Fill<Rgb> {
+pub fn green_fill(opacity: f32) -> Fill {
     Fill {
         paint: Paint::Color(rgb::Color::new(0, 255, 0)),
         opacity: NormalizedF32::new(opacity).unwrap(),
@@ -119,7 +119,7 @@ pub fn basic_mask(surface: &mut Surface, mask_type: MaskType) -> Mask {
     Mask::new(stream_builder.finish(), mask_type)
 }
 
-pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
+pub fn blue_fill(opacity: f32) -> Fill {
     Fill {
         paint: Paint::Color(rgb::Color::new(0, 0, 255)),
         opacity: NormalizedF32::new(opacity).unwrap(),
@@ -127,7 +127,7 @@ pub fn blue_fill(opacity: f32) -> Fill<Rgb> {
     }
 }
 
-pub fn blue_stroke(opacity: f32) -> Stroke<Rgb> {
+pub fn blue_stroke(opacity: f32) -> Stroke {
     Stroke {
         paint: Paint::Color(rgb::Color::new(0, 0, 255)),
         opacity: NormalizedF32::new(opacity).unwrap(),
@@ -135,7 +135,7 @@ pub fn blue_stroke(opacity: f32) -> Stroke<Rgb> {
     }
 }
 
-pub fn red_fill(opacity: f32) -> Fill<Rgb> {
+pub fn red_fill(opacity: f32) -> Fill {
     Fill {
         paint: Paint::Color(rgb::Color::new(255, 0, 0)),
         opacity: NormalizedF32::new(opacity).unwrap(),
@@ -143,7 +143,7 @@ pub fn red_fill(opacity: f32) -> Fill<Rgb> {
     }
 }
 
-pub fn red_stroke(opacity: f32) -> Stroke<Rgb> {
+pub fn red_stroke(opacity: f32) -> Stroke {
     Stroke {
         paint: Paint::Color(rgb::Color::new(255, 0, 0)),
         opacity: NormalizedF32::new(opacity).unwrap(),
@@ -151,7 +151,7 @@ pub fn red_stroke(opacity: f32) -> Stroke<Rgb> {
     }
 }
 
-pub fn purple_fill(opacity: f32) -> Fill<Rgb> {
+pub fn purple_fill(opacity: f32) -> Fill {
     Fill {
         paint: Paint::Color(rgb::Color::new(128, 0, 128)),
         opacity: NormalizedF32::new(opacity).unwrap(),
@@ -159,7 +159,7 @@ pub fn purple_fill(opacity: f32) -> Fill<Rgb> {
     }
 }
 
-pub fn gray_fill(opacity: f32) -> Fill<Rgb> {
+pub fn gray_fill(opacity: f32) -> Fill {
     Fill {
         paint: Paint::Color(rgb::Color::gray(127)),
         opacity: NormalizedF32::new(opacity).unwrap(),

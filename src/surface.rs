@@ -101,18 +101,13 @@ impl<'a> Surface<'a> {
     }
 
     /// Fill a path.
-    pub fn fill_path<T>(&mut self, path: &Path, fill: Fill<T>)
-    where
-        T: ColorSpace,
-    {
+    pub fn fill_path(&mut self, path: &Path, fill: Fill) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .fill_path(path, fill, self.sc);
     }
 
     /// Stroke a path.
-    pub fn stroke_path<T>(&mut self, path: &Path, stroke: Stroke<T>) -> Option<()>
-    where
-        T: ColorSpace,
+    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()>
     {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc)
@@ -125,7 +120,7 @@ impl<'a> Surface<'a> {
         font: Font,
         font_size: f32,
         glyph_units: GlyphUnits,
-        outline_mode: OutlineMode<impl ColorSpace>,
+        outline_mode: OutlineMode,
     ) {
         // TODO: What to do with invalid COLR glyphs?
         let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
@@ -160,19 +155,17 @@ impl<'a> Surface<'a> {
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
     #[allow(clippy::too_many_arguments)]
-    pub fn fill_glyphs<T>(
+    pub fn fill_glyphs(
         &mut self,
         start: Point,
-        fill: Fill<T>,
+        fill: Fill,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         if outlined {
             self.outline_glyphs(
                 glyphs,
@@ -210,18 +203,16 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `fill_glyphs` method,
     /// you can use the `cosmic-text` integration to do so.
     #[cfg(feature = "simple-text")]
-    pub fn fill_text<T>(
+    pub fn fill_text(
         &mut self,
         start: Point,
-        fill: Fill<T>,
+        fill: Fill,
         font: Font,
         font_size: f32,
         features: &[Feature],
         text: &str,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
         self.fill_glyphs(
@@ -242,19 +233,17 @@ impl<'a> Surface<'a> {
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[allow(clippy::too_many_arguments)]
-    pub fn stroke_glyphs<T>(
+    pub fn stroke_glyphs(
         &mut self,
         start: Point,
-        stroke: Stroke<T>,
+        stroke: Stroke,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         if outlined {
             self.outline_glyphs(
                 glyphs,
@@ -295,15 +284,13 @@ impl<'a> Surface<'a> {
     pub fn stroke_text<T>(
         &mut self,
         start: Point,
-        stroke: Stroke<T>,
+        stroke: Stroke,
         font: Font,
         font_size: f32,
         features: &[Feature],
         text: &str,
         outlined: bool,
-    ) where
-        T: ColorSpace,
-    {
+    ) {
         let glyphs = naive_shape(text, font.clone(), features, font_size);
 
         self.stroke_glyphs(
@@ -467,7 +454,7 @@ impl<'a> Surface<'a> {
     pub(crate) fn fill_path_impl(
         &mut self,
         path: &Path,
-        fill: Fill<impl ColorSpace>,
+        fill: Fill,
         fill_props: bool,
     ) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)

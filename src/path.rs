@@ -4,6 +4,7 @@ use crate::object::color::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
+use crate::color::rgb;
 
 /// A line cap.
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Default)]
@@ -40,12 +41,10 @@ pub struct StrokeDash {
 
 /// A stroke.
 #[derive(Debug, Clone)]
-pub struct Stroke<C>
-where
-    C: ColorSpace,
+pub struct Stroke
 {
     /// The paint of the stroke.
-    pub paint: Paint<C>,
+    pub paint: Paint,
     /// The width of the stroke.
     pub width: f32,
     /// The miter limit of the stroke.
@@ -60,13 +59,11 @@ where
     pub dash: Option<StrokeDash>,
 }
 
-impl<C> Default for Stroke<C>
-where
-    C: ColorSpace,
+impl Default for Stroke
 {
     fn default() -> Self {
         Stroke {
-            paint: Paint::Color(C::Color::default()),
+            paint: rgb::Color::black().into(),
             width: 1.0,
             miter_limit: 10.0,
             line_cap: LineCap::default(),
@@ -77,9 +74,7 @@ where
     }
 }
 
-impl<C> Stroke<C>
-where
-    C: ColorSpace,
+impl Stroke
 {
     pub(crate) fn into_tiny_skia(self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
@@ -123,25 +118,21 @@ impl Default for FillRule {
 
 /// A fill.
 #[derive(Debug, Clone)]
-pub struct Fill<C>
-where
-    C: ColorSpace,
+pub struct Fill
 {
     /// The paint of the fill.
-    pub paint: Paint<C>,
+    pub paint: Paint,
     /// The opacity of the fill.
     pub opacity: NormalizedF32,
     /// The fill rule that should be used when applying the fill.
     pub rule: FillRule,
 }
 
-impl<C> Default for Fill<C>
-where
-    C: ColorSpace,
+impl Default for Fill
 {
     fn default() -> Self {
         Fill {
-            paint: Paint::Color(C::Color::default()),
+            paint: rgb::Color::black().into(),
             opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }
