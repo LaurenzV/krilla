@@ -1,10 +1,10 @@
 //! Path-related properties.
 
+use crate::color::rgb;
 use crate::object::color::ColorSpace;
 use crate::paint::Paint;
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
-use crate::color::rgb;
 
 /// A line cap.
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Default)]
@@ -41,8 +41,7 @@ pub struct StrokeDash {
 
 /// A stroke.
 #[derive(Debug, Clone)]
-pub struct Stroke
-{
+pub struct Stroke {
     /// The paint of the stroke.
     pub paint: Paint,
     /// The width of the stroke.
@@ -59,8 +58,7 @@ pub struct Stroke
     pub dash: Option<StrokeDash>,
 }
 
-impl Default for Stroke
-{
+impl Default for Stroke {
     fn default() -> Self {
         Stroke {
             paint: rgb::Color::black().into(),
@@ -74,8 +72,7 @@ impl Default for Stroke
     }
 }
 
-impl Stroke
-{
+impl Stroke {
     pub(crate) fn into_tiny_skia(self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
             width: self.width,
@@ -118,8 +115,7 @@ impl Default for FillRule {
 
 /// A fill.
 #[derive(Debug, Clone)]
-pub struct Fill
-{
+pub struct Fill {
     /// The paint of the fill.
     pub paint: Paint,
     /// The opacity of the fill.
@@ -128,8 +124,7 @@ pub struct Fill
     pub rule: FillRule,
 }
 
-impl Default for Fill
-{
+impl Default for Fill {
     fn default() -> Self {
         Fill {
             paint: rgb::Color::black().into(),

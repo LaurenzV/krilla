@@ -1,9 +1,9 @@
 //! Paints that can be used for filling and stroking text or paths.
 
+use crate::color::{cmyk, rgb, Color};
 use crate::object::color::ColorSpace;
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
-use crate::color::{cmyk, Color, rgb};
 
 /// A linear gradient.
 #[derive(Debug, Clone)]
@@ -98,8 +98,7 @@ pub struct Pattern {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum InnerPaint
-{
+pub(crate) enum InnerPaint {
     RgbColor(rgb::Color),
     CmykColor(cmyk::Color),
     RgbLinearGradient(LinearGradient<rgb::Rgb>),

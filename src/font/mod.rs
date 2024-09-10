@@ -338,8 +338,7 @@ pub(crate) fn draw_color_glyph(
 }
 
 #[derive(Clone)]
-pub(crate) enum OutlineMode
-{
+pub(crate) enum OutlineMode {
     Fill(Fill),
     Stroke(Stroke),
 }
