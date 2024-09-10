@@ -5,8 +5,9 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-use crate::content::ContentBuilder;
-use crate::font::{Font, Glyph, GlyphUnits, KrillaGlyph};
+use crate::content::{unit_normalize, ContentBuilder};
+use crate::font::outline::draw_glyph;
+use crate::font::{Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
 use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -132,19 +133,47 @@ impl<'a> Surface<'a> {
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
+        outline: bool,
     ) where
         T: ColorSpace,
     {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
-            start,
-            self.sc,
-            fill,
-            glyphs,
-            font,
-            text,
-            font_size,
-            glyph_units,
-        );
+        if outline {
+            // TODO: What to do with invalid COLR glyphs?
+            let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
+            let (mut cur_x, y) = (start.x, start.y);
+
+            for glyph in glyphs {
+                self.push_transform(&Transform::from_translate(
+                    cur_x + normalize(glyph.x_offset()) * font_size,
+                    y + normalize(glyph.y_offset()) * font_size,
+                ));
+                self.push_transform(&Transform::from_scale(
+                    font_size / font.units_per_em(),
+                    font_size / font.units_per_em(),
+                ));
+                draw_glyph(
+                    font.clone(),
+                    glyph.glyph_id(),
+                    Some(OutlineMode::Fill(fill.clone())),
+                    self,
+                )
+                .unwrap();
+                self.pop();
+                self.pop();
+                cur_x += normalize(glyph.x_advance()) * font_size;
+            }
+        } else {
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
+                start,
+                self.sc,
+                fill,
+                glyphs,
+                font,
+                text,
+                font_size,
+                glyph_units,
+            );
+        }
     }
 
     /// Draw some text with a fill.
@@ -182,6 +211,7 @@ impl<'a> Surface<'a> {
             text,
             font_size,
             GlyphUnits::UserSpace,
+            false,
         );
     }
 

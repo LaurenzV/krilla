@@ -115,6 +115,7 @@ fn main() {
                                 &text,
                                 font_size,
                                 GlyphUnits::UserSpace,
+                                false,
                             );
                             glyphs.clear();
                             cur_x = x;
@@ -152,6 +153,7 @@ fn main() {
                     &text,
                     font_size,
                     GlyphUnits::UserSpace,
+                    false,
                 );
             }
         }

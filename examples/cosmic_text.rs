@@ -78,6 +78,7 @@ fn main() {
                 run.text,
                 size,
                 GlyphUnits::UserSpace,
+                false,
             );
         }
     }
