@@ -30,12 +30,12 @@ endobj
 
 4 0 obj
 <<
-  /Length 67
+  /Length 64
 >>
 stream
 q
-/DeviceRGB cs
-0 0 0 scn
+/DeviceGray cs
+0 scn
 20 20 m
 180 20 l
 180 180 l

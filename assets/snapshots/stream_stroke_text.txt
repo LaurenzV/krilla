@@ -1,6 +1,6 @@
 q
-/DeviceRGB CS
-0 0 0 SCN
+/DeviceGray CS
+0 SCN
 BT
 1 Tr
 /f0 16 Tf
