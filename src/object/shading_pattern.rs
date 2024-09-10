@@ -53,11 +53,14 @@ impl Object for ShadingPattern {
 mod tests {
     use crate::object::shading_function::GradientPropertiesExt;
     use crate::object::shading_pattern::ShadingPattern;
+    use crate::page::Page;
     use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
-    use crate::tests::{rect_to_path, stops_with_2_solid_1, stops_with_3_solid_1};
+    use crate::tests::{
+        rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1,
+    };
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{NormalizedF32, Rect};
 
@@ -243,6 +246,34 @@ mod tests {
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
         let shading_pattern = ShadingPattern::new(props, transform);
         sc.add_object(shading_pattern).unwrap();
+    }
+
+    // Should be turned into a solid color.
+    #[snapshot(single_page)]
+    fn gradient_single_stop(page: &mut Page) {
+        let mut surface = page.surface();
+
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let gradient = RadialGradient {
+            cx: 100.0,
+            cy: 100.0,
+            cr: 30.0,
+            fx: 120.0,
+            fy: 120.0,
+            fr: 60.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_1_solid(),
+        };
+
+        surface.fill_path(
+            &path,
+            Fill {
+                paint: gradient.into(),
+                opacity: NormalizedF32::ONE,
+                rule: Default::default(),
+            },
+        );
     }
 
     #[visreg(all)]
