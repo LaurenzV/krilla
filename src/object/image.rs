@@ -484,7 +484,7 @@ mod tests {
         image_visreg_impl(surface, "rgba8.webp", load_webp_image);
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn image_resized(surface: &mut Surface) {
         let image = load_png_image("rgba8.png");
         surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());
