@@ -673,5 +673,11 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
 
     let pdf = d.finish().unwrap();
     let rendered = render_document(&pdf, &renderer);
-    check_render(&format!("svg_{}", name), &renderer, rendered, &pdf, ignore_renderer);
+    check_render(
+        &format!("svg_{}", name),
+        &renderer,
+        rendered,
+        &pdf,
+        ignore_renderer,
+    );
 }
