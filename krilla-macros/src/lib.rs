@@ -156,6 +156,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut serialize_settings = format_ident!("default");
 
     let mut pdfium = false;
+    let mut ignore_renderer = false;
     let mut mupdf = false;
     let mut pdfbox = false;
     let mut ghostscript = false;
@@ -174,6 +175,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         )
     }) {
         pdfium = true;
+        ignore_renderer = true;
     }
 
     for identifier in attrs.identifiers {
@@ -208,12 +210,6 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    let ignore_renderer = [pdfium, mupdf, pdfbox, ghostscript, pdfjs, poppler, quartz]
-        .iter()
-        .filter(|v| **v)
-        .count()
-        == 1;
-
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
 
@@ -223,7 +219,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_body = if is_svg {
         quote! {
             use crate::tests::svg_impl;
-            svg_impl(stringify!(#fn_name), renderer);
+            svg_impl(stringify!(#fn_name), renderer, #ignore_renderer);
         }
     } else if document {
         quote! {

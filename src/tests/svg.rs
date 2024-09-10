@@ -144,7 +144,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_painting_fill_linear_gradient_on_text() {}
 #[visreg(svg)] fn resvg_paint_servers_stop_opacity_simple_case() {}
 #[visreg(svg)] fn resvg_structure_svg_invalid_id_attribute_1() {}
-#[visreg(svg)] fn resvg_paint_servers_pattern_pattern_on_child() {}
+#[visreg(svg, all)] fn resvg_paint_servers_pattern_pattern_on_child() {}
 #[visreg(svg)] fn resvg_paint_servers_stop_hsla_color() {}
 // no relative paths supported
 #[visreg(svg, ignore)] fn resvg_structure_image_width_and_height_set_to_auto() {}
@@ -634,7 +634,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_paint_servers_radialGradient_attributes_via_xlink_href_from_rect() {}
 #[visreg(svg)] fn resvg_filters_feComponentTransfer_mixed_types() {}
 #[visreg(svg)] fn resvg_filters_enable_background_stop_on_the_first_new_1() {}
-#[visreg(svg)] fn resvg_masking_clip_rule_clip_rule_evenodd() {}
+#[visreg(svg, all)] fn resvg_masking_clip_rule_clip_rule_evenodd() {}
 #[visreg(svg)] fn resvg_filters_feMorphology_radius_with_too_many_values() {}
 #[visreg(svg)] fn custom_masking_clipPath_complex_clip_path_with_nested_clip_path_on_child() {}
 #[visreg(svg)] fn resvg_text_textPath_invalid_textPath_in_the_middle() {}
@@ -824,7 +824,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_painting_fill_missing_FuncIRI_with_a_currentColor_fallback() {}
 #[visreg(svg)] fn resvg_text_dominant_baseline_nested() {}
 #[visreg(svg)] fn resvg_structure_transform_empty() {}
-#[visreg(svg)] fn resvg_paint_servers_linearGradient_many_stops() {}
+#[visreg(svg, all)] fn resvg_paint_servers_linearGradient_many_stops() {}
 #[visreg(svg)] fn resvg_painting_fill_rule_evenodd() {}
 #[visreg(svg)] fn custom_structure_viewbox_negative_viewbox() {}
 #[visreg(svg)] fn resvg_structure_a_inside_text() {}
@@ -1261,7 +1261,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_masking_clipPath_on_the_root_svg_without_size() {}
 // no relative paths supported
 #[visreg(svg, ignore)] fn resvg_structure_image_external_svgz() {}
-#[visreg(svg)] fn resvg_painting_mix_blend_mode_exclusion() {}
+#[visreg(svg, all)] fn resvg_painting_mix_blend_mode_exclusion() {}
 #[visreg(svg)] fn resvg_painting_fill_rgba_0_127_0_1() {}
 #[visreg(svg)] fn resvg_filters_filter_with_transform_outside_of_canvas() {}
 #[visreg(svg)] fn resvg_structure_systemLanguage_ru_Ru() {}
@@ -1384,12 +1384,12 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_text_textPath_with_transform_on_a_referenced_path() {}
 #[visreg(svg)] fn resvg_filters_feMorphology_negative_radius() {}
 #[visreg(svg)] fn resvg_structure_image_preserveAspectRatio_xMaxYMax_meet_on_svg() {}
-#[visreg(svg)] fn resvg_masking_mask_simple_case() {}
+#[visreg(svg, all)] fn resvg_masking_mask_simple_case() {}
 #[visreg(svg)] fn resvg_structure_svg_preserveAspectRatio_xMidYMid_slice() {}
 #[visreg(svg)] fn resvg_structure_transform_numeric_character_references() {}
 #[visreg(svg)] fn resvg_structure_systemLanguage_on_linearGradient() {}
 #[visreg(svg)] fn resvg_painting_fill_hsl_120_100percent_25percent() {}
-#[visreg(svg)] fn resvg_paint_servers_radialGradient_many_stops() {}
+#[visreg(svg, all)] fn resvg_paint_servers_radialGradient_many_stops() {}
 #[visreg(svg)] fn resvg_filters_feConvolveMatrix_unset_order() {}
 #[visreg(svg)] fn resvg_filters_feDiffuseLighting_lighting_color_currentColor() {}
 #[visreg(svg)] fn resvg_text_writing_mode_invalid_value() {}
@@ -1672,7 +1672,7 @@ use krilla_macros::visreg;
 #[visreg(svg)] fn resvg_filters_feComposite_operator_arithmetic_with_some_k1_4() {}
 #[visreg(svg)] fn resvg_painting_marker_with_invalid_markerUnits() {}
 #[visreg(svg)] fn resvg_structure_systemLanguage_on_tspan() {}
-#[visreg(svg)] fn resvg_text_textPath_closed_path() {}
+#[visreg(svg, all)] fn resvg_text_textPath_closed_path() {}
 #[visreg(svg)] fn resvg_shapes_path_M_T_S() {}
 #[visreg(svg)] fn resvg_structure_symbol_simple_case() {}
 #[visreg(svg)] fn resvg_text_font_weight_650() {}

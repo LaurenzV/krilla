@@ -651,7 +651,7 @@ static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     Arc::new(fontdb)
 });
 
-fn svg_impl(name: &str, renderer: Renderer) {
+fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     let settings = SerializeSettings::default();
     let mut d = Document::new_with(settings);
     let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", name));
@@ -673,5 +673,11 @@ fn svg_impl(name: &str, renderer: Renderer) {
 
     let pdf = d.finish().unwrap();
     let rendered = render_document(&pdf, &renderer);
-    check_render(&format!("svg_{}", name), &renderer, rendered, &pdf, true);
+    check_render(
+        &format!("svg_{}", name),
+        &renderer,
+        rendered,
+        &pdf,
+        ignore_renderer,
+    );
 }
