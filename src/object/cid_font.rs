@@ -288,6 +288,7 @@ mod tests {
             32.0,
             &[],
             "hello world",
+            false,
         );
     }
 
@@ -301,6 +302,7 @@ mod tests {
             32.0,
             &[],
             "hello world",
+            false,
         );
     }
 
@@ -314,6 +316,7 @@ mod tests {
             32.0,
             &[],
             "مرحبا بالعالم",
+            false,
         );
     }
 

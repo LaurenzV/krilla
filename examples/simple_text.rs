@@ -41,6 +41,7 @@ fn main() {
         25.0,
         &[],
         "This text is filled red and has opacity.",
+        false,
     );
 
     // Instead of applying fills, we can also apply strokes!
@@ -72,6 +73,7 @@ fn main() {
         25.0,
         &[],
         "هذا هو السطر الثاني من النص.",
+        false,
     );
 
     let mut y = 125.0;
@@ -106,6 +108,7 @@ fn main() {
             25.0,
             &[],
             "Variable fonts rock!",
+            false,
         );
 
         y += 25.0;

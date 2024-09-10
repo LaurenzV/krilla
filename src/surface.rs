@@ -6,8 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::outline::draw_glyph;
-use crate::font::{Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
+use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
 use crate::object::color::ColorSpace;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -19,6 +18,7 @@ use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
 use crate::util::RectExt;
+use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::BlendMode;
@@ -149,15 +149,15 @@ impl<'a> Surface<'a> {
                 ));
                 self.push_transform(&Transform::from_scale(
                     font_size / font.units_per_em(),
-                    font_size / font.units_per_em(),
+                    -font_size / font.units_per_em(),
                 ));
                 draw_glyph(
                     font.clone(),
+                    SvgSettings::default(),
                     glyph.glyph_id(),
                     Some(OutlineMode::Fill(fill.clone())),
                     self,
-                )
-                .unwrap();
+                );
                 self.pop();
                 self.pop();
                 cur_x += normalize(glyph.x_advance()) * font_size;
@@ -198,6 +198,7 @@ impl<'a> Surface<'a> {
         font_size: f32,
         features: &[Feature],
         text: &str,
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
@@ -211,7 +212,7 @@ impl<'a> Surface<'a> {
             text,
             font_size,
             GlyphUnits::UserSpace,
-            false,
+            outlined,
         );
     }
 
@@ -532,7 +533,7 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{
         basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path,
-        red_fill, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH,
+        red_fill, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
@@ -609,6 +610,7 @@ mod tests {
             16.0,
             &[],
             "hi there",
+            false,
         );
     }
 
@@ -633,6 +635,7 @@ mod tests {
             16.0,
             &[],
             "यह कुछ जटिल पाठ है.",
+            false,
         );
     }
 
@@ -645,6 +648,7 @@ mod tests {
             16.0,
             &[],
             "यु॒धा नर॑ ऋ॒ष्वा ",
+            false,
         );
     }
 
@@ -657,6 +661,7 @@ mod tests {
             16.0,
             &[],
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
+            false,
         );
     }
 
@@ -669,6 +674,7 @@ mod tests {
             16.0,
             &[],
             "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
+            false,
         );
     }
 
@@ -693,18 +699,18 @@ mod tests {
         usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn svg_simple(surface: &mut Surface) {
         let tree = sample_svg();
         surface.draw_svg(&tree, tree.size());
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn svg_resized(surface: &mut Surface) {
         surface.draw_svg(&sample_svg(), Size::from_wh(120.0, 80.0).unwrap());
     }
 
-    #[visreg(pdfium)]
+    #[visreg]
     fn svg_should_be_clipped(surface: &mut Surface) {
         let data =
             std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
@@ -713,5 +719,41 @@ mod tests {
         surface.push_transform(&Transform::from_translate(100.0, 0.0));
         surface.draw_svg(&tree, tree.size());
         surface.pop();
+    }
+
+    #[visreg]
+    fn text_outlined(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 80.0),
+            red_fill(0.5),
+            font.clone(),
+            20.0,
+            &[],
+            "red outlined text",
+            true,
+        );
+
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            blue_fill(0.8),
+            font,
+            20.0,
+            &[],
+            "blue outlined text",
+            true,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 120.0),
+            blue_fill(0.8),
+            font,
+            20.0,
+            &[],
+            "😄😁😆",
+            true,
+        );
     }
 }
