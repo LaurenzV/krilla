@@ -337,6 +337,7 @@ pub(crate) fn draw_color_glyph(
     Ok(glyph_source)
 }
 
+#[derive(Clone)]
 pub(crate) enum OutlineMode<T>
 where
     T: ColorSpace,

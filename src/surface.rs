@@ -118,6 +118,42 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc)
     }
 
+    fn outline_glyphs(
+        &mut self,
+        glyphs: &[impl Glyph],
+        start: Point,
+        font: Font,
+        font_size: f32,
+        glyph_units: GlyphUnits,
+        outline_mode: OutlineMode<impl ColorSpace>,
+    ) {
+        // TODO: What to do with invalid COLR glyphs?
+        let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
+        let (mut cur_x, y) = (start.x, start.y);
+
+        for glyph in glyphs {
+            self.push_transform(&Transform::from_translate(
+                cur_x + normalize(glyph.x_offset()) * font_size,
+                y + normalize(glyph.y_offset()) * font_size,
+            ));
+            self.push_transform(&Transform::from_scale(
+                font_size / font.units_per_em(),
+                -font_size / font.units_per_em(),
+            ));
+            draw_glyph(
+                font.clone(),
+                SvgSettings::default(),
+                glyph.glyph_id(),
+                Some(outline_mode.clone()),
+                self,
+            )
+            .unwrap();
+            self.pop();
+            self.pop();
+            cur_x += normalize(glyph.x_advance()) * font_size;
+        }
+    }
+
     /// Draw a sequence of glyphs with a fill.
     ///
     /// This is a very low-level method, which gives you full control over how to place
@@ -138,30 +174,14 @@ impl<'a> Surface<'a> {
         T: ColorSpace,
     {
         if outline {
-            // TODO: What to do with invalid COLR glyphs?
-            let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
-            let (mut cur_x, y) = (start.x, start.y);
-
-            for glyph in glyphs {
-                self.push_transform(&Transform::from_translate(
-                    cur_x + normalize(glyph.x_offset()) * font_size,
-                    y + normalize(glyph.y_offset()) * font_size,
-                ));
-                self.push_transform(&Transform::from_scale(
-                    font_size / font.units_per_em(),
-                    -font_size / font.units_per_em(),
-                ));
-                draw_glyph(
-                    font.clone(),
-                    SvgSettings::default(),
-                    glyph.glyph_id(),
-                    Some(OutlineMode::Fill(fill.clone())),
-                    self,
-                );
-                self.pop();
-                self.pop();
-                cur_x += normalize(glyph.x_advance()) * font_size;
-            }
+            self.outline_glyphs(
+                glyphs,
+                start,
+                font,
+                font_size,
+                glyph_units,
+                OutlineMode::Fill(fill),
+            );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
                 start,
@@ -231,35 +251,19 @@ impl<'a> Surface<'a> {
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
-        outlined: bool
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
         if outlined {
-            // TODO: What to do with invalid COLR glyphs?
-            let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
-            let (mut cur_x, y) = (start.x, start.y);
-
-            for glyph in glyphs {
-                self.push_transform(&Transform::from_translate(
-                    cur_x + normalize(glyph.x_offset()) * font_size,
-                    y + normalize(glyph.y_offset()) * font_size,
-                ));
-                self.push_transform(&Transform::from_scale(
-                    font_size / font.units_per_em(),
-                    -font_size / font.units_per_em(),
-                ));
-                draw_glyph(
-                    font.clone(),
-                    SvgSettings::default(),
-                    glyph.glyph_id(),
-                    Some(OutlineMode::Stroke(stroke.clone())),
-                    self,
-                );
-                self.pop();
-                self.pop();
-                cur_x += normalize(glyph.x_advance()) * font_size;
-            }
+            self.outline_glyphs(
+                glyphs,
+                start,
+                font,
+                font_size,
+                glyph_units,
+                OutlineMode::Stroke(stroke),
+            );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
                 start,
@@ -272,7 +276,6 @@ impl<'a> Surface<'a> {
                 glyph_units,
             );
         }
-
     }
 
     /// Draw some text with a stroke.
@@ -297,7 +300,7 @@ impl<'a> Surface<'a> {
         font_size: f32,
         features: &[Feature],
         text: &str,
-        outlined: bool
+        outlined: bool,
     ) where
         T: ColorSpace,
     {
@@ -311,7 +314,7 @@ impl<'a> Surface<'a> {
             text,
             font_size,
             GlyphUnits::UserSpace,
-            outlined
+            outlined,
         );
     }
 
@@ -562,7 +565,11 @@ mod tests {
     use crate::path::Fill;
     use crate::surface::Stroke;
     use crate::surface::Surface;
-    use crate::tests::{basic_mask, blue_fill, cmyk_fill, gray_luma, green_fill, load_png_image, rect_to_path, red_fill, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI, SVGS_PATH, red_stroke, blue_stroke};
+    use crate::tests::{
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_luma, green_fill, load_png_image,
+        rect_to_path, red_fill, red_stroke, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI,
+        SVGS_PATH,
+    };
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
     use tiny_skia_path::{Point, Size, Transform};
@@ -651,7 +658,7 @@ mod tests {
             16.0,
             &[],
             "hi there",
-            false
+            false,
         );
     }
 

@@ -55,7 +55,7 @@ fn main() {
         25.0,
         &[],
         "This text is stroked green!",
-        false
+        false,
     );
 
     let noto_arabic_font = Font::new(
