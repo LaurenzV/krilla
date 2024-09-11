@@ -340,7 +340,7 @@ mod tests {
         }
     }
 
-    #[visreg]
+    #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
         let font_data = Arc::new(std::fs::read("/System/Library/Fonts/PingFang.ttc").unwrap());
         let font_1 = Font::new(font_data.clone(), 0, vec![]).unwrap();
