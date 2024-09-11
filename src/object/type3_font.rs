@@ -377,6 +377,7 @@ mod tests {
             &[],
             "hello world",
             false,
+            None,
         );
     }
 
@@ -432,6 +433,7 @@ mod tests {
             &[],
             "hello world",
             false,
+            None,
         );
     }
 
@@ -446,6 +448,7 @@ mod tests {
             &[],
             "hello world",
             false,
+            None,
         );
     }
 
@@ -475,6 +478,7 @@ mod tests {
             &[],
             "Variable fonts rock!",
             false,
+            None,
         );
 
         surface.fill_text(
@@ -488,6 +492,7 @@ mod tests {
             &[],
             "Variable fonts rock!",
             false,
+            None,
         );
     }
 
@@ -502,6 +507,7 @@ mod tests {
             &[],
             "مرحبا بالعالم",
             false,
+            None,
         );
     }
 

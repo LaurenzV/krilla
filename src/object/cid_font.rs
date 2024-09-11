@@ -289,6 +289,7 @@ mod tests {
             &[],
             "hello world",
             false,
+            None,
         );
     }
 
@@ -303,6 +304,7 @@ mod tests {
             &[],
             "hello world",
             false,
+            None,
         );
     }
 
@@ -317,6 +319,7 @@ mod tests {
             &[],
             "مرحبا بالعالم",
             false,
+            None,
         );
     }
 
@@ -355,6 +358,7 @@ mod tests {
             &[],
             "这是一段测试文字。",
             false,
+            None,
         );
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -364,6 +368,7 @@ mod tests {
             &[],
             "这是一段测试文字。",
             false,
+            None,
         );
         surface.fill_text(
             Point::from_xy(0.0, 125.0),
@@ -373,6 +378,7 @@ mod tests {
             &[],
             "这是一段测试文字。",
             false,
+            None,
         );
     }
 }

@@ -63,6 +63,7 @@ fn main() {
                         glyph.w,
                         glyph.x_offset,
                         glyph.y_offset,
+                        0.0,
                         glyph.start..glyph.end,
                     )
                 })

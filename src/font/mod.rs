@@ -423,6 +423,8 @@ pub trait Glyph {
     fn x_offset(&self) -> f32;
     /// The offset in the y direction of the glyph.
     fn y_offset(&self) -> f32;
+    /// The advance in the y direction of the glyph.
+    fn y_advance(&self) -> f32;
 }
 
 /// The units of the metrics of a glyph.
@@ -452,6 +454,8 @@ pub struct KrillaGlyph {
     pub x_offset: f32,
     /// The y offset of the glyph.
     pub y_offset: f32,
+    /// The y advance of the glyph.
+    pub y_advance: f32,
 }
 
 impl Glyph for KrillaGlyph {
@@ -474,6 +478,10 @@ impl Glyph for KrillaGlyph {
     fn y_offset(&self) -> f32 {
         self.y_offset
     }
+
+    fn y_advance(&self) -> f32 {
+        self.y_advance
+    }
 }
 
 impl KrillaGlyph {
@@ -483,6 +491,7 @@ impl KrillaGlyph {
         x_advance: f32,
         x_offset: f32,
         y_offset: f32,
+        y_advance: f32,
         range: Range<usize>,
     ) -> Self {
         Self {
@@ -490,6 +499,7 @@ impl KrillaGlyph {
             x_advance,
             x_offset,
             y_offset,
+            y_advance,
             text_range: range,
         }
     }

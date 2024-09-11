@@ -18,7 +18,7 @@ krilla supports a good amount of features you would expect from a graphics libra
 - Alpha and luminosity masks.
 - Clip paths.
 - Blend modes and layer isolation.
-- A high-level text API for rendering strings.
+- A high-level text API for rendering lines of characters, including support for vertical writing.
 - A low-level text API for drawing sequences of positioned glyphs.
 - Excellent OpenType font support, supporting all major font types, including color fonts. 
 - Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.

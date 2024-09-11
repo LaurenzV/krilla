@@ -40,6 +40,7 @@ fn main() {
         &[],
         "This text is filled red and has opacity.",
         false,
+        None,
     );
 
     // Instead of applying fills, we can also apply strokes!
@@ -54,6 +55,7 @@ fn main() {
         &[],
         "This text is stroked green!",
         false,
+        None,
     );
 
     let noto_arabic_font = Font::new(
@@ -73,6 +75,7 @@ fn main() {
         &[],
         "هذا هو السطر الثاني من النص.",
         false,
+        None,
     );
 
     let mut y = 125.0;
@@ -108,6 +111,7 @@ fn main() {
             &[],
             "Variable fonts rock!",
             false,
+            None,
         );
 
         y += 25.0;

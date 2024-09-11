@@ -340,7 +340,7 @@ impl ContentBuilder {
     fn fill_stroke_glyph_run(
         &mut self,
         x: f32,
-        y: f32,
+        ys: f32,
         sc: &mut SerializerContext,
         text_rendering_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
@@ -354,6 +354,7 @@ impl ContentBuilder {
             |_| {},
             |sb| {
                 let mut cur_x = x;
+                let mut cur_y = ys;
 
                 action(sb, sc);
                 sb.content.begin_text();
@@ -383,20 +384,26 @@ impl ContentBuilder {
                             .get_from_identifier(glyph_group.font_identifier.clone())
                             .unwrap();
 
-                        sb.encode_consecutive_glyph_run(
-                            &mut cur_x,
-                            y - unit_normalize(
+                        let normalize = |v| {
+                            unit_normalize(
                                 glyph_units,
                                 pdf_font.font().units_per_em(),
                                 font_size,
-                                glyph_group.y_offset,
-                            ) * font_size,
+                                v,
+                            )
+                        };
+
+                        sb.encode_consecutive_glyph_run(
+                            &mut cur_x,
+                            cur_y - normalize(glyph_group.y_offset) * font_size,
                             glyph_group.font_identifier,
                             pdf_font,
                             font_size,
                             glyph_group.glyphs,
                             glyph_units,
-                        )
+                        );
+
+                        cur_y -= normalize(glyph_group.y_advance) * font_size;
                     }
 
                     if fragment.actual_text().is_some() {
@@ -994,17 +1001,24 @@ where
     font_identifier: FontIdentifier,
     glyphs: &'a [T],
     y_offset: f32,
+    y_advance: f32,
 }
 
 impl<'a, T> GlyphGroup<'a, T>
 where
     T: Glyph,
 {
-    pub fn new(font_identifier: FontIdentifier, glyphs: &'a [T], y_offset: f32) -> Self {
+    pub fn new(
+        font_identifier: FontIdentifier,
+        glyphs: &'a [T],
+        y_offset: f32,
+        y_advance: f32,
+    ) -> Self {
         GlyphGroup {
             font_identifier,
             glyphs,
             y_offset,
+            y_advance,
         }
     }
 }
@@ -1042,6 +1056,7 @@ where
             struct GlyphProps {
                 font_identifier: FontIdentifier,
                 y_offset: f32,
+                y_advance: f32,
             }
 
             fn func<U>(g: &U, font_container: RefMut<FontContainer>) -> GlyphProps
@@ -1054,6 +1069,7 @@ where
                 GlyphProps {
                     font_identifier,
                     y_offset: g.y_offset(),
+                    y_advance: g.y_advance(),
                 }
             }
 
@@ -1067,6 +1083,8 @@ where
 
                 if first.font_identifier != temp_glyph.font_identifier
                     || first.y_offset != temp_glyph.y_offset
+                    || first.y_advance != 0.0
+                    || temp_glyph.y_advance != 0.0
                 {
                     break;
                 }
@@ -1080,7 +1098,8 @@ where
 
         self.slice = tail;
 
-        let glyph_group = GlyphGroup::new(props.font_identifier, head, props.y_offset);
+        let glyph_group =
+            GlyphGroup::new(props.font_identifier, head, props.y_offset, props.y_advance);
 
         Some(glyph_group)
     }
