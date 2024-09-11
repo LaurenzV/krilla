@@ -1,4 +1,5 @@
-use crate::error::{KrillaError, KrillaResult};
+//! Drawing COLR-based glyphs to a surface.
+
 use crate::font::{Font, OutlineBuilder};
 use crate::object::color::rgb;
 use crate::object::color::rgb::Rgb;
@@ -15,76 +16,123 @@ use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
 /// Draw a COLR-based glyph on a surface.
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+    // Drawing COLR glyphs is a bit tricky, because it's possible that an error
+    // occurs while we are drawing, in which case we cannot revert it anymore since
+    // we already drew the instructions onto the surface. Because of this, we first
+    // convert the glyph into a more accessible bytecode representation and only
+    // if that succeeds do we iterate over the bytecode to draw onto the canvas.
+
     let colr_glyphs = font.font_ref().color_glyphs();
+    let colr_glyph = colr_glyphs.get(glyph)?;
 
-    if let Some(colr_glyph) = colr_glyphs.get(glyph) {
-        surface.push_transform(&Transform::from_scale(1.0, -1.0));
+    let mut colr_canvas = ColrBuilder::new(font.clone());
+    colr_glyph
+        .paint(font.location_ref(), &mut colr_canvas)
+        .ok()?;
+    let instructions = colr_canvas.finish()?;
 
-        let mut colr_canvas = ColrCanvas::new(font.clone(), surface);
-        colr_glyph
-            .paint(font.location_ref(), &mut colr_canvas)
-            .map_err(|_| KrillaError::GlyphDrawing("failed to draw colr glyph".to_string()))?;
+    surface.push_transform(&Transform::from_scale(1.0, -1.0));
+    interpret(instructions, surface);
+    surface.pop();
 
-        surface.pop();
-
-        Ok(Some(()))
-    } else {
-        Ok(None)
-    }
+    Some(())
 }
 
-/// The context necessary for drawing a COLR-based glyph.
-struct ColrCanvas<'a, 'b> {
-    font: Font,
-    clips: Vec<Vec<Path>>,
-    canvas_builder: &'b mut Surface<'a>,
-    transforms: Vec<Transform>,
-    error: KrillaResult<()>,
-}
+// Interpret the glyph bytecode
+fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
+    for instruction in instructions {
+        match instruction {
+            Instruction::Layer(blend, instructions) => {
+                surface.push_blend_mode(blend);
+                surface.push_isolated();
+                interpret(instructions, surface);
+                surface.pop();
+                surface.pop();
+            }
+            Instruction::Filled(fill, mut clips) => {
+                let filled = clips.split_off(clips.len() - 1);
 
-impl<'a, 'b> ColrCanvas<'a, 'b> {
-    pub fn new(font: Font, canvas_builder: &'b mut Surface<'a>) -> Self {
-        Self {
-            font,
-            canvas_builder,
-            transforms: vec![Transform::identity()],
-            clips: vec![vec![]],
-            error: Ok(()),
+                for path in &clips {
+                    surface.push_clip_path(path, &FillRule::NonZero);
+                }
+
+                surface.fill_path(&filled[0], *fill);
+
+                for _ in clips {
+                    surface.pop();
+                }
+            }
         }
     }
 }
 
-impl<'a, 'b> ColrCanvas<'a, 'b> {
+/// The context necessary for creating the bytecode of a COLR-based glyph.
+struct ColrBuilder {
+    font: Font,
+    clips: Vec<Vec<Path>>,
+    stack: Vec<Vec<Instruction>>,
+    layers: Vec<BlendMode>,
+    transforms: Vec<Transform>,
+    error: bool,
+}
+
+/// A bytecode instruction for drawing a COLR glyph.
+enum Instruction {
+    Layer(BlendMode, Vec<Instruction>),
+    Filled(Box<Fill>, Vec<Path>),
+}
+
+impl ColrBuilder {
+    pub fn new(font: Font) -> Self {
+        Self {
+            font,
+            stack: vec![vec![]],
+            transforms: vec![Transform::identity()],
+            clips: vec![vec![]],
+            layers: vec![],
+            error: false,
+        }
+    }
+
+    pub fn finish(mut self) -> Option<Vec<Instruction>> {
+        if self.error {
+            return None;
+        } else {
+            if let Some(instructions) = self.stack.pop() {
+                return Some(instructions);
+            }
+        }
+
+        None
+    }
+}
+
+impl ColrBuilder {
     fn palette_index_to_color(
         &self,
         palette_index: u16,
         alpha: f32,
-    ) -> KrillaResult<(rgb::Color, NormalizedF32)> {
+    ) -> Option<(rgb::Color, NormalizedF32)> {
         if palette_index != u16::MAX {
             let color = self
                 .font
                 .font_ref()
                 .cpal()
-                .map_err(|_| KrillaError::GlyphDrawing("missing cpal table".to_string()))?
-                .color_records_array()
-                .ok_or(KrillaError::GlyphDrawing(
-                    "missing color records array in cpal table".to_string(),
-                ))?
-                .map_err(|_| {
-                    KrillaError::GlyphDrawing("error while reading cpal table".to_string())
-                })?[palette_index as usize];
+                .ok()?
+                .color_records_array()?
+                .ok()?[palette_index as usize];
 
-            Ok((
+            Some((
                 rgb::Color::new(color.red, color.green, color.blue),
                 NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
             ))
         } else {
-            Ok((rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap()))
+            Some((rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap()))
         }
     }
 
-    fn stops(&self, stops: &[ColorStop]) -> KrillaResult<Vec<Stop<Rgb>>> {
+    fn stops(&self, stops: &[ColorStop]) -> Option<Vec<Stop<Rgb>>> {
         let mut converted_stops = vec![];
 
         for stop in stops {
@@ -97,7 +145,7 @@ impl<'a, 'b> ColrCanvas<'a, 'b> {
             })
         }
 
-        Ok(converted_stops)
+        Some(converted_stops)
     }
 }
 
@@ -116,12 +164,10 @@ impl ExtendExt for skrifa::color::Extend {
     }
 }
 
-impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
+impl ColorPainter for ColrBuilder {
     fn push_transform(&mut self, transform: skrifa::color::Transform) {
         let Some(last_transform) = self.transforms.last() else {
-            self.error = Err(KrillaError::GlyphDrawing(
-                "encountered imbalanced transform".to_string(),
-            ));
+            self.error = true;
             return;
         };
 
@@ -137,48 +183,38 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     }
 
     fn pop_transform(&mut self) {
-        self.transforms.pop();
+        let Some(_) = self.transforms.pop() else {
+            self.error = true;
+            return;
+        };
     }
 
     fn push_clip_glyph(&mut self, glyph_id: GlyphId) {
         let Some(mut old) = self.clips.last().cloned() else {
-            self.error = Err(KrillaError::GlyphDrawing(
-                "encountered imbalanced clip".to_string(),
-            ));
+            self.error = true;
             return;
         };
 
         let mut glyph_builder = OutlineBuilder(PathBuilder::new());
         let outline_glyphs = self.font.font_ref().outline_glyphs();
         let Some(outline_glyph) = outline_glyphs.get(glyph_id) else {
-            self.error = Err(KrillaError::GlyphDrawing(
-                "missing outline glyph".to_string(),
-            ));
+            self.error = true;
             return;
         };
 
-        let drawn_outline_glyph = outline_glyph
-            .draw(
-                DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()),
-                &mut glyph_builder,
-            )
-            .map_err(|_| KrillaError::GlyphDrawing("failed to draw outline glyph".to_string()));
-
-        match drawn_outline_glyph {
-            Ok(_) => {}
-            Err(e) => {
-                self.error = Err(e);
-                return;
-            }
-        }
+        let Ok(_) = outline_glyph.draw(
+            DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()),
+            &mut glyph_builder,
+        ) else {
+            self.error = true;
+            return;
+        };
 
         let Some(path) = glyph_builder
             .finish()
             .and_then(|p| p.transform(*self.transforms.last()?))
         else {
-            self.error = Err(KrillaError::GlyphDrawing(
-                "failed to build glyph path".to_string(),
-            ));
+            self.error = true;
             return;
         };
 
@@ -189,9 +225,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
 
     fn push_clip_box(&mut self, clip_box: BoundingBox<f32>) {
         let Some(mut old) = self.clips.last().cloned() else {
-            self.error = Err(KrillaError::GlyphDrawing(
-                "encountered imbalanced clip".to_string(),
-            ));
+            self.error = true;
             return;
         };
 
@@ -206,9 +240,7 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             .finish()
             .and_then(|p| p.transform(*self.transforms.last()?))
         else {
-            self.error = Err(KrillaError::GlyphDrawing(
-                "failed to build glyph path".to_string(),
-            ));
+            self.error = true;
             return;
         };
         old.push(path);
@@ -217,7 +249,10 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
     }
 
     fn pop_clip(&mut self) {
-        self.clips.pop();
+        let Some(_) = self.clips.pop() else {
+            self.error = true;
+            return;
+        };
     }
 
     fn fill(&mut self, brush: Brush<'_>) {
@@ -227,9 +262,9 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 alpha,
             } => {
                 let (color, alpha) = match self.palette_index_to_color(palette_index, alpha) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        self.error = Err(e);
+                    Some(c) => c,
+                    None => {
+                        self.error = true;
                         return;
                     }
                 };
@@ -246,17 +281,15 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 extend,
             } => {
                 let stops = match self.stops(color_stops) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        self.error = Err(e);
+                    Some(s) => s,
+                    None => {
+                        self.error = true;
                         return;
                     }
                 };
 
                 let Some(transform) = self.transforms.last().copied() else {
-                    self.error = Err(KrillaError::GlyphDrawing(
-                        "encountered imbalanced transform".to_string(),
-                    ));
+                    self.error = true;
                     return;
                 };
 
@@ -285,17 +318,15 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 extend,
             } => {
                 let stops = match self.stops(color_stops) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        self.error = Err(e);
+                    Some(s) => s,
+                    None => {
+                        self.error = true;
                         return;
                     }
                 };
 
                 let Some(transform) = self.transforms.last().copied() else {
-                    self.error = Err(KrillaError::GlyphDrawing(
-                        "encountered imbalanced transform".to_string(),
-                    ));
+                    self.error = true;
                     return;
                 };
 
@@ -325,17 +356,15 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
                 extend,
             } => {
                 let stops = match self.stops(color_stops) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        self.error = Err(e);
+                    Some(s) => s,
+                    None => {
+                        self.error = true;
                         return;
                     }
                 };
 
                 let Some(transform) = self.transforms.last().copied() else {
-                    self.error = Err(KrillaError::GlyphDrawing(
-                        "encountered imbalanced transform".to_string(),
-                    ));
+                    self.error = true;
                     return;
                 };
 
@@ -360,29 +389,21 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             // whole "visible" area with the fill. However, this seems to produce artifacts in
             // Google Chrome when zooming. So instead, what we do is that we apply all clip paths except
             // for the last one, and the last one we use to actually perform the fill.
-            let Some(mut clips) = self.clips.last().map(|paths| {
-                paths
-                    .iter()
-                    .map(|p| (p.clone(), FillRule::NonZero))
-                    .collect::<Vec<_>>()
-            }) else {
-                self.error = Err(KrillaError::GlyphDrawing(
-                    "failed to apply fill glyph".to_string(),
-                ));
+            let Some(clips) = self
+                .clips
+                .last()
+                .map(|paths| paths.iter().map(|p| p.clone()).collect::<Vec<_>>())
+            else {
+                self.error = true;
                 return;
             };
 
-            let filled = clips.split_off(clips.len() - 1);
+            let Some(stack) = self.stack.last_mut() else {
+                self.error = true;
+                return;
+            };
 
-            for (path, rule) in &clips {
-                self.canvas_builder.push_clip_path(path, rule);
-            }
-
-            self.canvas_builder.fill_path(&filled[0].0, fill);
-
-            for _ in clips {
-                self.canvas_builder.pop();
-            }
+            stack.push(Instruction::Filled(Box::new(fill), clips));
         }
     }
 
@@ -406,13 +427,23 @@ impl<'a, 'b> ColorPainter for ColrCanvas<'a, 'b> {
             CompositeMode::HslSaturation => BlendMode::Saturation,
             _ => BlendMode::Normal,
         };
-        self.canvas_builder.push_blend_mode(mode);
-        self.canvas_builder.push_isolated();
+
+        self.layers.push(mode);
+        self.stack.push(vec![]);
     }
 
     fn pop_layer(&mut self) {
-        self.canvas_builder.pop();
-        self.canvas_builder.pop();
+        let (Some(blend), Some(instructions)) = (self.layers.pop(), self.stack.pop()) else {
+            self.error = true;
+            return;
+        };
+
+        let Some(stack) = self.stack.last_mut() else {
+            self.error = true;
+            return;
+        };
+
+        stack.push(Instruction::Layer(blend, instructions));
     }
 }
 
@@ -423,7 +454,7 @@ mod tests {
     use krilla_macros::visreg;
     use skrifa::GlyphId;
 
-    #[visreg(document, settings_3)]
+    #[visreg(document)]
     fn colr_test_glyphs(document: &mut Document) {
         let font_data = COLR_TEST_GLYPHS.clone();
 
@@ -434,7 +465,9 @@ mod tests {
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
     }
 
-    #[visreg(document)]
+    // We don't run on pdf.js because it leads to a high pixel difference in CI
+    // for some reason.
+    #[visreg(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
     fn noto_color_emoji_colr(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_COLR.clone();
         all_glyphs_to_pdf(font_data, None, false, document);

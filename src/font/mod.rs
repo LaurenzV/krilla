@@ -17,7 +17,6 @@
 //! coordinates. Another limitation is that, when setting variation coordinates, only filling
 //! works, not stroking.
 
-use crate::error::KrillaResult;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
@@ -44,7 +43,7 @@ pub(crate) mod svg;
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
 
-/// An OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
+/// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
 ///
@@ -304,17 +303,17 @@ pub(crate) fn draw_color_glyph(
     glyph: GlyphId,
     base_transform: Transform,
     surface: &mut Surface,
-) -> KrillaResult<Option<GlyphSource>> {
+) -> Option<GlyphSource> {
     let mut glyph_source = None;
 
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
+    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
         glyph_source = Some(GlyphSource::Colr);
     } else if let Some(()) = {
         #[cfg(feature = "svg")]
-        let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings)?;
+        let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings);
         #[cfg(not(feature = "svg"))]
         let res = None;
 
@@ -323,7 +322,7 @@ pub(crate) fn draw_color_glyph(
         glyph_source = Some(GlyphSource::Svg);
     } else if let Some(()) = {
         #[cfg(feature = "raster-images")]
-        let res = bitmap::draw_glyph(font.clone(), glyph, surface)?;
+        let res = bitmap::draw_glyph(font.clone(), glyph, surface);
         #[cfg(not(feature = "raster-images"))]
         let res = None;
 
@@ -335,7 +334,7 @@ pub(crate) fn draw_color_glyph(
     surface.pop();
     surface.pop();
 
-    Ok(glyph_source)
+    glyph_source
 }
 
 #[derive(Clone)]
@@ -351,17 +350,11 @@ pub(crate) fn draw_glyph(
     outline_mode: Option<OutlineMode>,
     base_transform: Transform,
     surface: &mut Surface,
-) -> KrillaResult<Option<GlyphSource>> {
-    let mut glyph_source =
-        draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface)?;
-
-    if glyph_source.is_none() {
-        if let Some(()) = outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)? {
-            glyph_source = Some(GlyphSource::Outline);
-        }
-    }
-
-    Ok(glyph_source)
+) -> Option<GlyphSource> {
+    draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface).or_else(|| {
+        outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)
+            .map(|_| GlyphSource::Outline)
+    })
 }
 
 /// A unique CID identifier.

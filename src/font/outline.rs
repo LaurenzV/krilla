@@ -1,4 +1,5 @@
-use crate::error::{KrillaError, KrillaResult};
+//! Drawing outline-based glyphs to a surface.
+
 use crate::font::{Font, OutlineBuilder, OutlineMode};
 use crate::path::Fill;
 use crate::surface::Surface;
@@ -6,7 +7,7 @@ use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{Path, Transform};
 
-pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
+pub fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
@@ -16,12 +17,10 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),
                 &mut outline_builder,
             )
-            .map_err(|err| {
-                KrillaError::GlyphDrawing(format!("failed to draw outline glyph: {}", err))
-            })?;
+            .ok()?;
     }
 
-    Ok(outline_builder.finish())
+    outline_builder.finish()
 }
 
 /// Draw an outline-based glyph on a surface.
@@ -31,22 +30,20 @@ pub fn draw_glyph(
     outline_mode: Option<OutlineMode>,
     base_transform: Transform,
     surface: &mut Surface,
-) -> KrillaResult<Option<()>> {
-    if let Some(path) = glyph_path(font, glyph)?.and_then(|p| p.transform(base_transform)) {
-        match outline_mode {
-            None => surface.fill_path_impl(&path, Fill::default(), false),
-            Some(m) => match m {
-                OutlineMode::Fill(f) => surface.fill_path(&path, f),
-                OutlineMode::Stroke(s) => {
-                    surface.stroke_path(&path, s);
-                }
-            },
-        }
+) -> Option<()> {
+    let path = glyph_path(font, glyph).and_then(|p| p.transform(base_transform))?;
 
-        return Ok(Some(()));
+    match outline_mode {
+        None => surface.fill_path_impl(&path, Fill::default(), false),
+        Some(m) => match m {
+            OutlineMode::Fill(f) => surface.fill_path(&path, f),
+            OutlineMode::Stroke(s) => {
+                surface.stroke_path(&path, s);
+            }
+        },
     }
 
-    Ok(None)
+    Some(())
 }
 
 #[cfg(test)]
@@ -56,7 +53,7 @@ mod tests {
     use krilla_macros::visreg;
     use skrifa::GlyphId;
 
-    #[visreg(document, settings_4)]
+    #[visreg(document, settings_4, all)]
     fn noto_sans_type3_glyphs(document: &mut Document) {
         let font_data = NOTO_SANS.clone();
         all_glyphs_to_pdf(

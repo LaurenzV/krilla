@@ -1,4 +1,5 @@
-use crate::error::{KrillaError, KrillaResult};
+//! Drawing bitmap-based glyphs to a surface.
+
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::Font;
 use crate::object::image::Image;
@@ -7,68 +8,60 @@ use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
 
 /// Draw a bitmap-based glyph on a surface.
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> KrillaResult<Option<()>> {
+pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
     let metrics = font
         .font_ref()
         .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
 
     let bitmap_strikes = BitmapStrikes::new(font.font_ref());
 
-    if let Some(bitmap_glyph) = bitmap_strikes.iter().filter_map(|s| s.get(glyph)).last() {
-        let upem = metrics.units_per_em as f32;
+    let bitmap_glyph = bitmap_strikes.iter().filter_map(|s| s.get(glyph)).last()?;
+    let upem = metrics.units_per_em as f32;
 
-        match bitmap_glyph.data {
-            BitmapData::Png(data) => {
-                let image = Image::from_png(data).ok_or(KrillaError::GlyphDrawing(
-                    "failed to decode png".to_string(),
-                ))?;
-                let size = image.size();
+    return match bitmap_glyph.data {
+        BitmapData::Png(data) => {
+            let image = Image::from_png(data)?;
+            let size = image.size();
 
-                // Adapted from vello.
-                let scale_factor = upem / (bitmap_glyph.ppem_y);
-                let mut transform =
-                    Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
-                        .pre_scale(scale_factor, scale_factor)
-                        .pre_translate(
-                            -bitmap_glyph.inner_bearing_x,
-                            -bitmap_glyph.inner_bearing_y,
-                        );
+            // Adapted from vello.
+            let scale_factor = upem / (bitmap_glyph.ppem_y);
+            let mut transform =
+                Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
+                    .pre_scale(scale_factor, scale_factor)
+                    .pre_translate(-bitmap_glyph.inner_bearing_x, -bitmap_glyph.inner_bearing_y);
 
-                transform = match bitmap_glyph.placement_origin {
-                    Origin::TopLeft => transform,
-                    Origin::BottomLeft => transform.pre_translate(0.0, -image.size().height()),
-                };
+            transform = match bitmap_glyph.placement_origin {
+                Origin::TopLeft => transform,
+                Origin::BottomLeft => transform.pre_translate(0.0, -image.size().height()),
+            };
 
-                transform = if let Some(format) = bitmap_strikes.format() {
-                    if format == BitmapFormat::Sbix {
-                        // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
-                        // doesn't seem to be coming from the font and most likely is somehow hardcoded. On Windows,
-                        // this shift will not be applied. However, if this shift is not applied the emojis are a bit
-                        // too high up when being together with other text, so we try to imitate this.
-                        // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
-                        // We approximate this vertical shift that seems to be produced by it.
-                        // This value seems to be pretty close to what is happening on MacOS.
-                        transform
-                            .pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
-                    } else {
-                        transform
-                    }
+            transform = if let Some(format) = bitmap_strikes.format() {
+                if format == BitmapFormat::Sbix {
+                    // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
+                    // doesn't seem to be coming from the font and most likely is somehow hardcoded. On Windows,
+                    // this shift will not be applied. However, if this shift is not applied the emojis are a bit
+                    // too high up when being together with other text, so we try to imitate this.
+                    // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
+                    // We approximate this vertical shift that seems to be produced by it.
+                    // This value seems to be pretty close to what is happening on MacOS.
+                    transform
+                        .pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
                 } else {
                     transform
-                };
+                }
+            } else {
+                transform
+            };
 
-                surface.push_transform(&transform);
-                surface.draw_image(image, size);
-                surface.pop();
+            surface.push_transform(&transform);
+            surface.draw_image(image, size);
+            surface.pop();
 
-                return Ok(Some(()));
-            }
-            BitmapData::Bgra(_) => return Ok(None),
-            BitmapData::Mask(_) => return Ok(None),
+            Some(())
         }
-    }
-
-    Ok(None)
+        BitmapData::Bgra(_) => None,
+        BitmapData::Mask(_) => None,
+    };
 }
 
 mod utils {
@@ -453,13 +446,15 @@ mod tests {
     use krilla_macros::visreg;
     use std::sync::Arc;
 
-    #[visreg(document)]
+    // We don't run on pdf.js because it leads to a high pixel difference in CI
+    // for some reason.
+    #[visreg(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
     fn noto_color_emoji_cbdt(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
         all_glyphs_to_pdf(font_data, None, false, document);
     }
 
-    #[visreg(document)]
+    #[visreg(document, all)]
     #[cfg(target_os = "macos")]
     fn apple_color_emoji(document: &mut Document) {
         let font_data =

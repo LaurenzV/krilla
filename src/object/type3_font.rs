@@ -104,8 +104,6 @@ impl Type3Font {
         root_ref: Ref,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
-        // TODO: Remove this?
-        let ignore_invalid_glyphs = sc.serialize_settings.ignore_invalid_glyphs;
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
@@ -118,24 +116,14 @@ impl Type3Font {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
 
-                let glyph_type = match font::draw_glyph(
+                let glyph_type = font::draw_glyph(
                     self.font.clone(),
                     SvgSettings::default(),
                     *glyph_id,
                     None::<OutlineMode>,
                     Transform::default(),
                     &mut surface,
-                ) {
-                    Ok(g) => g,
-                    Err(e) => {
-                        if ignore_invalid_glyphs {
-                            surface.reset();
-                            None
-                        } else {
-                            return Err(e);
-                        }
-                    }
-                };
+                );
 
                 surface.finish();
                 let stream = stream_surface.finish();

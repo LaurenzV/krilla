@@ -140,8 +140,7 @@ impl<'a> Surface<'a> {
                 Some(outline_mode.clone()),
                 base_transform,
                 self,
-            )
-            .unwrap();
+            );
 
             cur_x += normalize(glyph.x_advance()) * font_size;
         }
@@ -330,12 +329,6 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions.push(PushInstruction::Mask(mask));
         self.sub_builders.push(ContentBuilder::new());
-    }
-
-    pub(crate) fn reset(&mut self) {
-        self.push_instructions = vec![];
-        self.sub_builders = vec![];
-        self.root_builder = ContentBuilder::new();
     }
 
     /// Push a new opacity, meaning that each subsequent graphics object will be

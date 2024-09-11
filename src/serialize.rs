@@ -61,9 +61,6 @@ pub struct SerializeSettings {
     pub ascii_compatible: bool,
     /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
-    /// Whether invalid glyphs should be ignored and drawn in blank
-    /// instead of erroring out (applies only to Type3 fonts).
-    pub ignore_invalid_glyphs: bool,
 }
 
 #[cfg(test)]
@@ -74,20 +71,12 @@ impl SerializeSettings {
             compress_content_streams: false,
             no_device_cs: false,
             force_type3_fonts: false,
-            ignore_invalid_glyphs: false,
         }
     }
 
     pub(crate) fn settings_2() -> Self {
         Self {
             no_device_cs: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_3() -> Self {
-        Self {
-            ignore_invalid_glyphs: true,
             ..Self::settings_1()
         }
     }
@@ -107,7 +96,6 @@ impl Default for SerializeSettings {
             compress_content_streams: true,
             no_device_cs: false,
             force_type3_fonts: false,
-            ignore_invalid_glyphs: false,
         }
     }
 }
