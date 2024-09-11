@@ -460,6 +460,7 @@ impl Drop for Surface<'_> {
     }
 }
 
+#[cfg(feature = "simple-text")]
 /// The direction of a text.
 pub enum TextDirection {
     /// Left to right.
@@ -472,6 +473,7 @@ pub enum TextDirection {
     BottomToTop,
 }
 
+#[cfg(feature = "simple-text")]
 impl From<TextDirection> for Direction {
     fn from(value: TextDirection) -> Self {
         match value {
