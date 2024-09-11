@@ -44,7 +44,9 @@ pub fn render_node(node: &Node, surface: &mut Surface, process_context: &mut Pro
     match node {
         Node::Group(g) => render(g, surface, process_context),
         Node::Path(p) => path::render(p, surface, process_context),
-        Node::Image(i) => image::render(i, surface, process_context),
+        Node::Image(i) => {
+            image::render(i, surface, process_context);
+        }
         Node::Text(t) => text::render(t, surface, process_context),
     }
 }

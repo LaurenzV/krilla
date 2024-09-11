@@ -7,45 +7,46 @@ use tiny_skia_path::Rect;
 use usvg::ImageKind;
 
 /// Render an image into a surface.
-pub fn render(image: &usvg::Image, surface: &mut Surface, process_context: &mut ProcessContext) {
+///
+/// Returns `None` if the image could not be rendered.
+pub fn render(
+    image: &usvg::Image,
+    surface: &mut Surface,
+    process_context: &mut ProcessContext,
+) -> Option<()> {
     if !image.is_visible() {
-        return;
+        return Some(());
     }
 
     match image.kind() {
         ImageKind::JPEG(d) => {
-            if let Some(image) = Image::from_jpeg(d) {
-                let size = image.size();
-                surface.draw_image(image, size);
-            }
+            let image = Image::from_jpeg(d)?;
+            let size = image.size();
+            surface.draw_image(image, size);
         }
         ImageKind::PNG(d) => {
-            if let Some(image) = Image::from_png(d) {
-                let size = image.size();
-                surface.draw_image(image, size);
-            }
+            let image = Image::from_png(d)?;
+            let size = image.size();
+            surface.draw_image(image, size);
         }
         ImageKind::GIF(d) => {
-            if let Some(image) = Image::from_gif(d) {
-                let size = image.size();
-                surface.draw_image(image, size);
-            }
+            let image = Image::from_gif(d)?;
+            let size = image.size();
+            surface.draw_image(image, size);
         }
         ImageKind::WEBP(d) => {
-            if let Some(image) = Image::from_webp(d) {
-                let size = image.size();
-                surface.draw_image(image, size);
-            }
+            let image = Image::from_webp(d)?;
+            let size = image.size();
+            surface.draw_image(image, size);
         }
         ImageKind::SVG(t) => {
-            surface.push_clip_path(
-                &Rect::from_xywh(0.0, 0.0, t.size().width(), t.size().height())
-                    .unwrap()
-                    .to_clip_path(),
-                &FillRule::NonZero,
-            );
+            let clip_path =
+                Rect::from_xywh(0.0, 0.0, t.size().width(), t.size().height())?.to_clip_path();
+            surface.push_clip_path(&clip_path, &FillRule::NonZero);
             group::render(t.root(), surface, process_context);
             surface.pop();
         }
     }
+
+    Some(())
 }

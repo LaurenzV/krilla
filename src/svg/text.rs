@@ -25,7 +25,11 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
         }
 
         for glyph in &span.positioned_glyphs {
-            let font = process_context.fonts.get(&glyph.font).cloned().unwrap();
+            // Ignore glyph if font can't be fetched.
+            let Some(font) = process_context.fonts.get(&glyph.font).cloned() else {
+                continue;
+            };
+
             let upem = font.units_per_em();
 
             // The text transform contains the scale transform `font_size / upem`, we need to invert that
@@ -101,7 +105,8 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
-                    // We always outline strokes, so that text won't be selected two times.
+                    // We always outline strokes in this case,
+                    // so that text won't be selected two times.
                     PaintOrder::FillAndStroke => {
                         fill_op(
                             surface,

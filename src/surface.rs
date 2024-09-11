@@ -431,11 +431,7 @@ impl<'a> Surface<'a> {
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
     /// which makes it easier to integrate `cosmic-text` with this library.
     #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(
-        &mut self,
-        db: &mut Database,
-        ids: Option<Vec<ID>>,
-    ) -> Option<HashMap<ID, Font>> {
+    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
         self.sc.convert_fontdb(db, ids)
     }
 
