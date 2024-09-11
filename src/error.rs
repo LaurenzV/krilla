@@ -12,8 +12,6 @@ pub enum KrillaError {
     /// A font-related error, most likely indicated that the font is either not
     /// supported or has issues.
     Font(String),
-    /// A font-related error when attempting to draw a glyph.
-    GlyphDrawing(String),
     /// A user-related error, indicating API misuse (for example attempting to add
     /// a link to a page that doesn't exist).
     UserError(String),
