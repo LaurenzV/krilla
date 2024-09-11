@@ -36,11 +36,16 @@ pub fn draw_glyph(
         let document = roxmltree::Document::parse(xml)
             .map_err(|_| KrillaError::GlyphDrawing("failed to parse svg for glyph".to_string()))?;
 
-        // TODO: Add cache for SVG glyphs
+        // Reparsing every time might be pretty slow in some cases, because Noto Color Emoji
+        // for example contains hundreds of glyphs in the same SVG document, meaning that we have
+        // to reparse it every time. However, Twitter Color Emoji does have each glyph in a
+        // separate SVG document, and since we use COLRv1 for Noto Color Emoji anyway, this is
+        // good enough.
         let opts = usvg::Options::default();
         let tree = usvg::Tree::from_xmltree(&document, &opts).map_err(|_| {
             KrillaError::GlyphDrawing("failed to convert SVG for glyph".to_string())
         })?;
+
         if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
             svg::render_node(node, tree.fontdb().clone(), svg_settings, surface)
         } else {
