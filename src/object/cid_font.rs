@@ -252,6 +252,7 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use crate::font::Font;
+    use std::sync::Arc;
 
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializerContext};
@@ -337,5 +338,41 @@ mod tests {
                 cid_font.set_codepoints(4, "L".to_string());
             }
         }
+    }
+
+    #[visreg]
+    fn cid_font_true_type_collection(surface: &mut Surface) {
+        let font_data = Arc::new(std::fs::read("/System/Library/Fonts/PingFang.ttc").unwrap());
+        let font_1 = Font::new(font_data.clone(), 0, vec![]).unwrap();
+        let font_2 = Font::new(font_data.clone(), 7, vec![]).unwrap();
+        let font_3 = Font::new(font_data, 15, vec![]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 75.0),
+            Fill::default(),
+            font_1.clone(),
+            20.0,
+            &[],
+            "这是一段测试文字。",
+            false,
+        );
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font_2.clone(),
+            20.0,
+            &[],
+            "这是一段测试文字。",
+            false,
+        );
+        surface.fill_text(
+            Point::from_xy(0.0, 125.0),
+            Fill::default(),
+            font_3.clone(),
+            20.0,
+            &[],
+            "这是一段测试文字。",
+            false,
+        );
     }
 }

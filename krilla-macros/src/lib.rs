@@ -166,6 +166,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut document = false;
     let mut is_svg = false;
     let mut ignore = false;
+    let mut only_macos = false;
 
     if !attrs.identifiers.iter().any(|ident| {
         let string_ident = ident.to_string();
@@ -197,6 +198,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             "document" => document = true,
             "svg" => is_svg = true,
             "ignore" => ignore = true,
+            "macos" => only_macos = true,
             "all" => {
                 pdfium = true;
                 mupdf = true;
@@ -258,7 +260,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             quote! {}
         };
 
-        let quartz_snippet = if renderer == Renderer::Quartz {
+        let quartz_snippet = if renderer == Renderer::Quartz || only_macos {
             quote! { #[cfg(target_os = "macos")] }
         } else {
             quote! {}

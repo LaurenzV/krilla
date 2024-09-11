@@ -1,4 +1,4 @@
-//! Text and font font support.
+//! Text and font support.
 //!
 //! krilla has extensive support for OpenType fonts. It supports CFF-based as well
 //! as glyf-based OpenType fonts. In addition to that, krilla also supports
@@ -8,7 +8,7 @@
 //!
 //! Even better is the fact that you do not need to take care of choosing the right
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
-//! an appropriate index and variation coordinates,
+//! an appropriate index and variation coordinates.
 //!
 //! krilla, in principle, also supports variable fonts. However, at the moment, variable
 //! fonts are not encoded in the most efficient way (they are stored as Type3 fonts instead
@@ -43,7 +43,6 @@ pub(crate) mod svg;
 
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
-// TODO: Test TrueType collection
 
 /// An OpenType font. Can be a TrueType, OpenType fonts or TrueType collections.
 /// It holds a reference to the underlying data as well as some basic information
