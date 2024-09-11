@@ -302,10 +302,12 @@ pub(crate) fn draw_color_glyph(
     #[cfg(feature = "svg")] svg_settings: SvgSettings,
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
+    base_transform: Transform,
     surface: &mut Surface,
 ) -> KrillaResult<Option<GlyphSource>> {
     let mut glyph_source = None;
 
+    surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
     if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface)? {
@@ -331,6 +333,7 @@ pub(crate) fn draw_color_glyph(
     }
 
     surface.pop();
+    surface.pop();
 
     Ok(glyph_source)
 }
@@ -346,12 +349,13 @@ pub(crate) fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     outline_mode: Option<OutlineMode>,
+    base_transform: Transform,
     surface: &mut Surface,
 ) -> KrillaResult<Option<GlyphSource>> {
-    let mut glyph_source = draw_color_glyph(font.clone(), svg_settings, glyph, surface)?;
+    let mut glyph_source = draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface)?;
 
     if glyph_source.is_none() {
-        if let Some(()) = outline::draw_glyph(font, glyph, outline_mode, surface)? {
+        if let Some(()) = outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)? {
             glyph_source = Some(GlyphSource::Outline);
         }
     }

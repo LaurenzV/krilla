@@ -125,11 +125,11 @@ impl<'a> Surface<'a> {
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
-            self.push_transform(&Transform::from_translate(
+            let mut base_transform = Transform::from_translate(
                 cur_x + normalize(glyph.x_offset()) * font_size,
                 y - normalize(glyph.y_offset()) * font_size,
-            ));
-            self.push_transform(&Transform::from_scale(
+            );
+            base_transform = base_transform.pre_concat(Transform::from_scale(
                 font_size / font.units_per_em(),
                 -font_size / font.units_per_em(),
             ));
@@ -138,11 +138,11 @@ impl<'a> Surface<'a> {
                 SvgSettings::default(),
                 glyph.glyph_id(),
                 Some(outline_mode.clone()),
+                base_transform,
                 self,
             )
             .unwrap();
-            self.pop();
-            self.pop();
+
             cur_x += normalize(glyph.x_advance()) * font_size;
         }
     }

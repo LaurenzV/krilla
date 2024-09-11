@@ -1,3 +1,5 @@
+//! Drawing SVG files to a surface.
+
 use crate::font::Font;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;

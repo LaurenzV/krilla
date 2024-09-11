@@ -4,7 +4,7 @@ use crate::path::Fill;
 use crate::surface::Surface;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
-use tiny_skia_path::Path;
+use tiny_skia_path::{Path, Transform};
 
 pub fn glyph_path(font: Font, glyph: GlyphId) -> KrillaResult<Option<Path>> {
     let outline_glyphs = font.font_ref().outline_glyphs();
@@ -29,9 +29,10 @@ pub fn draw_glyph(
     font: Font,
     glyph: GlyphId,
     outline_mode: Option<OutlineMode>,
+    base_transform: Transform,
     surface: &mut Surface,
 ) -> KrillaResult<Option<()>> {
-    if let Some(path) = glyph_path(font, glyph)? {
+    if let Some(path) = glyph_path(font, glyph)?.and_then(|p| p.transform(base_transform)) {
         match outline_mode {
             None => surface.fill_path_impl(&path, Fill::default(), false),
             Some(m) => match m {

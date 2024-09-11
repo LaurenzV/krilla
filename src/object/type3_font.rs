@@ -124,6 +124,7 @@ impl Type3Font {
                     svg_settings,
                     *glyph_id,
                     None::<OutlineMode>,
+                    Transform::default(),
                     &mut surface,
                 ) {
                     Ok(g) => g,

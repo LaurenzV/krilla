@@ -11,7 +11,6 @@ use usvg::{NormalizedF32, PaintOrder};
 
 /// Render a text into a surface.
 pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {
-    // TODO: Add possibility to render as paths instead
     for span in text.layouted() {
         if !span.visible {
             continue;
@@ -58,7 +57,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 )
             });
 
-            let fill_op = |sb: &mut Surface, fill: Fill, font: Font| {
+            let fill_op = |sb: &mut Surface, fill: Fill, font: Font, embed_text: bool| {
                 sb.fill_glyphs(
                     Point::from_xy(0.0, 0.0),
                     fill,
@@ -74,11 +73,11 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     &glyph.text,
                     span.font_size.get(),
                     GlyphUnits::UnitsPerEm,
-                    false,
+                    !embed_text,
                 );
             };
 
-            let stroke_op = |sb: &mut Surface, stroke: Stroke, font: Font| {
+            let stroke_op = |sb: &mut Surface, stroke: Stroke, font: Font, embed_text: bool| {
                 sb.stroke_glyphs(
                     Point::from_xy(0.0, 0.0),
                     stroke,
@@ -94,7 +93,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     &glyph.text,
                     span.font_size.get(),
                     GlyphUnits::UnitsPerEm,
-                    false,
+                    !embed_text,
                 );
             };
 
@@ -102,20 +101,22 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
+                    // We always outline strokes, so that text won't be selected two times.
+
                     PaintOrder::FillAndStroke => {
-                        fill_op(surface, fill, font.clone());
-                        stroke_op(surface, stroke, font);
+                        fill_op(surface, fill, font.clone(), process_context.svg_settings.embed_text);
+                        stroke_op(surface, stroke, font, false);
                     }
                     PaintOrder::StrokeAndFill => {
-                        stroke_op(surface, stroke, font.clone());
-                        fill_op(surface, fill, font);
+                        stroke_op(surface, stroke, font.clone(), false);
+                        fill_op(surface, fill, font, process_context.svg_settings.embed_text);
                     }
                 },
                 (Some(fill), None) => {
-                    fill_op(surface, fill, font);
+                    fill_op(surface, fill, font, process_context.svg_settings.embed_text);
                 }
                 (None, Some(stroke)) => {
-                    stroke_op(surface, stroke, font);
+                    stroke_op(surface, stroke, font, process_context.svg_settings.embed_text);
                 }
                 // Emulate invisible glyph by drawing it with an opacity of zero.
                 (None, None) => fill_op(
@@ -126,6 +127,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                         rule: Default::default(),
                     },
                     font,
+                    process_context.svg_settings.embed_text
                 ),
             }
 
