@@ -1,3 +1,4 @@
+use crate::metadata::Metadata;
 use crate::serialize::SerializeSettings;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
@@ -21,6 +22,8 @@ pub struct ChunkContainer {
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,
     pub(crate) patterns: Vec<Chunk>,
+
+    pub(crate) metadata: Option<Metadata>,
 }
 
 impl ChunkContainer {
@@ -42,6 +45,8 @@ impl ChunkContainer {
             x_objects: vec![],
             shading_functions: vec![],
             patterns: vec![],
+
+            metadata: None,
         }
     }
 
@@ -156,6 +161,10 @@ impl ChunkContainer {
             ext_g_states, images, masks, x_objects,
             shading_functions, patterns
         );
+
+        if let Some(metadata) = self.metadata {
+            metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
+        }
 
         pdf
     }

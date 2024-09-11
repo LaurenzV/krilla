@@ -4,6 +4,7 @@ use crate::color::{ColorSpaceType, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
+use crate::metadata::Metadata;
 use crate::object::cid_font::CIDFont;
 use crate::object::color::rgb::Srgb;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
@@ -158,6 +159,10 @@ impl SerializerContext {
 
     pub fn set_outline(&mut self, outline: Outline) {
         self.outline = Some(outline);
+    }
+
+    pub fn set_metadata(&mut self, metadata: Metadata) {
+        self.chunk_container.metadata = Some(metadata);
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {
