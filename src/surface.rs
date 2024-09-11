@@ -209,8 +209,9 @@ impl<'a> Surface<'a> {
         features: &[Feature],
         text: &str,
         outlined: bool,
+        direction: Option<TextDirection>,
     ) {
-        let glyphs = naive_shape(text, font.clone(), features, font_size);
+        let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
 
         self.fill_glyphs(
             start,
@@ -287,8 +288,9 @@ impl<'a> Surface<'a> {
         features: &[Feature],
         text: &str,
         outlined: bool,
+        direction: Option<TextDirection>,
     ) {
-        let glyphs = naive_shape(text, font.clone(), features, font_size);
+        let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
 
         self.stroke_glyphs(
             start,
@@ -458,9 +460,38 @@ impl Drop for Surface<'_> {
     }
 }
 
+/// The direction of a text.
+pub enum TextDirection {
+    /// Left to right.
+    LeftToRight,
+    /// Right to left.
+    RightToLeft,
+    /// Top to bottom.
+    TopToBottom,
+    /// Bottom to top.
+    BottomToTop,
+}
+
+impl From<TextDirection> for Direction {
+    fn from(value: TextDirection) -> Self {
+        match value {
+            TextDirection::LeftToRight => Direction::LeftToRight,
+            TextDirection::RightToLeft => Direction::RightToLeft,
+            TextDirection::TopToBottom => Direction::TopToBottom,
+            TextDirection::BottomToTop => Direction::BottomToTop,
+        }
+    }
+}
+
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
-fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<KrillaGlyph> {
+fn naive_shape(
+    text: &str,
+    font: Font,
+    features: &[Feature],
+    size: f32,
+    direction: Option<TextDirection>,
+) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let mut rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
     for (tag, val) in font.variations() {
@@ -470,6 +501,10 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<K
     let mut buffer = UnicodeBuffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
+
+    if let Some(direction) = direction {
+        buffer.set_direction(direction.into());
+    }
 
     let dir = buffer.direction();
 
@@ -486,7 +521,7 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<K
 
         let start = start_info.cluster as usize;
 
-        let end = if dir == Direction::LeftToRight {
+        let end = if dir == Direction::LeftToRight || dir == Direction::TopToBottom {
             let mut e = i.checked_add(1);
             loop {
                 if let Some(index) = e {
@@ -524,6 +559,7 @@ fn naive_shape(text: &str, font: Font, features: &[Feature], size: f32) -> Vec<K
             (pos.x_advance as f32 / font.units_per_em()) * size,
             (pos.x_offset as f32 / font.units_per_em()) * size,
             (pos.y_offset as f32 / font.units_per_em()) * size,
+            (pos.y_advance as f32 / font.units_per_em()) * size,
             start..end,
         ));
     }
@@ -537,17 +573,77 @@ mod tests {
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::path::Fill;
-    use crate::surface::Stroke;
     use crate::surface::Surface;
+    use crate::surface::{Stroke, TextDirection};
     use crate::tests::{
         basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
         rect_to_path, red_fill, red_stroke, FONTDB, NOTO_COLOR_EMOJI_COLR, NOTO_SANS,
-        NOTO_SANS_DEVANAGARI, SVGS_PATH,
+        NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
     use tiny_skia_path::{Point, Size, Transform};
+
+    #[visreg]
+    fn text_direction_ltr(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "你好这是一段则是文字",
+            false,
+            Some(TextDirection::LeftToRight),
+        );
+    }
+
+    #[visreg]
+    fn text_direction_rtl(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "你好这是一段则是文字",
+            false,
+            Some(TextDirection::RightToLeft),
+        );
+    }
+
+    #[visreg]
+    fn text_direction_ttb(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(100.0, 0.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "你好这是一段则是文字",
+            false,
+            Some(TextDirection::TopToBottom),
+        );
+    }
+
+    #[visreg]
+    fn text_direction_btt(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
+        surface.fill_text(
+            Point::from_xy(100.0, 0.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "你好这是一段则是文字",
+            false,
+            Some(TextDirection::BottomToTop),
+        );
+    }
 
     #[snapshot(stream)]
     fn stream_path_single_with_rgb(surface: &mut Surface) {
@@ -621,6 +717,7 @@ mod tests {
             &[],
             "hi there",
             false,
+            None,
         );
     }
 
@@ -634,6 +731,7 @@ mod tests {
             &[],
             "hi there",
             false,
+            None,
         );
     }
 
@@ -647,6 +745,7 @@ mod tests {
             &[],
             "यह कुछ जटिल पाठ है.",
             false,
+            None,
         );
     }
 
@@ -660,6 +759,7 @@ mod tests {
             &[],
             "यु॒धा नर॑ ऋ॒ष्वा ",
             false,
+            None,
         );
     }
 
@@ -673,6 +773,7 @@ mod tests {
             &[],
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
             false,
+            None,
         );
     }
 
@@ -686,6 +787,7 @@ mod tests {
             &[],
             "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
             false,
+            None,
         );
     }
 
@@ -765,6 +867,7 @@ mod tests {
             &[],
             "red outlined text",
             true,
+            None,
         );
 
         surface.fill_text(
@@ -775,6 +878,7 @@ mod tests {
             &[],
             "blue outlined text",
             true,
+            None,
         );
 
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
@@ -787,6 +891,7 @@ mod tests {
             &[],
             "😄😁😆",
             true,
+            None,
         );
     }
 
@@ -801,6 +906,7 @@ mod tests {
             &[],
             "red outlined text",
             true,
+            None,
         );
 
         surface.stroke_text(
@@ -811,6 +917,7 @@ mod tests {
             &[],
             "blue outlined text",
             true,
+            None,
         );
 
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
@@ -823,6 +930,7 @@ mod tests {
             &[],
             "😄😁😆",
             true,
+            None,
         );
     }
 
@@ -837,6 +945,7 @@ mod tests {
             &[],
             "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
             false,
+            None,
         );
     }
 
@@ -851,6 +960,7 @@ mod tests {
             &[],
             "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
             true,
+            None,
         );
     }
 }

@@ -496,7 +496,7 @@ pub fn all_glyphs_to_pdf(
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
-            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0..text.len())],
+            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0.0, 0..text.len())],
             font.clone(),
             &text,
             size as f32,
