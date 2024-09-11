@@ -638,7 +638,7 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
     stream_builder.finish()
 }
 
-static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
+pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     let mut fontdb = fontdb::Database::new();
     fontdb.load_fonts_dir(ASSETS_PATH.join("svg_fonts"));
 

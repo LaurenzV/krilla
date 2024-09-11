@@ -552,8 +552,8 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{
         basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
-        rect_to_path, red_fill, red_stroke, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI,
-        SVGS_PATH,
+        rect_to_path, red_fill, red_stroke, FONTDB, NOTO_COLOR_EMOJI_COLR, NOTO_SANS,
+        NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
@@ -725,6 +725,24 @@ mod tests {
     fn svg_simple(surface: &mut Surface) {
         let tree = sample_svg();
         surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    }
+
+    #[visreg]
+    fn svg_outlined_text(surface: &mut Surface) {
+        let data = std::fs::read(SVGS_PATH.join("resvg_text_text_simple_case.svg")).unwrap();
+        let tree = usvg::Tree::from_data(
+            &data,
+            &usvg::Options {
+                fontdb: FONTDB.clone(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let settings = SvgSettings {
+            embed_text: false,
+            ..Default::default()
+        };
+        surface.draw_svg(&tree, tree.size(), settings);
     }
 
     #[visreg]
