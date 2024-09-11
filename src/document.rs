@@ -15,6 +15,7 @@
 //! [`Page`]: crate::page::Page
 
 use crate::error::KrillaResult;
+use crate::metadata::Metadata;
 use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
@@ -60,6 +61,11 @@ impl Document {
     /// Set the outline of the document.
     pub fn set_outline(&mut self, outline: Outline) {
         self.serializer_context.set_outline(outline);
+    }
+
+    /// Set the metadata of the document.
+    pub fn set_metadata(&mut self, metadata: Metadata) {
+        self.serializer_context.set_metadata(metadata);
     }
 
     /// Attempt to write the document to a PDF.
@@ -143,9 +149,43 @@ impl Default for PageSettings {
 
 #[cfg(test)]
 mod tests {
+    use crate::metadata::Metadata;
     use crate::Document;
     use krilla_macros::snapshot;
+    use pdf_writer::Date;
 
     #[snapshot(document)]
     fn empty_document(_: &mut Document) {}
+
+    #[snapshot(document)]
+    fn metadata_empty(document: &mut Document) {
+        let metadata = Metadata::new();
+        document.set_metadata(metadata);
+    }
+
+    #[snapshot(document)]
+    fn metadata_full(document: &mut Document) {
+        let date = Date::new(2024)
+            .month(11)
+            .day(8)
+            .hour(22)
+            .minute(23)
+            .second(18)
+            .utc_offset_hour(1)
+            .utc_offset_minute(12);
+        let metadata = Metadata::new()
+            .creation_date(date)
+            .subject("A very interesting subject".to_string())
+            .modification_date(date)
+            .creator("krilla".to_string())
+            .producer("krilla".to_string())
+            .keywords(vec![
+                "keyword1".to_string(),
+                "keyword2".to_string(),
+                "keyword3".to_string(),
+            ])
+            .title("An awesome title".to_string())
+            .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()]);
+        document.set_metadata(metadata);
+    }
 }
