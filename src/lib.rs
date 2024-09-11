@@ -28,6 +28,7 @@ For more examples, feel free to take a look at the [examples] directory of the G
 # use krilla::paint::Paint;
 # use krilla::path::Fill;
 # use krilla::{Document, PageSettings};
+# use krilla::SvgSettings;
 # use std::path::PathBuf;
 # use std::sync::Arc;
 # use usvg::NormalizedF32;
@@ -88,7 +89,7 @@ let svg_size = svg_tree.size();
 let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
 let mut surface = page.surface();
 // Draw the SVG.
-surface.draw_svg(&svg_tree, svg_size);
+surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
 
 // Finish up and write the resulting PDF.
 surface.finish();

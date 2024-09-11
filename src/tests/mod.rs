@@ -9,7 +9,7 @@ use crate::path::{Fill, Stroke};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
-use crate::SerializeSettings;
+use crate::{SerializeSettings, SvgSettings};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
 use once_cell::sync::Lazy;
@@ -667,7 +667,7 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
 
     let mut page = d.start_page_with(PageSettings::new(tree.size().width(), tree.size().height()));
     let mut surface = page.surface();
-    surface.draw_svg(&tree, tree.size());
+    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
     surface.finish();
     page.finish();
 

@@ -352,7 +352,8 @@ pub(crate) fn draw_glyph(
     base_transform: Transform,
     surface: &mut Surface,
 ) -> KrillaResult<Option<GlyphSource>> {
-    let mut glyph_source = draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface)?;
+    let mut glyph_source =
+        draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface)?;
 
     if glyph_source.is_none() {
         if let Some(()) = outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)? {

@@ -102,9 +102,13 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {
                     // We always outline strokes, so that text won't be selected two times.
-
                     PaintOrder::FillAndStroke => {
-                        fill_op(surface, fill, font.clone(), process_context.svg_settings.embed_text);
+                        fill_op(
+                            surface,
+                            fill,
+                            font.clone(),
+                            process_context.svg_settings.embed_text,
+                        );
                         stroke_op(surface, stroke, font, false);
                     }
                     PaintOrder::StrokeAndFill => {
@@ -116,7 +120,12 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                     fill_op(surface, fill, font, process_context.svg_settings.embed_text);
                 }
                 (None, Some(stroke)) => {
-                    stroke_op(surface, stroke, font, process_context.svg_settings.embed_text);
+                    stroke_op(
+                        surface,
+                        stroke,
+                        font,
+                        process_context.svg_settings.embed_text,
+                    );
                 }
                 // Emulate invisible glyph by drawing it with an opacity of zero.
                 (None, None) => fill_op(
@@ -127,7 +136,7 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                         rule: Default::default(),
                     },
                     font,
-                    process_context.svg_settings.embed_text
+                    process_context.svg_settings.embed_text,
                 ),
             }
 

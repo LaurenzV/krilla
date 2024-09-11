@@ -1,11 +1,11 @@
 use crate::error::KrillaResult;
-use crate::font;
 use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
+use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
@@ -104,7 +104,6 @@ impl Type3Font {
         root_ref: Ref,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
-        let svg_settings = sc.serialize_settings.svg_settings;
         // TODO: Remove this?
         let ignore_invalid_glyphs = sc.serialize_settings.ignore_invalid_glyphs;
 
@@ -121,7 +120,7 @@ impl Type3Font {
 
                 let glyph_type = match font::draw_glyph(
                     self.font.clone(),
-                    svg_settings,
+                    SvgSettings::default(),
                     *glyph_id,
                     None::<OutlineMode>,
                     Transform::default(),

@@ -34,14 +34,14 @@ pub struct SvgSettings {
     pub filter_scale: f32,
     /// Whether text should be embedded as properly selectable text. Otherwise,
     /// it will be drawn as outlined paths instead.
-    pub embed_text: bool
+    pub embed_text: bool,
 }
 
 impl Default for SvgSettings {
     fn default() -> Self {
         Self {
             filter_scale: 1.5,
-            embed_text: true
+            embed_text: true,
         }
     }
 }
@@ -51,8 +51,6 @@ impl Default for SvgSettings {
 pub struct SerializeSettings {
     /// Whether content streams should be compressed.
     pub compress_content_streams: bool,
-    /// The settings for SVG conversion.
-    pub svg_settings: SvgSettings,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
     ///
@@ -76,7 +74,6 @@ impl SerializeSettings {
             compress_content_streams: false,
             no_device_cs: false,
             force_type3_fonts: false,
-            svg_settings: SvgSettings::default(),
             ignore_invalid_glyphs: false,
         }
     }
@@ -111,7 +108,6 @@ impl Default for SerializeSettings {
             no_device_cs: false,
             force_type3_fonts: false,
             ignore_invalid_glyphs: false,
-            svg_settings: SvgSettings::default(),
         }
     }
 }

@@ -400,7 +400,12 @@ impl<'a> Surface<'a> {
 
     #[cfg(feature = "svg")]
     /// Draw a new SVG image.
-    pub fn draw_svg(&mut self, tree: &usvg::Tree, size: Size) -> Option<()> {
+    pub fn draw_svg(
+        &mut self,
+        tree: &usvg::Tree,
+        size: Size,
+        svg_settings: SvgSettings,
+    ) -> Option<()> {
         let transform = Transform::from_scale(
             size.width() / tree.size().width(),
             size.height() / tree.size().height(),
@@ -412,7 +417,7 @@ impl<'a> Surface<'a> {
                 .to_clip_path(),
             &FillRule::NonZero,
         );
-        svg::render_tree(tree, self.sc.serialize_settings.svg_settings, self);
+        svg::render_tree(tree, svg_settings, self);
         self.pop();
         self.pop();
 
@@ -550,6 +555,7 @@ mod tests {
         rect_to_path, red_fill, red_stroke, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_DEVANAGARI,
         SVGS_PATH,
     };
+    use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
     use tiny_skia_path::{Point, Size, Transform};
@@ -718,12 +724,16 @@ mod tests {
     #[visreg]
     fn svg_simple(surface: &mut Surface) {
         let tree = sample_svg();
-        surface.draw_svg(&tree, tree.size());
+        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
     }
 
     #[visreg]
     fn svg_resized(surface: &mut Surface) {
-        surface.draw_svg(&sample_svg(), Size::from_wh(120.0, 80.0).unwrap());
+        surface.draw_svg(
+            &sample_svg(),
+            Size::from_wh(120.0, 80.0).unwrap(),
+            SvgSettings::default(),
+        );
     }
 
     #[visreg]
@@ -733,7 +743,7 @@ mod tests {
         let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
 
         surface.push_transform(&Transform::from_translate(100.0, 0.0));
-        surface.draw_svg(&tree, tree.size());
+        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
         surface.pop();
     }
 
