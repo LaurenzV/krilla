@@ -354,6 +354,9 @@ impl<'a> Surface<'a> {
     }
 
     /// Pop the last `push` instruction.
+    ///
+    /// # Panics
+    /// Panics if the there wasn't a corresponding `push` to the `pop`.
     pub fn pop(&mut self) {
         match self.push_instructions.pop().unwrap() {
             PushInstruction::Transform => {
@@ -430,7 +433,10 @@ impl<'a> Surface<'a> {
         self.sc.convert_fontdb(db, ids)
     }
 
-    /// A convenience method for dropping the current surface.
+    /// A convenience method for `std::mem::drop`.
+    ///
+    /// # Panics
+    /// Panics if the push/pop difference is not 0.
     pub fn finish(self) {}
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {

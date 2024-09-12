@@ -134,8 +134,7 @@ impl ContentBuilder {
             return Some(());
         }
 
-        // TODO: Revisit whether we shouldn't just use a dummy bbox instead.
-        let stroke_bbox = calculate_stroke_bbox(&stroke, path)?;
+        let stroke_bbox = calculate_stroke_bbox(&stroke, path).unwrap_or(path.bounds());
 
         self.apply_isolated_op(
             |sb| {
@@ -863,6 +862,23 @@ where
     }
 }
 
+/// In PDF, correspondences between glyphs and Unicode codepoints are expressed
+/// via a CMAP. In a CMAP, you can assign a sequence of unicode codepoints to each
+/// glyph. There are two issues with this approach:
+/// - How to deal with the fact that the same glyph might be assigned two different codepoints
+/// in different contexts (i.e. space and NZWJ).
+/// - How to deal with complex shaping scenarios, where there is not a one-to-one or
+/// one-to-many correspondence between glyphs and codepoints, but instead a many-to-one
+/// or many-to-many mapping.
+///
+/// The answer to this is the `ActualText` feature of PDF, which allows to define some custom
+/// actual text for a number of glyphs, which overrides anything else. Unfortunately, this
+/// is seemingly only supported in Acrobat and Chrome, but it's the only proper way of addressing
+/// this issue.
+///
+/// This is the task of the `TextSpanner`. Given a sequence of glyphs, it segments the
+/// sequence into subruns of glyphs that either do need to be wrapped in an actual text
+/// attribute, or not.
 pub(crate) struct TextSpanner<'a, 'b, T>
 where
     T: Glyph,
@@ -908,8 +924,11 @@ where
             let range = g.text_range().clone();
             let text = &text[range.clone()];
             let codepoints = pdf_font.get_codepoints(pdf_glyph);
+            // Check if the glyph has already been assigned codepoints that don't match the
+            // one we are seeing right now.
             let incompatible_codepoint = codepoints.is_some() && codepoints != Some(text);
 
+            // Only set the codepoint if there isn't a previous one.
             if !incompatible_codepoint {
                 pdf_font.set_codepoints(pdf_glyph, text.to_string());
             }
@@ -921,6 +940,9 @@ where
         let mut count = 1;
 
         let mut iter = self.slice.iter();
+
+        // Get the range of the first glyph, as well as whether it's
+        // incompatible.
         let (first_range, first_incompatible) =
             func(iter.next()?, self.font_container.borrow_mut(), self.text);
 
@@ -931,33 +953,61 @@ where
                 func(next, self.font_container.borrow_mut(), self.text);
 
             match use_span {
+                // In this case, we just started and we are looking at the first two glyphs.
+                // This decides whether the current run will be spanned, or not.
                 None => {
+                    // The first glyph is incompatible, so we definitely need actual text.
                     if first_incompatible {
                         use_span = Some(true);
 
+                        // If the range of the next one is the same, it means they are
+                        // part of the same cluster, meaning that we need to include it
+                        // in the actual text. If not, we abort and only wrap the first
+                        // glyph in actual text.
                         if last_range != next_range {
                             break;
                         }
                     }
 
+                    // If the next is incompatible but not part of the current cluster,
+                    // then it will need a dedicated spanned range, and
+                    // we can't include it in the current text span. So we abort and
+                    // create a spanned element with just the first glyph.
                     if next_incompatible && last_range != next_range {
                         break;
                     }
 
+                    // If they have the same range, they are part of the same cluster,
+                    // and thus we started a spanned range with actual text.
+                    //
+                    // Otherwise, they are part of a different cluster, and we
+                    // start a spanned range with no actual text (common case).
                     use_span = Some(last_range == next_range);
                 }
+                // We are currently building a spanned range, and all glyphs
+                // are part of the same cluster.
                 Some(true) => {
+                    // If the next glyph is not part of the same cluster, terminate the current
+                    // span and don't include the next one.
                     if last_range != next_range {
                         break;
                     }
                 }
+                // We are currently building an unspanned range, meaning the
+                // glyphs are not part of the same cluster.
                 Some(false) => {
-                    if next_incompatible && last_range != next_range {
+                    // If the current and the last one are part of the same range
+                    // this means that they are part of the same cluster. This means
+                    // that the current AND the last one belong to a spanned segment,
+                    // so we need to do count -= 1 as well before terminating.
+                    if last_range == next_range {
+                        count -= 1;
                         break;
                     }
 
-                    if last_range == next_range {
-                        count -= 1;
+                    // If the next one is incompatible, terminate the
+                    // current run, since the next one needs to be spanned.
+                    if next_incompatible {
                         break;
                     }
                 }
@@ -1007,6 +1057,14 @@ where
     }
 }
 
+// The GlyphGrouper further segments glyph runs (that already have been segmented
+// by `TextSpanner` into subruns that can be encoded as one consecutive run in PDF.
+// This is necessary because:
+// - The user provides a font for the whole glyph run, but in PDF, the font might
+// have to be switched if the glyph maps to a different Type3 font.
+// - The glyph contains a y_offset/y_advance, which cannot be expressed as an adjustment
+// and requires us to start a new run with a transformation matrix that takes this
+// adjustment into account.
 pub(crate) struct GlyphGrouper<'a, 'b, T>
 where
     T: Glyph,
@@ -1065,6 +1123,7 @@ where
             for next in iter {
                 let temp_glyph = func(next, self.font_container.borrow_mut());
 
+                // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier
                     || first.y_offset != temp_glyph.y_offset
                     || first.y_advance != 0.0
