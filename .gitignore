@@ -3,4 +3,4 @@ target
 data
 assets/diffs
 assets/store
-**/.DS_STORE
+.DS_Store
