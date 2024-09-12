@@ -3,32 +3,25 @@
 
 1 0 obj
 <<
-  /Type /Catalog
-  /Pages 2 0 R
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
 >>
 endobj
 
 2 0 obj
-<<
-  /Type /Pages
-  /Count 1
-  /Kids [3 0 R]
->>
-endobj
-
-3 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
   /MediaBox [0 0 200 200]
-  /Parent 2 0 R
-  /Contents 4 0 R
+  /Parent 1 0 R
+  /Contents 3 0 R
 >>
 endobj
 
-4 0 obj
+3 0 obj
 <<
   /Length 64
 >>
@@ -44,5 +37,12 @@ h
 f
 Q
 endstream
+endobj
+
+4 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
 endobj
 

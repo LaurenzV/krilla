@@ -3,43 +3,36 @@
 
 1 0 obj
 <<
-  /Type /Catalog
-  /Pages 2 0 R
+  /Type /Pages
+  /Count 2
+  /Kids [3 0 R 6 0 R]
 >>
 endobj
 
 2 0 obj
 <<
-  /Type /Pages
-  /Count 2
-  /Kids [4 0 R 7 0 R]
->>
-endobj
-
-3 0 obj
-<<
   /Type /Annot
   /Subtype /Link
   /Rect [50 100 150 200]
   /Border [0 0 0]
-  /Dest [7 0 R /XYZ 100 100 0]
+  /Dest [6 0 R /XYZ 100 100 0]
 >>
 endobj
 
-4 0 obj
+3 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
   /MediaBox [0 0 200 200]
-  /Parent 2 0 R
-  /Contents 5 0 R
-  /Annots [3 0 R]
+  /Parent 1 0 R
+  /Contents 4 0 R
+  /Annots [2 0 R]
 >>
 endobj
 
-5 0 obj
+4 0 obj
 <<
   /Length 83
 >>
@@ -58,30 +51,30 @@ Q
 endstream
 endobj
 
-6 0 obj
+5 0 obj
 <<
   /Type /Annot
   /Subtype /Link
   /Rect [50 0 150 100]
   /Border [0 0 0]
-  /Dest [4 0 R /XYZ 0 200 0]
+  /Dest [3 0 R /XYZ 0 200 0]
 >>
 endobj
 
-7 0 obj
+6 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
   /MediaBox [0 0 200 200]
-  /Parent 2 0 R
-  /Contents 8 0 R
-  /Annots [6 0 R]
+  /Parent 1 0 R
+  /Contents 7 0 R
+  /Annots [5 0 R]
 >>
 endobj
 
-8 0 obj
+7 0 obj
 <<
   /Length 87
 >>
@@ -100,21 +93,29 @@ Q
 endstream
 endobj
 
+8 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
 xref
 0 9
 0000000000 65535 f
 0000000016 00000 n
-0000000070 00000 n
-0000000140 00000 n
-0000000268 00000 n
-0000000445 00000 n
-0000000581 00000 n
-0000000705 00000 n
-0000000882 00000 n
+0000000086 00000 n
+0000000214 00000 n
+0000000391 00000 n
+0000000527 00000 n
+0000000651 00000 n
+0000000828 00000 n
+0000000968 00000 n
 trailer
 <<
   /Size 9
-  /Root 1 0 R
+  /Root 8 0 R
+  /ID [(ZwH5XNwYy7oUWIqatPC17Q==) (ZwH5XNwYy7oUWIqatPC17Q==)]
 >>
 startxref
 1022

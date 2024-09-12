@@ -20,6 +20,7 @@ available under the [Apache 2 license](https://github.com/typst/typst/blob/main/
 - The `Prehashed` struct.
 - The implementation of `SipHashable`.
 - The implementation of writing CID-keyed fonts.
+- The implementation of writing PDF metadata.
 
 ## `svg2pdf`
 

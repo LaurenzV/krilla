@@ -1,7 +1,9 @@
 use crate::metadata::Metadata;
 use crate::serialize::SerializeSettings;
+use crate::util::hash_base64;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
+use xmp_writer::{RenditionClass, XmpWriter};
 
 /// Collects all of the chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
@@ -105,30 +107,7 @@ impl ChunkContainer {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
         }
 
-        // We only write a catalog if a page tree exists. Every valid PDF must have one
-        // and krilla ensures that there always is one, but for snapshot tests, it can be
-        // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
-            let catalog_ref = remapped_ref.bump();
-
-            let mut catalog = pdf.catalog(catalog_ref);
-            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
-
-            if let Some(pt) = &self.page_tree {
-                catalog.pages(pt.0);
-            }
-
-            if let Some(pl) = &self.page_label_tree {
-                catalog.pair(Name(b"PageLabels"), pl.0);
-            }
-
-            if let Some(ol) = &self.outline {
-                catalog.outlines(ol.0);
-            }
-
-            catalog.finish();
-        }
-
+        remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
         remap_fields!(self, remapper, remapped_ref; pages, page_labels,
             annotations, fonts, color_spaces, destinations,
             ext_g_states, images, masks, x_objects, shading_functions,
@@ -138,7 +117,7 @@ impl ChunkContainer {
         macro_rules! write_field {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    if let Some((_, chunk)) = $self.$field {
+                    if let Some((_, chunk)) = &$self.$field {
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -148,7 +127,7 @@ impl ChunkContainer {
         macro_rules! write_fields {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    for chunk in $self.$field {
+                    for chunk in &$self.$field {
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -162,8 +141,85 @@ impl ChunkContainer {
             shading_functions, patterns
         );
 
-        if let Some(metadata) = self.metadata {
+        // Write the PDF document info metadata.
+        if let Some(metadata) = &self.metadata {
             metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
+        }
+
+        // Write the XMP data, if applicable
+        const PDF_VERSION: &str = "PDF-1.7";
+
+        let mut xmp = XmpWriter::new();
+        if let Some(metadata) = &self.metadata {
+            metadata.serialize_xmp_metadata(&mut xmp);
+        }
+
+        let instance_id = hash_base64(pdf.as_bytes());
+
+        let document_id = if let Some(metadata) = &self.metadata {
+            if let Some(document_id) = &metadata.document_id {
+                hash_base64(&(PDF_VERSION, document_id))
+            } else if metadata.title.is_some() && metadata.authors.is_some() {
+                hash_base64(&(PDF_VERSION, &metadata.title, &metadata.authors))
+            } else {
+                instance_id.clone()
+            }
+        } else {
+            instance_id.clone()
+        };
+
+        xmp.num_pages(self.pages.len() as u32);
+        xmp.format("application/pdf");
+        // TODO: Add XMP languages
+        xmp.instance_id(&instance_id);
+        xmp.document_id(&document_id);
+        pdf.set_file_id((
+            document_id.as_bytes().to_vec(),
+            instance_id.as_bytes().to_vec(),
+        ));
+
+        xmp.rendition_class(RenditionClass::Proof);
+        xmp.pdf_version("1.7");
+
+        // We only write a catalog if a page tree exists. Every valid PDF must have one
+        // and krilla ensures that there always is one, but for snapshot tests, it can be
+        // useful to not write a document catalog if we don't actually need it for the test.
+        if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
+            let meta_ref = if serialize_settings.xmp_metadata {
+                let meta_ref = remapped_ref.bump();
+                let xmp_buf = xmp.finish(None);
+                pdf.stream(meta_ref, xmp_buf.as_bytes())
+                    .pair(Name(b"Type"), Name(b"Metadata"))
+                    .pair(Name(b"Subtype"), Name(b"XML"));
+                Some(meta_ref)
+            } else {
+                None
+            };
+
+            let catalog_ref = remapped_ref.bump();
+
+            let mut catalog = pdf.catalog(catalog_ref);
+
+            if let Some(pt) = &self.page_tree {
+                catalog.pages(pt.0);
+            }
+
+            if let Some(meta_ref) = meta_ref {
+                catalog.metadata(meta_ref);
+            }
+
+            if let Some(pl) = &self.page_label_tree {
+                catalog.pair(Name(b"PageLabels"), pl.0);
+            }
+
+            // TODO: Add viewer preferences
+            // TODO: Add lang
+
+            if let Some(ol) = &self.outline {
+                catalog.outlines(ol.0);
+            }
+
+            catalog.finish();
         }
 
         pdf

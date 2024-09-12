@@ -1,6 +1,7 @@
 //! Internal utilities.
 
 use crate::path::{LineCap, LineJoin, Stroke};
+use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
@@ -298,4 +299,16 @@ where
         self.hash(&mut state);
         state.finish128().as_u128()
     }
+}
+
+/// Create a base64-encoded hash of the value.
+pub(crate) fn hash_base64<T: Hash + ?Sized>(value: &T) -> String {
+    base64::engine::general_purpose::STANDARD.encode(hash128(value).to_be_bytes())
+}
+
+/// Calculate a 128-bit siphash of a value.
+fn hash128<T: Hash + ?Sized>(value: &T) -> u128 {
+    let mut state = SipHasher13::new();
+    value.hash(&mut state);
+    state.finish128().as_u128()
 }
