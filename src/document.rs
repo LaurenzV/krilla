@@ -162,8 +162,7 @@ mod tests {
         document.set_metadata(metadata);
     }
 
-    #[snapshot(document)]
-    fn metadata_full(document: &mut Document) {
+    fn metadata_impl(document: &mut Document) {
         let date = DateTime::new(2024)
             .month(11)
             .day(8)
@@ -186,5 +185,15 @@ mod tests {
             .title("An awesome title".to_string())
             .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()]);
         document.set_metadata(metadata);
+    }
+
+    #[snapshot(document)]
+    fn metadata_full(document: &mut Document) {
+        metadata_impl(document);
+    }
+
+    #[snapshot(document, settings_5)]
+    fn metadata_full_with_xmp(document: &mut Document) {
+        metadata_impl(document);
     }
 }

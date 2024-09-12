@@ -1,6 +1,6 @@
 //! Setting document metadata.
 
-use pdf_writer::{Date, Pdf, Ref, TextStr};
+use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{Timezone, XmpWriter};
 
 /// Metadata for a PDF document.

@@ -52,42 +52,6 @@ impl ChunkContainer {
         }
     }
 
-    fn get_other_metadata(&self, root_ref: Ref, pdf: &mut Pdf) -> Chunk {
-        const PDF_VERSION: &str = "PDF-1.7";
-
-        let mut xmp = XmpWriter::new();
-        if let Some(metadata) = &self.metadata {
-            metadata.serialize_xmp_metadata(&mut xmp);
-        }
-
-        let instance_id = hash_base64(pdf.as_bytes());
-
-        let document_id = if let Some(metadata) = &self.metadata {
-            if let Some(document_id) = &metadata.document_id {
-                hash_base64(&(PDF_VERSION, document_id))
-            } else if metadata.title.is_some() && metadata.authors.is_some() {
-                hash_base64(&(PDF_VERSION, &metadata.title, &metadata.authors))
-            } else {
-                instance_id.clone()
-            }
-        } else {
-            instance_id.clone()
-        };
-
-        xmp.num_pages(self.pages.len() as u32);
-        xmp.instance_id(&instance_id);
-        xmp.document_id(&document_id);
-        pdf.set_file_id((
-            document_id.as_bytes().to_vec(),
-            instance_id.as_bytes().to_vec(),
-        ));
-
-        xmp.rendition_class(RenditionClass::Proof);
-        xmp.pdf_version("1.7");
-
-        Chunk::new()
-    }
-
     pub fn finish(mut self, serialize_settings: SerializeSettings) -> Pdf {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
@@ -177,14 +141,62 @@ impl ChunkContainer {
             shading_functions, patterns
         );
 
-        if let Some(metadata) = self.metadata {
+        // Write the PDF document info metadata.
+        if let Some(metadata) = &self.metadata {
             metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
         }
+
+        // Write the XMP data, if applicable
+        const PDF_VERSION: &str = "PDF-1.7";
+
+        let mut xmp = XmpWriter::new();
+        if let Some(metadata) = &self.metadata {
+            metadata.serialize_xmp_metadata(&mut xmp);
+        }
+
+        let instance_id = hash_base64(pdf.as_bytes());
+
+        let document_id = if let Some(metadata) = &self.metadata {
+            if let Some(document_id) = &metadata.document_id {
+                hash_base64(&(PDF_VERSION, document_id))
+            } else if metadata.title.is_some() && metadata.authors.is_some() {
+                hash_base64(&(PDF_VERSION, &metadata.title, &metadata.authors))
+            } else {
+                instance_id.clone()
+            }
+        } else {
+            instance_id.clone()
+        };
+
+        xmp.num_pages(self.pages.len() as u32);
+        xmp.format("application/pdf");
+        // TODO: Add XMP languages
+        xmp.instance_id(&instance_id);
+        xmp.document_id(&document_id);
+        pdf.set_file_id((
+            document_id.as_bytes().to_vec(),
+            instance_id.as_bytes().to_vec(),
+        ));
+
+        xmp.rendition_class(RenditionClass::Proof);
+        xmp.pdf_version("1.7");
+
 
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
         if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
+            let meta_ref = if serialize_settings.xmp_metadata {
+                let meta_ref = remapped_ref.bump();
+                let xmp_buf = xmp.finish(None);
+                pdf.stream(meta_ref, xmp_buf.as_bytes())
+                    .pair(Name(b"Type"), Name(b"Metadata"))
+                    .pair(Name(b"Subtype"), Name(b"XML"));
+                Some(meta_ref)
+            }   else {
+                None
+            };
+
             let catalog_ref = remapped_ref.bump();
 
             let mut catalog = pdf.catalog(catalog_ref);
@@ -193,9 +205,16 @@ impl ChunkContainer {
                 catalog.pages(pt.0);
             }
 
+            if let Some(meta_ref) = meta_ref {
+                catalog.metadata(meta_ref);
+            }
+
             if let Some(pl) = &self.page_label_tree {
                 catalog.pair(Name(b"PageLabels"), pl.0);
             }
+
+            // TODO: Add viewer preferences
+            // TODO: Add lang
 
             if let Some(ol) = &self.outline {
                 catalog.outlines(ol.0);
