@@ -60,6 +60,8 @@ pub struct SerializeSettings {
     /// Whether the PDF should be ASCII-compatible, i.e. only consist of
     /// characters in the ASCII range.
     pub ascii_compatible: bool,
+    /// Whether the PDF should contain XMP metadata.
+    pub xmp_metadata: bool,
     /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
 }
@@ -71,6 +73,7 @@ impl SerializeSettings {
             ascii_compatible: true,
             compress_content_streams: false,
             no_device_cs: false,
+            xmp_metadata: false,
             force_type3_fonts: false,
         }
     }
@@ -88,6 +91,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_5() -> Self {
+        Self {
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -96,6 +106,7 @@ impl Default for SerializeSettings {
             ascii_compatible: false,
             compress_content_streams: true,
             no_device_cs: false,
+            xmp_metadata: true,
             force_type3_fonts: false,
         }
     }

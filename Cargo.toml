@@ -89,6 +89,7 @@ usvg = { workspace = true, optional = true }
 yoke = { workspace = true }
 zune-png = { workspace = true, optional = true }
 zune-jpeg = { workspace = true, optional = true }
+xmp-writer = "0.2.0"
 
 [dev-dependencies]
 cosmic-text = { workspace = true }

@@ -149,10 +149,9 @@ impl Default for PageSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::metadata::Metadata;
+    use crate::metadata::{DateTime, Metadata};
     use crate::Document;
     use krilla_macros::snapshot;
-    use pdf_writer::Date;
 
     #[snapshot(document)]
     fn empty_document(_: &mut Document) {}
@@ -165,7 +164,7 @@ mod tests {
 
     #[snapshot(document)]
     fn metadata_full(document: &mut Document) {
-        let date = Date::new(2024)
+        let date = DateTime::new(2024)
             .month(11)
             .day(8)
             .hour(22)

@@ -50,6 +50,10 @@ impl ChunkContainer {
         }
     }
 
+    // fn get_xmp_metadata(&self, root_ref: Ref) -> Chunk {
+    //
+    // }
+
     pub fn finish(mut self, serialize_settings: SerializeSettings) -> Pdf {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
