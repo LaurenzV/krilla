@@ -327,23 +327,22 @@ pub(crate) enum ColorSpaceType {
 
 #[cfg(test)]
 mod tests {
-    use crate::object::color::rgb::Srgb;
+
     use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 
-    use crate::color::rgb::SGray;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path};
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_object(ColorSpaceResource::SGray(SGray)).unwrap();
+        sc.add_object(ColorSpaceResource::SGray).unwrap();
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_object(ColorSpaceResource::Srgb(Srgb)).unwrap();
+        sc.add_object(ColorSpaceResource::Srgb).unwrap();
     }
 
     #[visreg(all)]

@@ -369,8 +369,8 @@ pub type ResourceNumber = u32;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ColorSpaceResource {
-    Srgb(Srgb),
-    SGray(SGray),
+    Srgb,
+    SGray,
 }
 
 impl Object for ColorSpaceResource {
@@ -380,8 +380,8 @@ impl Object for ColorSpaceResource {
 
     fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
-            ColorSpaceResource::Srgb(srgb) => srgb.serialize(sc, root_ref),
-            ColorSpaceResource::SGray(sgray) => sgray.serialize(sc, root_ref),
+            ColorSpaceResource::Srgb => Srgb.serialize(sc, root_ref),
+            ColorSpaceResource::SGray => SGray.serialize(sc, root_ref),
         }
     }
 }
