@@ -22,7 +22,6 @@ For more examples, feel free to take a look at the [examples] directory of the G
 
 ```
 # use krilla::color::rgb;
-# use krilla::color::rgb::Rgb;
 # use krilla::font::Font;
 # use krilla::geom::Point;
 # use krilla::paint::Paint;

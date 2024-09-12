@@ -5,7 +5,7 @@ use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
 
-/// Collects all of the chunks that we create while building
+/// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 pub struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,

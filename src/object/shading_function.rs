@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::rgb::Luma;
+use crate::color::rgb;
 use crate::error::KrillaResult;
-use crate::object::color::{Color, ColorSpace};
+use crate::object::color::Color;
 use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
@@ -98,10 +98,7 @@ fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     )
 }
 
-impl<C> GradientPropertiesExt for LinearGradient<C>
-where
-    C: ColorSpace,
-{
+impl GradientPropertiesExt for LinearGradient {
     fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         if self.spread_method == SpreadMethod::Pad {
             (
@@ -115,6 +112,7 @@ where
                     shading_type: FunctionShadingType::Axial,
                     stops: self
                         .stops
+                        .0
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
@@ -132,6 +130,7 @@ where
                     max: FiniteF32::new(max).unwrap(),
                     stops: self
                         .stops
+                        .0
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
@@ -145,10 +144,7 @@ where
     }
 }
 
-impl<C> GradientPropertiesExt for SweepGradient<C>
-where
-    C: ColorSpace,
-{
+impl GradientPropertiesExt for SweepGradient {
     fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         let min = self.start_angle;
         let max = self.end_angle;
@@ -163,6 +159,7 @@ where
                 max: FiniteF32::new(max).unwrap(),
                 stops: self
                     .stops
+                    .0
                     .into_iter()
                     .map(|s| s.into())
                     .collect::<Vec<Stop>>(),
@@ -175,10 +172,7 @@ where
     }
 }
 
-impl<C> GradientPropertiesExt for RadialGradient<C>
-where
-    C: ColorSpace,
-{
+impl GradientPropertiesExt for RadialGradient {
     fn gradient_properties(self, _: Rect) -> (GradientProperties, TransformWrapper) {
         // TODO: Support other spread methods
         (
@@ -194,6 +188,7 @@ where
                 shading_type: FunctionShadingType::Radial,
                 stops: self
                     .stops
+                    .0
                     .into_iter()
                     .map(|s| s.into())
                     .collect::<Vec<Stop>>(),
@@ -253,11 +248,11 @@ fn serialize_postscript_shading(
 
     let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        Luma::color_space(sc.serialize_settings.no_device_cs)
+        rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
         post_script_gradient.stops[0]
             .color
-            .color_space(sc.serialize_settings.no_device_cs, true)
+            .color_space(sc.serialize_settings.no_device_cs, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -284,11 +279,11 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        Luma::color_space(sc.serialize_settings.no_device_cs)
+        rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
         radial_axial_gradient.stops[0]
             .color
-            .color_space(sc.serialize_settings.no_device_cs, true)
+            .color_space(sc.serialize_settings.no_device_cs, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -343,12 +338,12 @@ fn select_axial_radial_function(
             serialize_exponential(
                 stops[0]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops[1]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 chunk,
@@ -420,7 +415,6 @@ fn serialize_sweep_postscript(
     let min: f32 = properties.min.get();
     let max: f32 = properties.max.get();
 
-    // TODO: Improve formatting of PS code.
     let start_code = [
         "{".to_string(),
         // Stack: x y
@@ -474,7 +468,6 @@ fn serialize_linear_postscript(
     let min: f32 = properties.min.get();
     let max: f32 = properties.max.get();
 
-    // TODO: Improve formatting of PS code.
     let start_code = [
         "{".to_string(),
         // Stack: x y
@@ -651,7 +644,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         } else {
             stops[0]
                 .color
-                .to_pdf_color(true)
+                .to_pdf_color(false)
                 .into_iter()
                 .map(|n| n.to_string())
                 .collect::<Vec<_>>()
@@ -674,12 +667,12 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
             encode_two_stops(
                 &stops[0]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 &stops[1]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops_min,
@@ -718,12 +711,12 @@ fn serialize_stitching(
             (
                 first
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 second
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
             )

@@ -1,6 +1,5 @@
 use crate::mask::MaskType;
 use crate::object::color::rgb;
-use crate::object::color::rgb::Rgb;
 use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use crate::stream::StreamBuilder;
@@ -30,10 +29,10 @@ pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod
 }
 
 /// Convert a usvg `Stop` into a krilla `Stop`.
-pub fn convert_stop(stop: &usvg::Stop) -> Stop<Rgb> {
+pub fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
     Stop {
         offset: stop.offset(),
-        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
+        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
 }
@@ -58,7 +57,12 @@ pub fn convert_paint(
             y2: lg.y2(),
             transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
             spread_method: convert_spread_method(&lg.spread_method()),
-            stops: lg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
+            stops: lg
+                .stops()
+                .iter()
+                .map(convert_stop)
+                .collect::<Vec<_>>()
+                .into(),
         }
         .into(),
         usvg::Paint::RadialGradient(rg) => RadialGradient {
@@ -70,7 +74,12 @@ pub fn convert_paint(
             fr: 0.0,
             transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
             spread_method: convert_spread_method(&rg.spread_method()),
-            stops: rg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
+            stops: rg
+                .stops()
+                .iter()
+                .map(convert_stop)
+                .collect::<Vec<_>>()
+                .into(),
         }
         .into(),
         usvg::Paint::Pattern(pat) => {

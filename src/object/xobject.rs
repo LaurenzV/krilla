@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::rgb::Rgb;
+use crate::color::rgb;
 use crate::error::KrillaResult;
 use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
@@ -69,7 +69,7 @@ impl Object for XObject {
             }
 
             if self.transparency_group_color_space {
-                let cs = Rgb::color_space(sc.serialize_settings.no_device_cs);
+                let cs = rgb::Color::rgb_based_color_space(sc.serialize_settings.no_device_cs);
                 transparency.pair(Name(b"CS"), sc.add_cs(cs));
             }
 

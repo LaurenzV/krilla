@@ -296,6 +296,7 @@ pub(crate) enum GlyphSource {
     Bitmap,
 }
 
+/// Draw a color glyph to a surface.
 pub(crate) fn draw_color_glyph(
     font: Font,
     #[cfg(feature = "svg")] svg_settings: SvgSettings,
@@ -343,6 +344,7 @@ pub(crate) enum OutlineMode {
     Stroke(Stroke),
 }
 
+/// Draw a color glyph or outline glyph to a surface.
 pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,

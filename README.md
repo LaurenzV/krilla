@@ -125,17 +125,19 @@ let mut surface = page.surface();
 // Draw some text.
 surface.fill_text(
     Point::from_xy(0.0, 25.0),
-    Fill::<Rgb>::default(),
+    Fill::default(),
     font.clone(),
     14.0,
     &[],
     "This text has font size 14!",
+    false,
+    None
 );
 // Draw some more text, in a different color with an opacity and bigger font size.
 surface.fill_text(
     Point::from_xy(0.0, 50.0),
     Fill {
-        paint: Paint::<Rgb>::Color(rgb::Color::new(255, 0, 0)),
+        paint: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::new(0.5).unwrap(),
         rule: Default::default(),
     },
@@ -143,6 +145,8 @@ surface.fill_text(
     16.0,
     &[],
     "This text has font size 16!",
+    false,
+    None
 );
 
 // Finish the page.
@@ -162,7 +166,7 @@ let svg_size = svg_tree.size();
 let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
 let mut surface = page.surface();
 // Draw the SVG.
-surface.draw_svg(&svg_tree, svg_size);
+surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
 
 // Finish up and write the resulting PDF.
 surface.finish();

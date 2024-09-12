@@ -18,7 +18,7 @@ use tiny_skia_path::Transform;
 ///
 /// You cannot create an instance of this type yourself. Instead, you should use the
 /// [`Document::start_page`] (or a related method) to add a new page to a document. In most cases, all
-/// you need to do is to call the [`Page::surface`] method so you can start drawing on the page.
+/// you need to do is to call the [`Page::surface`] method, so you can start drawing on the page.
 /// However, there are a few other operations you can perform, such as adding annotations
 /// to a page.
 ///
@@ -131,7 +131,7 @@ impl InternalPage {
             .to_pdf_resources(sc, &mut page)?;
 
         let media_box = self.page_settings.media_box();
-        // Convert to the proper PDF values
+        // Convert to the proper PDF values.
         page.media_box(pdf_writer::Rect::new(
             media_box.x(),
             -media_box.height() + (self.page_settings.surface_size().height() - media_box.y()),
