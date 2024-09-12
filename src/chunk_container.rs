@@ -143,30 +143,7 @@ impl ChunkContainer {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
         }
 
-        // We only write a catalog if a page tree exists. Every valid PDF must have one
-        // and krilla ensures that there always is one, but for snapshot tests, it can be
-        // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
-            let catalog_ref = remapped_ref.bump();
-
-            let mut catalog = pdf.catalog(catalog_ref);
-            remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
-
-            if let Some(pt) = &self.page_tree {
-                catalog.pages(pt.0);
-            }
-
-            if let Some(pl) = &self.page_label_tree {
-                catalog.pair(Name(b"PageLabels"), pl.0);
-            }
-
-            if let Some(ol) = &self.outline {
-                catalog.outlines(ol.0);
-            }
-
-            catalog.finish();
-        }
-
+        remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
         remap_fields!(self, remapper, remapped_ref; pages, page_labels,
             annotations, fonts, color_spaces, destinations,
             ext_g_states, images, masks, x_objects, shading_functions,
@@ -176,7 +153,7 @@ impl ChunkContainer {
         macro_rules! write_field {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    if let Some((_, chunk)) = $self.$field {
+                    if let Some((_, chunk)) = &$self.$field {
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -186,7 +163,7 @@ impl ChunkContainer {
         macro_rules! write_fields {
             ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
                 $(
-                    for chunk in $self.$field {
+                    for chunk in &$self.$field {
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -202,6 +179,29 @@ impl ChunkContainer {
 
         if let Some(metadata) = self.metadata {
             metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
+        }
+
+        // We only write a catalog if a page tree exists. Every valid PDF must have one
+        // and krilla ensures that there always is one, but for snapshot tests, it can be
+        // useful to not write a document catalog if we don't actually need it for the test.
+        if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
+            let catalog_ref = remapped_ref.bump();
+
+            let mut catalog = pdf.catalog(catalog_ref);
+
+            if let Some(pt) = &self.page_tree {
+                catalog.pages(pt.0);
+            }
+
+            if let Some(pl) = &self.page_label_tree {
+                catalog.pair(Name(b"PageLabels"), pl.0);
+            }
+
+            if let Some(ol) = &self.outline {
+                catalog.outlines(ol.0);
+            }
+
+            catalog.finish();
         }
 
         pdf
