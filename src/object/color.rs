@@ -127,7 +127,7 @@ impl Color {
 
 /// CMYK colors.
 pub mod cmyk {
-    use crate::object::color::{ColorSpace};
+    use crate::object::color::ColorSpace;
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -172,7 +172,7 @@ pub mod cmyk {
 
 /// RGB colors.
 pub mod rgb {
-    use crate::object::color::{ColorSpace};
+    use crate::object::color::ColorSpace;
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -225,11 +225,27 @@ pub mod rgb {
             }
         }
 
+        pub(crate) fn luma_based_color_space(no_device_cs: bool) -> ColorSpace {
+            if no_device_cs {
+                ColorSpace::SGray
+            } else {
+                ColorSpace::DeviceGray
+            }
+        }
+
+        pub(crate) fn rgb_based_color_space(no_device_cs: bool) -> ColorSpace {
+            if no_device_cs {
+                ColorSpace::Srgb
+            } else {
+                ColorSpace::DeviceRgb
+            }
+        }
+
         pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
             if self.is_gray_scale() && !is_gradient {
-                Luma::color_space(no_device_cs)
+                Self::luma_based_color_space(no_device_cs)
             } else {
-                Rgb::color_space(no_device_cs)
+                Self::rgb_based_color_space(no_device_cs)
             }
         }
     }
@@ -237,34 +253,6 @@ pub mod rgb {
     impl From<Color> for super::Color {
         fn from(val: Color) -> Self {
             super::Color::Rgb(val)
-        }
-    }
-
-    /// The RGB color space. Depending on whether the `no_device_cs` serialize option is set,
-    /// this will internally be encoded either using the PDF `DeviceRgb` color space, or in the
-    /// SRGB color space using an ICC profile.
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Rgb;
-
-    impl Rgb {
-        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
-            if no_device_cs {
-                ColorSpace::Srgb
-            } else {
-                ColorSpace::DeviceRgb
-            }
-        }
-    }
-
-    pub(crate) struct Luma;
-
-    impl Luma {
-        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
-            if no_device_cs {
-                ColorSpace::SGray
-            } else {
-                ColorSpace::DeviceGray
-            }
         }
     }
 }

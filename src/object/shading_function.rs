@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::rgb::Luma;
+use crate::color::rgb;
 use crate::error::KrillaResult;
 use crate::object::color::Color;
 use crate::object::Object;
@@ -248,7 +248,7 @@ fn serialize_postscript_shading(
 
     let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        Luma::color_space(sc.serialize_settings.no_device_cs)
+        rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
         post_script_gradient.stops[0]
             .color
@@ -279,7 +279,7 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        Luma::color_space(sc.serialize_settings.no_device_cs)
+        rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
         radial_axial_gradient.stops[0]
             .color
