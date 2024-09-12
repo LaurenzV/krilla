@@ -607,13 +607,9 @@ impl ContentBuilder {
             };
 
         match &paint.0 {
-            InnerPaint::RgbColor(c) => {
-                let color_space = color_to_string((*c).into(), self, true);
-                set_solid_fn(&mut self.content, color_space, (*c).into());
-            }
-            InnerPaint::CmykColor(c) => {
-                let color_space = color_to_string((*c).into(), self, true);
-                set_solid_fn(&mut self.content, color_space, (*c).into());
+            InnerPaint::Color(c) => {
+                let color_space = color_to_string(*c, self, true);
+                set_solid_fn(&mut self.content, color_space, *c);
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);

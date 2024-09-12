@@ -128,8 +128,7 @@ pub struct Pattern {
 
 #[derive(Debug, Clone)]
 pub(crate) enum InnerPaint {
-    RgbColor(rgb::Color),
-    CmykColor(cmyk::Color),
+    Color(Color),
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
     SweepGradient(SweepGradient),
@@ -146,13 +145,13 @@ pub struct Paint(pub(crate) InnerPaint);
 
 impl From<rgb::Color> for Paint {
     fn from(value: rgb::Color) -> Self {
-        Paint(InnerPaint::RgbColor(value))
+        Paint(InnerPaint::Color(value.into()))
     }
 }
 
 impl From<cmyk::Color> for Paint {
     fn from(value: cmyk::Color) -> Self {
-        Paint(InnerPaint::CmykColor(value))
+        Paint(InnerPaint::Color(value.into()))
     }
 }
 
