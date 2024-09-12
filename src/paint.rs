@@ -1,38 +1,41 @@
 //! Paints that can be used for filling and stroking text or paths.
 
 use crate::color::{cmyk, Color, rgb};
-use crate::object::color::ColorSpace;
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
 
-/// The color stops of a gradient.
 #[derive(Debug, Clone)]
-pub enum Stops {
+pub(crate) enum InnerStops {
     RgbStops(Vec<Stop<rgb::Color>>),
     CmykStops(Vec<Stop<cmyk::Color>>)
 }
 
-impl IntoIterator for Stops {
+/// The color stops of a gradient.
+#[derive(Debug, Clone)]
+pub struct Stops(pub(crate) InnerStops);
+
+impl IntoIterator for InnerStops {
     type Item = crate::object::shading_function::Stop;
     type IntoIter = std::vec::IntoIter<crate::object::shading_function::Stop>;
 
     fn into_iter(self) -> Self::IntoIter {
+        // TODO: Avoid collect somehow?
         match self {
-            Stops::RgbStops(r) => r.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
-            Stops::CmykStops(c) => c.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
+            InnerStops::RgbStops(r) => r.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
+            InnerStops::CmykStops(c) => c.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
         }
     }
 }
 
 impl From<Vec<Stop<rgb::Color>>> for Stops {
     fn from(value: Vec<Stop<rgb::Color>>) -> Self {
-        Stops::RgbStops(value)
+        Stops(InnerStops::RgbStops(value))
     }
 }
 
 impl From<Vec<Stop<cmyk::Color>>> for Stops {
     fn from(value: Vec<Stop<cmyk::Color>>) -> Self {
-        Stops::CmykStops(value)
+        Stops(InnerStops::CmykStops(value))
     }
 }
 
@@ -191,6 +194,7 @@ impl Default for SpreadMethod {
 
 /// A color stop in a gradient.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+#[allow(private_bounds)]
 pub struct Stop<C>
 where
     C: Into<Color>,

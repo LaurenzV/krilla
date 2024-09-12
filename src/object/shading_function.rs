@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb::Luma;
 use crate::error::KrillaResult;
-use crate::object::color::{Color, ColorSpace};
+use crate::object::color::Color;
 use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
@@ -113,6 +113,7 @@ impl GradientPropertiesExt for LinearGradient
                     shading_type: FunctionShadingType::Axial,
                     stops: self
                         .stops
+                        .0
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
@@ -129,7 +130,7 @@ impl GradientPropertiesExt for LinearGradient
                     min: FiniteF32::new(min).unwrap(),
                     max: FiniteF32::new(max).unwrap(),
                     stops: self
-                        .stops
+                        .stops.0
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
@@ -159,6 +160,7 @@ impl GradientPropertiesExt for SweepGradient
                 max: FiniteF32::new(max).unwrap(),
                 stops: self
                     .stops
+                    .0
                     .into_iter()
                     .map(|s| s.into())
                     .collect::<Vec<Stop>>(),
@@ -187,6 +189,7 @@ impl GradientPropertiesExt for RadialGradient {
                 shading_type: FunctionShadingType::Radial,
                 stops: self
                     .stops
+                    .0
                     .into_iter()
                     .map(|s| s.into())
                     .collect::<Vec<Stop>>(),

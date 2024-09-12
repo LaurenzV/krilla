@@ -1,10 +1,9 @@
-use crate::color::rgb::Rgb;
 use crate::color::{cmyk, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
 use crate::mask::{Mask, MaskType};
-use crate::paint::Stop;
+use crate::paint::{Stop, Stops};
 use crate::path::{Fill, Stroke};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -512,15 +511,15 @@ pub fn all_glyphs_to_pdf(
     builder.finish();
 }
 
-pub fn stops_with_1_solid() -> Vec<Stop<Rgb>> {
+pub fn stops_with_1_solid() -> Stops {
     vec![Stop {
         offset: NormalizedF32::new(0.5).unwrap(),
         color: rgb::Color::new(255, 0, 0),
         opacity: NormalizedF32::ONE,
-    }]
+    }].into()
 }
 
-pub fn stops_with_2_solid_1() -> Vec<Stop<Rgb>> {
+pub fn stops_with_2_solid_1() -> Stops {
     vec![
         Stop {
             offset: NormalizedF32::new(0.2).unwrap(),
@@ -532,10 +531,10 @@ pub fn stops_with_2_solid_1() -> Vec<Stop<Rgb>> {
             color: rgb::Color::new(255, 255, 0),
             opacity: NormalizedF32::ONE,
         },
-    ]
+    ].into()
 }
 
-pub fn stops_with_2_solid_2() -> Vec<Stop<Rgb>> {
+pub fn stops_with_2_solid_2() -> Stops {
     vec![
         Stop {
             offset: NormalizedF32::new(0.2).unwrap(),
@@ -547,10 +546,10 @@ pub fn stops_with_2_solid_2() -> Vec<Stop<Rgb>> {
             color: rgb::Color::new(89, 52, 235),
             opacity: NormalizedF32::ONE,
         },
-    ]
+    ].into()
 }
 
-pub fn stops_with_2_opacity() -> Vec<Stop<Rgb>> {
+pub fn stops_with_2_opacity() -> Stops {
     vec![
         Stop {
             offset: NormalizedF32::new(0.2).unwrap(),
@@ -562,10 +561,10 @@ pub fn stops_with_2_opacity() -> Vec<Stop<Rgb>> {
             color: rgb::Color::new(89, 52, 235),
             opacity: NormalizedF32::new(0.2).unwrap(),
         },
-    ]
+    ].into()
 }
 
-pub fn stops_with_3_solid_1() -> Vec<Stop<Rgb>> {
+pub fn stops_with_3_solid_1() -> Stops {
     vec![
         Stop {
             offset: NormalizedF32::new(0.1).unwrap(),
@@ -582,10 +581,10 @@ pub fn stops_with_3_solid_1() -> Vec<Stop<Rgb>> {
             color: rgb::Color::new(0, 255, 255),
             opacity: NormalizedF32::ONE,
         },
-    ]
+    ].into()
 }
 
-pub fn stops_with_3_solid_2() -> Vec<Stop<Rgb>> {
+pub fn stops_with_3_solid_2() -> Stops {
     vec![
         Stop {
             offset: NormalizedF32::new(0.1).unwrap(),
@@ -602,10 +601,10 @@ pub fn stops_with_3_solid_2() -> Vec<Stop<Rgb>> {
             color: rgb::Color::new(235, 52, 110),
             opacity: NormalizedF32::ONE,
         },
-    ]
+    ].into()
 }
 
-pub fn stops_with_3_opacity() -> Vec<Stop<Rgb>> {
+pub fn stops_with_3_opacity() -> Stops {
     vec![
         Stop {
             offset: NormalizedF32::new(0.2).unwrap(),
@@ -622,7 +621,7 @@ pub fn stops_with_3_opacity() -> Vec<Stop<Rgb>> {
             color: rgb::Color::new(235, 52, 110),
             opacity: NormalizedF32::new(0.1).unwrap(),
         },
-    ]
+    ].into()
 }
 
 pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
