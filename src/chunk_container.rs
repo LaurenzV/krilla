@@ -181,7 +181,6 @@ impl ChunkContainer {
         xmp.rendition_class(RenditionClass::Proof);
         xmp.pdf_version("1.7");
 
-
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
@@ -193,7 +192,7 @@ impl ChunkContainer {
                     .pair(Name(b"Type"), Name(b"Metadata"))
                     .pair(Name(b"Subtype"), Name(b"XML"));
                 Some(meta_ref)
-            }   else {
+            } else {
                 None
             };
 
