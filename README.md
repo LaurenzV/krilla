@@ -11,26 +11,30 @@ as fills, strokes, gradient, glyphs and images which can be used and combined ea
 without having to worry about low-level details.
 
 ## Features
-krilla supports a good amount of features you would expect from a graphics library, including:
+krilla supports most features you would expect from a 2D graphics library, including:
 
 - Filling and stroking arbitrary paths.
 - Affine transformations.
 - Alpha and luminosity masks.
 - Clip paths.
 - Blend modes and layer isolation.
-- A high-level text API for rendering lines of characters, including support for vertical writing.
+- A high-level text API for rendering sequences of characters.
 - A low-level text API for drawing sequences of positioned glyphs.
-- Excellent OpenType font support, supporting all major font types, including color fonts. 
-- Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.
-- Linear, radial and sweep gradients as well as patterns.
+- Excellent OpenType font support, supporting all major font types, including color fonts.
+- Linear, radial and sweep gradients, as well as patterns.
 - Embedding bitmap and SVG images.
-- A small number of PDF features like creating outlines, setting page labels and inserting links.
-  More features will be added in future updates.
+
+In addition to that, the library also supports the following PDF features:
+- Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.
+- Creating document outlines.
+- Setting page labels.
+- Inserting links to webpages or intra-document positions.
+- Adding document metadata.
 
 ## Non-goals
-The PDF specification is huge and supports tons of features with a lot of customization, including
-complex color spaces and functions. The goal of krilla is not to expose high-level bindings 
-for all functionality, but just for a specific subset that is commonly used.
+The PDF specification is *huge* and supports tons of features with a lot of customization, including
+complex color spaces and shadings. The goal of krilla is not to expose high-level bindings 
+for all functionality, but instead expose only a relevant subset of it.
 
 ## Testing
 Testing is a major pain point for most PDF-creation libraries. The reason is that it is very hard to do:
