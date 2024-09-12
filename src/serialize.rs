@@ -197,15 +197,15 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpaceType) -> CSWrapper {
         match cs {
-            ColorSpaceType::Srgb(_) => {
+            ColorSpaceType::Srgb => {
                 CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb(Srgb)).unwrap())
             }
-            ColorSpaceType::SGray(_) => {
+            ColorSpaceType::SGray => {
                 CSWrapper::Ref(self.add_object(ColorSpaceResource::SGray(SGray)).unwrap())
             }
-            ColorSpaceType::DeviceGray(_) => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
-            ColorSpaceType::DeviceRgb(_) => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
-            ColorSpaceType::DeviceCmyk(_) => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
+            ColorSpaceType::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
+            ColorSpaceType::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
+            ColorSpaceType::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
         }
     }
 

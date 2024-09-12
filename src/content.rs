@@ -1,5 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
+use crate::color::rgb::{SGray, Srgb};
 use crate::color::{Color, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
@@ -547,15 +548,15 @@ impl ContentBuilder {
             |color: Color, content_builder: &mut ContentBuilder, is_gradient: bool| match color
                 .color_space(no_device_cs, is_gradient)
             {
-                ColorSpaceType::Srgb(srgb) => content_builder
+                ColorSpaceType::Srgb => content_builder
                     .rd_builder
-                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(srgb))),
-                ColorSpaceType::SGray(sgray) => content_builder
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb(Srgb))),
+                ColorSpaceType::SGray => content_builder
                     .rd_builder
-                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(sgray))),
-                ColorSpaceType::DeviceRgb(_) => DEVICE_RGB.to_string(),
-                ColorSpaceType::DeviceGray(_) => DEVICE_GRAY.to_string(),
-                ColorSpaceType::DeviceCmyk(_) => DEVICE_CMYK.to_string(),
+                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray(SGray))),
+                ColorSpaceType::DeviceRgb => DEVICE_RGB.to_string(),
+                ColorSpaceType::DeviceGray => DEVICE_GRAY.to_string(),
+                ColorSpaceType::DeviceCmyk => DEVICE_CMYK.to_string(),
             };
 
         let mut write_gradient =
