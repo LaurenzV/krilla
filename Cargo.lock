@@ -790,6 +790,7 @@ dependencies = [
 name = "krilla"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "cosmic-text",
  "difference",
  "flate2",

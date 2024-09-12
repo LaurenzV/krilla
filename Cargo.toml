@@ -11,6 +11,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+base64 = "0.22.1"
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 miniz_oxide = "0.8.0"
 once_cell = "1.19.0"
@@ -37,6 +38,7 @@ proc-macro2 = "1.0.86"
 oxipng = "9.1.2"
 krilla-macros = {path = "krilla-macros"}
 parley = {git = "https://github.com/linebender/parley", rev = "14070d5"}
+xmp-writer = "0.2.0"
 zune-png = "0.4.10"
 zune-jpeg = "0.4.13"
 gif = "0.13.1"
@@ -89,7 +91,8 @@ usvg = { workspace = true, optional = true }
 yoke = { workspace = true }
 zune-png = { workspace = true, optional = true }
 zune-jpeg = { workspace = true, optional = true }
-xmp-writer = "0.2.0"
+xmp-writer = { workspace = true }
+base64 = { workspace = true }
 
 [dev-dependencies]
 cosmic-text = { workspace = true }

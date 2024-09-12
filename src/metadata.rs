@@ -6,14 +6,15 @@ use xmp_writer::{Timezone, XmpWriter};
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]
 pub struct Metadata {
-    title: Option<String>,
-    subject: Option<String>,
-    creator: Option<String>,
-    producer: Option<String>,
-    keywords: Option<Vec<String>>,
-    authors: Option<Vec<String>>,
-    modification_date: Option<DateTime>,
-    creation_date: Option<DateTime>,
+    pub(crate) title: Option<String>,
+    pub(crate) subject: Option<String>,
+    pub(crate) creator: Option<String>,
+    pub(crate) producer: Option<String>,
+    pub(crate) keywords: Option<Vec<String>>,
+    pub(crate) authors: Option<Vec<String>>,
+    pub(crate) document_id: Option<String>,
+    pub(crate) modification_date: Option<DateTime>,
+    pub(crate) creation_date: Option<DateTime>,
 }
 
 impl Metadata {
@@ -63,6 +64,15 @@ impl Metadata {
     /// The creation date of the document.
     pub fn creation_date(mut self, creation_date: DateTime) -> Self {
         self.creation_date = Some(creation_date);
+        self
+    }
+
+    /// A document ID.
+    ///
+    /// This attribute will be used as an identifier for identifying
+    /// different versions of the same document.
+    pub fn document_id(mut self, document_id: String) -> Self {
+        self.document_id = Some(document_id);
         self
     }
 

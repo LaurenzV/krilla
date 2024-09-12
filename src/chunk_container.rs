@@ -1,7 +1,9 @@
 use crate::metadata::Metadata;
 use crate::serialize::SerializeSettings;
+use crate::util::hash_base64;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
+use xmp_writer::{RenditionClass, XmpWriter};
 
 /// Collects all of the chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
@@ -50,9 +52,41 @@ impl ChunkContainer {
         }
     }
 
-    // fn get_xmp_metadata(&self, root_ref: Ref) -> Chunk {
-    //
-    // }
+    fn get_other_metadata(&self, root_ref: Ref, pdf: &mut Pdf) -> Chunk {
+        const PDF_VERSION: &str = "PDF-1.7";
+
+        let mut xmp = XmpWriter::new();
+        if let Some(metadata) = &self.metadata {
+            metadata.serialize_xmp_metadata(&mut xmp);
+        }
+
+        let instance_id = hash_base64(pdf.as_bytes());
+
+        let document_id = if let Some(metadata) = &self.metadata {
+            if let Some(document_id) = &metadata.document_id {
+                hash_base64(&(PDF_VERSION, document_id))
+            } else if metadata.title.is_some() && metadata.authors.is_some() {
+                hash_base64(&(PDF_VERSION, &metadata.title, &metadata.authors))
+            } else {
+                instance_id.clone()
+            }
+        } else {
+            instance_id.clone()
+        };
+
+        xmp.num_pages(self.pages.len() as u32);
+        xmp.instance_id(&instance_id);
+        xmp.document_id(&document_id);
+        pdf.set_file_id((
+            document_id.as_bytes().to_vec(),
+            instance_id.as_bytes().to_vec(),
+        ));
+
+        xmp.rendition_class(RenditionClass::Proof);
+        xmp.pdf_version("1.7");
+
+        Chunk::new()
+    }
 
     pub fn finish(mut self, serialize_settings: SerializeSettings) -> Pdf {
         let mut remapped_ref = Ref::new(1);
