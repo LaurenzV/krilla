@@ -57,43 +57,6 @@ pub(crate) const DEVICE_GRAY: &str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
 pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
-#[derive(Clone)]
-pub(crate) struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
-
-impl ICCBasedColorSpace {
-    pub fn new(data: Arc<dyn AsRef<[u8]>>, num_components: u8) -> Self {
-        Self(data, num_components)
-    }
-
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
-        let icc_ref = sc.new_ref();
-
-        let mut chunk = Chunk::new();
-
-        let mut array = chunk.indirect(root_ref).array();
-        array.item(Name(b"ICCBased"));
-        array.item(icc_ref);
-        array.finish();
-
-        let icc_stream =
-            FilterStream::new_from_binary_data(self.0.as_ref().as_ref(), &sc.serialize_settings);
-
-        let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
-        icc_profile
-            .n(self.1 as i32)
-            .range([0.0, 1.0].repeat(self.1 as usize));
-
-        icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
-        icc_profile.finish();
-
-        Ok(chunk)
-    }
-}
-
 /// A wrapper enum that can hold colors from different color spaces.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum Color {
@@ -260,6 +223,43 @@ pub(crate) enum ColorSpace {
     DeviceGray,
     DeviceRgb,
     DeviceCmyk,
+}
+
+#[derive(Clone)]
+pub(crate) struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
+
+impl ICCBasedColorSpace {
+    pub fn new(data: Arc<dyn AsRef<[u8]>>, num_components: u8) -> Self {
+        Self(data, num_components)
+    }
+
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
+        let icc_ref = sc.new_ref();
+
+        let mut chunk = Chunk::new();
+
+        let mut array = chunk.indirect(root_ref).array();
+        array.item(Name(b"ICCBased"));
+        array.item(icc_ref);
+        array.finish();
+
+        let icc_stream =
+            FilterStream::new_from_binary_data(self.0.as_ref().as_ref(), &sc.serialize_settings);
+
+        let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
+        icc_profile
+            .n(self.1 as i32)
+            .range([0.0, 1.0].repeat(self.1 as usize));
+
+        icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
+        icc_profile.finish();
+
+        Ok(chunk)
+    }
 }
 
 #[cfg(test)]
