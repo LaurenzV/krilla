@@ -63,14 +63,22 @@ pub(crate) trait InternalColor {
     /// Return the components of the color as a normalized f32.
     fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32>;
     /// Return the color space of the color.
-    fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpaceType;
+    fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace;
 }
 
 #[derive(Clone)]
-struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
+pub(crate) struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
 impl ICCBasedColorSpace {
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    pub fn new(data: Arc<dyn AsRef<[u8]>>, num_components: u8) -> Self {
+        Self(data, num_components)
+    }
+
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -118,7 +126,7 @@ impl Color {
         }
     }
 
-    pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpaceType {
+    pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
         match self {
             Color::Rgb(rgb) => rgb.color_space(no_device_cs, is_gradient),
             Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs, is_gradient),
@@ -128,7 +136,7 @@ impl Color {
 
 /// CMYK colors.
 pub mod cmyk {
-    use crate::object::color::{ColorSpaceType, InternalColor};
+    use crate::object::color::{ColorSpace, InternalColor};
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -163,8 +171,8 @@ pub mod cmyk {
             ]
         }
 
-        fn color_space(&self, _: bool, _: bool) -> ColorSpaceType {
-            ColorSpaceType::DeviceCmyk
+        fn color_space(&self, _: bool, _: bool) -> ColorSpace {
+            ColorSpace::DeviceCmyk
         }
     }
 
@@ -175,14 +183,7 @@ pub mod cmyk {
 
 /// RGB colors.
 pub mod rgb {
-    use crate::object::color::{ColorSpaceType, ICCBasedColorSpace, InternalColor};
-    use crate::serialize::SerializerContext;
-    use std::sync::Arc;
-
-    use crate::chunk_container::ChunkContainer;
-    use crate::error::KrillaResult;
-    use crate::object::Object;
-    use pdf_writer::{Chunk, Ref};
+    use crate::object::color::{ColorSpace, InternalColor};
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -243,7 +244,7 @@ pub mod rgb {
             }
         }
 
-        fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpaceType {
+        fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
             if self.is_gray_scale() && !is_gradient {
                 Luma::color_space(no_device_cs)
             } else {
@@ -252,11 +253,6 @@ pub mod rgb {
         }
     }
 
-    /// The ICC profile for the SRGB color space.
-    static SRGB_ICC: &[u8] = include_bytes!("../icc/sRGB-v4.icc");
-    /// The ICC profile for the sgray color space.
-    static GREY_ICC: &[u8] = include_bytes!("../icc/sGrey-v4.icc");
-
     /// The RGB color space. Depending on whether the `no_device_cs` serialize option is set,
     /// this will internally be encoded either using the PDF `DeviceRgb` color space, or in the
     /// SRGB color space using an ICC profile.
@@ -264,11 +260,11 @@ pub mod rgb {
     pub struct Rgb;
 
     impl Rgb {
-        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpaceType {
+        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpaceType::Srgb
+                ColorSpace::Srgb
             } else {
-                ColorSpaceType::DeviceRgb
+                ColorSpace::DeviceRgb
             }
         }
     }
@@ -276,48 +272,18 @@ pub mod rgb {
     pub(crate) struct Luma;
 
     impl Luma {
-        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpaceType {
+        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpaceType::SGray
+                ColorSpace::SGray
             } else {
-                ColorSpaceType::DeviceGray
+                ColorSpace::DeviceGray
             }
-        }
-    }
-
-    /// The SRGB color space.
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub(crate) struct Srgb;
-
-    impl Object for Srgb {
-        fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-            &mut cc.color_spaces
-        }
-
-        fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-            let icc_based = ICCBasedColorSpace(Arc::new(SRGB_ICC), 3);
-            icc_based.serialize(sc, root_ref)
-        }
-    }
-
-    /// The sgray color space.
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub(crate) struct SGray;
-
-    impl Object for SGray {
-        fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-            &mut cc.color_spaces
-        }
-
-        fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-            let icc_based = ICCBasedColorSpace(Arc::new(GREY_ICC), 1);
-            icc_based.serialize(sc, root_ref)
         }
     }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) enum ColorSpaceType {
+pub(crate) enum ColorSpace {
     Srgb,
     SGray,
     DeviceGray,

@@ -1,6 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::{Color, ColorSpaceType, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -547,15 +547,15 @@ impl ContentBuilder {
             |color: Color, content_builder: &mut ContentBuilder, is_gradient: bool| match color
                 .color_space(no_device_cs, is_gradient)
             {
-                ColorSpaceType::Srgb => content_builder
+                ColorSpace::Srgb => content_builder
                     .rd_builder
                     .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb)),
-                ColorSpaceType::SGray => content_builder
+                ColorSpace::SGray => content_builder
                     .rd_builder
                     .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray)),
-                ColorSpaceType::DeviceRgb => DEVICE_RGB.to_string(),
-                ColorSpaceType::DeviceGray => DEVICE_GRAY.to_string(),
-                ColorSpaceType::DeviceCmyk => DEVICE_CMYK.to_string(),
+                ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
+                ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
+                ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
             };
 
         let mut write_gradient =

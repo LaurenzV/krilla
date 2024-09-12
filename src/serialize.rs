@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpaceType, DEVICE_CMYK};
+use crate::color::{ColorSpace, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -193,17 +193,15 @@ impl SerializerContext {
         self.cur_ref.bump()
     }
 
-    pub fn add_cs(&mut self, cs: ColorSpaceType) -> CSWrapper {
+    pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpaceType::Srgb => {
-                CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb).unwrap())
-            }
-            ColorSpaceType::SGray => {
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb).unwrap()),
+            ColorSpace::SGray => {
                 CSWrapper::Ref(self.add_object(ColorSpaceResource::SGray).unwrap())
             }
-            ColorSpaceType::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
-            ColorSpaceType::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
-            ColorSpaceType::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
+            ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
+            ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
+            ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
         }
     }
 

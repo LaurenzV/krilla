@@ -1,8 +1,7 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::rgb::SGray;
+use crate::color::ICCBasedColorSpace;
 use crate::error::KrillaResult;
 use crate::font::FontIdentifier;
-use crate::object::color::rgb::Srgb;
 use crate::object::ext_g_state::ExtGState;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -18,6 +17,7 @@ use pdf_writer::{Chunk, Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::Arc;
 
 pub(crate) trait ResourceTrait: Hash {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
@@ -367,6 +367,11 @@ where
 
 pub type ResourceNumber = u32;
 
+/// The ICC profile for the SRGB color space.
+static SRGB_ICC: &[u8] = include_bytes!("icc/sRGB-v4.icc");
+/// The ICC profile for the sgray color space.
+static GREY_ICC: &[u8] = include_bytes!("icc/sGrey-v4.icc");
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ColorSpaceResource {
     Srgb,
@@ -380,8 +385,14 @@ impl Object for ColorSpaceResource {
 
     fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         match self {
-            ColorSpaceResource::Srgb => Srgb.serialize(sc, root_ref),
-            ColorSpaceResource::SGray => SGray.serialize(sc, root_ref),
+            ColorSpaceResource::Srgb => {
+                let icc_based = ICCBasedColorSpace::new(Arc::new(SRGB_ICC), 3);
+                icc_based.serialize(sc, root_ref)
+            }
+            ColorSpaceResource::SGray => {
+                let icc_based = ICCBasedColorSpace::new(Arc::new(GREY_ICC), 1);
+                icc_based.serialize(sc, root_ref)
+            }
         }
     }
 }
