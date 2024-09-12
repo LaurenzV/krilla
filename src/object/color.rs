@@ -67,16 +67,10 @@ pub(crate) enum Color {
 }
 
 impl Color {
-    pub(crate) fn to_pdf_color(self, is_gradient: bool) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(self, allow_gray: bool) -> Vec<f32> {
         match self {
-            Color::Rgb(rgb) => rgb
-                .to_pdf_color(is_gradient)
-                .into_iter()
-                .collect::<Vec<_>>(),
-            Color::DeviceCmyk(cmyk) => cmyk
-                .to_pdf_color(is_gradient)
-                .into_iter()
-                .collect::<Vec<_>>(),
+            Color::Rgb(rgb) => rgb.to_pdf_color(allow_gray).into_iter().collect::<Vec<_>>(),
+            Color::DeviceCmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
 
@@ -102,7 +96,7 @@ pub mod cmyk {
             Color(cyan, magenta, yellow, black)
         }
 
-        pub(crate) fn to_pdf_color(&self, _: bool) -> impl IntoIterator<Item = f32> {
+        pub(crate) fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
             [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
@@ -172,8 +166,8 @@ pub mod rgb {
         // require the number of components for each stop to be the same. Because of this
         // we always use 3 components for RGB and 4 components for CMYK. No automatic
         // detection of greyscale colors.
-        pub(crate) fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32> {
-            if self.is_gray_scale() && !is_gradient {
+        pub(crate) fn to_pdf_color(&self, allow_gray: bool) -> impl IntoIterator<Item = f32> {
+            if self.is_gray_scale() && allow_gray {
                 vec![self.0 as f32 / 255.0]
             } else {
                 vec![

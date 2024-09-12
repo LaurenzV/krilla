@@ -657,7 +657,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_fill_color_space(color_space.to_pdf_name());
-            content.set_fill_color(color.to_pdf_color(false));
+            content.set_fill_color(color.to_pdf_color(true));
         }
 
         self.content_set_fill_stroke_properties(
@@ -683,7 +683,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_stroke_color_space(color_space.to_pdf_name());
-            content.set_stroke_color(color.to_pdf_color(false));
+            content.set_stroke_color(color.to_pdf_color(true));
         }
 
         self.content_set_fill_stroke_properties(

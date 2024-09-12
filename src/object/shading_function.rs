@@ -338,12 +338,12 @@ fn select_axial_radial_function(
             serialize_exponential(
                 stops[0]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops[1]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 chunk,
@@ -644,7 +644,7 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
         } else {
             stops[0]
                 .color
-                .to_pdf_color(true)
+                .to_pdf_color(false)
                 .into_iter()
                 .map(|n| n.to_string())
                 .collect::<Vec<_>>()
@@ -667,12 +667,12 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
             encode_two_stops(
                 &stops[0]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 &stops[1]
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops_min,
@@ -711,12 +711,12 @@ fn serialize_stitching(
             (
                 first
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
                 second
                     .color
-                    .to_pdf_color(true)
+                    .to_pdf_color(false)
                     .into_iter()
                     .collect::<Vec<_>>(),
             )
