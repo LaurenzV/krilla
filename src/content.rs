@@ -615,27 +615,15 @@ impl ContentBuilder {
                 let color_space = color_to_string((*c).into(), self, false);
                 set_solid_fn(&mut self.content, color_space, (*c).into());
             }
-            InnerPaint::RgbLinearGradient(lg) => {
+            InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            InnerPaint::CmykLinearGradient(lg) => {
-                let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform, self);
-            }
-            InnerPaint::RgbRadialGradient(rg) => {
+            InnerPaint::RadialGradient(rg) => {
                 let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }
-            InnerPaint::CmykRadialGradient(rg) => {
-                let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform, self);
-            }
-            InnerPaint::RgbSweepGradient(sg) => {
-                let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform, self);
-            }
-            InnerPaint::CmykSweepGradient(sg) => {
+            InnerPaint::SweepGradient(sg) => {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
                 write_gradient(gradient_props, transform, self);
             }

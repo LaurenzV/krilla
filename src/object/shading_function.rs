@@ -98,9 +98,7 @@ fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     )
 }
 
-impl<C> GradientPropertiesExt for LinearGradient<C>
-where
-    C: ColorSpace,
+impl GradientPropertiesExt for LinearGradient
 {
     fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         if self.spread_method == SpreadMethod::Pad {
@@ -145,9 +143,7 @@ where
     }
 }
 
-impl<C> GradientPropertiesExt for SweepGradient<C>
-where
-    C: ColorSpace,
+impl GradientPropertiesExt for SweepGradient
 {
     fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
         let min = self.start_angle;
@@ -175,10 +171,7 @@ where
     }
 }
 
-impl<C> GradientPropertiesExt for RadialGradient<C>
-where
-    C: ColorSpace,
-{
+impl GradientPropertiesExt for RadialGradient {
     fn gradient_properties(self, _: Rect) -> (GradientProperties, TransformWrapper) {
         // TODO: Support other spread methods
         (

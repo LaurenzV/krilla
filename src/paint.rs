@@ -1,15 +1,44 @@
 //! Paints that can be used for filling and stroking text or paths.
 
-use crate::color::{cmyk, rgb};
+use crate::color::{cmyk, Color, rgb};
 use crate::object::color::ColorSpace;
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
 
+/// The color stops of a gradient.
+#[derive(Debug, Clone)]
+pub enum Stops {
+    RgbStops(Vec<Stop<rgb::Color>>),
+    CmykStops(Vec<Stop<cmyk::Color>>)
+}
+
+impl IntoIterator for Stops {
+    type Item = crate::object::shading_function::Stop;
+    type IntoIter = std::vec::IntoIter<crate::object::shading_function::Stop>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            Stops::RgbStops(r) => r.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
+            Stops::CmykStops(c) => c.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
+        }
+    }
+}
+
+impl From<Vec<Stop<rgb::Color>>> for Stops {
+    fn from(value: Vec<Stop<rgb::Color>>) -> Self {
+        Stops::RgbStops(value)
+    }
+}
+
+impl From<Vec<Stop<cmyk::Color>>> for Stops {
+    fn from(value: Vec<Stop<cmyk::Color>>) -> Self {
+        Stops::CmykStops(value)
+    }
+}
+
 /// A linear gradient.
 #[derive(Debug, Clone)]
-pub struct LinearGradient<C>
-where
-    C: ColorSpace,
+pub struct LinearGradient
 {
     /// The x coordinate of the first point.
     pub x1: f32,
@@ -24,14 +53,12 @@ where
     /// The spread method of the linear gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
-    pub stops: Vec<Stop<C>>,
+    pub stops: Stops,
 }
 
 /// A radial gradient.
 #[derive(Debug, Clone)]
-pub struct RadialGradient<C>
-where
-    C: ColorSpace,
+pub struct RadialGradient
 {
     /// The x coordinate of the start circle.
     pub fx: f32,
@@ -53,16 +80,14 @@ where
     /// for radial gradients, and will fall back to `Pad`.
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
-    pub stops: Vec<Stop<C>>,
+    pub stops: Stops,
 }
 
 /// A sweep gradient.
 ///
 /// Angles start from the right and go counter-clockwise with increasing values.
 #[derive(Debug, Clone)]
-pub struct SweepGradient<C>
-where
-    C: ColorSpace,
+pub struct SweepGradient
 {
     /// The x coordinate of the center.
     pub cx: f32,
@@ -77,7 +102,7 @@ where
     /// The spread method of the sweep gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
-    pub stops: Vec<Stop<C>>,
+    pub stops: Stops,
 }
 
 /// A pattern.
@@ -97,12 +122,9 @@ pub struct Pattern {
 pub(crate) enum InnerPaint {
     RgbColor(rgb::Color),
     CmykColor(cmyk::Color),
-    RgbLinearGradient(LinearGradient<rgb::Rgb>),
-    CmykLinearGradient(LinearGradient<cmyk::DeviceCmyk>),
-    RgbRadialGradient(RadialGradient<rgb::Rgb>),
-    CmykRadialGradient(RadialGradient<cmyk::DeviceCmyk>),
-    RgbSweepGradient(SweepGradient<rgb::Rgb>),
-    CmykSweepGradient(SweepGradient<cmyk::DeviceCmyk>),
+    LinearGradient(LinearGradient),
+    RadialGradient(RadialGradient),
+    SweepGradient(SweepGradient),
     Pattern(Pattern),
 }
 
@@ -126,39 +148,21 @@ impl From<cmyk::Color> for Paint {
     }
 }
 
-impl From<LinearGradient<rgb::Rgb>> for Paint {
-    fn from(value: LinearGradient<rgb::Rgb>) -> Self {
-        Paint(InnerPaint::RgbLinearGradient(value))
+impl From<LinearGradient> for Paint {
+    fn from(value: LinearGradient) -> Self {
+        Paint(InnerPaint::LinearGradient(value))
     }
 }
 
-impl From<LinearGradient<cmyk::DeviceCmyk>> for Paint {
-    fn from(value: LinearGradient<cmyk::DeviceCmyk>) -> Self {
-        Paint(InnerPaint::CmykLinearGradient(value))
+impl From<RadialGradient> for Paint {
+    fn from(value: RadialGradient) -> Self {
+        Paint(InnerPaint::RadialGradient(value))
     }
 }
 
-impl From<RadialGradient<rgb::Rgb>> for Paint {
-    fn from(value: RadialGradient<rgb::Rgb>) -> Self {
-        Paint(InnerPaint::RgbRadialGradient(value))
-    }
-}
-
-impl From<RadialGradient<cmyk::DeviceCmyk>> for Paint {
-    fn from(value: RadialGradient<cmyk::DeviceCmyk>) -> Self {
-        Paint(InnerPaint::CmykRadialGradient(value))
-    }
-}
-
-impl From<SweepGradient<rgb::Rgb>> for Paint {
-    fn from(value: SweepGradient<rgb::Rgb>) -> Self {
-        Paint(InnerPaint::RgbSweepGradient(value))
-    }
-}
-
-impl From<SweepGradient<cmyk::DeviceCmyk>> for Paint {
-    fn from(value: SweepGradient<cmyk::DeviceCmyk>) -> Self {
-        Paint(InnerPaint::CmykSweepGradient(value))
+impl From<SweepGradient> for Paint {
+    fn from(value: SweepGradient) -> Self {
+        Paint(InnerPaint::SweepGradient(value))
     }
 }
 
@@ -189,19 +193,19 @@ impl Default for SpreadMethod {
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Stop<C>
 where
-    C: ColorSpace,
+    C: Into<Color>,
 {
     /// The normalized offset of the stop.
     pub offset: NormalizedF32,
     /// The color of the stop.
-    pub color: C::Color,
+    pub color: C,
     /// The opacity of the stop.
     pub opacity: NormalizedF32,
 }
 
 impl<C> From<Stop<C>> for crate::object::shading_function::Stop
 where
-    C: ColorSpace,
+    C: Into<Color>,
 {
     fn from(val: Stop<C>) -> Self {
         crate::object::shading_function::Stop {
