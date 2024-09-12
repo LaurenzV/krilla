@@ -164,10 +164,6 @@ pub mod cmyk {
             Color::new(0, 0, 0, 255)
         }
     }
-
-    /// The device CMYK color space.
-    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct DeviceCmyk;
 }
 
 /// RGB colors.
