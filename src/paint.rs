@@ -22,8 +22,6 @@ where
     /// A transform that should be applied to the linear gradient.
     pub transform: Transform,
     /// The spread method of the linear gradient.
-    ///
-    /// _Note_: The spread methods `Repeat`/`Reflect` are not supported in Firefox.
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
     pub stops: Vec<Stop<C>>,
@@ -77,8 +75,6 @@ where
     /// A transform that should be applied to the sweep gradient.
     pub transform: Transform,
     /// The spread method of the sweep gradient.
-    ///
-    /// _Note_: The spread methods `Repeat`/`Reflect` are not supported in Firefox.
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
     pub stops: Vec<Stop<C>>,
