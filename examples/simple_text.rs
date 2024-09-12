@@ -13,6 +13,7 @@ use krilla::{Document, PageSettings};
 use std::sync::Arc;
 use tiny_skia_path::Point;
 use usvg::NormalizedF32;
+use krilla::paint::LinearGradient;
 
 fn main() {
     // The usual page setup.
@@ -26,6 +27,16 @@ fn main() {
         vec![],
     )
     .unwrap();
+    
+    let gradient = LinearGradient {
+        x1: 0.0,
+        y1: 0.0,
+        x2: 0.0,
+        y2: 0.0,
+        transform: Default::default(),
+        spread_method: Default::default(),
+        stops: vec![],
+    }
 
     // Let's first write some red-colored text with some English text.
     surface.fill_text(

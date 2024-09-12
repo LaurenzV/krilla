@@ -130,6 +130,7 @@ impl Type3Font {
                 let mut content = Content::new();
 
                 let stream = if glyph_type == Some(GlyphSource::Outline) || stream.is_empty() {
+                    // Use shape glyph for outline-based Type3 fonts.
                     let bbox = stream.bbox();
                     font_bbox.expand(&bbox);
                     content.start_shape_glyph(
@@ -146,6 +147,8 @@ impl Type3Font {
                     final_stream.extend(stream.content());
                     final_stream
                 } else {
+                    // Use color glyph for colored Type3 fonts.
+
                     // I considered writing into the stream directly instead of creating an XObject
                     // and showing that, but it seems like many viewers don't like that, and emojis
                     // look messed up. Using XObjects seems like the best choice here.
@@ -301,6 +304,8 @@ impl Type3FontMapper {
     }
 
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (FontIdentifier, Gid) {
+        // If the glyph has already been added, return the font identifier of
+        // the type 3 font as well as the Type3 gid in that font.
         if let Some(id) = self.id_from_glyph(glyph_id) {
             let gid = self
                 .font_from_id(id.clone())
@@ -312,16 +317,19 @@ impl Type3FontMapper {
 
         if let Some(last_font) = self.fonts.last_mut() {
             if last_font.is_full() {
+                // If the last Type3 font is full, create a new one.
                 let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
                 let id = font.identifier();
                 let gid = font.add_glyph(glyph_id);
                 self.fonts.push(font);
                 (id, gid)
             } else {
+                // Otherwise, insert it into the last Type3 font.
                 let id = last_font.identifier();
                 (id, last_font.add_glyph(glyph_id))
             }
         } else {
+            // If not Type3 font exists yet, create a new one.
             let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
             let id = font.identifier();
             let gid = font.add_glyph(glyph_id);
@@ -380,47 +388,6 @@ mod tests {
             None,
         );
     }
-
-    // #[visreg(all, settings_4)]
-    // fn type3_noto_sans_different_actions(surface: &mut Surface) {
-    //     let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
-    //
-    //     surface.fill_text(
-    //         Point::from_xy(0.0, 25.0),
-    //         purple_fill(0.5),
-    //         font.clone(),
-    //         32.0,
-    //         &[],
-    //         "hello world",
-    //     );
-    //
-    //     surface.stroke_text(
-    //         Point::from_xy(0.0, 50.0),
-    //         red_stroke(0.5),
-    //         font.clone(),
-    //         32.0,
-    //         &[],
-    //         "hello world",
-    //     );
-    //
-    //     surface.fill_text(
-    //         Point::from_xy(0.0, 75.0),
-    //         red_fill(1.0),
-    //         font.clone(),
-    //         32.0,
-    //         &[],
-    //         "hello world",
-    //     );
-    //
-    //     surface.stroke_text(
-    //         Point::from_xy(0.0, 100.0),
-    //         blue_stroke(1.0),
-    //         font.clone(),
-    //         32.0,
-    //         &[],
-    //         "hello world",
-    //     );
-    // }
 
     #[visreg(all, settings_4)]
     fn type3_latin_modern_simple_text(surface: &mut Surface) {

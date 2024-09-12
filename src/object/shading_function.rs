@@ -420,7 +420,6 @@ fn serialize_sweep_postscript(
     let min: f32 = properties.min.get();
     let max: f32 = properties.max.get();
 
-    // TODO: Improve formatting of PS code.
     let start_code = [
         "{".to_string(),
         // Stack: x y
@@ -474,7 +473,6 @@ fn serialize_linear_postscript(
     let min: f32 = properties.min.get();
     let max: f32 = properties.max.get();
 
-    // TODO: Improve formatting of PS code.
     let start_code = [
         "{".to_string(),
         // Stack: x y

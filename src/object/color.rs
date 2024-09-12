@@ -7,9 +7,8 @@
 //!
 //! # Color spaces
 //!
-//! krilla currently supports three color spaces:
-//! - Luma (for greyscale colors)
-//! - Rgb
+//! krilla currently supports two color spaces:
+//! - Rgb (gray-scale colors will automatically be converted to the luma color space)
 //! - CMYK
 //!
 //! Each color space is associated with its specific color type, which you can use to create new
@@ -32,11 +31,11 @@
 //!
 //! This is why there is also the option to specify colors in a *device-independent* way,
 //! which basically means that the color value (145, 120, 45) is represented in a well-specified
-//! color space, and each screen can then convert the colors so that they match the representation
-//! in the given color space. This should lead to a more accurate color representation across
-//! different screens.
+//! color space, and each device can then convert the colors to their native color space
+//! so that they match the representation in the given color space as closely as possible.
+//! This should lead to a more accurate color representation across different screens.
 //!
-//! In most cases, it is totally fine to just use a device-dependent color specification, and it's
+//! In 90% of the cases, it is totally fine to just use a device-dependent colorspace, and it's
 //! what krilla does by default. However, if you do care about that, then you can set the
 //! `no_device_cs` property to true, in which case krilla will embed an ICC profile for the
 //! sgrey and srgb color space (for luma and rgb colors, respectively). At the moment, krilla
@@ -241,6 +240,10 @@ pub mod rgb {
     }
 
     impl InternalColor for Color {
+        // For gradients, we don't want to coerce to luma if possible, because gradients
+        // require the number of components for each stop to be the same. Because of this
+        // we always use 3 components for RGB and 4 components for CMYK. No automatic
+        // detection of greyscale colors.
         fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32> {
             if self.is_gray_scale() && !is_gradient {
                 vec![self.0 as f32 / 255.0]

@@ -67,7 +67,7 @@ impl XyzDestination {
             .page_infos()
             .get(self.page_index)
             .ok_or(KrillaError::UserError(
-                "attempted to link to non-existing page".to_string(),
+                format!("attempted to link to page {}, but document only has {} pages", self.page_index, sc.page_infos().len()),
             ))?;
         let page_ref = page_info.ref_;
         let page_size = page_info.surface_size.height();
