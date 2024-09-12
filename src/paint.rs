@@ -1,13 +1,13 @@
 //! Paints that can be used for filling and stroking text or paths.
 
-use crate::color::{cmyk, Color, rgb};
+use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
 use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone)]
 pub(crate) enum InnerStops {
     RgbStops(Vec<Stop<rgb::Color>>),
-    CmykStops(Vec<Stop<cmyk::Color>>)
+    CmykStops(Vec<Stop<cmyk::Color>>),
 }
 
 /// The color stops of a gradient.
@@ -21,8 +21,16 @@ impl IntoIterator for InnerStops {
     fn into_iter(self) -> Self::IntoIter {
         // TODO: Avoid collect somehow?
         match self {
-            InnerStops::RgbStops(r) => r.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
-            InnerStops::CmykStops(c) => c.into_iter().map(|c| c.into()).collect::<Vec<_>>().into_iter(),
+            InnerStops::RgbStops(r) => r
+                .into_iter()
+                .map(|c| c.into())
+                .collect::<Vec<_>>()
+                .into_iter(),
+            InnerStops::CmykStops(c) => c
+                .into_iter()
+                .map(|c| c.into())
+                .collect::<Vec<_>>()
+                .into_iter(),
         }
     }
 }
@@ -41,8 +49,7 @@ impl From<Vec<Stop<cmyk::Color>>> for Stops {
 
 /// A linear gradient.
 #[derive(Debug, Clone)]
-pub struct LinearGradient
-{
+pub struct LinearGradient {
     /// The x coordinate of the first point.
     pub x1: f32,
     /// The y coordinate of the first point.
@@ -61,8 +68,7 @@ pub struct LinearGradient
 
 /// A radial gradient.
 #[derive(Debug, Clone)]
-pub struct RadialGradient
-{
+pub struct RadialGradient {
     /// The x coordinate of the start circle.
     pub fx: f32,
     /// The y coordinate of the start circle.
@@ -90,8 +96,7 @@ pub struct RadialGradient
 ///
 /// Angles start from the right and go counter-clockwise with increasing values.
 #[derive(Debug, Clone)]
-pub struct SweepGradient
-{
+pub struct SweepGradient {
     /// The x coordinate of the center.
     pub cx: f32,
     /// The y coordinate of the center.

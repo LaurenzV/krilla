@@ -57,7 +57,12 @@ pub fn convert_paint(
             y2: lg.y2(),
             transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
             spread_method: convert_spread_method(&lg.spread_method()),
-            stops: lg.stops().iter().map(convert_stop).collect::<Vec<_>>().into(),
+            stops: lg
+                .stops()
+                .iter()
+                .map(convert_stop)
+                .collect::<Vec<_>>()
+                .into(),
         }
         .into(),
         usvg::Paint::RadialGradient(rg) => RadialGradient {
@@ -69,7 +74,12 @@ pub fn convert_paint(
             fr: 0.0,
             transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
             spread_method: convert_spread_method(&rg.spread_method()),
-            stops: rg.stops().iter().map(convert_stop).collect::<Vec<_>>().into(),
+            stops: rg
+                .stops()
+                .iter()
+                .map(convert_stop)
+                .collect::<Vec<_>>()
+                .into(),
         }
         .into(),
         usvg::Paint::Pattern(pat) => {

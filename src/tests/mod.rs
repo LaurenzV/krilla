@@ -516,7 +516,8 @@ pub fn stops_with_1_solid() -> Stops {
         offset: NormalizedF32::new(0.5).unwrap(),
         color: rgb::Color::new(255, 0, 0),
         opacity: NormalizedF32::ONE,
-    }].into()
+    }]
+    .into()
 }
 
 pub fn stops_with_2_solid_1() -> Stops {
@@ -531,7 +532,8 @@ pub fn stops_with_2_solid_1() -> Stops {
             color: rgb::Color::new(255, 255, 0),
             opacity: NormalizedF32::ONE,
         },
-    ].into()
+    ]
+    .into()
 }
 
 pub fn stops_with_2_solid_2() -> Stops {
@@ -546,7 +548,8 @@ pub fn stops_with_2_solid_2() -> Stops {
             color: rgb::Color::new(89, 52, 235),
             opacity: NormalizedF32::ONE,
         },
-    ].into()
+    ]
+    .into()
 }
 
 pub fn stops_with_2_opacity() -> Stops {
@@ -561,7 +564,8 @@ pub fn stops_with_2_opacity() -> Stops {
             color: rgb::Color::new(89, 52, 235),
             opacity: NormalizedF32::new(0.2).unwrap(),
         },
-    ].into()
+    ]
+    .into()
 }
 
 pub fn stops_with_3_solid_1() -> Stops {
@@ -581,7 +585,8 @@ pub fn stops_with_3_solid_1() -> Stops {
             color: rgb::Color::new(0, 255, 255),
             opacity: NormalizedF32::ONE,
         },
-    ].into()
+    ]
+    .into()
 }
 
 pub fn stops_with_3_solid_2() -> Stops {
@@ -601,7 +606,8 @@ pub fn stops_with_3_solid_2() -> Stops {
             color: rgb::Color::new(235, 52, 110),
             opacity: NormalizedF32::ONE,
         },
-    ].into()
+    ]
+    .into()
 }
 
 pub fn stops_with_3_opacity() -> Stops {
@@ -621,7 +627,8 @@ pub fn stops_with_3_opacity() -> Stops {
             color: rgb::Color::new(235, 52, 110),
             opacity: NormalizedF32::new(0.1).unwrap(),
         },
-    ].into()
+    ]
+    .into()
 }
 
 pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
