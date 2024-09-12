@@ -57,15 +57,6 @@ pub(crate) const DEVICE_GRAY: &str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
 pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
-/// An internal helper trait to more easily deal with colors
-/// of different color spaces.
-pub(crate) trait InternalColor {
-    /// Return the components of the color as a normalized f32.
-    fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32>;
-    /// Return the color space of the color.
-    fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace;
-}
-
 #[derive(Clone)]
 pub(crate) struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
 
@@ -136,7 +127,7 @@ impl Color {
 
 /// CMYK colors.
 pub mod cmyk {
-    use crate::object::color::{ColorSpace, InternalColor};
+    use crate::object::color::{ColorSpace};
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -146,6 +137,19 @@ pub mod cmyk {
         /// Create a new CMYK color.
         pub fn new(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
             Color(cyan, magenta, yellow, black)
+        }
+
+        pub(crate) fn to_pdf_color(&self, _: bool) -> impl IntoIterator<Item = f32> {
+            [
+                self.0 as f32 / 255.0,
+                self.1 as f32 / 255.0,
+                self.2 as f32 / 255.0,
+                self.3 as f32 / 255.0,
+            ]
+        }
+
+        pub(crate) fn color_space(&self, _: bool, _: bool) -> ColorSpace {
+            ColorSpace::DeviceCmyk
         }
     }
 
@@ -161,21 +165,6 @@ pub mod cmyk {
         }
     }
 
-    impl InternalColor for Color {
-        fn to_pdf_color(&self, _: bool) -> impl IntoIterator<Item = f32> {
-            [
-                self.0 as f32 / 255.0,
-                self.1 as f32 / 255.0,
-                self.2 as f32 / 255.0,
-                self.3 as f32 / 255.0,
-            ]
-        }
-
-        fn color_space(&self, _: bool, _: bool) -> ColorSpace {
-            ColorSpace::DeviceCmyk
-        }
-    }
-
     /// The device CMYK color space.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct DeviceCmyk;
@@ -183,7 +172,7 @@ pub mod cmyk {
 
 /// RGB colors.
 pub mod rgb {
-    use crate::object::color::{ColorSpace, InternalColor};
+    use crate::object::color::{ColorSpace};
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -219,20 +208,12 @@ pub mod rgb {
         fn is_gray_scale(&self) -> bool {
             self.0 == self.1 && self.1 == self.2
         }
-    }
 
-    impl From<Color> for super::Color {
-        fn from(val: Color) -> Self {
-            super::Color::Rgb(val)
-        }
-    }
-
-    impl InternalColor for Color {
         // For gradients, we don't want to coerce to luma if possible, because gradients
         // require the number of components for each stop to be the same. Because of this
         // we always use 3 components for RGB and 4 components for CMYK. No automatic
         // detection of greyscale colors.
-        fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32> {
+        pub(crate) fn to_pdf_color(&self, is_gradient: bool) -> impl IntoIterator<Item = f32> {
             if self.is_gray_scale() && !is_gradient {
                 vec![self.0 as f32 / 255.0]
             } else {
@@ -244,12 +225,18 @@ pub mod rgb {
             }
         }
 
-        fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
+        pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
             if self.is_gray_scale() && !is_gradient {
                 Luma::color_space(no_device_cs)
             } else {
                 Rgb::color_space(no_device_cs)
             }
+        }
+    }
+
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::Rgb(val)
         }
     }
 
