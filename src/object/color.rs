@@ -80,10 +80,10 @@ impl Color {
         }
     }
 
-    pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
+    pub(crate) fn color_space(&self, no_device_cs: bool, allow_gray: bool) -> ColorSpace {
         match self {
-            Color::Rgb(rgb) => rgb.color_space(no_device_cs, is_gradient),
-            Color::DeviceCmyk(cmyk) => cmyk.color_space(no_device_cs, is_gradient),
+            Color::Rgb(rgb) => rgb.color_space(no_device_cs, allow_gray),
+            Color::DeviceCmyk(cmyk) => cmyk.color_space(),
         }
     }
 }
@@ -111,7 +111,7 @@ pub mod cmyk {
             ]
         }
 
-        pub(crate) fn color_space(&self, _: bool, _: bool) -> ColorSpace {
+        pub(crate) fn color_space(&self) -> ColorSpace {
             ColorSpace::DeviceCmyk
         }
     }
@@ -200,8 +200,8 @@ pub mod rgb {
             }
         }
 
-        pub(crate) fn color_space(&self, no_device_cs: bool, is_gradient: bool) -> ColorSpace {
-            if self.is_gray_scale() && !is_gradient {
+        pub(crate) fn color_space(&self, no_device_cs: bool, allow_gray: bool) -> ColorSpace {
+            if self.is_gray_scale() && allow_gray {
                 Self::luma_based_color_space(no_device_cs)
             } else {
                 Self::rgb_based_color_space(no_device_cs)

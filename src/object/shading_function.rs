@@ -252,7 +252,7 @@ fn serialize_postscript_shading(
     } else {
         post_script_gradient.stops[0]
             .color
-            .color_space(sc.serialize_settings.no_device_cs, true)
+            .color_space(sc.serialize_settings.no_device_cs, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -283,7 +283,7 @@ fn serialize_axial_radial_shading(
     } else {
         radial_axial_gradient.stops[0]
             .color
-            .color_space(sc.serialize_settings.no_device_cs, true)
+            .color_space(sc.serialize_settings.no_device_cs, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);

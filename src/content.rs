@@ -544,8 +544,8 @@ impl ContentBuilder {
         };
 
         let color_to_string =
-            |color: Color, content_builder: &mut ContentBuilder, is_gradient: bool| match color
-                .color_space(no_device_cs, is_gradient)
+            |color: Color, content_builder: &mut ContentBuilder, allow_gray: bool| match color
+                .color_space(no_device_cs, allow_gray)
             {
                 ColorSpace::Srgb => content_builder
                     .rd_builder
@@ -566,7 +566,7 @@ impl ContentBuilder {
                     // Write gradients with one stop as a solid color fill.
                     // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder, true);
+                    let color_space = color_to_string(color, content_builder, false);
                     set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
@@ -608,11 +608,11 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::RgbColor(c) => {
-                let color_space = color_to_string((*c).into(), self, false);
+                let color_space = color_to_string((*c).into(), self, true);
                 set_solid_fn(&mut self.content, color_space, (*c).into());
             }
             InnerPaint::CmykColor(c) => {
-                let color_space = color_to_string((*c).into(), self, false);
+                let color_space = color_to_string((*c).into(), self, true);
                 set_solid_fn(&mut self.content, color_space, (*c).into());
             }
             InnerPaint::LinearGradient(lg) => {
