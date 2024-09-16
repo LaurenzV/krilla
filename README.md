@@ -43,14 +43,14 @@ krilla.
 krilla's main "target group" is libraries that have some kind of intermediate representation
 of layouted content (whether it be from HTML or other input sources), and want to easily 
 translate this representation into a PDF file. If this is your use case, then krilla is probably
-a very suitable choice for you. 
+a very suitable, if not the most suitable choice for you. 
 
 If not, depending on what exactly you want to do, there are other Rust crates you can use:
 
-- Creating PDF files with very low-level access to the resulting file: [pdf-writer](https://github.com/typst/pdf-writer). krilla uses this library under the hood.
+- Creating PDF files with very low-level access to the resulting file: [pdf-writer](https://github.com/typst/pdf-writer).
 - Creating documents requiring high-level functionality like automatic text layouting, 
 page breaking, inserting headers and footers: [typst](https://github.com/typst/typst/).
-- Reading existing PDF documents and manipulating in a certain way: [pdf-rs](https://github.com/pdf-rs/pdf).
+- Reading existing PDF documents and manipulating them in a certain way: [pdf-rs](https://github.com/pdf-rs/pdf).
 
 In addition to that, the PDF specification is *huge* and supports tons of features with a lot of customization, including
 complex color spaces and shadings. The goal of krilla is not to expose high-level bindings 
