@@ -31,8 +31,28 @@ In addition to that, the library also supports the following PDF features:
 - Inserting links to webpages or intra-document positions.
 - Adding document metadata.
 
-## Non-goals
-The PDF specification is *huge* and supports tons of features with a lot of customization, including
+
+## Scope
+This crate labels itself as a high-level crate, and this is what it is: It abstracts away most
+of the complexity of the PDF format and instead provides high-level primitives for
+creating PDF files. However from a document-creation perspective, this crate is still
+very low-level: It does not provide functionality like text layouting, creation of tables,
+page breaking, inserting headers/footers, etc. This kind of functionality is strictly out of scope for
+krilla. 
+
+krilla's main "target group" is libraries that have some kind of intermediate representation
+of layouted content (whether it be from HTML or other input sources), and want to easily 
+translate this representation into a PDF file. If this is your use case, then krilla is probably
+a very suitable, if not the most suitable choice for you. 
+
+If not, depending on what exactly you want to do, there are other Rust crates you can use:
+
+- Creating PDF files with very low-level access to the resulting file: [pdf-writer](https://github.com/typst/pdf-writer).
+- Creating documents requiring high-level functionality like automatic text layouting, 
+page breaking, inserting headers and footers: [typst](https://github.com/typst/typst/).
+- Reading existing PDF documents and manipulating them in a certain way: [pdf-rs](https://github.com/pdf-rs/pdf).
+
+In addition to that, the PDF specification is *huge* and supports tons of features with a lot of customization, including
 complex color spaces and shadings. The goal of krilla is not to expose high-level bindings 
 for all functionality, but instead expose only a relevant subset of it.
 
