@@ -573,21 +573,17 @@ fn naive_shape(
 
 #[cfg(test)]
 mod tests {
-
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::path::Fill;
     use crate::surface::Surface;
     use crate::surface::{Stroke, TextDirection};
-    use crate::tests::{
-        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
-        rect_to_path, red_fill, red_stroke, FONTDB, NOTO_COLOR_EMOJI_COLR, NOTO_SANS,
-        NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
-    };
+    use crate::tests::{basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH};
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
     use tiny_skia_path::{Point, Size, Transform};
+    use crate::paint::{LinearGradient, Paint, SpreadMethod};
 
     #[visreg]
     fn text_direction_ltr(surface: &mut Surface) {
@@ -860,6 +856,18 @@ mod tests {
         surface.pop();
     }
 
+    fn text_gradient() -> LinearGradient {
+        LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_3_solid_1(),
+        }
+    }
+
     #[visreg]
     fn text_outlined_with_fill(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
@@ -877,7 +885,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             blue_fill(0.8),
-            font,
+            font.clone(),
             20.0,
             &[],
             "blue outlined text",
@@ -885,10 +893,24 @@ mod tests {
             None,
         );
 
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+        let mut grad_fill = Fill::default();
+        grad_fill.paint = Paint::from(text_gradient());
 
         surface.fill_text(
             Point::from_xy(0.0, 120.0),
+            grad_fill,
+            font,
+            20.0,
+            &[],
+            "gradient text",
+            true,
+            None,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 140.0),
             blue_fill(0.8),
             font,
             20.0,
@@ -916,7 +938,7 @@ mod tests {
         surface.stroke_text(
             Point::from_xy(0.0, 100.0),
             blue_stroke(0.8),
-            font,
+            font.clone(),
             20.0,
             &[],
             "blue outlined text",
@@ -924,10 +946,24 @@ mod tests {
             None,
         );
 
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+        let mut grad_stroke = Stroke::default();
+        grad_stroke.paint = Paint::from(text_gradient());
 
         surface.stroke_text(
             Point::from_xy(0.0, 120.0),
+            grad_stroke,
+            font,
+            20.0,
+            &[],
+            "gradient text",
+            true,
+            None,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 140.0),
             blue_stroke(0.8),
             font,
             20.0,
