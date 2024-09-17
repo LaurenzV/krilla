@@ -1,6 +1,6 @@
 use crate::metadata::Metadata;
 use crate::serialize::SerializeSettings;
-use crate::util::hash_base64;
+use crate::util::{hash_base64, Deferred};
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};

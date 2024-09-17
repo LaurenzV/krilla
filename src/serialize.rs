@@ -11,8 +11,8 @@ use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::{ColorSpaceResource, Resource};
-use crate::util::{NameExt, SipHashable};
+use crate::resource::{ColorSpaceResource, Resource, XObjectResource};
+use crate::util::{Deferred, NameExt, SipHashable};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
@@ -23,6 +23,7 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::image::Image;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -124,6 +125,7 @@ pub(crate) struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
+    deferred_images: Vec<Deferred<Chunk>>,
     pub(crate) serialize_settings: SerializeSettings,
 }
 
@@ -156,6 +158,7 @@ impl SerializerContext {
             outline: None,
             page_infos: vec![],
             pages: vec![],
+            deferred_images: vec![],
             font_map: HashMap::new(),
             serialize_settings,
         }
@@ -222,6 +225,20 @@ impl SerializerContext {
         }
     }
 
+    pub fn add_image(&mut self, image: Image) -> Ref
+    {
+        let hash = image.sip_hash();
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            *_ref
+        } else {
+            let root_ref = self.new_ref();
+            let chunk = image.serialize(self, root_ref);
+            self.cached_mappings.insert(hash, root_ref);
+            self.deferred_images.push(chunk);
+            root_ref
+        }
+    }
+
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
         let chunk = page_label.serialize(ref_);
@@ -263,7 +280,12 @@ impl SerializerContext {
 
     pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> KrillaResult<Ref> {
         match resource.into() {
-            Resource::XObject(xr) => self.add_object(xr),
+            Resource::XObject(xr) => {
+                match xr {
+                    XObjectResource::XObject(x) => self.add_object(x),
+                    XObjectResource::Image(i) => Ok(self.add_image(i))
+                }
+            },
             Resource::Pattern(pr) => self.add_object(pr),
             Resource::ExtGState(e) => self.add_object(e),
             Resource::ColorSpace(csr) => self.add_object(csr),
@@ -364,6 +386,10 @@ impl SerializerContext {
                 .count(pages.len() as i32)
                 .kids(pages.iter().map(|(r, _)| *r));
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
+        }
+
+        for image in self.deferred_images {
+            self.chunk_container.images.push(image.wait());
         }
 
         // Just a sanity check.

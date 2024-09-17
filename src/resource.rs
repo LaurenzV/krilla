@@ -117,24 +117,6 @@ impl ResourceTrait for XObjectResource {
     }
 }
 
-impl Object for XObjectResource {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        match self {
-            XObjectResource::XObject(x) => x.chunk_container(cc),
-            #[cfg(feature = "raster-images")]
-            XObjectResource::Image(i) => i.chunk_container(cc),
-        }
-    }
-
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-        match self {
-            XObjectResource::XObject(x) => x.serialize(sc, root_ref),
-            #[cfg(feature = "raster-images")]
-            XObjectResource::Image(i) => i.serialize(sc, root_ref),
-        }
-    }
-}
-
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) enum PatternResource {
     ShadingPattern(ShadingPattern),

@@ -16,7 +16,7 @@ use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
 use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::util::{NameExt, Prehashed, SizeWrapper};
+use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -192,56 +192,55 @@ impl Image {
     pub fn size(&self) -> Size {
         self.0.size.0
     }
-}
 
-impl Object for Image {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.images
-    }
+    pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
+        let soft_mask_id = self.0.mask_data.as_ref().map(|_| sc.new_ref());
+        let serialize_settings = sc.serialize_settings;
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-        let mut chunk = Chunk::new();
+        Deferred::new(move || {
+            let mut chunk = Chunk::new();
 
-        let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
-            let soft_mask_id = sc.new_ref();
-            let mask_stream = FilterStream::new_from_binary_data(mask_data, &sc.serialize_settings);
-            let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
-            mask_stream.write_filters(s_mask.deref_mut().deref_mut());
-            s_mask.width(self.0.size.width() as i32);
-            s_mask.height(self.0.size.height() as i32);
-            s_mask.pair(
-                Name(b"ColorSpace"),
-                // Mask color space must be device gray -- see Table 145.
-                DEVICE_GRAY.to_pdf_name(),
-            );
-            s_mask.bits_per_component(self.0.bits_per_component.as_u8() as i32);
-            soft_mask_id
-        });
+            let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
+                let soft_mask_id = soft_mask_id.unwrap();
+                let mask_stream = FilterStream::new_from_binary_data(mask_data, &serialize_settings);
+                let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
+                mask_stream.write_filters(s_mask.deref_mut().deref_mut());
+                s_mask.width(self.0.size.width() as i32);
+                s_mask.height(self.0.size.height() as i32);
+                s_mask.pair(
+                    Name(b"ColorSpace"),
+                    // Mask color space must be device gray -- see Table 145.
+                    DEVICE_GRAY.to_pdf_name(),
+                );
+                s_mask.bits_per_component(self.0.bits_per_component.as_u8() as i32);
+                soft_mask_id
+            });
 
-        let image_stream =
-            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
+            let image_stream =
+                FilterStream::new_from_binary_data(&self.0.image_data, &serialize_settings);
 
-        let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
-        image_stream.write_filters(image_x_object.deref_mut().deref_mut());
-        image_x_object.width(self.0.size.width() as i32);
-        image_x_object.height(self.0.size.height() as i32);
+            let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
+            image_stream.write_filters(image_x_object.deref_mut().deref_mut());
+            image_x_object.width(self.0.size.width() as i32);
+            image_x_object.height(self.0.size.height() as i32);
 
-        match self.0.image_color_space {
-            ImageColorspace::Rgb => {
-                image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
+            match self.0.image_color_space {
+                ImageColorspace::Rgb => {
+                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
+                }
+                ImageColorspace::Luma => {
+                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
+                }
+            };
+
+            image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);
+            if let Some(soft_mask_id) = alpha_mask {
+                image_x_object.s_mask(soft_mask_id);
             }
-            ImageColorspace::Luma => {
-                image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
-            }
-        };
+            image_x_object.finish();
 
-        image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);
-        if let Some(soft_mask_id) = alpha_mask {
-            image_x_object.s_mask(soft_mask_id);
-        }
-        image_x_object.finish();
-
-        Ok(chunk)
+            chunk
+        })
     }
 }
 
