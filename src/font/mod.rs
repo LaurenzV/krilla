@@ -14,8 +14,7 @@
 //! fonts are not encoded in the most efficient way (they are stored as Type3 fonts instead
 //! of embedded TTF/CFF fonts, due to the lack of an instancing crate in the Rust ecosystem),
 //! so if possible you should prefer static versions of font and not setting any variation
-//! coordinates. Another limitation is that, when setting variation coordinates, only filling
-//! works, not stroking.
+//! coordinates.
 
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;

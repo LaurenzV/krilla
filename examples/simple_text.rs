@@ -90,8 +90,7 @@ fn main() {
         vec![("wght".to_string(), 900.0), ("wdth".to_string(), 100.0)],
     ];
 
-    // krilla also supports variable fonts! With the limitation
-    // that it only works with filling, not stroking.
+    // krilla also supports variable fonts!
     for coordinates in axes {
         let noto_font_variable = Font::new(
             Arc::new(std::fs::read("assets/fonts/NotoSans_variable.ttf").unwrap()),
