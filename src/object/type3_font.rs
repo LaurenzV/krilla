@@ -1,9 +1,7 @@
-use crate::color::rgb;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
 use crate::object::xobject::XObject;
-use crate::paint::Paint;
-use crate::path::{Fill, Stroke};
+use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -12,7 +10,7 @@ use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 

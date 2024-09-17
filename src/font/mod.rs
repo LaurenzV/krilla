@@ -40,8 +40,6 @@ pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
 
-use crate::color::rgb;
-use crate::paint::Paint;
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
 
@@ -348,16 +346,6 @@ pub(crate) enum OutlineMode {
     Stroke(Stroke),
 }
 
-impl OutlineMode {
-    // TODO: No clone?
-    pub fn paint(&self) -> Paint {
-        match self {
-            OutlineMode::Fill(f) => f.paint.clone(),
-            OutlineMode::Stroke(s) => s.paint.clone(),
-        }
-    }
-}
-
 impl From<Stroke> for OutlineMode {
     fn from(value: Stroke) -> Self {
         Self::Stroke(value)
@@ -366,7 +354,7 @@ impl From<Stroke> for OutlineMode {
 
 impl From<Fill> for OutlineMode {
     fn from(value: Fill) -> Self {
-        todo!()
+        Self::Fill(value)
     }
 }
 

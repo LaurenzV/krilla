@@ -27,12 +27,11 @@ use crate::util::{
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
-use skrifa::GlyphId;
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,

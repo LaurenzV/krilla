@@ -2,7 +2,7 @@
 
 use crate::font::{Font, OutlineBuilder, OutlineMode};
 use crate::object::color::rgb;
-use crate::paint::{LinearGradient, Paint, RadialGradient, SpreadMethod, Stop, SweepGradient};
+use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
 use crate::surface::Surface;
 use crate::util::{F32Wrapper, TransformWrapper};

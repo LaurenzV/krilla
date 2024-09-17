@@ -3,7 +3,7 @@
 use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
 use crate::util::{F32Wrapper, TransformWrapper};
-use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
+use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {

@@ -17,7 +17,6 @@ use crate::util::{NameExt, SipHashable};
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
 use skrifa::raw::TableProvider;
-use skrifa::GlyphId;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;

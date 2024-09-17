@@ -5,14 +5,12 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-use crate::color::rgb;
 use crate::content::{unit_normalize, ContentBuilder};
 use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
-use crate::paint::InnerPaint;
 use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};

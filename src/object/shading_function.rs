@@ -11,7 +11,7 @@ use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Point, Rect, Transform};
+use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {

@@ -9,7 +9,7 @@ use crate::util::{F32Wrapper, TransformExt};
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::DerefMut;
-use tiny_skia_path::{FiniteF32, NormalizedF32};
+use tiny_skia_path::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct TilingPattern {
@@ -100,7 +100,7 @@ mod tests {
     use crate::tiling_pattern::TilingPattern;
     use crate::util::{F32Wrapper, TransformWrapper};
     use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
+    use tiny_skia_path::{NormalizedF32, Transform};
 
     #[snapshot]
     fn tiling_pattern_basic(sc: &mut SerializerContext) {
