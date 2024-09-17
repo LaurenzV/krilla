@@ -110,6 +110,15 @@ impl<'a> Surface<'a> {
             .fill_path_impl(path, fill, self.sc, fill_props)
     }
 
+    pub(crate) fn stroke_path_impl(&mut self, path: &Path, stroke: Stroke, stroke_props: bool) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_path_impl(
+            path,
+            stroke,
+            self.sc,
+            stroke_props,
+        );
+    }
+
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
@@ -934,7 +943,6 @@ mod tests {
         text_with_fill_impl(surface, true)
     }
 
-    // Currently doesn't work correctly for gradients.
     #[visreg(settings_4, all)]
     fn text_type3_with_fill(surface: &mut Surface) {
         text_with_fill_impl(surface, false)
@@ -997,7 +1005,7 @@ mod tests {
         text_with_stroke_impl(surface, true);
     }
 
-    // This test does not work. Stroking is unfortunately
+    // This test does not work correctly. Stroking is unfortunately
     // very tricky to get to work properly with Type3 fonts.
     #[visreg(settings_4, all)]
     fn text_type3_with_stroke(surface: &mut Surface) {

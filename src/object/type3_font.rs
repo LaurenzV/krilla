@@ -2,7 +2,7 @@ use crate::error::KrillaResult;
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
-use crate::path::Fill;
+use crate::path::{Fill, Stroke};
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -184,7 +184,14 @@ impl Type3Font {
                         // Just use a dummy fill. The Type3 glyph description is a shape glyph
                         // so it doesn't contain any fill. Instead, it will be taken from
                         // context where it is drawn.
-                        surface.fill_path_impl(&path, Fill::default(), false);
+                        match &glyph.paint_mode {
+                            OwnedPaintMode::Fill(_) => {
+                                surface.fill_path_impl(&path, Fill::default(), false)
+                            }
+                            OwnedPaintMode::Stroke(_) => {
+                                surface.stroke_path_impl(&path, Stroke::default(), false)
+                            }
+                        }
                     }
 
                     surface.finish();
