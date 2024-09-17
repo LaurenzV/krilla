@@ -32,7 +32,7 @@ pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod
 pub fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
     Stop {
         offset: stop.offset(),
-        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
+        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
 }

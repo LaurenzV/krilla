@@ -205,6 +205,7 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `fill_glyphs` method,
     /// you can use the `cosmic-text` integration to do so.
     #[cfg(feature = "simple-text")]
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_text(
         &mut self,
         start: Point,
@@ -284,6 +285,7 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[cfg(feature = "simple-text")]
+    #[allow(clippy::too_many_arguments)]
     pub fn stroke_text(
         &mut self,
         start: Point,
@@ -901,8 +903,10 @@ mod tests {
             None,
         );
 
-        let mut grad_fill = Fill::default();
-        grad_fill.paint = Paint::from(text_gradient());
+        let grad_fill = Fill {
+            paint: Paint::from(text_gradient()),
+            ..Default::default()
+        };
 
         surface.fill_text(
             Point::from_xy(0.0, 120.0),
@@ -963,8 +967,10 @@ mod tests {
             None,
         );
 
-        let mut grad_stroke = Stroke::default();
-        grad_stroke.paint = Paint::from(text_gradient());
+        let grad_stroke = Stroke {
+            paint: Paint::from(text_gradient()),
+            ..Default::default()
+        };
 
         surface.stroke_text(
             Point::from_xy(0.0, 120.0),

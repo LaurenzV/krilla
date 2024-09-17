@@ -376,7 +376,7 @@ impl Type3FontMapper {
     pub fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
-            .position(|f| f.covers(&glyph))
+            .position(|f| f.covers(glyph))
             .map(|p| self.fonts[p].identifier())
     }
 

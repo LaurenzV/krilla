@@ -111,10 +111,8 @@ impl ColrBuilder {
     pub fn finish(mut self) -> Option<Vec<Instruction>> {
         if self.error {
             return None;
-        } else {
-            if let Some(instructions) = self.stack.pop() {
-                return Some(instructions);
-            }
+        } else if let Some(instructions) = self.stack.pop() {
+            return Some(instructions);
         }
 
         None
@@ -313,7 +311,7 @@ impl ColorPainter for ColrBuilder {
                     y2: p1.y,
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform: transform,
+                    transform,
                 };
 
                 Some(Fill {
@@ -384,8 +382,8 @@ impl ColorPainter for ColrBuilder {
                 let sweep = SweepGradient {
                     cx: c0.x,
                     cy: c0.y,
-                    start_angle: start_angle,
-                    end_angle: end_angle,
+                    start_angle,
+                    end_angle,
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
                     transform,
@@ -402,11 +400,7 @@ impl ColorPainter for ColrBuilder {
             // whole "visible" area with the fill. However, this seems to produce artifacts in
             // Google Chrome when zooming. So instead, what we do is that we apply all clip paths except
             // for the last one, and the last one we use to actually perform the fill.
-            let Some(clips) = self
-                .clips
-                .last()
-                .map(|paths| paths.iter().map(|p| p.clone()).collect::<Vec<_>>())
-            else {
+            let Some(clips) = self.clips.last().map(|paths| paths.to_vec()) else {
                 self.error = true;
                 return;
             };

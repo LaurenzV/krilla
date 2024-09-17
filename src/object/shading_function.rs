@@ -131,12 +131,7 @@ impl GradientPropertiesExt for LinearGradient {
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
                     coords: vec![self.x1, self.y1, self.x2, self.y2],
                     shading_type: FunctionShadingType::Axial,
-                    stops: self
-                        .stops
-                        .0
-                        .into_iter()
-                        .map(|s| s.into())
-                        .collect::<Vec<Stop>>(),
+                    stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
                 }),
                 self.transform,
             )
@@ -149,12 +144,7 @@ impl GradientPropertiesExt for LinearGradient {
                 GradientProperties::PostScriptGradient(PostScriptGradient {
                     min,
                     max,
-                    stops: self
-                        .stops
-                        .0
-                        .into_iter()
-                        .map(|s| s.into())
-                        .collect::<Vec<Stop>>(),
+                    stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
                     domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
@@ -178,12 +168,7 @@ impl GradientPropertiesExt for SweepGradient {
             GradientProperties::PostScriptGradient(PostScriptGradient {
                 min,
                 max,
-                stops: self
-                    .stops
-                    .0
-                    .into_iter()
-                    .map(|s| s.into())
-                    .collect::<Vec<Stop>>(),
+                stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
                 domain: RectWrapper(get_expanded_bbox(bbox, transform)),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
@@ -200,12 +185,7 @@ impl GradientPropertiesExt for RadialGradient {
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
                 coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
                 shading_type: FunctionShadingType::Radial,
-                stops: self
-                    .stops
-                    .0
-                    .into_iter()
-                    .map(|s| s.into())
-                    .collect::<Vec<Stop>>(),
+                stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
             }),
             self.transform,
         )

@@ -900,10 +900,10 @@ where
 /// via a CMAP. In a CMAP, you can assign a sequence of unicode codepoints to each
 /// glyph. There are two issues with this approach:
 /// - How to deal with the fact that the same glyph might be assigned two different codepoints
-/// in different contexts (i.e. space and NZWJ).
+///   in different contexts (i.e. space and NZWJ).
 /// - How to deal with complex shaping scenarios, where there is not a one-to-one or
-/// one-to-many correspondence between glyphs and codepoints, but instead a many-to-one
-/// or many-to-many mapping.
+///   one-to-many correspondence between glyphs and codepoints, but instead a many-to-one
+///   or many-to-many mapping.
 ///
 /// The answer to this is the `ActualText` feature of PDF, which allows to define some custom
 /// actual text for a number of glyphs, which overrides anything else. Unfortunately, this
