@@ -2,9 +2,8 @@
 
 use crate::color::rgb;
 use crate::paint::Paint;
-use crate::util::F32Wrapper;
 use std::hash::{Hash, Hasher};
-use tiny_skia_path::{FiniteF32, NormalizedF32};
+use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
 
 /// A line cap.

@@ -9,7 +9,6 @@ use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
-use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
 

@@ -21,7 +21,6 @@ use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
 use crate::util::{LocationWrapper, Prehashed, RectWrapper};
-use pdf_writer::Str;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;

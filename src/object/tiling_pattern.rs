@@ -5,7 +5,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::util::HashExt;
-use crate::util::{F32Wrapper, TransformExt};
+use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::hash::{Hash, Hasher};
@@ -111,7 +111,7 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{basic_pattern_stream, rect_to_path};
     use crate::tiling_pattern::TilingPattern;
-    use crate::util::{F32Wrapper, TransformWrapper};
+    
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{NormalizedF32, Transform};
 

@@ -22,7 +22,6 @@ use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{
     calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
-    TransformWrapper,
 };
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;

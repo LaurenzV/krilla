@@ -2,7 +2,7 @@
 
 use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
-use crate::util::{F32Wrapper, HashExt, TransformWrapper};
+use crate::util::HashExt;
 use std::hash::Hash;
 use tiny_skia_path::{NormalizedF32, Transform};
 

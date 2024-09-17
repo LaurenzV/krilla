@@ -6,7 +6,6 @@ use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::serialize::SerializerContext;
-use crate::util::{F32Wrapper, TransformWrapper};
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
