@@ -4,29 +4,42 @@ use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::util::TransformWrapper;
+use crate::util::HashExt;
 use crate::util::{F32Wrapper, TransformExt};
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
+use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
-use tiny_skia_path::NormalizedF32;
+use tiny_skia_path::{NormalizedF32, Transform};
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct TilingPattern {
     stream: Stream,
-    transform: TransformWrapper,
+    transform: Transform,
     base_opacity: NormalizedF32,
-    width: F32Wrapper,
-    height: F32Wrapper,
+    width: f32,
+    height: f32,
+}
+
+impl Eq for TilingPattern {}
+
+impl Hash for TilingPattern {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.stream.hash(state);
+        self.transform.hash(state);
+        self.base_opacity.hash(state);
+        self.width.to_bits().hash(state);
+        self.height.to_bits().hash(state);
+    }
 }
 
 impl TilingPattern {
     pub fn new(
         stream: Stream,
-        transform: TransformWrapper,
+        transform: Transform,
         base_opacity: NormalizedF32,
-        width: F32Wrapper,
-        height: F32Wrapper,
+        width: f32,
+        height: f32,
         serializer_context: &mut SerializerContext,
     ) -> Self {
         // stroke/fill opacity doesn't work consistently across different viewers for patterns,
@@ -72,13 +85,13 @@ impl Object for TilingPattern {
             .resource_dictionary()
             .to_pdf_resources(sc, &mut tiling_pattern)?;
 
-        let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width.0, self.height.0);
+        let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
 
         tiling_pattern
             .tiling_type(TilingType::ConstantSpacing)
             .paint_type(PaintType::Colored)
             .bbox(final_bbox)
-            .matrix(self.transform.0.to_pdf_transform())
+            .matrix(self.transform.to_pdf_transform())
             .x_step(final_bbox.x2 - final_bbox.x1)
             .y_step(final_bbox.y2 - final_bbox.y1);
 
@@ -109,10 +122,10 @@ mod tests {
 
         let tiling_pattern = TilingPattern::new(
             pattern_stream,
-            TransformWrapper(Transform::identity()),
+            Transform::identity(),
             NormalizedF32::ONE,
-            F32Wrapper(20.0),
-            F32Wrapper(20.0),
+            20.0,
+            20.0,
             sc,
         );
 
@@ -125,7 +138,12 @@ mod tests {
         let stream_builder = surface.stream_builder();
         let pattern_stream = basic_pattern_stream(stream_builder);
 
-        let pattern = Pattern::new(pattern_stream, Transform::identity(), 20.0, 20.0);
+        let pattern = Pattern {
+            stream: pattern_stream,
+            transform: Default::default(),
+            width: 20.0,
+            height: 20.0,
+        };
 
         surface.fill_path(
             &path,

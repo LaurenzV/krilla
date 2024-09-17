@@ -2,7 +2,8 @@
 
 use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
-use crate::util::{F32Wrapper, TransformWrapper};
+use crate::util::{F32Wrapper, HashExt, TransformWrapper};
+use std::hash::Hash;
 use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -49,166 +50,136 @@ impl From<Vec<Stop<cmyk::Color>>> for Stops {
 }
 
 /// A linear gradient.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LinearGradient {
     /// The x coordinate of the first point.
-    pub(crate) x1: F32Wrapper,
+    pub x1: f32,
     /// The y coordinate of the first point.
-    pub(crate) y1: F32Wrapper,
+    pub y1: f32,
     /// The x coordinate of the second point.
-    pub(crate) x2: F32Wrapper,
+    pub x2: f32,
     /// The y coordinate of the second point.
-    pub(crate) y2: F32Wrapper,
+    pub y2: f32,
     /// A transform that should be applied to the linear gradient.
-    pub(crate) transform: TransformWrapper,
+    pub transform: Transform,
     /// The spread method of the linear gradient.
-    pub(crate) spread_method: SpreadMethod,
+    pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
-    pub(crate) stops: Stops,
+    pub stops: Stops,
 }
 
-impl LinearGradient {
-    /// Create a new linear gradient.
-    pub fn new(
-        x1: f32,
-        y1: f32,
-        x2: f32,
-        y2: f32,
-        transform: Transform,
-        spread_method: SpreadMethod,
-        stops: Stops,
-    ) -> Self {
-        Self {
-            x1: F32Wrapper(x1),
-            y1: F32Wrapper(y1),
-            x2: F32Wrapper(x2),
-            y2: F32Wrapper(y2),
-            transform: TransformWrapper(transform),
-            spread_method,
-            stops,
-        }
+impl Eq for LinearGradient {}
+
+impl Hash for LinearGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x1.to_bits().hash(state);
+        self.y1.to_bits().hash(state);
+        self.x2.to_bits().hash(state);
+        self.y2.to_bits().hash(state);
+        self.transform.hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
     }
 }
 
 /// A radial gradient.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RadialGradient {
     /// The x coordinate of the start circle.
-    pub(crate) fx: F32Wrapper,
+    pub fx: f32,
     /// The y coordinate of the start circle.
-    pub(crate) fy: F32Wrapper,
+    pub fy: f32,
     /// The radius of the start circle.
-    pub(crate) fr: F32Wrapper,
+    pub fr: f32,
     /// The x coordinate of the end circle.
-    pub(crate) cx: F32Wrapper,
+    pub cx: f32,
     /// The y coordinate of the end circle.
-    pub(crate) cy: F32Wrapper,
+    pub cy: f32,
     /// The radius of the end circle.
-    pub(crate) cr: F32Wrapper,
+    pub cr: f32,
     /// A transform that should be applied to the radial gradient.
-    pub(crate) transform: TransformWrapper,
+    pub transform: Transform,
     /// The spread method of the radial gradient.
     ///
     /// _Note_: The spread methods `Repeat`/`Reflect` are currently not supported
     /// for radial gradients, and will fall back to `Pad`.
-    pub(crate) spread_method: SpreadMethod,
+    pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
-    pub(crate) stops: Stops,
+    pub stops: Stops,
 }
 
-impl RadialGradient {
-    /// Create a new radial gradient.
-    pub fn new(
-        fx: f32,
-        fy: f32,
-        fr: f32,
-        cx: f32,
-        cy: f32,
-        cr: f32,
-        transform: Transform,
-        spread_method: SpreadMethod,
-        stops: Stops,
-    ) -> Self {
-        Self {
-            fx: F32Wrapper(fx),
-            fy: F32Wrapper(fy),
-            fr: F32Wrapper(fr),
-            cx: F32Wrapper(cx),
-            cy: F32Wrapper(cy),
-            cr: F32Wrapper(cr),
-            transform: TransformWrapper(transform),
-            spread_method,
-            stops,
-        }
+impl Eq for RadialGradient {}
+
+impl Hash for RadialGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.fx.to_bits().hash(state);
+        self.fy.to_bits().hash(state);
+        self.fr.to_bits().hash(state);
+        self.cx.to_bits().hash(state);
+        self.cy.to_bits().hash(state);
+        self.cr.to_bits().hash(state);
+        self.transform.hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
     }
 }
 
 /// A sweep gradient.
 ///
 /// Angles start from the right and go counter-clockwise with increasing values.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SweepGradient {
     /// The x coordinate of the center.
-    pub(crate) cx: F32Wrapper,
+    pub cx: f32,
     /// The y coordinate of the center.
-    pub(crate) cy: F32Wrapper,
+    pub cy: f32,
     /// The start angle.
-    pub(crate) start_angle: F32Wrapper,
+    pub start_angle: f32,
     /// The end angle.
-    pub(crate) end_angle: F32Wrapper,
+    pub end_angle: f32,
     /// A transform that should be applied to the sweep gradient.
-    pub(crate) transform: TransformWrapper,
+    pub transform: Transform,
     /// The spread method of the sweep gradient.
-    pub(crate) spread_method: SpreadMethod,
+    pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
-    pub(crate) stops: Stops,
+    pub stops: Stops,
 }
 
-impl SweepGradient {
-    /// Create a new sweep gradient.
-    pub fn new(
-        cx: f32,
-        cy: f32,
-        start_angle: f32,
-        end_angle: f32,
-        transform: Transform,
-        spread_method: SpreadMethod,
-        stops: Stops,
-    ) -> Self {
-        Self {
-            cx: F32Wrapper(cx),
-            cy: F32Wrapper(cy),
-            start_angle: F32Wrapper(start_angle),
-            end_angle: F32Wrapper(end_angle),
-            transform: TransformWrapper(transform),
-            spread_method,
-            stops,
-        }
+impl Eq for SweepGradient {}
+
+impl Hash for SweepGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.cx.to_bits().hash(state);
+        self.cy.to_bits().hash(state);
+        self.start_angle.to_bits().hash(state);
+        self.end_angle.to_bits().hash(state);
+        self.transform.hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
     }
 }
 
 /// A pattern.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pattern {
     /// The stream of the pattern.
-    pub(crate) stream: Stream,
+    pub stream: Stream,
     /// A transform that should be applied to the pattern.
-    pub(crate) transform: TransformWrapper,
+    pub transform: Transform,
     /// The width of the pattern.
-    pub(crate) width: F32Wrapper,
+    pub width: f32,
     /// The height of the pattern.
-    pub(crate) height: F32Wrapper,
+    pub height: f32,
 }
 
-impl Pattern {
-    /// Create a new pattern.
-    pub fn new(stream: Stream, transform: Transform, width: f32, height: f32) -> Self {
-        Self {
-            stream,
-            transform: TransformWrapper(transform),
-            width: F32Wrapper(width),
-            height: F32Wrapper(height),
-        }
+impl Eq for Pattern {}
+
+impl Hash for Pattern {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.stream.hash(state);
+        self.transform.hash(state);
+        self.width.to_bits().hash(state);
+        self.height.to_bits().hash(state);
     }
 }
 

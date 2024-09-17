@@ -308,13 +308,13 @@ impl ColorPainter for ColrBuilder {
                 };
 
                 let linear = LinearGradient {
-                    x1: F32Wrapper(p0.x),
-                    y1: F32Wrapper(p0.y),
-                    x2: F32Wrapper(p1.x),
-                    y2: F32Wrapper(p1.y),
+                    x1: p0.x,
+                    y1: p0.y,
+                    x2: p1.x,
+                    y2: p1.y,
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(transform),
+                    transform: transform,
                 };
 
                 Some(Fill {
@@ -345,15 +345,15 @@ impl ColorPainter for ColrBuilder {
                 };
 
                 let radial = RadialGradient {
-                    fx: F32Wrapper(c0.x),
-                    fy: F32Wrapper(c0.y),
-                    fr: F32Wrapper(r0),
-                    cx: F32Wrapper(c1.x),
-                    cy: F32Wrapper(c1.y),
-                    cr: F32Wrapper(r1),
+                    fx: c0.x,
+                    fy: c0.y,
+                    fr: r0,
+                    cx: c1.x,
+                    cy: c1.y,
+                    cr: r1,
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(transform),
+                    transform,
                 };
 
                 Some(Fill {
@@ -383,13 +383,13 @@ impl ColorPainter for ColrBuilder {
                 };
 
                 let sweep = SweepGradient {
-                    cx: F32Wrapper(c0.x),
-                    cy: F32Wrapper(c0.y),
-                    start_angle: F32Wrapper(start_angle),
-                    end_angle: F32Wrapper(end_angle),
+                    cx: c0.x,
+                    cy: c0.y,
+                    start_angle: start_angle,
+                    end_angle: end_angle,
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform: TransformWrapper(transform),
+                    transform,
                 };
 
                 Some(Fill {

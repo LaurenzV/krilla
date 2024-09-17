@@ -251,6 +251,21 @@ impl Hash for SizeWrapper {
     }
 }
 
+pub trait HashExt {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H);
+}
+
+impl HashExt for Transform {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.tx.to_bits().hash(state);
+        self.ty.to_bits().hash(state);
+        self.sx.to_bits().hash(state);
+        self.sy.to_bits().hash(state);
+        self.kx.to_bits().hash(state);
+        self.ky.to_bits().hash(state);
+    }
+}
+
 #[derive(Debug)]
 pub struct LocationWrapper(pub Location);
 

@@ -10,6 +10,7 @@ use crate::util::{F32Wrapper, TransformWrapper};
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
@@ -26,21 +27,47 @@ pub(crate) struct Stop {
     pub opacity: NormalizedF32,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct RadialAxialGradient {
-    pub coords: Vec<F32Wrapper>,
+    pub coords: Vec<f32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+impl Eq for RadialAxialGradient {}
+
+impl Hash for RadialAxialGradient {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        for el in &self.coords {
+            el.to_bits().hash(state);
+        }
+
+        self.shading_type.hash(state);
+        self.stops.hash(state);
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct PostScriptGradient {
-    pub min: F32Wrapper,
-    pub max: F32Wrapper,
+    pub min: f32,
+    pub max: f32,
     pub stops: Vec<Stop>,
     pub domain: RectWrapper,
     pub spread_method: SpreadMethod,
     pub gradient_type: GradientType,
+}
+
+impl Eq for PostScriptGradient {}
+
+impl Hash for PostScriptGradient {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.min.to_bits().hash(state);
+        self.max.to_bits().hash(state);
+        self.stops.hash(state);
+        self.domain.hash(state);
+        self.spread_method.hash(state);
+        self.gradient_type.hash(state);
+    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -70,7 +97,7 @@ impl GradientProperties {
 }
 
 pub(crate) trait GradientPropertiesExt {
-    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper);
+    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, Transform);
 }
 
 fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
@@ -99,7 +126,7 @@ fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
 }
 
 impl GradientPropertiesExt for LinearGradient {
-    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, Transform) {
         if self.spread_method == SpreadMethod::Pad {
             (
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
@@ -115,39 +142,38 @@ impl GradientPropertiesExt for LinearGradient {
                 self.transform,
             )
         } else {
-            let p1 = Point::from_xy(self.x1.0, self.y1.0);
-            let p2 = Point::from_xy(self.x2.0, self.y2.0);
+            let p1 = Point::from_xy(self.x1, self.y1);
+            let p2 = Point::from_xy(self.x2, self.y2);
 
             let (ts, min, max) = get_point_ts(p1, p2);
             (
                 GradientProperties::PostScriptGradient(PostScriptGradient {
-                    min: F32Wrapper(min),
-                    max: F32Wrapper(max),
+                    min,
+                    max,
                     stops: self
                         .stops
                         .0
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
-                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.0.pre_concat(ts))),
+                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
                 }),
-                TransformWrapper(self.transform.0.pre_concat(ts)),
+                self.transform.pre_concat(ts),
             )
         }
     }
 }
 
 impl GradientPropertiesExt for SweepGradient {
-    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, TransformWrapper) {
+    fn gradient_properties(self, bbox: Rect) -> (GradientProperties, Transform) {
         let min = self.start_angle;
         let max = self.end_angle;
 
         let transform = self
             .transform
-            .0
-            .post_concat(Transform::from_translate(self.cx.0, self.cy.0));
+            .post_concat(Transform::from_translate(self.cx, self.cy));
 
         (
             GradientProperties::PostScriptGradient(PostScriptGradient {
@@ -163,13 +189,13 @@ impl GradientPropertiesExt for SweepGradient {
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
             }),
-            TransformWrapper(transform),
+            transform,
         )
     }
 }
 
 impl GradientPropertiesExt for RadialGradient {
-    fn gradient_properties(self, _: Rect) -> (GradientProperties, TransformWrapper) {
+    fn gradient_properties(self, _: Rect) -> (GradientProperties, Transform) {
         // TODO: Support other spread methods
         (
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
@@ -284,7 +310,7 @@ fn serialize_axial_radial_shading(
     shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
 
     shading.function(function_ref);
-    shading.coords(radial_axial_gradient.coords.iter().map(|n| n.0));
+    shading.coords(radial_axial_gradient.coords.iter().copied());
     shading.extend([true, true]);
     shading.finish();
 }
@@ -401,8 +427,8 @@ fn serialize_sweep_postscript(
 ) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min: f32 = properties.min.0;
-    let max: f32 = properties.max.0;
+    let min: f32 = properties.min;
+    let max: f32 = properties.max;
 
     let start_code = [
         "{".to_string(),
@@ -454,8 +480,8 @@ fn serialize_linear_postscript(
 ) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min: f32 = properties.min.0;
-    let max: f32 = properties.max.0;
+    let min: f32 = properties.min;
+    let max: f32 = properties.max;
 
     let start_code = [
         "{".to_string(),

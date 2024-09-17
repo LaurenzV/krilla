@@ -4,7 +4,6 @@ use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod,
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use crate::stream::StreamBuilder;
 use crate::svg::{group, ProcessContext};
-use crate::util::{F32Wrapper, TransformWrapper};
 use pdf_writer::types::BlendMode;
 use tiny_skia_path::{NormalizedF32, Transform};
 
@@ -52,13 +51,11 @@ pub fn convert_paint(
     match paint {
         usvg::Paint::Color(c) => rgb::Color::new(c.red, c.green, c.blue).into(),
         usvg::Paint::LinearGradient(lg) => LinearGradient {
-            x1: F32Wrapper(lg.x1()),
-            y1: F32Wrapper(lg.y1()),
-            x2: F32Wrapper(lg.x2()),
-            y2: F32Wrapper(lg.y2()),
-            transform: TransformWrapper(
-                additional_transform.pre_concat(convert_transform(&lg.transform())),
-            ),
+            x1: lg.x1(),
+            y1: lg.y1(),
+            x2: lg.x2(),
+            y2: lg.y2(),
+            transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
             spread_method: convert_spread_method(&lg.spread_method()),
             stops: lg
                 .stops()
@@ -69,15 +66,13 @@ pub fn convert_paint(
         }
         .into(),
         usvg::Paint::RadialGradient(rg) => RadialGradient {
-            cx: F32Wrapper(rg.cx()),
-            cy: F32Wrapper(rg.cy()),
-            cr: F32Wrapper(rg.r().get()),
-            fx: F32Wrapper(rg.fx()),
-            fy: F32Wrapper(rg.fy()),
-            fr: F32Wrapper(0.0),
-            transform: TransformWrapper(
-                additional_transform.pre_concat(convert_transform(&rg.transform())),
-            ),
+            cx: rg.cx(),
+            cy: rg.cy(),
+            cr: rg.r().get(),
+            fx: rg.fx(),
+            fy: rg.fy(),
+            fr: 0.0,
+            transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
             spread_method: convert_spread_method(&rg.spread_method()),
             stops: rg
                 .stops()
@@ -95,13 +90,11 @@ pub fn convert_paint(
 
             Pattern {
                 stream,
-                transform: TransformWrapper(
-                    additional_transform
-                        .pre_concat(pat.transform())
-                        .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
-                ),
-                width: F32Wrapper(pat.rect().width()),
-                height: F32Wrapper(pat.rect().height()),
+                transform: additional_transform
+                    .pre_concat(pat.transform())
+                    .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
+                width: pat.rect().width(),
+                height: pat.rect().height(),
             }
             .into()
         }
@@ -162,8 +155,8 @@ pub fn convert_stroke(
     additional_transform: Transform,
 ) -> Stroke {
     let dash = stroke.dasharray().map(|dash_array| StrokeDash {
-        array: dash_array.to_vec(),
         offset: stroke.dashoffset(),
+        array: dash_array.to_vec(),
     });
 
     Stroke {

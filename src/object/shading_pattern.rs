@@ -3,25 +3,32 @@ use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::Object;
 use crate::serialize::SerializerContext;
-use crate::util::TransformExt;
-use crate::util::TransformWrapper;
+use crate::util::{HashExt, TransformExt};
 use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::hash::Hash;
 use std::sync::Arc;
+use tiny_skia_path::Transform;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Repr {
     shading_function: ShadingFunction,
-    shading_transform: TransformWrapper,
+    shading_transform: Transform,
+}
+
+impl Eq for Repr {}
+
+impl Hash for Repr {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.shading_function.hash(state);
+        self.shading_transform.hash(state);
+    }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct ShadingPattern(Arc<Repr>);
 
 impl ShadingPattern {
-    pub fn new(
-        gradient_properties: GradientProperties,
-        shading_transform: TransformWrapper,
-    ) -> Self {
+    pub fn new(gradient_properties: GradientProperties, shading_transform: Transform) -> Self {
         Self(Arc::new(Repr {
             // CTM doesn't need to be included to calculate the domain of the shading function
             shading_function: ShadingFunction::new(gradient_properties, false),
@@ -41,7 +48,7 @@ impl Object for ShadingPattern {
         let shading_ref = sc.add_object(self.0.shading_function.clone())?;
         let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
-        shading_pattern.matrix(self.0.shading_transform.0.to_pdf_transform());
+        shading_pattern.matrix(self.0.shading_transform.to_pdf_transform());
 
         shading_pattern.finish();
 
@@ -62,19 +69,19 @@ mod tests {
         rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1,
     };
     use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::{NormalizedF32, Rect, Transform};
+    use tiny_skia_path::{NormalizedF32, Rect};
 
     #[snapshot]
     fn linear_gradient_pad(sc: &mut SerializerContext) {
-        let gradient = LinearGradient::new(
-            50.0,
-            0.0,
-            150.0,
-            0.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_2_solid_1(),
-        );
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
 
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
@@ -84,15 +91,15 @@ mod tests {
 
     #[snapshot]
     fn linear_gradient_repeat(sc: &mut SerializerContext) {
-        let gradient = LinearGradient::new(
-            50.0,
-            0.0,
-            150.0,
-            0.0,
-            Transform::identity(),
-            SpreadMethod::Repeat,
-            stops_with_2_solid_1(),
-        );
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
 
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
@@ -103,15 +110,15 @@ mod tests {
     #[visreg(all)]
     fn linear_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let gradient = LinearGradient::new(
-            50.0,
-            0.0,
-            150.0,
-            0.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_2_solid_1(),
-        );
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
 
         surface.fill_path(
             &path,
@@ -126,15 +133,15 @@ mod tests {
     #[visreg(all)]
     fn linear_gradient_repeat(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let gradient = LinearGradient::new(
-            50.0,
-            0.0,
-            150.0,
-            0.0,
-            Transform::identity(),
-            SpreadMethod::Repeat,
-            stops_with_2_solid_1(),
-        );
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
 
         surface.fill_path(
             &path,
@@ -148,15 +155,15 @@ mod tests {
 
     #[snapshot]
     fn sweep_gradient_pad(sc: &mut SerializerContext) {
-        let gradient = SweepGradient::new(
-            100.0,
-            100.0,
-            0.0,
-            90.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_2_solid_1(),
-        );
+        let gradient = SweepGradient {
+            cx: 100.0,
+            cy: 100.0,
+            start_angle: 0.0,
+            end_angle: 90.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
 
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
@@ -166,15 +173,15 @@ mod tests {
 
     #[snapshot]
     fn sweep_gradient_repeat(sc: &mut SerializerContext) {
-        let gradient = SweepGradient::new(
-            100.0,
-            100.0,
-            0.0,
-            90.0,
-            Transform::identity(),
-            SpreadMethod::Repeat,
-            stops_with_2_solid_1(),
-        );
+        let gradient = SweepGradient {
+            cx: 100.0,
+            cy: 100.0,
+            start_angle: 0.0,
+            end_angle: 90.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
 
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
@@ -185,15 +192,16 @@ mod tests {
     #[visreg(all)]
     fn sweep_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let gradient = SweepGradient::new(
-            100.0,
-            100.0,
-            0.0,
-            90.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_2_solid_1(),
-        );
+        let gradient = SweepGradient {
+            cx: 100.0,
+            cy: 100.0,
+            start_angle: 0.0,
+            end_angle: 90.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
+
         surface.fill_path(
             &path,
             Fill {
@@ -207,15 +215,15 @@ mod tests {
     #[visreg(all)]
     fn sweep_gradient_repeat(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let gradient = SweepGradient::new(
-            100.0,
-            100.0,
-            0.0,
-            90.0,
-            Transform::identity(),
-            SpreadMethod::Repeat,
-            stops_with_2_solid_1(),
-        );
+        let gradient = SweepGradient {
+            cx: 100.0,
+            cy: 100.0,
+            start_angle: 0.0,
+            end_angle: 90.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
 
         surface.fill_path(
             &path,
@@ -229,17 +237,17 @@ mod tests {
 
     #[snapshot]
     fn radial_gradient_pad(sc: &mut SerializerContext) {
-        let gradient = RadialGradient::new(
-            120.0,
-            120.0,
-            50.0,
-            100.0,
-            100.0,
-            50.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_2_solid_1(),
-        );
+        let gradient = RadialGradient {
+            cx: 100.0,
+            cy: 100.0,
+            cr: 50.0,
+            fx: 120.0,
+            fy: 120.0,
+            fr: 50.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_2_solid_1(),
+        };
 
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
@@ -247,20 +255,23 @@ mod tests {
         sc.add_object(shading_pattern).unwrap();
     }
 
-    #[visreg(all)]
-    fn radial_gradient_pad(surface: &mut Surface) {
+    // Should be turned into a solid color.
+    #[snapshot(single_page)]
+    fn gradient_single_stop(page: &mut Page) {
+        let mut surface = page.surface();
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let gradient = RadialGradient::new(
-            120.0,
-            120.0,
-            60.0,
-            100.0,
-            100.0,
-            30.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_3_solid_1(),
-        );
+        let gradient = RadialGradient {
+            cx: 100.0,
+            cy: 100.0,
+            cr: 30.0,
+            fx: 120.0,
+            fy: 120.0,
+            fr: 60.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_1_solid(),
+        };
 
         surface.fill_path(
             &path,
@@ -272,23 +283,20 @@ mod tests {
         );
     }
 
-    // Should be turned into a solid color.
-    #[snapshot(single_page)]
-    fn gradient_single_stop(page: &mut Page) {
-        let mut surface = page.surface();
-
+    #[visreg(all)]
+    fn radial_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let gradient = RadialGradient::new(
-            100.0,
-            100.0,
-            30.0,
-            120.0,
-            120.0,
-            60.0,
-            Transform::identity(),
-            SpreadMethod::Pad,
-            stops_with_1_solid(),
-        );
+        let gradient = RadialGradient {
+            cx: 100.0,
+            cy: 100.0,
+            cr: 30.0,
+            fx: 120.0,
+            fy: 120.0,
+            fr: 60.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_3_solid_1(),
+        };
 
         surface.fill_path(
             &path,

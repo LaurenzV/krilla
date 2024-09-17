@@ -550,7 +550,7 @@ impl ContentBuilder {
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
-             transform: TransformWrapper,
+             transform: Transform,
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
@@ -568,13 +568,11 @@ impl ContentBuilder {
 
                     let shading_pattern = ShadingPattern::new(
                         gradient_props,
-                        TransformWrapper(
-                            content_builder
-                                .graphics_states
-                                .cur()
-                                .transform()
-                                .pre_concat(transform.0),
-                        ),
+                        content_builder
+                            .graphics_states
+                            .cur()
+                            .transform()
+                            .pre_concat(transform),
                     );
                     let color_space =
                         content_builder
@@ -617,7 +615,7 @@ impl ContentBuilder {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
 
-                pat.transform = TransformWrapper(pattern_transform(transform.0));
+                pat.transform = pattern_transform(transform);
 
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
