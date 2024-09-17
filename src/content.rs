@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits};
+use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -175,8 +175,6 @@ impl ContentBuilder {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
-        let cloned_fill = fill.clone();
-
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
         if !matches!(&fill.paint.0, &InnerPaint::Pattern(_)) {
@@ -188,7 +186,7 @@ impl ContentBuilder {
             y,
             sc,
             TextRenderingMode::Fill,
-            move |sb, sc| {
+            |sb, sc| {
                 sb.content_set_fill_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     &fill,
@@ -197,7 +195,7 @@ impl ContentBuilder {
             },
             glyphs,
             font,
-            cloned_fill,
+            PaintMode::Fill(&fill),
             text,
             font_size,
             glyph_units,
@@ -241,7 +239,7 @@ impl ContentBuilder {
             },
             glyphs,
             font,
-            Fill::default(),
+            PaintMode::Stroke(&stroke),
             text,
             font_size,
             glyph_units,
@@ -260,7 +258,7 @@ impl ContentBuilder {
         font_identifier: FontIdentifier,
         pdf_font: &dyn PdfFont,
         size: f32,
-        fill: Fill,
+        paint_mode: PaintMode,
         glyphs: &[impl Glyph],
         glyph_units: GlyphUnits,
     ) {
@@ -280,7 +278,7 @@ impl ContentBuilder {
 
         for glyph in glyphs {
             let pdf_glyph = pdf_font
-                .get_gid(&CoveredGlyph::new(glyph.glyph_id(), fill.clone()))
+                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode))
                 .unwrap();
 
             let normalize =
@@ -335,7 +333,7 @@ impl ContentBuilder {
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[impl Glyph],
         font: Font,
-        fill: Fill,
+        paint_mode: PaintMode,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
@@ -354,7 +352,7 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, fill.clone(), font_container);
+                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_container);
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -367,7 +365,7 @@ impl ContentBuilder {
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
                     let segmented =
-                        GlyphGrouper::new(font_container, fill.clone(), fragment.glyphs());
+                        GlyphGrouper::new(font_container, paint_mode, fragment.glyphs());
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -390,7 +388,7 @@ impl ContentBuilder {
                             glyph_group.font_identifier,
                             pdf_font,
                             font_size,
-                            fill.clone(),
+                            paint_mode,
                             glyph_group.glyphs,
                             glyph_units,
                         );
@@ -689,12 +687,12 @@ impl ContentBuilder {
 
         // Only write if they don't correspond to the default values as defined in the
         // PDF specification.
-        if stroke.width != 1.0 {
-            self.content.set_line_width(stroke.width);
+        if stroke.width.0 != 1.0 {
+            self.content.set_line_width(stroke.width.0);
         }
 
-        if stroke.miter_limit != 10.0 {
-            self.content.set_miter_limit(stroke.miter_limit);
+        if stroke.miter_limit.0 != 10.0 {
+            self.content.set_miter_limit(stroke.miter_limit.0);
         }
 
         if stroke.line_cap != LineCap::Butt {
@@ -707,8 +705,10 @@ impl ContentBuilder {
         }
 
         if let Some(stroke_dash) = &stroke.dash {
-            self.content
-                .set_dash_pattern(stroke_dash.array.iter().copied(), stroke_dash.offset);
+            self.content.set_dash_pattern(
+                stroke_dash.array.iter().copied().map(|n| n.0),
+                stroke_dash.offset.0,
+            );
         }
     }
 
@@ -769,7 +769,7 @@ pub(crate) trait PdfFont {
     fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
-    fn get_gid(&self, glyph: &CoveredGlyph) -> Option<PDFGlyph>;
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
 }
 
 impl PdfFont for Type3Font {
@@ -795,8 +795,8 @@ impl PdfFont for Type3Font {
         }
     }
 
-    fn get_gid(&self, glyph: &CoveredGlyph) -> Option<PDFGlyph> {
-        self.get_gid(glyph).map(PDFGlyph::Type3)
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_gid(&glyph.to_owned()).map(PDFGlyph::Type3)
     }
 }
 
@@ -823,7 +823,7 @@ impl PdfFont for CIDFont {
         }
     }
 
-    fn get_gid(&self, glyph: &CoveredGlyph) -> Option<PDFGlyph> {
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
         self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
     }
 }
@@ -877,7 +877,7 @@ where
     T: Glyph,
 {
     slice: &'a [T],
-    fill: Fill,
+    paint_mode: PaintMode<'a>,
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
@@ -889,12 +889,12 @@ where
     pub fn new(
         slice: &'a [T],
         text: &'a str,
-        fill: Fill,
+        paint_mode: PaintMode<'a>,
         font_container: &'b RefCell<FontContainer>,
     ) -> Self {
         Self {
             slice,
-            fill,
+            paint_mode,
             text,
             font_container,
         }
@@ -910,7 +910,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         fn func<U>(
             g: &U,
-            fill: Fill,
+            paint_mode: PaintMode,
             mut font_container: RefMut<FontContainer>,
             text: &str,
         ) -> (Range<usize>, bool)
@@ -918,7 +918,7 @@ where
             U: Glyph,
         {
             let (identifier, pdf_glyph) =
-                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), fill));
+                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), paint_mode));
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
@@ -947,7 +947,7 @@ where
         // incompatible.
         let (first_range, first_incompatible) = func(
             iter.next()?,
-            self.fill.clone(),
+            self.paint_mode,
             self.font_container.borrow_mut(),
             self.text,
         );
@@ -957,7 +957,7 @@ where
         for next in iter {
             let (next_range, next_incompatible) = func(
                 next,
-                self.fill.clone(),
+                self.paint_mode,
                 self.font_container.borrow_mut(),
                 self.text,
             );
@@ -1080,7 +1080,7 @@ where
     T: Glyph,
 {
     font_container: &'b RefCell<FontContainer>,
-    fill: Fill,
+    paint_mode: PaintMode<'a>,
     slice: &'a [T],
 }
 
@@ -1088,10 +1088,14 @@ impl<'a, 'b, T> GlyphGrouper<'a, 'b, T>
 where
     T: Glyph,
 {
-    pub fn new(font_container: &'b RefCell<FontContainer>, fill: Fill, slice: &'a [T]) -> Self {
+    pub fn new(
+        font_container: &'b RefCell<FontContainer>,
+        paint_mode: PaintMode<'a>,
+        slice: &'a [T],
+    ) -> Self {
         Self {
             font_container,
-            fill,
+            paint_mode,
             slice,
         }
     }
@@ -1113,13 +1117,17 @@ where
                 y_advance: f32,
             }
 
-            fn func<U>(g: &U, fill: Fill, font_container: RefMut<FontContainer>) -> GlyphProps
+            fn func<U>(
+                g: &U,
+                paint_mode: PaintMode,
+                font_container: RefMut<FontContainer>,
+            ) -> GlyphProps
             where
                 U: Glyph,
             {
                 // Safe because we've already added all glyphs in the text spanner.
                 let font_identifier = font_container
-                    .font_identifier(CoveredGlyph::new(g.glyph_id(), fill))
+                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode))
                     .unwrap();
 
                 GlyphProps {
@@ -1134,12 +1142,12 @@ where
             let mut iter = self.slice.iter();
             let first = func(
                 iter.next()?,
-                self.fill.clone(),
+                self.paint_mode,
                 self.font_container.borrow_mut(),
             );
 
             for next in iter {
-                let temp_glyph = func(next, self.fill.clone(), self.font_container.borrow_mut());
+                let temp_glyph = func(next, self.paint_mode, self.font_container.borrow_mut());
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier

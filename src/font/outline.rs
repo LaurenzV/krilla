@@ -26,7 +26,7 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
 pub fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    paint_mode: &PaintMode,
+    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {

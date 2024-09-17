@@ -21,6 +21,7 @@ use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
 use crate::util::{LocationWrapper, Prehashed, RectWrapper};
+use pdf_writer::Str;
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
@@ -294,7 +295,7 @@ pub(crate) fn draw_color_glyph(
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     base_transform: Transform,
-    paint_mode: &PaintMode,
+    paint_mode: PaintMode,
     surface: &mut Surface,
 ) -> Option<()> {
     surface.push_transform(&base_transform);
@@ -322,22 +323,45 @@ pub(crate) fn draw_color_glyph(
     drawn
 }
 
-// TODO: Take reference instead?
-#[derive(Clone)]
-pub(crate) enum PaintMode {
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub(crate) enum OwnedPaintMode {
     Fill(Fill),
     Stroke(Stroke),
 }
 
-impl From<Stroke> for PaintMode {
+impl From<Fill> for OwnedPaintMode {
+    fn from(value: Fill) -> Self {
+        Self::Fill(value)
+    }
+}
+
+impl From<Stroke> for OwnedPaintMode {
     fn from(value: Stroke) -> Self {
         Self::Stroke(value)
     }
 }
 
-impl From<Fill> for PaintMode {
-    fn from(value: Fill) -> Self {
-        Self::Fill(value)
+impl OwnedPaintMode {
+    pub fn as_ref(&self) -> PaintMode {
+        match self {
+            OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
+            OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum PaintMode<'a> {
+    Fill(&'a Fill),
+    Stroke(&'a Stroke),
+}
+
+impl PaintMode<'_> {
+    pub fn to_owend(&self) -> OwnedPaintMode {
+        match self {
+            PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
+            PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),
+        }
     }
 }
 
@@ -347,7 +371,7 @@ pub(crate) fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     // TODO: Rename
-    paint_mode: &PaintMode,
+    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {

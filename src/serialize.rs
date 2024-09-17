@@ -398,7 +398,7 @@ pub(crate) enum FontContainer {
 impl FontContainer {
     pub fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
         match self {
-            FontContainer::Type3(t3) => t3.id_from_glyph(&glyph),
+            FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
             FontContainer::CIDFont(cid) => cid.get_cid(glyph.glyph_id).map(|_| cid.identifier()),
         }
     }
@@ -447,7 +447,7 @@ impl FontContainer {
     pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
         match self {
             FontContainer::Type3(t3) => {
-                let (identifier, gid) = t3.add_glyph(glyph);
+                let (identifier, gid) = t3.add_glyph(glyph.to_owned());
                 (identifier, PDFGlyph::Type3(gid))
             }
             FontContainer::CIDFont(cid_font) => {

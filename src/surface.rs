@@ -137,7 +137,7 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 SvgSettings::default(),
                 glyph.glyph_id(),
-                &paint_mode,
+                paint_mode,
                 base_transform,
                 self,
             );
@@ -170,7 +170,7 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                PaintMode::Fill(fill),
+                PaintMode::Fill(&fill),
             );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
@@ -249,7 +249,7 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                PaintMode::Stroke(stroke),
+                PaintMode::Stroke(&stroke),
             );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(

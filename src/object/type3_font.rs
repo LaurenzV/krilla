@@ -1,5 +1,5 @@
 use crate::error::KrillaResult;
-use crate::font::{Font, FontIdentifier, PaintMode, Type3Identifier};
+use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -11,27 +11,38 @@ use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use tiny_skia_path::{Rect, Transform};
 
 pub type Gid = u8;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) struct CoveredGlyph {
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct CoveredGlyph<'a> {
     pub glyph_id: GlyphId,
-    // TODO: Use outline mode instead?
-    pub fill: Fill,
+    pub paint_mode: PaintMode<'a>,
 }
 
-impl From<GlyphId> for CoveredGlyph {
-    fn from(value: GlyphId) -> Self {
-        Self::new(value, Fill::default())
+impl CoveredGlyph<'_> {
+    pub fn to_owned(&self) -> OwnedCoveredGlyph {
+        OwnedCoveredGlyph {
+            glyph_id: self.glyph_id,
+            paint_mode: self.paint_mode.to_owend(),
+        }
     }
 }
 
-impl CoveredGlyph {
-    pub fn new(glyph_id: GlyphId, fill: Fill) -> Self {
-        Self { glyph_id, fill }
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub(crate) struct OwnedCoveredGlyph {
+    pub glyph_id: GlyphId,
+    pub paint_mode: OwnedPaintMode,
+}
+
+impl<'a> CoveredGlyph<'a> {
+    pub fn new(glyph_id: GlyphId, paint_mode: PaintMode<'a>) -> CoveredGlyph<'a> {
+        Self {
+            glyph_id,
+            paint_mode,
+        }
     }
 }
 
@@ -39,10 +50,10 @@ impl CoveredGlyph {
 #[derive(Debug)]
 pub(crate) struct Type3Font {
     font: Font,
-    glyphs: Vec<CoveredGlyph>,
+    glyphs: Vec<OwnedCoveredGlyph>,
     widths: Vec<f32>,
     cmap_entries: BTreeMap<Gid, String>,
-    glyph_set: HashSet<CoveredGlyph>,
+    glyph_set: HashSet<OwnedCoveredGlyph>,
     index: usize,
 }
 
@@ -77,18 +88,19 @@ impl Type3Font {
         u16::try_from(self.glyphs.len()).unwrap()
     }
 
-    pub fn covers(&self, glyph: &CoveredGlyph) -> bool {
+    // TODO: Can we used COveredGlyphRef instead?
+    pub fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
         self.glyph_set.contains(glyph)
     }
 
-    pub fn get_gid(&self, glyph: &CoveredGlyph) -> Option<u8> {
+    pub fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
             .position(|g| g == glyph)
             .and_then(|n| u8::try_from(n).ok())
     }
 
-    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> u8 {
+    pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
         if let Some(pos) = self.get_gid(&glyph) {
             pos
         } else {
@@ -142,7 +154,7 @@ impl Type3Font {
                     glyph.glyph_id,
                     // TODO: Change outlines glyphs so that they are also drawn as colors
                     // glyphs and support stroking
-                    &PaintMode::Fill(glyph.fill.clone()),
+                    glyph.paint_mode.as_ref(),
                     Transform::default(),
                     &mut surface,
                 );
@@ -281,7 +293,7 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn id_from_glyph(&self, glyph: &CoveredGlyph) -> Option<FontIdentifier> {
+    pub fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
             .position(|f| f.covers(&glyph))
@@ -308,7 +320,7 @@ impl Type3FontMapper {
         &self.fonts
     }
 
-    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, Gid) {
+    pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> (FontIdentifier, Gid) {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
         if let Some(id) = self.id_from_glyph(&glyph) {
@@ -346,10 +358,11 @@ impl Type3FontMapper {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, FontIdentifier, Type3Identifier};
+    use crate::font::{Font, FontIdentifier, OwnedPaintMode, Type3Identifier};
 
     use crate::color::rgb;
 
+    use crate::object::type3_font::OwnedCoveredGlyph;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
@@ -360,6 +373,15 @@ mod tests {
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
 
+    impl OwnedCoveredGlyph {
+        pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {
+            Self {
+                glyph_id,
+                paint_mode,
+            }
+        }
+    }
+
     #[snapshot(settings_4)]
     fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
@@ -367,8 +389,14 @@ mod tests {
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
-                t3.add_glyph(GlyphId::new(36).into());
-                t3.add_glyph(GlyphId::new(37).into());
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(36),
+                    Fill::default().into(),
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(37),
+                    Fill::default().into(),
+                ));
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
@@ -490,10 +518,22 @@ mod tests {
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
-                t3.add_glyph(GlyphId::new(58).into());
-                t3.add_glyph(GlyphId::new(54).into());
-                t3.add_glyph(GlyphId::new(69).into());
-                t3.add_glyph(GlyphId::new(71).into());
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(58),
+                    Fill::default().into(),
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(54),
+                    Fill::default().into(),
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(69),
+                    Fill::default().into(),
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(71),
+                    Fill::default().into(),
+                ));
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
@@ -515,13 +555,25 @@ mod tests {
         match &mut *font_container {
             FontContainer::Type3(t3) => {
                 for i in 2..258 {
-                    t3.add_glyph(GlyphId::new(i).into());
+                    t3.add_glyph(OwnedCoveredGlyph::new(
+                        GlyphId::new(i),
+                        Fill::default().into(),
+                    ));
                 }
 
                 assert_eq!(t3.fonts.len(), 1);
-                assert_eq!(t3.fonts[0].add_glyph(GlyphId::new(20).into()), 18);
+                assert_eq!(
+                    t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
+                        GlyphId::new(20),
+                        Fill::default().into()
+                    )),
+                    18
+                );
 
-                t3.add_glyph(GlyphId::new(512).into());
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(512),
+                    Fill::default().into(),
+                ));
                 assert_eq!(t3.fonts.len(), 2);
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),

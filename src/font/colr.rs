@@ -19,7 +19,7 @@ use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 pub fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    paint_mode: &PaintMode,
+    paint_mode: PaintMode,
     surface: &mut Surface,
 ) -> Option<()> {
     // Drawing COLR glyphs is a bit tricky, because it's possible that an error
