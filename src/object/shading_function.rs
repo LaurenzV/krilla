@@ -6,7 +6,7 @@ use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::serialize::SerializerContext;
-use crate::util::TransformWrapper;
+use crate::util::{F32Wrapper, TransformWrapper};
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -28,15 +28,15 @@ pub(crate) struct Stop {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct RadialAxialGradient {
-    pub coords: Vec<FiniteF32>,
+    pub coords: Vec<F32Wrapper>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct PostScriptGradient {
-    pub min: FiniteF32,
-    pub max: FiniteF32,
+    pub min: F32Wrapper,
+    pub max: F32Wrapper,
     pub stops: Vec<Stop>,
     pub domain: RectWrapper,
     pub spread_method: SpreadMethod,
@@ -103,12 +103,7 @@ impl GradientPropertiesExt for LinearGradient {
         if self.spread_method == SpreadMethod::Pad {
             (
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
-                    coords: vec![
-                        FiniteF32::new(self.x1).unwrap(),
-                        FiniteF32::new(self.y1).unwrap(),
-                        FiniteF32::new(self.x2).unwrap(),
-                        FiniteF32::new(self.y2).unwrap(),
-                    ],
+                    coords: vec![self.x1, self.y1, self.x2, self.y2],
                     shading_type: FunctionShadingType::Axial,
                     stops: self
                         .stops
@@ -117,28 +112,28 @@ impl GradientPropertiesExt for LinearGradient {
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
                 }),
-                TransformWrapper(self.transform),
+                self.transform,
             )
         } else {
-            let p1 = Point::from_xy(self.x1, self.y1);
-            let p2 = Point::from_xy(self.x2, self.y2);
+            let p1 = Point::from_xy(self.x1.0, self.y1.0);
+            let p2 = Point::from_xy(self.x2.0, self.y2.0);
 
             let (ts, min, max) = get_point_ts(p1, p2);
             (
                 GradientProperties::PostScriptGradient(PostScriptGradient {
-                    min: FiniteF32::new(min).unwrap(),
-                    max: FiniteF32::new(max).unwrap(),
+                    min: F32Wrapper(min),
+                    max: F32Wrapper(max),
                     stops: self
                         .stops
                         .0
                         .into_iter()
                         .map(|s| s.into())
                         .collect::<Vec<Stop>>(),
-                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
+                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.0.pre_concat(ts))),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
                 }),
-                TransformWrapper(self.transform.pre_concat(ts)),
+                TransformWrapper(self.transform.0.pre_concat(ts)),
             )
         }
     }
@@ -151,12 +146,13 @@ impl GradientPropertiesExt for SweepGradient {
 
         let transform = self
             .transform
-            .post_concat(Transform::from_translate(self.cx, self.cy));
+            .0
+            .post_concat(Transform::from_translate(self.cx.0, self.cy.0));
 
         (
             GradientProperties::PostScriptGradient(PostScriptGradient {
-                min: FiniteF32::new(min).unwrap(),
-                max: FiniteF32::new(max).unwrap(),
+                min,
+                max,
                 stops: self
                     .stops
                     .0
@@ -177,14 +173,7 @@ impl GradientPropertiesExt for RadialGradient {
         // TODO: Support other spread methods
         (
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
-                coords: vec![
-                    FiniteF32::new(self.fx).unwrap(),
-                    FiniteF32::new(self.fy).unwrap(),
-                    FiniteF32::new(self.fr).unwrap(),
-                    FiniteF32::new(self.cx).unwrap(),
-                    FiniteF32::new(self.cy).unwrap(),
-                    FiniteF32::new(self.cr).unwrap(),
-                ],
+                coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
                 shading_type: FunctionShadingType::Radial,
                 stops: self
                     .stops
@@ -193,7 +182,7 @@ impl GradientPropertiesExt for RadialGradient {
                     .map(|s| s.into())
                     .collect::<Vec<Stop>>(),
             }),
-            TransformWrapper(self.transform),
+            self.transform,
         )
     }
 }
@@ -295,7 +284,7 @@ fn serialize_axial_radial_shading(
     shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
 
     shading.function(function_ref);
-    shading.coords(radial_axial_gradient.coords.iter().map(|n| n.get()));
+    shading.coords(radial_axial_gradient.coords.iter().map(|n| n.0));
     shading.extend([true, true]);
     shading.finish();
 }
@@ -412,8 +401,8 @@ fn serialize_sweep_postscript(
 ) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min: f32 = properties.min.get();
-    let max: f32 = properties.max.get();
+    let min: f32 = properties.min.0;
+    let max: f32 = properties.max.0;
 
     let start_code = [
         "{".to_string(),
@@ -465,8 +454,8 @@ fn serialize_linear_postscript(
 ) -> Ref {
     let root_ref = sc.new_ref();
 
-    let min: f32 = properties.min.get();
-    let max: f32 = properties.max.get();
+    let min: f32 = properties.min.0;
+    let max: f32 = properties.max.0;
 
     let start_code = [
         "{".to_string(),

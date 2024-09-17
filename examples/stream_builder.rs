@@ -45,12 +45,7 @@ fn main() {
     let pattern_stream = stream_builder.finish();
 
     // Define the actual pattern
-    let pattern = Pattern {
-        stream: pattern_stream,
-        transform: Default::default(),
-        width: 20.0,
-        height: 20.0,
-    };
+    let pattern = Pattern::new(pattern_stream, Transform::identity(), 20.0, 20.0);
 
     // Now we draw the actual transformed rectangle.
     // First, push a transform so that the rectangle will be rotated.

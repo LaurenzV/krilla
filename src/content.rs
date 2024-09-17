@@ -626,15 +626,15 @@ impl ContentBuilder {
                 let mut pat = pat.clone();
                 let transform = pat.transform;
 
-                pat.transform = pattern_transform(transform);
+                pat.transform = TransformWrapper(pattern_transform(transform.0));
 
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
                         pat.stream,
-                        TransformWrapper(pat.transform),
+                        pat.transform,
                         opacity,
-                        FiniteF32::new(pat.width).unwrap(),
-                        FiniteF32::new(pat.height).unwrap(),
+                        pat.width,
+                        pat.height,
                         serializer_context,
                     )),
                 ));

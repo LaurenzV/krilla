@@ -5,6 +5,7 @@ use crate::object::color::rgb;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
 use crate::surface::Surface;
+use crate::util::{F32Wrapper, TransformWrapper};
 use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
@@ -15,7 +16,12 @@ use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
 /// Draw a COLR-based glyph on a surface.
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub fn draw_glyph(
+    font: Font,
+    glyph: GlyphId,
+    context_color: rgb::Color,
+    surface: &mut Surface,
+) -> Option<()> {
     // Drawing COLR glyphs is a bit tricky, because it's possible that an error
     // occurs while we are drawing, in which case we cannot revert it anymore since
     // we already drew the instructions onto the surface. Because of this, we first
@@ -25,7 +31,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
     let colr_glyphs = font.font_ref().color_glyphs();
     let colr_glyph = colr_glyphs.get(glyph)?;
 
-    let mut colr_canvas = ColrBuilder::new(font.clone());
+    let mut colr_canvas = ColrBuilder::new(font.clone(), context_color);
     colr_glyph
         .paint(font.location_ref(), &mut colr_canvas)
         .ok()?;
@@ -69,6 +75,7 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
 /// The context necessary for creating the bytecode of a COLR-based glyph.
 struct ColrBuilder {
     font: Font,
+    context_color: rgb::Color,
     clips: Vec<Vec<Path>>,
     stack: Vec<Vec<Instruction>>,
     layers: Vec<BlendMode>,
@@ -83,9 +90,10 @@ enum Instruction {
 }
 
 impl ColrBuilder {
-    pub fn new(font: Font) -> Self {
+    pub fn new(font: Font, context_color: rgb::Color) -> Self {
         Self {
             font,
+            context_color,
             stack: vec![vec![]],
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
@@ -293,13 +301,13 @@ impl ColorPainter for ColrBuilder {
                 };
 
                 let linear = LinearGradient {
-                    x1: p0.x,
-                    y1: p0.y,
-                    x2: p1.x,
-                    y2: p1.y,
+                    x1: F32Wrapper(p0.x),
+                    y1: F32Wrapper(p0.y),
+                    x2: F32Wrapper(p1.x),
+                    y2: F32Wrapper(p1.y),
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform,
+                    transform: TransformWrapper(transform),
                 };
 
                 Some(Fill {
@@ -330,15 +338,15 @@ impl ColorPainter for ColrBuilder {
                 };
 
                 let radial = RadialGradient {
-                    fx: c0.x,
-                    fy: c0.y,
-                    fr: r0,
-                    cx: c1.x,
-                    cy: c1.y,
-                    cr: r1,
+                    fx: F32Wrapper(c0.x),
+                    fy: F32Wrapper(c0.y),
+                    fr: F32Wrapper(r0),
+                    cx: F32Wrapper(c1.x),
+                    cy: F32Wrapper(c1.y),
+                    cr: F32Wrapper(r1),
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform,
+                    transform: TransformWrapper(transform),
                 };
 
                 Some(Fill {
@@ -368,13 +376,13 @@ impl ColorPainter for ColrBuilder {
                 };
 
                 let sweep = SweepGradient {
-                    cx: c0.x,
-                    cy: c0.y,
-                    start_angle,
-                    end_angle,
+                    cx: F32Wrapper(c0.x),
+                    cy: F32Wrapper(c0.y),
+                    start_angle: F32Wrapper(start_angle),
+                    end_angle: F32Wrapper(end_angle),
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
-                    transform,
+                    transform: TransformWrapper(transform),
                 };
 
                 Some(Fill {

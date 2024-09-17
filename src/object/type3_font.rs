@@ -1,6 +1,8 @@
+use crate::color::rgb;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
 use crate::object::xobject::XObject;
+use crate::paint::Paint;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -14,6 +16,12 @@ use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
 pub type Gid = u8;
+
+#[derive(Debug, Clone, Hash)]
+pub(crate) struct CoveredGlyph {
+    pub glyph_id: GlyphId,
+    pub paint: Paint,
+}
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
@@ -122,6 +130,8 @@ impl Type3Font {
                     *glyph_id,
                     None::<OutlineMode>,
                     Transform::default(),
+                    // TODO: Update
+                    rgb::Color::black(),
                     &mut surface,
                 );
 

@@ -4,8 +4,8 @@ use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::util::TransformExt;
 use crate::util::TransformWrapper;
+use crate::util::{F32Wrapper, TransformExt};
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 use std::ops::DerefMut;
@@ -16,8 +16,8 @@ pub(crate) struct TilingPattern {
     stream: Stream,
     transform: TransformWrapper,
     base_opacity: NormalizedF32,
-    width: FiniteF32,
-    height: FiniteF32,
+    width: F32Wrapper,
+    height: F32Wrapper,
 }
 
 impl TilingPattern {
@@ -25,8 +25,8 @@ impl TilingPattern {
         stream: Stream,
         transform: TransformWrapper,
         base_opacity: NormalizedF32,
-        width: FiniteF32,
-        height: FiniteF32,
+        width: F32Wrapper,
+        height: F32Wrapper,
         serializer_context: &mut SerializerContext,
     ) -> Self {
         // stroke/fill opacity doesn't work consistently across different viewers for patterns,
@@ -72,7 +72,7 @@ impl Object for TilingPattern {
             .resource_dictionary()
             .to_pdf_resources(sc, &mut tiling_pattern)?;
 
-        let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width.get(), self.height.get());
+        let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width.0, self.height.0);
 
         tiling_pattern
             .tiling_type(TilingType::ConstantSpacing)
@@ -98,7 +98,7 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{basic_pattern_stream, rect_to_path};
     use crate::tiling_pattern::TilingPattern;
-    use crate::util::TransformWrapper;
+    use crate::util::{F32Wrapper, TransformWrapper};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 
@@ -111,8 +111,8 @@ mod tests {
             pattern_stream,
             TransformWrapper(Transform::identity()),
             NormalizedF32::ONE,
-            FiniteF32::new(20.0).unwrap(),
-            FiniteF32::new(20.0).unwrap(),
+            F32Wrapper(20.0),
+            F32Wrapper(20.0),
             sc,
         );
 
@@ -125,12 +125,7 @@ mod tests {
         let stream_builder = surface.stream_builder();
         let pattern_stream = basic_pattern_stream(stream_builder);
 
-        let pattern = Pattern {
-            stream: pattern_stream,
-            transform: Default::default(),
-            width: 20.0,
-            height: 20.0,
-        };
+        let pattern = Pattern::new(pattern_stream, Transform::identity(), 20.0, 20.0);
 
         surface.fill_path(
             &path,

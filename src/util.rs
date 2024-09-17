@@ -269,6 +269,18 @@ impl PartialEq for LocationWrapper {
 impl Eq for LocationWrapper {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub struct F32Wrapper(pub(crate) f32);
+
+impl Hash for F32Wrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+// We don't care about NaNs.
+impl Eq for F32Wrapper {}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TransformWrapper(pub(crate) Transform);
 
 // We don't care about NaNs.

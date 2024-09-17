@@ -40,6 +40,7 @@ pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
 
+use crate::color::rgb;
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
 
@@ -303,6 +304,7 @@ pub(crate) fn draw_color_glyph(
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     base_transform: Transform,
+    context_color: rgb::Color,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
     let mut glyph_source = None;
@@ -310,7 +312,7 @@ pub(crate) fn draw_color_glyph(
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
+    if let Some(()) = colr::draw_glyph(font.clone(), glyph, context_color, surface) {
         glyph_source = Some(GlyphSource::Colr);
     } else if let Some(()) = {
         #[cfg(feature = "svg")]
@@ -351,9 +353,18 @@ pub(crate) fn draw_glyph(
     glyph: GlyphId,
     outline_mode: Option<OutlineMode>,
     base_transform: Transform,
+    context_color: rgb::Color,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
-    draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface).or_else(|| {
+    draw_color_glyph(
+        font.clone(),
+        svg_settings,
+        glyph,
+        base_transform,
+        context_color,
+        surface,
+    )
+    .or_else(|| {
         outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)
             .map(|_| GlyphSource::Outline)
     })

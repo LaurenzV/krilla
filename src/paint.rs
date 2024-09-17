@@ -2,16 +2,17 @@
 
 use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
-use tiny_skia_path::{NormalizedF32, Transform};
+use crate::util::{F32Wrapper, TransformWrapper};
+use tiny_skia_path::{FiniteF32, NormalizedF32, Transform};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {
     RgbStops(Vec<Stop<rgb::Color>>),
     CmykStops(Vec<Stop<cmyk::Color>>),
 }
 
 /// The color stops of a gradient.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Stops(pub(crate) InnerStops);
 
 impl IntoIterator for InnerStops {
@@ -48,85 +49,170 @@ impl From<Vec<Stop<cmyk::Color>>> for Stops {
 }
 
 /// A linear gradient.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LinearGradient {
     /// The x coordinate of the first point.
-    pub x1: f32,
+    pub(crate) x1: F32Wrapper,
     /// The y coordinate of the first point.
-    pub y1: f32,
+    pub(crate) y1: F32Wrapper,
     /// The x coordinate of the second point.
-    pub x2: f32,
+    pub(crate) x2: F32Wrapper,
     /// The y coordinate of the second point.
-    pub y2: f32,
+    pub(crate) y2: F32Wrapper,
     /// A transform that should be applied to the linear gradient.
-    pub transform: Transform,
+    pub(crate) transform: TransformWrapper,
     /// The spread method of the linear gradient.
-    pub spread_method: SpreadMethod,
+    pub(crate) spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
-    pub stops: Stops,
+    pub(crate) stops: Stops,
+}
+
+impl LinearGradient {
+    /// Create a new linear gradient.
+    pub fn new(
+        x1: f32,
+        y1: f32,
+        x2: f32,
+        y2: f32,
+        transform: Transform,
+        spread_method: SpreadMethod,
+        stops: Stops,
+    ) -> Self {
+        Self {
+            x1: F32Wrapper(x1),
+            y1: F32Wrapper(y1),
+            x2: F32Wrapper(x2),
+            y2: F32Wrapper(y2),
+            transform: TransformWrapper(transform),
+            spread_method,
+            stops,
+        }
+    }
 }
 
 /// A radial gradient.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RadialGradient {
     /// The x coordinate of the start circle.
-    pub fx: f32,
+    pub(crate) fx: F32Wrapper,
     /// The y coordinate of the start circle.
-    pub fy: f32,
+    pub(crate) fy: F32Wrapper,
     /// The radius of the start circle.
-    pub fr: f32,
+    pub(crate) fr: F32Wrapper,
     /// The x coordinate of the end circle.
-    pub cx: f32,
+    pub(crate) cx: F32Wrapper,
     /// The y coordinate of the end circle.
-    pub cy: f32,
+    pub(crate) cy: F32Wrapper,
     /// The radius of the end circle.
-    pub cr: f32,
+    pub(crate) cr: F32Wrapper,
     /// A transform that should be applied to the radial gradient.
-    pub transform: Transform,
+    pub(crate) transform: TransformWrapper,
     /// The spread method of the radial gradient.
     ///
     /// _Note_: The spread methods `Repeat`/`Reflect` are currently not supported
     /// for radial gradients, and will fall back to `Pad`.
-    pub spread_method: SpreadMethod,
+    pub(crate) spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
-    pub stops: Stops,
+    pub(crate) stops: Stops,
+}
+
+impl RadialGradient {
+    /// Create a new radial gradient.
+    pub fn new(
+        fx: f32,
+        fy: f32,
+        fr: f32,
+        cx: f32,
+        cy: f32,
+        cr: f32,
+        transform: Transform,
+        spread_method: SpreadMethod,
+        stops: Stops,
+    ) -> Self {
+        Self {
+            fx: F32Wrapper(fx),
+            fy: F32Wrapper(fy),
+            fr: F32Wrapper(fr),
+            cx: F32Wrapper(cx),
+            cy: F32Wrapper(cy),
+            cr: F32Wrapper(cr),
+            transform: TransformWrapper(transform),
+            spread_method,
+            stops,
+        }
+    }
 }
 
 /// A sweep gradient.
 ///
 /// Angles start from the right and go counter-clockwise with increasing values.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct SweepGradient {
     /// The x coordinate of the center.
-    pub cx: f32,
+    pub(crate) cx: F32Wrapper,
     /// The y coordinate of the center.
-    pub cy: f32,
+    pub(crate) cy: F32Wrapper,
     /// The start angle.
-    pub start_angle: f32,
+    pub(crate) start_angle: F32Wrapper,
     /// The end angle.
-    pub end_angle: f32,
+    pub(crate) end_angle: F32Wrapper,
     /// A transform that should be applied to the sweep gradient.
-    pub transform: Transform,
+    pub(crate) transform: TransformWrapper,
     /// The spread method of the sweep gradient.
-    pub spread_method: SpreadMethod,
+    pub(crate) spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
-    pub stops: Stops,
+    pub(crate) stops: Stops,
+}
+
+impl SweepGradient {
+    /// Create a new sweep gradient.
+    pub fn new(
+        cx: f32,
+        cy: f32,
+        start_angle: f32,
+        end_angle: f32,
+        transform: Transform,
+        spread_method: SpreadMethod,
+        stops: Stops,
+    ) -> Self {
+        Self {
+            cx: F32Wrapper(cx),
+            cy: F32Wrapper(cy),
+            start_angle: F32Wrapper(start_angle),
+            end_angle: F32Wrapper(end_angle),
+            transform: TransformWrapper(transform),
+            spread_method,
+            stops,
+        }
+    }
 }
 
 /// A pattern.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Pattern {
     /// The stream of the pattern.
-    pub stream: Stream,
+    pub(crate) stream: Stream,
     /// A transform that should be applied to the pattern.
-    pub transform: Transform,
+    pub(crate) transform: TransformWrapper,
     /// The width of the pattern.
-    pub width: f32,
+    pub(crate) width: F32Wrapper,
     /// The height of the pattern.
-    pub height: f32,
+    pub(crate) height: F32Wrapper,
 }
 
-#[derive(Debug, Clone)]
+impl Pattern {
+    /// Create a new pattern.
+    pub fn new(stream: Stream, transform: Transform, width: f32, height: f32) -> Self {
+        Self {
+            stream,
+            transform: TransformWrapper(transform),
+            width: F32Wrapper(width),
+            height: F32Wrapper(height),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum InnerPaint {
     Color(Color),
     LinearGradient(LinearGradient),
@@ -140,12 +226,26 @@ pub(crate) enum InnerPaint {
 /// You cannot construct this type directly, but instead can convert
 /// into it by calling `into` on the various types of paint, such as linear
 /// gradients and patterns.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Paint(pub(crate) InnerPaint);
 
 impl From<rgb::Color> for Paint {
     fn from(value: rgb::Color) -> Self {
         Paint(InnerPaint::Color(value.into()))
+    }
+}
+
+impl TryFrom<Paint> for rgb::Color {
+    type Error = ();
+
+    fn try_from(value: Paint) -> Result<Self, Self::Error> {
+        match value.0 {
+            InnerPaint::Color(c) => match c {
+                Color::Rgb(rgb) => Ok(rgb),
+                Color::DeviceCmyk(_) => Err(()),
+            },
+            _ => Err(()),
+        }
     }
 }
 
