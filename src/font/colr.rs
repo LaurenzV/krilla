@@ -463,7 +463,7 @@ impl ColorPainter for ColrBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::color::rgb;
+
     use crate::document::Document;
     use crate::font::Font;
     use crate::path::{Fill, Stroke};

@@ -136,7 +136,7 @@ impl Type3Font {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
 
-                let glyph_type = font::draw_glyph(
+                font::draw_glyph(
                     self.font.clone(),
                     SvgSettings::default(),
                     glyph.glyph_id,

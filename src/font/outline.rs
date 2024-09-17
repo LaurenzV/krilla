@@ -1,7 +1,6 @@
 //! Drawing outline-based glyphs to a surface.
 
 use crate::font::{Font, OutlineBuilder, OutlineMode};
-use crate::path::Fill;
 use crate::surface::Surface;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
