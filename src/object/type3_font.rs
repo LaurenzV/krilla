@@ -1,5 +1,5 @@
 use crate::error::KrillaResult;
-use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
+use crate::font::{Font, FontIdentifier, OutlineMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};

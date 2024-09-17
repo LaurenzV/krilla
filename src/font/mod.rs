@@ -287,15 +287,6 @@ struct FontRefWrapper<'a> {
     pub font_ref: FontRef<'a>,
 }
 
-/// The table from which a drawn glyph stems from.
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub(crate) enum GlyphSource {
-    Colr,
-    Svg,
-    Outline,
-    Bitmap,
-}
-
 /// Draw a color glyph to a surface.
 pub(crate) fn draw_color_glyph(
     font: Font,
@@ -305,38 +296,30 @@ pub(crate) fn draw_color_glyph(
     base_transform: Transform,
     outline_mode: &OutlineMode,
     surface: &mut Surface,
-) -> Option<GlyphSource> {
-    let mut glyph_source = None;
-
+) -> Option<()> {
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Some(()) = colr::draw_glyph(font.clone(), glyph, outline_mode, surface) {
-        glyph_source = Some(GlyphSource::Colr);
-    } else if let Some(()) = {
-        #[cfg(feature = "svg")]
-        let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings);
-        #[cfg(not(feature = "svg"))]
-        let res = None;
-
-        res
-    } {
-        glyph_source = Some(GlyphSource::Svg);
-    } else if let Some(()) = {
-        #[cfg(feature = "raster-images")]
-        let res = bitmap::draw_glyph(font.clone(), glyph, surface);
-        #[cfg(not(feature = "raster-images"))]
-        let res = None;
-
-        res
-    } {
-        glyph_source = Some(GlyphSource::Bitmap);
-    }
+    let drawn = colr::draw_glyph(font.clone(), glyph, outline_mode, surface)
+        .or_else(|| {
+            if cfg!(feature = "svg") {
+                svg::draw_glyph(font.clone(), glyph, surface, svg_settings)
+            } else {
+                None
+            }
+        })
+        .or_else(|| {
+            if cfg!(feature = "raster-images") {
+                bitmap::draw_glyph(font.clone(), glyph, surface)
+            } else {
+                None
+            }
+        });
 
     surface.pop();
     surface.pop();
 
-    glyph_source
+    drawn
 }
 
 // TODO: Take reference instead?
@@ -367,7 +350,7 @@ pub(crate) fn draw_glyph(
     outline_mode: &OutlineMode,
     base_transform: Transform,
     surface: &mut Surface,
-) -> Option<GlyphSource> {
+) -> Option<()> {
     draw_color_glyph(
         font.clone(),
         svg_settings,
@@ -376,10 +359,7 @@ pub(crate) fn draw_glyph(
         outline_mode,
         surface,
     )
-    .or_else(|| {
-        outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)
-            .map(|_| GlyphSource::Outline)
-    })
+    .or_else(|| outline::draw_glyph(font, glyph, outline_mode, base_transform, surface))
 }
 
 /// A unique CID identifier.
