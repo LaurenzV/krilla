@@ -120,13 +120,11 @@ impl ContentBuilder {
         );
     }
 
-    // TODO: Dont' return options
-    pub fn stroke_path_impl(
+    pub fn stroke_path(
         &mut self,
         path: &Path,
         stroke: Stroke,
         serializer_context: &mut SerializerContext,
-        stroke_props: bool,
     ) -> Option<()> {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return Some(());
@@ -139,32 +137,19 @@ impl ContentBuilder {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
 
-                if stroke_props {
-                    // See comment in `set_fill_properties`
-                    if !matches!(stroke.paint.0, InnerPaint::Pattern(_)) {
-                        sb.set_stroke_opacity(stroke.opacity);
-                    }
+                // See comment in `set_fill_properties`
+                if !matches!(stroke.paint.0, InnerPaint::Pattern(_)) {
+                    sb.set_stroke_opacity(stroke.opacity);
                 }
             },
             |sb| {
-                if stroke_props {
-                    sb.content_set_stroke_properties(stroke_bbox, &stroke, serializer_context);
-                }
+                sb.content_set_stroke_properties(stroke_bbox, &stroke, serializer_context);
                 sb.content_draw_path(path.segments());
                 sb.content.stroke();
             },
         );
 
         Some(())
-    }
-
-    pub fn stroke_path(
-        &mut self,
-        path: &Path,
-        stroke: Stroke,
-        serializer_context: &mut SerializerContext,
-    ) -> Option<()> {
-        self.stroke_path_impl(path, stroke, serializer_context, true)
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
@@ -251,6 +236,9 @@ impl ContentBuilder {
         // Because of this, the opacity is accounted for in the pattern itself.
         if !matches!(&stroke.paint.0, &InnerPaint::Pattern(_)) {
             self.set_stroke_opacity(stroke.opacity);
+
+            // See the comment below regarding why we also set the fill opacity.
+            self.set_fill_opacity(stroke.opacity);
         }
 
         self.fill_stroke_glyph_run(

@@ -110,15 +110,6 @@ impl<'a> Surface<'a> {
             .fill_path_impl(path, fill, self.sc, fill_props)
     }
 
-    pub(crate) fn stroke_path_impl(&mut self, path: &Path, stroke: Stroke, stroke_props: bool) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_path_impl(
-            path,
-            stroke,
-            self.sc,
-            stroke_props,
-        );
-    }
-
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
