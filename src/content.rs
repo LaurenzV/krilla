@@ -371,7 +371,7 @@ impl ContentBuilder {
         x: f32,
         ys: f32,
         sc: &mut SerializerContext,
-        text_rendering_mode: TextRenderingMode,
+        fill_render_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[impl Glyph],
         font: Font,
@@ -388,7 +388,6 @@ impl ContentBuilder {
 
                 action(sb, sc);
                 sb.content.begin_text();
-                sb.content.set_text_rendering_mode(text_rendering_mode);
 
                 let font_container = sc.create_or_get_font_container(font.clone());
 
@@ -423,6 +422,13 @@ impl ContentBuilder {
                                 v,
                             )
                         };
+
+                        if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
+                            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+                        } else {
+                            sb.content
+                                .set_text_rendering_mode(TextRenderingMode::Stroke);
+                        }
 
                         sb.encode_consecutive_glyph_run(
                             &mut cur_x,
@@ -808,6 +814,7 @@ pub(crate) trait PdfFont {
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
     fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
+    fn force_fill(&self) -> bool;
 }
 
 impl PdfFont for Type3Font {
@@ -836,6 +843,10 @@ impl PdfFont for Type3Font {
     fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
         self.get_gid(&glyph.to_owned()).map(PDFGlyph::Type3)
     }
+
+    fn force_fill(&self) -> bool {
+        true
+    }
 }
 
 impl PdfFont for CIDFont {
@@ -863,6 +874,10 @@ impl PdfFont for CIDFont {
 
     fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
         self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
+    }
+
+    fn force_fill(&self) -> bool {
+        false
     }
 }
 

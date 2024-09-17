@@ -2,7 +2,7 @@ use crate::error::KrillaResult;
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
-use crate::path::{Fill, Stroke};
+use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -14,7 +14,7 @@ use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::{PathStroker, Rect, Transform};
 
 pub type Gid = u8;
 
@@ -209,18 +209,34 @@ impl Type3Font {
                     // If this is the case (i.e. no glyph was drawn, either because no table
                     // exists or an error occurred, the surface is guaranteed to be empty.
                     // So we can just safely draw the outline glyph instead.
-                    if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id) {
+                    if let Some(path) =
+                        glyph_path(self.font.clone(), glyph.glyph_id).and_then(|p| {
+                            match &glyph.paint_mode {
+                                OwnedPaintMode::Fill(_) => Some(p),
+                                OwnedPaintMode::Stroke(s) => {
+                                    let mut stroker = PathStroker::new();
+                                    let stroke_dash = s.dash.clone().and_then(|s| {
+                                        tiny_skia_path::StrokeDash::new(s.array, s.offset)
+                                    });
+
+                                    let stroke = tiny_skia_path::Stroke {
+                                        width: (s.width / glyph.font_size)
+                                            * self.font.units_per_em(),
+                                        miter_limit: s.miter_limit,
+                                        line_cap: s.line_cap.into(),
+                                        line_join: s.line_join.into(),
+                                        dash: stroke_dash,
+                                    };
+
+                                    stroker.stroke(&p, &stroke, 1.0)
+                                }
+                            }
+                        })
+                    {
                         // Just use a dummy fill. The Type3 glyph description is a shape glyph
                         // so it doesn't contain any fill. Instead, it will be taken from
                         // context where it is drawn.
-                        match &glyph.paint_mode {
-                            OwnedPaintMode::Fill(_) => {
-                                surface.fill_path_impl(&path, Fill::default(), false)
-                            }
-                            OwnedPaintMode::Stroke(_) => {
-                                surface.stroke_path_impl(&path, Stroke::default(), false)
-                            }
-                        }
+                        surface.fill_path_impl(&path, Fill::default(), false);
                     }
 
                     surface.finish();

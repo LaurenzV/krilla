@@ -141,10 +141,11 @@ pub fn red_fill(opacity: f32) -> Fill {
     }
 }
 
-pub fn red_stroke(opacity: f32) -> Stroke {
+pub fn red_stroke(opacity: f32, width: f32) -> Stroke {
     Stroke {
         paint: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
+        width,
         ..Stroke::default()
     }
 }

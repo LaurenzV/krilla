@@ -952,7 +952,7 @@ mod tests {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.stroke_text(
             Point::from_xy(0.0, 80.0),
-            red_stroke(0.5),
+            red_stroke(0.5, 1.0),
             font.clone(),
             20.0,
             &[],
@@ -1007,7 +1007,7 @@ mod tests {
 
     // This test does not work correctly. Stroking is unfortunately
     // very tricky to get to work properly with Type3 fonts.
-    #[visreg(settings_4, all)]
+    #[visreg(all, settings_4)]
     fn text_type3_with_stroke(surface: &mut Surface) {
         text_with_stroke_impl(surface, false)
     }
