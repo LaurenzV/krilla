@@ -1,6 +1,6 @@
 //! Drawing COLR-based glyphs to a surface.
 
-use crate::font::{Font, OutlineBuilder, OutlineMode};
+use crate::font::{Font, OutlineBuilder, PaintMode};
 use crate::object::color::rgb;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
@@ -19,7 +19,7 @@ use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 pub fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    outline_mode: &OutlineMode,
+    paint_mode: &PaintMode,
     surface: &mut Surface,
 ) -> Option<()> {
     // Drawing COLR glyphs is a bit tricky, because it's possible that an error
@@ -29,9 +29,9 @@ pub fn draw_glyph(
     // if that succeeds do we iterate over the bytecode to draw onto the canvas.
 
     // TODO: Also support CMYK?
-    let context_color = match outline_mode {
-        OutlineMode::Fill(f) => f.paint.as_rgb(),
-        OutlineMode::Stroke(s) => s.paint.as_rgb(),
+    let context_color = match paint_mode {
+        PaintMode::Fill(f) => f.paint.as_rgb(),
+        PaintMode::Stroke(s) => s.paint.as_rgb(),
     }
     .unwrap_or(rgb::Color::black());
 

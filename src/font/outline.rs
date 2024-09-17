@@ -1,6 +1,6 @@
 //! Drawing outline-based glyphs to a surface.
 
-use crate::font::{Font, OutlineBuilder, OutlineMode};
+use crate::font::{Font, OutlineBuilder, PaintMode};
 use crate::surface::Surface;
 use skrifa::outline::DrawSettings;
 use skrifa::{GlyphId, MetadataProvider};
@@ -26,15 +26,15 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
 pub fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    outline_mode: &OutlineMode,
+    paint_mode: &PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
     let path = glyph_path(font, glyph).and_then(|p| p.transform(base_transform))?;
 
-    match outline_mode {
-        OutlineMode::Fill(f) => surface.fill_path(&path, f.clone()),
-        OutlineMode::Stroke(s) => {
+    match paint_mode {
+        PaintMode::Fill(f) => surface.fill_path(&path, f.clone()),
+        PaintMode::Stroke(s) => {
             surface.stroke_path(&path, s.clone());
         }
     }

@@ -1,5 +1,5 @@
 use crate::error::KrillaResult;
-use crate::font::{Font, FontIdentifier, OutlineMode, Type3Identifier};
+use crate::font::{Font, FontIdentifier, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
@@ -142,7 +142,7 @@ impl Type3Font {
                     glyph.glyph_id,
                     // TODO: Change outlines glyphs so that they are also drawn as colors
                     // glyphs and support stroking
-                    &OutlineMode::Fill(glyph.fill.clone()),
+                    &PaintMode::Fill(glyph.fill.clone()),
                     Transform::default(),
                     &mut surface,
                 );

@@ -6,7 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
+use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -118,7 +118,7 @@ impl<'a> Surface<'a> {
         font: Font,
         font_size: f32,
         glyph_units: GlyphUnits,
-        outline_mode: OutlineMode,
+        paint_mode: PaintMode,
     ) {
         // TODO: What to do with invalid COLR glyphs?
         let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
@@ -137,7 +137,7 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 SvgSettings::default(),
                 glyph.glyph_id(),
-                &outline_mode,
+                &paint_mode,
                 base_transform,
                 self,
             );
@@ -170,7 +170,7 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                OutlineMode::Fill(fill),
+                PaintMode::Fill(fill),
             );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
@@ -249,7 +249,7 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                OutlineMode::Stroke(stroke),
+                PaintMode::Stroke(stroke),
             );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(

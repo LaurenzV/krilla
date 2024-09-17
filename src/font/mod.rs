@@ -294,13 +294,13 @@ pub(crate) fn draw_color_glyph(
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     base_transform: Transform,
-    outline_mode: &OutlineMode,
+    paint_mode: &PaintMode,
     surface: &mut Surface,
 ) -> Option<()> {
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    let drawn = colr::draw_glyph(font.clone(), glyph, outline_mode, surface)
+    let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
         .or_else(|| {
             if cfg!(feature = "svg") {
                 svg::draw_glyph(font.clone(), glyph, surface, svg_settings)
@@ -324,18 +324,18 @@ pub(crate) fn draw_color_glyph(
 
 // TODO: Take reference instead?
 #[derive(Clone)]
-pub(crate) enum OutlineMode {
+pub(crate) enum PaintMode {
     Fill(Fill),
     Stroke(Stroke),
 }
 
-impl From<Stroke> for OutlineMode {
+impl From<Stroke> for PaintMode {
     fn from(value: Stroke) -> Self {
         Self::Stroke(value)
     }
 }
 
-impl From<Fill> for OutlineMode {
+impl From<Fill> for PaintMode {
     fn from(value: Fill) -> Self {
         Self::Fill(value)
     }
@@ -347,7 +347,7 @@ pub(crate) fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     // TODO: Rename
-    outline_mode: &OutlineMode,
+    paint_mode: &PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
@@ -356,10 +356,10 @@ pub(crate) fn draw_glyph(
         svg_settings,
         glyph,
         base_transform,
-        outline_mode,
+        paint_mode,
         surface,
     )
-    .or_else(|| outline::draw_glyph(font, glyph, outline_mode, base_transform, surface))
+    .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
 }
 
 /// A unique CID identifier.
