@@ -105,6 +105,11 @@ impl<'a> Surface<'a> {
             .fill_path(path, fill, self.sc);
     }
 
+    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: Fill, fill_props: bool) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path_impl(path, fill, self.sc, fill_props)
+    }
+
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
@@ -868,8 +873,7 @@ mod tests {
         }
     }
 
-    #[visreg]
-    fn text_outlined_with_fill(surface: &mut Surface) {
+    fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 80.0),
@@ -878,7 +882,7 @@ mod tests {
             20.0,
             &[],
             "red outlined text",
-            true,
+            outlined,
             None,
         );
 
@@ -889,7 +893,7 @@ mod tests {
             20.0,
             &[],
             "blue outlined text",
-            true,
+            outlined,
             None,
         );
 
@@ -903,7 +907,7 @@ mod tests {
             20.0,
             &[],
             "gradient text",
-            true,
+            outlined,
             None,
         );
 
@@ -916,13 +920,23 @@ mod tests {
             20.0,
             &[],
             "😄😁😆",
-            true,
+            outlined,
             None,
         );
     }
 
     #[visreg]
-    fn text_outlined_with_stroke(surface: &mut Surface) {
+    fn text_outlined_with_fill(surface: &mut Surface) {
+       text_with_fill_impl(surface, true)
+    }
+
+    // Currently doesn't work correctly for gradients.
+    #[visreg(settings_4, mupdf)]
+    fn text_type3_with_fill(surface: &mut Surface) {
+       text_with_fill_impl(surface, false)
+    }
+
+    fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.stroke_text(
             Point::from_xy(0.0, 80.0),
@@ -931,7 +945,7 @@ mod tests {
             20.0,
             &[],
             "red outlined text",
-            true,
+            outlined,
             None,
         );
 
@@ -942,7 +956,7 @@ mod tests {
             20.0,
             &[],
             "blue outlined text",
-            true,
+            outlined,
             None,
         );
 
@@ -956,7 +970,7 @@ mod tests {
             20.0,
             &[],
             "gradient text",
-            true,
+            outlined,
             None,
         );
 
@@ -969,9 +983,19 @@ mod tests {
             20.0,
             &[],
             "😄😁😆",
-            true,
+            outlined,
             None,
         );
+    }
+
+    #[visreg]
+    fn text_outlined_with_stroke(surface: &mut Surface) {
+        text_with_stroke_impl(surface, true);
+    }
+
+    #[visreg(settings_4)]
+    fn text_type3_with_stroke(surface: &mut Surface) {
+        text_with_stroke_impl(surface, false)
     }
 
     #[visreg]

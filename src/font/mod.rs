@@ -294,8 +294,8 @@ pub(crate) fn draw_color_glyph(
     #[cfg(feature = "svg")] svg_settings: SvgSettings,
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
-    base_transform: Transform,
     paint_mode: PaintMode,
+    base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
     surface.push_transform(&base_transform);
@@ -370,7 +370,6 @@ pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
-    // TODO: Rename
     paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
@@ -379,8 +378,8 @@ pub(crate) fn draw_glyph(
         font.clone(),
         svg_settings,
         glyph,
-        base_transform,
         paint_mode,
+        base_transform,
         surface,
     )
     .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))

@@ -12,6 +12,8 @@ use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
+use crate::font::outline::glyph_path;
+use crate::path::Fill;
 
 pub type Gid = u8;
 
@@ -147,7 +149,7 @@ impl Type3Font {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
 
-                font::draw_glyph(
+                let drawn_color_glyph = font::draw_color_glyph(
                     self.font.clone(),
                     SvgSettings::default(),
                     glyph.glyph_id,
@@ -158,13 +160,11 @@ impl Type3Font {
                     &mut surface,
                 );
 
-                surface.finish();
-                let stream = stream_surface.finish();
-                let mut content = Content::new();
+                let stream = if drawn_color_glyph.is_some() {
+                    surface.finish();
+                    let stream = stream_surface.finish();
+                    let mut content = Content::new();
 
-                let stream = if stream.is_empty() {
-                    content.finish()
-                } else {
                     // I considered writing into the stream directly instead of creating an XObject
                     // and showing that, but it seems like many viewers don't like that, and emojis
                     // look messed up. Using XObjects seems like the best choice here.
@@ -176,6 +176,37 @@ impl Type3Font {
                     content.x_object(x_name.to_pdf_name());
 
                     content.finish()
+                }   else {
+                    // If this is the case (i.e. no glyph was drawn, either because no table
+                    // exists or an error occurred, the surface is guaranteed to be empty.
+                    // So we can just safely draw the outline glyph instead.
+                    if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id) {
+                        // Just use a dummy fill. The Type3 glyph description is a shape glyph
+                        // so it doesn't contain any fill. Instead, it will be taken from
+                        // context where it is drawn.
+                        surface.fill_path_impl(&path, Fill::default(), false);
+                    }
+
+                    surface.finish();
+                    let stream = stream_surface.finish();
+                    let mut content = Content::new();
+
+                    // Use shape glyph for outline-based Type3 fonts.
+                    let bbox = stream.bbox();
+                    font_bbox.expand(&bbox);
+                    content.start_shape_glyph(
+                        self.widths[index],
+                        bbox.left(),
+                        bbox.top(),
+                        bbox.right(),
+                        bbox.bottom(),
+                    );
+
+                    // TODO: Find a type-safe way of doing this.
+                    let mut final_stream = content.finish();
+                    final_stream.push(b'\n');
+                    final_stream.extend(stream.content());
+                    final_stream
                 };
 
                 let font_stream =

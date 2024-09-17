@@ -76,6 +76,18 @@ impl ContentBuilder {
         fill: Fill,
         serializer_context: &mut SerializerContext,
     ) {
+        self.fill_path_impl(path, fill, serializer_context, true);
+    }
+
+    pub(crate) fn fill_path_impl(
+        &mut self,
+        path: &Path,
+        fill: Fill,
+        serializer_context: &mut SerializerContext,
+        // This is only needed because when creating a Type3 glyph, we don't want to apply a
+        // fill properties for outline glyphs, so that they are taken from wherever the glyph is shown.
+        fill_props: bool,
+    ) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -85,15 +97,19 @@ impl ContentBuilder {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(path.bounds()));
 
-                // PDF viewers don't show patterns with fill/stroke opacities consistently.
-                // Because of this, the opacity is accounted for in the pattern itself.
-                if !matches!(fill.paint.0, InnerPaint::Pattern(_)) {
-                    sb.set_fill_opacity(fill.opacity);
+                if fill_props {
+                    // PDF viewers don't show patterns with fill/stroke opacities consistently.
+                    // Because of this, the opacity is accounted for in the pattern itself.
+                    if !matches!(fill.paint.0, InnerPaint::Pattern(_)) {
+                        sb.set_fill_opacity(fill.opacity);
+                    }
                 }
             },
             |sb| {
                 let fill_rule = fill.rule;
-                sb.content_set_fill_properties(path.bounds(), &fill, serializer_context);
+                if fill_props {
+                    sb.content_set_fill_properties(path.bounds(), &fill, serializer_context);
+                }
                 sb.content_draw_path(path.segments());
 
                 match fill_rule {
