@@ -357,7 +357,7 @@ pub(crate) enum PaintMode<'a> {
 }
 
 impl PaintMode<'_> {
-    pub fn to_owend(&self) -> OwnedPaintMode {
+    pub fn to_owned(&self) -> OwnedPaintMode {
         match self {
             PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
             PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),

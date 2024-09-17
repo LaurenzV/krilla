@@ -320,7 +320,7 @@ impl ContentBuilder {
 
         for glyph in glyphs {
             let pdf_glyph = pdf_font
-                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode))
+                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode, size))
                 .unwrap();
 
             let normalize =
@@ -394,7 +394,7 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_container);
+                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_size, font_container);
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -407,7 +407,7 @@ impl ContentBuilder {
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
                     let segmented =
-                        GlyphGrouper::new(font_container, paint_mode, fragment.glyphs());
+                        GlyphGrouper::new(font_container, paint_mode, font_size, fragment.glyphs());
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -916,6 +916,7 @@ where
 {
     slice: &'a [T],
     paint_mode: PaintMode<'a>,
+    font_size: f32,
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
@@ -928,6 +929,7 @@ where
         slice: &'a [T],
         text: &'a str,
         paint_mode: PaintMode<'a>,
+        font_size: f32,
         font_container: &'b RefCell<FontContainer>,
     ) -> Self {
         Self {
@@ -935,6 +937,7 @@ where
             paint_mode,
             text,
             font_container,
+            font_size,
         }
     }
 }
@@ -949,6 +952,7 @@ where
         fn func<U>(
             g: &U,
             paint_mode: PaintMode,
+            font_size: f32,
             mut font_container: RefMut<FontContainer>,
             text: &str,
         ) -> (Range<usize>, bool)
@@ -956,7 +960,7 @@ where
             U: Glyph,
         {
             let (identifier, pdf_glyph) =
-                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), paint_mode));
+                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), paint_mode, font_size));
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
@@ -986,6 +990,7 @@ where
         let (first_range, first_incompatible) = func(
             iter.next()?,
             self.paint_mode,
+            self.font_size,
             self.font_container.borrow_mut(),
             self.text,
         );
@@ -996,6 +1001,7 @@ where
             let (next_range, next_incompatible) = func(
                 next,
                 self.paint_mode,
+                self.font_size,
                 self.font_container.borrow_mut(),
                 self.text,
             );
@@ -1119,6 +1125,7 @@ where
 {
     font_container: &'b RefCell<FontContainer>,
     paint_mode: PaintMode<'a>,
+    font_size: f32,
     slice: &'a [T],
 }
 
@@ -1129,11 +1136,13 @@ where
     pub fn new(
         font_container: &'b RefCell<FontContainer>,
         paint_mode: PaintMode<'a>,
+        font_size: f32,
         slice: &'a [T],
     ) -> Self {
         Self {
             font_container,
             paint_mode,
+            font_size,
             slice,
         }
     }
@@ -1158,6 +1167,7 @@ where
             fn func<U>(
                 g: &U,
                 paint_mode: PaintMode,
+                font_size: f32,
                 font_container: RefMut<FontContainer>,
             ) -> GlyphProps
             where
@@ -1165,7 +1175,7 @@ where
             {
                 // Safe because we've already added all glyphs in the text spanner.
                 let font_identifier = font_container
-                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode))
+                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode, font_size))
                     .unwrap();
 
                 GlyphProps {
@@ -1181,11 +1191,17 @@ where
             let first = func(
                 iter.next()?,
                 self.paint_mode,
+                self.font_size,
                 self.font_container.borrow_mut(),
             );
 
             for next in iter {
-                let temp_glyph = func(next, self.paint_mode, self.font_container.borrow_mut());
+                let temp_glyph = func(
+                    next,
+                    self.paint_mode,
+                    self.font_size,
+                    self.font_container.borrow_mut(),
+                );
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier

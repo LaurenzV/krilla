@@ -12,6 +12,7 @@ use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
+use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
@@ -21,29 +22,57 @@ pub type Gid = u8;
 pub(crate) struct CoveredGlyph<'a> {
     pub glyph_id: GlyphId,
     pub paint_mode: PaintMode<'a>,
+    pub font_size: f32,
 }
 
 impl CoveredGlyph<'_> {
     pub fn to_owned(&self) -> OwnedCoveredGlyph {
         OwnedCoveredGlyph {
             glyph_id: self.glyph_id,
-            paint_mode: self.paint_mode.to_owend(),
+            paint_mode: self.paint_mode.to_owned(),
+            font_size: self.font_size,
         }
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) struct OwnedCoveredGlyph {
-    pub glyph_id: GlyphId,
-    pub paint_mode: OwnedPaintMode,
-}
-
 impl<'a> CoveredGlyph<'a> {
-    pub fn new(glyph_id: GlyphId, paint_mode: PaintMode<'a>) -> CoveredGlyph<'a> {
+    pub fn new(
+        glyph_id: GlyphId,
+        paint_mode: PaintMode<'a>,
+        mut font_size: f32,
+    ) -> CoveredGlyph<'a> {
+        if matches!(paint_mode, PaintMode::Fill(_)) {
+            // The only reason we need the font size is that
+            // when drawing a stroked glyph as a Type3 glyph, we stroke
+            // it using tiny-skia and then draw it as a filled glyph instead.
+            // This is because stroking pretty much doesn't work with type 3 fonts.
+            // For fills, we don't care about the font size, so we always set it to one.
+            // so that we don't allocate new glyphs for each font size it is used at.
+            font_size = 1.0;
+        }
+
         Self {
             glyph_id,
             paint_mode,
+            font_size,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct OwnedCoveredGlyph {
+    glyph_id: GlyphId,
+    paint_mode: OwnedPaintMode,
+    font_size: f32,
+}
+
+impl Eq for OwnedCoveredGlyph {}
+
+impl Hash for OwnedCoveredGlyph {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.glyph_id.hash(state);
+        self.paint_mode.hash(state);
+        self.font_size.to_bits().hash(state);
     }
 }
 
@@ -411,10 +440,11 @@ mod tests {
     use tiny_skia_path::Point;
 
     impl OwnedCoveredGlyph {
-        pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {
+        pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode, font_size: f32) -> Self {
             Self {
                 glyph_id,
                 paint_mode,
+                font_size,
             }
         }
     }
@@ -429,10 +459,12 @@ mod tests {
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(36),
                     Fill::default().into(),
+                    1.0,
                 ));
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(37),
                     Fill::default().into(),
+                    1.0,
                 ));
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
@@ -558,18 +590,22 @@ mod tests {
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(58),
                     Fill::default().into(),
+                    1.0,
                 ));
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(54),
                     Fill::default().into(),
+                    1.0,
                 ));
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(69),
                     Fill::default().into(),
+                    1.0,
                 ));
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(71),
                     Fill::default().into(),
+                    1.0,
                 ));
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
@@ -595,6 +631,7 @@ mod tests {
                     t3.add_glyph(OwnedCoveredGlyph::new(
                         GlyphId::new(i),
                         Fill::default().into(),
+                        1.0,
                     ));
                 }
 
@@ -602,7 +639,8 @@ mod tests {
                 assert_eq!(
                     t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
                         GlyphId::new(20),
-                        Fill::default().into()
+                        Fill::default().into(),
+                        1.0
                     )),
                     18
                 );
@@ -610,6 +648,7 @@ mod tests {
                 t3.add_glyph(OwnedCoveredGlyph::new(
                     GlyphId::new(512),
                     Fill::default().into(),
+                    1.0,
                 ));
                 assert_eq!(t3.fonts.len(), 2);
             }
