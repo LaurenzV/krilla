@@ -3,6 +3,7 @@ use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::paint::Paint;
+use crate::path::{Fill, Stroke};
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -11,26 +12,32 @@ use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
 pub type Gid = u8;
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) struct CoveredGlyph {
     pub glyph_id: GlyphId,
-    pub paint: Paint,
+    pub fill: Fill,
+}
+
+impl CoveredGlyph {
+    pub fn new(glyph_id: GlyphId, fill: Fill) -> Self {
+        Self { glyph_id, fill }
+    }
 }
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
 pub(crate) struct Type3Font {
     font: Font,
-    glyphs: Vec<GlyphId>,
+    glyphs: Vec<CoveredGlyph>,
     widths: Vec<f32>,
     cmap_entries: BTreeMap<Gid, String>,
-    glyph_set: BTreeSet<GlyphId>,
+    glyph_set: HashSet<CoveredGlyph>,
     index: usize,
 }
 
@@ -48,7 +55,7 @@ impl Type3Font {
             glyphs: Vec::new(),
             cmap_entries: BTreeMap::new(),
             widths: Vec::new(),
-            glyph_set: BTreeSet::new(),
+            glyph_set: HashSet::new(),
             index,
         }
     }
@@ -65,27 +72,27 @@ impl Type3Font {
         u16::try_from(self.glyphs.len()).unwrap()
     }
 
-    pub fn covers(&self, glyph: GlyphId) -> bool {
-        self.glyph_set.contains(&glyph)
+    pub fn covers(&self, glyph: &CoveredGlyph) -> bool {
+        self.glyph_set.contains(glyph)
     }
 
-    pub fn get_gid(&self, glyph_id: GlyphId) -> Option<u8> {
+    pub fn get_gid(&self, glyph: &CoveredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
-            .position(|g| *g == glyph_id)
+            .position(|g| g == glyph)
             .and_then(|n| u8::try_from(n).ok())
     }
 
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
-        if let Some(pos) = self.get_gid(glyph_id) {
+    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> u8 {
+        if let Some(pos) = self.get_gid(&glyph) {
             pos
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyph_set.insert(glyph_id);
-            self.glyphs.push(glyph_id);
+            self.glyph_set.insert(glyph.clone());
+            self.glyphs.push(glyph.clone());
             self.widths
-                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
+                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -120,18 +127,18 @@ impl Type3Font {
             .glyphs
             .iter()
             .enumerate()
-            .map(|(index, glyph_id)| {
+            .map(|(index, glyph)| {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
 
                 let glyph_type = font::draw_glyph(
                     self.font.clone(),
                     SvgSettings::default(),
-                    *glyph_id,
+                    glyph.glyph_id,
+                    // TODO: Change outlines glyphs so that they are also drawn as colors
+                    // glyphs and support stroking
                     None::<OutlineMode>,
                     Transform::default(),
-                    // TODO: Update
-                    rgb::Color::black(),
                     &mut surface,
                 );
 

@@ -98,7 +98,7 @@ impl Stroke {
 }
 
 /// A fill rule.
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub enum FillRule {
     /// The `non-zero` fill rule.
     NonZero,
@@ -113,7 +113,7 @@ impl Default for FillRule {
 }
 
 /// A fill.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fill {
     /// The paint of the fill.
     pub paint: Paint,

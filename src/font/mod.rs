@@ -41,6 +41,7 @@ pub(crate) mod outline;
 pub(crate) mod svg;
 
 use crate::color::rgb;
+use crate::paint::Paint;
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
 
@@ -304,7 +305,7 @@ pub(crate) fn draw_color_glyph(
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     base_transform: Transform,
-    context_color: rgb::Color,
+    outline_mode: Option<&OutlineMode>,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
     let mut glyph_source = None;
@@ -312,7 +313,7 @@ pub(crate) fn draw_color_glyph(
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Some(()) = colr::draw_glyph(font.clone(), glyph, context_color, surface) {
+    if let Some(()) = colr::draw_glyph(font.clone(), glyph, outline_mode, surface) {
         glyph_source = Some(GlyphSource::Colr);
     } else if let Some(()) = {
         #[cfg(feature = "svg")]
@@ -340,10 +341,33 @@ pub(crate) fn draw_color_glyph(
     glyph_source
 }
 
+// TODO: Take reference instead?
 #[derive(Clone)]
 pub(crate) enum OutlineMode {
     Fill(Fill),
     Stroke(Stroke),
+}
+
+impl OutlineMode {
+    // TODO: No clone?
+    pub fn paint(&self) -> Paint {
+        match self {
+            OutlineMode::Fill(f) => f.paint.clone(),
+            OutlineMode::Stroke(s) => s.paint.clone(),
+        }
+    }
+}
+
+impl From<Stroke> for OutlineMode {
+    fn from(value: Stroke) -> Self {
+        Self::Stroke(value)
+    }
+}
+
+impl From<Fill> for OutlineMode {
+    fn from(value: Fill) -> Self {
+        todo!()
+    }
 }
 
 /// Draw a color glyph or outline glyph to a surface.
@@ -351,9 +375,9 @@ pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
+    // TODO: Rename
     outline_mode: Option<OutlineMode>,
     base_transform: Transform,
-    context_color: rgb::Color,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
     draw_color_glyph(
@@ -361,11 +385,11 @@ pub(crate) fn draw_glyph(
         svg_settings,
         glyph,
         base_transform,
-        context_color,
+        &outline_mode,
         surface,
     )
     .or_else(|| {
-        outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)
+        outline::draw_glyph(font, glyph, Some(outline_mode), base_transform, surface)
             .map(|_| GlyphSource::Outline)
     })
 }

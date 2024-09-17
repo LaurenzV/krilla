@@ -212,6 +212,7 @@ impl Pattern {
     }
 }
 
+// TODO: Wrap linear/stroke etc. in Arc
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum InnerPaint {
     Color(Color),
@@ -229,23 +230,21 @@ pub(crate) enum InnerPaint {
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Paint(pub(crate) InnerPaint);
 
-impl From<rgb::Color> for Paint {
-    fn from(value: rgb::Color) -> Self {
-        Paint(InnerPaint::Color(value.into()))
+impl Paint {
+    pub(crate) fn as_rgb(&self) -> Option<rgb::Color> {
+        match self.0 {
+            InnerPaint::Color(c) => match c {
+                Color::Rgb(rgb) => Some(rgb),
+                Color::DeviceCmyk(_) => None,
+            },
+            _ => None,
+        }
     }
 }
 
-impl TryFrom<Paint> for rgb::Color {
-    type Error = ();
-
-    fn try_from(value: Paint) -> Result<Self, Self::Error> {
-        match value.0 {
-            InnerPaint::Color(c) => match c {
-                Color::Rgb(rgb) => Ok(rgb),
-                Color::DeviceCmyk(_) => Err(()),
-            },
-            _ => Err(()),
-        }
+impl From<rgb::Color> for Paint {
+    fn from(value: rgb::Color) -> Self {
+        Paint(InnerPaint::Color(value.into()))
     }
 }
 
