@@ -1,6 +1,8 @@
 q
 /DeviceGray CS
 0 SCN
+/DeviceGray cs
+0 scn
 BT
 1 Tr
 /f0 16 Tf
