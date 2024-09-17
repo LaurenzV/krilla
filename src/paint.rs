@@ -2,16 +2,18 @@
 
 use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
+use crate::util::HashExt;
+use std::hash::Hash;
 use tiny_skia_path::{NormalizedF32, Transform};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {
     RgbStops(Vec<Stop<rgb::Color>>),
     CmykStops(Vec<Stop<cmyk::Color>>),
 }
 
 /// The color stops of a gradient.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Stops(pub(crate) InnerStops);
 
 impl IntoIterator for InnerStops {
@@ -48,7 +50,7 @@ impl From<Vec<Stop<cmyk::Color>>> for Stops {
 }
 
 /// A linear gradient.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LinearGradient {
     /// The x coordinate of the first point.
     pub x1: f32,
@@ -66,8 +68,22 @@ pub struct LinearGradient {
     pub stops: Stops,
 }
 
+impl Eq for LinearGradient {}
+
+impl Hash for LinearGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x1.to_bits().hash(state);
+        self.y1.to_bits().hash(state);
+        self.x2.to_bits().hash(state);
+        self.y2.to_bits().hash(state);
+        self.transform.hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
+    }
+}
+
 /// A radial gradient.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RadialGradient {
     /// The x coordinate of the start circle.
     pub fx: f32,
@@ -92,10 +108,26 @@ pub struct RadialGradient {
     pub stops: Stops,
 }
 
+impl Eq for RadialGradient {}
+
+impl Hash for RadialGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.fx.to_bits().hash(state);
+        self.fy.to_bits().hash(state);
+        self.fr.to_bits().hash(state);
+        self.cx.to_bits().hash(state);
+        self.cy.to_bits().hash(state);
+        self.cr.to_bits().hash(state);
+        self.transform.hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
+    }
+}
+
 /// A sweep gradient.
 ///
 /// Angles start from the right and go counter-clockwise with increasing values.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SweepGradient {
     /// The x coordinate of the center.
     pub cx: f32,
@@ -113,8 +145,22 @@ pub struct SweepGradient {
     pub stops: Stops,
 }
 
+impl Eq for SweepGradient {}
+
+impl Hash for SweepGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.cx.to_bits().hash(state);
+        self.cy.to_bits().hash(state);
+        self.start_angle.to_bits().hash(state);
+        self.end_angle.to_bits().hash(state);
+        self.transform.hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
+    }
+}
+
 /// A pattern.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pattern {
     /// The stream of the pattern.
     pub stream: Stream,
@@ -126,7 +172,19 @@ pub struct Pattern {
     pub height: f32,
 }
 
-#[derive(Debug, Clone)]
+impl Eq for Pattern {}
+
+impl Hash for Pattern {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.stream.hash(state);
+        self.transform.hash(state);
+        self.width.to_bits().hash(state);
+        self.height.to_bits().hash(state);
+    }
+}
+
+// TODO: Wrap linear/stroke etc. in Arc
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum InnerPaint {
     Color(Color),
     LinearGradient(LinearGradient),
@@ -140,8 +198,20 @@ pub(crate) enum InnerPaint {
 /// You cannot construct this type directly, but instead can convert
 /// into it by calling `into` on the various types of paint, such as linear
 /// gradients and patterns.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Paint(pub(crate) InnerPaint);
+
+impl Paint {
+    pub(crate) fn as_rgb(&self) -> Option<rgb::Color> {
+        match self.0 {
+            InnerPaint::Color(c) => match c {
+                Color::Rgb(rgb) => Some(rgb),
+                Color::DeviceCmyk(_) => None,
+            },
+            _ => None,
+        }
+    }
+}
 
 impl From<rgb::Color> for Paint {
     fn from(value: rgb::Color) -> Self {

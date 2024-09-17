@@ -1,6 +1,6 @@
 //! Drawing COLR-based glyphs to a surface.
 
-use crate::font::{Font, OutlineBuilder};
+use crate::font::{Font, OutlineBuilder, PaintMode};
 use crate::object::color::rgb;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
@@ -15,17 +15,29 @@ use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
 /// Draw a COLR-based glyph on a surface.
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub fn draw_glyph(
+    font: Font,
+    glyph: GlyphId,
+    paint_mode: PaintMode,
+    surface: &mut Surface,
+) -> Option<()> {
     // Drawing COLR glyphs is a bit tricky, because it's possible that an error
     // occurs while we are drawing, in which case we cannot revert it anymore since
     // we already drew the instructions onto the surface. Because of this, we first
     // convert the glyph into a more accessible bytecode representation and only
     // if that succeeds do we iterate over the bytecode to draw onto the canvas.
 
+    // TODO: Also support CMYK?
+    let context_color = match paint_mode {
+        PaintMode::Fill(f) => f.paint.as_rgb(),
+        PaintMode::Stroke(s) => s.paint.as_rgb(),
+    }
+    .unwrap_or(rgb::Color::black());
+
     let colr_glyphs = font.font_ref().color_glyphs();
     let colr_glyph = colr_glyphs.get(glyph)?;
 
-    let mut colr_canvas = ColrBuilder::new(font.clone());
+    let mut colr_canvas = ColrBuilder::new(font.clone(), context_color);
     colr_glyph
         .paint(font.location_ref(), &mut colr_canvas)
         .ok()?;
@@ -69,6 +81,7 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
 /// The context necessary for creating the bytecode of a COLR-based glyph.
 struct ColrBuilder {
     font: Font,
+    context_color: rgb::Color,
     clips: Vec<Vec<Path>>,
     stack: Vec<Vec<Instruction>>,
     layers: Vec<BlendMode>,
@@ -83,9 +96,10 @@ enum Instruction {
 }
 
 impl ColrBuilder {
-    pub fn new(font: Font) -> Self {
+    pub fn new(font: Font, context_color: rgb::Color) -> Self {
         Self {
             font,
+            context_color,
             stack: vec![vec![]],
             transforms: vec![Transform::identity()],
             clips: vec![vec![]],
@@ -97,10 +111,8 @@ impl ColrBuilder {
     pub fn finish(mut self) -> Option<Vec<Instruction>> {
         if self.error {
             return None;
-        } else {
-            if let Some(instructions) = self.stack.pop() {
-                return Some(instructions);
-            }
+        } else if let Some(instructions) = self.stack.pop() {
+            return Some(instructions);
         }
 
         None
@@ -127,7 +139,7 @@ impl ColrBuilder {
                 NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
             ))
         } else {
-            Some((rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap()))
+            Some((self.context_color, NormalizedF32::new(alpha).unwrap()))
         }
     }
 
@@ -388,11 +400,7 @@ impl ColorPainter for ColrBuilder {
             // whole "visible" area with the fill. However, this seems to produce artifacts in
             // Google Chrome when zooming. So instead, what we do is that we apply all clip paths except
             // for the last one, and the last one we use to actually perform the fill.
-            let Some(clips) = self
-                .clips
-                .last()
-                .map(|paths| paths.iter().map(|p| p.clone()).collect::<Vec<_>>())
-            else {
+            let Some(clips) = self.clips.last().map(|paths| paths.to_vec()) else {
                 self.error = true;
                 return;
             };
@@ -448,10 +456,17 @@ impl ColorPainter for ColrBuilder {
 
 #[cfg(test)]
 mod tests {
+
     use crate::document::Document;
-    use crate::tests::{all_glyphs_to_pdf, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR};
+    use crate::font::Font;
+    use crate::path::{Fill, Stroke};
+    use crate::surface::Surface;
+    use crate::tests::{
+        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
+    };
     use krilla_macros::visreg;
     use skrifa::GlyphId;
+    use tiny_skia_path::Point;
 
     #[visreg(document)]
     fn colr_test_glyphs(document: &mut Document) {
@@ -462,6 +477,88 @@ mod tests {
             .collect::<Vec<_>>();
 
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
+    }
+
+    #[visreg]
+    fn colr_context_color(surface: &mut Surface) {
+        let font_data = COLR_TEST_GLYPHS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let text = [
+            0xf0b00, 0xf0b01, 0xf0b02, 0xf0b03, 0xf0b04, 0xf0b05, 0xf0b06, 0xf0b07,
+        ]
+        .into_iter()
+        .map(|n| char::from_u32(n).unwrap().to_string())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+        surface.fill_text(
+            Point::from_xy(0., 30.0),
+            Fill::default(),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        surface.fill_text(
+            Point::from_xy(0., 50.0),
+            purple_fill(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        surface.fill_text(
+            Point::from_xy(0., 70.0),
+            purple_fill(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            true,
+            None,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0., 130.0),
+            Stroke::default(),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        // Since it a COLR glyph, it will still be filled, but the color should be taken from
+        // the stroke.
+        surface.stroke_text(
+            Point::from_xy(0., 150.0),
+            blue_stroke(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0., 170.0),
+            blue_stroke(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            true,
+            None,
+        );
     }
 
     // We don't run on pdf.js because it leads to a high pixel difference in CI

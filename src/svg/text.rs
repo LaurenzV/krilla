@@ -40,26 +40,22 @@ pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut Pr
                 upem / span.font_size.get(),
             ));
 
+            let Some(inverted) = transform.invert() else {
+                continue;
+            };
+
             // We need to apply the inverse transform to fill/stroke because we don't
             // want the paint to be affected by the transform applied to the glyph. See docs
             // of `convert_paint`.
-            let fill = span.fill.as_ref().map(|f| {
-                convert_fill(
-                    f,
-                    surface.stream_builder(),
-                    process_context,
-                    transform.invert().unwrap(),
-                )
-            });
+            let fill = span
+                .fill
+                .as_ref()
+                .map(|f| convert_fill(f, surface.stream_builder(), process_context, inverted));
 
-            let stroke = span.stroke.as_ref().map(|s| {
-                convert_stroke(
-                    s,
-                    surface.stream_builder(),
-                    process_context,
-                    transform.invert().unwrap(),
-                )
-            });
+            let stroke = span
+                .stroke
+                .as_ref()
+                .map(|s| convert_stroke(s, surface.stream_builder(), process_context, inverted));
 
             let fill_op = |sb: &mut Surface, fill: Fill, font: Font, embed_text: bool| {
                 sb.fill_glyphs(

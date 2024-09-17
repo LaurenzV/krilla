@@ -18,7 +18,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
     let bitmap_glyph = bitmap_strikes.iter().filter_map(|s| s.get(glyph)).last()?;
     let upem = metrics.units_per_em as f32;
 
-    return match bitmap_glyph.data {
+    match bitmap_glyph.data {
         BitmapData::Png(data) => {
             let image = Image::from_png(data)?;
             let size = image.size();
@@ -61,7 +61,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
         }
         BitmapData::Bgra(_) => None,
         BitmapData::Mask(_) => None,
-    };
+    }
 }
 
 mod utils {

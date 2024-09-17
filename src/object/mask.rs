@@ -9,9 +9,8 @@ use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
-use crate::util::TransformWrapper;
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Rect, Transform};
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
@@ -41,7 +40,7 @@ impl Mask {
     /// Create a new mask for a shading to encode the opacity channels.
     pub(crate) fn new_from_shading(
         gradient_properties: GradientProperties,
-        shading_transform: TransformWrapper,
+        shading_transform: Transform,
         bbox: Rect,
         serializer_context: &mut SerializerContext,
     ) -> Option<Self> {
@@ -63,7 +62,7 @@ impl Mask {
         let shading_stream = {
             let mut builder = StreamBuilder::new(serializer_context);
             let mut surface = builder.surface();
-            surface.push_transform(&shading_transform.0);
+            surface.push_transform(&shading_transform);
             surface.draw_shading(&shading_function);
             surface.pop();
             surface.finish();

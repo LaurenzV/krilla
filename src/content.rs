@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits};
+use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -11,7 +11,7 @@ use crate::object::ext_g_state::ExtGState;
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
-use crate::object::type3_font::Type3Font;
+use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
@@ -20,19 +20,15 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
-use crate::util::{
-    calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
-    TransformWrapper,
-};
+use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
-use skrifa::GlyphId;
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::{FiniteF32, NormalizedF32, Path, PathSegment, Point, Rect, Transform};
+use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -203,7 +199,7 @@ impl ContentBuilder {
             y,
             sc,
             TextRenderingMode::Fill,
-            move |sb, sc| {
+            |sb, sc| {
                 sb.content_set_fill_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     &fill,
@@ -212,6 +208,7 @@ impl ContentBuilder {
             },
             glyphs,
             font,
+            PaintMode::Fill(&fill),
             text,
             font_size,
             glyph_units,
@@ -239,6 +236,9 @@ impl ContentBuilder {
         // Because of this, the opacity is accounted for in the pattern itself.
         if !matches!(&stroke.paint.0, &InnerPaint::Pattern(_)) {
             self.set_stroke_opacity(stroke.opacity);
+
+            // See the comment below regarding why we also set the fill opacity.
+            self.set_fill_opacity(stroke.opacity);
         }
 
         self.fill_stroke_glyph_run(
@@ -251,10 +251,25 @@ impl ContentBuilder {
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     &stroke,
                     sc,
+                );
+
+                // There is a very weird and inconsistent interaction between Type3
+                // glyphs and stroking them. Each PDF viewer does something different.
+                // Because of this, we simply set BOTH, fill and stroke when stroking
+                // a run of glyphs.
+                sb.content_set_fill_properties(
+                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                    &Fill {
+                        paint: stroke.paint.clone(),
+                        opacity: stroke.opacity,
+                        rule: Default::default(),
+                    },
+                    sc,
                 )
             },
             glyphs,
             font,
+            PaintMode::Stroke(&stroke),
             text,
             font_size,
             glyph_units,
@@ -273,6 +288,7 @@ impl ContentBuilder {
         font_identifier: FontIdentifier,
         pdf_font: &dyn PdfFont,
         size: f32,
+        paint_mode: PaintMode,
         glyphs: &[impl Glyph],
         glyph_units: GlyphUnits,
     ) {
@@ -291,7 +307,9 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let pdf_glyph = pdf_font.get_gid(glyph.glyph_id()).unwrap();
+            let pdf_glyph = pdf_font
+                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode, size))
+                .unwrap();
 
             let normalize =
                 |v| unit_normalize(glyph_units, pdf_font.font().units_per_em(), size, v);
@@ -341,10 +359,11 @@ impl ContentBuilder {
         x: f32,
         ys: f32,
         sc: &mut SerializerContext,
-        text_rendering_mode: TextRenderingMode,
+        fill_render_mode: TextRenderingMode,
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[impl Glyph],
         font: Font,
+        paint_mode: PaintMode,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
@@ -357,13 +376,12 @@ impl ContentBuilder {
 
                 action(sb, sc);
                 sb.content.begin_text();
-                sb.content.set_text_rendering_mode(text_rendering_mode);
 
                 let font_container = sc.create_or_get_font_container(font.clone());
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, font_container);
+                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_size, font_container);
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -375,7 +393,8 @@ impl ContentBuilder {
 
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                    let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
+                    let segmented =
+                        GlyphGrouper::new(font_container, paint_mode, font_size, fragment.glyphs());
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -392,12 +411,20 @@ impl ContentBuilder {
                             )
                         };
 
+                        if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
+                            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+                        } else {
+                            sb.content
+                                .set_text_rendering_mode(TextRenderingMode::Stroke);
+                        }
+
                         sb.encode_consecutive_glyph_run(
                             &mut cur_x,
                             cur_y - normalize(glyph_group.y_offset) * font_size,
                             glyph_group.font_identifier,
                             pdf_font,
                             font_size,
+                            paint_mode,
                             glyph_group.glyphs,
                             glyph_units,
                         );
@@ -559,7 +586,7 @@ impl ContentBuilder {
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
-             transform: TransformWrapper,
+             transform: Transform,
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
@@ -577,13 +604,11 @@ impl ContentBuilder {
 
                     let shading_pattern = ShadingPattern::new(
                         gradient_props,
-                        TransformWrapper(
-                            content_builder
-                                .graphics_states
-                                .cur()
-                                .transform()
-                                .pre_concat(transform.0),
-                        ),
+                        content_builder
+                            .graphics_states
+                            .cur()
+                            .transform()
+                            .pre_concat(transform),
                     );
                     let color_space =
                         content_builder
@@ -631,10 +656,10 @@ impl ContentBuilder {
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
                         pat.stream,
-                        TransformWrapper(pat.transform),
+                        pat.transform,
                         opacity,
-                        FiniteF32::new(pat.width).unwrap(),
-                        FiniteF32::new(pat.height).unwrap(),
+                        pat.width,
+                        pat.height,
                         serializer_context,
                     )),
                 ));
@@ -776,7 +801,8 @@ pub(crate) trait PdfFont {
     fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
-    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph>;
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
+    fn force_fill(&self) -> bool;
 }
 
 impl PdfFont for Type3Font {
@@ -802,8 +828,12 @@ impl PdfFont for Type3Font {
         }
     }
 
-    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_gid(gid).map(PDFGlyph::Type3)
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_gid(&glyph.to_owned()).map(PDFGlyph::Type3)
+    }
+
+    fn force_fill(&self) -> bool {
+        true
     }
 }
 
@@ -830,8 +860,12 @@ impl PdfFont for CIDFont {
         }
     }
 
-    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_cid(gid).map(PDFGlyph::Cid)
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
+    }
+
+    fn force_fill(&self) -> bool {
+        false
     }
 }
 
@@ -866,10 +900,10 @@ where
 /// via a CMAP. In a CMAP, you can assign a sequence of unicode codepoints to each
 /// glyph. There are two issues with this approach:
 /// - How to deal with the fact that the same glyph might be assigned two different codepoints
-/// in different contexts (i.e. space and NZWJ).
+///   in different contexts (i.e. space and NZWJ).
 /// - How to deal with complex shaping scenarios, where there is not a one-to-one or
-/// one-to-many correspondence between glyphs and codepoints, but instead a many-to-one
-/// or many-to-many mapping.
+///   one-to-many correspondence between glyphs and codepoints, but instead a many-to-one
+///   or many-to-many mapping.
 ///
 /// The answer to this is the `ActualText` feature of PDF, which allows to define some custom
 /// actual text for a number of glyphs, which overrides anything else. Unfortunately, this
@@ -884,6 +918,8 @@ where
     T: Glyph,
 {
     slice: &'a [T],
+    paint_mode: PaintMode<'a>,
+    font_size: f32,
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
@@ -892,11 +928,19 @@ impl<'a, 'b, T> TextSpanner<'a, 'b, T>
 where
     T: Glyph,
 {
-    pub fn new(slice: &'a [T], text: &'a str, font_container: &'b RefCell<FontContainer>) -> Self {
+    pub fn new(
+        slice: &'a [T],
+        text: &'a str,
+        paint_mode: PaintMode<'a>,
+        font_size: f32,
+        font_container: &'b RefCell<FontContainer>,
+    ) -> Self {
         Self {
             slice,
+            paint_mode,
             text,
             font_container,
+            font_size,
         }
     }
 }
@@ -910,13 +954,16 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         fn func<U>(
             g: &U,
+            paint_mode: PaintMode,
+            font_size: f32,
             mut font_container: RefMut<FontContainer>,
             text: &str,
         ) -> (Range<usize>, bool)
         where
             U: Glyph,
         {
-            let (identifier, pdf_glyph) = font_container.add_glyph(g.glyph_id());
+            let (identifier, pdf_glyph) =
+                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), paint_mode, font_size));
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
@@ -943,14 +990,24 @@ where
 
         // Get the range of the first glyph, as well as whether it's
         // incompatible.
-        let (first_range, first_incompatible) =
-            func(iter.next()?, self.font_container.borrow_mut(), self.text);
+        let (first_range, first_incompatible) = func(
+            iter.next()?,
+            self.paint_mode,
+            self.font_size,
+            self.font_container.borrow_mut(),
+            self.text,
+        );
 
         let mut last_range = first_range.clone();
 
         for next in iter {
-            let (next_range, next_incompatible) =
-                func(next, self.font_container.borrow_mut(), self.text);
+            let (next_range, next_incompatible) = func(
+                next,
+                self.paint_mode,
+                self.font_size,
+                self.font_container.borrow_mut(),
+                self.text,
+            );
 
             match use_span {
                 // In this case, we just started and we are looking at the first two glyphs.
@@ -1070,6 +1127,8 @@ where
     T: Glyph,
 {
     font_container: &'b RefCell<FontContainer>,
+    paint_mode: PaintMode<'a>,
+    font_size: f32,
     slice: &'a [T],
 }
 
@@ -1077,9 +1136,16 @@ impl<'a, 'b, T> GlyphGrouper<'a, 'b, T>
 where
     T: Glyph,
 {
-    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [T]) -> Self {
+    pub fn new(
+        font_container: &'b RefCell<FontContainer>,
+        paint_mode: PaintMode<'a>,
+        font_size: f32,
+        slice: &'a [T],
+    ) -> Self {
         Self {
             font_container,
+            paint_mode,
+            font_size,
             slice,
         }
     }
@@ -1101,12 +1167,19 @@ where
                 y_advance: f32,
             }
 
-            fn func<U>(g: &U, font_container: RefMut<FontContainer>) -> GlyphProps
+            fn func<U>(
+                g: &U,
+                paint_mode: PaintMode,
+                font_size: f32,
+                font_container: RefMut<FontContainer>,
+            ) -> GlyphProps
             where
                 U: Glyph,
             {
                 // Safe because we've already added all glyphs in the text spanner.
-                let font_identifier = font_container.font_identifier(g.glyph_id()).unwrap();
+                let font_identifier = font_container
+                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode, font_size))
+                    .unwrap();
 
                 GlyphProps {
                     font_identifier,
@@ -1118,10 +1191,20 @@ where
             let mut count = 1;
 
             let mut iter = self.slice.iter();
-            let first = func(iter.next()?, self.font_container.borrow_mut());
+            let first = func(
+                iter.next()?,
+                self.paint_mode,
+                self.font_size,
+                self.font_container.borrow_mut(),
+            );
 
             for next in iter {
-                let temp_glyph = func(next, self.font_container.borrow_mut());
+                let temp_glyph = func(
+                    next,
+                    self.paint_mode,
+                    self.font_size,
+                    self.font_container.borrow_mut(),
+                );
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier

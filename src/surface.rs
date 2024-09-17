@@ -6,7 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, OutlineMode};
+use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -105,6 +105,11 @@ impl<'a> Surface<'a> {
             .fill_path(path, fill, self.sc);
     }
 
+    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: Fill, fill_props: bool) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .fill_path_impl(path, fill, self.sc, fill_props)
+    }
+
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()> {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
@@ -118,7 +123,7 @@ impl<'a> Surface<'a> {
         font: Font,
         font_size: f32,
         glyph_units: GlyphUnits,
-        outline_mode: OutlineMode,
+        paint_mode: PaintMode,
     ) {
         // TODO: What to do with invalid COLR glyphs?
         let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
@@ -137,7 +142,7 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 SvgSettings::default(),
                 glyph.glyph_id(),
-                Some(outline_mode.clone()),
+                paint_mode,
                 base_transform,
                 self,
             );
@@ -170,7 +175,7 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                OutlineMode::Fill(fill),
+                PaintMode::Fill(&fill),
             );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
@@ -200,6 +205,7 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `fill_glyphs` method,
     /// you can use the `cosmic-text` integration to do so.
     #[cfg(feature = "simple-text")]
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_text(
         &mut self,
         start: Point,
@@ -249,7 +255,7 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                OutlineMode::Stroke(stroke),
+                PaintMode::Stroke(&stroke),
             );
         } else {
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
@@ -279,6 +285,7 @@ impl<'a> Surface<'a> {
     /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
     /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[cfg(feature = "simple-text")]
+    #[allow(clippy::too_many_arguments)]
     pub fn stroke_text(
         &mut self,
         start: Point,
@@ -450,11 +457,6 @@ impl<'a> Surface<'a> {
     ) -> &'b mut ContentBuilder {
         sub_builders.last_mut().unwrap_or(root_builder)
     }
-
-    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: Fill, fill_props: bool) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path_impl(path, fill, self.sc, fill_props)
-    }
 }
 
 impl Drop for Surface<'_> {
@@ -466,6 +468,7 @@ impl Drop for Surface<'_> {
     }
 }
 
+// TODO: Add auto
 #[cfg(feature = "simple-text")]
 /// The direction of a text.
 pub enum TextDirection {
@@ -577,16 +580,16 @@ fn naive_shape(
 
 #[cfg(test)]
 mod tests {
-
     use crate::font::Font;
     use crate::mask::MaskType;
+    use crate::paint::{LinearGradient, Paint, SpreadMethod};
     use crate::path::Fill;
     use crate::surface::Surface;
     use crate::surface::{Stroke, TextDirection};
     use crate::tests::{
         basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
-        rect_to_path, red_fill, red_stroke, FONTDB, NOTO_COLOR_EMOJI_COLR, NOTO_SANS,
-        NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
+        rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR,
+        NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
@@ -864,8 +867,19 @@ mod tests {
         surface.pop();
     }
 
-    #[visreg]
-    fn text_outlined_with_fill(surface: &mut Surface) {
+    fn text_gradient() -> LinearGradient {
+        LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: stops_with_3_solid_1(),
+        }
+    }
+
+    fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 80.0),
@@ -874,72 +888,125 @@ mod tests {
             20.0,
             &[],
             "red outlined text",
-            true,
+            outlined,
             None,
         );
 
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             blue_fill(0.8),
-            font,
+            font.clone(),
             20.0,
             &[],
             "blue outlined text",
-            true,
+            outlined,
+            None,
+        );
+
+        let grad_fill = Fill {
+            paint: Paint::from(text_gradient()),
+            ..Default::default()
+        };
+
+        surface.fill_text(
+            Point::from_xy(0.0, 120.0),
+            grad_fill,
+            font,
+            20.0,
+            &[],
+            "gradient text",
+            outlined,
             None,
         );
 
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
 
         surface.fill_text(
-            Point::from_xy(0.0, 120.0),
+            Point::from_xy(0.0, 140.0),
             blue_fill(0.8),
             font,
             20.0,
             &[],
             "😄😁😆",
-            true,
+            outlined,
+            None,
+        );
+    }
+
+    #[visreg]
+    fn text_outlined_with_fill(surface: &mut Surface) {
+        text_with_fill_impl(surface, true)
+    }
+
+    #[visreg(settings_4, all)]
+    fn text_type3_with_fill(surface: &mut Surface) {
+        text_with_fill_impl(surface, false)
+    }
+
+    fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        surface.stroke_text(
+            Point::from_xy(0.0, 80.0),
+            red_stroke(0.5, 1.0),
+            font.clone(),
+            20.0,
+            &[],
+            "red outlined text",
+            outlined,
+            None,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 100.0),
+            blue_stroke(0.8),
+            font.clone(),
+            20.0,
+            &[],
+            "blue outlined text",
+            outlined,
+            None,
+        );
+
+        let grad_stroke = Stroke {
+            paint: Paint::from(text_gradient()),
+            ..Default::default()
+        };
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 120.0),
+            grad_stroke,
+            font,
+            20.0,
+            &[],
+            "gradient text",
+            outlined,
+            None,
+        );
+
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+
+        surface.stroke_text(
+            Point::from_xy(0.0, 140.0),
+            blue_stroke(0.8),
+            font,
+            20.0,
+            &[],
+            "😄😁😆",
+            outlined,
             None,
         );
     }
 
     #[visreg]
     fn text_outlined_with_stroke(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
-        surface.stroke_text(
-            Point::from_xy(0.0, 80.0),
-            red_stroke(0.5),
-            font.clone(),
-            20.0,
-            &[],
-            "red outlined text",
-            true,
-            None,
-        );
+        text_with_stroke_impl(surface, true);
+    }
 
-        surface.stroke_text(
-            Point::from_xy(0.0, 100.0),
-            blue_stroke(0.8),
-            font,
-            20.0,
-            &[],
-            "blue outlined text",
-            true,
-            None,
-        );
-
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
-
-        surface.stroke_text(
-            Point::from_xy(0.0, 120.0),
-            blue_stroke(0.8),
-            font,
-            20.0,
-            &[],
-            "😄😁😆",
-            true,
-            None,
-        );
+    // This test does not work correctly. Stroking is unfortunately
+    // very tricky to get to work properly with Type3 fonts.
+    #[visreg(all, settings_4)]
+    fn text_type3_with_stroke(surface: &mut Surface) {
+        text_with_stroke_impl(surface, false)
     }
 
     #[visreg]

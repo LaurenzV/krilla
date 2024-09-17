@@ -2,11 +2,12 @@
 
 use crate::color::rgb;
 use crate::paint::Paint;
+use std::hash::{Hash, Hasher};
 use tiny_skia_path::NormalizedF32;
 pub use tiny_skia_path::{Path, PathBuilder};
 
 /// A line cap.
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Default)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Default, Hash)]
 pub enum LineCap {
     /// The butt line cap.
     #[default]
@@ -17,8 +18,18 @@ pub enum LineCap {
     Square,
 }
 
+impl From<LineCap> for tiny_skia_path::LineCap {
+    fn from(value: LineCap) -> Self {
+        match value {
+            LineCap::Butt => tiny_skia_path::LineCap::Butt,
+            LineCap::Round => tiny_skia_path::LineCap::Round,
+            LineCap::Square => tiny_skia_path::LineCap::Square,
+        }
+    }
+}
+
 /// A line join.
-#[derive(PartialEq, Eq, Debug, Clone, Copy, Default)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Default, Hash)]
 pub enum LineJoin {
     /// The miter line join.
     #[default]
@@ -29,8 +40,18 @@ pub enum LineJoin {
     Bevel,
 }
 
+impl From<LineJoin> for tiny_skia_path::LineJoin {
+    fn from(value: LineJoin) -> Self {
+        match value {
+            LineJoin::Miter => tiny_skia_path::LineJoin::Miter,
+            LineJoin::Round => tiny_skia_path::LineJoin::Round,
+            LineJoin::Bevel => tiny_skia_path::LineJoin::Bevel,
+        }
+    }
+}
+
 /// A stroke dash.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StrokeDash {
     /// The dash array.
     pub array: Vec<f32>,
@@ -38,8 +59,20 @@ pub struct StrokeDash {
     pub offset: f32,
 }
 
+impl Eq for StrokeDash {}
+
+impl Hash for StrokeDash {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for el in &self.array {
+            el.to_bits().hash(state);
+        }
+
+        self.offset.to_bits().hash(state);
+    }
+}
+
 /// A stroke.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Stroke {
     /// The paint of the stroke.
     pub paint: Paint,
@@ -55,6 +88,20 @@ pub struct Stroke {
     pub opacity: NormalizedF32,
     /// The (optional) dash of the stroke.
     pub dash: Option<StrokeDash>,
+}
+
+impl Eq for Stroke {}
+
+impl Hash for Stroke {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.paint.hash(state);
+        self.width.to_bits().hash(state);
+        self.miter_limit.to_bits().hash(state);
+        self.line_cap.hash(state);
+        self.line_join.hash(state);
+        self.opacity.hash(state);
+        self.dash.hash(state);
+    }
 }
 
 impl Default for Stroke {
@@ -98,7 +145,7 @@ impl Stroke {
 }
 
 /// A fill rule.
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub enum FillRule {
     /// The `non-zero` fill rule.
     NonZero,
@@ -113,7 +160,7 @@ impl Default for FillRule {
 }
 
 /// A fill.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fill {
     /// The paint of the fill.
     pub paint: Paint,

@@ -5,7 +5,6 @@ use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
-use skrifa::instance::Location;
 use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
@@ -251,37 +250,18 @@ impl Hash for SizeWrapper {
     }
 }
 
-#[derive(Debug)]
-pub struct LocationWrapper(pub Location);
-
-impl Hash for LocationWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.coords().hash(state);
-    }
+pub trait HashExt {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H);
 }
 
-impl PartialEq for LocationWrapper {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.coords().eq(other.0.coords())
-    }
-}
-
-impl Eq for LocationWrapper {}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TransformWrapper(pub(crate) Transform);
-
-// We don't care about NaNs.
-impl Eq for TransformWrapper {}
-
-impl Hash for TransformWrapper {
+impl HashExt for Transform {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.tx.to_bits().hash(state);
-        self.0.ty.to_bits().hash(state);
-        self.0.sx.to_bits().hash(state);
-        self.0.sy.to_bits().hash(state);
-        self.0.kx.to_bits().hash(state);
-        self.0.ky.to_bits().hash(state);
+        self.tx.to_bits().hash(state);
+        self.ty.to_bits().hash(state);
+        self.sx.to_bits().hash(state);
+        self.sy.to_bits().hash(state);
+        self.kx.to_bits().hash(state);
+        self.ky.to_bits().hash(state);
     }
 }
 

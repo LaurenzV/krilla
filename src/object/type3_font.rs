@@ -1,6 +1,8 @@
 use crate::error::KrillaResult;
-use crate::font::{Font, FontIdentifier, GlyphSource, OutlineMode, Type3Identifier};
+use crate::font::outline::glyph_path;
+use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
+use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -9,20 +11,79 @@ use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, HashSet};
+use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::{PathStroker, Rect, Transform};
 
 pub type Gid = u8;
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct CoveredGlyph<'a> {
+    pub glyph_id: GlyphId,
+    pub paint_mode: PaintMode<'a>,
+    pub font_size: f32,
+}
+
+impl CoveredGlyph<'_> {
+    pub fn to_owned(&self) -> OwnedCoveredGlyph {
+        OwnedCoveredGlyph {
+            glyph_id: self.glyph_id,
+            paint_mode: self.paint_mode.to_owned(),
+            font_size: self.font_size,
+        }
+    }
+}
+
+impl<'a> CoveredGlyph<'a> {
+    pub fn new(
+        glyph_id: GlyphId,
+        paint_mode: PaintMode<'a>,
+        mut font_size: f32,
+    ) -> CoveredGlyph<'a> {
+        if matches!(paint_mode, PaintMode::Fill(_)) {
+            // The only reason we need the font size is that
+            // when drawing a stroked glyph as a Type3 glyph, we stroke
+            // it using tiny-skia and then draw it as a filled glyph instead.
+            // This is because stroking pretty much doesn't work with type 3 fonts.
+            // For fills, we don't care about the font size, so we always set it to one.
+            // so that we don't allocate new glyphs for each font size it is used at.
+            font_size = 1.0;
+        }
+
+        Self {
+            glyph_id,
+            paint_mode,
+            font_size,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct OwnedCoveredGlyph {
+    glyph_id: GlyphId,
+    paint_mode: OwnedPaintMode,
+    font_size: f32,
+}
+
+impl Eq for OwnedCoveredGlyph {}
+
+impl Hash for OwnedCoveredGlyph {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.glyph_id.hash(state);
+        self.paint_mode.hash(state);
+        self.font_size.to_bits().hash(state);
+    }
+}
 
 // TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
 pub(crate) struct Type3Font {
     font: Font,
-    glyphs: Vec<GlyphId>,
+    glyphs: Vec<OwnedCoveredGlyph>,
     widths: Vec<f32>,
     cmap_entries: BTreeMap<Gid, String>,
-    glyph_set: BTreeSet<GlyphId>,
+    glyph_set: HashSet<OwnedCoveredGlyph>,
     index: usize,
 }
 
@@ -40,7 +101,7 @@ impl Type3Font {
             glyphs: Vec::new(),
             cmap_entries: BTreeMap::new(),
             widths: Vec::new(),
-            glyph_set: BTreeSet::new(),
+            glyph_set: HashSet::new(),
             index,
         }
     }
@@ -57,27 +118,28 @@ impl Type3Font {
         u16::try_from(self.glyphs.len()).unwrap()
     }
 
-    pub fn covers(&self, glyph: GlyphId) -> bool {
-        self.glyph_set.contains(&glyph)
+    // TODO: Can we used COveredGlyphRef instead?
+    pub fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
+        self.glyph_set.contains(glyph)
     }
 
-    pub fn get_gid(&self, glyph_id: GlyphId) -> Option<u8> {
+    pub fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
-            .position(|g| *g == glyph_id)
+            .position(|g| g == glyph)
             .and_then(|n| u8::try_from(n).ok())
     }
 
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> u8 {
-        if let Some(pos) = self.get_gid(glyph_id) {
+    pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
+        if let Some(pos) = self.get_gid(&glyph) {
             pos
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyph_set.insert(glyph_id);
-            self.glyphs.push(glyph_id);
+            self.glyph_set.insert(glyph.clone());
+            self.glyphs.push(glyph.clone());
             self.widths
-                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
+                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -112,24 +174,73 @@ impl Type3Font {
             .glyphs
             .iter()
             .enumerate()
-            .map(|(index, glyph_id)| {
+            .map(|(index, glyph)| {
                 let mut stream_surface = StreamBuilder::new(sc);
                 let mut surface = stream_surface.surface();
 
-                let glyph_type = font::draw_glyph(
+                let drawn_color_glyph = font::draw_color_glyph(
                     self.font.clone(),
                     SvgSettings::default(),
-                    *glyph_id,
-                    None::<OutlineMode>,
+                    glyph.glyph_id,
+                    glyph.paint_mode.as_ref(),
                     Transform::default(),
                     &mut surface,
                 );
 
-                surface.finish();
-                let stream = stream_surface.finish();
-                let mut content = Content::new();
+                let stream = if drawn_color_glyph.is_some() {
+                    surface.finish();
+                    let stream = stream_surface.finish();
+                    let mut content = Content::new();
 
-                let stream = if glyph_type == Some(GlyphSource::Outline) || stream.is_empty() {
+                    // I considered writing into the stream directly instead of creating an XObject
+                    // and showing that, but it seems like many viewers don't like that, and emojis
+                    // look messed up. Using XObjects seems like the best choice here.
+                    content.start_color_glyph(self.widths[index]);
+                    let x_object = XObject::new(stream, false, false, None);
+                    font_bbox.expand(&x_object.bbox());
+                    let x_name = rd_builder
+                        .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+                    content.x_object(x_name.to_pdf_name());
+
+                    content.finish()
+                } else {
+                    // If this is the case (i.e. no glyph was drawn, either because no table
+                    // exists or an error occurred, the surface is guaranteed to be empty.
+                    // So we can just safely draw the outline glyph instead.
+                    if let Some(path) =
+                        glyph_path(self.font.clone(), glyph.glyph_id).and_then(|p| {
+                            match &glyph.paint_mode {
+                                OwnedPaintMode::Fill(_) => Some(p),
+                                OwnedPaintMode::Stroke(s) => {
+                                    let mut stroker = PathStroker::new();
+                                    let stroke_dash = s.dash.clone().and_then(|s| {
+                                        tiny_skia_path::StrokeDash::new(s.array, s.offset)
+                                    });
+
+                                    let stroke = tiny_skia_path::Stroke {
+                                        width: (s.width / glyph.font_size)
+                                            * self.font.units_per_em(),
+                                        miter_limit: s.miter_limit,
+                                        line_cap: s.line_cap.into(),
+                                        line_join: s.line_join.into(),
+                                        dash: stroke_dash,
+                                    };
+
+                                    stroker.stroke(&p, &stroke, 1.0)
+                                }
+                            }
+                        })
+                    {
+                        // Just use a dummy fill. The Type3 glyph description is a shape glyph
+                        // so it doesn't contain any fill. Instead, it will be taken from
+                        // context where it is drawn.
+                        surface.fill_path_impl(&path, Fill::default(), false);
+                    }
+
+                    surface.finish();
+                    let stream = stream_surface.finish();
+                    let mut content = Content::new();
+
                     // Use shape glyph for outline-based Type3 fonts.
                     let bbox = stream.bbox();
                     font_bbox.expand(&bbox);
@@ -146,20 +257,6 @@ impl Type3Font {
                     final_stream.push(b'\n');
                     final_stream.extend(stream.content());
                     final_stream
-                } else {
-                    // Use color glyph for colored Type3 fonts.
-
-                    // I considered writing into the stream directly instead of creating an XObject
-                    // and showing that, but it seems like many viewers don't like that, and emojis
-                    // look messed up. Using XObjects seems like the best choice here.
-                    content.start_color_glyph(self.widths[index]);
-                    let x_object = XObject::new(stream, false, false, None);
-                    font_bbox.expand(&x_object.bbox());
-                    let x_name = rd_builder
-                        .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
-                    content.x_object(x_name.to_pdf_name());
-
-                    content.finish()
                 };
 
                 let font_stream =
@@ -276,10 +373,10 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn id_from_glyph(&self, glyph_id: GlyphId) -> Option<FontIdentifier> {
+    pub fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
-            .position(|f| f.covers(glyph_id))
+            .position(|f| f.covers(glyph))
             .map(|p| self.fonts[p].identifier())
     }
 
@@ -303,14 +400,14 @@ impl Type3FontMapper {
         &self.fonts
     }
 
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (FontIdentifier, Gid) {
+    pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> (FontIdentifier, Gid) {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
-        if let Some(id) = self.id_from_glyph(glyph_id) {
+        if let Some(id) = self.id_from_glyph(&glyph) {
             let gid = self
                 .font_from_id(id.clone())
                 .unwrap()
-                .get_gid(glyph_id)
+                .get_gid(&glyph)
                 .unwrap();
             return (id, gid);
         }
@@ -320,19 +417,19 @@ impl Type3FontMapper {
                 // If the last Type3 font is full, create a new one.
                 let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
                 let id = font.identifier();
-                let gid = font.add_glyph(glyph_id);
+                let gid = font.add_glyph(glyph);
                 self.fonts.push(font);
                 (id, gid)
             } else {
                 // Otherwise, insert it into the last Type3 font.
                 let id = last_font.identifier();
-                (id, last_font.add_glyph(glyph_id))
+                (id, last_font.add_glyph(glyph))
             }
         } else {
             // If not Type3 font exists yet, create a new one.
             let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
             let id = font.identifier();
-            let gid = font.add_glyph(glyph_id);
+            let gid = font.add_glyph(glyph);
             self.fonts.push(font);
             (id, gid)
         }
@@ -341,10 +438,11 @@ impl Type3FontMapper {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, FontIdentifier, Type3Identifier};
+    use crate::font::{Font, FontIdentifier, OwnedPaintMode, Type3Identifier};
 
     use crate::color::rgb;
 
+    use crate::object::type3_font::OwnedCoveredGlyph;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::Surface;
@@ -355,6 +453,16 @@ mod tests {
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
 
+    impl OwnedCoveredGlyph {
+        pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode, font_size: f32) -> Self {
+            Self {
+                glyph_id,
+                paint_mode,
+                font_size,
+            }
+        }
+    }
+
     #[snapshot(settings_4)]
     fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
@@ -362,8 +470,16 @@ mod tests {
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
-                t3.add_glyph(GlyphId::new(36));
-                t3.add_glyph(GlyphId::new(37));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(36),
+                    Fill::default().into(),
+                    1.0,
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(37),
+                    Fill::default().into(),
+                    1.0,
+                ));
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
@@ -485,10 +601,26 @@ mod tests {
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
-                t3.add_glyph(GlyphId::new(58));
-                t3.add_glyph(GlyphId::new(54));
-                t3.add_glyph(GlyphId::new(69));
-                t3.add_glyph(GlyphId::new(71));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(58),
+                    Fill::default().into(),
+                    1.0,
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(54),
+                    Fill::default().into(),
+                    1.0,
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(69),
+                    Fill::default().into(),
+                    1.0,
+                ));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(71),
+                    Fill::default().into(),
+                    1.0,
+                ));
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
@@ -510,13 +642,28 @@ mod tests {
         match &mut *font_container {
             FontContainer::Type3(t3) => {
                 for i in 2..258 {
-                    t3.add_glyph(GlyphId::new(i));
+                    t3.add_glyph(OwnedCoveredGlyph::new(
+                        GlyphId::new(i),
+                        Fill::default().into(),
+                        1.0,
+                    ));
                 }
 
                 assert_eq!(t3.fonts.len(), 1);
-                assert_eq!(t3.fonts[0].add_glyph(GlyphId::new(20)), 18);
+                assert_eq!(
+                    t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
+                        GlyphId::new(20),
+                        Fill::default().into(),
+                        1.0
+                    )),
+                    18
+                );
 
-                t3.add_glyph(GlyphId::new(512));
+                t3.add_glyph(OwnedCoveredGlyph::new(
+                    GlyphId::new(512),
+                    Fill::default().into(),
+                    1.0,
+                ));
                 assert_eq!(t3.fonts.len(), 2);
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),

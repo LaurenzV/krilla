@@ -66,10 +66,6 @@ impl Stream {
         self.0.bbox.0
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.content.is_empty()
-    }
-
     pub(crate) fn resource_dictionary(&self) -> &ResourceDictionary {
         &self.0.resource_dictionary
     }

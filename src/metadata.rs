@@ -135,7 +135,7 @@ impl Metadata {
         }
 
         if let Some(creator) = &self.creator {
-            xmp.creator_tool(&creator);
+            xmp.creator_tool(creator);
         }
 
         if let Some(producer) = &self.producer {
@@ -324,7 +324,7 @@ fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
         (None, _) => Some(Timezone::Utc),
         (Some(0), 0) => Some(Timezone::Utc),
         (Some(h), m) => {
-            if let Some(minute) = i8::try_from(m).ok() {
+            if let Ok(minute) = i8::try_from(m) {
                 Some(Timezone::Local { hour: h, minute })
             } else {
                 None

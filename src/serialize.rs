@@ -8,7 +8,7 @@ use crate::object::cid_font::CIDFont;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::type3_font::Type3FontMapper;
+use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{ColorSpaceResource, Resource};
@@ -17,7 +17,6 @@ use crate::util::{NameExt, SipHashable};
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
 use skrifa::raw::TableProvider;
-use skrifa::GlyphId;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -397,10 +396,10 @@ pub(crate) enum FontContainer {
 }
 
 impl FontContainer {
-    pub fn font_identifier(&self, glyph_id: GlyphId) -> Option<FontIdentifier> {
+    pub fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
         match self {
-            FontContainer::Type3(t3) => t3.id_from_glyph(glyph_id),
-            FontContainer::CIDFont(cid) => cid.get_cid(glyph_id).map(|_| cid.identifier()),
+            FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
+            FontContainer::CIDFont(cid) => cid.get_cid(glyph.glyph_id).map(|_| cid.identifier()),
         }
     }
 
@@ -445,14 +444,14 @@ impl FontContainer {
         }
     }
 
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (FontIdentifier, PDFGlyph) {
+    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
         match self {
             FontContainer::Type3(t3) => {
-                let (identifier, gid) = t3.add_glyph(glyph_id);
+                let (identifier, gid) = t3.add_glyph(glyph.to_owned());
                 (identifier, PDFGlyph::Type3(gid))
             }
             FontContainer::CIDFont(cid_font) => {
-                let cid = cid_font.add_glyph(glyph_id);
+                let cid = cid_font.add_glyph(glyph.glyph_id);
                 (cid_font.identifier(), PDFGlyph::Cid(cid))
             }
         }

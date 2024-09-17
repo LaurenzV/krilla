@@ -14,13 +14,12 @@
 //! fonts are not encoded in the most efficient way (they are stored as Type3 fonts instead
 //! of embedded TTF/CFF fonts, due to the lack of an instancing crate in the Rust ecosystem),
 //! so if possible you should prefer static versions of font and not setting any variation
-//! coordinates. Another limitation is that, when setting variation coordinates, only filling
-//! works, not stroking.
+//! coordinates.
 
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
-use crate::util::{LocationWrapper, Prehashed, RectWrapper};
+use crate::util::{Prehashed, RectWrapper};
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
@@ -41,6 +40,7 @@ pub(crate) mod outline;
 pub(crate) mod svg;
 
 use crate::path::{Fill, Stroke};
+use skrifa::instance::Location;
 pub use skrifa::GlyphId;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
@@ -147,7 +147,7 @@ impl Font {
 
     /// Return the `LocationRef` of the font.
     pub fn location_ref(&self) -> LocationRef {
-        (&self.0.font_info.location.0).into()
+        (&self.0.font_info.location).into()
     }
 
     /// Return the `FontRef` of the font.
@@ -186,7 +186,7 @@ pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     variations: Vec<(String, FiniteF32)>,
-    location: LocationWrapper,
+    location: Location,
     units_per_em: u16,
     global_bbox: RectWrapper,
     postscript_name: Option<String>,
@@ -266,7 +266,7 @@ impl FontInfo {
             index,
             checksum,
             variations,
-            location: LocationWrapper(location),
+            location,
             units_per_em,
             postscript_name,
             ascent,
@@ -287,61 +287,85 @@ struct FontRefWrapper<'a> {
     pub font_ref: FontRef<'a>,
 }
 
-/// The table from which a drawn glyph stems from.
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub(crate) enum GlyphSource {
-    Colr,
-    Svg,
-    Outline,
-    Bitmap,
-}
-
 /// Draw a color glyph to a surface.
 pub(crate) fn draw_color_glyph(
     font: Font,
     #[cfg(feature = "svg")] svg_settings: SvgSettings,
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
+    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
-) -> Option<GlyphSource> {
-    let mut glyph_source = None;
-
+) -> Option<()> {
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    if let Some(()) = colr::draw_glyph(font.clone(), glyph, surface) {
-        glyph_source = Some(GlyphSource::Colr);
-    } else if let Some(()) = {
-        #[cfg(feature = "svg")]
-        let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings);
-        #[cfg(not(feature = "svg"))]
-        let res = None;
+    let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
+        .or_else(|| {
+            #[cfg(feature = "svg")]
+            let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings);
 
-        res
-    } {
-        glyph_source = Some(GlyphSource::Svg);
-    } else if let Some(()) = {
-        #[cfg(feature = "raster-images")]
-        let res = bitmap::draw_glyph(font.clone(), glyph, surface);
-        #[cfg(not(feature = "raster-images"))]
-        let res = None;
+            #[cfg(not(feature = "svg"))]
+            let res = None;
 
-        res
-    } {
-        glyph_source = Some(GlyphSource::Bitmap);
-    }
+            res
+        })
+        .or_else(|| {
+            #[cfg(feature = "raster-images")]
+            let res = bitmap::draw_glyph(font.clone(), glyph, surface);
+
+            #[cfg(not(feature = "raster-images"))]
+            let res = None;
+
+            res
+        });
 
     surface.pop();
     surface.pop();
 
-    glyph_source
+    drawn
 }
 
-#[derive(Clone)]
-pub(crate) enum OutlineMode {
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub(crate) enum OwnedPaintMode {
     Fill(Fill),
     Stroke(Stroke),
+}
+
+impl From<Fill> for OwnedPaintMode {
+    fn from(value: Fill) -> Self {
+        Self::Fill(value)
+    }
+}
+
+impl From<Stroke> for OwnedPaintMode {
+    fn from(value: Stroke) -> Self {
+        Self::Stroke(value)
+    }
+}
+
+impl OwnedPaintMode {
+    pub fn as_ref(&self) -> PaintMode {
+        match self {
+            OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
+            OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum PaintMode<'a> {
+    Fill(&'a Fill),
+    Stroke(&'a Stroke),
+}
+
+impl PaintMode<'_> {
+    pub fn to_owned(&self) -> OwnedPaintMode {
+        match self {
+            PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
+            PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),
+        }
+    }
 }
 
 /// Draw a color glyph or outline glyph to a surface.
@@ -349,14 +373,19 @@ pub(crate) fn draw_glyph(
     font: Font,
     svg_settings: SvgSettings,
     glyph: GlyphId,
-    outline_mode: Option<OutlineMode>,
+    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
-) -> Option<GlyphSource> {
-    draw_color_glyph(font.clone(), svg_settings, glyph, base_transform, surface).or_else(|| {
-        outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)
-            .map(|_| GlyphSource::Outline)
-    })
+) -> Option<()> {
+    draw_color_glyph(
+        font.clone(),
+        svg_settings,
+        glyph,
+        paint_mode,
+        base_transform,
+        surface,
+    )
+    .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
 }
 
 /// A unique CID identifier.
