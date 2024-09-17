@@ -580,15 +580,19 @@ fn naive_shape(
 mod tests {
     use crate::font::Font;
     use crate::mask::MaskType;
+    use crate::paint::{LinearGradient, Paint, SpreadMethod};
     use crate::path::Fill;
     use crate::surface::Surface;
     use crate::surface::{Stroke, TextDirection};
-    use crate::tests::{basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH};
+    use crate::tests::{
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
+        rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR,
+        NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
+    };
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::BlendMode;
     use tiny_skia_path::{Point, Size, Transform};
-    use crate::paint::{LinearGradient, Paint, SpreadMethod};
 
     #[visreg]
     fn text_direction_ltr(surface: &mut Surface) {
@@ -927,13 +931,13 @@ mod tests {
 
     #[visreg]
     fn text_outlined_with_fill(surface: &mut Surface) {
-       text_with_fill_impl(surface, true)
+        text_with_fill_impl(surface, true)
     }
 
     // Currently doesn't work correctly for gradients.
     #[visreg(settings_4, all)]
     fn text_type3_with_fill(surface: &mut Surface) {
-       text_with_fill_impl(surface, false)
+        text_with_fill_impl(surface, false)
     }
 
     fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {

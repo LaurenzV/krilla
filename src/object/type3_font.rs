@@ -1,6 +1,8 @@
 use crate::error::KrillaResult;
+use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
+use crate::path::Fill;
 use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
@@ -12,8 +14,6 @@ use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
-use crate::font::outline::glyph_path;
-use crate::path::Fill;
 
 pub type Gid = u8;
 
@@ -176,7 +176,7 @@ impl Type3Font {
                     content.x_object(x_name.to_pdf_name());
 
                     content.finish()
-                }   else {
+                } else {
                     // If this is the case (i.e. no glyph was drawn, either because no table
                     // exists or an error occurred, the surface is guaranteed to be empty.
                     // So we can just safely draw the outline glyph instead.
