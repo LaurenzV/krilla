@@ -5,7 +5,6 @@ use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
-use skrifa::instance::Location;
 use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
@@ -265,35 +264,6 @@ impl HashExt for Transform {
         self.ky.to_bits().hash(state);
     }
 }
-
-#[derive(Debug)]
-pub struct LocationWrapper(pub Location);
-
-impl Hash for LocationWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.coords().hash(state);
-    }
-}
-
-impl PartialEq for LocationWrapper {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.coords().eq(other.0.coords())
-    }
-}
-
-impl Eq for LocationWrapper {}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct F32Wrapper(pub(crate) f32);
-
-impl Hash for F32Wrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
-    }
-}
-
-// We don't care about NaNs.
-impl Eq for F32Wrapper {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TransformWrapper(pub(crate) Transform);

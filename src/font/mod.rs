@@ -20,7 +20,7 @@
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::type3_font::Type3ID;
-use crate::util::{LocationWrapper, Prehashed, RectWrapper};
+use crate::util::{Prehashed, RectWrapper};
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
@@ -42,6 +42,7 @@ pub(crate) mod svg;
 
 use crate::path::{Fill, Stroke};
 pub use skrifa::GlyphId;
+use skrifa::instance::Location;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
@@ -147,7 +148,7 @@ impl Font {
 
     /// Return the `LocationRef` of the font.
     pub fn location_ref(&self) -> LocationRef {
-        (&self.0.font_info.location.0).into()
+        (&self.0.font_info.location).into()
     }
 
     /// Return the `FontRef` of the font.
@@ -186,7 +187,7 @@ pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     variations: Vec<(String, FiniteF32)>,
-    location: LocationWrapper,
+    location: Location,
     units_per_em: u16,
     global_bbox: RectWrapper,
     postscript_name: Option<String>,
@@ -266,7 +267,7 @@ impl FontInfo {
             index,
             checksum,
             variations,
-            location: LocationWrapper(location),
+            location,
             units_per_em,
             postscript_name,
             ascent,
