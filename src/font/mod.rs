@@ -41,8 +41,8 @@ pub(crate) mod outline;
 pub(crate) mod svg;
 
 use crate::path::{Fill, Stroke};
-pub use skrifa::GlyphId;
 use skrifa::instance::Location;
+pub use skrifa::GlyphId;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information

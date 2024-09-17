@@ -20,9 +20,7 @@ use crate::resource::{
 };
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
-use crate::util::{
-    calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt,
-};
+use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};

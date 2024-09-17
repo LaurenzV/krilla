@@ -1,22 +1,32 @@
 use crate::object::ext_g_state::ExtGState;
-use crate::util::TransformWrapper;
+use crate::util::HashExt;
+use std::hash::Hash;
 use tiny_skia_path::{Rect, Transform};
 
 /// A simulation of the PDF graphics state, so that we
 /// can write our transforms/graphics state all at once
 /// when adding an image/path instead of having to
 /// use `save_state`/`restore_state` excessively.
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GraphicsState {
     ext_g_state: ExtGState,
-    ctm: TransformWrapper,
+    ctm: Transform,
+}
+
+impl Eq for GraphicsState {}
+
+impl Hash for GraphicsState {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.ext_g_state.hash(state);
+        self.ctm.hash(state);
+    }
 }
 
 impl Default for GraphicsState {
     fn default() -> Self {
         Self {
             ext_g_state: ExtGState::new(),
-            ctm: TransformWrapper(Transform::identity()),
+            ctm: Transform::identity(),
         }
     }
 }
@@ -27,11 +37,11 @@ impl GraphicsState {
     }
 
     pub fn concat_transform(&mut self, transform: Transform) {
-        self.ctm = TransformWrapper(self.ctm.0.pre_concat(transform));
+        self.ctm = self.ctm.pre_concat(transform);
     }
 
     pub fn transform(&self) -> Transform {
-        self.ctm.0
+        self.ctm
     }
 
     pub fn ext_g_state(&self) -> &ExtGState {
