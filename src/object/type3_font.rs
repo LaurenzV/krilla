@@ -142,7 +142,7 @@ impl Type3Font {
                     glyph.glyph_id,
                     // TODO: Change outlines glyphs so that they are also drawn as colors
                     // glyphs and support stroking
-                    Some(&OutlineMode::Fill(glyph.fill.clone())),
+                    &OutlineMode::Fill(glyph.fill.clone()),
                     Transform::default(),
                     &mut surface,
                 );
@@ -151,26 +151,9 @@ impl Type3Font {
                 let stream = stream_surface.finish();
                 let mut content = Content::new();
 
-                let stream = if glyph_type == Some(GlyphSource::Outline) || stream.is_empty() {
-                    // Use shape glyph for outline-based Type3 fonts.
-                    let bbox = stream.bbox();
-                    font_bbox.expand(&bbox);
-                    content.start_shape_glyph(
-                        self.widths[index],
-                        bbox.left(),
-                        bbox.top(),
-                        bbox.right(),
-                        bbox.bottom(),
-                    );
-
-                    // TODO: Find a type-safe way of doing this.
-                    let mut final_stream = content.finish();
-                    final_stream.push(b'\n');
-                    final_stream.extend(stream.content());
-                    final_stream
+                let stream = if stream.is_empty() {
+                    content.finish()
                 } else {
-                    // Use color glyph for colored Type3 fonts.
-
                     // I considered writing into the stream directly instead of creating an XObject
                     // and showing that, but it seems like many viewers don't like that, and emojis
                     // look messed up. Using XObjects seems like the best choice here.

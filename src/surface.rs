@@ -137,7 +137,7 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 SvgSettings::default(),
                 glyph.glyph_id(),
-                Some(&outline_mode),
+                &outline_mode,
                 base_transform,
                 self,
             );

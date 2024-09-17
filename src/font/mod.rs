@@ -303,7 +303,7 @@ pub(crate) fn draw_color_glyph(
     #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     base_transform: Transform,
-    outline_mode: Option<&OutlineMode>,
+    outline_mode: &OutlineMode,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
     let mut glyph_source = None;
@@ -364,7 +364,7 @@ pub(crate) fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     // TODO: Rename
-    outline_mode: Option<&OutlineMode>,
+    outline_mode: &OutlineMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
