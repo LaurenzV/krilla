@@ -202,7 +202,8 @@ impl Image {
 
             let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
                 let soft_mask_id = soft_mask_id.unwrap();
-                let mask_stream = FilterStream::new_from_binary_data(mask_data, &serialize_settings);
+                let mask_stream =
+                    FilterStream::new_from_binary_data(mask_data, &serialize_settings);
                 let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
                 mask_stream.write_filters(s_mask.deref_mut().deref_mut());
                 s_mask.width(self.0.size.width() as i32);
@@ -358,63 +359,63 @@ mod tests {
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("luma8.png")).unwrap();
+        sc.add_image(load_png_image("luma8.png"));
     }
 
     #[snapshot]
     fn image_luma16_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("luma16.png")).unwrap();
+        sc.add_image(load_png_image("luma16.png"));
     }
 
     #[snapshot]
     fn image_rgb8_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgb8.png")).unwrap();
+        sc.add_image(load_png_image("rgb8.png"));
     }
 
     #[snapshot]
     fn image_rgb16_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgb16.png")).unwrap();
+        sc.add_image(load_png_image("rgb16.png"));
     }
 
     #[snapshot]
     fn image_rgba8_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgba8.png")).unwrap();
+        sc.add_image(load_png_image("rgba8.png"));
     }
 
     #[snapshot]
     fn image_rgba16_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgba16.png")).unwrap();
+        sc.add_image(load_png_image("rgba16.png"));
     }
 
     #[snapshot]
     fn image_luma8_jpg(sc: &mut SerializerContext) {
-        sc.add_object(load_jpg_image("luma8.jpg")).unwrap();
+        sc.add_image(load_jpg_image("luma8.jpg"));
     }
 
     #[snapshot]
     fn image_rgb8_jpg(sc: &mut SerializerContext) {
-        sc.add_object(load_jpg_image("rgb8.jpg")).unwrap();
+        sc.add_image(load_jpg_image("rgb8.jpg"));
     }
 
     // Currently gets converted into RGB.
     #[snapshot]
     fn image_cmyk_jpg(sc: &mut SerializerContext) {
-        sc.add_object(load_jpg_image("cmyk.jpg")).unwrap();
+        sc.add_image(load_jpg_image("cmyk.jpg"));
     }
 
     // Currently gets converted into RGBA.
     #[snapshot]
     fn image_rgb8_gif(sc: &mut SerializerContext) {
-        sc.add_object(load_gif_image("rgb8.gif")).unwrap();
+        sc.add_image(load_gif_image("rgb8.gif"));
     }
 
     #[snapshot]
     fn image_rgba8_gif(sc: &mut SerializerContext) {
-        sc.add_object(load_gif_image("rgba8.gif")).unwrap();
+        sc.add_image(load_gif_image("rgba8.gif"));
     }
     #[snapshot]
     fn image_rgba8_webp(sc: &mut SerializerContext) {
-        sc.add_object(load_webp_image("rgba8.webp")).unwrap();
+        sc.add_image(load_webp_image("rgba8.webp"));
     }
 
     fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {

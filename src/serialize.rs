@@ -3,6 +3,7 @@ use crate::color::{ColorSpace, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
+use crate::image::Image;
 use crate::metadata::Metadata;
 use crate::object::cid_font::CIDFont;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
@@ -23,7 +24,6 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use crate::image::Image;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -225,8 +225,7 @@ impl SerializerContext {
         }
     }
 
-    pub fn add_image(&mut self, image: Image) -> Ref
-    {
+    pub fn add_image(&mut self, image: Image) -> Ref {
         let hash = image.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
@@ -280,11 +279,9 @@ impl SerializerContext {
 
     pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> KrillaResult<Ref> {
         match resource.into() {
-            Resource::XObject(xr) => {
-                match xr {
-                    XObjectResource::XObject(x) => self.add_object(x),
-                    XObjectResource::Image(i) => Ok(self.add_image(i))
-                }
+            Resource::XObject(xr) => match xr {
+                XObjectResource::XObject(x) => self.add_object(x),
+                XObjectResource::Image(i) => Ok(self.add_image(i)),
             },
             Resource::Pattern(pr) => self.add_object(pr),
             Resource::ExtGState(e) => self.add_object(e),
@@ -388,15 +385,19 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
-        for image in self.deferred_images {
-            self.chunk_container.images.push(image.wait());
-        }
+        let images = self
+            .deferred_images
+            .iter()
+            .map(|i| i.wait())
+            .collect::<Vec<_>>();
 
         // Just a sanity check.
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
 
-        Ok(self.chunk_container.finish(self.serialize_settings))
+        Ok(self
+            .chunk_container
+            .finish(&images, self.serialize_settings))
     }
 }
 
