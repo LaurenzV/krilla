@@ -182,8 +182,6 @@ impl Type3Font {
                     self.font.clone(),
                     SvgSettings::default(),
                     glyph.glyph_id,
-                    // TODO: Change outlines glyphs so that they are also drawn as colors
-                    // glyphs and support stroking
                     glyph.paint_mode.as_ref(),
                     Transform::default(),
                     &mut surface,
