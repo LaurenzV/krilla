@@ -687,12 +687,12 @@ impl ContentBuilder {
 
         // Only write if they don't correspond to the default values as defined in the
         // PDF specification.
-        if stroke.width.0 != 1.0 {
-            self.content.set_line_width(stroke.width.0);
+        if stroke.width != 1.0 {
+            self.content.set_line_width(stroke.width);
         }
 
-        if stroke.miter_limit.0 != 10.0 {
-            self.content.set_miter_limit(stroke.miter_limit.0);
+        if stroke.miter_limit != 10.0 {
+            self.content.set_miter_limit(stroke.miter_limit);
         }
 
         if stroke.line_cap != LineCap::Butt {
@@ -705,10 +705,8 @@ impl ContentBuilder {
         }
 
         if let Some(stroke_dash) = &stroke.dash {
-            self.content.set_dash_pattern(
-                stroke_dash.array.iter().copied().map(|n| n.0),
-                stroke_dash.offset.0,
-            );
+            self.content
+                .set_dash_pattern(stroke_dash.array.iter().copied(), stroke_dash.offset);
         }
     }
 

@@ -3,6 +3,7 @@
 use crate::color::rgb;
 use crate::paint::Paint;
 use crate::util::F32Wrapper;
+use std::hash::{Hash, Hasher};
 use tiny_skia_path::{FiniteF32, NormalizedF32};
 pub use tiny_skia_path::{Path, PathBuilder};
 
@@ -31,33 +32,35 @@ pub enum LineJoin {
 }
 
 /// A stroke dash.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StrokeDash {
     /// The dash array.
-    pub array: Vec<F32Wrapper>,
+    pub array: Vec<f32>,
     /// The offset of the dash.
-    pub offset: F32Wrapper,
+    pub offset: f32,
 }
 
-impl StrokeDash {
-    /// Create a new stroke dash.
-    pub fn new(array: impl IntoIterator<Item = f32>, offset: f32) -> Self {
-        Self {
-            array: array.into_iter().map(|n| F32Wrapper(n)).collect::<Vec<_>>(),
-            offset: F32Wrapper(offset),
+impl Eq for StrokeDash {}
+
+impl Hash for StrokeDash {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for el in &self.array {
+            el.to_bits().hash(state);
         }
+
+        self.offset.to_bits().hash(state);
     }
 }
 
 /// A stroke.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Stroke {
     /// The paint of the stroke.
     pub paint: Paint,
     /// The width of the stroke.
-    pub width: F32Wrapper,
+    pub width: f32,
     /// The miter limit of the stroke.
-    pub miter_limit: F32Wrapper,
+    pub miter_limit: f32,
     /// The line cap of the stroke.
     pub line_cap: LineCap,
     /// The line join of the stroke.
@@ -68,26 +71,17 @@ pub struct Stroke {
     pub dash: Option<StrokeDash>,
 }
 
-impl Stroke {
-    /// Create a new stroke.
-    pub fn new(
-        paint: Paint,
-        width: f32,
-        miter_limit: f32,
-        line_cap: LineCap,
-        line_join: LineJoin,
-        opacity: NormalizedF32,
-        dash: Option<StrokeDash>,
-    ) -> Self {
-        Self {
-            paint,
-            width: F32Wrapper(width),
-            miter_limit: F32Wrapper(miter_limit),
-            line_cap,
-            line_join,
-            opacity,
-            dash,
-        }
+impl Eq for Stroke {}
+
+impl Hash for Stroke {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.paint.hash(state);
+        self.width.to_bits().hash(state);
+        self.miter_limit.to_bits().hash(state);
+        self.line_cap.hash(state);
+        self.line_join.hash(state);
+        self.opacity.hash(state);
+        self.dash.hash(state);
     }
 }
 
@@ -95,8 +89,8 @@ impl Default for Stroke {
     fn default() -> Self {
         Stroke {
             paint: rgb::Color::black().into(),
-            width: F32Wrapper(1.0),
-            miter_limit: F32Wrapper(10.0),
+            width: 1.0,
+            miter_limit: 10.0,
             line_cap: LineCap::default(),
             line_join: LineJoin::default(),
             opacity: NormalizedF32::ONE,
@@ -108,8 +102,8 @@ impl Default for Stroke {
 impl Stroke {
     pub(crate) fn into_tiny_skia(self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
-            width: self.width.0,
-            miter_limit: self.miter_limit.0,
+            width: self.width,
+            miter_limit: self.miter_limit,
             line_cap: match self.line_cap {
                 LineCap::Butt => tiny_skia_path::LineCap::Butt,
                 LineCap::Round => tiny_skia_path::LineCap::Round,
@@ -124,10 +118,7 @@ impl Stroke {
         };
 
         if let Some(stroke_dash) = self.dash {
-            stroke.dash = tiny_skia_path::StrokeDash::new(
-                stroke_dash.array.iter().map(|n| n.0).collect::<Vec<_>>(),
-                stroke_dash.offset.0,
-            );
+            stroke.dash = tiny_skia_path::StrokeDash::new(stroke_dash.array, stroke_dash.offset);
         }
 
         stroke

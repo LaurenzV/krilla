@@ -161,24 +161,25 @@ pub fn convert_stroke(
     process_context: &mut ProcessContext,
     additional_transform: Transform,
 ) -> Stroke {
-    let dash = stroke
-        .dasharray()
-        .map(|dash_array| StrokeDash::new(dash_array.to_vec(), stroke.dashoffset()));
+    let dash = stroke.dasharray().map(|dash_array| StrokeDash {
+        array: dash_array.to_vec(),
+        offset: stroke.dashoffset(),
+    });
 
-    Stroke::new(
-        convert_paint(
+    Stroke {
+        paint: convert_paint(
             stroke.paint(),
             stream_builder,
             process_context,
             additional_transform,
         ),
-        stroke.width().get(),
-        stroke.miterlimit().get(),
-        convert_line_cap(&stroke.linecap()),
-        convert_line_join(&stroke.linejoin()),
-        stroke.opacity(),
+        width: stroke.width().get(),
+        miter_limit: stroke.miterlimit().get(),
+        line_cap: convert_line_cap(&stroke.linecap()),
+        line_join: convert_line_join(&stroke.linejoin()),
+        opacity: stroke.opacity(),
         dash,
-    )
+    }
 }
 
 /// Convert a usvg `BlendMode` into a krilla `BlendMode`.
