@@ -248,6 +248,20 @@ impl ContentBuilder {
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     &stroke,
                     sc,
+                );
+
+                // There is a very weird and inconsistent interaction between Type3
+                // glyphs and stroking them. Each PDF viewer does something different.
+                // Because of this, we simply set BOTH, fill and stroke when stroking
+                // a run of glyphs.
+                sb.content_set_fill_properties(
+                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                    &Fill {
+                        paint: stroke.paint.clone(),
+                        opacity: stroke.opacity,
+                        rule: Default::default(),
+                    },
+                    sc,
                 )
             },
             glyphs,

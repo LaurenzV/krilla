@@ -931,7 +931,7 @@ mod tests {
     }
 
     // Currently doesn't work correctly for gradients.
-    #[visreg(settings_4, mupdf)]
+    #[visreg(settings_4, all)]
     fn text_type3_with_fill(surface: &mut Surface) {
        text_with_fill_impl(surface, false)
     }
@@ -995,8 +995,7 @@ mod tests {
 
     // This test does not work. Stroking is unfortunately
     // very tricky to get to work properly with Type3 fonts.
-    #[ignore]
-    #[visreg(settings_4)]
+    #[visreg(settings_4, all)]
     fn text_type3_with_stroke(surface: &mut Surface) {
         text_with_stroke_impl(surface, false)
     }
