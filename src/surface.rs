@@ -118,7 +118,6 @@ impl<'a> Surface<'a> {
         glyphs: &[impl Glyph],
         start: Point,
         font: Font,
-        context_color: rgb::Color,
         font_size: f32,
         glyph_units: GlyphUnits,
         outline_mode: OutlineMode,
@@ -140,9 +139,8 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 SvgSettings::default(),
                 glyph.glyph_id(),
-                Some(outline_mode.clone()),
+                Some(&outline_mode),
                 base_transform,
-                context_color,
                 self,
             );
 
@@ -172,7 +170,6 @@ impl<'a> Surface<'a> {
                 glyphs,
                 start,
                 font,
-                fill.paint.clone().try_into().unwrap_or(rgb::Color::black()),
                 font_size,
                 glyph_units,
                 OutlineMode::Fill(fill),
@@ -252,11 +249,6 @@ impl<'a> Surface<'a> {
                 glyphs,
                 start,
                 font,
-                stroke
-                    .paint
-                    .clone()
-                    .try_into()
-                    .unwrap_or(rgb::Color::black()),
                 font_size,
                 glyph_units,
                 OutlineMode::Stroke(stroke),

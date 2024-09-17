@@ -11,7 +11,7 @@ use crate::object::ext_g_state::ExtGState;
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
-use crate::object::type3_font::Type3Font;
+use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
@@ -192,6 +192,8 @@ impl ContentBuilder {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
+        let cloned_fill = fill.clone();
+
         // PDF viewers don't show patterns with fill/stroke opacities consistently.
         // Because of this, the opacity is accounted for in the pattern itself.
         if !matches!(&fill.paint.0, &InnerPaint::Pattern(_)) {
@@ -212,6 +214,7 @@ impl ContentBuilder {
             },
             glyphs,
             font,
+            cloned_fill,
             text,
             font_size,
             glyph_units,
@@ -255,6 +258,7 @@ impl ContentBuilder {
             },
             glyphs,
             font,
+            Fill::default(),
             text,
             font_size,
             glyph_units,
@@ -273,6 +277,7 @@ impl ContentBuilder {
         font_identifier: FontIdentifier,
         pdf_font: &dyn PdfFont,
         size: f32,
+        fill: Fill,
         glyphs: &[impl Glyph],
         glyph_units: GlyphUnits,
     ) {
@@ -291,7 +296,9 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            let pdf_glyph = pdf_font.get_gid(glyph.glyph_id()).unwrap();
+            let pdf_glyph = pdf_font
+                .get_gid(&CoveredGlyph::new(glyph.glyph_id(), fill.clone()))
+                .unwrap();
 
             let normalize =
                 |v| unit_normalize(glyph_units, pdf_font.font().units_per_em(), size, v);
@@ -345,6 +352,7 @@ impl ContentBuilder {
         action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
         glyphs: &[impl Glyph],
         font: Font,
+        fill: Fill,
         text: &str,
         font_size: f32,
         glyph_units: GlyphUnits,
@@ -363,7 +371,7 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, font_container);
+                let spanned = TextSpanner::new(glyphs, text, fill.clone(), font_container);
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -375,7 +383,8 @@ impl ContentBuilder {
 
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                    let segmented = GlyphGrouper::new(font_container, fragment.glyphs());
+                    let segmented =
+                        GlyphGrouper::new(font_container, fill.clone(), fragment.glyphs());
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -398,6 +407,7 @@ impl ContentBuilder {
                             glyph_group.font_identifier,
                             pdf_font,
                             font_size,
+                            fill.clone(),
                             glyph_group.glyphs,
                             glyph_units,
                         );
@@ -776,7 +786,7 @@ pub(crate) trait PdfFont {
     fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
-    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph>;
+    fn get_gid(&self, glyph: &CoveredGlyph) -> Option<PDFGlyph>;
 }
 
 impl PdfFont for Type3Font {
@@ -802,8 +812,8 @@ impl PdfFont for Type3Font {
         }
     }
 
-    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_gid(gid).map(PDFGlyph::Type3)
+    fn get_gid(&self, glyph: &CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_gid(glyph).map(PDFGlyph::Type3)
     }
 }
 
@@ -830,8 +840,8 @@ impl PdfFont for CIDFont {
         }
     }
 
-    fn get_gid(&self, gid: GlyphId) -> Option<PDFGlyph> {
-        self.get_cid(gid).map(PDFGlyph::Cid)
+    fn get_gid(&self, glyph: &CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
     }
 }
 
@@ -884,6 +894,7 @@ where
     T: Glyph,
 {
     slice: &'a [T],
+    fill: Fill,
     font_container: &'b RefCell<FontContainer>,
     text: &'a str,
 }
@@ -892,9 +903,15 @@ impl<'a, 'b, T> TextSpanner<'a, 'b, T>
 where
     T: Glyph,
 {
-    pub fn new(slice: &'a [T], text: &'a str, font_container: &'b RefCell<FontContainer>) -> Self {
+    pub fn new(
+        slice: &'a [T],
+        text: &'a str,
+        fill: Fill,
+        font_container: &'b RefCell<FontContainer>,
+    ) -> Self {
         Self {
             slice,
+            fill,
             text,
             font_container,
         }
@@ -910,13 +927,15 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         fn func<U>(
             g: &U,
+            fill: Fill,
             mut font_container: RefMut<FontContainer>,
             text: &str,
         ) -> (Range<usize>, bool)
         where
             U: Glyph,
         {
-            let (identifier, pdf_glyph) = font_container.add_glyph(g.glyph_id());
+            let (identifier, pdf_glyph) =
+                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), fill));
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
@@ -943,14 +962,22 @@ where
 
         // Get the range of the first glyph, as well as whether it's
         // incompatible.
-        let (first_range, first_incompatible) =
-            func(iter.next()?, self.font_container.borrow_mut(), self.text);
+        let (first_range, first_incompatible) = func(
+            iter.next()?,
+            self.fill.clone(),
+            self.font_container.borrow_mut(),
+            self.text,
+        );
 
         let mut last_range = first_range.clone();
 
         for next in iter {
-            let (next_range, next_incompatible) =
-                func(next, self.font_container.borrow_mut(), self.text);
+            let (next_range, next_incompatible) = func(
+                next,
+                self.fill.clone(),
+                self.font_container.borrow_mut(),
+                self.text,
+            );
 
             match use_span {
                 // In this case, we just started and we are looking at the first two glyphs.
@@ -1070,6 +1097,7 @@ where
     T: Glyph,
 {
     font_container: &'b RefCell<FontContainer>,
+    fill: Fill,
     slice: &'a [T],
 }
 
@@ -1077,9 +1105,10 @@ impl<'a, 'b, T> GlyphGrouper<'a, 'b, T>
 where
     T: Glyph,
 {
-    pub fn new(font_container: &'b RefCell<FontContainer>, slice: &'a [T]) -> Self {
+    pub fn new(font_container: &'b RefCell<FontContainer>, fill: Fill, slice: &'a [T]) -> Self {
         Self {
             font_container,
+            fill,
             slice,
         }
     }
@@ -1101,12 +1130,14 @@ where
                 y_advance: f32,
             }
 
-            fn func<U>(g: &U, font_container: RefMut<FontContainer>) -> GlyphProps
+            fn func<U>(g: &U, fill: Fill, font_container: RefMut<FontContainer>) -> GlyphProps
             where
                 U: Glyph,
             {
                 // Safe because we've already added all glyphs in the text spanner.
-                let font_identifier = font_container.font_identifier(g.glyph_id()).unwrap();
+                let font_identifier = font_container
+                    .font_identifier(CoveredGlyph::new(g.glyph_id(), fill))
+                    .unwrap();
 
                 GlyphProps {
                     font_identifier,
@@ -1118,10 +1149,14 @@ where
             let mut count = 1;
 
             let mut iter = self.slice.iter();
-            let first = func(iter.next()?, self.font_container.borrow_mut());
+            let first = func(
+                iter.next()?,
+                self.fill.clone(),
+                self.font_container.borrow_mut(),
+            );
 
             for next in iter {
-                let temp_glyph = func(next, self.font_container.borrow_mut());
+                let temp_glyph = func(next, self.fill.clone(), self.font_container.borrow_mut());
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier

@@ -21,7 +21,14 @@ pub type Gid = u8;
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) struct CoveredGlyph {
     pub glyph_id: GlyphId,
+    // TODO: Use outline mode instead?
     pub fill: Fill,
+}
+
+impl From<GlyphId> for CoveredGlyph {
+    fn from(value: GlyphId) -> Self {
+        Self::new(value, Fill::default())
+    }
 }
 
 impl CoveredGlyph {
@@ -137,7 +144,7 @@ impl Type3Font {
                     glyph.glyph_id,
                     // TODO: Change outlines glyphs so that they are also drawn as colors
                     // glyphs and support stroking
-                    None::<OutlineMode>,
+                    None::<OutlineMode>.as_ref(),
                     Transform::default(),
                     &mut surface,
                 );
@@ -293,10 +300,10 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn id_from_glyph(&self, glyph_id: GlyphId) -> Option<FontIdentifier> {
+    pub fn id_from_glyph(&self, glyph: &CoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
-            .position(|f| f.covers(glyph_id))
+            .position(|f| f.covers(&glyph))
             .map(|p| self.fonts[p].identifier())
     }
 
@@ -320,14 +327,14 @@ impl Type3FontMapper {
         &self.fonts
     }
 
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> (FontIdentifier, Gid) {
+    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, Gid) {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
-        if let Some(id) = self.id_from_glyph(glyph_id) {
+        if let Some(id) = self.id_from_glyph(&glyph) {
             let gid = self
                 .font_from_id(id.clone())
                 .unwrap()
-                .get_gid(glyph_id)
+                .get_gid(&glyph)
                 .unwrap();
             return (id, gid);
         }
@@ -337,19 +344,19 @@ impl Type3FontMapper {
                 // If the last Type3 font is full, create a new one.
                 let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
                 let id = font.identifier();
-                let gid = font.add_glyph(glyph_id);
+                let gid = font.add_glyph(glyph);
                 self.fonts.push(font);
                 (id, gid)
             } else {
                 // Otherwise, insert it into the last Type3 font.
                 let id = last_font.identifier();
-                (id, last_font.add_glyph(glyph_id))
+                (id, last_font.add_glyph(glyph))
             }
         } else {
             // If not Type3 font exists yet, create a new one.
             let mut font = Type3Font::new(self.font.clone(), self.fonts.len());
             let id = font.identifier();
-            let gid = font.add_glyph(glyph_id);
+            let gid = font.add_glyph(glyph);
             self.fonts.push(font);
             (id, gid)
         }
@@ -379,8 +386,8 @@ mod tests {
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
-                t3.add_glyph(GlyphId::new(36));
-                t3.add_glyph(GlyphId::new(37));
+                t3.add_glyph(GlyphId::new(36).into());
+                t3.add_glyph(GlyphId::new(37).into());
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
@@ -502,10 +509,10 @@ mod tests {
 
         match &mut *font_container {
             FontContainer::Type3(t3) => {
-                t3.add_glyph(GlyphId::new(58));
-                t3.add_glyph(GlyphId::new(54));
-                t3.add_glyph(GlyphId::new(69));
-                t3.add_glyph(GlyphId::new(71));
+                t3.add_glyph(GlyphId::new(58).into());
+                t3.add_glyph(GlyphId::new(54).into());
+                t3.add_glyph(GlyphId::new(69).into());
+                t3.add_glyph(GlyphId::new(71).into());
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
@@ -527,13 +534,13 @@ mod tests {
         match &mut *font_container {
             FontContainer::Type3(t3) => {
                 for i in 2..258 {
-                    t3.add_glyph(GlyphId::new(i));
+                    t3.add_glyph(GlyphId::new(i).into());
                 }
 
                 assert_eq!(t3.fonts.len(), 1);
-                assert_eq!(t3.fonts[0].add_glyph(GlyphId::new(20)), 18);
+                assert_eq!(t3.fonts[0].add_glyph(GlyphId::new(20).into()), 18);
 
-                t3.add_glyph(GlyphId::new(512));
+                t3.add_glyph(GlyphId::new(512).into());
                 assert_eq!(t3.fonts.len(), 2);
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),

@@ -376,7 +376,7 @@ pub(crate) fn draw_glyph(
     svg_settings: SvgSettings,
     glyph: GlyphId,
     // TODO: Rename
-    outline_mode: Option<OutlineMode>,
+    outline_mode: Option<&OutlineMode>,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<GlyphSource> {
@@ -385,11 +385,11 @@ pub(crate) fn draw_glyph(
         svg_settings,
         glyph,
         base_transform,
-        &outline_mode,
+        outline_mode,
         surface,
     )
     .or_else(|| {
-        outline::draw_glyph(font, glyph, Some(outline_mode), base_transform, surface)
+        outline::draw_glyph(font, glyph, outline_mode, base_transform, surface)
             .map(|_| GlyphSource::Outline)
     })
 }

@@ -143,7 +143,7 @@ impl ColrBuilder {
                 NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
             ))
         } else {
-            Some((rgb::Color::new(0, 0, 0), NormalizedF32::new(alpha).unwrap()))
+            Some((self.context_color, NormalizedF32::new(alpha).unwrap()))
         }
     }
 
