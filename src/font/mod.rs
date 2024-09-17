@@ -302,18 +302,22 @@ pub(crate) fn draw_color_glyph(
 
     let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
         .or_else(|| {
-            if cfg!(feature = "svg") {
-                svg::draw_glyph(font.clone(), glyph, surface, svg_settings)
-            } else {
-                None
-            }
+            #[cfg(feature = "svg")]
+            let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings);
+
+            #[cfg(not(feature = "svg"))]
+            let res = None;
+
+            res
         })
         .or_else(|| {
-            if cfg!(feature = "raster-images") {
-                bitmap::draw_glyph(font.clone(), glyph, surface)
-            } else {
-                None
-            }
+            #[cfg(feature = "raster-images")]
+            let res = bitmap::draw_glyph(font.clone(), glyph, surface);
+
+            #[cfg(not(feature = "raster-images"))]
+            let res = None;
+
+            res
         });
 
     surface.pop();
