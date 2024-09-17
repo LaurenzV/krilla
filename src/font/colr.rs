@@ -464,10 +464,17 @@ impl ColorPainter for ColrBuilder {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb;
     use crate::document::Document;
-    use crate::tests::{all_glyphs_to_pdf, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR};
+    use crate::font::Font;
+    use crate::path::{Fill, Stroke};
+    use crate::surface::Surface;
+    use crate::tests::{
+        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
+    };
     use krilla_macros::visreg;
     use skrifa::GlyphId;
+    use tiny_skia_path::Point;
 
     #[visreg(document)]
     fn colr_test_glyphs(document: &mut Document) {
@@ -478,6 +485,88 @@ mod tests {
             .collect::<Vec<_>>();
 
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
+    }
+
+    #[visreg]
+    fn colr_context_color(surface: &mut Surface) {
+        let font_data = COLR_TEST_GLYPHS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let text = [
+            0xf0b00, 0xf0b01, 0xf0b02, 0xf0b03, 0xf0b04, 0xf0b05, 0xf0b06, 0xf0b07,
+        ]
+        .into_iter()
+        .map(|n| char::from_u32(n).unwrap().to_string())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+        surface.fill_text(
+            Point::from_xy(0., 30.0),
+            Fill::default(),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        surface.fill_text(
+            Point::from_xy(0., 50.0),
+            purple_fill(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        surface.fill_text(
+            Point::from_xy(0., 70.0),
+            purple_fill(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            true,
+            None,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0., 130.0),
+            Stroke::default(),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        // Since it a COLR glyph, it will still be filled, but the color should be taken from
+        // the stroke.
+        surface.stroke_text(
+            Point::from_xy(0., 150.0),
+            blue_stroke(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            false,
+            None,
+        );
+
+        surface.stroke_text(
+            Point::from_xy(0., 170.0),
+            blue_stroke(1.0),
+            font.clone(),
+            15.0,
+            &[],
+            &text,
+            true,
+            None,
+        );
     }
 
     // We don't run on pdf.js because it leads to a high pixel difference in CI

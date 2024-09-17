@@ -142,7 +142,7 @@ impl Type3Font {
                     glyph.glyph_id,
                     // TODO: Change outlines glyphs so that they are also drawn as colors
                     // glyphs and support stroking
-                    None::<OutlineMode>.as_ref(),
+                    Some(&OutlineMode::Fill(glyph.fill.clone())),
                     Transform::default(),
                     &mut surface,
                 );

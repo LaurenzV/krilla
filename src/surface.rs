@@ -466,6 +466,7 @@ impl Drop for Surface<'_> {
     }
 }
 
+// TODO: Add auto
 #[cfg(feature = "simple-text")]
 /// The direction of a text.
 pub enum TextDirection {
