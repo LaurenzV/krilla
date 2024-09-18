@@ -15,6 +15,7 @@ use crate::color::DEVICE_RGB;
 use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -244,6 +245,8 @@ impl Image {
         })
     }
 }
+
+impl RegisterableResource<crate::resource::XObject> for Image {}
 
 fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {

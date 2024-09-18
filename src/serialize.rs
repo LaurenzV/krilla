@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -12,7 +12,7 @@ use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::{ColorSpaceResource, Resource, XObjectResource};
+use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{Deferred, NameExt, SipHashable};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -196,10 +196,8 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb).unwrap()),
-            ColorSpace::SGray => {
-                CSWrapper::Ref(self.add_object(ColorSpaceResource::SGray).unwrap())
-            }
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb).unwrap()),
+            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray).unwrap()),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -290,9 +288,10 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::ColorSpace(csr) => self.add_object(csr),
-            Resource::Shading(s) => self.add_object(s),
-            Resource::Font(f) => {
+            Resource::Srgb => self.add_object(SRGB_ICC.clone()),
+            Resource::SGray => self.add_object(GREY_ICC.clone()),
+            Resource::ShadingFunction(s) => self.add_object(s),
+            Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();
                 if let Some(_ref) = self.cached_mappings.get(&hash) {
                     Ok(*_ref)

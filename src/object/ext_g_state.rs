@@ -1,7 +1,9 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
+use crate::font::FontIdentifier;
 use crate::object::mask::Mask;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -99,6 +101,8 @@ impl ExtGState {
         }
     }
 }
+
+impl RegisterableResource<crate::resource::ExtGState> for ExtGState {}
 
 impl Object for ExtGState {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {

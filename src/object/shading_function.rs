@@ -1,10 +1,12 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::error::KrillaResult;
+use crate::font::FontIdentifier;
 use crate::object::color::Color;
 use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
+use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
@@ -209,6 +211,8 @@ impl ShadingFunction {
         }))
     }
 }
+
+impl RegisterableResource<crate::resource::ShadingFunction> for ShadingFunction {}
 
 impl Object for ShadingFunction {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {

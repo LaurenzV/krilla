@@ -40,6 +40,7 @@ pub(crate) mod outline;
 pub(crate) mod svg;
 
 use crate::path::{Fill, Stroke};
+use crate::resource::RegisterableResource;
 use skrifa::instance::Location;
 pub use skrifa::GlyphId;
 
@@ -405,6 +406,8 @@ pub(crate) enum FontIdentifier {
     Cid(CIDIdentifer),
     Type3(Type3Identifier),
 }
+
+impl RegisterableResource<crate::resource::Font> for FontIdentifier {}
 
 /// A wrapper struct for implementing the `OutlinePen` trait.
 struct OutlineBuilder(PathBuilder);

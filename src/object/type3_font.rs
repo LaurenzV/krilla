@@ -3,7 +3,7 @@ use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
-use crate::resource::{Resource, ResourceDictionaryBuilder, XObjectResource};
+use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
@@ -199,8 +199,7 @@ impl Type3Font {
                             content.start_color_glyph(self.widths[index]);
                             let x_object = XObject::new(stream, false, false, None);
                             font_bbox.expand(&x_object.bbox());
-                            let x_name = rd_builder
-                                .register_resource(XObjectResource::XObject(x_object), sc);
+                            let x_name = rd_builder.register_resource(x_object, sc);
                             content.x_object(x_name.to_pdf_name());
 
                             content.finish()

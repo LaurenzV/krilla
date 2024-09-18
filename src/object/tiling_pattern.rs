@@ -1,6 +1,8 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
+use crate::object::shading_pattern::ShadingPattern;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -67,6 +69,8 @@ impl TilingPattern {
         }
     }
 }
+
+impl RegisterableResource<crate::resource::Pattern> for TilingPattern {}
 
 impl Object for TilingPattern {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {

@@ -2,6 +2,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::error::KrillaResult;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
@@ -9,7 +10,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {
     stream: Stream,
     isolated: bool,
@@ -36,6 +37,8 @@ impl XObject {
         self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox())
     }
 }
+
+impl RegisterableResource<crate::resource::XObject> for XObject {}
 
 impl Object for XObject {
     fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {

@@ -1,5 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
+use crate::color::rgb::{SGray, Srgb};
 use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
 use crate::graphics_state::GraphicsStates;
@@ -15,9 +16,7 @@ use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource::{
-    ColorSpaceResource, PatternResource, Resource, ResourceDictionaryBuilder, XObjectResource,
-};
+use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -472,9 +471,7 @@ impl ContentBuilder {
                 sb.bbox.expand(&bbox);
             },
             move |sb, sc| {
-                let x_object_name = sb
-                    .rd_builder
-                    .register_resource(XObjectResource::XObject(x_object), sc);
+                let x_object_name = sb.rd_builder.register_resource(x_object, sc);
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
@@ -520,9 +517,7 @@ impl ContentBuilder {
                 );
             },
             move |sb, sc| {
-                let image_name = sb
-                    .rd_builder
-                    .register_resource(XObjectResource::Image(image), sc);
+                let image_name = sb.rd_builder.register_resource(image, sc);
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
@@ -605,12 +600,8 @@ impl ContentBuilder {
              content_builder: &mut ContentBuilder,
              sc: &mut SerializerContext,
              allow_gray: bool| match color.color_space(no_device_cs, allow_gray) {
-                ColorSpace::Srgb => content_builder
-                    .rd_builder
-                    .register_resource(ColorSpaceResource::Srgb, sc),
-                ColorSpace::SGray => content_builder
-                    .rd_builder
-                    .register_resource(ColorSpaceResource::SGray, sc),
+                ColorSpace::Srgb => content_builder.rd_builder.register_resource(Srgb, sc),
+                ColorSpace::SGray => content_builder.rd_builder.register_resource(SGray, sc),
                 ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
                 ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
                 ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
@@ -641,7 +632,7 @@ impl ContentBuilder {
                     );
                     let color_space = content_builder
                         .rd_builder
-                        .register_resource(PatternResource::ShadingPattern(shading_pattern), sc);
+                        .register_resource(shading_pattern, sc);
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask, sc);
@@ -684,9 +675,7 @@ impl ContentBuilder {
                     sc,
                 );
 
-                let color_space = self
-                    .rd_builder
-                    .register_resource(PatternResource::TilingPattern(tiling_pattern), sc);
+                let color_space = self.rd_builder.register_resource(tiling_pattern, sc);
                 set_pattern_fn(&mut self.content, color_space);
             }
         }
