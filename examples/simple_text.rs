@@ -24,6 +24,7 @@ fn main() {
         Arc::new(std::fs::read("assets/fonts/NotoSans-Regular.ttf").unwrap()),
         0,
         vec![],
+        None,
     )
     .unwrap();
 
@@ -62,6 +63,7 @@ fn main() {
         Arc::new(std::fs::read("assets/fonts/NotoSansArabic-Regular.ttf").unwrap()),
         0,
         vec![],
+        None,
     )
     .unwrap();
 
@@ -96,6 +98,7 @@ fn main() {
             Arc::new(std::fs::read("assets/fonts/NotoSans_variable.ttf").unwrap()),
             0,
             coordinates,
+            None,
         )
         .unwrap();
 

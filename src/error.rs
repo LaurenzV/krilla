@@ -10,8 +10,9 @@ pub type KrillaResult<T> = Result<T, KrillaError>;
 #[derive(Debug, PartialEq, Eq)]
 pub enum KrillaError {
     /// A font-related error, most likely indicated that the font is either not
-    /// supported or has issues.
-    Font(String),
+    /// supported or has issues. The first field contains the ID of the font,
+    /// if set, and the second field the message.
+    Font(Option<u32>, String),
     /// A user-related error, indicating API misuse (for example attempting to add
     /// a link to a page that doesn't exist).
     UserError(String),

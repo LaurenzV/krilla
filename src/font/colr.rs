@@ -482,7 +482,7 @@ mod tests {
     #[visreg]
     fn colr_context_color(surface: &mut Surface) {
         let font_data = COLR_TEST_GLYPHS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0, vec![], None).unwrap();
 
         let text = [
             0xf0b00, 0xf0b01, 0xf0b02, 0xf0b03, 0xf0b04, 0xf0b05, 0xf0b06, 0xf0b07,
