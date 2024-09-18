@@ -14,14 +14,12 @@ pub(crate) enum InnerStops {
 }
 
 impl InnerStops {
-    pub(crate) fn into_iter(self) -> Box<dyn Iterator<Item = crate::object::shading_function::Stop>> {
+    pub(crate) fn into_iter(
+        self,
+    ) -> Box<dyn Iterator<Item = crate::object::shading_function::Stop>> {
         match self {
-            InnerStops::RgbStops(r) => Box::new(r
-                .into_iter()
-                .map(|c| c.into())),
-            InnerStops::CmykStops(c) => Box::new(c
-                .into_iter()
-                .map(|c| c.into())),
+            InnerStops::RgbStops(r) => Box::new(r.into_iter().map(|c| c.into())),
+            InnerStops::CmykStops(c) => Box::new(c.into_iter().map(|c| c.into())),
         }
     }
 }
@@ -29,7 +27,6 @@ impl InnerStops {
 /// The color stops of a gradient.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Stops(pub(crate) InnerStops);
-
 
 impl From<Vec<Stop<rgb::Color>>> for Stops {
     fn from(value: Vec<Stop<rgb::Color>>) -> Self {
