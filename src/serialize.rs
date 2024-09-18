@@ -3,6 +3,8 @@ use crate::color::{ColorSpace, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
+#[cfg(feature = "raster-images")]
+use crate::image::Image;
 use crate::metadata::Metadata;
 use crate::object::cid_font::CIDFont;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
@@ -11,7 +13,7 @@ use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::{ColorSpaceResource, Resource};
+use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -21,6 +23,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::DerefMut;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
 
@@ -116,7 +119,7 @@ pub(crate) struct PageInfo {
 
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
-    font_map: HashMap<Font, RefCell<FontContainer>>,
+    font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
@@ -194,10 +197,8 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_object(ColorSpaceResource::Srgb).unwrap()),
-            ColorSpace::SGray => {
-                CSWrapper::Ref(self.add_object(ColorSpaceResource::SGray).unwrap())
-            }
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb).unwrap()),
+            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray).unwrap()),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -213,12 +214,25 @@ impl SerializerContext {
             Ok(*_ref)
         } else {
             let root_ref = self.new_ref();
+            let mut chunk_container_fn = object.chunk_container();
             let chunk = object.serialize(self, root_ref)?;
             self.cached_mappings.insert(hash, root_ref);
-            object
-                .chunk_container(&mut self.chunk_container)
-                .push(chunk);
+            chunk_container_fn(&mut self.chunk_container).push(chunk);
             Ok(root_ref)
+        }
+    }
+
+    #[cfg(feature = "raster-images")]
+    pub fn add_image(&mut self, image: Image) -> Ref {
+        let hash = image.sip_hash();
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            *_ref
+        } else {
+            let root_ref = self.new_ref();
+            let chunk = image.serialize(self, root_ref);
+            self.cached_mappings.insert(hash, root_ref);
+            self.chunk_container.images.push(chunk);
+            root_ref
         }
     }
 
@@ -229,46 +243,57 @@ impl SerializerContext {
         ref_
     }
 
-    pub fn create_or_get_font_container(&mut self, font: Font) -> &RefCell<FontContainer> {
-        self.font_map.entry(font.clone()).or_insert_with(|| {
-            self.font_cache
-                .insert(font.font_info().clone(), font.clone());
+    pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
+        self.font_map
+            .entry(font.clone())
+            .or_insert_with(|| {
+                self.font_cache
+                    .insert(font.font_info().clone(), font.clone());
 
-            // Right now, we decide whether to embed a font as a Type3 font
-            // solely based on whether one of these tables exist (or if
-            // the settings tell us to force it). This is not the most "efficient"
-            // method, because it is possible a font has a `COLR` table, but
-            // there are still some glyphs which are not in COLR but in `glyf`
-            // or `CFF`. In this case, we would still choose a Type3 font for
-            // the outlines, even though they could be embedded as a CID font.
-            // For now, we make the simplifying assumption that a font is either mapped
-            // to a series of Type3 fonts or to a single CID font, but not a mix of both.
-            let font_ref = font.font_ref();
-            let use_type3 = self.serialize_settings.force_type3_fonts
-                || !font.location_ref().coords().is_empty()
-                || font_ref.svg().is_ok()
-                || font_ref.colr().is_ok()
-                || font_ref.sbix().is_ok()
-                || font_ref.cbdt().is_ok()
-                || font_ref.ebdt().is_ok()
-                || font_ref.cff2().is_ok();
+                // Right now, we decide whether to embed a font as a Type3 font
+                // solely based on whether one of these tables exist (or if
+                // the settings tell us to force it). This is not the most "efficient"
+                // method, because it is possible a font has a `COLR` table, but
+                // there are still some glyphs which are not in COLR but in `glyf`
+                // or `CFF`. In this case, we would still choose a Type3 font for
+                // the outlines, even though they could be embedded as a CID font.
+                // For now, we make the simplifying assumption that a font is either mapped
+                // to a series of Type3 fonts or to a single CID font, but not a mix of both.
+                let font_ref = font.font_ref();
+                let use_type3 = self.serialize_settings.force_type3_fonts
+                    || !font.location_ref().coords().is_empty()
+                    || font_ref.svg().is_ok()
+                    || font_ref.colr().is_ok()
+                    || font_ref.sbix().is_ok()
+                    || font_ref.cbdt().is_ok()
+                    || font_ref.ebdt().is_ok()
+                    || font_ref.cff2().is_ok();
 
-            if use_type3 {
-                RefCell::new(FontContainer::Type3(Type3FontMapper::new(font.clone())))
-            } else {
-                RefCell::new(FontContainer::CIDFont(CIDFont::new(font.clone())))
-            }
-        })
+                if use_type3 {
+                    Rc::new(RefCell::new(FontContainer::Type3(Type3FontMapper::new(
+                        font.clone(),
+                    ))))
+                } else {
+                    Rc::new(RefCell::new(FontContainer::CIDFont(CIDFont::new(
+                        font.clone(),
+                    ))))
+                }
+            })
+            .clone()
     }
 
     pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> KrillaResult<Ref> {
         match resource.into() {
-            Resource::XObject(xr) => self.add_object(xr),
-            Resource::Pattern(pr) => self.add_object(pr),
+            Resource::XObject(x) => self.add_object(x),
+            #[cfg(feature = "raster-images")]
+            Resource::Image(i) => Ok(self.add_image(i)),
+            Resource::ShadingPattern(sp) => self.add_object(sp),
+            Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::ColorSpace(csr) => self.add_object(csr),
-            Resource::Shading(s) => self.add_object(s),
-            Resource::Font(f) => {
+            Resource::Srgb => self.add_object(SRGB_ICC.clone()),
+            Resource::SGray => self.add_object(GREY_ICC.clone()),
+            Resource::ShadingFunction(s) => self.add_object(s),
+            Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();
                 if let Some(_ref) = self.cached_mappings.get(&hash) {
                     Ok(*_ref)

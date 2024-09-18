@@ -374,7 +374,7 @@ impl<'a> Surface<'a> {
                 if o != NormalizedF32::ONE {
                     let stream = self.sub_builders.pop().unwrap().finish();
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                        .draw_opacified(o, stream);
+                        .draw_opacified(self.sc, o, stream);
                 }
             }
             PushInstruction::ClipPath => {
@@ -387,12 +387,12 @@ impl<'a> Surface<'a> {
             PushInstruction::Mask(mask) => {
                 let stream = self.sub_builders.pop().unwrap().finish();
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_masked(mask, stream)
+                    .draw_masked(self.sc, mask, stream)
             }
             PushInstruction::Isolated => {
                 let stream = self.sub_builders.pop().unwrap().finish();
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_isolated(stream);
+                    .draw_isolated(self.sc, stream);
             }
         }
     }
@@ -400,7 +400,8 @@ impl<'a> Surface<'a> {
     #[cfg(feature = "raster-images")]
     /// Draw a new bitmap image.
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_image(image, size);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_image(image, size, self.sc);
     }
 
     #[cfg(feature = "svg")]
@@ -430,7 +431,8 @@ impl<'a> Surface<'a> {
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).draw_shading(shading);
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .draw_shading(shading, self.sc);
     }
 
     /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
@@ -448,7 +450,7 @@ impl<'a> Surface<'a> {
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-            .draw_opacified(opacity, stream)
+            .draw_opacified(self.sc, opacity, stream)
     }
 
     fn cur_builder<'b>(

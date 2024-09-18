@@ -4,6 +4,7 @@ use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
 use crate::util::HashExt;
 use std::hash::Hash;
+use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -12,30 +13,20 @@ pub(crate) enum InnerStops {
     CmykStops(Vec<Stop<cmyk::Color>>),
 }
 
-/// The color stops of a gradient.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct Stops(pub(crate) InnerStops);
-
-impl IntoIterator for InnerStops {
-    type Item = crate::object::shading_function::Stop;
-    type IntoIter = std::vec::IntoIter<crate::object::shading_function::Stop>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        // TODO: Avoid collect somehow?
+impl InnerStops {
+    pub(crate) fn into_iter(
+        self,
+    ) -> Box<dyn Iterator<Item = crate::object::shading_function::Stop>> {
         match self {
-            InnerStops::RgbStops(r) => r
-                .into_iter()
-                .map(|c| c.into())
-                .collect::<Vec<_>>()
-                .into_iter(),
-            InnerStops::CmykStops(c) => c
-                .into_iter()
-                .map(|c| c.into())
-                .collect::<Vec<_>>()
-                .into_iter(),
+            InnerStops::RgbStops(r) => Box::new(r.into_iter().map(|c| c.into())),
+            InnerStops::CmykStops(c) => Box::new(c.into_iter().map(|c| c.into())),
         }
     }
 }
+
+/// The color stops of a gradient.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct Stops(pub(crate) InnerStops);
 
 impl From<Vec<Stop<rgb::Color>>> for Stops {
     fn from(value: Vec<Stop<rgb::Color>>) -> Self {
@@ -160,7 +151,7 @@ impl Hash for SweepGradient {
 }
 
 /// A pattern.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Pattern {
     /// The stream of the pattern.
     pub stream: Stream,
@@ -184,13 +175,13 @@ impl Hash for Pattern {
 }
 
 // TODO: Wrap linear/stroke etc. in Arc
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub(crate) enum InnerPaint {
     Color(Color),
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
     SweepGradient(SweepGradient),
-    Pattern(Pattern),
+    Pattern(Arc<Pattern>),
 }
 
 /// A paint.
@@ -198,7 +189,7 @@ pub(crate) enum InnerPaint {
 /// You cannot construct this type directly, but instead can convert
 /// into it by calling `into` on the various types of paint, such as linear
 /// gradients and patterns.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Paint(pub(crate) InnerPaint);
 
 impl Paint {
@@ -245,7 +236,7 @@ impl From<SweepGradient> for Paint {
 
 impl From<Pattern> for Paint {
     fn from(value: Pattern) -> Self {
-        Paint(InnerPaint::Pattern(value))
+        Paint(InnerPaint::Pattern(Arc::new(value)))
     }
 }
 

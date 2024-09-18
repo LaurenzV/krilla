@@ -2,6 +2,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{HashExt, TransformExt};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -37,12 +38,14 @@ impl ShadingPattern {
     }
 }
 
+impl RegisterableResource<crate::resource::Pattern> for ShadingPattern {}
+
 impl Object for ShadingPattern {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.patterns
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.patterns)
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let shading_ref = sc.add_object(self.0.shading_function.clone())?;

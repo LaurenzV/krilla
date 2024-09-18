@@ -4,9 +4,11 @@ use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
+use crate::resource::ResourceDictionary;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
+use crate::util::Deferred;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
@@ -78,25 +80,46 @@ impl Drop for Page<'_> {
         let page_settings = std::mem::take(&mut self.page_settings);
 
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(stream, annotations, page_settings);
+        let page = InternalPage::new(stream, self.sc, annotations, page_settings);
         self.sc.add_page(page);
     }
 }
 
 pub(crate) struct InternalPage {
-    pub stream: Stream,
+    pub stream_ref: Ref,
+    pub stream_resources: ResourceDictionary,
+    pub stream_chunk: Deferred<Chunk>,
     pub page_settings: PageSettings,
     pub annotations: Vec<Annotation>,
 }
 
 impl InternalPage {
     pub(crate) fn new(
-        stream: Stream,
+        mut stream: Stream,
+        sc: &mut SerializerContext,
         annotations: Vec<Annotation>,
         page_settings: PageSettings,
     ) -> Self {
+        let stream_ref = sc.new_ref();
+        let serialize_settings = sc.serialize_settings;
+        let stream_resources = std::mem::take(&mut stream.resource_dictionary);
+
+        let stream_chunk = Deferred::new(move || {
+            let mut chunk = Chunk::new();
+            let page_stream =
+                FilterStream::new_from_content_stream(&stream.content, &serialize_settings);
+
+            let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
+            page_stream.write_filters(stream.deref_mut());
+
+            stream.finish();
+            chunk
+        });
+
         Self {
-            stream,
+            stream_resources,
+            stream_ref,
+            stream_chunk,
             annotations,
             page_settings,
         }
@@ -107,8 +130,6 @@ impl InternalPage {
         sc: &mut SerializerContext,
         root_ref: Ref,
     ) -> KrillaResult<Chunk> {
-        let stream_ref = sc.new_ref();
-
         let mut chunk = Chunk::new();
 
         let mut annotation_refs = vec![];
@@ -126,9 +147,7 @@ impl InternalPage {
         }
 
         let mut page = chunk.page(root_ref);
-        self.stream
-            .resource_dictionary()
-            .to_pdf_resources(sc, &mut page)?;
+        self.stream_resources.to_pdf_resources(&mut page)?;
 
         let media_box = self.page_settings.media_box();
         // Convert to the proper PDF values.
@@ -139,7 +158,7 @@ impl InternalPage {
             self.page_settings.surface_size().height() - media_box.y(),
         ));
         page.parent(sc.page_tree_ref());
-        page.contents(stream_ref);
+        page.contents(self.stream_ref);
 
         if !annotation_refs.is_empty() {
             page.annotations(annotation_refs);
@@ -147,13 +166,7 @@ impl InternalPage {
 
         page.finish();
 
-        let page_stream =
-            FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
-
-        let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
-        page_stream.write_filters(stream.deref_mut());
-
-        stream.finish();
+        chunk.extend(self.stream_chunk.wait());
 
         Ok(chunk)
     }
@@ -290,7 +303,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], page_settings);
         sc.add_page(page);
     }
 
@@ -307,7 +320,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], page_settings);
         sc.add_page(page);
     }
 

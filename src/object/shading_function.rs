@@ -5,6 +5,7 @@ use crate::object::color::Color;
 use crate::object::Object;
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
+use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use pdf_writer::types::FunctionShadingType;
@@ -210,12 +211,14 @@ impl ShadingFunction {
     }
 }
 
+impl RegisterableResource<crate::resource::ShadingFunction> for ShadingFunction {}
+
 impl Object for ShadingFunction {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.shading_functions
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.shading_functions)
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {

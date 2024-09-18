@@ -10,13 +10,11 @@
 //! ICC profiles will currently not be embedded, and CMYK images will be naively
 //! converted into the RGB color space.
 
-use crate::chunk_container::ChunkContainer;
 use crate::color::DEVICE_RGB;
-use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
-use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::util::{NameExt, Prehashed, SizeWrapper};
+use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -192,58 +190,60 @@ impl Image {
     pub fn size(&self) -> Size {
         self.0.size.0
     }
+
+    pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
+        let soft_mask_id = self.0.mask_data.as_ref().map(|_| sc.new_ref());
+        let serialize_settings = sc.serialize_settings;
+
+        Deferred::new(move || {
+            let mut chunk = Chunk::new();
+
+            let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
+                let soft_mask_id = soft_mask_id.unwrap();
+                let mask_stream =
+                    FilterStream::new_from_binary_data(mask_data, &serialize_settings);
+                let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
+                mask_stream.write_filters(s_mask.deref_mut().deref_mut());
+                s_mask.width(self.0.size.width() as i32);
+                s_mask.height(self.0.size.height() as i32);
+                s_mask.pair(
+                    Name(b"ColorSpace"),
+                    // Mask color space must be device gray -- see Table 145.
+                    DEVICE_GRAY.to_pdf_name(),
+                );
+                s_mask.bits_per_component(self.0.bits_per_component.as_u8() as i32);
+                soft_mask_id
+            });
+
+            let image_stream =
+                FilterStream::new_from_binary_data(&self.0.image_data, &serialize_settings);
+
+            let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
+            image_stream.write_filters(image_x_object.deref_mut().deref_mut());
+            image_x_object.width(self.0.size.width() as i32);
+            image_x_object.height(self.0.size.height() as i32);
+
+            match self.0.image_color_space {
+                ImageColorspace::Rgb => {
+                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
+                }
+                ImageColorspace::Luma => {
+                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
+                }
+            };
+
+            image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);
+            if let Some(soft_mask_id) = alpha_mask {
+                image_x_object.s_mask(soft_mask_id);
+            }
+            image_x_object.finish();
+
+            chunk
+        })
+    }
 }
 
-impl Object for Image {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.images
-    }
-
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
-        let mut chunk = Chunk::new();
-
-        let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
-            let soft_mask_id = sc.new_ref();
-            let mask_stream = FilterStream::new_from_binary_data(mask_data, &sc.serialize_settings);
-            let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
-            mask_stream.write_filters(s_mask.deref_mut().deref_mut());
-            s_mask.width(self.0.size.width() as i32);
-            s_mask.height(self.0.size.height() as i32);
-            s_mask.pair(
-                Name(b"ColorSpace"),
-                // Mask color space must be device gray -- see Table 145.
-                DEVICE_GRAY.to_pdf_name(),
-            );
-            s_mask.bits_per_component(self.0.bits_per_component.as_u8() as i32);
-            soft_mask_id
-        });
-
-        let image_stream =
-            FilterStream::new_from_binary_data(&self.0.image_data, &sc.serialize_settings);
-
-        let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
-        image_stream.write_filters(image_x_object.deref_mut().deref_mut());
-        image_x_object.width(self.0.size.width() as i32);
-        image_x_object.height(self.0.size.height() as i32);
-
-        match self.0.image_color_space {
-            ImageColorspace::Rgb => {
-                image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
-            }
-            ImageColorspace::Luma => {
-                image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
-            }
-        };
-
-        image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);
-        if let Some(soft_mask_id) = alpha_mask {
-            image_x_object.s_mask(soft_mask_id);
-        }
-        image_x_object.finish();
-
-        Ok(chunk)
-    }
-}
+impl RegisterableResource<crate::resource::XObject> for Image {}
 
 fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {
@@ -359,63 +359,63 @@ mod tests {
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("luma8.png")).unwrap();
+        sc.add_image(load_png_image("luma8.png"));
     }
 
     #[snapshot]
     fn image_luma16_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("luma16.png")).unwrap();
+        sc.add_image(load_png_image("luma16.png"));
     }
 
     #[snapshot]
     fn image_rgb8_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgb8.png")).unwrap();
+        sc.add_image(load_png_image("rgb8.png"));
     }
 
     #[snapshot]
     fn image_rgb16_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgb16.png")).unwrap();
+        sc.add_image(load_png_image("rgb16.png"));
     }
 
     #[snapshot]
     fn image_rgba8_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgba8.png")).unwrap();
+        sc.add_image(load_png_image("rgba8.png"));
     }
 
     #[snapshot]
     fn image_rgba16_png(sc: &mut SerializerContext) {
-        sc.add_object(load_png_image("rgba16.png")).unwrap();
+        sc.add_image(load_png_image("rgba16.png"));
     }
 
     #[snapshot]
     fn image_luma8_jpg(sc: &mut SerializerContext) {
-        sc.add_object(load_jpg_image("luma8.jpg")).unwrap();
+        sc.add_image(load_jpg_image("luma8.jpg"));
     }
 
     #[snapshot]
     fn image_rgb8_jpg(sc: &mut SerializerContext) {
-        sc.add_object(load_jpg_image("rgb8.jpg")).unwrap();
+        sc.add_image(load_jpg_image("rgb8.jpg"));
     }
 
     // Currently gets converted into RGB.
     #[snapshot]
     fn image_cmyk_jpg(sc: &mut SerializerContext) {
-        sc.add_object(load_jpg_image("cmyk.jpg")).unwrap();
+        sc.add_image(load_jpg_image("cmyk.jpg"));
     }
 
     // Currently gets converted into RGBA.
     #[snapshot]
     fn image_rgb8_gif(sc: &mut SerializerContext) {
-        sc.add_object(load_gif_image("rgb8.gif")).unwrap();
+        sc.add_image(load_gif_image("rgb8.gif"));
     }
 
     #[snapshot]
     fn image_rgba8_gif(sc: &mut SerializerContext) {
-        sc.add_object(load_gif_image("rgba8.gif")).unwrap();
+        sc.add_image(load_gif_image("rgba8.gif"));
     }
     #[snapshot]
     fn image_rgba8_webp(sc: &mut SerializerContext) {
-        sc.add_object(load_webp_image("rgba8.webp")).unwrap();
+        sc.add_image(load_webp_image("rgba8.webp"));
     }
 
     fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {

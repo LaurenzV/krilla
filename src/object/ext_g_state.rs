@@ -2,6 +2,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::mask::Mask;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -18,7 +19,7 @@ struct Repr {
     /// The blend mode.
     blend_mode: Option<BlendMode>,
     /// An active mask.
-    mask: Option<Arc<Mask>>,
+    mask: Option<Ref>,
 }
 
 /// A graphics state containing information about
@@ -63,8 +64,10 @@ impl ExtGState {
 
     /// Create a new graphics state with a mask.
     #[must_use]
-    pub fn mask(mut self, mask: Mask) -> Self {
-        Arc::make_mut(&mut self.0).mask = Some(Arc::new(mask));
+    pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
+        // TODO: Don't unwrap
+        let mask_ref = sc.add_object(mask).unwrap();
+        Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
     }
 
@@ -98,19 +101,15 @@ impl ExtGState {
     }
 }
 
+impl RegisterableResource<crate::resource::ExtGState> for ExtGState {}
+
 impl Object for ExtGState {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.ext_g_states
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.ext_g_states)
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
-
-        let mask_ref = if let Some(mask) = self.0.mask.clone() {
-            Some(sc.add_object(Arc::unwrap_or_clone(mask))?)
-        } else {
-            None
-        };
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
@@ -125,7 +124,7 @@ impl Object for ExtGState {
             ext_st.blend_mode(bm);
         }
 
-        if let Some(mask_ref) = mask_ref {
+        if let Some(mask_ref) = self.0.mask {
             ext_st.pair(Name(b"SMask"), mask_ref);
         }
 
@@ -169,7 +168,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
-            .mask(mask);
+            .mask(mask, sc);
         sc.add_object(ext_state).unwrap();
     }
 }

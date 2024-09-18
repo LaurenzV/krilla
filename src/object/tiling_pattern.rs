@@ -1,6 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -12,7 +13,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use tiny_skia_path::{NormalizedF32, Transform};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {
     stream: Stream,
     transform: Transform,
@@ -68,22 +69,24 @@ impl TilingPattern {
     }
 }
 
+impl RegisterableResource<crate::resource::Pattern> for TilingPattern {}
+
 impl Object for TilingPattern {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.patterns
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.patterns)
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let pattern_stream =
-            FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
+            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, pattern_stream.encoded_data());
         pattern_stream.write_filters(tiling_pattern.deref_mut().deref_mut());
 
         self.stream
-            .resource_dictionary()
-            .to_pdf_resources(sc, &mut tiling_pattern)?;
+            .resource_dictionary
+            .to_pdf_resources(&mut tiling_pattern)?;
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
 

@@ -1,9 +1,19 @@
 use crate::metadata::Metadata;
 use crate::serialize::SerializeSettings;
-use crate::util::hash_base64;
+use crate::util::{hash_base64, Deferred};
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
+
+trait ChunkExt {
+    fn wait(&self) -> &Chunk;
+}
+
+impl ChunkExt for Chunk {
+    fn wait(&self) -> &Chunk {
+        self
+    }
+}
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
@@ -19,7 +29,7 @@ pub struct ChunkContainer {
     pub(crate) color_spaces: Vec<Chunk>,
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
-    pub(crate) images: Vec<Chunk>,
+    pub(crate) images: Vec<Deferred<Chunk>>,
     pub(crate) masks: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,
@@ -66,9 +76,9 @@ impl ChunkContainer {
         // It also allows us to estimate the capacity we will need for the new PDF.
         let mut chunks_len = 0;
         macro_rules! remap_field {
-            ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
+            ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
                 $(
-                    if let Some((original_ref, chunk)) = &mut $self.$field {
+                    if let Some((original_ref, chunk)) = $field {
                         chunks_len += chunk.len();
                         for object_ref in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&object_ref));
@@ -83,9 +93,10 @@ impl ChunkContainer {
         }
 
         macro_rules! remap_fields {
-            ($self:expr, $remapper:expr, $remapped_ref:expr; $($field:ident),+) => {
+            ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
                 $(
-                    for chunk in &$self.$field {
+                    for chunk in $field {
+                        let chunk = chunk.wait();
                         chunks_len += chunk.len();
                         for ref_ in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&ref_));
@@ -107,17 +118,17 @@ impl ChunkContainer {
             pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
         }
 
-        remap_field!(self, remapper, remapped_ref; page_tree, outline, page_label_tree);
-        remap_fields!(self, remapper, remapped_ref; pages, page_labels,
-            annotations, fonts, color_spaces, destinations,
-            ext_g_states, images, masks, x_objects, shading_functions,
-            patterns
+        remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline, &mut self.page_label_tree);
+        remap_fields!(remapper, remapped_ref; &self.pages, &self.page_labels,
+            &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
+            &self.ext_g_states, &self.images, &self.masks, &self.x_objects, &self.shading_functions,
+            &self.patterns
         );
 
         macro_rules! write_field {
-            ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
+            ($remapper:expr, $pdf:expr; $($field:expr),+) => {
                 $(
-                    if let Some((_, chunk)) = &$self.$field {
+                    if let Some((_, chunk)) = $field {
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -125,20 +136,21 @@ impl ChunkContainer {
         }
 
         macro_rules! write_fields {
-            ($self:expr, $remapper:expr, $pdf:expr; $($field:ident),+) => {
+            ($remapper:expr, $pdf:expr; $($field:expr),+) => {
                 $(
-                    for chunk in &$self.$field {
+                    for chunk in $field {
+                        let chunk = chunk.wait();
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
             };
         }
 
-        write_field!(self, remapper, &mut pdf; page_tree, outline, page_label_tree);
-        write_fields!(self, remapper, &mut pdf; pages, page_labels,
-            annotations, fonts, color_spaces, destinations,
-            ext_g_states, images, masks, x_objects,
-            shading_functions, patterns
+        write_field!(remapper, &mut pdf; &self.page_tree, &self.outline, &self.page_label_tree);
+        write_fields!(remapper, &mut pdf; &self.pages, &self.page_labels,
+            &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
+            &self.ext_g_states, &self.images, &self.masks, &self.x_objects,
+            &self.shading_functions, &self.patterns
         );
 
         // Write the PDF document info metadata.

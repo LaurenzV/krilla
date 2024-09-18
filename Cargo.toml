@@ -93,6 +93,7 @@ zune-png = { workspace = true, optional = true }
 zune-jpeg = { workspace = true, optional = true }
 xmp-writer = { workspace = true }
 base64 = { workspace = true }
+rayon = "1.10.0"
 
 [dev-dependencies]
 cosmic-text = { workspace = true }

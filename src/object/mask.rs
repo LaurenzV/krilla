@@ -13,7 +13,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
 
 /// A mask. Can be a luminance mask or an alpha mask.
-#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, Debug, Hash)]
 pub struct Mask {
     /// The stream of the mask.
     stream: Stream,
@@ -97,15 +97,15 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.masks
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.masks)
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let x_ref = sc.add_object(XObject::new(
-            self.stream.clone(),
+            self.stream,
             false,
             true,
             self.custom_bbox.map(|c| c.0),

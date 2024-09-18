@@ -42,11 +42,14 @@
 //! does not allow for custom CMYK ICC profiles, so CMYK colors are currently always encoded
 //! in a device-dependent way.
 
+use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
+use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
+use crate::util::Prehashed;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -126,6 +129,13 @@ pub mod cmyk {
 /// RGB colors.
 pub mod rgb {
     use crate::object::color::ColorSpace;
+    use crate::resource::RegisterableResource;
+
+    pub(crate) struct Srgb;
+    pub(crate) struct SGray;
+
+    impl RegisterableResource<crate::resource::ColorSpace> for Srgb {}
+    impl RegisterableResource<crate::resource::ColorSpace> for SGray {}
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -220,18 +230,30 @@ pub(crate) enum ColorSpace {
 }
 
 #[derive(Clone)]
-pub(crate) struct ICCBasedColorSpace(Arc<dyn AsRef<[u8]>>, u8);
+struct Repr(Arc<dyn AsRef<[u8]> + Send + Sync>, u8);
+
+impl Hash for Repr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ref().as_ref().hash(state);
+        self.1.hash(state);
+    }
+}
+
+#[derive(Clone, Hash)]
+pub(crate) struct ICCBasedColorSpace(Prehashed<Repr>);
 
 impl ICCBasedColorSpace {
-    pub fn new(data: Arc<dyn AsRef<[u8]>>, num_components: u8) -> Self {
-        Self(data, num_components)
+    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>, num_components: u8) -> Self {
+        Self(Prehashed::new(Repr(data, num_components)))
+    }
+}
+
+impl Object for ICCBasedColorSpace {
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.color_spaces)
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -242,12 +264,12 @@ impl ICCBasedColorSpace {
         array.finish();
 
         let icc_stream =
-            FilterStream::new_from_binary_data(self.0.as_ref().as_ref(), &sc.serialize_settings);
+            FilterStream::new_from_binary_data(self.0 .0.as_ref().as_ref(), &sc.serialize_settings);
 
         let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
         icc_profile
-            .n(self.1 as i32)
-            .range([0.0, 1.0].repeat(self.1 as usize));
+            .n(self.0 .1 as i32)
+            .range([0.0, 1.0].repeat(self.0 .1 as usize));
 
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
@@ -259,21 +281,21 @@ impl ICCBasedColorSpace {
 #[cfg(test)]
 mod tests {
 
-    use crate::resource::ColorSpaceResource;
     use crate::serialize::SerializerContext;
 
+    use crate::resource::Resource;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path};
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_object(ColorSpaceResource::SGray).unwrap();
+        sc.add_resource(Resource::SGray).unwrap();
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_object(ColorSpaceResource::Srgb).unwrap();
+        sc.add_resource(Resource::Srgb).unwrap();
     }
 
     #[visreg(all)]

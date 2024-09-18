@@ -2,6 +2,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::error::KrillaResult;
 use crate::object::Object;
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
@@ -9,7 +10,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {
     stream: Stream,
     isolated: bool,
@@ -33,30 +34,32 @@ impl XObject {
     }
 
     pub fn bbox(&self) -> Rect {
-        self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox())
+        self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox.0)
     }
 }
 
+impl RegisterableResource<crate::resource::XObject> for XObject {}
+
 impl Object for XObject {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.x_objects
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.x_objects)
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let x_object_stream =
-            FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
+            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
         x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
         self.stream
-            .resource_dictionary()
-            .to_pdf_resources(sc, &mut x_object)?;
+            .resource_dictionary
+            .to_pdf_resources(&mut x_object)?;
         x_object.bbox(
             self.custom_bbox
                 .map(|c| c.0)
-                .unwrap_or(self.stream.bbox())
+                .unwrap_or(*self.stream.bbox)
                 .to_pdf_rect(),
         );
 

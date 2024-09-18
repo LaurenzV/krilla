@@ -29,21 +29,19 @@ use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
-use std::sync::Arc;
 use tiny_skia_path::Rect;
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-struct Repr {
-    content: Vec<u8>,
-    bbox: RectWrapper,
-    resource_dictionary: ResourceDictionary,
-}
 
 /// A stream.
 ///
 /// See the module description for an explanation of its purpose.
+// The only reason we implement clone for this type is that in some cases,
+// we might need to clone a pattern (including its stream)
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Stream(Arc<Repr>);
+pub struct Stream {
+    pub(crate) content: Vec<u8>,
+    pub(crate) bbox: RectWrapper,
+    pub(crate) resource_dictionary: ResourceDictionary,
+}
 
 impl Stream {
     pub(crate) fn new(
@@ -51,31 +49,19 @@ impl Stream {
         bbox: Rect,
         resource_dictionary: ResourceDictionary,
     ) -> Self {
-        Self(Arc::new(Repr {
+        Self {
             content,
             bbox: RectWrapper(bbox),
             resource_dictionary,
-        }))
-    }
-
-    pub(crate) fn content(&self) -> &[u8] {
-        &self.0.content
-    }
-
-    pub(crate) fn bbox(&self) -> Rect {
-        self.0.bbox.0
-    }
-
-    pub(crate) fn resource_dictionary(&self) -> &ResourceDictionary {
-        &self.0.resource_dictionary
+        }
     }
 
     pub(crate) fn empty() -> Self {
-        Self(Arc::new(Repr {
+        Self {
             content: vec![],
             bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
-        }))
+        }
     }
 }
 
