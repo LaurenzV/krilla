@@ -213,11 +213,10 @@ impl SerializerContext {
             Ok(*_ref)
         } else {
             let root_ref = self.new_ref();
+            let mut chunk_container_fn = object.chunk_container();
             let chunk = object.serialize(self, root_ref)?;
             self.cached_mappings.insert(hash, root_ref);
-            object
-                .chunk_container(&mut self.chunk_container)
-                .push(chunk);
+            chunk_container_fn(&mut self.chunk_container).push(chunk);
             Ok(root_ref)
         }
     }

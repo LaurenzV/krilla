@@ -104,11 +104,11 @@ impl ExtGState {
 impl RegisterableResource<crate::resource::ExtGState> for ExtGState {}
 
 impl Object for ExtGState {
-    fn chunk_container<'a>(&self, cc: &'a mut ChunkContainer) -> &'a mut Vec<Chunk> {
-        &mut cc.ext_g_states
+    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+        Box::new(|cc| &mut cc.ext_g_states)
     }
 
-    fn serialize(&self, _: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
