@@ -3,6 +3,7 @@ use crate::color::{ColorSpace, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
+#[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
 use crate::object::cid_font::CIDFont;
@@ -221,6 +222,7 @@ impl SerializerContext {
         }
     }
 
+    #[cfg(feature = "raster-images")]
     pub fn add_image(&mut self, image: Image) -> Ref {
         let hash = image.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
@@ -283,6 +285,7 @@ impl SerializerContext {
     pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> KrillaResult<Ref> {
         match resource.into() {
             Resource::XObject(x) => self.add_object(x),
+            #[cfg(feature = "raster-images")]
             Resource::Image(i) => Ok(self.add_image(i)),
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),

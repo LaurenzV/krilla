@@ -135,6 +135,7 @@ impl ResourceTrait for Font {
 #[derive(Hash, Eq, PartialEq)]
 pub(crate) enum Resource {
     XObject(crate::object::xobject::XObject),
+    #[cfg(feature = "raster-images")]
     Image(Image),
     ShadingPattern(ShadingPattern),
     TilingPattern(TilingPattern),
@@ -151,6 +152,7 @@ impl From<crate::object::xobject::XObject> for Resource {
     }
 }
 
+#[cfg(feature = "raster-images")]
 impl From<Image> for Resource {
     fn from(value: Image) -> Self {
         Self::Image(value)
