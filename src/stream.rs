@@ -34,6 +34,8 @@ use tiny_skia_path::Rect;
 /// A stream.
 ///
 /// See the module description for an explanation of its purpose.
+// The only reason we implement clone for this type is that in some cases,
+// we might need to clone a pattern (including its stream)
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stream {
     pub(crate) content: Vec<u8>,
