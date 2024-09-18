@@ -170,105 +170,104 @@ impl Type3Font {
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
-        let glyph_streams = self
-            .glyphs
-            .iter()
-            .enumerate()
-            .map(|(index, glyph)| {
-                let mut stream_surface = StreamBuilder::new(sc);
-                let mut surface = stream_surface.surface();
+        let glyph_streams =
+            self.glyphs
+                .iter()
+                .enumerate()
+                .map(|(index, glyph)| {
+                    let mut stream_surface = StreamBuilder::new(sc);
+                    let mut surface = stream_surface.surface();
 
-                let drawn_color_glyph = font::draw_color_glyph(
-                    self.font.clone(),
-                    SvgSettings::default(),
-                    glyph.glyph_id,
-                    glyph.paint_mode.as_ref(),
-                    Transform::default(),
-                    &mut surface,
-                );
-
-                let stream = if drawn_color_glyph.is_some() {
-                    surface.finish();
-                    let stream = stream_surface.finish();
-                    let mut content = Content::new();
-
-                    // I considered writing into the stream directly instead of creating an XObject
-                    // and showing that, but it seems like many viewers don't like that, and emojis
-                    // look messed up. Using XObjects seems like the best choice here.
-                    content.start_color_glyph(self.widths[index]);
-                    let x_object = XObject::new(stream, false, false, None);
-                    font_bbox.expand(&x_object.bbox());
-                    let x_name = rd_builder
-                        .register_resource(XObjectResource::XObject(x_object), sc);
-                    content.x_object(x_name.to_pdf_name());
-
-                    content.finish()
-                } else {
-                    // If this is the case (i.e. no glyph was drawn, either because no table
-                    // exists or an error occurred, the surface is guaranteed to be empty.
-                    // So we can just safely draw the outline glyph instead.
-                    if let Some(path) =
-                        glyph_path(self.font.clone(), glyph.glyph_id).and_then(|p| {
-                            match &glyph.paint_mode {
-                                OwnedPaintMode::Fill(_) => Some(p),
-                                OwnedPaintMode::Stroke(s) => {
-                                    let mut stroker = PathStroker::new();
-                                    let stroke_dash = s.dash.clone().and_then(|s| {
-                                        tiny_skia_path::StrokeDash::new(s.array, s.offset)
-                                    });
-
-                                    let stroke = tiny_skia_path::Stroke {
-                                        width: (s.width / glyph.font_size)
-                                            * self.font.units_per_em(),
-                                        miter_limit: s.miter_limit,
-                                        line_cap: s.line_cap.into(),
-                                        line_join: s.line_join.into(),
-                                        dash: stroke_dash,
-                                    };
-
-                                    stroker.stroke(&p, &stroke, 1.0)
-                                }
-                            }
-                        })
-                    {
-                        // Just use a dummy fill. The Type3 glyph description is a shape glyph
-                        // so it doesn't contain any fill. Instead, it will be taken from
-                        // context where it is drawn.
-                        surface.fill_path_impl(&path, Fill::default(), false);
-                    }
-
-                    surface.finish();
-                    let stream = stream_surface.finish();
-                    let mut content = Content::new();
-
-                    // Use shape glyph for outline-based Type3 fonts.
-                    let bbox = stream.bbox();
-                    font_bbox.expand(&bbox);
-                    content.start_shape_glyph(
-                        self.widths[index],
-                        bbox.left(),
-                        bbox.top(),
-                        bbox.right(),
-                        bbox.bottom(),
+                    let drawn_color_glyph = font::draw_color_glyph(
+                        self.font.clone(),
+                        SvgSettings::default(),
+                        glyph.glyph_id,
+                        glyph.paint_mode.as_ref(),
+                        Transform::default(),
+                        &mut surface,
                     );
 
-                    // TODO: Find a type-safe way of doing this.
-                    let mut final_stream = content.finish();
-                    final_stream.push(b'\n');
-                    final_stream.extend(stream.content());
-                    final_stream
-                };
+                    let stream =
+                        if drawn_color_glyph.is_some() {
+                            surface.finish();
+                            let stream = stream_surface.finish();
+                            let mut content = Content::new();
 
-                let font_stream =
-                    FilterStream::new_from_content_stream(&stream, &sc.serialize_settings);
+                            // I considered writing into the stream directly instead of creating an XObject
+                            // and showing that, but it seems like many viewers don't like that, and emojis
+                            // look messed up. Using XObjects seems like the best choice here.
+                            content.start_color_glyph(self.widths[index]);
+                            let x_object = XObject::new(stream, false, false, None);
+                            font_bbox.expand(&x_object.bbox());
+                            let x_name = rd_builder
+                                .register_resource(XObjectResource::XObject(x_object), sc);
+                            content.x_object(x_name.to_pdf_name());
 
-                let stream_ref = sc.new_ref();
-                let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
-                font_stream.write_filters(stream.deref_mut());
+                            content.finish()
+                        } else {
+                            // If this is the case (i.e. no glyph was drawn, either because no table
+                            // exists or an error occurred, the surface is guaranteed to be empty.
+                            // So we can just safely draw the outline glyph instead.
+                            if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id)
+                                .and_then(|p| match &glyph.paint_mode {
+                                    OwnedPaintMode::Fill(_) => Some(p),
+                                    OwnedPaintMode::Stroke(s) => {
+                                        let mut stroker = PathStroker::new();
+                                        let stroke_dash = s.dash.clone().and_then(|s| {
+                                            tiny_skia_path::StrokeDash::new(s.array, s.offset)
+                                        });
 
-                Ok(stream_ref)
-            })
-            .collect::<KrillaResult<Vec<Ref>>>()?;
+                                        let stroke = tiny_skia_path::Stroke {
+                                            width: (s.width / glyph.font_size)
+                                                * self.font.units_per_em(),
+                                            miter_limit: s.miter_limit,
+                                            line_cap: s.line_cap.into(),
+                                            line_join: s.line_join.into(),
+                                            dash: stroke_dash,
+                                        };
+
+                                        stroker.stroke(&p, &stroke, 1.0)
+                                    }
+                                })
+                            {
+                                // Just use a dummy fill. The Type3 glyph description is a shape glyph
+                                // so it doesn't contain any fill. Instead, it will be taken from
+                                // context where it is drawn.
+                                surface.fill_path_impl(&path, Fill::default(), false);
+                            }
+
+                            surface.finish();
+                            let stream = stream_surface.finish();
+                            let mut content = Content::new();
+
+                            // Use shape glyph for outline-based Type3 fonts.
+                            let bbox = stream.bbox();
+                            font_bbox.expand(&bbox);
+                            content.start_shape_glyph(
+                                self.widths[index],
+                                bbox.left(),
+                                bbox.top(),
+                                bbox.right(),
+                                bbox.bottom(),
+                            );
+
+                            // TODO: Find a type-safe way of doing this.
+                            let mut final_stream = content.finish();
+                            final_stream.push(b'\n');
+                            final_stream.extend(stream.content());
+                            final_stream
+                        };
+
+                    let font_stream =
+                        FilterStream::new_from_content_stream(&stream, &sc.serialize_settings);
+
+                    let stream_ref = sc.new_ref();
+                    let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
+                    font_stream.write_filters(stream.deref_mut());
+
+                    Ok(stream_ref)
+                })
+                .collect::<KrillaResult<Vec<Ref>>>()?;
 
         let resource_dictionary = rd_builder.finish();
 
@@ -306,7 +305,7 @@ impl Type3Font {
         font_descriptor.finish();
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(sc, &mut type3_font)?;
+        resource_dictionary.to_pdf_resources(&mut type3_font)?;
 
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);

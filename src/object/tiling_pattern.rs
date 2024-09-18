@@ -83,7 +83,7 @@ impl Object for TilingPattern {
 
         self.stream
             .resource_dictionary()
-            .to_pdf_resources(sc, &mut tiling_pattern)?;
+            .to_pdf_resources(&mut tiling_pattern)?;
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
 

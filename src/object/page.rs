@@ -4,18 +4,18 @@ use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
+use crate::resource::ResourceDictionary;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
+use crate::util::Deferred;
+use crate::SerializeSettings;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
 use tiny_skia_path::Transform;
-use crate::resource::ResourceDictionary;
-use crate::SerializeSettings;
-use crate::util::Deferred;
 
 /// A single page.
 ///
@@ -149,8 +149,7 @@ impl InternalPage {
         }
 
         let mut page = chunk.page(root_ref);
-        self.stream_resources
-            .to_pdf_resources(sc, &mut page)?;
+        self.stream_resources.to_pdf_resources(&mut page)?;
 
         let media_box = self.page_settings.media_box();
         // Convert to the proper PDF values.

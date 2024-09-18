@@ -97,7 +97,7 @@ impl ContentBuilder {
         let fill_opacity = fill.opacity;
 
         self.apply_isolated_op(
-            |sb, sc| {
+            |sb, _| {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(path.bounds()));
 
@@ -121,7 +121,7 @@ impl ContentBuilder {
                     FillRule::EvenOdd => sb.content.fill_even_odd(),
                 };
             },
-            sc
+            sc,
         );
     }
 
@@ -155,7 +155,7 @@ impl ContentBuilder {
                 sb.content_draw_path(path.segments());
                 sb.content.stroke();
             },
-            sc
+            sc,
         );
 
         Some(())
@@ -391,7 +391,8 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_size, font_container.clone());
+                let spanned =
+                    TextSpanner::new(glyphs, text, paint_mode, font_size, font_container.clone());
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -403,8 +404,12 @@ impl ContentBuilder {
 
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                    let segmented =
-                        GlyphGrouper::new(font_container.clone(), paint_mode, font_size, fragment.glyphs());
+                    let segmented = GlyphGrouper::new(
+                        font_container.clone(),
+                        paint_mode,
+                        font_size,
+                        fragment.glyphs(),
+                    );
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -450,11 +455,16 @@ impl ContentBuilder {
 
                 sb.content.end_text();
             },
-            sc
+            sc,
         )
     }
 
-    pub(crate) fn draw_xobject(&mut self, sc: &mut SerializerContext, x_object: XObject, state: &ExtGState) {
+    pub(crate) fn draw_xobject(
+        &mut self,
+        sc: &mut SerializerContext,
+        x_object: XObject,
+        state: &ExtGState,
+    ) {
         let bbox = x_object.bbox();
         self.apply_isolated_op(
             |sb, _| {
@@ -467,7 +477,7 @@ impl ContentBuilder {
                     .register_resource(XObjectResource::XObject(x_object), sc);
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
-            sc
+            sc,
         );
     }
 
@@ -477,7 +487,12 @@ impl ContentBuilder {
         self.draw_xobject(sc, x_object, &state);
     }
 
-    pub fn draw_opacified(&mut self, sc: &mut SerializerContext, opacity: NormalizedF32, stream: Stream) {
+    pub fn draw_opacified(
+        &mut self,
+        sc: &mut SerializerContext,
+        opacity: NormalizedF32,
+        stream: Stream,
+    ) {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
@@ -511,7 +526,7 @@ impl ContentBuilder {
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
-            sc
+            sc,
         );
     }
 
@@ -519,12 +534,10 @@ impl ContentBuilder {
         self.apply_isolated_op(
             |_, _| {},
             move |sb, sc| {
-                let sh = sb
-                    .rd_builder
-                    .register_resource(shading.clone(), sc);
+                let sh = sb.rd_builder.register_resource(shading.clone(), sc);
                 sb.content.shading(sh.to_pdf_name());
             },
-            sc
+            sc,
         )
     }
 
@@ -542,7 +555,12 @@ impl ContentBuilder {
         }
     }
 
-    fn apply_isolated_op(&mut self, prep: impl FnOnce(&mut Self, &mut SerializerContext), op: impl FnOnce(&mut Self, &mut SerializerContext), sc: &mut SerializerContext) {
+    fn apply_isolated_op(
+        &mut self,
+        prep: impl FnOnce(&mut Self, &mut SerializerContext),
+        op: impl FnOnce(&mut Self, &mut SerializerContext),
+        sc: &mut SerializerContext,
+    ) {
         self.save_graphics_state();
         self.content.save_state();
 
@@ -557,9 +575,7 @@ impl ContentBuilder {
         let state = self.graphics_states.cur().ext_g_state().clone();
 
         if !state.empty() {
-            let ext = self
-                .rd_builder
-                .register_resource(state, sc);
+            let ext = self.rd_builder.register_resource(state, sc);
             self.content.set_parameters(ext.to_pdf_name());
         }
 
@@ -585,9 +601,10 @@ impl ContentBuilder {
         };
 
         let color_to_string =
-            |color: Color, content_builder: &mut ContentBuilder, sc: &mut SerializerContext, allow_gray: bool| match color
-                .color_space(no_device_cs, allow_gray)
-            {
+            |color: Color,
+             content_builder: &mut ContentBuilder,
+             sc: &mut SerializerContext,
+             allow_gray: bool| match color.color_space(no_device_cs, allow_gray) {
                 ColorSpace::Srgb => content_builder
                     .rd_builder
                     .register_resource(ColorSpaceResource::Srgb, sc),
@@ -601,7 +618,7 @@ impl ContentBuilder {
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
-                sc: &mut SerializerContext,
+             sc: &mut SerializerContext,
              transform: Transform,
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
@@ -611,12 +628,8 @@ impl ContentBuilder {
                     let color_space = color_to_string(color, content_builder, sc, false);
                     set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
-                    let shading_mask = Mask::new_from_shading(
-                        gradient_props.clone(),
-                        transform,
-                        bounds,
-                        sc,
-                    );
+                    let shading_mask =
+                        Mask::new_from_shading(gradient_props.clone(), transform, bounds, sc);
 
                     let shading_pattern = ShadingPattern::new(
                         gradient_props,
@@ -626,19 +639,14 @@ impl ContentBuilder {
                             .transform()
                             .pre_concat(transform),
                     );
-                    let color_space =
-                        content_builder
-                            .rd_builder
-                            .register_resource(PatternResource::ShadingPattern(
-                                shading_pattern,
-                            ), sc);
+                    let color_space = content_builder
+                        .rd_builder
+                        .register_resource(PatternResource::ShadingPattern(shading_pattern), sc);
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask);
 
-                        let ext = content_builder
-                            .rd_builder
-                            .register_resource(state, sc);
+                        let ext = content_builder.rd_builder.register_resource(state, sc);
                         content_builder.content.set_parameters(ext.to_pdf_name());
                     }
 
@@ -676,7 +684,9 @@ impl ContentBuilder {
                     sc,
                 );
 
-                let color_space = self.rd_builder.register_resource(PatternResource::TilingPattern(tiling_pattern), sc);
+                let color_space = self
+                    .rd_builder
+                    .register_resource(PatternResource::TilingPattern(tiling_pattern), sc);
                 set_pattern_fn(&mut self.content, color_space);
             }
         }

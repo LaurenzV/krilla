@@ -7,6 +7,7 @@ use crate::object::ext_g_state::ExtGState;
 use crate::object::image::Image;
 use crate::object::shading_function::ShadingFunction;
 use crate::object::shading_pattern::ShadingPattern;
+use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::object::Object;
 use crate::serialize::SerializerContext;
@@ -19,9 +20,8 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::object::tiling_pattern::TilingPattern;
 
-pub(crate) trait ResourceTrait: Hash {
+pub(crate) trait ResourceTrait {
     fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
     fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Self>;
@@ -85,9 +85,8 @@ impl From<XObjectResource> for Resource {
     fn from(val: XObjectResource) -> Self {
         match val {
             XObjectResource::XObject(x) => Resource::XObject(x),
-            XObjectResource::Image(i) => Resource::Image(i)
+            XObjectResource::Image(i) => Resource::Image(i),
         }
-
     }
 }
 
@@ -95,7 +94,7 @@ impl From<PatternResource> for Resource {
     fn from(val: PatternResource) -> Self {
         match val {
             PatternResource::ShadingPattern(s) => Resource::ShadingPattern(s),
-            PatternResource::TilingPattern(t) => Resource::TilingPattern(t)
+            PatternResource::TilingPattern(t) => Resource::TilingPattern(t),
         }
     }
 }
@@ -199,7 +198,10 @@ impl ResourceDictionaryBuilder {
         }
     }
 
-    pub(crate) fn register_resource<T>(&mut self, resource: T, sc: &mut SerializerContext) -> String where T: ResourceTrait + Into<Resource> {
+    pub(crate) fn register_resource<T>(&mut self, resource: T, sc: &mut SerializerContext) -> String
+    where
+        T: ResourceTrait + Into<Resource>,
+    {
         // TODO Don't unwrap
         let ref_ = sc.add_resource(resource).unwrap();
 
@@ -229,11 +231,7 @@ pub(crate) struct ResourceDictionary {
 }
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(
-        &self,
-        sc: &mut SerializerContext,
-        parent: &mut T,
-    ) -> KrillaResult<()>
+    pub fn to_pdf_resources<T>(&self, parent: &mut T) -> KrillaResult<()>
     where
         T: ResourcesExt,
     {
@@ -244,34 +242,23 @@ impl ResourceDictionary {
             ProcSet::ImageColor,
             ProcSet::ImageGrayscale,
         ]);
-        write_resource_type::<ColorSpaceResource>(sc, resources, &self.color_spaces)?;
-        write_resource_type::<ExtGState>(sc, resources, &self.ext_g_states)?;
-        write_resource_type::<PatternResource>(sc, resources, &self.patterns)?;
-        write_resource_type::<XObjectResource>(sc, resources, &self.x_objects)?;
-        write_resource_type::<ShadingFunction>(sc, resources, &self.shadings)?;
-        write_resource_type::<FontIdentifier>(sc, resources, &self.fonts)?;
+        write_resource_type::<ColorSpaceResource>(resources, &self.color_spaces)?;
+        write_resource_type::<ExtGState>(resources, &self.ext_g_states)?;
+        write_resource_type::<PatternResource>(resources, &self.patterns)?;
+        write_resource_type::<XObjectResource>(resources, &self.x_objects)?;
+        write_resource_type::<ShadingFunction>(resources, &self.shadings)?;
+        write_resource_type::<FontIdentifier>(resources, &self.fonts)?;
 
         Ok(())
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            color_spaces: ResourceList::empty(),
-            ext_g_states: ResourceList::empty(),
-            patterns: ResourceList::empty(),
-            x_objects: ResourceList::empty(),
-            shadings: ResourceList::empty(),
-            fonts: ResourceList::empty(),
-        }
     }
 }
 
 fn write_resource_type<T>(
-    sc: &mut SerializerContext,
     resources: &mut Resources,
     resource_list: &ResourceList<T>,
 ) -> KrillaResult<()>
-where T: ResourceTrait
+where
+    T: ResourceTrait,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
@@ -287,8 +274,7 @@ where T: ResourceTrait
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct ResourceList<V>
-{
+pub(crate) struct ResourceList<V> {
     entries: Vec<Ref>,
     phantom: PhantomData<V>,
 }
@@ -297,13 +283,6 @@ impl<T> ResourceList<T>
 where
     T: ResourceTrait,
 {
-    pub fn empty() -> Self {
-        Self {
-            entries: vec![],
-            phantom: PhantomData,
-        }
-    }
-
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
     }
@@ -327,7 +306,9 @@ pub(crate) struct ResourceMapper<T: ?Sized> {
     phantom: PhantomData<T>,
 }
 
-impl<T> ResourceMapper<T> where T: ResourceTrait
+impl<T> ResourceMapper<T>
+where
+    T: ResourceTrait,
 {
     pub fn new() -> Self {
         Self {
