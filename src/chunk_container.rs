@@ -5,6 +5,16 @@ use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
 
+trait ChunkExt {
+    fn wait(&self) -> &Chunk;
+}
+
+impl ChunkExt for Chunk {
+    fn wait(&self) -> &Chunk {
+        self
+    }
+}
+
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 pub struct ChunkContainer {
@@ -19,6 +29,7 @@ pub struct ChunkContainer {
     pub(crate) color_spaces: Vec<Chunk>,
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
+    pub(crate) images: Vec<Deferred<Chunk>>,
     pub(crate) masks: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,
@@ -41,6 +52,7 @@ impl ChunkContainer {
             color_spaces: vec![],
             destinations: vec![],
             ext_g_states: vec![],
+            images: vec![],
             masks: vec![],
             x_objects: vec![],
             shading_functions: vec![],
@@ -50,7 +62,7 @@ impl ChunkContainer {
         }
     }
 
-    pub fn finish(mut self, images: &[&Chunk], serialize_settings: SerializeSettings) -> Pdf {
+    pub fn finish(mut self, serialize_settings: SerializeSettings) -> Pdf {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -84,6 +96,7 @@ impl ChunkContainer {
             ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
                 $(
                     for chunk in $field {
+                        let chunk = chunk.wait();
                         chunks_len += chunk.len();
                         for ref_ in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&ref_));
@@ -108,7 +121,7 @@ impl ChunkContainer {
         remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline, &mut self.page_label_tree);
         remap_fields!(remapper, remapped_ref; &self.pages, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
-            &self.ext_g_states, images, &self.masks, &self.x_objects, &self.shading_functions,
+            &self.ext_g_states, &self.images, &self.masks, &self.x_objects, &self.shading_functions,
             &self.patterns
         );
 
@@ -126,6 +139,7 @@ impl ChunkContainer {
             ($remapper:expr, $pdf:expr; $($field:expr),+) => {
                 $(
                     for chunk in $field {
+                        let chunk = chunk.wait();
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -135,7 +149,7 @@ impl ChunkContainer {
         write_field!(remapper, &mut pdf; &self.page_tree, &self.outline, &self.page_label_tree);
         write_fields!(remapper, &mut pdf; &self.pages, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
-            &self.ext_g_states, images, &self.masks, &self.x_objects,
+            &self.ext_g_states, &self.images, &self.masks, &self.x_objects,
             &self.shading_functions, &self.patterns
         );
 

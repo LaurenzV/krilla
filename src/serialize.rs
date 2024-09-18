@@ -125,7 +125,6 @@ pub(crate) struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
-    deferred_images: Vec<Deferred<Chunk>>,
     pub(crate) serialize_settings: SerializeSettings,
 }
 
@@ -158,7 +157,6 @@ impl SerializerContext {
             outline: None,
             page_infos: vec![],
             pages: vec![],
-            deferred_images: vec![],
             font_map: HashMap::new(),
             serialize_settings,
         }
@@ -233,7 +231,7 @@ impl SerializerContext {
             let root_ref = self.new_ref();
             let chunk = image.serialize(self, root_ref);
             self.cached_mappings.insert(hash, root_ref);
-            self.deferred_images.push(chunk);
+            self.chunk_container.images.push(chunk);
             root_ref
         }
     }
@@ -385,19 +383,11 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
-        let images = self
-            .deferred_images
-            .iter()
-            .map(|i| i.wait())
-            .collect::<Vec<_>>();
-
         // Just a sanity check.
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
 
-        Ok(self
-            .chunk_container
-            .finish(&images, self.serialize_settings))
+        Ok(self.chunk_container.finish(self.serialize_settings))
     }
 }
 
