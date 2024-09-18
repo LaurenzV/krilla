@@ -83,7 +83,7 @@ impl ContentBuilder {
         &mut self,
         path: &Path,
         fill: Fill,
-        serializer_context: &mut SerializerContext,
+        sc: &mut SerializerContext,
         // This is only needed because when creating a Type3 glyph, we don't want to apply a
         // fill properties for outline glyphs, so that they are taken from wherever the glyph is shown.
         fill_props: bool,
@@ -96,7 +96,7 @@ impl ContentBuilder {
         let fill_opacity = fill.opacity;
 
         self.apply_isolated_op(
-            |sb| {
+            |sb, sc| {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(path.bounds()));
 
@@ -108,10 +108,10 @@ impl ContentBuilder {
                     }
                 }
             },
-            |sb| {
+            |sb, sc| {
                 let fill_rule = fill.rule;
                 if fill_props {
-                    sb.content_set_fill_properties(path.bounds(), &fill, serializer_context);
+                    sb.content_set_fill_properties(path.bounds(), &fill, sc);
                 }
                 sb.content_draw_path(path.segments());
 
@@ -120,6 +120,7 @@ impl ContentBuilder {
                     FillRule::EvenOdd => sb.content.fill_even_odd(),
                 };
             },
+            sc
         );
     }
 
@@ -127,7 +128,7 @@ impl ContentBuilder {
         &mut self,
         path: &Path,
         stroke: Stroke,
-        serializer_context: &mut SerializerContext,
+        sc: &mut SerializerContext,
     ) -> Option<()> {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return Some(());
@@ -139,7 +140,7 @@ impl ContentBuilder {
         let stroke_opacity = stroke.opacity;
 
         self.apply_isolated_op(
-            |sb| {
+            |sb, _| {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
 
@@ -148,11 +149,12 @@ impl ContentBuilder {
                     sb.set_stroke_opacity(stroke_opacity);
                 }
             },
-            |sb| {
-                sb.content_set_stroke_properties(stroke_bbox, stroke, serializer_context);
+            |sb, sc| {
+                sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
                 sb.content_draw_path(path.segments());
                 sb.content.stroke();
             },
+            sc
         );
 
         Some(())
@@ -289,6 +291,7 @@ impl ContentBuilder {
     #[allow(clippy::too_many_arguments)]
     fn encode_consecutive_glyph_run(
         &mut self,
+        sc: &mut SerializerContext,
         cur_x: &mut f32,
         cur_y: f32,
         font_identifier: FontIdentifier,
@@ -300,7 +303,7 @@ impl ContentBuilder {
     ) {
         let font_name = self
             .rd_builder
-            .register_resource(Resource::Font(font_identifier.clone()));
+            .register_resource(font_identifier.clone(), sc);
         self.content.set_font(font_name.to_pdf_name(), size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
@@ -375,8 +378,8 @@ impl ContentBuilder {
         glyph_units: GlyphUnits,
     ) {
         self.apply_isolated_op(
-            |_| {},
-            |sb| {
+            |_, _| {},
+            |sb, sc| {
                 let mut cur_x = x;
                 let mut cur_y = ys;
 
@@ -425,6 +428,7 @@ impl ContentBuilder {
                         }
 
                         sb.encode_consecutive_glyph_run(
+                            sc,
                             &mut cur_x,
                             cur_y - normalize(glyph_group.y_offset) * font_size,
                             glyph_group.font_identifier,
@@ -445,49 +449,51 @@ impl ContentBuilder {
 
                 sb.content.end_text();
             },
+            sc
         )
     }
 
-    pub(crate) fn draw_xobject(&mut self, x_object: XObject, state: &ExtGState) {
+    pub(crate) fn draw_xobject(&mut self, sc: &mut SerializerContext, x_object: XObject, state: &ExtGState) {
         let bbox = x_object.bbox();
         self.apply_isolated_op(
-            |sb| {
+            |sb, _| {
                 sb.graphics_states.combine(state);
                 sb.bbox.expand(&bbox);
             },
-            move |sb| {
+            move |sb, sc| {
                 let x_object_name = sb
                     .rd_builder
-                    .register_resource(Resource::XObject(XObjectResource::XObject(x_object)));
+                    .register_resource(XObjectResource::XObject(x_object), sc);
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
+            sc
         );
     }
 
-    pub fn draw_masked(&mut self, mask: Mask, stream: Stream) {
+    pub fn draw_masked(&mut self, sc: &mut SerializerContext, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask);
         let x_object = XObject::new(stream, false, true, None);
-        self.draw_xobject(x_object, &state);
+        self.draw_xobject(sc, x_object, &state);
     }
 
-    pub fn draw_opacified(&mut self, opacity: NormalizedF32, stream: Stream) {
+    pub fn draw_opacified(&mut self, sc: &mut SerializerContext, opacity: NormalizedF32, stream: Stream) {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
         let x_object = XObject::new(stream, true, false, None);
-        self.draw_xobject(x_object, &state);
+        self.draw_xobject(sc, x_object, &state);
     }
 
-    pub fn draw_isolated(&mut self, stream: Stream) {
+    pub fn draw_isolated(&mut self, sc: &mut SerializerContext, stream: Stream) {
         let state = ExtGState::new();
         let x_object = XObject::new(stream, true, false, None);
-        self.draw_xobject(x_object, &state);
+        self.draw_xobject(sc, x_object, &state);
     }
 
     #[cfg(feature = "raster-images")]
-    pub fn draw_image(&mut self, image: Image, size: Size) {
+    pub fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializerContext) {
         self.apply_isolated_op(
-            |sb| {
+            |sb, _| {
                 // Scale the image from 1x1 to the actual dimensions.
                 let transform =
                     Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
@@ -497,25 +503,27 @@ impl ContentBuilder {
                         .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
                 );
             },
-            move |sb| {
+            move |sb, sc| {
                 let image_name = sb
                     .rd_builder
-                    .register_resource(Resource::XObject(XObjectResource::Image(image)));
+                    .register_resource(XObjectResource::Image(image), sc);
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
+            sc
         );
     }
 
-    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
+    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction, sc: &mut SerializerContext) {
         self.apply_isolated_op(
-            |_| {},
-            move |sb| {
+            |_, _| {},
+            move |sb, sc| {
                 let sh = sb
                     .rd_builder
-                    .register_resource(Resource::Shading(shading.clone()));
+                    .register_resource(shading.clone(), sc);
                 sb.content.shading(sh.to_pdf_name());
             },
+            sc
         )
     }
 
@@ -533,11 +541,11 @@ impl ContentBuilder {
         }
     }
 
-    fn apply_isolated_op(&mut self, prep: impl FnOnce(&mut Self), op: impl FnOnce(&mut Self)) {
+    fn apply_isolated_op(&mut self, prep: impl FnOnce(&mut Self, &mut SerializerContext), op: impl FnOnce(&mut Self, &mut SerializerContext), sc: &mut SerializerContext) {
         self.save_graphics_state();
         self.content.save_state();
 
-        prep(self);
+        prep(self, sc);
 
         let transform = self.graphics_states.cur().transform();
 
@@ -550,11 +558,11 @@ impl ContentBuilder {
         if !state.empty() {
             let ext = self
                 .rd_builder
-                .register_resource(Resource::ExtGState(state));
+                .register_resource(state, sc);
             self.content.set_parameters(ext.to_pdf_name());
         }
 
-        op(self);
+        op(self, sc);
 
         self.content.restore_state();
         self.restore_graphics_state();
@@ -565,26 +573,26 @@ impl ContentBuilder {
         bounds: Rect,
         paint: &Paint,
         opacity: NormalizedF32,
-        serializer_context: &mut SerializerContext,
+        sc: &mut SerializerContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, Color),
     ) {
-        let no_device_cs = serializer_context.serialize_settings.no_device_cs;
+        let no_device_cs = sc.serialize_settings.no_device_cs;
 
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.graphics_states.cur().transform())
         };
 
         let color_to_string =
-            |color: Color, content_builder: &mut ContentBuilder, allow_gray: bool| match color
+            |color: Color, content_builder: &mut ContentBuilder, sc: &mut SerializerContext, allow_gray: bool| match color
                 .color_space(no_device_cs, allow_gray)
             {
                 ColorSpace::Srgb => content_builder
                     .rd_builder
-                    .register_resource(Resource::ColorSpace(ColorSpaceResource::Srgb)),
+                    .register_resource(ColorSpaceResource::Srgb, sc),
                 ColorSpace::SGray => content_builder
                     .rd_builder
-                    .register_resource(Resource::ColorSpace(ColorSpaceResource::SGray)),
+                    .register_resource(ColorSpaceResource::SGray, sc),
                 ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
                 ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
                 ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
@@ -592,20 +600,21 @@ impl ContentBuilder {
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
+                sc: &mut SerializerContext,
              transform: Transform,
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder, false);
+                    let color_space = color_to_string(color, content_builder, sc, false);
                     set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
                         gradient_props.clone(),
                         transform,
                         bounds,
-                        serializer_context,
+                        sc,
                     );
 
                     let shading_pattern = ShadingPattern::new(
@@ -619,16 +628,16 @@ impl ContentBuilder {
                     let color_space =
                         content_builder
                             .rd_builder
-                            .register_resource(Resource::Pattern(PatternResource::ShadingPattern(
+                            .register_resource(PatternResource::ShadingPattern(
                                 shading_pattern,
-                            )));
+                            ), sc);
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask);
 
                         let ext = content_builder
                             .rd_builder
-                            .register_resource(Resource::ExtGState(state));
+                            .register_resource(state, sc);
                         content_builder.content.set_parameters(ext.to_pdf_name());
                     }
 
@@ -638,35 +647,35 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::Color(c) => {
-                let color_space = color_to_string(*c, self, true);
+                let color_space = color_to_string(*c, self, sc, true);
                 set_solid_fn(&mut self.content, color_space, *c);
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform, self);
+                write_gradient(gradient_props, sc, transform, self);
             }
             InnerPaint::RadialGradient(rg) => {
                 let (gradient_props, transform) = rg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform, self);
+                write_gradient(gradient_props, sc, transform, self);
             }
             InnerPaint::SweepGradient(sg) => {
                 let (gradient_props, transform) = sg.clone().gradient_properties(bounds);
-                write_gradient(gradient_props, transform, self);
+                write_gradient(gradient_props, sc, transform, self);
             }
             InnerPaint::Pattern(pat) => {
                 let mut pat = pat.clone();
                 pat.transform = pattern_transform(pat.transform);
 
-                let color_space = self.rd_builder.register_resource(Resource::Pattern(
-                    PatternResource::TilingPattern(TilingPattern::new(
-                        pat.stream,
-                        pat.transform,
-                        opacity,
-                        pat.width,
-                        pat.height,
-                        serializer_context,
-                    )),
-                ));
+                let tiling_pattern = TilingPattern::new(
+                    pat.stream,
+                    pat.transform,
+                    opacity,
+                    pat.width,
+                    pat.height,
+                    sc,
+                );
+
+                let color_space = self.rd_builder.register_resource(PatternResource::TilingPattern(tiling_pattern), sc);
                 set_pattern_fn(&mut self.content, color_space);
             }
         }

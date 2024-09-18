@@ -22,6 +22,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::DerefMut;
+use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
 
@@ -117,7 +118,7 @@ pub(crate) struct PageInfo {
 
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
-    font_map: HashMap<Font, RefCell<FontContainer>>,
+    font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
@@ -243,7 +244,7 @@ impl SerializerContext {
         ref_
     }
 
-    pub fn create_or_get_font_container(&mut self, font: Font) -> &RefCell<FontContainer> {
+    pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
         self.font_map.entry(font.clone()).or_insert_with(|| {
             self.font_cache
                 .insert(font.font_info().clone(), font.clone());
@@ -268,20 +269,19 @@ impl SerializerContext {
                 || font_ref.cff2().is_ok();
 
             if use_type3 {
-                RefCell::new(FontContainer::Type3(Type3FontMapper::new(font.clone())))
+                Rc::new(RefCell::new(FontContainer::Type3(Type3FontMapper::new(font.clone()))))
             } else {
-                RefCell::new(FontContainer::CIDFont(CIDFont::new(font.clone())))
+                Rc::new(RefCell::new(FontContainer::CIDFont(CIDFont::new(font.clone()))))
             }
-        })
+        }).clone()
     }
 
     pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> KrillaResult<Ref> {
         match resource.into() {
-            Resource::XObject(xr) => match xr {
-                XObjectResource::XObject(x) => self.add_object(x),
-                XObjectResource::Image(i) => Ok(self.add_image(i)),
-            },
-            Resource::Pattern(pr) => self.add_object(pr),
+            Resource::XObject(x) => self.add_object(x),
+            Resource::Image(i) => Ok(self.add_image(i)),
+            Resource::ShadingPattern(sp) => self.add_object(sp),
+            Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
             Resource::ColorSpace(csr) => self.add_object(csr),
             Resource::Shading(s) => self.add_object(s),
