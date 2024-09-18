@@ -356,6 +356,7 @@ mod tests {
     use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::Size;
+    use crate::Document;
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
@@ -488,5 +489,21 @@ mod tests {
     fn image_resized(surface: &mut Surface) {
         let image = load_png_image("rgba8.png");
         surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());
+    }
+
+    #[snapshot(document)]
+    fn image_deduplication(document: &mut Document) {
+        let size = load_png_image("luma8.png").size();
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        surface.draw_image(load_png_image("luma8.png"), size);
+        surface.draw_image(load_png_image("luma8.png"), size);
+        surface.finish();
+
+        page.finish();
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        surface.draw_image(load_png_image("luma8.png"), size);
     }
 }
