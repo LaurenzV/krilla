@@ -92,6 +92,9 @@ impl ContentBuilder {
             return;
         }
 
+        let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
+        let fill_opacity = fill.opacity;
+
         self.apply_isolated_op(
             |sb| {
                 sb.bbox
@@ -100,8 +103,8 @@ impl ContentBuilder {
                 if fill_props {
                     // PDF viewers don't show patterns with fill/stroke opacities consistently.
                     // Because of this, the opacity is accounted for in the pattern itself.
-                    if !matches!(fill.paint.0, InnerPaint::Pattern(_)) {
-                        sb.set_fill_opacity(fill.opacity);
+                    if !has_pattern {
+                        sb.set_fill_opacity(fill_opacity);
                     }
                 }
             },
@@ -132,18 +135,21 @@ impl ContentBuilder {
 
         let stroke_bbox = calculate_stroke_bbox(&stroke, path).unwrap_or(path.bounds());
 
+        let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
+        let stroke_opacity = stroke.opacity;
+
         self.apply_isolated_op(
             |sb| {
                 sb.bbox
                     .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
 
                 // See comment in `set_fill_properties`
-                if !matches!(stroke.paint.0, InnerPaint::Pattern(_)) {
-                    sb.set_stroke_opacity(stroke.opacity);
+                if !is_pattern {
+                    sb.set_stroke_opacity(stroke_opacity);
                 }
             },
             |sb| {
-                sb.content_set_stroke_properties(stroke_bbox, &stroke, serializer_context);
+                sb.content_set_stroke_properties(stroke_bbox, stroke, serializer_context);
                 sb.content_draw_path(path.segments());
                 sb.content.stroke();
             },
@@ -249,7 +255,7 @@ impl ContentBuilder {
             |sb, sc| {
                 sb.content_set_stroke_properties(
                     Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    &stroke,
+                    stroke.clone(),
                     sc,
                 );
 
@@ -649,9 +655,7 @@ impl ContentBuilder {
             }
             InnerPaint::Pattern(pat) => {
                 let mut pat = pat.clone();
-                let transform = pat.transform;
-
-                pat.transform = pattern_transform(transform);
+                pat.transform = pattern_transform(pat.transform);
 
                 let color_space = self.rd_builder.register_resource(Resource::Pattern(
                     PatternResource::TilingPattern(TilingPattern::new(
@@ -697,7 +701,7 @@ impl ContentBuilder {
     fn content_set_stroke_properties(
         &mut self,
         bounds: Rect,
-        stroke: &Stroke,
+        stroke: Stroke,
         serializer_context: &mut SerializerContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {

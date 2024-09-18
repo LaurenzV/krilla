@@ -96,7 +96,7 @@ pub(crate) struct InternalPage {
 
 impl InternalPage {
     pub(crate) fn new(
-        mut stream: Stream,
+        stream: Stream,
         sc: &mut SerializerContext,
         annotations: Vec<Annotation>,
         page_settings: PageSettings,

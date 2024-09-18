@@ -160,7 +160,7 @@ impl Hash for SweepGradient {
 }
 
 /// A pattern.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Pattern {
     /// The stream of the pattern.
     pub stream: Stream,
@@ -184,7 +184,7 @@ impl Hash for Pattern {
 }
 
 // TODO: Wrap linear/stroke etc. in Arc
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub(crate) enum InnerPaint {
     Color(Color),
     LinearGradient(LinearGradient),
@@ -198,7 +198,7 @@ pub(crate) enum InnerPaint {
 /// You cannot construct this type directly, but instead can convert
 /// into it by calling `into` on the various types of paint, such as linear
 /// gradients and patterns.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Paint(pub(crate) InnerPaint);
 
 impl Paint {
