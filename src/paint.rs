@@ -13,30 +13,23 @@ pub(crate) enum InnerStops {
     CmykStops(Vec<Stop<cmyk::Color>>),
 }
 
+impl InnerStops {
+    pub(crate) fn into_iter(self) -> Box<dyn Iterator<Item = crate::object::shading_function::Stop>> {
+        match self {
+            InnerStops::RgbStops(r) => Box::new(r
+                .into_iter()
+                .map(|c| c.into())),
+            InnerStops::CmykStops(c) => Box::new(c
+                .into_iter()
+                .map(|c| c.into())),
+        }
+    }
+}
+
 /// The color stops of a gradient.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Stops(pub(crate) InnerStops);
 
-impl IntoIterator for InnerStops {
-    type Item = crate::object::shading_function::Stop;
-    type IntoIter = std::vec::IntoIter<crate::object::shading_function::Stop>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        // TODO: Avoid collect somehow?
-        match self {
-            InnerStops::RgbStops(r) => r
-                .into_iter()
-                .map(|c| c.into())
-                .collect::<Vec<_>>()
-                .into_iter(),
-            InnerStops::CmykStops(c) => c
-                .into_iter()
-                .map(|c| c.into())
-                .collect::<Vec<_>>()
-                .into_iter(),
-        }
-    }
-}
 
 impl From<Vec<Stop<rgb::Color>>> for Stops {
     fn from(value: Vec<Stop<rgb::Color>>) -> Self {
