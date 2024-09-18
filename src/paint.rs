@@ -4,6 +4,7 @@ use crate::color::{cmyk, rgb, Color};
 use crate::stream::Stream;
 use crate::util::HashExt;
 use std::hash::Hash;
+use std::sync::Arc;
 use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -190,7 +191,7 @@ pub(crate) enum InnerPaint {
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
     SweepGradient(SweepGradient),
-    Pattern(Pattern),
+    Pattern(Arc<Pattern>),
 }
 
 /// A paint.
@@ -245,7 +246,7 @@ impl From<SweepGradient> for Paint {
 
 impl From<Pattern> for Paint {
     fn from(value: Pattern) -> Self {
-        Paint(InnerPaint::Pattern(value))
+        Paint(InnerPaint::Pattern(Arc::new(value)))
     }
 }
 

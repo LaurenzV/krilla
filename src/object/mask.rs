@@ -105,7 +105,7 @@ impl Object for Mask {
         let mut chunk = Chunk::new();
 
         let x_ref = sc.add_object(XObject::new(
-            self.stream.clone(),
+            self.stream,
             false,
             true,
             self.custom_bbox.map(|c| c.0),

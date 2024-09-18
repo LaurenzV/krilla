@@ -34,7 +34,7 @@ impl XObject {
     }
 
     pub fn bbox(&self) -> Rect {
-        self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox())
+        self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox.0)
     }
 }
 
@@ -49,17 +49,17 @@ impl Object for XObject {
         let mut chunk = Chunk::new();
 
         let x_object_stream =
-            FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
+            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
         x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
         self.stream
-            .resource_dictionary()
+            .resource_dictionary
             .to_pdf_resources(&mut x_object)?;
         x_object.bbox(
             self.custom_bbox
                 .map(|c| c.0)
-                .unwrap_or(self.stream.bbox())
+                .unwrap_or(*self.stream.bbox)
                 .to_pdf_rect(),
         );
 

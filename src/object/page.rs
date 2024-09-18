@@ -95,20 +95,19 @@ pub(crate) struct InternalPage {
 
 impl InternalPage {
     pub(crate) fn new(
-        stream: Stream,
+        mut stream: Stream,
         sc: &mut SerializerContext,
         annotations: Vec<Annotation>,
         page_settings: PageSettings,
     ) -> Self {
         let stream_ref = sc.new_ref();
         let serialize_settings = sc.serialize_settings;
-        // TODO: Remove clone
-        let stream_resources = stream.resource_dictionary().clone();
+        let stream_resources = std::mem::take(&mut stream.resource_dictionary);
 
         let stream_chunk = Deferred::new(move || {
             let mut chunk = Chunk::new();
             let page_stream =
-                FilterStream::new_from_content_stream(stream.content(), &serialize_settings);
+                FilterStream::new_from_content_stream(&stream.content, &serialize_settings);
 
             let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
             page_stream.write_filters(stream.deref_mut());

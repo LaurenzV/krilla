@@ -240,7 +240,7 @@ impl Type3Font {
                             let mut content = Content::new();
 
                             // Use shape glyph for outline-based Type3 fonts.
-                            let bbox = stream.bbox();
+                            let bbox = stream.bbox;
                             font_bbox.expand(&bbox);
                             content.start_shape_glyph(
                                 self.widths[index],
@@ -253,7 +253,7 @@ impl Type3Font {
                             // TODO: Find a type-safe way of doing this.
                             let mut final_stream = content.finish();
                             final_stream.push(b'\n');
-                            final_stream.extend(stream.content());
+                            final_stream.extend(&stream.content);
                             final_stream
                         };
 

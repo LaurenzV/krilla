@@ -26,6 +26,7 @@ use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
 use std::rc::Rc;
+use std::sync::Arc;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
@@ -663,7 +664,7 @@ impl ContentBuilder {
                 write_gradient(gradient_props, sc, transform, self);
             }
             InnerPaint::Pattern(pat) => {
-                let mut pat = pat.clone();
+                let mut pat = Arc::unwrap_or_clone(pat.clone());
                 pat.transform = pattern_transform(pat.transform);
 
                 let tiling_pattern = TilingPattern::new(

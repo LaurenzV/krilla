@@ -13,7 +13,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use tiny_skia_path::{NormalizedF32, Transform};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {
     stream: Stream,
     transform: Transform,
@@ -80,12 +80,12 @@ impl Object for TilingPattern {
         let mut chunk = Chunk::new();
 
         let pattern_stream =
-            FilterStream::new_from_content_stream(self.stream.content(), &sc.serialize_settings);
+            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, pattern_stream.encoded_data());
         pattern_stream.write_filters(tiling_pattern.deref_mut().deref_mut());
 
         self.stream
-            .resource_dictionary()
+            .resource_dictionary
             .to_pdf_resources(&mut tiling_pattern)?;
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
