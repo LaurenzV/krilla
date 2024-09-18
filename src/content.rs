@@ -26,6 +26,7 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
+use std::rc::Rc;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
@@ -390,7 +391,7 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_size, font_container);
+                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_size, font_container.clone());
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -403,7 +404,7 @@ impl ContentBuilder {
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
                     let segmented =
-                        GlyphGrouper::new(font_container, paint_mode, font_size, fragment.glyphs());
+                        GlyphGrouper::new(font_container.clone(), paint_mode, font_size, fragment.glyphs());
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -926,18 +927,18 @@ where
 /// This is the task of the `TextSpanner`. Given a sequence of glyphs, it segments the
 /// sequence into subruns of glyphs that either do need to be wrapped in an actual text
 /// attribute, or not.
-pub(crate) struct TextSpanner<'a, 'b, T>
+pub(crate) struct TextSpanner<'a, T>
 where
     T: Glyph,
 {
     slice: &'a [T],
     paint_mode: PaintMode<'a>,
     font_size: f32,
-    font_container: &'b RefCell<FontContainer>,
+    font_container: Rc<RefCell<FontContainer>>,
     text: &'a str,
 }
 
-impl<'a, 'b, T> TextSpanner<'a, 'b, T>
+impl<'a, T> TextSpanner<'a, T>
 where
     T: Glyph,
 {
@@ -946,7 +947,7 @@ where
         text: &'a str,
         paint_mode: PaintMode<'a>,
         font_size: f32,
-        font_container: &'b RefCell<FontContainer>,
+        font_container: Rc<RefCell<FontContainer>>,
     ) -> Self {
         Self {
             slice,
@@ -958,7 +959,7 @@ where
     }
 }
 
-impl<'a, T> Iterator for TextSpanner<'a, '_, T>
+impl<'a, T> Iterator for TextSpanner<'a, T>
 where
     T: Glyph,
 {
@@ -1135,22 +1136,22 @@ where
 // - The glyph contains a y_offset/y_advance, which cannot be expressed as an adjustment
 // and requires us to start a new run with a transformation matrix that takes this
 // adjustment into account.
-pub(crate) struct GlyphGrouper<'a, 'b, T>
+pub(crate) struct GlyphGrouper<'a, T>
 where
     T: Glyph,
 {
-    font_container: &'b RefCell<FontContainer>,
+    font_container: Rc<RefCell<FontContainer>>,
     paint_mode: PaintMode<'a>,
     font_size: f32,
     slice: &'a [T],
 }
 
-impl<'a, 'b, T> GlyphGrouper<'a, 'b, T>
+impl<'a, T> GlyphGrouper<'a, T>
 where
     T: Glyph,
 {
     pub fn new(
-        font_container: &'b RefCell<FontContainer>,
+        font_container: Rc<RefCell<FontContainer>>,
         paint_mode: PaintMode<'a>,
         font_size: f32,
         slice: &'a [T],
@@ -1164,7 +1165,7 @@ where
     }
 }
 
-impl<'a, T> Iterator for GlyphGrouper<'a, '_, T>
+impl<'a, T> Iterator for GlyphGrouper<'a, T>
 where
     T: Glyph,
 {

@@ -266,7 +266,8 @@ mod tests {
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+        let container = sc.create_or_get_font_container(font.clone());
+        let mut font_container = container.borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(_) => panic!("expected CID font"),
@@ -327,7 +328,8 @@ mod tests {
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
-        let mut font_container = sc.create_or_get_font_container(font.clone()).borrow_mut();
+        let container = sc.create_or_get_font_container(font.clone());
+        let mut font_container = container.borrow_mut();
 
         match &mut *font_container {
             FontContainer::Type3(_) => panic!("expected CID font"),
