@@ -1,6 +1,5 @@
 use crate::chunk_container::ChunkContainer;
 use crate::error::KrillaResult;
-use crate::font::FontIdentifier;
 use crate::object::mask::Mask;
 use crate::object::Object;
 use crate::resource::RegisterableResource;
@@ -109,7 +108,7 @@ impl Object for ExtGState {
         &mut cc.ext_g_states
     }
 
-    fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(&self, _: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);

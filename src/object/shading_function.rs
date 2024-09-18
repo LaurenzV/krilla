@@ -1,7 +1,6 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::error::KrillaResult;
-use crate::font::FontIdentifier;
 use crate::object::color::Color;
 use crate::object::Object;
 use crate::paint::SpreadMethod;

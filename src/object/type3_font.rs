@@ -3,7 +3,7 @@ use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
-use crate::resource::{Resource, ResourceDictionaryBuilder};
+use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};

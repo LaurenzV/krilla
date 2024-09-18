@@ -10,11 +10,8 @@
 //! ICC profiles will currently not be embedded, and CMYK images will be naively
 //! converted into the RGB color space.
 
-use crate::chunk_container::ChunkContainer;
 use crate::color::DEVICE_RGB;
-use crate::error::KrillaResult;
 use crate::object::color::DEVICE_GRAY;
-use crate::object::Object;
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
