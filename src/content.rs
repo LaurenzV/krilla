@@ -482,7 +482,7 @@ impl ContentBuilder {
     }
 
     pub fn draw_masked(&mut self, sc: &mut SerializerContext, mask: Mask, stream: Stream) {
-        let state = ExtGState::new().mask(mask);
+        let state = ExtGState::new().mask(mask, sc);
         let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(sc, x_object, &state);
     }
@@ -644,7 +644,7 @@ impl ContentBuilder {
                         .register_resource(PatternResource::ShadingPattern(shading_pattern), sc);
 
                     if let Some(shading_mask) = shading_mask {
-                        let state = ExtGState::new().mask(shading_mask);
+                        let state = ExtGState::new().mask(shading_mask, sc);
 
                         let ext = content_builder.rd_builder.register_resource(state, sc);
                         content_builder.content.set_parameters(ext.to_pdf_name());

@@ -18,7 +18,7 @@ struct Repr {
     /// The blend mode.
     blend_mode: Option<BlendMode>,
     /// An active mask.
-    mask: Option<Arc<Mask>>,
+    mask: Option<Ref>,
 }
 
 /// A graphics state containing information about
@@ -63,8 +63,10 @@ impl ExtGState {
 
     /// Create a new graphics state with a mask.
     #[must_use]
-    pub fn mask(mut self, mask: Mask) -> Self {
-        Arc::make_mut(&mut self.0).mask = Some(Arc::new(mask));
+    pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
+        // TODO: Don't unwrap
+        let mask_ref = sc.add_object(mask).unwrap();
+        Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
     }
 
@@ -106,12 +108,6 @@ impl Object for ExtGState {
     fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
-        let mask_ref = if let Some(mask) = self.0.mask.clone() {
-            Some(sc.add_object(Arc::unwrap_or_clone(mask))?)
-        } else {
-            None
-        };
-
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
             ext_st.non_stroking_alpha(nsa.get());
@@ -125,7 +121,7 @@ impl Object for ExtGState {
             ext_st.blend_mode(bm);
         }
 
-        if let Some(mask_ref) = mask_ref {
+        if let Some(mask_ref) = self.0.mask {
             ext_st.pair(Name(b"SMask"), mask_ref);
         }
 
@@ -169,7 +165,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
-            .mask(mask);
+            .mask(mask, sc);
         sc.add_object(ext_state).unwrap();
     }
 }

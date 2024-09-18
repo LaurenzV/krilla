@@ -13,7 +13,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
 
 /// A mask. Can be a luminance mask or an alpha mask.
-#[derive(PartialEq, Eq, Debug, Hash, Clone)]
+#[derive(PartialEq, Eq, Debug, Hash)]
 pub struct Mask {
     /// The stream of the mask.
     stream: Stream,
