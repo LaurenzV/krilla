@@ -53,7 +53,6 @@ impl Stream {
             content,
             bbox: RectWrapper(bbox),
             resource_dictionary,
-
         }
     }
 
