@@ -130,9 +130,9 @@ impl ContentBuilder {
         path: &Path,
         stroke: Stroke,
         sc: &mut SerializerContext,
-    ) -> Option<()> {
+    ) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
-            return Some(());
+            return;
         }
 
         let stroke_bbox = calculate_stroke_bbox(&stroke, path).unwrap_or(path.bounds());
@@ -157,8 +157,6 @@ impl ContentBuilder {
             },
             sc,
         );
-
-        Some(())
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {

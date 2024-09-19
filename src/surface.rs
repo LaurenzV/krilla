@@ -111,7 +111,7 @@ impl<'a> Surface<'a> {
     }
 
     /// Stroke a path.
-    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) -> Option<()> {
+    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) {
         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc)
     }
