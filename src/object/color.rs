@@ -38,9 +38,9 @@
 //! In 90% of the cases, it is totally fine to just use a device-dependent colorspace, and it's
 //! what krilla does by default. However, if you do care about that, then you can set the
 //! `no_device_cs` property to true, in which case krilla will embed an ICC profile for the
-//! sgrey and srgb color space (for luma and rgb colors, respectively). At the moment, krilla
-//! does not allow for custom CMYK ICC profiles, so CMYK colors are currently always encoded
-//! in a device-dependent way.
+//! sgrey and srgb color space (for luma and rgb colors, respectively). If a CMYK profile
+//! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
+//! it will fall back to device CMYK.
 
 use crate::object::{ChunkContainerFn, Object};
 use crate::serialize::{FilterStream, SerializerContext};
@@ -291,8 +291,10 @@ impl Object for ICCBasedColorSpace {
         array.item(icc_ref);
         array.finish();
 
-        let icc_stream =
-            FilterStream::new_from_binary_data(self.0.0.deref().0.as_ref().as_ref(), &sc.serialize_settings);
+        let icc_stream = FilterStream::new_from_binary_data(
+            self.0 .0.deref().0.as_ref().as_ref(),
+            &sc.serialize_settings,
+        );
 
         let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
         icc_profile
@@ -328,6 +330,13 @@ mod tests {
 
     #[visreg(all)]
     fn cmyk_color(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+
+        surface.fill_path(&path, cmyk_fill(1.0));
+    }
+
+    #[visreg(all, settings_6)]
+    fn cmyk_with_icc(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
         surface.fill_path(&path, cmyk_fill(1.0));

@@ -33,7 +33,7 @@ mod svg;
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
 
-static ASSETS_PATH: LazyLock<PathBuf> =
+pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
 
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {

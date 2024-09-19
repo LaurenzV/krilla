@@ -54,8 +54,6 @@ pub struct SerializeSettings {
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
-    ///
-    /// CMYK colors are currently not affected by this setting.
     pub no_device_cs: bool,
     /// Whether the PDF should be ASCII-compatible, i.e. only consist of
     /// characters in the ASCII range.
@@ -99,6 +97,16 @@ impl SerializeSettings {
     pub(crate) fn settings_5() -> Self {
         Self {
             xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_6() -> Self {
+        Self {
+            no_device_cs: true,
+            cmyk_profile: Some(ICCProfile::new(Arc::new(
+                std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+            ))),
             ..Self::settings_1()
         }
     }
