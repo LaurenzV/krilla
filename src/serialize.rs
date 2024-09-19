@@ -137,6 +137,7 @@ pub(crate) struct SerializerContext {
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
+    cmyk_profile: Option<ICCBasedColorSpace<4>>,
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
@@ -168,6 +169,10 @@ impl SerializerContext {
             font_cache: HashMap::new(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
+            cmyk_profile: serialize_settings
+                .cmyk_profile
+                .as_ref()
+                .map(|p| ICCBasedColorSpace(p.clone())),
             page_tree_ref: None,
             outline: None,
             page_infos: vec![],
@@ -210,9 +215,9 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
-            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray)),
-            ColorSpace::IccCmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::IccCmyk)),
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Rgb)),
+            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::Gray)),
+            ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::Cmyk(cs))),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -304,17 +309,11 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Srgb => self.add_object(SRGB_ICC.clone()),
-            Resource::SGray => self.add_object(GREY_ICC.clone()),
+            Resource::Rgb => self.add_object(SRGB_ICC.clone()),
+            Resource::Gray => self.add_object(GREY_ICC.clone()),
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
-            Resource::IccCmyk => self.add_object(ICCBasedColorSpace::<4>(
-                self.serialize_settings
-                    .cmyk_profile
-                    .as_ref()
-                    .unwrap()
-                    .clone(),
-            )),
+            Resource::Cmyk(cs) => self.add_object(cs),
             Resource::ShadingFunction(s) => self.add_object(s),
             Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();

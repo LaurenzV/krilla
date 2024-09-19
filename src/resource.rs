@@ -138,9 +138,9 @@ pub(crate) enum Resource {
     ShadingPattern(ShadingPattern),
     TilingPattern(TilingPattern),
     ExtGState(crate::object::ext_g_state::ExtGState),
-    Srgb,
-    SGray,
-    IccCmyk,
+    Rgb,
+    Gray,
+    Cmyk(ICCBasedColorSpace<4>),
     ShadingFunction(crate::object::shading_function::ShadingFunction),
     FontIdentifier(FontIdentifier),
 }
@@ -161,19 +161,19 @@ impl From<Image> for Resource {
 // TODO: Overthink this design
 impl From<ICCBasedColorSpace<3>> for Resource {
     fn from(_: ICCBasedColorSpace<3>) -> Self {
-        Self::Srgb
+        Self::Rgb
     }
 }
 
 impl From<ICCBasedColorSpace<1>> for Resource {
     fn from(_: ICCBasedColorSpace<1>) -> Self {
-        Self::SGray
+        Self::Gray
     }
 }
 
 impl From<ICCBasedColorSpace<4>> for Resource {
-    fn from(_: ICCBasedColorSpace<4>) -> Self {
-        Self::IccCmyk
+    fn from(cs: ICCBasedColorSpace<4>) -> Self {
+        Self::Cmyk(cs)
     }
 }
 

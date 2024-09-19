@@ -118,7 +118,7 @@ pub mod cmyk {
             if ss.no_device_cs {
                 ss.clone()
                     .cmyk_profile
-                    .map(|p| ColorSpace::IccCmyk(ICCBasedColorSpace::<4>(p.clone())))
+                    .map(|p| ColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())))
                     .unwrap_or(ColorSpace::DeviceCmyk)
             } else {
                 ColorSpace::DeviceCmyk
@@ -232,7 +232,7 @@ pub(crate) enum ColorSpace {
     DeviceRgb,
     SGray,
     DeviceGray,
-    IccCmyk(ICCBasedColorSpace<4>),
+    Cmyk(ICCBasedColorSpace<4>),
     DeviceCmyk,
 }
 
@@ -311,12 +311,12 @@ mod tests {
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::SGray);
+        sc.add_resource(Resource::Gray);
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Srgb);
+        sc.add_resource(Resource::Rgb);
     }
 
     #[visreg(all)]
