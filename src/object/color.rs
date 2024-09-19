@@ -45,10 +45,11 @@
 use crate::object::{ChunkContainerFn, Object};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::Prehashed;
+use crate::SerializeSettings;
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
@@ -64,28 +65,39 @@ pub(crate) enum Color {
     /// An RGB-based color.
     Rgb(rgb::Color),
     /// A device CMYK color.
-    DeviceCmyk(cmyk::Color),
+    Cmyk(cmyk::Color),
 }
 
 impl Color {
     pub(crate) fn to_pdf_color(self, allow_gray: bool) -> Vec<f32> {
         match self {
             Color::Rgb(rgb) => rgb.to_pdf_color(allow_gray).into_iter().collect::<Vec<_>>(),
-            Color::DeviceCmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Cmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
 
-    pub(crate) fn color_space(&self, no_device_cs: bool, allow_gray: bool) -> ColorSpace {
+    pub(crate) fn color_space(
+        &self,
+        serialize_settings: &SerializeSettings,
+        allow_gray: bool,
+    ) -> ColorSpace {
         match self {
-            Color::Rgb(rgb) => rgb.color_space(no_device_cs, allow_gray),
-            Color::DeviceCmyk(cmyk) => cmyk.color_space(),
+            Color::Rgb(rgb) => rgb.color_space(serialize_settings.no_device_cs, allow_gray),
+            Color::Cmyk(cmyk) => cmyk.color_space(serialize_settings),
         }
     }
 }
 
 /// CMYK colors.
 pub mod cmyk {
+    use crate::color::ICCBasedColorSpace;
     use crate::object::color::ColorSpace;
+    use crate::resource::RegisterableResource;
+    use crate::SerializeSettings;
+
+    pub(crate) struct Cmyk(pub(crate) ICCBasedColorSpace);
+
+    impl RegisterableResource<crate::resource::ColorSpace> for Cmyk {}
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -106,14 +118,21 @@ pub mod cmyk {
             ]
         }
 
-        pub(crate) fn color_space(&self) -> ColorSpace {
-            ColorSpace::DeviceCmyk
+        pub(crate) fn color_space(&self, ss: &SerializeSettings) -> ColorSpace {
+            if ss.no_device_cs {
+                ss.clone()
+                    .cmyk_profile
+                    .map(|p| ColorSpace::IccCmyk(ICCBasedColorSpace(p.clone(), 4)))
+                    .unwrap_or(ColorSpace::DeviceCmyk)
+            } else {
+                ColorSpace::DeviceCmyk
+            }
         }
     }
 
     impl From<Color> for super::Color {
         fn from(val: Color) -> Self {
-            super::Color::DeviceCmyk(val)
+            super::Color::Cmyk(val)
         }
     }
 
@@ -221,30 +240,41 @@ pub mod rgb {
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) enum ColorSpace {
     Srgb,
+    DeviceRgb,
     SGray,
     DeviceGray,
-    DeviceRgb,
+    IccCmyk(ICCBasedColorSpace),
     DeviceCmyk,
 }
 
 #[derive(Clone)]
-struct Repr(Arc<dyn AsRef<[u8]> + Send + Sync>, u8);
+struct Repr(Arc<dyn AsRef<[u8]> + Send + Sync>);
+
+impl Debug for Repr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "ICC Profile")
+    }
+}
 
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.as_ref().as_ref().hash(state);
-        self.1.hash(state);
     }
 }
 
-#[derive(Clone, Hash)]
-pub(crate) struct ICCBasedColorSpace(Prehashed<Repr>);
+/// An ICC profile.
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub struct ICCProfile(Arc<Prehashed<Repr>>);
 
-impl ICCBasedColorSpace {
-    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>, num_components: u8) -> Self {
-        Self(Prehashed::new(Repr(data, num_components)))
+impl ICCProfile {
+    /// Create a new ICC profile.
+    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
+        Self(Arc::new(Prehashed::new(Repr(data))))
     }
 }
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct ICCBasedColorSpace(pub(crate) ICCProfile, pub(crate) u8);
 
 impl Object for ICCBasedColorSpace {
     fn chunk_container(&self) -> ChunkContainerFn {
@@ -262,12 +292,12 @@ impl Object for ICCBasedColorSpace {
         array.finish();
 
         let icc_stream =
-            FilterStream::new_from_binary_data(self.0 .0.as_ref().as_ref(), &sc.serialize_settings);
+            FilterStream::new_from_binary_data(self.0.0.deref().0.as_ref().as_ref(), &sc.serialize_settings);
 
         let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
         icc_profile
-            .n(self.0 .1 as i32)
-            .range([0.0, 1.0].repeat(self.0 .1 as usize));
+            .n(self.1 as i32)
+            .range([0.0, 1.0].repeat(self.1 as usize));
 
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();

@@ -1,5 +1,6 @@
+use crate::color::cmyk::Cmyk;
 use crate::color::rgb::{SGray, Srgb};
-use crate::color::ICCBasedColorSpace;
+use crate::color::{ICCBasedColorSpace, ICCProfile};
 use crate::font::FontIdentifier;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -141,6 +142,7 @@ pub(crate) enum Resource {
     ExtGState(crate::object::ext_g_state::ExtGState),
     Srgb,
     SGray,
+    IccCmyk(ICCBasedColorSpace),
     ShadingFunction(crate::object::shading_function::ShadingFunction),
     FontIdentifier(FontIdentifier),
 }
@@ -158,6 +160,7 @@ impl From<Image> for Resource {
     }
 }
 
+// TODO: Overthink this design
 impl From<Srgb> for Resource {
     fn from(_: Srgb) -> Self {
         Self::Srgb
@@ -167,6 +170,12 @@ impl From<Srgb> for Resource {
 impl From<SGray> for Resource {
     fn from(_: SGray) -> Self {
         Self::SGray
+    }
+}
+
+impl From<Cmyk> for Resource {
+    fn from(cmyk: Cmyk) -> Self {
+        Self::IccCmyk(cmyk.0.clone())
     }
 }
 
@@ -231,7 +240,6 @@ impl ResourceDictionaryBuilder {
         T: RegisterableResource<V>,
         V: ResourceTrait,
     {
-        // TODO Don't unwrap
         let ref_ = sc.add_resource(resource);
 
         V::get_mapper(self).remap_with_name(ref_)
@@ -371,10 +379,10 @@ pub type ResourceNumber = u32;
 
 /// The ICC profile for the SRGB color space.
 pub static SRGB_ICC: Lazy<ICCBasedColorSpace> =
-    Lazy::new(|| ICCBasedColorSpace::new(Arc::new(include_bytes!("icc/sRGB-v4.icc")), 3));
+    Lazy::new(|| ICCBasedColorSpace(ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))), 3));
 /// The ICC profile for the sgray color space.
 pub static GREY_ICC: Lazy<ICCBasedColorSpace> =
-    Lazy::new(|| ICCBasedColorSpace::new(Arc::new(include_bytes!("icc/sGrey-v4.icc")), 1));
+    Lazy::new(|| ICCBasedColorSpace(ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v4.icc"))), 1));
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {

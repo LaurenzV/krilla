@@ -100,7 +100,7 @@ impl InternalPage {
         page_settings: PageSettings,
     ) -> Self {
         let stream_ref = sc.new_ref();
-        let serialize_settings = sc.serialize_settings;
+        let serialize_settings = sc.serialize_settings.clone();
         let stream_resources = std::mem::take(&mut stream.resource_dictionary);
 
         let stream_chunk = Deferred::new(move || {

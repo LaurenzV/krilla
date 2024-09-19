@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -48,7 +48,7 @@ impl Default for SvgSettings {
 }
 
 /// Settings that should be applied when creating a PDF document.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SerializeSettings {
     /// Whether content streams should be compressed.
     pub compress_content_streams: bool,
@@ -64,6 +64,9 @@ pub struct SerializeSettings {
     pub xmp_metadata: bool,
     /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
+    /// The ICC profile that should be used for CMYK colors
+    /// when `no_device_cs` is enabled.
+    pub cmyk_profile: Option<ICCProfile>,
 }
 
 #[cfg(test)]
@@ -75,6 +78,7 @@ impl SerializeSettings {
             no_device_cs: false,
             xmp_metadata: false,
             force_type3_fonts: false,
+            cmyk_profile: None,
         }
     }
 
@@ -108,6 +112,7 @@ impl Default for SerializeSettings {
             no_device_cs: false,
             xmp_metadata: true,
             force_type3_fonts: false,
+            cmyk_profile: None,
         }
     }
 }
@@ -199,6 +204,7 @@ impl SerializerContext {
         match cs {
             ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
             ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray)),
+            ColorSpace::IccCmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::IccCmyk(cs))),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -292,6 +298,7 @@ impl SerializerContext {
             Resource::ExtGState(e) => self.add_object(e),
             Resource::Srgb => self.add_object(SRGB_ICC.clone()),
             Resource::SGray => self.add_object(GREY_ICC.clone()),
+            Resource::IccCmyk(profile) => self.add_object(profile),
             Resource::ShadingFunction(s) => self.add_object(s),
             Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();
