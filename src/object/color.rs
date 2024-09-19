@@ -42,9 +42,7 @@
 //! does not allow for custom CMYK ICC profiles, so CMYK colors are currently always encoded
 //! in a device-dependent way.
 
-use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::Prehashed;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -99,7 +97,7 @@ pub mod cmyk {
             Color(cyan, magenta, yellow, black)
         }
 
-        pub(crate) fn to_pdf_color(&self) -> impl IntoIterator<Item = f32> {
+        pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
             [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
@@ -176,7 +174,7 @@ pub mod rgb {
         // require the number of components for each stop to be the same. Because of this
         // we always use 3 components for RGB and 4 components for CMYK. No automatic
         // detection of greyscale colors.
-        pub(crate) fn to_pdf_color(&self, allow_gray: bool) -> impl IntoIterator<Item = f32> {
+        pub(crate) fn to_pdf_color(self, allow_gray: bool) -> impl IntoIterator<Item = f32> {
             if self.is_gray_scale() && allow_gray {
                 vec![self.0 as f32 / 255.0]
             } else {
@@ -249,11 +247,11 @@ impl ICCBasedColorSpace {
 }
 
 impl Object for ICCBasedColorSpace {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.color_spaces)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -274,7 +272,7 @@ impl Object for ICCBasedColorSpace {
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -290,12 +288,12 @@ mod tests {
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::SGray).unwrap();
+        sc.add_resource(Resource::SGray);
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Srgb).unwrap();
+        sc.add_resource(Resource::Srgb);
     }
 
     #[visreg(all)]

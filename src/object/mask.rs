@@ -1,10 +1,8 @@
 //! Alpha and luminosity masks.
 
-use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -97,11 +95,11 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.masks)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let x_ref = sc.add_object(XObject::new(
@@ -109,7 +107,7 @@ impl Object for Mask {
             false,
             true,
             self.custom_bbox.map(|c| c.0),
-        ))?;
+        ));
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
@@ -118,7 +116,7 @@ impl Object for Mask {
 
         dict.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -150,7 +148,7 @@ mod tests {
         surface.fill_path(&path, red_fill(0.5));
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
-        sc.add_object(mask).unwrap();
+        sc.add_object(mask);
     }
 
     fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {

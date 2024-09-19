@@ -423,7 +423,7 @@ pub fn all_glyphs_to_pdf(
     use crate::font::KrillaGlyph;
     use crate::geom::Transform;
 
-    let font = Font::new(font_data, 0, vec![], None).unwrap();
+    let font = Font::new(font_data, 0, vec![]).unwrap();
     let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {

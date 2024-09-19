@@ -1,5 +1,4 @@
 use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
 use crate::serialize::SerializerContext;
 use crate::util::SipHashable;
 use pdf_writer::{Chunk, Ref};
@@ -21,7 +20,9 @@ pub(crate) mod tiling_pattern;
 pub(crate) mod type3_font;
 pub(crate) mod xobject;
 
+pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>>;
+
 pub(crate) trait Object: SipHashable {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>>;
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk>;
+    fn chunk_container(&self) -> ChunkContainerFn;
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 }

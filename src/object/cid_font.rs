@@ -117,8 +117,8 @@ impl CIDFont {
                 self.font.index(),
                 glyph_remapper,
             )
-            .map_err(|_| {
-                KrillaError::Font(self.font.user_id(), "failed to subset font".to_string())
+            .map_err(|e| {
+                KrillaError::SubsetError(self.font.clone(), format!("failed to subset font: {}", e))
             })
         }?;
 
@@ -127,8 +127,8 @@ impl CIDFont {
 
             // If we have a CFF font, only embed the standalone CFF program.
             let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
-                KrillaError::Font(
-                    self.font.user_id(),
+                KrillaError::SubsetError(
+                    self.font.clone(),
                     "failed to read font subset".to_string(),
                 )
             })?;
@@ -270,7 +270,7 @@ mod tests {
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -287,7 +287,7 @@ mod tests {
 
     #[visreg(all)]
     fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -302,7 +302,7 @@ mod tests {
 
     #[visreg(all)]
     fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -317,7 +317,7 @@ mod tests {
 
     #[visreg(all)]
     fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -332,7 +332,7 @@ mod tests {
 
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -353,10 +353,11 @@ mod tests {
 
     #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
-        let font_data = Arc::new(std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc").unwrap());
-        let font_1 = Font::new(font_data.clone(), 0, vec![], None).unwrap();
-        let font_2 = Font::new(font_data.clone(), 3, vec![], None).unwrap();
-        let font_3 = Font::new(font_data, 6, vec![], None).unwrap();
+        let font_data =
+            Arc::new(std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc").unwrap());
+        let font_1 = Font::new(font_data.clone(), 0, vec![]).unwrap();
+        let font_2 = Font::new(font_data.clone(), 3, vec![]).unwrap();
+        let font_3 = Font::new(font_data, 6, vec![]).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 75.0),

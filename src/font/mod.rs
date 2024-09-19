@@ -63,27 +63,19 @@ impl Font {
     /// associated with this font for TrueType collections, otherwise this value should be
     /// set to 0. The location indicates the variation axes that should be associated with
     /// the font.
-    ///
-    /// The `user_id` is a completely optional field, and you can leave it as `None` in
-    /// most cases. The only purpose of this field is that if an `KrillaError` occurs
-    /// when processing the font, krilla will return the ID of the font that caused
-    /// the error, which allows you to find out more easily which font caused the
-    /// error.
     pub fn new(
         data: Arc<dyn AsRef<[u8]> + Send + Sync>,
         index: u32,
         variations: Vec<(String, f32)>,
-        user_id: Option<u32>,
     ) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref().as_ref(), index, variations)?;
 
-        Font::new_with_info(data, Arc::new(font_info), user_id)
+        Font::new_with_info(data, Arc::new(font_info))
     }
 
     pub(crate) fn new_with_info(
         data: Arc<dyn AsRef<[u8]> + Send + Sync>,
         font_info: Arc<FontInfo>,
-        user_id: Option<u32>,
     ) -> Option<Self> {
         let font_ref_yoke =
             Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
@@ -97,7 +89,6 @@ impl Font {
             font_data: data,
             font_ref_yoke,
             font_info,
-            user_id,
         }))))
     }
 
@@ -165,10 +156,6 @@ impl Font {
         &self.0.font_ref_yoke.get().font_ref
     }
 
-    pub(crate) fn user_id(&self) -> Option<u32> {
-        self.0.user_id
-    }
-
     /// Return the underlying data of the font.
     pub fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
         self.0.font_data.clone()
@@ -213,7 +200,6 @@ pub(crate) struct FontInfo {
 }
 
 struct Repr {
-    user_id: Option<u32>,
     font_info: Arc<FontInfo>,
     font_data: Arc<dyn AsRef<[u8]> + Send + Sync>,
     font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
@@ -226,7 +212,6 @@ impl Hash for Repr {
         // u32. The proper way would be to hash the whole font data, but this is just too expensive.
         // However, the odds of the checksum AND all font metrics (including font name) being the same
         // with the font being different is diminishingly low.
-        self.user_id.hash(state);
         self.font_info.hash(state);
     }
 }
@@ -376,7 +361,7 @@ pub(crate) enum PaintMode<'a> {
 }
 
 impl PaintMode<'_> {
-    pub fn to_owned(&self) -> OwnedPaintMode {
+    pub fn to_owned(self) -> OwnedPaintMode {
         match self {
             PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
             PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),

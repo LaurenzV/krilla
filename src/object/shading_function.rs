@@ -1,8 +1,6 @@
-use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
-use crate::error::KrillaResult;
 use crate::object::color::Color;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource::RegisterableResource;
@@ -214,11 +212,11 @@ impl ShadingFunction {
 impl RegisterableResource<crate::resource::ShadingFunction> for ShadingFunction {}
 
 impl Object for ShadingFunction {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.shading_functions)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -230,7 +228,7 @@ impl Object for ShadingFunction {
             }
         }
 
-        Ok(chunk)
+        chunk
     }
 }
 

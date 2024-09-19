@@ -75,7 +75,7 @@ impl Outline {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize(sc, root_ref, last, next, prev)?);
+                sub_chunks.push(self.children[i].serialize(sc, root_ref, last, next, prev));
 
                 prev = cur;
                 cur = next;
@@ -136,7 +136,7 @@ impl OutlineNode {
         root: Ref,
         next: Option<Ref>,
         prev: Option<Ref>,
-    ) -> KrillaResult<Chunk> {
+    ) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];
@@ -168,7 +168,7 @@ impl OutlineNode {
 
                 last = cur.unwrap();
 
-                sub_chunks.push(self.children[i].serialize(sc, root, last, next, prev)?);
+                sub_chunks.push(self.children[i].serialize(sc, root, last, next, prev));
 
                 prev = cur;
                 cur = next;
@@ -183,7 +183,7 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        self.destination.serialize(sc, outline_entry.dest())?;
+        self.destination.serialize(sc, outline_entry.dest());
 
         outline_entry.finish();
 
@@ -191,7 +191,7 @@ impl OutlineNode {
             chunk.extend(&sub_chunk);
         }
 
-        Ok(chunk)
+        chunk
     }
 }
 

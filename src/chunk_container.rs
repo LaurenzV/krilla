@@ -115,7 +115,7 @@ impl ChunkContainer {
         let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
 
         if serialize_settings.ascii_compatible {
-            pdf.set_binary_marker(&[b'A', b'A', b'A', b'A'])
+            pdf.set_binary_marker(b"AAAA")
         }
 
         remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline, &mut self.page_label_tree);

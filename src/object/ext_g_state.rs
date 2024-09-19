@@ -1,7 +1,5 @@
-use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
 use crate::object::mask::Mask;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use pdf_writer::types::BlendMode;
@@ -66,7 +64,7 @@ impl ExtGState {
     #[must_use]
     pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
         // TODO: Don't unwrap
-        let mask_ref = sc.add_object(mask).unwrap();
+        let mask_ref = sc.add_object(mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
     }
@@ -95,7 +93,7 @@ impl ExtGState {
             Arc::make_mut(&mut self.0).blend_mode = Some(blend_mode);
         }
 
-        if let Some(mask) = other.0.mask.clone() {
+        if let Some(mask) = other.0.mask {
             Arc::make_mut(&mut self.0).mask = Some(mask);
         }
     }
@@ -104,11 +102,11 @@ impl ExtGState {
 impl RegisterableResource<crate::resource::ExtGState> for ExtGState {}
 
 impl Object for ExtGState {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.ext_g_states)
     }
 
-    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
@@ -130,7 +128,7 @@ impl Object for ExtGState {
 
         ext_st.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -149,7 +147,7 @@ mod tests {
     #[snapshot]
     pub fn ext_g_state_empty(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new();
-        sc.add_object(ext_state).unwrap();
+        sc.add_object(ext_state);
     }
 
     #[snapshot]
@@ -158,7 +156,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
-        sc.add_object(ext_state).unwrap();
+        sc.add_object(ext_state);
     }
 
     #[snapshot]
@@ -169,6 +167,6 @@ mod tests {
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
             .mask(mask, sc);
-        sc.add_object(ext_state).unwrap();
+        sc.add_object(ext_state);
     }
 }
