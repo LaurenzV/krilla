@@ -125,12 +125,7 @@ impl ContentBuilder {
         );
     }
 
-    pub fn stroke_path(
-        &mut self,
-        path: &Path,
-        stroke: Stroke,
-        sc: &mut SerializerContext,
-    ) {
+    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke, sc: &mut SerializerContext) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }

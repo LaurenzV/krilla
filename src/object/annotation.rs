@@ -97,7 +97,7 @@ mod tests {
     use crate::object::destination::XyzDestination;
 
     use crate::object::page::Page;
-    
+
     use crate::tests::{green_fill, rect_to_path, red_fill};
 
     use krilla_macros::snapshot;
