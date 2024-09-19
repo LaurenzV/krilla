@@ -2,7 +2,6 @@
 
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
-use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{FilterStream, SerializerContext};

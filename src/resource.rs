@@ -1,6 +1,5 @@
 use crate::color::rgb::{SGray, Srgb};
 use crate::color::ICCBasedColorSpace;
-use crate::error::KrillaResult;
 use crate::font::FontIdentifier;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;

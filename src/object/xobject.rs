@@ -1,6 +1,5 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
-use crate::error::KrillaResult;
 use crate::object::Object;
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};

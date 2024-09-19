@@ -43,7 +43,6 @@
 //! in a device-dependent way.
 
 use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
 use crate::object::Object;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::Prehashed;

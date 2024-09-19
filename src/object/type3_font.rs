@@ -1,4 +1,3 @@
-use crate::error::KrillaResult;
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::object::xobject::XObject;

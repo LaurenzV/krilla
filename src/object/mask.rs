@@ -1,7 +1,6 @@
 //! Alpha and luminosity masks.
 
 use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::object::Object;

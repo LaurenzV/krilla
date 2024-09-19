@@ -1,5 +1,4 @@
 use crate::chunk_container::ChunkContainer;
-use crate::error::KrillaResult;
 use crate::serialize::SerializerContext;
 use crate::util::SipHashable;
 use pdf_writer::{Chunk, Ref};

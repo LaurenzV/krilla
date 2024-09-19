@@ -6,7 +6,6 @@
 //! that are supported are "link annotations", which allow you associate a certain region of
 //! the page with a link.
 
-use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::serialize::SerializerContext;
@@ -98,7 +97,7 @@ mod tests {
     use crate::object::destination::XyzDestination;
 
     use crate::object::page::Page;
-    use crate::serialize::SerializeSettings;
+    
     use crate::tests::{green_fill, rect_to_path, red_fill};
 
     use krilla_macros::snapshot;
