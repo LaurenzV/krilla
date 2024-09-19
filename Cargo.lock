@@ -806,7 +806,6 @@ dependencies = [
  "parley",
  "paste",
  "pdf-writer",
- "rayon",
  "resvg",
  "rustybuzz",
  "siphasher",
