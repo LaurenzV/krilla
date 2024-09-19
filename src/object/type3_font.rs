@@ -25,7 +25,7 @@ pub(crate) struct CoveredGlyph<'a> {
 }
 
 impl CoveredGlyph<'_> {
-    pub fn to_owned(&self) -> OwnedCoveredGlyph {
+    pub fn to_owned(self) -> OwnedCoveredGlyph {
         OwnedCoveredGlyph {
             glyph_id: self.glyph_id,
             paint_mode: self.paint_mode.to_owned(),

@@ -1,6 +1,5 @@
-use crate::chunk_container::ChunkContainer;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{HashExt, TransformExt};
@@ -40,7 +39,7 @@ impl ShadingPattern {
 impl RegisterableResource<crate::resource::Pattern> for ShadingPattern {}
 
 impl Object for ShadingPattern {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.patterns)
     }
 

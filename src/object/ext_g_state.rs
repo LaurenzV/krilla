@@ -1,6 +1,5 @@
-use crate::chunk_container::ChunkContainer;
 use crate::object::mask::Mask;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use pdf_writer::types::BlendMode;
@@ -94,7 +93,7 @@ impl ExtGState {
             Arc::make_mut(&mut self.0).blend_mode = Some(blend_mode);
         }
 
-        if let Some(mask) = other.0.mask.clone() {
+        if let Some(mask) = other.0.mask {
             Arc::make_mut(&mut self.0).mask = Some(mask);
         }
     }
@@ -103,7 +102,7 @@ impl ExtGState {
 impl RegisterableResource<crate::resource::ExtGState> for ExtGState {}
 
 impl Object for ExtGState {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.ext_g_states)
     }
 

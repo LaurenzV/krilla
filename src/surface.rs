@@ -39,7 +39,7 @@ pub(crate) enum PushInstruction {
     Opacity(NormalizedF32),
     ClipPath,
     BlendMode,
-    Mask(Mask),
+    Mask(Box<Mask>),
     Isolated,
 }
 
@@ -336,7 +336,8 @@ impl<'a> Surface<'a> {
 
     /// Push a new mask.
     pub fn push_mask(&mut self, mask: Mask) {
-        self.push_instructions.push(PushInstruction::Mask(mask));
+        self.push_instructions
+            .push(PushInstruction::Mask(Box::new(mask)));
         self.sub_builders.push(ContentBuilder::new());
     }
 
@@ -387,7 +388,7 @@ impl<'a> Surface<'a> {
             PushInstruction::Mask(mask) => {
                 let stream = self.sub_builders.pop().unwrap().finish();
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                    .draw_masked(self.sc, mask, stream)
+                    .draw_masked(self.sc, *mask, stream)
             }
             PushInstruction::Isolated => {
                 let stream = self.sub_builders.pop().unwrap().finish();

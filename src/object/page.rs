@@ -136,12 +136,12 @@ impl InternalPage {
                 // If this fails than we have an unused reference, but this isn't really
                 // a big deal, especially since the chunk container will renumber everything,
                 // anyway.
-                annotation
-                    .serialize(sc, annot_ref, self.page_settings.surface_size().height())
-                    .map(|a| {
-                        chunk.extend(&a);
-                        annotation_refs.push(annot_ref);
-                    });
+                if let Some(a) =
+                    annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height())
+                {
+                    chunk.extend(&a);
+                    annotation_refs.push(annot_ref);
+                }
             }
         }
 

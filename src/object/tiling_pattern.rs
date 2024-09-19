@@ -1,5 +1,4 @@
-use crate::chunk_container::ChunkContainer;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
@@ -71,7 +70,7 @@ impl TilingPattern {
 impl RegisterableResource<crate::resource::Pattern> for TilingPattern {}
 
 impl Object for TilingPattern {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.patterns)
     }
 

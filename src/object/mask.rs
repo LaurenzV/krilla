@@ -1,9 +1,8 @@
 //! Alpha and luminosity masks.
 
-use crate::chunk_container::ChunkContainer;
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -96,7 +95,7 @@ impl MaskType {
 }
 
 impl Object for Mask {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.masks)
     }
 

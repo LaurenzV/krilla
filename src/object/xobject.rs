@@ -1,6 +1,5 @@
-use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
@@ -40,7 +39,7 @@ impl XObject {
 impl RegisterableResource<crate::resource::XObject> for XObject {}
 
 impl Object for XObject {
-    fn chunk_container(&self) -> Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>> {
+    fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.x_objects)
     }
 
