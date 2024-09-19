@@ -196,7 +196,7 @@ pub mod rgb {
 
         pub(crate) fn luma_based_color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpace::SGray
+                ColorSpace::Gray
             } else {
                 ColorSpace::DeviceGray
             }
@@ -204,7 +204,7 @@ pub mod rgb {
 
         pub(crate) fn rgb_based_color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpace::Srgb
+                ColorSpace::Rgb
             } else {
                 ColorSpace::DeviceRgb
             }
@@ -228,12 +228,12 @@ pub mod rgb {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) enum ColorSpace {
-    Srgb,
     DeviceRgb,
-    SGray,
     DeviceGray,
-    Cmyk(ICCBasedColorSpace<4>),
     DeviceCmyk,
+    Rgb,
+    Gray,
+    Cmyk(ICCBasedColorSpace<4>),
 }
 
 #[derive(Clone)]

@@ -594,10 +594,10 @@ impl ContentBuilder {
                                allow_gray: bool| match color
             .color_space(&serialize_settings, allow_gray)
         {
-            ColorSpace::Srgb => content_builder
+            ColorSpace::Rgb => content_builder
                 .rd_builder
                 .register_resource(SRGB_ICC.clone(), sc),
-            ColorSpace::SGray => content_builder
+            ColorSpace::Gray => content_builder
                 .rd_builder
                 .register_resource(GREY_ICC.clone(), sc),
             ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),

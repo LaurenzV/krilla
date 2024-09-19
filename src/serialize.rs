@@ -210,8 +210,8 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Rgb)),
-            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::Gray)),
+            ColorSpace::Rgb => CSWrapper::Ref(self.add_resource(Resource::Rgb)),
+            ColorSpace::Gray => CSWrapper::Ref(self.add_resource(Resource::Gray)),
             ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::Cmyk(cs))),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
