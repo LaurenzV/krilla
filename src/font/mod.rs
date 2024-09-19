@@ -165,7 +165,7 @@ impl Font {
         &self.0.font_ref_yoke.get().font_ref
     }
 
-    pub fn user_id(&self) -> Option<u32> {
+    pub(crate) fn user_id(&self) -> Option<u32> {
         self.0.user_id
     }
 

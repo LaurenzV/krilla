@@ -354,9 +354,9 @@ mod tests {
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
     use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
+    use crate::Document;
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::Size;
-    use crate::Document;
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {

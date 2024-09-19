@@ -117,7 +117,9 @@ impl CIDFont {
                 self.font.index(),
                 glyph_remapper,
             )
-            .map_err(|_| KrillaError::Font(self.font.user_id(), "failed to subset font".to_string()))
+            .map_err(|_| {
+                KrillaError::Font(self.font.user_id(), "failed to subset font".to_string())
+            })
         }?;
 
         let font_stream = {
@@ -125,7 +127,10 @@ impl CIDFont {
 
             // If we have a CFF font, only embed the standalone CFF program.
             let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
-                KrillaError::Font(self.font.user_id(), "failed to read font subset".to_string())
+                KrillaError::Font(
+                    self.font.user_id(),
+                    "failed to read font subset".to_string(),
+                )
             })?;
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
                 data = cff.as_bytes();
