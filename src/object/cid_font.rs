@@ -353,10 +353,10 @@ mod tests {
 
     #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
-        let font_data = Arc::new(std::fs::read("/System/Library/Fonts/PingFang.ttc").unwrap());
+        let font_data = Arc::new(std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc").unwrap());
         let font_1 = Font::new(font_data.clone(), 0, vec![], None).unwrap();
-        let font_2 = Font::new(font_data.clone(), 7, vec![], None).unwrap();
-        let font_3 = Font::new(font_data, 15, vec![], None).unwrap();
+        let font_2 = Font::new(font_data.clone(), 3, vec![], None).unwrap();
+        let font_3 = Font::new(font_data, 6, vec![], None).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 75.0),
