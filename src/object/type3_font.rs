@@ -463,7 +463,7 @@ mod tests {
 
     #[snapshot(settings_4)]
     fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -491,7 +491,7 @@ mod tests {
 
     #[visreg(all, settings_4)]
     fn type3_noto_sans_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -506,7 +506,7 @@ mod tests {
 
     #[visreg(all, settings_4)]
     fn type3_latin_modern_simple_text(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -521,7 +521,7 @@ mod tests {
 
     #[visreg(all, settings_4)]
     fn type3_with_color(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             red_fill(0.8),
@@ -540,14 +540,12 @@ mod tests {
             NOTO_SANS_VARIABLE.clone(),
             0,
             vec![("wght".to_string(), 100.0), ("wdth".to_string(), 62.5)],
-            None,
         )
         .unwrap();
         let font2 = Font::new(
             NOTO_SANS_VARIABLE.clone(),
             0,
             vec![("wght".to_string(), 900.0), ("wdth".to_string(), 100.0)],
-            None,
         )
         .unwrap();
 
@@ -582,7 +580,7 @@ mod tests {
 
     #[visreg(all, settings_4)]
     fn type3_noto_arabic_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -597,7 +595,7 @@ mod tests {
 
     #[snapshot(settings_4)]
     fn type3_latin_modern_four_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -638,7 +636,7 @@ mod tests {
     #[test]
     fn type3_more_than_256_glyphs() {
         let mut sc = SerializerContext::new(SerializeSettings::settings_4());
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 

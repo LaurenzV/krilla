@@ -600,7 +600,7 @@ mod tests {
 
     #[visreg]
     fn text_direction_ltr(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -615,7 +615,7 @@ mod tests {
 
     #[visreg]
     fn text_direction_rtl(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -630,7 +630,7 @@ mod tests {
 
     #[visreg]
     fn text_direction_ttb(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(100.0, 0.0),
             Fill::default(),
@@ -645,7 +645,7 @@ mod tests {
 
     #[visreg]
     fn text_direction_btt(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS_CJK.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(100.0, 0.0),
             Fill::default(),
@@ -725,7 +725,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
-            Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap(),
+            Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "hi there",
@@ -739,7 +739,7 @@ mod tests {
         surface.stroke_text(
             Point::from_xy(0.0, 50.0),
             Stroke::default(),
-            Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap(),
+            Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "hi there",
@@ -753,7 +753,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![], None).unwrap(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "यह कुछ जटिल पाठ है.",
@@ -767,7 +767,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![], None).unwrap(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "यु॒धा नर॑ ऋ॒ष्वा ",
@@ -781,7 +781,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![], None).unwrap(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
@@ -795,7 +795,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![], None).unwrap(),
+            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, vec![]).unwrap(),
             16.0,
             &[],
             "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
@@ -882,7 +882,7 @@ mod tests {
     }
 
     fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 80.0),
             red_fill(0.5),
@@ -921,7 +921,7 @@ mod tests {
             None,
         );
 
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 140.0),
@@ -946,7 +946,7 @@ mod tests {
     }
 
     fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.stroke_text(
             Point::from_xy(0.0, 80.0),
             red_stroke(0.5, 1.0),
@@ -985,7 +985,7 @@ mod tests {
             None,
         );
 
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
 
         surface.stroke_text(
             Point::from_xy(0.0, 140.0),
@@ -1013,7 +1013,7 @@ mod tests {
 
     #[visreg]
     fn text_zalgo(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -1028,7 +1028,7 @@ mod tests {
 
     #[visreg]
     fn text_zalgo_outlined(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![], None).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),

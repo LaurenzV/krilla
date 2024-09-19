@@ -325,7 +325,7 @@ impl SerializerContext {
                         .font_cache
                         .get(&font_info.clone())
                         .cloned()
-                        .unwrap_or(Font::new_with_info(font_data, font_info, None).unwrap());
+                        .unwrap_or(Font::new_with_info(font_data, font_info).unwrap());
                     map.insert(id, font);
                 }
             }
