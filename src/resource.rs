@@ -1,4 +1,3 @@
-use crate::color::rgb::{SGray, Srgb};
 use crate::color::{ICCBasedColorSpace, ICCProfile};
 use crate::font::FontIdentifier;
 #[cfg(feature = "raster-images")]
@@ -160,14 +159,14 @@ impl From<Image> for Resource {
 }
 
 // TODO: Overthink this design
-impl From<Srgb> for Resource {
-    fn from(_: Srgb) -> Self {
+impl From<ICCBasedColorSpace<3>> for Resource {
+    fn from(_: ICCBasedColorSpace<3>) -> Self {
         Self::Srgb
     }
 }
 
-impl From<SGray> for Resource {
-    fn from(_: SGray) -> Self {
+impl From<ICCBasedColorSpace<1>> for Resource {
+    fn from(_: ICCBasedColorSpace<1>) -> Self {
         Self::SGray
     }
 }

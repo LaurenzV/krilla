@@ -93,7 +93,6 @@ impl Color {
 pub mod cmyk {
     use crate::color::ICCBasedColorSpace;
     use crate::object::color::ColorSpace;
-    use crate::resource::RegisterableResource;
     use crate::SerializeSettings;
 
     /// A CMYK color.
@@ -143,13 +142,6 @@ pub mod cmyk {
 /// RGB colors.
 pub mod rgb {
     use crate::object::color::ColorSpace;
-    use crate::resource::RegisterableResource;
-
-    pub(crate) struct Srgb;
-    pub(crate) struct SGray;
-
-    impl RegisterableResource<crate::resource::ColorSpace> for Srgb {}
-    impl RegisterableResource<crate::resource::ColorSpace> for SGray {}
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -304,6 +296,8 @@ impl<const C: u8> Object for ICCBasedColorSpace<C> {
 }
 
 impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<4> {}
+impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<3> {}
+impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<1> {}
 
 #[cfg(test)]
 mod tests {

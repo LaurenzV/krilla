@@ -1,6 +1,5 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::rgb::{SGray, Srgb};
 use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
 use crate::graphics_state::GraphicsStates;
@@ -16,7 +15,7 @@ use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource::ResourceDictionaryBuilder;
+use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -595,8 +594,8 @@ impl ContentBuilder {
                                allow_gray: bool| match color
             .color_space(&serialize_settings, allow_gray)
         {
-            ColorSpace::Srgb => content_builder.rd_builder.register_resource(Srgb, sc),
-            ColorSpace::SGray => content_builder.rd_builder.register_resource(SGray, sc),
+            ColorSpace::Srgb => content_builder.rd_builder.register_resource(SRGB_ICC.clone(), sc),
+            ColorSpace::SGray => content_builder.rd_builder.register_resource(GREY_ICC.clone(), sc),
             ColorSpace::IccCmyk(cs) => content_builder.rd_builder.register_resource(cs, sc),
             ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
             ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
