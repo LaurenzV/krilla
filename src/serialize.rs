@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -137,7 +137,6 @@ pub(crate) struct SerializerContext {
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
-    cmyk_profile: Option<ICCBasedColorSpace<4>>,
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
@@ -169,10 +168,6 @@ impl SerializerContext {
             font_cache: HashMap::new(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
-            cmyk_profile: serialize_settings
-                .cmyk_profile
-                .as_ref()
-                .map(|p| ICCBasedColorSpace(p.clone())),
             page_tree_ref: None,
             outline: None,
             page_infos: vec![],
