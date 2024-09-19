@@ -1,6 +1,5 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::cmyk::Cmyk;
 use crate::color::rgb::{SGray, Srgb};
 use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
@@ -598,7 +597,7 @@ impl ContentBuilder {
         {
             ColorSpace::Srgb => content_builder.rd_builder.register_resource(Srgb, sc),
             ColorSpace::SGray => content_builder.rd_builder.register_resource(SGray, sc),
-            ColorSpace::IccCmyk(cs) => content_builder.rd_builder.register_resource(Cmyk(cs), sc),
+            ColorSpace::IccCmyk(cs) => content_builder.rd_builder.register_resource(cs, sc),
             ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
             ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
             ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),

@@ -43,6 +43,7 @@
 //! it will fall back to device CMYK.
 
 use crate::object::{ChunkContainerFn, Object};
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::Prehashed;
 use crate::SerializeSettings;
@@ -95,10 +96,6 @@ pub mod cmyk {
     use crate::resource::RegisterableResource;
     use crate::SerializeSettings;
 
-    pub(crate) struct Cmyk(pub(crate) ICCBasedColorSpace);
-
-    impl RegisterableResource<crate::resource::ColorSpace> for Cmyk {}
-
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
     pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8, pub(crate) u8);
@@ -122,7 +119,7 @@ pub mod cmyk {
             if ss.no_device_cs {
                 ss.clone()
                     .cmyk_profile
-                    .map(|p| ColorSpace::IccCmyk(ICCBasedColorSpace(p.clone(), 4)))
+                    .map(|p| ColorSpace::IccCmyk(ICCBasedColorSpace::<4>(p.clone())))
                     .unwrap_or(ColorSpace::DeviceCmyk)
             } else {
                 ColorSpace::DeviceCmyk
@@ -243,7 +240,7 @@ pub(crate) enum ColorSpace {
     DeviceRgb,
     SGray,
     DeviceGray,
-    IccCmyk(ICCBasedColorSpace),
+    IccCmyk(ICCBasedColorSpace<4>),
     DeviceCmyk,
 }
 
@@ -274,9 +271,9 @@ impl ICCProfile {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct ICCBasedColorSpace(pub(crate) ICCProfile, pub(crate) u8);
+pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile);
 
-impl Object for ICCBasedColorSpace {
+impl<const C: u8> Object for ICCBasedColorSpace<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.color_spaces)
     }
@@ -297,9 +294,7 @@ impl Object for ICCBasedColorSpace {
         );
 
         let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
-        icc_profile
-            .n(self.1 as i32)
-            .range([0.0, 1.0].repeat(self.1 as usize));
+        icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
 
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
@@ -307,6 +302,8 @@ impl Object for ICCBasedColorSpace {
         chunk
     }
 }
+
+impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<4> {}
 
 #[cfg(test)]
 mod tests {

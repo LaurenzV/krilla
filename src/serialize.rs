@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -212,7 +212,7 @@ impl SerializerContext {
         match cs {
             ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
             ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray)),
-            ColorSpace::IccCmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::IccCmyk(cs))),
+            ColorSpace::IccCmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::IccCmyk)),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -306,7 +306,15 @@ impl SerializerContext {
             Resource::ExtGState(e) => self.add_object(e),
             Resource::Srgb => self.add_object(SRGB_ICC.clone()),
             Resource::SGray => self.add_object(GREY_ICC.clone()),
-            Resource::IccCmyk(profile) => self.add_object(profile),
+            // Unwrap is safe, because we only emit `IccCmyk`
+            // if a profile has been set in the first place.
+            Resource::IccCmyk => self.add_object(ICCBasedColorSpace::<4>(
+                self.serialize_settings
+                    .cmyk_profile
+                    .as_ref()
+                    .unwrap()
+                    .clone(),
+            )),
             Resource::ShadingFunction(s) => self.add_object(s),
             Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();

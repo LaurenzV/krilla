@@ -1,4 +1,3 @@
-use crate::color::cmyk::Cmyk;
 use crate::color::rgb::{SGray, Srgb};
 use crate::color::{ICCBasedColorSpace, ICCProfile};
 use crate::font::FontIdentifier;
@@ -142,7 +141,7 @@ pub(crate) enum Resource {
     ExtGState(crate::object::ext_g_state::ExtGState),
     Srgb,
     SGray,
-    IccCmyk(ICCBasedColorSpace),
+    IccCmyk,
     ShadingFunction(crate::object::shading_function::ShadingFunction),
     FontIdentifier(FontIdentifier),
 }
@@ -173,9 +172,9 @@ impl From<SGray> for Resource {
     }
 }
 
-impl From<Cmyk> for Resource {
-    fn from(cmyk: Cmyk) -> Self {
-        Self::IccCmyk(cmyk.0.clone())
+impl From<ICCBasedColorSpace<4>> for Resource {
+    fn from(_: ICCBasedColorSpace<4>) -> Self {
+        Self::IccCmyk
     }
 }
 
@@ -378,18 +377,13 @@ where
 pub type ResourceNumber = u32;
 
 /// The ICC profile for the SRGB color space.
-pub static SRGB_ICC: Lazy<ICCBasedColorSpace> = Lazy::new(|| {
-    ICCBasedColorSpace(
-        ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))),
-        3,
-    )
-});
+pub static SRGB_ICC: Lazy<ICCBasedColorSpace<3>> =
+    Lazy::new(|| ICCBasedColorSpace(ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc")))));
 /// The ICC profile for the sgray color space.
-pub static GREY_ICC: Lazy<ICCBasedColorSpace> = Lazy::new(|| {
-    ICCBasedColorSpace(
-        ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v4.icc"))),
-        1,
-    )
+pub static GREY_ICC: Lazy<ICCBasedColorSpace<1>> = Lazy::new(|| {
+    ICCBasedColorSpace(ICCProfile::new(Arc::new(include_bytes!(
+        "icc/sGrey-v4.icc"
+    ))))
 });
 
 /// A trait for getting the resource dictionary of an object.
