@@ -253,7 +253,7 @@ impl Object for ICCBasedColorSpace {
         Box::new(|cc| &mut cc.color_spaces)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.new_ref();
 
         let mut chunk = Chunk::new();
@@ -274,7 +274,7 @@ impl Object for ICCBasedColorSpace {
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -290,12 +290,12 @@ mod tests {
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::SGray).unwrap();
+        sc.add_resource(Resource::SGray);
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Srgb).unwrap();
+        sc.add_resource(Resource::Srgb);
     }
 
     #[visreg(all)]

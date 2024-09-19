@@ -125,11 +125,7 @@ impl InternalPage {
         }
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut annotation_refs = vec![];
@@ -137,17 +133,21 @@ impl InternalPage {
         if !self.annotations.is_empty() {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
-                chunk.extend(&annotation.serialize(
-                    sc,
-                    annot_ref,
-                    self.page_settings.surface_size().height(),
-                )?);
-                annotation_refs.push(annot_ref);
+
+                // If this fails than we have an unused reference, but this isn't really
+                // a big deal, especially since the chunk container will renumber everything,
+                // anyway.
+                annotation
+                    .serialize(sc, annot_ref, self.page_settings.surface_size().height())
+                    .map(|a| {
+                        chunk.extend(&a);
+                        annotation_refs.push(annot_ref);
+                    });
             }
         }
 
         let mut page = chunk.page(root_ref);
-        self.stream_resources.to_pdf_resources(&mut page)?;
+        self.stream_resources.to_pdf_resources(&mut page);
 
         let media_box = self.page_settings.media_box();
         // Convert to the proper PDF values.
@@ -168,7 +168,7 @@ impl InternalPage {
 
         chunk.extend(self.stream_chunk.wait());
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -234,11 +234,7 @@ impl<'a> PageLabelContainer<'a> {
         }
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -271,7 +267,7 @@ impl<'a> PageLabelContainer<'a> {
         nums.finish();
         num_tree.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 

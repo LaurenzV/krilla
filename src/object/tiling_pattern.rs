@@ -76,7 +76,7 @@ impl Object for TilingPattern {
         Box::new(|cc| &mut cc.patterns)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let pattern_stream =
@@ -86,7 +86,7 @@ impl Object for TilingPattern {
 
         self.stream
             .resource_dictionary
-            .to_pdf_resources(&mut tiling_pattern)?;
+            .to_pdf_resources(&mut tiling_pattern);
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
 
@@ -100,7 +100,7 @@ impl Object for TilingPattern {
 
         tiling_pattern.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -132,7 +132,7 @@ mod tests {
             sc,
         );
 
-        sc.add_object(tiling_pattern).unwrap();
+        sc.add_object(tiling_pattern);
     }
 
     #[visreg(all)]

@@ -66,7 +66,7 @@ impl ExtGState {
     #[must_use]
     pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
         // TODO: Don't unwrap
-        let mask_ref = sc.add_object(mask).unwrap();
+        let mask_ref = sc.add_object(mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
     }
@@ -108,7 +108,7 @@ impl Object for ExtGState {
         Box::new(|cc| &mut cc.ext_g_states)
     }
 
-    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
@@ -130,7 +130,7 @@ impl Object for ExtGState {
 
         ext_st.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -149,7 +149,7 @@ mod tests {
     #[snapshot]
     pub fn ext_g_state_empty(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new();
-        sc.add_object(ext_state).unwrap();
+        sc.add_object(ext_state);
     }
 
     #[snapshot]
@@ -158,7 +158,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
-        sc.add_object(ext_state).unwrap();
+        sc.add_object(ext_state);
     }
 
     #[snapshot]
@@ -169,6 +169,6 @@ mod tests {
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
             .mask(mask, sc);
-        sc.add_object(ext_state).unwrap();
+        sc.add_object(ext_state);
     }
 }

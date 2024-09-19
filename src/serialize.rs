@@ -197,28 +197,28 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb).unwrap()),
-            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray).unwrap()),
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
+            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray)),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
         }
     }
 
-    pub fn add_object<T>(&mut self, object: T) -> KrillaResult<Ref>
+    pub fn add_object<T>(&mut self, object: T) -> Ref
     where
         T: Object,
     {
         let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
-            Ok(*_ref)
+            *_ref
         } else {
             let root_ref = self.new_ref();
             let mut chunk_container_fn = object.chunk_container();
-            let chunk = object.serialize(self, root_ref)?;
+            let chunk = object.serialize(self, root_ref);
             self.cached_mappings.insert(hash, root_ref);
             chunk_container_fn(&mut self.chunk_container).push(chunk);
-            Ok(root_ref)
+            root_ref
         }
     }
 
@@ -282,11 +282,11 @@ impl SerializerContext {
             .clone()
     }
 
-    pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> KrillaResult<Ref> {
+    pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
         match resource.into() {
             Resource::XObject(x) => self.add_object(x),
             #[cfg(feature = "raster-images")]
-            Resource::Image(i) => Ok(self.add_image(i)),
+            Resource::Image(i) => self.add_image(i),
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
@@ -296,11 +296,11 @@ impl SerializerContext {
             Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();
                 if let Some(_ref) = self.cached_mappings.get(&hash) {
-                    Ok(*_ref)
+                    *_ref
                 } else {
                     let root_ref = self.new_ref();
                     self.cached_mappings.insert(hash, root_ref);
-                    Ok(root_ref)
+                    root_ref
                 }
             }
         }
@@ -347,7 +347,7 @@ impl SerializerContext {
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();
-            let chunk = container.serialize(&mut self, page_label_tree_ref)?;
+            let chunk = container.serialize(&mut self, page_label_tree_ref);
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
@@ -363,13 +363,13 @@ impl SerializerContext {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
-                        let ref_ = self.add_resource(t3_font.identifier())?;
-                        let chunk = t3_font.serialize(&mut self, ref_)?;
+                        let ref_ = self.add_resource(t3_font.identifier());
+                        let chunk = t3_font.serialize(&mut self, ref_);
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.add_resource(cid_font.identifier())?;
+                    let ref_ = self.add_resource(cid_font.identifier());
                     let chunk = cid_font.serialize(&mut self, ref_)?;
                     self.chunk_container.fonts.push(chunk);
                 }
@@ -378,7 +378,7 @@ impl SerializerContext {
 
         let pages = std::mem::take(&mut self.pages);
         for (ref_, page) in &pages {
-            let chunk = page.serialize(&mut self, *ref_)?;
+            let chunk = page.serialize(&mut self, *ref_);
             self.chunk_container.pages.push(chunk);
         }
 

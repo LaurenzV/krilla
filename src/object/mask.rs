@@ -101,7 +101,7 @@ impl Object for Mask {
         Box::new(|cc| &mut cc.masks)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let x_ref = sc.add_object(XObject::new(
@@ -109,7 +109,7 @@ impl Object for Mask {
             false,
             true,
             self.custom_bbox.map(|c| c.0),
-        ))?;
+        ));
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
@@ -118,7 +118,7 @@ impl Object for Mask {
 
         dict.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -150,7 +150,7 @@ mod tests {
         surface.fill_path(&path, red_fill(0.5));
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
-        sc.add_object(mask).unwrap();
+        sc.add_object(mask);
     }
 
     fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {

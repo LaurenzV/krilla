@@ -233,7 +233,7 @@ impl ResourceDictionaryBuilder {
         V: ResourceTrait,
     {
         // TODO Don't unwrap
-        let ref_ = sc.add_resource(resource).unwrap();
+        let ref_ = sc.add_resource(resource);
 
         V::get_mapper(self).remap_with_name(ref_)
     }
@@ -261,7 +261,7 @@ pub(crate) struct ResourceDictionary {
 }
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(&self, parent: &mut T) -> KrillaResult<()>
+    pub fn to_pdf_resources<T>(&self, parent: &mut T)
     where
         T: ResourcesExt,
     {
@@ -272,21 +272,16 @@ impl ResourceDictionary {
             ProcSet::ImageColor,
             ProcSet::ImageGrayscale,
         ]);
-        write_resource_type::<ColorSpace>(resources, &self.color_spaces)?;
-        write_resource_type::<ExtGState>(resources, &self.ext_g_states)?;
-        write_resource_type::<Pattern>(resources, &self.patterns)?;
-        write_resource_type::<XObject>(resources, &self.x_objects)?;
-        write_resource_type::<ShadingFunction>(resources, &self.shadings)?;
-        write_resource_type::<Font>(resources, &self.fonts)?;
-
-        Ok(())
+        write_resource_type::<ColorSpace>(resources, &self.color_spaces);
+        write_resource_type::<ExtGState>(resources, &self.ext_g_states);
+        write_resource_type::<Pattern>(resources, &self.patterns);
+        write_resource_type::<XObject>(resources, &self.x_objects);
+        write_resource_type::<ShadingFunction>(resources, &self.shadings);
+        write_resource_type::<Font>(resources, &self.fonts);
     }
 }
 
-fn write_resource_type<T>(
-    resources: &mut Resources,
-    resource_list: &ResourceList<T>,
-) -> KrillaResult<()>
+fn write_resource_type<T>(resources: &mut Resources, resource_list: &ResourceList<T>)
 where
     T: ResourceTrait,
 {
@@ -299,8 +294,6 @@ where
 
         dict.finish();
     }
-
-    Ok(())
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Default)]

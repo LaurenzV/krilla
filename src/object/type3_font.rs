@@ -160,11 +160,7 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
@@ -264,9 +260,9 @@ impl Type3Font {
                     let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
                     font_stream.write_filters(stream.deref_mut());
 
-                    Ok(stream_ref)
+                    stream_ref
                 })
-                .collect::<KrillaResult<Vec<Ref>>>()?;
+                .collect::<Vec<Ref>>();
 
         let resource_dictionary = rd_builder.finish();
 
@@ -304,7 +300,7 @@ impl Type3Font {
         font_descriptor.finish();
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(&mut type3_font)?;
+        resource_dictionary.to_pdf_resources(&mut type3_font);
 
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
@@ -349,7 +345,7 @@ impl Type3Font {
         };
         chunk.cmap(cmap_ref, &cmap.finish());
 
-        Ok(chunk)
+        chunk
     }
 }
 

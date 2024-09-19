@@ -218,7 +218,7 @@ impl Object for ShadingFunction {
         Box::new(|cc| &mut cc.shading_functions)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -230,7 +230,7 @@ impl Object for ShadingFunction {
             }
         }
 
-        Ok(chunk)
+        chunk
     }
 }
 

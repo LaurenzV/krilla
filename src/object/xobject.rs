@@ -45,7 +45,7 @@ impl Object for XObject {
         Box::new(|cc| &mut cc.x_objects)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let x_object_stream =
@@ -55,7 +55,7 @@ impl Object for XObject {
 
         self.stream
             .resource_dictionary
-            .to_pdf_resources(&mut x_object)?;
+            .to_pdf_resources(&mut x_object);
         x_object.bbox(
             self.custom_bbox
                 .map(|c| c.0)
@@ -82,7 +82,7 @@ impl Object for XObject {
 
         x_object.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -105,6 +105,6 @@ mod tests {
         surface.finish();
         let stream = sb.finish();
         let x_object = XObject::new(stream, true, true, None);
-        sc.add_object(x_object).unwrap();
+        sc.add_object(x_object);
     }
 }

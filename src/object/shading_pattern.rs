@@ -45,17 +45,17 @@ impl Object for ShadingPattern {
         Box::new(|cc| &mut cc.patterns)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> KrillaResult<Chunk> {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let shading_ref = sc.add_object(self.0.shading_function.clone())?;
+        let shading_ref = sc.add_object(self.0.shading_function.clone());
         let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.to_pdf_transform());
 
         shading_pattern.finish();
 
-        Ok(chunk)
+        chunk
     }
 }
 
@@ -89,7 +89,7 @@ mod tests {
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
         let shading_pattern = ShadingPattern::new(props, transform);
-        sc.add_object(shading_pattern).unwrap();
+        sc.add_object(shading_pattern);
     }
 
     #[snapshot]
@@ -107,7 +107,7 @@ mod tests {
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
         let shading_pattern = ShadingPattern::new(props, transform);
-        sc.add_object(shading_pattern).unwrap();
+        sc.add_object(shading_pattern);
     }
 
     #[visreg(all)]
@@ -171,7 +171,7 @@ mod tests {
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
         let shading_pattern = ShadingPattern::new(props, transform);
-        sc.add_object(shading_pattern).unwrap();
+        sc.add_object(shading_pattern);
     }
 
     #[snapshot]
@@ -189,7 +189,7 @@ mod tests {
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
         let shading_pattern = ShadingPattern::new(props, transform);
-        sc.add_object(shading_pattern).unwrap();
+        sc.add_object(shading_pattern);
     }
 
     #[visreg(all)]
@@ -255,7 +255,7 @@ mod tests {
         let (props, transform) =
             gradient.gradient_properties(Rect::from_ltrb(50.0, 50.0, 150.0, 150.0).unwrap());
         let shading_pattern = ShadingPattern::new(props, transform);
-        sc.add_object(shading_pattern).unwrap();
+        sc.add_object(shading_pattern);
     }
 
     // Should be turned into a solid color.
