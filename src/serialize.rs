@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::KrillaResult;
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -48,14 +48,12 @@ impl Default for SvgSettings {
 }
 
 /// Settings that should be applied when creating a PDF document.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SerializeSettings {
     /// Whether content streams should be compressed.
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
-    ///
-    /// CMYK colors are currently not affected by this setting.
     pub no_device_cs: bool,
     /// Whether the PDF should be ASCII-compatible, i.e. only consist of
     /// characters in the ASCII range.
@@ -64,6 +62,9 @@ pub struct SerializeSettings {
     pub xmp_metadata: bool,
     /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
+    /// The ICC profile that should be used for CMYK colors
+    /// when `no_device_cs` is enabled.
+    pub cmyk_profile: Option<ICCProfile>,
 }
 
 #[cfg(test)]
@@ -75,6 +76,7 @@ impl SerializeSettings {
             no_device_cs: false,
             xmp_metadata: false,
             force_type3_fonts: false,
+            cmyk_profile: None,
         }
     }
 
@@ -98,6 +100,16 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_6() -> Self {
+        Self {
+            no_device_cs: true,
+            cmyk_profile: Some(ICCProfile::new(Arc::new(
+                std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+            ))),
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -108,6 +120,7 @@ impl Default for SerializeSettings {
             no_device_cs: false,
             xmp_metadata: true,
             force_type3_fonts: false,
+            cmyk_profile: None,
         }
     }
 }
@@ -197,8 +210,9 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
-            ColorSpace::SGray => CSWrapper::Ref(self.add_resource(Resource::SGray)),
+            ColorSpace::Rgb => CSWrapper::Ref(self.add_resource(Resource::Rgb)),
+            ColorSpace::Gray => CSWrapper::Ref(self.add_resource(Resource::Gray)),
+            ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::Cmyk(cs))),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -290,8 +304,11 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Srgb => self.add_object(SRGB_ICC.clone()),
-            Resource::SGray => self.add_object(GREY_ICC.clone()),
+            Resource::Rgb => self.add_object(SRGB_ICC.clone()),
+            Resource::Gray => self.add_object(GREY_ICC.clone()),
+            // Unwrap is safe, because we only emit `IccCmyk`
+            // if a profile has been set in the first place.
+            Resource::Cmyk(cs) => self.add_object(cs),
             Resource::ShadingFunction(s) => self.add_object(s),
             Resource::FontIdentifier(f) => {
                 let hash = f.sip_hash();

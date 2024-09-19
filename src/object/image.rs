@@ -193,7 +193,7 @@ impl Image {
 
     pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
         let soft_mask_id = self.0.mask_data.as_ref().map(|_| sc.new_ref());
-        let serialize_settings = sc.serialize_settings;
+        let serialize_settings = sc.serialize_settings.clone();
 
         Deferred::new(move || {
             let mut chunk = Chunk::new();

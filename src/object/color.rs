@@ -38,17 +38,19 @@
 //! In 90% of the cases, it is totally fine to just use a device-dependent colorspace, and it's
 //! what krilla does by default. However, if you do care about that, then you can set the
 //! `no_device_cs` property to true, in which case krilla will embed an ICC profile for the
-//! sgrey and srgb color space (for luma and rgb colors, respectively). At the moment, krilla
-//! does not allow for custom CMYK ICC profiles, so CMYK colors are currently always encoded
-//! in a device-dependent way.
+//! sgrey and srgb color space (for luma and rgb colors, respectively). If a CMYK profile
+//! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
+//! it will fall back to device CMYK.
 
 use crate::object::{ChunkContainerFn, Object};
+use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::Prehashed;
+use crate::SerializeSettings;
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
@@ -64,28 +66,34 @@ pub(crate) enum Color {
     /// An RGB-based color.
     Rgb(rgb::Color),
     /// A device CMYK color.
-    DeviceCmyk(cmyk::Color),
+    Cmyk(cmyk::Color),
 }
 
 impl Color {
     pub(crate) fn to_pdf_color(self, allow_gray: bool) -> Vec<f32> {
         match self {
             Color::Rgb(rgb) => rgb.to_pdf_color(allow_gray).into_iter().collect::<Vec<_>>(),
-            Color::DeviceCmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Cmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
 
-    pub(crate) fn color_space(&self, no_device_cs: bool, allow_gray: bool) -> ColorSpace {
+    pub(crate) fn color_space(
+        &self,
+        serialize_settings: &SerializeSettings,
+        allow_gray: bool,
+    ) -> ColorSpace {
         match self {
-            Color::Rgb(rgb) => rgb.color_space(no_device_cs, allow_gray),
-            Color::DeviceCmyk(cmyk) => cmyk.color_space(),
+            Color::Rgb(rgb) => rgb.color_space(serialize_settings.no_device_cs, allow_gray),
+            Color::Cmyk(cmyk) => cmyk.color_space(serialize_settings),
         }
     }
 }
 
 /// CMYK colors.
 pub mod cmyk {
+    use crate::color::ICCBasedColorSpace;
     use crate::object::color::ColorSpace;
+    use crate::SerializeSettings;
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -106,14 +114,21 @@ pub mod cmyk {
             ]
         }
 
-        pub(crate) fn color_space(&self) -> ColorSpace {
-            ColorSpace::DeviceCmyk
+        pub(crate) fn color_space(&self, ss: &SerializeSettings) -> ColorSpace {
+            if ss.no_device_cs {
+                ss.clone()
+                    .cmyk_profile
+                    .map(|p| ColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())))
+                    .unwrap_or(ColorSpace::DeviceCmyk)
+            } else {
+                ColorSpace::DeviceCmyk
+            }
         }
     }
 
     impl From<Color> for super::Color {
         fn from(val: Color) -> Self {
-            super::Color::DeviceCmyk(val)
+            super::Color::Cmyk(val)
         }
     }
 
@@ -127,13 +142,6 @@ pub mod cmyk {
 /// RGB colors.
 pub mod rgb {
     use crate::object::color::ColorSpace;
-    use crate::resource::RegisterableResource;
-
-    pub(crate) struct Srgb;
-    pub(crate) struct SGray;
-
-    impl RegisterableResource<crate::resource::ColorSpace> for Srgb {}
-    impl RegisterableResource<crate::resource::ColorSpace> for SGray {}
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -188,7 +196,7 @@ pub mod rgb {
 
         pub(crate) fn luma_based_color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpace::SGray
+                ColorSpace::Gray
             } else {
                 ColorSpace::DeviceGray
             }
@@ -196,7 +204,7 @@ pub mod rgb {
 
         pub(crate) fn rgb_based_color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpace::Srgb
+                ColorSpace::Rgb
             } else {
                 ColorSpace::DeviceRgb
             }
@@ -220,33 +228,44 @@ pub mod rgb {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) enum ColorSpace {
-    Srgb,
-    SGray,
-    DeviceGray,
     DeviceRgb,
+    DeviceGray,
     DeviceCmyk,
+    Rgb,
+    Gray,
+    Cmyk(ICCBasedColorSpace<4>),
 }
 
 #[derive(Clone)]
-struct Repr(Arc<dyn AsRef<[u8]> + Send + Sync>, u8);
+struct Repr(Arc<dyn AsRef<[u8]> + Send + Sync>);
+
+impl Debug for Repr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "ICC Profile")
+    }
+}
 
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.as_ref().as_ref().hash(state);
-        self.1.hash(state);
     }
 }
 
-#[derive(Clone, Hash)]
-pub(crate) struct ICCBasedColorSpace(Prehashed<Repr>);
+/// An ICC profile.
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub struct ICCProfile(Arc<Prehashed<Repr>>);
 
-impl ICCBasedColorSpace {
-    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>, num_components: u8) -> Self {
-        Self(Prehashed::new(Repr(data, num_components)))
+impl ICCProfile {
+    /// Create a new ICC profile.
+    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
+        Self(Arc::new(Prehashed::new(Repr(data))))
     }
 }
 
-impl Object for ICCBasedColorSpace {
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile);
+
+impl<const C: u8> Object for ICCBasedColorSpace<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.color_spaces)
     }
@@ -261,13 +280,13 @@ impl Object for ICCBasedColorSpace {
         array.item(icc_ref);
         array.finish();
 
-        let icc_stream =
-            FilterStream::new_from_binary_data(self.0 .0.as_ref().as_ref(), &sc.serialize_settings);
+        let icc_stream = FilterStream::new_from_binary_data(
+            self.0 .0.deref().0.as_ref().as_ref(),
+            &sc.serialize_settings,
+        );
 
         let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
-        icc_profile
-            .n(self.0 .1 as i32)
-            .range([0.0, 1.0].repeat(self.0 .1 as usize));
+        icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
 
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
@@ -275,6 +294,10 @@ impl Object for ICCBasedColorSpace {
         chunk
     }
 }
+
+impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<4> {}
+impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<3> {}
+impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<1> {}
 
 #[cfg(test)]
 mod tests {
@@ -288,16 +311,23 @@ mod tests {
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::SGray);
+        sc.add_resource(Resource::Gray);
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Srgb);
+        sc.add_resource(Resource::Rgb);
     }
 
     #[visreg(all)]
     fn cmyk_color(surface: &mut Surface) {
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+
+        surface.fill_path(&path, cmyk_fill(1.0));
+    }
+
+    #[visreg(all, settings_6)]
+    fn cmyk_with_icc(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
         surface.fill_path(&path, cmyk_fill(1.0));

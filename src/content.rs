@@ -1,6 +1,5 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::rgb::{SGray, Srgb};
 use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
 use crate::graphics_state::GraphicsStates;
@@ -16,7 +15,7 @@ use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource::ResourceDictionaryBuilder;
+use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -583,23 +582,29 @@ impl ContentBuilder {
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, Color),
     ) {
-        let no_device_cs = sc.serialize_settings.no_device_cs;
+        let serialize_settings = sc.serialize_settings.clone();
 
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.graphics_states.cur().transform())
         };
 
-        let color_to_string =
-            |color: Color,
-             content_builder: &mut ContentBuilder,
-             sc: &mut SerializerContext,
-             allow_gray: bool| match color.color_space(no_device_cs, allow_gray) {
-                ColorSpace::Srgb => content_builder.rd_builder.register_resource(Srgb, sc),
-                ColorSpace::SGray => content_builder.rd_builder.register_resource(SGray, sc),
-                ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
-                ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
-                ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
-            };
+        let color_to_string = |color: Color,
+                               content_builder: &mut ContentBuilder,
+                               sc: &mut SerializerContext,
+                               allow_gray: bool| match color
+            .color_space(&serialize_settings, allow_gray)
+        {
+            ColorSpace::Rgb => content_builder
+                .rd_builder
+                .register_resource(SRGB_ICC.clone(), sc),
+            ColorSpace::Gray => content_builder
+                .rd_builder
+                .register_resource(GREY_ICC.clone(), sc),
+            ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
+            ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
+            ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
+            ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
+        };
 
         let mut write_gradient =
             |gradient_props: GradientProperties,

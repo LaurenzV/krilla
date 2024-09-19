@@ -197,7 +197,7 @@ impl Paint {
         match self.0 {
             InnerPaint::Color(c) => match c {
                 Color::Rgb(rgb) => Some(rgb),
-                Color::DeviceCmyk(_) => None,
+                Color::Cmyk(_) => None,
             },
             _ => None,
         }
