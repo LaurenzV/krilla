@@ -215,7 +215,7 @@ impl<'a> Surface<'a> {
         features: &[Feature],
         text: &str,
         outlined: bool,
-        direction: Option<TextDirection>,
+        direction: TextDirection,
     ) {
         let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
 
@@ -295,7 +295,7 @@ impl<'a> Surface<'a> {
         features: &[Feature],
         text: &str,
         outlined: bool,
-        direction: Option<TextDirection>,
+        direction: TextDirection,
     ) {
         let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
 
@@ -471,10 +471,11 @@ impl Drop for Surface<'_> {
     }
 }
 
-// TODO: Add auto
 #[cfg(feature = "simple-text")]
 /// The direction of a text.
 pub enum TextDirection {
+    /// Determine the direction automatically.
+    Auto,
     /// Left to right.
     LeftToRight,
     /// Right to left.
@@ -485,18 +486,6 @@ pub enum TextDirection {
     BottomToTop,
 }
 
-#[cfg(feature = "simple-text")]
-impl From<TextDirection> for Direction {
-    fn from(value: TextDirection) -> Self {
-        match value {
-            TextDirection::LeftToRight => Direction::LeftToRight,
-            TextDirection::RightToLeft => Direction::RightToLeft,
-            TextDirection::TopToBottom => Direction::TopToBottom,
-            TextDirection::BottomToTop => Direction::BottomToTop,
-        }
-    }
-}
-
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
 fn naive_shape(
@@ -504,7 +493,7 @@ fn naive_shape(
     font: Font,
     features: &[Feature],
     size: f32,
-    direction: Option<TextDirection>,
+    direction: TextDirection,
 ) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let mut rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
@@ -516,8 +505,12 @@ fn naive_shape(
     buffer.push_str(text);
     buffer.guess_segment_properties();
 
-    if let Some(direction) = direction {
-        buffer.set_direction(direction.into());
+    match direction {
+        TextDirection::LeftToRight => buffer.set_direction(Direction::LeftToRight),
+        TextDirection::RightToLeft => buffer.set_direction(Direction::RightToLeft),
+        TextDirection::TopToBottom => buffer.set_direction(Direction::TopToBottom),
+        TextDirection::BottomToTop => buffer.set_direction(Direction::BottomToTop),
+        TextDirection::Auto => {}
     }
 
     let dir = buffer.direction();
@@ -610,7 +603,7 @@ mod tests {
             &[],
             "你好这是一段则是文字",
             false,
-            Some(TextDirection::LeftToRight),
+            TextDirection::LeftToRight,
         );
     }
 
@@ -625,7 +618,7 @@ mod tests {
             &[],
             "你好这是一段则是文字",
             false,
-            Some(TextDirection::RightToLeft),
+            TextDirection::RightToLeft,
         );
     }
 
@@ -640,7 +633,7 @@ mod tests {
             &[],
             "你好这是一段则是文字",
             false,
-            Some(TextDirection::TopToBottom),
+            TextDirection::TopToBottom,
         );
     }
 
@@ -655,7 +648,7 @@ mod tests {
             &[],
             "你好这是一段则是文字",
             false,
-            Some(TextDirection::BottomToTop),
+            TextDirection::BottomToTop,
         );
     }
 
@@ -731,7 +724,7 @@ mod tests {
             &[],
             "hi there",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -745,7 +738,7 @@ mod tests {
             &[],
             "hi there",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -759,7 +752,7 @@ mod tests {
             &[],
             "यह कुछ जटिल पाठ है.",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -773,7 +766,7 @@ mod tests {
             &[],
             "यु॒धा नर॑ ऋ॒ष्वा ",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -787,7 +780,7 @@ mod tests {
             &[],
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -801,7 +794,7 @@ mod tests {
             &[],
             "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -892,7 +885,7 @@ mod tests {
             &[],
             "red outlined text",
             outlined,
-            None,
+            TextDirection::Auto,
         );
 
         surface.fill_text(
@@ -903,7 +896,7 @@ mod tests {
             &[],
             "blue outlined text",
             outlined,
-            None,
+            TextDirection::Auto,
         );
 
         let grad_fill = Fill {
@@ -919,7 +912,7 @@ mod tests {
             &[],
             "gradient text",
             outlined,
-            None,
+            TextDirection::Auto,
         );
 
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
@@ -932,7 +925,7 @@ mod tests {
             &[],
             "😄😁😆",
             outlined,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -956,7 +949,7 @@ mod tests {
             &[],
             "red outlined text",
             outlined,
-            None,
+            TextDirection::Auto,
         );
 
         surface.stroke_text(
@@ -967,7 +960,7 @@ mod tests {
             &[],
             "blue outlined text",
             outlined,
-            None,
+            TextDirection::Auto,
         );
 
         let grad_stroke = Stroke {
@@ -983,7 +976,7 @@ mod tests {
             &[],
             "gradient text",
             outlined,
-            None,
+            TextDirection::Auto,
         );
 
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
@@ -996,7 +989,7 @@ mod tests {
             &[],
             "😄😁😆",
             outlined,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -1023,7 +1016,7 @@ mod tests {
             &[],
             "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -1038,7 +1031,7 @@ mod tests {
             &[],
             "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
             true,
-            None,
+            TextDirection::Auto,
         );
     }
 }

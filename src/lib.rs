@@ -25,6 +25,7 @@ For more examples, feel free to take a look at the [examples] directory of the G
 # use krilla::font::Font;
 # use krilla::geom::Point;
 # use krilla::paint::Paint;
+# use krilla::surface::TextDirection;
 # use krilla::path::Fill;
 # use krilla::{Document, PageSettings};
 # use krilla::SvgSettings;
@@ -55,7 +56,7 @@ surface.fill_text(
     &[],
     "This text has font size 14!",
     false,
-    None
+    TextDirection::Auto
 );
 // Draw some more text, in a different color with an opacity and bigger font size.
 surface.fill_text(
@@ -70,7 +71,7 @@ surface.fill_text(
     &[],
     "This text has font size 16!",
     false,
-    None
+    TextDirection::Auto
 );
 
 // Finish the page.

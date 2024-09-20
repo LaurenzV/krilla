@@ -254,7 +254,7 @@ impl FontInfo {
                     None
                 })
             } else {
-                return None;
+                None
             }
         };
 
