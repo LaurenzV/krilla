@@ -460,7 +460,7 @@ mod tests {
     use crate::document::Document;
     use crate::font::Font;
     use crate::path::{Fill, Stroke};
-    use crate::surface::Surface;
+    use crate::surface::{Surface, TextDirection};
     use crate::tests::{
         all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
     };
@@ -500,7 +500,7 @@ mod tests {
             &[],
             &text,
             false,
-            None,
+            TextDirection::Auto,
         );
 
         surface.fill_text(
@@ -511,7 +511,7 @@ mod tests {
             &[],
             &text,
             false,
-            None,
+            TextDirection::Auto,
         );
 
         surface.fill_text(
@@ -522,7 +522,7 @@ mod tests {
             &[],
             &text,
             true,
-            None,
+            TextDirection::Auto,
         );
 
         surface.stroke_text(
@@ -533,7 +533,7 @@ mod tests {
             &[],
             &text,
             false,
-            None,
+            TextDirection::Auto,
         );
 
         // Since it a COLR glyph, it will still be filled, but the color should be taken from
@@ -546,7 +546,7 @@ mod tests {
             &[],
             &text,
             false,
-            None,
+            TextDirection::Auto,
         );
 
         surface.stroke_text(
@@ -557,7 +557,7 @@ mod tests {
             &[],
             &text,
             true,
-            None,
+            TextDirection::Auto,
         );
     }
 

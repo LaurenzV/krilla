@@ -13,6 +13,7 @@ use krilla::{Document, PageSettings};
 use std::sync::Arc;
 use tiny_skia_path::Point;
 use usvg::NormalizedF32;
+use krilla::surface::TextDirection;
 
 fn main() {
     // The usual page setup.
@@ -40,7 +41,7 @@ fn main() {
         &[],
         "This text is filled red and has opacity.",
         false,
-        None,
+        TextDirection::Auto,
     );
 
     // Instead of applying fills, we can also apply strokes!
@@ -55,7 +56,7 @@ fn main() {
         &[],
         "This text is stroked green!",
         false,
-        None,
+        TextDirection::Auto,
     );
 
     let noto_arabic_font = Font::new(
@@ -75,7 +76,7 @@ fn main() {
         &[],
         "هذا هو السطر الثاني من النص.",
         false,
-        None,
+        TextDirection::Auto,
     );
 
     let mut y = 125.0;
@@ -110,7 +111,7 @@ fn main() {
             &[],
             "Variable fonts rock!",
             false,
-            None,
+            TextDirection::Auto,
         );
 
         y += 25.0;

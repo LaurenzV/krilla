@@ -262,7 +262,7 @@ mod tests {
 
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializerContext};
-    use crate::surface::Surface;
+    use crate::surface::{Surface, TextDirection};
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
@@ -296,7 +296,7 @@ mod tests {
             &[],
             "hello world",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -311,7 +311,7 @@ mod tests {
             &[],
             "hello world",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -326,7 +326,7 @@ mod tests {
             &[],
             "مرحبا بالعالم",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -367,7 +367,7 @@ mod tests {
             &[],
             "这是一段测试文字。",
             false,
-            None,
+            TextDirection::Auto,
         );
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -377,7 +377,7 @@ mod tests {
             &[],
             "这是一段测试文字。",
             false,
-            None,
+            TextDirection::Auto,
         );
         surface.fill_text(
             Point::from_xy(0.0, 125.0),
@@ -387,7 +387,7 @@ mod tests {
             &[],
             "这是一段测试文字。",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 }

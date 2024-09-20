@@ -438,7 +438,7 @@ mod tests {
     use crate::object::type3_font::OwnedCoveredGlyph;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
-    use crate::surface::Surface;
+    use crate::surface::{Surface, TextDirection};
     use crate::tests::{
         red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
     };
@@ -495,7 +495,7 @@ mod tests {
             &[],
             "hello world",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -510,7 +510,7 @@ mod tests {
             &[],
             "hello world",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -525,7 +525,7 @@ mod tests {
             &[],
             "hello world",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -555,7 +555,7 @@ mod tests {
             &[],
             "Variable fonts rock!",
             false,
-            None,
+            TextDirection::Auto,
         );
 
         surface.fill_text(
@@ -569,7 +569,7 @@ mod tests {
             &[],
             "Variable fonts rock!",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
@@ -584,7 +584,7 @@ mod tests {
             &[],
             "مرحبا بالعالم",
             false,
-            None,
+            TextDirection::Auto,
         );
     }
 
