@@ -33,15 +33,17 @@ use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
+    root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
 }
 
 impl ContentBuilder {
-    pub fn new() -> Self {
+    pub fn new(root_transform: Transform) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             content: Content::new(),
+            root_transform,
             graphics_states: GraphicsStates::new(),
             bbox: None,
         }
@@ -53,6 +55,10 @@ impl ContentBuilder {
 
     pub fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
+    }
+
+    fn cur_transform_with_root_transform(&self) -> Transform {
+        self.root_transform.pre_concat(self.graphics_states.cur().transform())
     }
 
     pub fn save_graphics_state(&mut self) {
@@ -164,7 +170,7 @@ impl ContentBuilder {
         self.content.save_state();
         self.content_draw_path(
             path.clone()
-                .transform(self.graphics_states.cur().transform())
+                .transform(self.cur_transform_with_root_transform())
                 .unwrap()
                 .segments(),
         );
@@ -555,7 +561,7 @@ impl ContentBuilder {
 
         prep(self, sc);
 
-        let transform = self.graphics_states.cur().transform();
+        let transform = self.cur_transform_with_root_transform();
 
         if transform != Transform::identity() {
             self.content.transform(transform.to_pdf_transform());
@@ -586,7 +592,7 @@ impl ContentBuilder {
         let serialize_settings = sc.serialize_settings.clone();
 
         let pattern_transform = |transform: Transform| -> Transform {
-            transform.post_concat(self.graphics_states.cur().transform())
+            transform.post_concat(self.cur_transform_with_root_transform())
         };
 
         let color_to_string = |color: Color,
@@ -624,10 +630,7 @@ impl ContentBuilder {
 
                     let shading_pattern = ShadingPattern::new(
                         gradient_props,
-                        content_builder
-                            .graphics_states
-                            .cur()
-                            .transform()
+                        content_builder.cur_transform_with_root_transform()
                             .pre_concat(transform),
                     );
                     let color_space = content_builder

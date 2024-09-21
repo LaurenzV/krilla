@@ -60,9 +60,7 @@ impl<'a> Page<'a> {
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface {
-        let mut root_builder = ContentBuilder::new();
-        // Invert the y-axis.
-        root_builder.concat_transform(&self.root_transform());
+        let root_builder = ContentBuilder::new(self.root_transform());
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
