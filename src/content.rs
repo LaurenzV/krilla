@@ -50,7 +50,12 @@ impl ContentBuilder {
     }
 
     pub fn finish(self) -> Stream {
-        Stream::new(self.content.finish(), self.bbox.unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()), self.rd_builder.finish())
+        Stream::new(
+            self.content.finish(),
+            self.bbox
+                .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+            self.rd_builder.finish(),
+        )
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {
@@ -58,7 +63,8 @@ impl ContentBuilder {
     }
 
     fn cur_transform_with_root_transform(&self) -> Transform {
-        self.root_transform.pre_concat(self.graphics_states.cur().transform())
+        self.root_transform
+            .pre_concat(self.graphics_states.cur().transform())
     }
 
     pub fn save_graphics_state(&mut self) {
@@ -80,7 +86,7 @@ impl ContentBuilder {
         let new_bbox = self.graphics_states.transform_bbox(new_bbox);
         if let Some(bbox) = &mut self.bbox {
             bbox.expand(&new_bbox);
-        }   else {
+        } else {
             self.bbox = Some(new_bbox);
         }
     }
@@ -630,7 +636,8 @@ impl ContentBuilder {
 
                     let shading_pattern = ShadingPattern::new(
                         gradient_props,
-                        content_builder.cur_transform_with_root_transform()
+                        content_builder
+                            .cur_transform_with_root_transform()
                             .pre_concat(transform),
                     );
                     let color_space = content_builder
