@@ -10,6 +10,7 @@ use skrifa::GlyphId;
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
+use tiny_skia_path::Rect;
 
 const CMAP_NAME: Name = Name(b"Custom");
 const SYSTEM_INFO: SystemInfo = SystemInfo {

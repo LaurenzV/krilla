@@ -201,14 +201,12 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Fill,
             |sb, sc| {
-                sb.content_set_fill_properties(
-                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    &fill,
-                    sc,
-                )
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                sb.bbox.expand(&sb.graphics_states.transform_bbox(bbox));
+                sb.content_set_fill_properties(bbox, &fill, sc)
             },
             glyphs,
-            font,
+            font.clone(),
             PaintMode::Fill(&fill),
             text,
             font_size,
@@ -248,18 +246,17 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Stroke,
             |sb, sc| {
-                sb.content_set_stroke_properties(
-                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    stroke.clone(),
-                    sc,
-                );
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                sb.bbox.expand(&sb.graphics_states.transform_bbox(bbox));
+                sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
 
                 // There is a very weird and inconsistent interaction between Type3
                 // glyphs and stroking them. Each PDF viewer does something different.
                 // Because of this, we simply set BOTH, fill and stroke when stroking
                 // a run of glyphs.
                 sb.content_set_fill_properties(
-                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                    // TODO: bbox doesnt consider stroke
+                    bbox,
                     &Fill {
                         paint: stroke.paint.clone(),
                         opacity: stroke.opacity,
@@ -269,7 +266,7 @@ impl ContentBuilder {
                 )
             },
             glyphs,
-            font,
+            font.clone(),
             PaintMode::Stroke(&stroke),
             text,
             font_size,
@@ -461,7 +458,7 @@ impl ContentBuilder {
         self.apply_isolated_op(
             |sb, _| {
                 sb.graphics_states.combine(state);
-                sb.bbox.expand(&bbox);
+                sb.bbox.expand(&sb.graphics_states.transform_bbox(bbox));
             },
             move |sb, sc| {
                 let x_object_name = sb.rd_builder.register_resource(x_object, sc);
@@ -798,6 +795,43 @@ impl ContentBuilder {
             };
         }
     }
+}
+
+// TODO: Add stroke bbox too?
+fn get_glyphs_bbox(
+    glyphs: &[impl Glyph],
+    mut x: f32,
+    mut y: f32,
+    size: f32,
+    font: Font,
+    glyph_units: GlyphUnits,
+) -> Rect {
+    let mut bbox = Rect::from_xywh(x, y, 1.0, 1.0).unwrap();
+
+    let normalize = |v| unit_normalize(glyph_units, font.units_per_em(), size, v);
+
+    for glyph in glyphs {
+        let xo = normalize(glyph.x_offset()) * size;
+        let xa = normalize(glyph.x_advance()) * size;
+        let yo = normalize(glyph.y_offset()) * size;
+        let ya = normalize(glyph.y_advance()) * size;
+
+        if let Some(glyph_bbox) = font
+            .bbox()
+            .transform(Transform::from_scale(
+                size / font.units_per_em(),
+                -size / font.units_per_em(),
+            ))
+            .and_then(|b| b.transform(Transform::from_translate(x + xo, y - yo)))
+        {
+            bbox.expand(&glyph_bbox);
+        }
+
+        x += xa;
+        y += ya;
+    }
+
+    bbox
 }
 
 pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {
