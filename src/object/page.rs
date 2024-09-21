@@ -13,7 +13,7 @@ use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{Rect, Transform};
 
 /// A single page.
 ///
@@ -89,6 +89,7 @@ pub(crate) struct InternalPage {
     pub stream_resources: ResourceDictionary,
     pub stream_chunk: Deferred<Chunk>,
     pub page_settings: PageSettings,
+    pub bbox: Rect,
     pub annotations: Vec<Annotation>,
 }
 
@@ -119,6 +120,7 @@ impl InternalPage {
             stream_resources,
             stream_ref,
             stream_chunk,
+            bbox: stream.bbox.0,
             annotations,
             page_settings,
         }
@@ -148,7 +150,7 @@ impl InternalPage {
         let mut page = chunk.page(root_ref);
         self.stream_resources.to_pdf_resources(&mut page);
 
-        let media_box = self.page_settings.media_box();
+        let media_box = self.page_settings.media_box().unwrap_or(self.bbox);
         // Convert to the proper PDF values.
         page.media_box(pdf_writer::Rect::new(
             media_box.x(),
@@ -345,7 +347,7 @@ mod tests {
     }
 
     fn media_box_impl(d: &mut Document, media_box: Rect) {
-        let mut page = d.start_page_with(PageSettings::new(200.0, 200.0).with_media_box(media_box));
+        let mut page = d.start_page_with(PageSettings::new(200.0, 200.0).with_media_box(Some(media_box)));
         let mut surface = page.surface();
         surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(0.5));
         surface.fill_path(&rect_to_path(100.0, 0.0, 200.0, 100.0), green_fill(0.5));

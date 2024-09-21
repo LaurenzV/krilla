@@ -83,7 +83,7 @@ impl Document {
 /// The settings of a page.
 pub struct PageSettings {
     /// The media box of the page, which defines the visible area of the surface.
-    media_box: Rect,
+    media_box: Option<Rect>,
     /// The page label of the page.
     page_label: PageLabel,
     /// The size of the surface.
@@ -94,7 +94,7 @@ impl PageSettings {
     /// Create new page settings and define the size of the page surface.
     pub fn new(width: f32, height: f32) -> Self {
         Self {
-            media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
+            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
             surface_size: Size::from_wh(width, height).unwrap(),
             ..Default::default()
         }
@@ -106,7 +106,10 @@ impl PageSettings {
     /// so it can be distinct from the size of the surface, but in the majority
     /// of the cases you want them to match in size and align the media box
     /// at the origin of the coordinate system.
-    pub fn with_media_box(mut self, media_box: Rect) -> PageSettings {
+    ///
+    /// If set to `None`, the dimensions will be chosen in such a way that all
+    /// contents fit on the page.
+    pub fn with_media_box(mut self, media_box: Option<Rect>) -> PageSettings {
         self.media_box = media_box;
         self
     }
@@ -118,7 +121,7 @@ impl PageSettings {
     }
 
     /// The current media box.
-    pub fn media_box(&self) -> Rect {
+    pub fn media_box(&self) -> Option<Rect> {
         self.media_box
     }
 
@@ -140,7 +143,7 @@ impl Default for PageSettings {
         let height = 842.0;
 
         Self {
-            media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
+            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
             surface_size: Size::from_wh(width, height).unwrap(),
             page_label: PageLabel::default(),
         }
