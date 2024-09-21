@@ -338,7 +338,8 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions
             .push(PushInstruction::Mask(Box::new(mask)));
-        self.sub_builders.push(ContentBuilder::new());
+        self.sub_builders
+            .push(ContentBuilder::new(Transform::identity()));
     }
 
     /// Push a new opacity, meaning that each subsequent graphics object will be
@@ -351,14 +352,16 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.sub_builders.push(ContentBuilder::new());
+            self.sub_builders
+                .push(ContentBuilder::new(Transform::identity()));
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.sub_builders.push(ContentBuilder::new());
+        self.sub_builders
+            .push(ContentBuilder::new(Transform::identity()));
     }
 
     /// Pop the last `push` instruction.
@@ -464,7 +467,10 @@ impl<'a> Surface<'a> {
 
 impl Drop for Surface<'_> {
     fn drop(&mut self) {
-        let root_builder = std::mem::replace(&mut self.root_builder, ContentBuilder::new());
+        let root_builder = std::mem::replace(
+            &mut self.root_builder,
+            ContentBuilder::new(Transform::identity()),
+        );
         debug_assert!(self.sub_builders.is_empty());
         debug_assert!(self.push_instructions.is_empty());
         (self.finish_fn)(root_builder.finish())
@@ -863,14 +869,14 @@ mod tests {
         surface.pop();
     }
 
-    fn text_gradient() -> LinearGradient {
+    fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
         LinearGradient {
             x1: 50.0,
             y1: 0.0,
             x2: 150.0,
             y2: 0.0,
             transform: Default::default(),
-            spread_method: SpreadMethod::Pad,
+            spread_method,
             stops: stops_with_3_solid_1(),
         }
     }
@@ -900,14 +906,14 @@ mod tests {
         );
 
         let grad_fill = Fill {
-            paint: Paint::from(text_gradient()),
+            paint: Paint::from(text_gradient(SpreadMethod::Pad)),
             ..Default::default()
         };
 
         surface.fill_text(
             Point::from_xy(0.0, 120.0),
             grad_fill,
-            font,
+            font.clone(),
             20.0,
             &[],
             "gradient text",
@@ -915,15 +921,31 @@ mod tests {
             TextDirection::Auto,
         );
 
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
+        let noto_font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, vec![]).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 140.0),
             blue_fill(0.8),
-            font,
+            noto_font.clone(),
             20.0,
             &[],
             "😄😁😆",
+            outlined,
+            TextDirection::Auto,
+        );
+
+        let grad_fill = Fill {
+            paint: Paint::from(text_gradient(SpreadMethod::Reflect)),
+            ..Default::default()
+        };
+
+        surface.fill_text(
+            Point::from_xy(0.0, 160.0),
+            grad_fill,
+            font,
+            20.0,
+            &[],
+            "longer gradient text with repeat",
             outlined,
             TextDirection::Auto,
         );
@@ -964,7 +986,7 @@ mod tests {
         );
 
         let grad_stroke = Stroke {
-            paint: Paint::from(text_gradient()),
+            paint: Paint::from(text_gradient(SpreadMethod::Pad)),
             ..Default::default()
         };
 

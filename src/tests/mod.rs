@@ -395,7 +395,11 @@ pub fn get_diff(expected_image: &RgbaImage, actual_image: &RgbaImage) -> (RgbaIm
                     diff_image.put_pixel(x, y, *expected);
                     diff_image.put_pixel(x + width, y, Rgba([255, 0, 0, 255]));
                 }
-                _ => unreachable!(),
+                _ => {
+                    pixel_diff += 1;
+                    diff_image.put_pixel(x, y, Rgba([255, 0, 0, 255]));
+                    diff_image.put_pixel(x + width, y, Rgba([255, 0, 0, 255]));
+                }
             }
         }
     }

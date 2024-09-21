@@ -33,26 +33,38 @@ use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
+    root_transform: Transform,
     graphics_states: GraphicsStates,
-    bbox: Rect,
+    bbox: Option<Rect>,
 }
 
 impl ContentBuilder {
-    pub fn new() -> Self {
+    pub fn new(root_transform: Transform) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             content: Content::new(),
+            root_transform,
             graphics_states: GraphicsStates::new(),
-            bbox: Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+            bbox: None,
         }
     }
 
     pub fn finish(self) -> Stream {
-        Stream::new(self.content.finish(), self.bbox, self.rd_builder.finish())
+        Stream::new(
+            self.content.finish(),
+            self.bbox
+                .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+            self.rd_builder.finish(),
+        )
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
+    }
+
+    fn cur_transform_with_root_transform(&self) -> Transform {
+        self.root_transform
+            .pre_concat(self.graphics_states.cur().transform())
     }
 
     pub fn save_graphics_state(&mut self) {
@@ -67,6 +79,15 @@ impl ContentBuilder {
         if blend_mode != pdf_writer::types::BlendMode::Normal {
             let state = ExtGState::new().blend_mode(blend_mode);
             self.graphics_states.combine(&state);
+        }
+    }
+
+    pub fn expand_bbox(&mut self, new_bbox: Rect) {
+        let new_bbox = self.graphics_states.transform_bbox(new_bbox);
+        if let Some(bbox) = &mut self.bbox {
+            bbox.expand(&new_bbox);
+        } else {
+            self.bbox = Some(new_bbox);
         }
     }
 
@@ -97,8 +118,7 @@ impl ContentBuilder {
 
         self.apply_isolated_op(
             |sb, _| {
-                sb.bbox
-                    .expand(&sb.graphics_states.transform_bbox(path.bounds()));
+                sb.expand_bbox(path.bounds());
 
                 if fill_props {
                     // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -136,8 +156,7 @@ impl ContentBuilder {
 
         self.apply_isolated_op(
             |sb, _| {
-                sb.bbox
-                    .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
+                sb.expand_bbox(stroke_bbox);
 
                 // See comment in `set_fill_properties`
                 if !is_pattern {
@@ -157,7 +176,7 @@ impl ContentBuilder {
         self.content.save_state();
         self.content_draw_path(
             path.clone()
-                .transform(self.graphics_states.cur().transform())
+                .transform(self.cur_transform_with_root_transform())
                 .unwrap()
                 .segments(),
         );
@@ -201,14 +220,12 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Fill,
             |sb, sc| {
-                sb.content_set_fill_properties(
-                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    &fill,
-                    sc,
-                )
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                sb.expand_bbox(bbox);
+                sb.content_set_fill_properties(bbox, &fill, sc)
             },
             glyphs,
-            font,
+            font.clone(),
             PaintMode::Fill(&fill),
             text,
             font_size,
@@ -248,18 +265,17 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Stroke,
             |sb, sc| {
-                sb.content_set_stroke_properties(
-                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                    stroke.clone(),
-                    sc,
-                );
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                sb.expand_bbox(bbox);
+                sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
 
                 // There is a very weird and inconsistent interaction between Type3
                 // glyphs and stroking them. Each PDF viewer does something different.
                 // Because of this, we simply set BOTH, fill and stroke when stroking
                 // a run of glyphs.
                 sb.content_set_fill_properties(
-                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                    // TODO: bbox doesnt consider stroke
+                    bbox,
                     &Fill {
                         paint: stroke.paint.clone(),
                         opacity: stroke.opacity,
@@ -269,7 +285,7 @@ impl ContentBuilder {
                 )
             },
             glyphs,
-            font,
+            font.clone(),
             PaintMode::Stroke(&stroke),
             text,
             font_size,
@@ -461,7 +477,7 @@ impl ContentBuilder {
         self.apply_isolated_op(
             |sb, _| {
                 sb.graphics_states.combine(state);
-                sb.bbox.expand(&bbox);
+                sb.expand_bbox(bbox);
             },
             move |sb, sc| {
                 let x_object_name = sb.rd_builder.register_resource(x_object, sc);
@@ -504,10 +520,7 @@ impl ContentBuilder {
                 let transform =
                     Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
                 sb.concat_transform(&transform);
-                sb.bbox.expand(
-                    &sb.graphics_states
-                        .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
-                );
+                sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
             },
             move |sb, sc| {
                 let image_name = sb.rd_builder.register_resource(image, sc);
@@ -554,7 +567,7 @@ impl ContentBuilder {
 
         prep(self, sc);
 
-        let transform = self.graphics_states.cur().transform();
+        let transform = self.cur_transform_with_root_transform();
 
         if transform != Transform::identity() {
             self.content.transform(transform.to_pdf_transform());
@@ -585,7 +598,7 @@ impl ContentBuilder {
         let serialize_settings = sc.serialize_settings.clone();
 
         let pattern_transform = |transform: Transform| -> Transform {
-            transform.post_concat(self.graphics_states.cur().transform())
+            transform.post_concat(self.cur_transform_with_root_transform())
         };
 
         let color_to_string = |color: Color,
@@ -624,9 +637,7 @@ impl ContentBuilder {
                     let shading_pattern = ShadingPattern::new(
                         gradient_props,
                         content_builder
-                            .graphics_states
-                            .cur()
-                            .transform()
+                            .cur_transform_with_root_transform()
                             .pre_concat(transform),
                     );
                     let color_space = content_builder
@@ -798,6 +809,43 @@ impl ContentBuilder {
             };
         }
     }
+}
+
+// TODO: Add stroke bbox too?
+fn get_glyphs_bbox(
+    glyphs: &[impl Glyph],
+    mut x: f32,
+    mut y: f32,
+    size: f32,
+    font: Font,
+    glyph_units: GlyphUnits,
+) -> Rect {
+    let mut bbox = Rect::from_xywh(x, y, 1.0, 1.0).unwrap();
+
+    let normalize = |v| unit_normalize(glyph_units, font.units_per_em(), size, v);
+
+    for glyph in glyphs {
+        let xo = normalize(glyph.x_offset()) * size;
+        let xa = normalize(glyph.x_advance()) * size;
+        let yo = normalize(glyph.y_offset()) * size;
+        let ya = normalize(glyph.y_advance()) * size;
+
+        if let Some(glyph_bbox) = font
+            .bbox()
+            .transform(Transform::from_scale(
+                size / font.units_per_em(),
+                -size / font.units_per_em(),
+            ))
+            .and_then(|b| b.transform(Transform::from_translate(x + xo, y - yo)))
+        {
+            bbox.expand(&glyph_bbox);
+        }
+
+        x += xa;
+        y -= ya;
+    }
+
+    bbox
 }
 
 pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {

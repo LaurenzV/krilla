@@ -9,7 +9,7 @@
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
-  /BBox [0 0 180 180]
+  /BBox [20 20 180 180]
   /Group <<
     /Type /Group
     /S /Transparency

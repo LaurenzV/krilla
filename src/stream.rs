@@ -29,7 +29,7 @@ use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Rect, Transform};
 
 /// A stream.
 ///
@@ -85,7 +85,11 @@ impl<'a> StreamBuilder<'a> {
             self.stream = stream;
         });
 
-        Surface::new(self.sc, ContentBuilder::new(), finish_fn)
+        Surface::new(
+            self.sc,
+            ContentBuilder::new(Transform::identity()),
+            finish_fn,
+        )
     }
 
     /// Turn the stream builder into a stream.

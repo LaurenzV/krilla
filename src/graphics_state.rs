@@ -89,6 +89,10 @@ impl GraphicsStates {
     }
 
     pub fn transform_bbox(&self, bbox: Rect) -> Rect {
+        // Important: This does not take the root transform of the
+        // corresponding ContentBuilder into account, because we
+        // want it to be in krilla coordinates, not in PDF
+        // coordinates.
         bbox.transform(self.cur().transform()).unwrap()
     }
 }
