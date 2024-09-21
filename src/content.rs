@@ -835,7 +835,7 @@ fn get_glyphs_bbox(
         }
 
         x += xa;
-        y += ya;
+        y -= ya;
     }
 
     bbox
