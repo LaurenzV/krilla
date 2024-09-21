@@ -237,7 +237,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             let settings = SerializeSettings::#serialize_settings();
             let mut d = Document::new_with(settings);
-            let page_settings = PageSettings::new(200.0, 200.0);
+            let page_settings = PageSettings::new(200.0, 200.0).with_media_box(None);
             let mut page = d.start_page_with(page_settings);
             let mut surface = page.surface();
             #impl_ident(&mut surface);

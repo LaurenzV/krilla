@@ -34,7 +34,7 @@ pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
     graphics_states: GraphicsStates,
-    bbox: Rect,
+    bbox: Option<Rect>,
 }
 
 impl ContentBuilder {
@@ -43,12 +43,12 @@ impl ContentBuilder {
             rd_builder: ResourceDictionaryBuilder::new(),
             content: Content::new(),
             graphics_states: GraphicsStates::new(),
-            bbox: Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+            bbox: None,
         }
     }
 
     pub fn finish(self) -> Stream {
-        Stream::new(self.content.finish(), self.bbox, self.rd_builder.finish())
+        Stream::new(self.content.finish(), self.bbox.unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()), self.rd_builder.finish())
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {
@@ -67,6 +67,15 @@ impl ContentBuilder {
         if blend_mode != pdf_writer::types::BlendMode::Normal {
             let state = ExtGState::new().blend_mode(blend_mode);
             self.graphics_states.combine(&state);
+        }
+    }
+
+    pub fn expand_bbox(&mut self, new_bbox: Rect) {
+        let new_bbox = self.graphics_states.transform_bbox(new_bbox);
+        if let Some(bbox) = &mut self.bbox {
+            bbox.expand(&new_bbox);
+        }   else {
+            self.bbox = Some(new_bbox);
         }
     }
 
@@ -97,8 +106,7 @@ impl ContentBuilder {
 
         self.apply_isolated_op(
             |sb, _| {
-                sb.bbox
-                    .expand(&sb.graphics_states.transform_bbox(path.bounds()));
+                sb.expand_bbox(path.bounds());
 
                 if fill_props {
                     // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -136,8 +144,7 @@ impl ContentBuilder {
 
         self.apply_isolated_op(
             |sb, _| {
-                sb.bbox
-                    .expand(&sb.graphics_states.transform_bbox(stroke_bbox));
+                sb.expand_bbox(stroke_bbox);
 
                 // See comment in `set_fill_properties`
                 if !is_pattern {
@@ -202,7 +209,7 @@ impl ContentBuilder {
             TextRenderingMode::Fill,
             |sb, sc| {
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
-                sb.bbox.expand(&sb.graphics_states.transform_bbox(bbox));
+                sb.expand_bbox(bbox);
                 sb.content_set_fill_properties(bbox, &fill, sc)
             },
             glyphs,
@@ -247,7 +254,7 @@ impl ContentBuilder {
             TextRenderingMode::Stroke,
             |sb, sc| {
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
-                sb.bbox.expand(&sb.graphics_states.transform_bbox(bbox));
+                sb.expand_bbox(bbox);
                 sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
 
                 // There is a very weird and inconsistent interaction between Type3
@@ -458,7 +465,7 @@ impl ContentBuilder {
         self.apply_isolated_op(
             |sb, _| {
                 sb.graphics_states.combine(state);
-                sb.bbox.expand(&sb.graphics_states.transform_bbox(bbox));
+                sb.expand_bbox(bbox);
             },
             move |sb, sc| {
                 let x_object_name = sb.rd_builder.register_resource(x_object, sc);
@@ -501,10 +508,7 @@ impl ContentBuilder {
                 let transform =
                     Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
                 sb.concat_transform(&transform);
-                sb.bbox.expand(
-                    &sb.graphics_states
-                        .transform_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
-                );
+                sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
             },
             move |sb, sc| {
                 let image_name = sb.rd_builder.register_resource(image, sc);
