@@ -24,6 +24,7 @@ endobj
   >>
   /FontDescriptor 3 0 R
   /DW 0
+  /CIDToGIDMap /Identity
   /W [0 0 600 1 1 639 2 2 650]
 >>
 endobj

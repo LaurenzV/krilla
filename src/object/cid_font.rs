@@ -166,6 +166,10 @@ impl CIDFont {
         cid.font_descriptor(descriptor_ref);
         cid.default_width(0.0);
 
+        if !is_cff {
+            cid.cid_to_gid_map_predefined(Name(b"Identity"));
+        }
+
         // IN CID fonts, a upem value of 1000 is assumed for all fonts, so we need to convert.
         let to_pdf_units = |v: f32| v / self.font.units_per_em() * self.units_per_em();
 
