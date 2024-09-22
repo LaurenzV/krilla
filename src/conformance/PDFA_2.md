@@ -96,9 +96,28 @@ See `README.md` for the meaning of each subclause.
 
 6.2.11.2: krilla has made sure that the spec is followed in this regard. 🟢
 
-6.2.11.3.1: krilla always uses `Identity-H` as encoding.
+6.2.11.3.1: krilla always uses `Identity-H` as encoding. 🟢
 
-6.2.11.3.2: krilla always writes the `CIDToGidMap` entry.
+6.2.11.3.2: krilla always writes the `CIDToGidMap` entry. 🟢
+
+6.2.11.3.3: krilla always writes the `WMode` entry for cmaps and never references any other ones. 🟢
+
+6.2.11.4.1: 
+- krilla always embeds the used fonts. 6.2.11.4.2:
+- krilla does not verify the "legality" of the embedded font. 🔴
+
+6.2.11.4.2: 
+- krilla never writes the `CharSet` attribute. 🔵
+- krilla never writes the `CIDSet` attribute. 🔵
+
+6.2.11.5: krilla copies the font metrics directly from the font. 🟢
+
+6.2.11.6:
+- krilla embeds all fonts as symbolic. 🟢
+- krilla does not write the `Encoding` entry for TrueType fonts.
+- The `cmap` in the subsetted font is not preserved yet. 🔴
+
+## 6.3 Annotations
 
 
 
