@@ -21,7 +21,7 @@ See `README.md` for the meaning of each subclause.
 
 6.1.4: `pdf-writer` always write the xref section as described in the spec. 🟢
 
-6.1.5: Trivially fulfilled, we can include the document information dictionary if we want. 🟢
+6.1.5: -
 
 6.1.6: `pdf-writer` always writes hex strings with an even number of characters. 🟢
 
@@ -36,7 +36,7 @@ See `README.md` for the meaning of each subclause.
 
 6.1.10: krilla does never use inline image dictionaries. 🔵
 
-6.1.11: Trivially fulfilled, we can linearize the file if we want. 🔵
+6.1.11: -
 
 6.1.12: krilla doesn't support permissions. 🔵
 
@@ -88,7 +88,17 @@ See `README.md` for the meaning of each subclause.
 
 6.2.9.2: krilla does not use reference XObjects. 🔵
 
-6.2.9.2: krilla does not use PostScript XObjects. 🔵
+6.2.9.3: TODOL does this just apply to PostScript objects or all PostScript?? 🔴
+
+6.2.10: All pages that include transparency always have a group key. 🟢
+
+6.2.11.1: -
+
+6.2.11.2: krilla has made sure that the spec is followed in this regard. 🟢
+
+6.2.11.3.1: krilla always uses `Identity-H` as encoding.
+
+6.2.11.3.2: krilla always writes the `CIDToGidMap` entry.
 
 
 
