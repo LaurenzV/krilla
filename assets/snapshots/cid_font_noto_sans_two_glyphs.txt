@@ -48,6 +48,7 @@ endobj
 <<
   /Length 633
   /Type /CMap
+  /WMode 0
 >>
 stream
 %!PS-Adobe-3.0 Resource-CMap

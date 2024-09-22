@@ -9,6 +9,7 @@ use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::GlyphId;
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
+use pdf_writer::writers::WMode;
 use subsetter::GlyphRemapper;
 
 const CMAP_NAME: Name = Name(b"Custom");
@@ -232,7 +233,10 @@ impl CIDFont {
             cmap
         };
 
-        chunk.cmap(cmap_ref, &cmap.finish());
+        let cmap_stream = cmap.finish();
+        let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
+        cmap.writing_mode(WMode::Horizontal);
+        cmap.finish();
 
         let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
         font_stream.write_filters(stream.deref_mut());

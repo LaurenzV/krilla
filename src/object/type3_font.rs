@@ -13,6 +13,7 @@ use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
+use pdf_writer::writers::WMode;
 use tiny_skia_path::{PathStroker, Rect, Transform};
 
 pub type Gid = u8;
@@ -342,7 +343,11 @@ impl Type3Font {
 
             cmap
         };
-        chunk.cmap(cmap_ref, &cmap.finish());
+
+        let cmap_stream = cmap.finish();
+        let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
+        cmap.writing_mode(WMode::Horizontal);
+        cmap.finish();
 
         chunk
     }
