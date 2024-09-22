@@ -1,0 +1,99 @@
+# Description
+PDF-A/2 requires PDF 1.7 and defines three conformance levels, 
+in the following order from less strict to more strict:
+- Level B
+- Level U
+- Level A
+
+Level U is a subset of level A, and level B is a subset of level U.
+
+See `README.md` for the meaning of each subclause.
+
+## Level B
+
+## 6.1 File structure
+
+6.1.2: `pdf-writer` always write the file header as described in the spec. 🟢
+
+6.1.3: 
+- We always set the file ID. 🟢
+- We do not support encryption. 🔵
+
+6.1.4: `pdf-writer` always write the xref section as described in the spec. 🟢
+
+6.1.5: Trivially fulfilled, we can include the document information dictionary if we want. 🟢
+
+6.1.6: `pdf-writer` always writes hex strings with an even number of characters. 🟢
+
+6.1.7: 
+- `pdf-writer` always write streams as described in the spec. 🟢
+- krilla does never write streams referencing external files. 🔵
+- krilla does never use `LZWDecode` or `Crypt`. 🔵
+
+6.1.8: krilla only ever writes UTF-8 strings as names. 🟢
+
+6.1.9: `pdf-writer` always writes indirect objects as described in the spec. 🟢
+
+6.1.10: krilla does never use inline image dictionaries. 🔵
+
+6.1.11: Trivially fulfilled, we can linearize the file if we want. 🔵
+
+6.1.12: krilla doesn't support permissions. 🔵
+
+6.1.13:
+- `pdf-writer` uses i32 for integers. 🟢
+- `pdf-writer` uses f32 for real numbers. 🟢
+- krilla can contain strings longer than 32767 bytes. 🔴
+- krilla can contain names longer than 127 bytes. 🔴
+- krilla can contain more than 8388607 indirect objects. 🔴
+- krilla can produce content streams with a higher nesting-level than 28. 🔴
+- krilla does not use the DeviceN color space. 🟢
+- krilla only uses u16 for CIDs. 🟢
+
+## 6.2 Graphics
+
+6.2.2:
+- krilla doesn't use non-standard operators. 🟢
+- krilla doesn't use the `ri` or `i` operator. 🟢
+- krilla ensure that content stream has their own associated resource dictionary
+(TODO: what about glyph streams in Type3 fonts?). 🟢
+
+6.2.3: krilla never writes an `OutputIntent`. 🔴
+
+6.2.4.1: krilla does not enforce using a device-independent color space / output intent. 🔴
+
+6.2.4.2: 
+- srgb/sgrey ICC profiles conform to ICC v4 specification. 🟢
+- krilla does not support overprinting. 🔵
+
+6.2.4.3: currently not fulfilled. 🔴
+
+6.2.4.4: krilla does not support DeviceN/Separation color spaces. 🔵
+
+6.2.4.5: currently not fulfilled. 🔴
+
+6.2.5: krilla does not use the transfer functions, halftones, TR/HTP/RI/FL keys. 🔵
+
+6.2.6: krilla does never define a rendering intent. 🔵
+
+6.2.7: krilla is not a reader. 🔵
+
+6.2.8.1: krilla does not use the `Alternates`/`Interpolate`/`Intent` keys for images. 🔵
+
+6.2.8.2: krilla does not support thumbnails. 🔵
+
+6.2.8.3: krilla embeds JPEG images by converting them to a sampled representation. 🔵
+
+6.2.9.1: krilla does not use the `OPI`/`Subtype2`/`PS` keys for XObjects. 🔵
+
+6.2.9.2: krilla does not use reference XObjects. 🔵
+
+6.2.9.2: krilla does not use PostScript XObjects. 🔵
+
+
+
+
+
+
+
+
