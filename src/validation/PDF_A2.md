@@ -89,7 +89,9 @@ See `README.md` for the meaning of each subclause.
 
 6.2.9.2: krilla does not use reference XObjects. 🔵
 
-6.2.9.3: TODOL does this just apply to PostScript objects or all PostScript?? 🔴
+6.2.9.3: The spec only talks about PostScript XObjects, which we don't really use. 
+We only use PostScript functions. In any case, to be on the safe side, krilla fails exports
+when a PostScript function is used. 🟢
 
 6.2.10: Only pages with soft masks have the G key. 🔴
 

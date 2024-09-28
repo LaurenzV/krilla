@@ -12,6 +12,7 @@ pub enum ValidationError {
     TooLongString,
     TooManyIndirectObjects,
     TooHighQNestingLevel,
+    ContainsPostScript,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -28,6 +29,7 @@ impl Validator {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
+                ValidationError::ContainsPostScript => true,
             },
         }
     }
@@ -35,38 +37,29 @@ impl Validator {
     pub fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2(_) => true
+            Validator::PdfA2(_) => true,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::action::LinkAction;
+    use crate::annotation::{LinkAnnotation, Target};
     use crate::error::KrillaError;
     use crate::metadata::Metadata;
-    use crate::path::FillRule;
-    use crate::tests::rect_to_path;
+    use crate::page::Page;
+    use crate::paint::{LinearGradient, SpreadMethod};
+    use crate::path::{Fill, FillRule};
+    use crate::tests::{rect_to_path, stops_with_2_solid_1};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use std::iter;
     use tiny_skia_path::Rect;
-    use crate::action::LinkAction;
-    use crate::annotation::{LinkAnnotation, Target};
-    use crate::page::Page;
 
-    #[snapshot(document, settings_7)]
-    pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
-        let mut page = document.start_page();
-        let mut surface = page.surface();
-
-        for _ in 0..28 {
-            surface.push_clip_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), &FillRule::NonZero);
-        }
-
-        for _ in 0..28 {
-            surface.pop();
-        }
+    fn pdfa_document() -> Document {
+        Document::new_with(SerializeSettings::settings_7())
     }
 
     fn q_nesting_impl(settings: SerializeSettings) -> Document {
@@ -88,6 +81,20 @@ mod tests {
         document
     }
 
+    #[snapshot(document, settings_7)]
+    pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        for _ in 0..28 {
+            surface.push_clip_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), &FillRule::NonZero);
+        }
+
+        for _ in 0..28 {
+            surface.pop();
+        }
+    }
+
     #[test]
     pub fn validation_pdfa_q_nesting_28() {
         let document = q_nesting_impl(SerializeSettings::settings_7());
@@ -101,7 +108,7 @@ mod tests {
 
     #[test]
     pub fn validation_pdfa_string_length() {
-        let mut document = Document::new_with(SerializeSettings::settings_7());
+        let mut document = pdfa_document();
         let metadata = Metadata::new().creator(iter::repeat("A").take(32768).collect());
         document.set_metadata(metadata);
         assert_eq!(
@@ -121,8 +128,43 @@ mod tests {
                     LinkAction::new("https://www.youtube.com".to_string()).into(),
                 ),
             }
-                .into(),
+            .into(),
         );
+    }
+
+    #[test]
+    fn validation_pdfa_postscript() {
+        let mut document = pdfa_document();
+        let mut page = document.start_page();
+
+        let gradient = LinearGradient {
+            x1: 50.0,
+            y1: 0.0,
+            x2: 150.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Repeat,
+            stops: stops_with_2_solid_1(),
+        };
+
+        let fill = Fill {
+            paint: gradient.into(),
+            ..Default::default()
+        };
+
+        let mut surface = page.surface();
+
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), fill);
+
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::ContainsPostScript
+            ]))
+        )
     }
 
     #[test]
