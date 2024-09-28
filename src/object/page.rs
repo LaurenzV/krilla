@@ -60,7 +60,8 @@ impl<'a> Page<'a> {
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface {
-        let root_builder = ContentBuilder::new(self.root_transform());
+        let root_builder =
+            ContentBuilder::new(self.root_transform(), self.sc.serialize_settings.validator);
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 

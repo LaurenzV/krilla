@@ -24,6 +24,7 @@ use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use std::cell::{RefCell, RefMut};
+use std::collections::HashSet;
 use std::ops::Range;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -34,19 +35,19 @@ use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
-    validator: Box<dyn Validator>,
-    validation_errors: Vec<ValidationError>,
+    validator: Validator,
+    validation_errors: HashSet<ValidationError>,
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
 }
 
 impl ContentBuilder {
-    pub fn new(root_transform: Transform, validator: Box<dyn Validator>) -> Self {
+    pub fn new(root_transform: Transform, validator: Validator) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             validator,
-            validation_errors: vec![],
+            validation_errors: HashSet::new(),
             content: Content::new(),
             root_transform,
             graphics_states: GraphicsStates::new(),
@@ -57,13 +58,9 @@ impl ContentBuilder {
     pub fn content_save_state(&mut self) {
         self.content.save_state();
 
-        if self.content.state_nesting_depth() > 28
-            && !self
-                .validation_errors
-                .contains(&ValidationError::TooHighQNestingLevel)
-        {
+        if self.content.state_nesting_depth() > 28 && self.validator.q_nesting_less_or_equal_28() {
             self.validation_errors
-                .push(ValidationError::TooHighQNestingLevel);
+                .insert(ValidationError::TooHighQNestingLevel);
         }
     }
 
@@ -72,7 +69,7 @@ impl ContentBuilder {
             self.content.finish(),
             self.bbox
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
-            self.validation_errors,
+            self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
         )
     }

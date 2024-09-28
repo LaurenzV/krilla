@@ -15,8 +15,7 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
-use crate::validation::dummy::DummyValidator;
-use crate::validation::{ValidationError, Validator};
+use crate::validation::{ConformanceLevel, ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
@@ -67,7 +66,7 @@ pub struct SerializeSettings {
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
     pub cmyk_profile: Option<ICCProfile>,
-    pub validator: Box<dyn Validator>,
+    pub validator: Validator,
 }
 
 #[cfg(test)]
@@ -80,7 +79,7 @@ impl SerializeSettings {
             xmp_metadata: false,
             force_type3_fonts: false,
             cmyk_profile: None,
-            validator: Box::new(DummyValidator),
+            validator: Validator::Dummy,
         }
     }
 
@@ -114,6 +113,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_7() -> Self {
+        Self {
+            validator: Validator::PdfA2(ConformanceLevel::A),
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -125,7 +131,7 @@ impl Default for SerializeSettings {
             xmp_metadata: true,
             force_type3_fonts: false,
             cmyk_profile: None,
-            validator: Box::new(DummyValidator),
+            validator: Validator::Dummy,
         }
     }
 }

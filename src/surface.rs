@@ -338,8 +338,10 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions
             .push(PushInstruction::Mask(Box::new(mask)));
-        self.sub_builders
-            .push(ContentBuilder::new(Transform::identity()));
+        self.sub_builders.push(ContentBuilder::new(
+            Transform::identity(),
+            self.sc.serialize_settings.validator,
+        ));
     }
 
     /// Push a new opacity, meaning that each subsequent graphics object will be
@@ -352,16 +354,20 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.sub_builders
-                .push(ContentBuilder::new(Transform::identity()));
+            self.sub_builders.push(ContentBuilder::new(
+                Transform::identity(),
+                self.sc.serialize_settings.validator,
+            ));
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.sub_builders
-            .push(ContentBuilder::new(Transform::identity()));
+        self.sub_builders.push(ContentBuilder::new(
+            Transform::identity(),
+            self.sc.serialize_settings.validator,
+        ));
     }
 
     /// Pop the last `push` instruction.
@@ -469,7 +475,7 @@ impl Drop for Surface<'_> {
     fn drop(&mut self) {
         let root_builder = std::mem::replace(
             &mut self.root_builder,
-            ContentBuilder::new(Transform::identity()),
+            ContentBuilder::new(Transform::identity(), self.sc.serialize_settings.validator),
         );
         debug_assert!(self.sub_builders.is_empty());
         debug_assert!(self.push_instructions.is_empty());
