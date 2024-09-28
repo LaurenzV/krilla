@@ -8,12 +8,12 @@ use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
+use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
-use pdf_writer::writers::WMode;
 use tiny_skia_path::{PathStroker, Rect, Transform};
 
 pub type Gid = u8;
