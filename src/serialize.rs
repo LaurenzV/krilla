@@ -117,6 +117,8 @@ impl SerializeSettings {
     }
 
     pub(crate) fn settings_7() -> Self {
+        use crate::validation::ConformanceLevel;
+
         Self {
             validator: Validator::PdfA2(ConformanceLevel::A),
             ..Self::settings_1()

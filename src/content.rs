@@ -19,7 +19,7 @@ use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::validation::{ValidationError, Validator};
+use crate::validation::ValidationError;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str};
@@ -35,7 +35,6 @@ use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
-    validator: Validator,
     validation_errors: HashSet<ValidationError>,
     root_transform: Transform,
     graphics_states: GraphicsStates,
@@ -43,10 +42,9 @@ pub(crate) struct ContentBuilder {
 }
 
 impl ContentBuilder {
-    pub fn new(root_transform: Transform, validator: Validator) -> Self {
+    pub fn new(root_transform: Transform) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
-            validator,
             validation_errors: HashSet::new(),
             content: Content::new(),
             root_transform,

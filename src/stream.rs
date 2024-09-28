@@ -95,7 +95,7 @@ impl<'a> StreamBuilder<'a> {
 
         Surface::new(
             self.sc,
-            ContentBuilder::new(Transform::identity(), self.sc.serialize_settings.validator),
+            ContentBuilder::new(Transform::identity()),
             finish_fn,
         )
     }
