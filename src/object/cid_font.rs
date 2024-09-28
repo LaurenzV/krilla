@@ -3,13 +3,13 @@ use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{RectExt, SipHashable, SliceExt};
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
+use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::GlyphId;
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
-use pdf_writer::writers::WMode;
 use subsetter::GlyphRemapper;
 
 const CMAP_NAME: Name = Name(b"Custom");
