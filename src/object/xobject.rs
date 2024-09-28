@@ -46,6 +46,8 @@ impl Object for XObject {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
+        sc.register_validation_errors(&self.stream.validation_errors);
+
         let x_object_stream =
             FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());

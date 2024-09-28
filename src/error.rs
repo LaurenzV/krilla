@@ -4,6 +4,7 @@
 //! invalid fonts are provided. This module provides the basic error types krilla uses.
 
 use crate::font::Font;
+use crate::validation::ValidationError;
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;
@@ -16,4 +17,5 @@ pub enum KrillaError {
     /// A user-related error, indicating API misuse (for example attempting to add
     /// a link to a page that doesn't exist).
     UserError(String),
+    ValidationError(Vec<ValidationError>),
 }

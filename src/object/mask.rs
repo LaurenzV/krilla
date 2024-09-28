@@ -102,6 +102,8 @@ impl Object for Mask {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
+        sc.register_validation_errors(&self.stream.validation_errors);
+
         let x_ref = sc.add_object(XObject::new(
             self.stream,
             false,

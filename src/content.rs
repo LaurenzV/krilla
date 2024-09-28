@@ -19,6 +19,7 @@ use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::validation::{ValidationError, Validator};
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
@@ -33,19 +34,36 @@ use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
     content: Content,
+    validator: Box<dyn Validator>,
+    validation_errors: Vec<ValidationError>,
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
 }
 
 impl ContentBuilder {
-    pub fn new(root_transform: Transform) -> Self {
+    pub fn new(root_transform: Transform, validator: Box<dyn Validator>) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
+            validator,
+            validation_errors: vec![],
             content: Content::new(),
             root_transform,
             graphics_states: GraphicsStates::new(),
             bbox: None,
+        }
+    }
+
+    pub fn content_save_state(&mut self) {
+        self.content.save_state();
+
+        if self.content.state_nesting_depth() > 28
+            && !self
+                .validation_errors
+                .contains(&ValidationError::TooHighQNestingLevel)
+        {
+            self.validation_errors
+                .push(ValidationError::TooHighQNestingLevel);
         }
     }
 
@@ -54,6 +72,7 @@ impl ContentBuilder {
             self.content.finish(),
             self.bbox
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+            self.validation_errors,
             self.rd_builder.finish(),
         )
     }
@@ -173,7 +192,7 @@ impl ContentBuilder {
     }
 
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
-        self.content.save_state();
+        self.content_save_state();
         self.content_draw_path(
             path.clone()
                 .transform(self.cur_transform_with_root_transform())
@@ -563,7 +582,7 @@ impl ContentBuilder {
         sc: &mut SerializerContext,
     ) {
         self.save_graphics_state();
-        self.content.save_state();
+        self.content_save_state();
 
         prep(self, sc);
 

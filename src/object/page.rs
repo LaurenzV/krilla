@@ -98,6 +98,8 @@ impl InternalPage {
         annotations: Vec<Annotation>,
         page_settings: PageSettings,
     ) -> Self {
+        sc.register_validation_errors(&stream.validation_errors);
+
         let stream_ref = sc.new_ref();
         let serialize_settings = sc.serialize_settings.clone();
         let stream_resources = std::mem::take(&mut stream.resource_dictionary);

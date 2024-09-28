@@ -29,6 +29,7 @@ use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
+use crate::validation::ValidationError;
 use tiny_skia_path::{Rect, Transform};
 
 /// A stream.
@@ -40,6 +41,10 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Stream {
     pub(crate) content: Vec<u8>,
     pub(crate) bbox: RectWrapper,
+    // Important: Each object that uses a stream must ensure to pass on the validation
+    // errors to the `SerializerContext` at some point. Currently, only `Mask`,
+    // `TilingPattern`, `InternalPage` and `XObject` require that.
+    pub(crate) validation_errors: Vec<ValidationError>,
     pub(crate) resource_dictionary: ResourceDictionary,
 }
 
@@ -47,11 +52,13 @@ impl Stream {
     pub(crate) fn new(
         content: Vec<u8>,
         bbox: Rect,
+        validation_errors: Vec<ValidationError>,
         resource_dictionary: ResourceDictionary,
     ) -> Self {
         Self {
             content,
             bbox: RectWrapper(bbox),
+            validation_errors,
             resource_dictionary,
         }
     }
@@ -60,6 +67,7 @@ impl Stream {
         Self {
             content: vec![],
             bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
+            validation_errors: vec![],
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
         }
     }

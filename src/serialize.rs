@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontIdentifier, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -15,6 +15,8 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
+use crate::validation::dummy::DummyValidator;
+use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
@@ -65,6 +67,7 @@ pub struct SerializeSettings {
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
     pub cmyk_profile: Option<ICCProfile>,
+    pub validator: Box<dyn Validator>,
 }
 
 #[cfg(test)]
@@ -77,6 +80,7 @@ impl SerializeSettings {
             xmp_metadata: false,
             force_type3_fonts: false,
             cmyk_profile: None,
+            validator: Box::new(DummyValidator),
         }
     }
 
@@ -121,6 +125,7 @@ impl Default for SerializeSettings {
             xmp_metadata: true,
             force_type3_fonts: false,
             cmyk_profile: None,
+            validator: Box::new(DummyValidator),
         }
     }
 }
@@ -140,6 +145,7 @@ pub(crate) struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
+    validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: SerializeSettings,
 }
 
@@ -173,6 +179,7 @@ impl SerializerContext {
             page_infos: vec![],
             pages: vec![],
             font_map: HashMap::new(),
+            validation_errors: vec![],
             serialize_settings,
         }
     }
@@ -187,6 +194,10 @@ impl SerializerContext {
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub(crate) fn register_validation_errors(&mut self, errors: &[ValidationError]) {
+        self.validation_errors.extend(errors);
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {
@@ -411,6 +422,10 @@ impl SerializerContext {
         // Just a sanity check.
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
+
+        if !self.validation_errors.is_empty() {
+            return Err(KrillaError::ValidationError(self.validation_errors));
+        }
 
         Ok(self.chunk_container.finish(self.serialize_settings))
     }

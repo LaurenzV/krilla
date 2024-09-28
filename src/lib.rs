@@ -130,6 +130,7 @@ pub mod surface;
 pub mod content;
 #[cfg(test)]
 pub mod tests;
+pub mod validation;
 
 pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};
