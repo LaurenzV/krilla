@@ -36,11 +36,13 @@ impl Validator {
 #[cfg(test)]
 mod tests {
     use crate::error::KrillaError;
+    use crate::metadata::Metadata;
     use crate::path::FillRule;
     use crate::tests::rect_to_path;
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
+    use std::iter;
 
     #[snapshot(document, settings_7)]
     pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
@@ -56,9 +58,8 @@ mod tests {
         }
     }
 
-    #[test]
-    pub fn validation_pdfa_q_nesting_28() {
-        let mut document = Document::new_with(SerializeSettings::settings_7());
+    fn q_nesting_impl(settings: SerializeSettings) -> Document {
+        let mut document = Document::new_with(settings);
         let mut page = document.start_page();
         let mut surface = page.surface();
 
@@ -72,11 +73,37 @@ mod tests {
 
         surface.finish();
         page.finish();
+
+        document
+    }
+
+    #[test]
+    pub fn validation_pdfa_q_nesting_28() {
+        let document = q_nesting_impl(SerializeSettings::settings_7());
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::TooHighQNestingLevel
             ]))
         );
+    }
+
+    #[test]
+    pub fn validation_pdfa_string_length() {
+        let mut document = Document::new_with(SerializeSettings::settings_7());
+        let metadata = Metadata::new().creator(iter::repeat("A").take(17000).collect());
+        document.set_metadata(metadata);
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::TooLongString
+            ]))
+        );
+    }
+
+    #[test]
+    pub fn validation_disabled_q_nesting_28() {
+        let document = q_nesting_impl(SerializeSettings::default());
+        assert!(document.finish().is_ok());
     }
 }
