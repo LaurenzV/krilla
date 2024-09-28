@@ -18,7 +18,7 @@ use crate::util::{NameExt, SipHashable};
 use crate::validation::{ConformanceLevel, ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
+use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -68,6 +68,8 @@ pub struct SerializeSettings {
     pub cmyk_profile: Option<ICCProfile>,
     pub validator: Validator,
 }
+
+const STR_BYTE_LEN: usize = 32767;
 
 #[cfg(test)]
 impl SerializeSettings {
@@ -202,8 +204,10 @@ impl SerializerContext {
         self.chunk_container.metadata = Some(metadata);
     }
 
-    pub(crate) fn register_validation_errors(&mut self, errors: &[ValidationError]) {
-        self.validation_errors.extend(errors);
+    pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
+        if self.serialize_settings.validator.prohibits(error) {
+            self.validation_errors.push(error);
+        }
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {
@@ -269,9 +273,19 @@ impl SerializerContext {
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize(ref_);
+        let chunk = page_label.serialize(self, ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
+    }
+
+    pub fn new_text_str<'a>(&mut self, text: &'a str) -> TextStr<'a> {
+        // Check whether the worst-case string is small enough for PDF/A.
+        // 2 for the byte order mark and * 2 for hex encoding.
+        if text.as_bytes().len() * 2 + 2 > STR_BYTE_LEN {
+            self.register_validation_error(ValidationError::TooLongString);
+        }
+
+        TextStr(text)
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
@@ -430,15 +444,17 @@ impl SerializerContext {
         assert!(self.pages.is_empty());
 
         if self.cur_ref > Ref::new(8388607) {
-            self.validation_errors
-                .push(ValidationError::TooManyIndirectObjects);
+            self.register_validation_error(ValidationError::TooManyIndirectObjects)
         }
+
+        let chunk_container = std::mem::take(&mut self.chunk_container);
+        let serialized = chunk_container.finish(&mut self);
 
         if !self.validation_errors.is_empty() {
             return Err(KrillaError::ValidationError(self.validation_errors));
         }
 
-        Ok(self.chunk_container.finish(self.serialize_settings))
+        Ok(serialized)
     }
 }
 

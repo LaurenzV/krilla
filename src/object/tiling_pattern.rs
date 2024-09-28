@@ -77,7 +77,9 @@ impl Object for TilingPattern {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        sc.register_validation_errors(&self.stream.validation_errors);
+        for validation_error in &self.stream.validation_errors {
+            sc.register_validation_error(*validation_error);
+        }
 
         let pattern_stream =
             FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);

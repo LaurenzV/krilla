@@ -58,7 +58,7 @@ impl ContentBuilder {
     pub fn content_save_state(&mut self) {
         self.content.save_state();
 
-        if self.content.state_nesting_depth() > 28 && self.validator.q_nesting_less_or_equal_28() {
+        if self.content.state_nesting_depth() > 28 {
             self.validation_errors
                 .insert(ValidationError::TooHighQNestingLevel);
         }
@@ -423,7 +423,7 @@ impl ContentBuilder {
                         let mut actual_text = sb
                             .content
                             .begin_marked_content_with_properties(Name(b"Span"));
-                        actual_text.properties().actual_text(TextStr(text));
+                        actual_text.properties().actual_text(sc.new_text_str(text));
                     }
 
                     // Segment into glyph runs that can be encoded in one go using a PDF

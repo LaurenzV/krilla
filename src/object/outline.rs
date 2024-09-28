@@ -180,7 +180,7 @@ impl OutlineNode {
         }
 
         if !self.text.is_empty() {
-            outline_entry.title(TextStr(&self.text));
+            outline_entry.title(sc.new_text_str(&self.text));
         }
 
         self.destination.serialize(sc, outline_entry.dest());

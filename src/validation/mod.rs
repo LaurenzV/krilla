@@ -21,24 +21,14 @@ pub enum Validator {
 }
 
 impl Validator {
-    pub(crate) fn strings_less_than_32767(&self) -> bool {
+    pub fn prohibits(&self, validation_error: ValidationError) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2(_) => true,
-        }
-    }
-
-    pub(crate) fn indirect_objects_less_than_8388607(&self) -> bool {
-        match self {
-            Validator::Dummy => false,
-            Validator::PdfA2(_) => true,
-        }
-    }
-
-    pub(crate) fn q_nesting_less_or_equal_28(&self) -> bool {
-        match self {
-            Validator::Dummy => false,
-            Validator::PdfA2(_) => true,
+            Validator::PdfA2(_) => match validation_error {
+                ValidationError::TooLongString => true,
+                ValidationError::TooManyIndirectObjects => true,
+                ValidationError::TooHighQNestingLevel => true,
+            },
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::metadata::Metadata;
-use crate::serialize::SerializeSettings;
+use crate::serialize::{SerializeSettings, SerializerContext};
 use crate::util::{hash_base64, Deferred};
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
@@ -17,6 +17,7 @@ impl ChunkExt for Chunk {
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
+#[derive(Default)]
 pub struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
@@ -40,29 +41,10 @@ pub struct ChunkContainer {
 
 impl ChunkContainer {
     pub fn new() -> Self {
-        Self {
-            page_tree: None,
-            outline: None,
-            page_label_tree: None,
-
-            pages: vec![],
-            page_labels: vec![],
-            annotations: vec![],
-            fonts: vec![],
-            color_spaces: vec![],
-            destinations: vec![],
-            ext_g_states: vec![],
-            images: vec![],
-            masks: vec![],
-            x_objects: vec![],
-            shading_functions: vec![],
-            patterns: vec![],
-
-            metadata: None,
-        }
+        Self::default()
     }
 
-    pub fn finish(mut self, serialize_settings: SerializeSettings) -> Pdf {
+    pub fn finish(mut self, sc: &mut SerializerContext) -> Pdf {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -114,7 +96,7 @@ impl ChunkContainer {
         // case, and thus give us better performance.
         let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
 
-        if serialize_settings.ascii_compatible {
+        if sc.serialize_settings.ascii_compatible {
             pdf.set_binary_marker(b"AAAA")
         }
 
@@ -155,7 +137,7 @@ impl ChunkContainer {
 
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
-            metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
+            metadata.serialize_document_info(&mut remapped_ref, sc, &mut pdf);
         }
 
         // Write the XMP data, if applicable
@@ -197,7 +179,7 @@ impl ChunkContainer {
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
         if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
-            let meta_ref = if serialize_settings.xmp_metadata {
+            let meta_ref = if sc.serialize_settings.xmp_metadata {
                 let meta_ref = remapped_ref.bump();
                 let xmp_buf = xmp.finish(None);
                 pdf.stream(meta_ref, xmp_buf.as_bytes())
