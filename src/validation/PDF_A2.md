@@ -59,7 +59,7 @@ See `README.md` for the meaning of each subclause.
 - krilla ensure that content stream has their own associated resource dictionary
 (TODO: what about glyph streams in Type3 fonts?). 🟢
 
-6.2.3: krilla never writes an `OutputIntent`. 🔴
+6.2.3: krilla always write an `sRGB` output intent for PDF/A. 🟢
 
 6.2.4.1: krilla does not enforce using a device-independent color space / output intent. 🔴
 

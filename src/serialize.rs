@@ -18,7 +18,9 @@ use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::types::OutputIntentSubtype;
+use pdf_writer::writers::OutputIntent;
+use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -178,7 +180,11 @@ impl PDFGlyph {
 }
 
 impl SerializerContext {
-    pub fn new(serialize_settings: SerializeSettings) -> Self {
+    pub fn new(mut serialize_settings: SerializeSettings) -> Self {
+        // If the validator requires/prefers no device color spaces
+        // set it to true, even if the user didn't set it.
+        serialize_settings.no_device_cs |= serialize_settings.validator.prefers_no_device_cs();
+
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
@@ -390,10 +396,39 @@ impl SerializerContext {
         map
     }
 
+    fn get_output_intents(&mut self, subtype: OutputIntentSubtype, root_ref: Ref) -> Chunk {
+        let mut chunk = Chunk::new();
+
+        let oi_ref = self.new_ref();
+        let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+        oi.dest_output_profile(self.add_resource(Resource::Rgb))
+            .subtype(subtype)
+            .output_condition_identifier(TextStr("Custom"))
+            .output_condition(TextStr("sRGB"))
+            .registry_name(TextStr(""))
+            .info(TextStr("sRGB v4.2"));
+        oi.finish();
+
+        let mut array = chunk.indirect(root_ref).array();
+        array.item(Name(b"ICCBased"));
+        array.item(oi_ref);
+        array.finish();
+
+        chunk
+    }
+
     pub fn finish(mut self) -> KrillaResult<Pdf> {
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use `std::mem::take` to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
+
+        // Write output intent, if required by the validator.
+        let validator = self.serialize_settings.validator;
+        self.chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
+            let root_ref = self.new_ref();
+            let chunk = self.get_output_intents(subtype, root_ref);
+            (root_ref, chunk)
+        });
 
         if let Some(container) = PageLabelContainer::new(
             &self
@@ -447,10 +482,6 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
-        // Just a sanity check.
-        assert!(self.font_map.is_empty());
-        assert!(self.pages.is_empty());
-
         if self.cur_ref > Ref::new(8388607) {
             self.register_validation_error(ValidationError::TooManyIndirectObjects)
         }
@@ -461,6 +492,11 @@ impl SerializerContext {
         if !self.validation_errors.is_empty() {
             return Err(KrillaError::ValidationError(self.validation_errors));
         }
+
+        // Just a sanity check.
+        assert!(self.font_map.is_empty());
+        assert!(self.pages.is_empty());
+        // TODO: add check that chunk container is empty
 
         Ok(serialized)
     }

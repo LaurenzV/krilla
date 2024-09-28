@@ -22,6 +22,7 @@ pub struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
+    pub(crate) destination_profiles: Option<(Ref, Chunk)>,
 
     pub(crate) pages: Vec<Chunk>,
     pub(crate) page_labels: Vec<Chunk>,
@@ -100,7 +101,8 @@ impl ChunkContainer {
             pdf.set_binary_marker(b"AAAA")
         }
 
-        remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline, &mut self.page_label_tree);
+        remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
+            &mut self.page_label_tree, &mut self.destination_profiles);
         remap_fields!(remapper, remapped_ref; &self.pages, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
             &self.ext_g_states, &self.images, &self.masks, &self.x_objects, &self.shading_functions,
@@ -128,7 +130,8 @@ impl ChunkContainer {
             };
         }
 
-        write_field!(remapper, &mut pdf; &self.page_tree, &self.outline, &self.page_label_tree);
+        write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
+            &self.page_label_tree, &self.destination_profiles);
         write_fields!(remapper, &mut pdf; &self.pages, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
             &self.ext_g_states, &self.images, &self.masks, &self.x_objects,
@@ -178,7 +181,11 @@ impl ChunkContainer {
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some() || self.outline.is_some() || self.page_label_tree.is_some() {
+        if self.page_tree.is_some()
+            || self.outline.is_some()
+            || self.page_label_tree.is_some()
+            || self.destination_profiles.is_some()
+        {
             let meta_ref = if sc.serialize_settings.xmp_metadata {
                 let meta_ref = remapped_ref.bump();
                 let xmp_buf = xmp.finish(None);
@@ -204,6 +211,10 @@ impl ChunkContainer {
 
             if let Some(pl) = &self.page_label_tree {
                 catalog.pair(Name(b"PageLabels"), pl.0);
+            }
+
+            if let Some(oi) = &self.destination_profiles {
+                catalog.pair(Name(b"OutputIntents"), oi.0);
             }
 
             // TODO: Add viewer preferences

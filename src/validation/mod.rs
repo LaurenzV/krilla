@@ -1,3 +1,4 @@
+use pdf_writer::types::OutputIntentSubtype;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Copy)]
@@ -38,6 +39,20 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2(_) => true,
+        }
+    }
+
+    pub fn prefers_no_device_cs(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::PdfA2(_) => true,
+        }
+    }
+
+    pub fn output_intent(&self) -> Option<OutputIntentSubtype> {
+        match self {
+            Validator::Dummy => None,
+            Validator::PdfA2(_) => Some(OutputIntentSubtype::PDFA),
         }
     }
 }
