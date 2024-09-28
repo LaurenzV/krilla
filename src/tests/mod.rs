@@ -97,6 +97,8 @@ lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS_VARIABLE, FONT_PATH.join("NotoSans_variable.ttf"));
+#[rustfmt::skip]
+lazy_font!(SVG_EXTRA, FONT_PATH.join("SVG_extra.ttf"));
 
 pub fn green_fill(opacity: f32) -> Fill {
     Fill {

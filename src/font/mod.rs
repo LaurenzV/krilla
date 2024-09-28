@@ -304,7 +304,7 @@ pub(crate) fn draw_color_glyph(
     let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
         .or_else(|| {
             #[cfg(feature = "svg")]
-            let res = svg::draw_glyph(font.clone(), glyph, surface, svg_settings);
+            let res = svg::draw_glyph(font.clone(), glyph, surface, paint_mode, svg_settings);
 
             #[cfg(not(feature = "svg"))]
             let res = None;
