@@ -358,7 +358,7 @@ impl ContentBuilder {
             // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
                 if !encoded.is_empty() {
-                    items.show(Str(&encoded));
+                    items.show(sc.new_str(&encoded));
                     encoded.clear();
                 }
 

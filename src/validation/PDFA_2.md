@@ -43,7 +43,8 @@ See `README.md` for the meaning of each subclause.
 6.1.13:
 - `pdf-writer` uses i32 for integers. 🟢
 - `pdf-writer` uses f32 for real numbers. 🟢
-- krilla can contain strings longer than 32767 bytes. 🔴
+- krilla always uses the `new_str` and `new_text_str` methods of the SerializerContext to create them, 
+  which returns a validation error in case it's too long. 🔵
 - krilla trims the names of fonts, and all other names cannot be longer than 127. 🔵
 - krilla fails export if more than 8388607 indirect objects exist. 🟢
 - krilla fails export if a higher nesting-level than 28 exists. 🟢

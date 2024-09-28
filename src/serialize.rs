@@ -18,7 +18,7 @@ use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref, TextStr};
+use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -281,13 +281,19 @@ impl SerializerContext {
     }
 
     pub fn new_text_str<'a>(&mut self, text: &'a str) -> TextStr<'a> {
-        // Check whether the worst-case string is small enough for PDF/A.
-        // 2 for the byte order mark and * 2 for hex encoding.
         if text.as_bytes().len() > STR_BYTE_LEN {
             self.register_validation_error(ValidationError::TooLongString);
         }
 
         TextStr(text)
+    }
+
+    pub fn new_str<'a>(&mut self, str: &'a [u8]) -> Str<'a> {
+        if str.len() > STR_BYTE_LEN {
+            self.register_validation_error(ValidationError::TooLongString);
+        }
+
+        Str(str)
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {

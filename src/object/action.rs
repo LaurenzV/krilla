@@ -8,7 +8,6 @@
 
 use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
-use pdf_writer::Str;
 
 /// A type of action.
 pub enum Action {
@@ -17,9 +16,9 @@ pub enum Action {
 }
 
 impl Action {
-    pub(crate) fn serialize(&self, _: &mut SerializerContext, action: pdf_writer::writers::Action) {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, action: pdf_writer::writers::Action) {
         match self {
-            Action::Link(link) => link.serialize(action),
+            Action::Link(link) => link.serialize(sc, action),
         }
     }
 }
@@ -43,10 +42,10 @@ impl LinkAction {
 }
 
 impl LinkAction {
-    fn serialize(&self, mut action: pdf_writer::writers::Action) {
+    fn serialize(&self, sc: &mut SerializerContext, mut action: pdf_writer::writers::Action) {
         action
             .action_type(ActionType::Uri)
-            .uri(Str(self.uri.as_bytes()));
+            .uri(sc.new_str(self.uri.as_bytes()));
     }
 }
 
