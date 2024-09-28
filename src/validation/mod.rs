@@ -31,6 +31,13 @@ impl Validator {
             },
         }
     }
+
+    pub fn annotation_ap_stream(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::PdfA2(_) => true
+        }
+    }
 }
 
 #[cfg(test)]
@@ -43,6 +50,10 @@ mod tests {
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use std::iter;
+    use tiny_skia_path::Rect;
+    use crate::action::LinkAction;
+    use crate::annotation::{LinkAnnotation, Target};
+    use crate::page::Page;
 
     #[snapshot(document, settings_7)]
     pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
@@ -91,13 +102,26 @@ mod tests {
     #[test]
     pub fn validation_pdfa_string_length() {
         let mut document = Document::new_with(SerializeSettings::settings_7());
-        let metadata = Metadata::new().creator(iter::repeat("A").take(17000).collect());
+        let metadata = Metadata::new().creator(iter::repeat("A").take(32768).collect());
         document.set_metadata(metadata);
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::TooLongString
             ]))
+        );
+    }
+
+    #[snapshot(single_page, settings_7)]
+    fn validation_pdfa_annotation(page: &mut Page) {
+        page.add_annotation(
+            LinkAnnotation {
+                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                target: Target::Action(
+                    LinkAction::new("https://www.youtube.com".to_string()).into(),
+                ),
+            }
+                .into(),
         );
     }
 

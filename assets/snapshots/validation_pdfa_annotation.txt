@@ -1,0 +1,91 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [3 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Annot
+  /Subtype /Link
+  /Rect [50 50 150 150]
+  /Border [0 0 0]
+  /F 4
+  /AP <<
+    /N 5 0 R
+  >>
+  /A <<
+    /Type /Action
+    /S /URI
+    /URI (https://www.youtube.com)
+  >>
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 4 0 R
+  /Annots [2 0 R]
+>>
+endobj
+
+4 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+5 0 obj
+<<
+  /Length 0
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [50 50 150 150]
+>>
+stream
+
+endstream
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000288 00000 n
+0000000465 00000 n
+0000000517 00000 n
+0000000690 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(aQjVOI1nUGu9h8nxFv6N5A==) (aQjVOI1nUGu9h8nxFv6N5A==)]
+>>
+startxref
+744
+%%EOF

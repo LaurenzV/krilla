@@ -91,7 +91,7 @@ See `README.md` for the meaning of each subclause.
 
 6.2.9.3: TODOL does this just apply to PostScript objects or all PostScript?? 🔴
 
-6.2.10: All pages that include transparency always have a group key. 🟢
+6.2.10: Only pages with soft masks have the G key. 🔴
 
 6.2.11.1: -
 
@@ -127,7 +127,7 @@ See `README.md` for the meaning of each subclause.
 - krilla always sets the `F` flag for annotations. 🟢
 - krilla does not support text annotations. 🔵
 
-6.3.3: krilla does not support write an appearence stream. 🔴
+6.3.3: krilla always writes an empty appearence stream for PDF/A output. 🟢
 
 6.3.4: -
 

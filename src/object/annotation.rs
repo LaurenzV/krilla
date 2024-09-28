@@ -13,6 +13,8 @@ use crate::util::RectExt;
 use pdf_writer::types::{AnnotationFlags, AnnotationType};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
+use crate::object::xobject::XObject;
+use crate::stream::Stream;
 
 /// A type of annotation.
 pub enum Annotation {
@@ -73,6 +75,13 @@ impl LinkAnnotation {
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
         annotation.flags(AnnotationFlags::PRINT);
+
+        if sc.serialize_settings.validator.annotation_ap_stream() {
+            let x_obj = XObject::new(Stream::empty(), false, false, Some(actual_rect));
+            let x_ref = sc.add_object(x_obj);
+            annotation.appearance()
+                .normal().stream(x_ref);
+        }
 
         match &self.target {
             Target::Destination(destination) => destination.serialize(
