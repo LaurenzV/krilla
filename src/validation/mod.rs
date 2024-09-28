@@ -10,7 +10,6 @@ pub enum ConformanceLevel {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ValidationError {
     TooLongString,
-    TooLongName,
     TooManyIndirectObjects,
     TooHighQNestingLevel,
 }
@@ -23,13 +22,6 @@ pub enum Validator {
 
 impl Validator {
     pub(crate) fn strings_less_than_32767(&self) -> bool {
-        match self {
-            Validator::Dummy => false,
-            Validator::PdfA2(_) => true,
-        }
-    }
-
-    pub(crate) fn name_less_than_127(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2(_) => true,

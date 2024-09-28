@@ -429,6 +429,11 @@ impl SerializerContext {
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
 
+        if self.cur_ref > Ref::new(8388607) {
+            self.validation_errors
+                .push(ValidationError::TooManyIndirectObjects);
+        }
+
         if !self.validation_errors.is_empty() {
             return Err(KrillaError::ValidationError(self.validation_errors));
         }

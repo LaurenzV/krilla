@@ -44,9 +44,9 @@ See `README.md` for the meaning of each subclause.
 - `pdf-writer` uses i32 for integers. 🟢
 - `pdf-writer` uses f32 for real numbers. 🟢
 - krilla can contain strings longer than 32767 bytes. 🔴
-- krilla can contain names longer than 127 bytes. 🔴
-- krilla can contain more than 8388607 indirect objects. 🔴
-- krilla can produce content streams with a higher nesting-level than 28. 🔴
+- krilla trims the names of fonts, and all other names cannot be longer than 127. 🔵
+- krilla fails export if more than 8388607 indirect objects exist. 🟢
+- krilla fails export if a higher nesting-level than 28 exists. 🟢
 - krilla does not use the DeviceN color space. 🟢
 - krilla only uses u16 for CIDs. 🟢
 

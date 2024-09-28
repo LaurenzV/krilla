@@ -1,5 +1,6 @@
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use crate::object::cid_font::{CMAP_NAME, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
@@ -7,9 +8,9 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::{font, SvgSettings};
-use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
+use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
+use pdf_writer::{Chunk, Content, Finish, Name, Ref};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -86,13 +87,6 @@ pub(crate) struct Type3Font {
     glyph_set: HashSet<OwnedCoveredGlyph>,
     index: usize,
 }
-
-const CMAP_NAME: Name = Name(b"Custom");
-const SYSTEM_INFO: SystemInfo = SystemInfo {
-    registry: Str(b"Adobe"),
-    ordering: Str(b"Identity"),
-    supplement: 0,
-};
 
 impl Type3Font {
     pub fn new(font: Font, index: usize) -> Self {
@@ -269,14 +263,12 @@ impl Type3Font {
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
 
-        let postscript_name = self.font.postscript_name();
-
         let mut flags = FontFlags::empty();
         flags.set(
             FontFlags::SERIF,
-            postscript_name
-                .map(|n| n.contains("Serif"))
-                .unwrap_or(false),
+            self.font
+                .postscript_name()
+                .is_some_and(|n| n.contains("Serif")),
         );
         flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
         flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
@@ -287,10 +279,14 @@ impl Type3Font {
         let ascender = font_bbox.bottom();
         let descender = font_bbox.top();
 
+        const MAX_LEN: usize = 127;
+        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
+        let trimmed = &postscript_name[..postscript_name.len().min(MAX_LEN)];
+
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
-            .name(Name(postscript_name.unwrap_or("unknown").as_bytes()))
+            .name(Name(trimmed.as_bytes()))
             .flags(flags)
             .bbox(font_bbox.to_pdf_rect())
             .italic_angle(italic_angle)
