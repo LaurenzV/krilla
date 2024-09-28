@@ -13,3 +13,4 @@ invariant in the code, or by returning an error to the user in case it's not ful
 🟣: This means that this property cannot be enforced by krilla, and thus is only documented.
 It is upon the user of the library to enforce it.
 🔴: This means that the property is currently not enforced by krilla.
+-: This means that the clause is not applicable to krilla (for example because it's not a reader application)

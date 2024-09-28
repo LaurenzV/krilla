@@ -116,14 +116,42 @@ See `README.md` for the meaning of each subclause.
 6.2.11.6:
 - krilla embeds all fonts as symbolic. 🟢
 - krilla does not write the `Encoding` entry for TrueType fonts.
-- The `cmap` in the subsetted font is not preserved yet. 🔴
+- krilla only writes CIDFonts instead of TrueType fonts directly, so cmap is not needed. 🟢
 
 ## 6.3 Annotations
 
 
+6.3.1: krilla does not support any non-standard annotation types, nor `3D`, `Sound`, `Screen` or `Movie`. 🔵
 
+6.3.2: krilla currently does not set the approproiate annotation flags. 🔴
 
+6.3.3: krilla does not support appearence streams. 🔵
 
+6.3.4: -
 
+## 6.4 Interactive forms
 
+6.4.1: krilla does not support interactive forms. 🔵
 
+6.4.2: krilla does not support interactive forms. 🔵
+
+6.4.3: krilla does not support digital signatures. 🔵
+
+## 6.5 Action
+
+6.5.1:
+- krilla does not support the `Launch`, `Sound`, `Movie`, `ResetForm`, `ImportData`, `Hide`, `SetOCGState`, `Rendition`, `Trans`,
+  `GoTo3DView` and `JavaScript` actions. 🔵
+- krilla does not use the `set-state` and `no-op` actions. 🔵
+- krilla does not support named actions. 🔵
+
+6.5.2:
+- krilla does not support widget annotations. 🔵
+- krilla does not write an AA entry in the document catalog. 🟢
+- krilla does not write an AA entry for pages. 🟢
+
+6.5.3: -
+
+## 6.6 Metadata
+
+TODO
