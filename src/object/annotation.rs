@@ -10,7 +10,7 @@ use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::serialize::SerializerContext;
 use crate::util::RectExt;
-use pdf_writer::types::AnnotationType;
+use pdf_writer::types::{AnnotationFlags, AnnotationType};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
 
@@ -72,6 +72,7 @@ impl LinkAnnotation {
         annotation.subtype(AnnotationType::Link);
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
+        annotation.flags(AnnotationFlags::PRINT);
 
         match &self.target {
             Target::Destination(destination) => destination.serialize(

@@ -123,9 +123,11 @@ See `README.md` for the meaning of each subclause.
 
 6.3.1: krilla does not support any non-standard annotation types, nor `3D`, `Sound`, `Screen` or `Movie`. 🔵
 
-6.3.2: krilla currently does not set the approproiate annotation flags. 🔴
+6.3.2: 
+- krilla always sets the `F` flag for annotations. 🟢
+- krilla does not support text annotations. 🔵
 
-6.3.3: krilla does not support appearence streams. 🔵
+6.3.3: krilla does not support write an appearence stream. 🔴
 
 6.3.4: -
 
