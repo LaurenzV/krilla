@@ -22,7 +22,7 @@ use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectE
 use crate::validation::{ValidationError, Validator};
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Name, Str, TextStr};
+use pdf_writer::{Content, Finish, Name, Str};
 use std::cell::{RefCell, RefMut};
 use std::collections::HashSet;
 use std::ops::Range;

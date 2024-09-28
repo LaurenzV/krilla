@@ -10,7 +10,7 @@ use crate::surface::Surface;
 use crate::util::Deferred;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use pdf_writer::{Chunk, Finish, Ref};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};

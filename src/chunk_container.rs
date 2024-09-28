@@ -1,5 +1,5 @@
 use crate::metadata::Metadata;
-use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::util::{hash_base64, Deferred};
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;

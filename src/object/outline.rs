@@ -21,7 +21,7 @@
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::SerializerContext;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use pdf_writer::{Chunk, Finish, Ref};
 
 /// An outline.
 ///
