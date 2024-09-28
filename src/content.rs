@@ -609,29 +609,26 @@ impl ContentBuilder {
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, Color),
     ) {
-        let serialize_settings = sc.serialize_settings.clone();
-
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.cur_transform_with_root_transform())
         };
 
-        let color_to_string = |color: Color,
-                               content_builder: &mut ContentBuilder,
-                               sc: &mut SerializerContext,
-                               allow_gray: bool| match color
-            .color_space(&serialize_settings, allow_gray)
-        {
-            ColorSpace::Rgb => content_builder
-                .rd_builder
-                .register_resource(SRGB_ICC.clone(), sc),
-            ColorSpace::Gray => content_builder
-                .rd_builder
-                .register_resource(GREY_ICC.clone(), sc),
-            ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
-            ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
-            ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
-            ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
-        };
+        let color_to_string =
+            |color: Color,
+             content_builder: &mut ContentBuilder,
+             sc: &mut SerializerContext,
+             allow_gray: bool| match color.color_space(sc, allow_gray) {
+                ColorSpace::Rgb => content_builder
+                    .rd_builder
+                    .register_resource(SRGB_ICC.clone(), sc),
+                ColorSpace::Gray => content_builder
+                    .rd_builder
+                    .register_resource(GREY_ICC.clone(), sc),
+                ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
+                ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
+                ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
+                ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
+            };
 
         let mut write_gradient =
             |gradient_props: GradientProperties,

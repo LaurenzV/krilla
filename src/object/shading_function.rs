@@ -247,9 +247,7 @@ fn serialize_postscript_shading(
     let cs = if use_opacities {
         rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
-        post_script_gradient.stops[0]
-            .color
-            .color_space(&sc.serialize_settings, false)
+        post_script_gradient.stops[0].color.color_space(sc, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -278,9 +276,7 @@ fn serialize_axial_radial_shading(
     let cs = if use_opacities {
         rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
-        radial_axial_gradient.stops[0]
-            .color
-            .color_space(&sc.serialize_settings, false)
+        radial_axial_gradient.stops[0].color.color_space(sc, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);

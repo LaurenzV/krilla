@@ -46,7 +46,7 @@ use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::Prehashed;
-use crate::SerializeSettings;
+use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -77,14 +77,16 @@ impl Color {
         }
     }
 
-    pub(crate) fn color_space(
-        &self,
-        serialize_settings: &SerializeSettings,
-        allow_gray: bool,
-    ) -> ColorSpace {
+    pub(crate) fn color_space(&self, sc: &mut SerializerContext, allow_gray: bool) -> ColorSpace {
         match self {
-            Color::Rgb(rgb) => rgb.color_space(serialize_settings.no_device_cs, allow_gray),
-            Color::Cmyk(cmyk) => cmyk.color_space(serialize_settings),
+            Color::Rgb(rgb) => rgb.color_space(sc.serialize_settings.no_device_cs, allow_gray),
+            Color::Cmyk(cmyk) => {
+                let color_space = cmyk.color_space(&sc.serialize_settings);
+                if color_space == ColorSpace::DeviceCmyk {
+                    sc.register_validation_error(ValidationError::MissingCMYKProfile);
+                }
+                color_space
+            }
         }
     }
 }

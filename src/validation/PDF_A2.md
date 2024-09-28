@@ -61,17 +61,23 @@ See `README.md` for the meaning of each subclause.
 
 6.2.3: krilla always write an `sRGB` output intent for PDF/A. 🟢
 
-6.2.4.1: krilla does not enforce using a device-independent color space / output intent. 🔴
+6.2.4.1: krilla overrides the `no_device_cs` property if PDF/A is selected, and
+in case CMYK is used but no profile was provided, export fails.
 
 6.2.4.2: 
-- srgb/sgrey ICC profiles conform to ICC v4 specification. 🟢
+- sRGB/sGrey ICC profiles conform to ICC v4 specification. 🟢
 - krilla does not support overprinting. 🔵
 
-6.2.4.3: currently not fulfilled. 🔴
+6.2.4.3: 
+- krilla always uses sRGB for RGB, and in addition also embeds an sRGB output intent. 🟢
+- krilla always uses sGrey (except for encoding the alpha channel in images, where DeviceGray
+  is required), and in addition always embeds an output intent. 🟢
+- krilla always uses an CMYK ICC profile, and always sets CMYK as the output intent. 🟢
+  It fails export if no CMYK ICC profile was provided. 🟢
 
 6.2.4.4: krilla does not support DeviceN/Separation color spaces. 🔵
 
-6.2.4.5: currently not fulfilled. 🔴
+6.2.4.5: Fulfilled because patterns are treated the same as all other elements in krilla. 🟢
 
 6.2.5: krilla does not use the transfer functions, halftones, TR/HTP/RI/FL keys. 🔵
 
@@ -93,7 +99,8 @@ See `README.md` for the meaning of each subclause.
 We only use PostScript functions. In any case, to be on the safe side, krilla fails exports
 when a PostScript function is used. 🟢
 
-6.2.10: Only pages with soft masks have the G key. 🔴
+6.2.10: krilla always includes an OutputIntent for PDF/A, so the /G attribute is not
+always required. 🟢
 
 6.2.11.1: -
 

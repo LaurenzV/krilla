@@ -14,6 +14,7 @@ pub enum ValidationError {
     TooManyIndirectObjects,
     TooHighQNestingLevel,
     ContainsPostScript,
+    MissingCMYKProfile,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -31,6 +32,7 @@ impl Validator {
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
+                ValidationError::MissingCMYKProfile => true,
             },
         }
     }
@@ -66,7 +68,8 @@ mod tests {
     use crate::page::Page;
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
-    use crate::tests::{rect_to_path, stops_with_2_solid_1};
+    use crate::surface::Surface;
+    use crate::tests::{cmyk_fill, rect_to_path, stops_with_2_solid_1};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
@@ -186,5 +189,38 @@ mod tests {
     pub fn validation_disabled_q_nesting_28() {
         let document = q_nesting_impl(SerializeSettings::default());
         assert!(document.finish().is_ok());
+    }
+
+    fn cmyk_document_impl(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+        let fill = cmyk_fill(1.0);
+        surface.fill_path(&path, fill);
+
+        surface.finish();
+        page.finish();
+    }
+
+    #[test]
+    fn validation_pdfa_missing_cmyk() {
+        let mut document = pdfa_document();
+        cmyk_document_impl(&mut document);
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::MissingCMYKProfile
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa_existing_cmyk() {
+        let mut document = Document::new_with(SerializeSettings::settings_8());
+        cmyk_document_impl(&mut document);
+
+        assert!(document.finish().is_ok())
     }
 }
