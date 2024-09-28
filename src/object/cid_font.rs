@@ -269,13 +269,8 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
 fn base_font_name(font: &Font, subset_data: &[u8]) -> String {
     const REST_LEN: usize = SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len();
     let postscript_name = font.postscript_name().unwrap_or("unknown");
-    let base_len = if postscript_name.is_ascii() {
-        127
-    } else {
-        127 / 3
-    } as usize;
 
-    let max_len = base_len - REST_LEN;
+    let max_len = 127 - REST_LEN;
 
     let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
 

@@ -283,7 +283,7 @@ impl SerializerContext {
     pub fn new_text_str<'a>(&mut self, text: &'a str) -> TextStr<'a> {
         // Check whether the worst-case string is small enough for PDF/A.
         // 2 for the byte order mark and * 2 for hex encoding.
-        if text.as_bytes().len() * 2 + 2 > STR_BYTE_LEN {
+        if text.as_bytes().len() > STR_BYTE_LEN {
             self.register_validation_error(ValidationError::TooLongString);
         }
 
