@@ -1,6 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::{Color, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::{Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -625,10 +625,10 @@ impl ContentBuilder {
              allow_gray: bool| match color.color_space(sc, allow_gray) {
                 ColorSpace::Rgb => content_builder
                     .rd_builder
-                    .register_resource(SRGB_ICC.clone(), sc),
+                    .register_resource(ICCBasedColorSpace(SRGB_ICC.clone()), sc),
                 ColorSpace::Gray => content_builder
                     .rd_builder
-                    .register_resource(GREY_ICC.clone(), sc),
+                    .register_resource(ICCBasedColorSpace(GREY_ICC.clone()), sc),
                 ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
                 ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
                 ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),

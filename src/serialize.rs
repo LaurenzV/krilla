@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontIdentifier, FontInfo};
@@ -362,8 +362,8 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(SRGB_ICC.clone()),
-            Resource::Gray => self.add_object(GREY_ICC.clone()),
+            Resource::Rgb => self.add_object(ICCBasedColorSpace(SRGB_ICC.clone())),
+            Resource::Gray => self.add_object(ICCBasedColorSpace(GREY_ICC.clone())),
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),
@@ -414,7 +414,7 @@ impl SerializerContext {
 
         let oi_ref = self.new_ref();
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        oi.dest_output_profile(self.add_resource(Resource::Rgb))
+        oi.dest_output_profile(self.add_object(SRGB_ICC.clone()))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))

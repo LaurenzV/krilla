@@ -376,14 +376,11 @@ where
 pub type ResourceNumber = u32;
 
 /// The ICC profile for the SRGB color space.
-pub static SRGB_ICC: Lazy<ICCBasedColorSpace<3>> =
-    Lazy::new(|| ICCBasedColorSpace(ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc")))));
+pub static SRGB_ICC: Lazy<ICCProfile<3>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))));
 /// The ICC profile for the sgray color space.
-pub static GREY_ICC: Lazy<ICCBasedColorSpace<1>> = Lazy::new(|| {
-    ICCBasedColorSpace(ICCProfile::new(Arc::new(include_bytes!(
-        "icc/sGrey-v4.icc"
-    ))))
-});
+pub static GREY_ICC: Lazy<ICCProfile<1>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v4.icc"))));
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {
