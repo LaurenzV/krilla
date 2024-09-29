@@ -174,6 +174,20 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_10() -> Self {
+        Self {
+            validator: Validator::PdfA3B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_11() -> Self {
+        Self {
+            validator: Validator::PdfA3U,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {

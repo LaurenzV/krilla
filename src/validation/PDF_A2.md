@@ -7,7 +7,7 @@ in the following order from less strict to more strict:
 
 Level U is a subset of level A, and level B is a subset of level U.
 
-See `README.md` for the meaning of each subclause.
+See `README.md` for the meaning of each color.
 
 ## Level B
 
@@ -192,6 +192,23 @@ always required. 🟢
 - krilla does not write the `xmpMM:History` attribute. 🔵
 
 6.6.6: krilla does not write the `xmpMM:History` attribute. 🔵
+
+# 6.8 Embedding files
+
+krilla does not support embedding files. 🔵
+
+# 6.9 Optional content
+
+krilla does not support optional content. 🔵
+
+# 6.10 Use of alternate presentations and transitions
+
+- krilla never writes `AlternatePresentations` in the name dictionary. 🔵
+- krilla never writes `PresSteps` into page dictionaries. 🔵
+
+# 6.11 Document requirements
+
+krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 ## Level U
 

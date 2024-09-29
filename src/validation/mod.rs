@@ -67,20 +67,30 @@ pub enum Validator {
     ///
     /// **Requirements**: -
     Dummy,
-    // /// The validator for the PDFA2-A standard.
-    // PdfA2A,
-    /// The validator for the PDFA2-B standard.
+    /// The validator for the PDF/A2-B standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     /// universal rendering.
     PdfA2B,
-    /// The validator for the PDFA2-U standard.
+    /// The validator for the PDF/A2-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     /// universal rendering.
     PdfA2U,
+    /// The validator for the PDF/A3-B standard.
+    ///
+    /// **Requirements**:
+    /// - You should only use fonts that are legally embeddable in a file for unlimited,
+    /// universal rendering.
+    PdfA3B,
+    /// The validator for the PDF/A3-U standard.
+    ///
+    /// **Requirements**:
+    /// - You should only use fonts that are legally embeddable in a file for unlimited,
+    /// universal rendering.
+    PdfA3U,
 }
 
 impl Validator {
@@ -97,6 +107,16 @@ impl Validator {
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A2-U and PDF/A2-A
                 ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA2B,
+            },
+            Validator::PdfA3B | Validator::PdfA3U => match validation_error {
+                ValidationError::TooLongString => true,
+                ValidationError::TooManyIndirectObjects => true,
+                ValidationError::TooHighQNestingLevel => true,
+                ValidationError::ContainsPostScript => true,
+                ValidationError::MissingCMYKProfile => true,
+                ValidationError::ContainsNotDefGlyph => true,
+                // Only applies for PDF/A3-U and PDF/A3-A
+                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA3B,
             },
         }
     }
@@ -116,6 +136,14 @@ impl Validator {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("U");
             }
+            Validator::PdfA3B => {
+                xmp.pdfa_part("3");
+                xmp.pdfa_conformance("B");
+            }
+            Validator::PdfA3U => {
+                xmp.pdfa_part("3");
+                xmp.pdfa_conformance("U");
+            }
         }
     }
 
@@ -123,6 +151,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA3B | Validator::PdfA3U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -131,6 +160,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA3B | Validator::PdfA3U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -139,6 +169,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA3B | Validator::PdfA3U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -147,6 +178,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA3B | Validator::PdfA3U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -156,6 +188,7 @@ impl Validator {
             Validator::Dummy => None,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
             Validator::PdfA2B | Validator::PdfA2U => Some(OutputIntentSubtype::PDFA),
+            Validator::PdfA3B | Validator::PdfA3U => Some(OutputIntentSubtype::PDFA),
         }
     }
 }
@@ -380,11 +413,6 @@ mod tests {
         page.finish();
     }
 
-    #[snapshot(document, settings_7)]
-    fn validation_pdfa2_b_full_example(document: &mut Document) {
-        validation_pdf_full_example(document);
-    }
-
     #[test]
     fn validation_pdfu_invalid_codepoint() {
         let mut document = Document::new_with(SerializeSettings::settings_9());
@@ -424,8 +452,23 @@ mod tests {
         )
     }
 
+    #[snapshot(document, settings_7)]
+    fn validation_pdfa2_b_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
     #[snapshot(document, settings_9)]
     fn validation_pdfa2_u_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_10)]
+    fn validation_pdfa3_b_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_11)]
+    fn validation_pdfa3_u_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
     }
 }
