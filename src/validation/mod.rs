@@ -52,8 +52,8 @@ pub enum ValidationError {
 pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.
     Dummy,
-    /// The validator for the PDFA2-A standard.
-    PdfA2A,
+    // /// The validator for the PDFA2-A standard.
+    // PdfA2A,
     /// The validator for the PDFA2-B standard.
     PdfA2B,
     /// The validator for the PDFA2-U standard.
@@ -64,7 +64,8 @@ impl Validator {
     pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
+            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
+            Validator::PdfA2B | Validator::PdfA2U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -80,10 +81,10 @@ impl Validator {
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             Validator::Dummy => {}
-            Validator::PdfA2A => {
-                xmp.pdfa_part("2");
-                xmp.pdfa_conformance("A");
-            }
+            // Validator::PdfA2A => {
+            //     xmp.pdfa_part("2");
+            //     xmp.pdfa_conformance("A");
+            // }
             Validator::PdfA2B => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("B");
@@ -98,35 +99,40 @@ impl Validator {
     pub(crate) fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA2B | Validator::PdfA2U => true,
+            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
     pub(crate) fn no_device_cs(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA2B | Validator::PdfA2U => true,
+            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA2B | Validator::PdfA2U => true,
+            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::PdfA2B | Validator::PdfA2U => true,
+            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
     pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype> {
         match self {
             Validator::Dummy => None,
-            Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
+            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
+            Validator::PdfA2B | Validator::PdfA2U => {
                 Some(OutputIntentSubtype::PDFA)
             }
         }
