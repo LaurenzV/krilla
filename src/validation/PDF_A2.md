@@ -13,7 +13,8 @@ See `README.md` for the meaning of each subclause.
 
 ## 6.1 File structure
 
-6.1.2: `pdf-writer` always write the file header as described in the spec. 🟢
+6.1.2: `pdf-writer` always write the file header as described in the spec. Even if the
+user enables `ascii_compatible`, we still write a binary header marker. 🟢
 
 6.1.3: 
 - We always set the file ID. 🟢
@@ -178,5 +179,18 @@ always required. 🟢
 
 6.6.2.3.1: krilla doesn't use any non-standard properties. 🟢
 
+6.6.2.3.2: krilla doesn't use extension schemas. 🔵
+
+6.6.2.3.3: krilla doesn't use extension schemas. 🔵
+
+6.6.3: krilla ensures that XMP metadata and document info dictionary are consistent. 🟢
+
+6.6.4: krilla writes pdfaid:conformance and pdfaid:part as specified. 🟢
+
+6.6.5: 
+- krilla writes a document and instance ID. 🟢
+- krilla does not write the `xmpMM:History` attribute. 🔵
+
+6.6.6: krilla does not write the `xmpMM:History` attribute. 🔵
 
 TODO

@@ -98,7 +98,9 @@ impl ChunkContainer {
         // case, and thus give us better performance.
         let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
 
-        if sc.serialize_settings.ascii_compatible {
+        if sc.serialize_settings.ascii_compatible
+            && !sc.serialize_settings.validator.requires_binary_header()
+        {
             pdf.set_binary_marker(b"AAAA")
         }
 
@@ -151,6 +153,8 @@ impl ChunkContainer {
         if let Some(metadata) = &self.metadata {
             metadata.serialize_xmp_metadata(&mut xmp);
         }
+
+        sc.serialize_settings.validator.write_xmp(&mut xmp);
 
         let instance_id = hash_base64(pdf.as_bytes());
 

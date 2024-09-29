@@ -57,16 +57,34 @@ pub struct SerializeSettings {
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
+    ///
+    /// Note that this value might be overridden depending on which validator
+    /// you use. For example, when exporting to PDF/A, this value will be set to
+    /// true, regardless of what value will be passed.
     pub no_device_cs: bool,
     /// Whether the PDF should be ASCII-compatible, i.e. only consist of
     /// characters in the ASCII range.
+    ///
+    /// Note that this only on a best-effort basis. For example, XMP metadata always
+    /// contains a binary marker. In addition to that, some validators,
+    /// like PDF/A, require that the file header be a binary marker, meaning
+    /// that the header itself will not be ASCII-compatible.
+    ///
+    /// Binary streams will always be hex encoded and thus are ascii compatible, though.
     pub ascii_compatible: bool,
     /// Whether the PDF should contain XMP metadata.
+    ///
+    /// Note that this value might be overridden depending on which validator
+    /// you use. For example, when exporting to PDF/A, this value will be set to
+    /// true, regardless of what value will be passed.
     pub xmp_metadata: bool,
     /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
+    ///
+    /// This is usually not required, but it is for example required when exporting
+    /// to PDF/A and using a CMYK color, since they have to be device-independent.
     pub cmyk_profile: Option<ICCProfile<4>>,
     pub validator: Validator,
 }
@@ -122,7 +140,7 @@ impl SerializeSettings {
         use crate::validation::ConformanceLevel;
 
         Self {
-            validator: Validator::PdfA2(ConformanceLevel::A),
+            validator: Validator::PdfA2(ConformanceLevel::B),
             ..Self::settings_1()
         }
     }
@@ -131,7 +149,7 @@ impl SerializeSettings {
         use crate::validation::ConformanceLevel;
 
         Self {
-            validator: Validator::PdfA2(ConformanceLevel::A),
+            validator: Validator::PdfA2(ConformanceLevel::B),
             cmyk_profile: Some(ICCProfile::new(Arc::new(
                 std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
             ))),

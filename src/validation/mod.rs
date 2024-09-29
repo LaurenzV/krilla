@@ -1,5 +1,6 @@
 use pdf_writer::types::OutputIntentSubtype;
 use std::fmt::Debug;
+use xmp_writer::XmpWriter;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ConformanceLevel {
@@ -39,6 +40,20 @@ impl Validator {
         }
     }
 
+    pub fn write_xmp(&self, xmp: &mut XmpWriter) {
+        match self {
+            Validator::Dummy => {}
+            Validator::PdfA2(c) => {
+                xmp.pdfa_part("2");
+                match c {
+                    ConformanceLevel::A => xmp.pdfa_conformance("A"),
+                    ConformanceLevel::B => xmp.pdfa_conformance("B"),
+                    ConformanceLevel::U => xmp.pdfa_conformance("U"),
+                };
+            }
+        }
+    }
+
     pub fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
@@ -54,6 +69,13 @@ impl Validator {
     }
 
     pub fn xmp_metadata(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::PdfA2(_) => true,
+        }
+    }
+
+    pub fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2(_) => true,
@@ -79,7 +101,7 @@ mod tests {
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
     use crate::surface::TextDirection;
-    use crate::tests::{cmyk_fill, rect_to_path, stops_with_2_solid_1, NOTO_SANS};
+    use crate::tests::{cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, NOTO_SANS};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
@@ -227,6 +249,14 @@ mod tests {
     }
 
     #[test]
+    fn validation_pdfa_existing_cmyk() {
+        let mut document = Document::new_with(SerializeSettings::settings_8());
+        cmyk_document_impl(&mut document);
+
+        assert!(document.finish().is_ok())
+    }
+
+    #[test]
     fn validation_pdfa_notdef_glyph() {
         let mut document = pdfa_document();
         let mut page = document.start_page();
@@ -256,11 +286,32 @@ mod tests {
         )
     }
 
-    #[test]
-    fn validation_pdfa_existing_cmyk() {
-        let mut document = Document::new_with(SerializeSettings::settings_8());
-        cmyk_document_impl(&mut document);
+    fn validation_pdf_full_example(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
 
-        assert!(document.finish().is_ok())
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "This is some text",
+            false,
+            TextDirection::Auto,
+        );
+
+        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(0.5));
+
+        surface.finish();
+        page.finish();
+    }
+
+    #[snapshot(document, settings_7)]
+    fn validation_pdfa_b_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
     }
 }
