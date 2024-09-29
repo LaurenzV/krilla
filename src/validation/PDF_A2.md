@@ -115,7 +115,7 @@ always required. 🟢
 
 6.2.11.4.1: 
 - krilla always embeds the used fonts. 6.2.11.4.2:
-- krilla does not verify the "legality" of the embedded font. 🔴
+- krilla does not verify the "legality" of the embedded font. 🟣
 
 6.2.11.4.2: 
 - krilla never writes the `CharSet` attribute. 🔵

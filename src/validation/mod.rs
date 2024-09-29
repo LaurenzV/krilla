@@ -48,15 +48,38 @@ pub enum ValidationError {
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
+///
+/// You can use the validator by setting the `validator` attribute of the [`SerializeSettings`]
+/// you create the document with. There are three important aspects that play into this:
+/// - krilla will internally write the file in a way that conforms to the given standard, i.e.
+///   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
+///   away from the user.
+/// - For aspects that are out of control of krilla and dependent on the input, krilla will perform
+///   a validation that the input is compatible with the standard. krilla will record all violations,
+///   and when calling `document.finish()`, in case there is at least one violation, krilla will
+///   return them as an error, instead of returning the finished document. See [`ValidationError`].
+/// - Finally, some standards have requirements that cannot possibly be validated by krilla, as
+///   they are semantic in nature. It is upon your, as a user of that library, to ensure that those
+///   requirements are fulfilled. You can find them under **Requirements** for each export standard.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.
+    ///
+    /// **Requirements**: -
     Dummy,
     // /// The validator for the PDFA2-A standard.
     // PdfA2A,
     /// The validator for the PDFA2-B standard.
+    ///
+    /// **Requirements**:
+    /// - You should only use fonts that are legally embeddable in a file for unlimited,
+    /// universal rendering.
     PdfA2B,
     /// The validator for the PDFA2-U standard.
+    ///
+    /// **Requirements**:
+    /// - You should only use fonts that are legally embeddable in a file for unlimited,
+    /// universal rendering.
     PdfA2U,
 }
 
@@ -132,9 +155,7 @@ impl Validator {
         match self {
             Validator::Dummy => None,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
-            Validator::PdfA2B | Validator::PdfA2U => {
-                Some(OutputIntentSubtype::PDFA)
-            }
+            Validator::PdfA2B | Validator::PdfA2U => Some(OutputIntentSubtype::PDFA),
         }
     }
 }
