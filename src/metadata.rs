@@ -7,7 +7,6 @@
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
 use crate::serialize::SerializerContext;
-use crate::validation::Validator;
 use pdf_writer::{Pdf, Ref};
 use xmp_writer::{Timezone, XmpWriter};
 

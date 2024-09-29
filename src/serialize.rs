@@ -137,19 +137,15 @@ impl SerializeSettings {
     }
 
     pub(crate) fn settings_7() -> Self {
-        use crate::validation::ConformanceLevel;
-
         Self {
-            validator: Validator::PdfA2(ConformanceLevel::B),
+            validator: Validator::PdfA2B,
             ..Self::settings_1()
         }
     }
 
     pub(crate) fn settings_8() -> Self {
-        use crate::validation::ConformanceLevel;
-
         Self {
-            validator: Validator::PdfA2(ConformanceLevel::B),
+            validator: Validator::PdfA2B,
             cmyk_profile: Some(ICCProfile::new(Arc::new(
                 std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
             ))),
