@@ -200,7 +200,7 @@ always required. 🟢
 6.2.11.7.2: 
 - krilla always includes a `ToUnicode` mapping. 🟢
 - For levels U and A, krilla checks that all glyphs have a codepoint mapping that
-  does not conain 0x0, 0xFEFF or 0xFFFE. 🟢
+  does not contain 0x0, 0xFEFF or 0xFFFE. 🟢
 
 
 # Level A

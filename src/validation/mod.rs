@@ -1,30 +1,67 @@
+//! Exporting with a specific validation level.
+
+// TODO: Add guide, mentioning manual invariants.
+// PDF-A: Legality of fonts
+
 use crate::font::Font;
 use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
 
+/// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValidationError {
+    /// There was a string that was longer than the maximum allowed length (32767).
+    ///
+    /// Can for example occur if someone set a title or an author that is longer than
+    /// the given length.
     TooLongString,
+    /// The PDF exceeds the upper limit for indirect objects (8388607).
+    ///
+    /// Occurs if the PDF is simply too long.
     TooManyIndirectObjects,
+    /// The PDF contains a content stream that exceeds maximum allowed q/Q nesting level (28).
+    ///
+    /// Can only occur if the user stacks many clip paths.
     TooHighQNestingLevel,
+    /// The PDF contains PostScript code, which is forbidden by some export formats.
+    ///
+    /// Occurs if a gradient with spread method `Repeat`/`Reflect` was used.
     ContainsPostScript,
+    /// No CMYK ICC profile was provided, even though one is necessary.
+    ///
+    /// Occurs if the export format requires a device-independent color representation,
+    /// and a CMYK color was used in the document.
     MissingCMYKProfile,
+    /// The `.notdef` glyph was used, which is forbidden by some export formats.
+    ///
+    /// Can occur if a glyph could not be found in the font for a corresponding codepoint
+    /// in the input text, or if it was explicitly mapped that way.
     ContainsNotDefGlyph,
+    /// A glyph was mapped either to the codepoint 0x0, 0xFEFF or 0xFFFE, or no codepoint at all,
+    /// which is forbidden by some standards.
+    ///
+    /// Can occur if those codepoints appeared in the input text, or were explicitly
+    /// mapped to that glyph.
     InvalidCodepointMapping(Font, GlyphId, Option<String>),
 }
 
+/// A validator for exporting PDF documents to a specific subset of PDF.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Validator {
+    /// A dummy validator, that does not perform any actual validation.
     Dummy,
+    /// The validator for the PDFA2-A standard.
     PdfA2A,
+    /// The validator for the PDFA2-B standard.
     PdfA2B,
+    /// The validator for the PDFA2-U standard.
     PdfA2U,
 }
 
 impl Validator {
-    pub fn prohibits(&self, validation_error: &ValidationError) -> bool {
+    pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
@@ -40,7 +77,7 @@ impl Validator {
         }
     }
 
-    pub fn write_xmp(&self, xmp: &mut XmpWriter) {
+    pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             Validator::Dummy => {}
             Validator::PdfA2A => {
@@ -58,35 +95,35 @@ impl Validator {
         }
     }
 
-    pub fn annotation_ap_stream(&self) -> bool {
+    pub(crate) fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
-    pub fn no_device_cs(&self) -> bool {
+    pub(crate) fn no_device_cs(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
-    pub fn xmp_metadata(&self) -> bool {
+    pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
-    pub fn requires_binary_header(&self) -> bool {
+    pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
 
-    pub fn output_intent(&self) -> Option<OutputIntentSubtype> {
+    pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype> {
         match self {
             Validator::Dummy => None,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {

@@ -17,5 +17,7 @@ pub enum KrillaError {
     /// A user-related error, indicating API misuse (for example attempting to add
     /// a link to a page that doesn't exist).
     UserError(String),
+    /// A list of validation errors. Can only occur if you set the `validator` in
+    /// the serialize settings to something else than the dummy validator.
     ValidationError(Vec<ValidationError>),
 }

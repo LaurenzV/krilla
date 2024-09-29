@@ -86,6 +86,21 @@ pub struct SerializeSettings {
     /// This is usually not required, but it is for example required when exporting
     /// to PDF/A and using a CMYK color, since they have to be device-independent.
     pub cmyk_profile: Option<ICCProfile<4>>,
+    /// A validator that allows for exporting to a specific substandard of PDF.
+    ///
+    /// In case validation fails, export will fail, and a list of validation errors that
+    /// occurred will be returned instead of the PDF.
+    ///
+    /// **Important**: Make sure to carefully read the documentation of the [`validation`] module
+    /// before using this feature! Just setting a validator might not be enough to ensure that
+    /// your output conforms to the given standard, as some requirements are semantic in nature
+    /// and cannot possibly be verified by krilla!
+    ///
+    /// However, as long as you carefully read and follow the documentation,
+    /// you can be certain that the resulting document will conform to the standard (unless there
+    /// is a bug).
+    ///
+    /// [`validation`]: crate::validation
     pub validator: Validator,
 }
 
