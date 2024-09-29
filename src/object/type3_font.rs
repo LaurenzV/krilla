@@ -7,6 +7,7 @@ use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
+use crate::validation::ValidationError;
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
@@ -331,9 +332,31 @@ impl Type3Font {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in &self.cmap_entries {
-                if !text.is_empty() {
-                    cmap.pair_with_multiple(*g, text.chars());
+
+            for g in 0..self.glyphs.len() as u8 {
+                match self.cmap_entries.get(&g) {
+                    None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                        self.font.clone(),
+                        GlyphId::new(g as u32),
+                        None,
+                    )),
+                    Some(text) => {
+                        if text
+                            .chars()
+                            .any(|c| matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE))
+                            || text.is_empty()
+                        {
+                            sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                                self.font.clone(),
+                                GlyphId::new(g as u32),
+                                Some(text.clone()),
+                            ))
+                        }
+
+                        if !text.is_empty() {
+                            cmap.pair_with_multiple(g, text.chars());
+                        }
+                    }
                 }
             }
 

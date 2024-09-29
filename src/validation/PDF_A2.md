@@ -193,4 +193,16 @@ always required. 🟢
 
 6.6.6: krilla does not write the `xmpMM:History` attribute. 🔵
 
-TODO
+## Level U
+
+6.2.11.7.1: -
+
+6.2.11.7.2: 
+- krilla always includes a `ToUnicode` mapping. 🟢
+- For levels U and A, krilla checks that all glyphs have a codepoint mapping that
+  does not conain 0x0, 0xFEFF or 0xFFFE. 🟢
+
+
+# Level A
+
+6.2.11.7.3: TODO

@@ -152,6 +152,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_9() -> Self {
+        Self {
+            validator: Validator::PdfA2U,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -240,7 +247,7 @@ impl SerializerContext {
     }
 
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
-        if self.serialize_settings.validator.prohibits(error) {
+        if self.serialize_settings.validator.prohibits(&error) {
             self.validation_errors.push(error);
         }
     }

@@ -98,8 +98,8 @@ impl InternalPage {
         annotations: Vec<Annotation>,
         page_settings: PageSettings,
     ) -> Self {
-        for validation_error in &stream.validation_errors {
-            sc.register_validation_error(*validation_error)
+        for validation_error in stream.validation_errors {
+            sc.register_validation_error(validation_error)
         }
 
         let stream_ref = sc.new_ref();

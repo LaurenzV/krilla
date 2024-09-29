@@ -2,6 +2,7 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{RectExt, SipHashable, SliceExt};
+use crate::validation::ValidationError;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
@@ -228,9 +229,33 @@ impl CIDFont {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in self.cmap_entries.iter() {
-                if !text.is_empty() {
-                    cmap.pair_with_multiple(*g, text.chars());
+
+            // For the .notdef glyph, it's fine if no mapping exists, since it is included
+            // even if it was not referenced in the text.
+            for g in 1..self.glyph_remapper.num_gids() {
+                match self.cmap_entries.get(&g) {
+                    None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                        self.font.clone(),
+                        GlyphId::new(g as u32),
+                        None,
+                    )),
+                    Some(text) => {
+                        if text
+                            .chars()
+                            .any(|c| matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE))
+                            || text.is_empty()
+                        {
+                            sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                                self.font.clone(),
+                                GlyphId::new(g as u32),
+                                Some(text.clone()),
+                            ))
+                        }
+
+                        if !text.is_empty() {
+                            cmap.pair_with_multiple(g, text.chars());
+                        }
+                    }
                 }
             }
 

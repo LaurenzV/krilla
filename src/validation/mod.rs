@@ -1,8 +1,10 @@
+use crate::font::Font;
 use pdf_writer::types::OutputIntentSubtype;
+use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValidationError {
     TooLongString,
     TooManyIndirectObjects,
@@ -10,9 +12,10 @@ pub enum ValidationError {
     ContainsPostScript,
     MissingCMYKProfile,
     ContainsNotDefGlyph,
+    InvalidCodepointMapping(Font, GlyphId, Option<String>),
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Validator {
     Dummy,
     PdfA2A,
@@ -21,7 +24,7 @@ pub enum Validator {
 }
 
 impl Validator {
-    pub fn prohibits(&self, validation_error: ValidationError) -> bool {
+    pub fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
@@ -31,6 +34,8 @@ impl Validator {
                 ValidationError::ContainsPostScript => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
+                // Only applies for PDF/A2-U and PDF/A2-A
+                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA2B,
             },
         }
     }
@@ -96,7 +101,7 @@ mod tests {
     use crate::action::LinkAction;
     use crate::annotation::{LinkAnnotation, Target};
     use crate::error::KrillaError;
-    use crate::font::Font;
+    use crate::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
     use crate::metadata::Metadata;
     use crate::page::Page;
     use crate::paint::{LinearGradient, SpreadMethod};
@@ -312,7 +317,51 @@ mod tests {
     }
 
     #[snapshot(document, settings_7)]
-    fn validation_pdfa_b_full_example(document: &mut Document) {
+    fn validation_pdfa2_b_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[test]
+    fn validation_pdfu_invalid_codepoint() {
+        let mut document = Document::new_with(SerializeSettings::settings_9());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let glyphs = vec![
+            KrillaGlyph::new(GlyphId::new(3), 2048.0, 0.0, 0.0, 0.0, 0..1),
+            KrillaGlyph::new(GlyphId::new(2), 2048.0, 0.0, 0.0, 0.0, 1..4),
+        ];
+
+        surface.fill_glyphs(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            &glyphs,
+            font.clone(),
+            "A\u{FEFF}B",
+            20.0,
+            GlyphUnits::UnitsPerEm,
+            false,
+        );
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::InvalidCodepointMapping(
+                    font,
+                    GlyphId::new(2),
+                    Some("\u{FEFF}".to_string())
+                )
+            ]))
+        )
+    }
+
+    #[snapshot(document, settings_9)]
+    fn validation_pdfa2_u_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
     }
 }
