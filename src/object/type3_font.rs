@@ -501,8 +501,8 @@ mod tests {
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
-                t3_font.set_codepoints(1, "A".to_string());
-                t3_font.set_codepoints(2, "B".to_string());
+                t3_font.set_codepoints(0, "A".to_string());
+                t3_font.set_codepoints(1, "B".to_string());
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
@@ -643,10 +643,10 @@ mod tests {
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
-                t3_font.set_codepoints(1, "G".to_string());
-                t3_font.set_codepoints(2, "F".to_string());
-                t3_font.set_codepoints(3, "K".to_string());
-                t3_font.set_codepoints(4, "L".to_string());
+                t3_font.set_codepoints(0, "G".to_string());
+                t3_font.set_codepoints(1, "F".to_string());
+                t3_font.set_codepoints(2, "K".to_string());
+                t3_font.set_codepoints(3, "L".to_string());
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
