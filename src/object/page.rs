@@ -10,7 +10,7 @@ use crate::surface::Surface;
 use crate::util::Deferred;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use pdf_writer::{Chunk, Finish, Ref};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
@@ -98,6 +98,10 @@ impl InternalPage {
         annotations: Vec<Annotation>,
         page_settings: PageSettings,
     ) -> Self {
+        for validation_error in stream.validation_errors {
+            sc.register_validation_error(validation_error)
+        }
+
         let stream_ref = sc.new_ref();
         let serialize_settings = sc.serialize_settings.clone();
         let stream_resources = std::mem::take(&mut stream.resource_dictionary);
@@ -196,7 +200,7 @@ impl PageLabel {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 
-    pub(crate) fn serialize(&self, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)
@@ -206,7 +210,7 @@ impl PageLabel {
         }
 
         if let Some(prefix) = &self.prefix {
-            label.prefix(TextStr(prefix));
+            label.prefix(sc.new_text_str(&prefix));
         }
 
         if let Some(offset) = self.offset {

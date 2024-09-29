@@ -6,7 +6,8 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use pdf_writer::{Pdf, Ref, TextStr};
+use crate::serialize::SerializerContext;
+use pdf_writer::{Pdf, Ref};
 use xmp_writer::{Timezone, XmpWriter};
 
 /// Metadata for a PDF document.
@@ -151,35 +152,40 @@ impl Metadata {
         }
     }
 
-    pub(crate) fn serialize_document_info(&self, ref_: &mut Ref, pdf: &mut Pdf) {
+    pub(crate) fn serialize_document_info(
+        &self,
+        ref_: &mut Ref,
+        sc: &mut SerializerContext,
+        pdf: &mut Pdf,
+    ) {
         if self.has_document_info() {
             let ref_ = ref_.bump();
             let mut document_info = pdf.document_info(ref_);
 
             if let Some(title) = &self.title {
-                document_info.title(TextStr(title));
+                document_info.title(sc.new_text_str(title));
             }
 
             if let Some(subject) = &self.subject {
-                document_info.subject(TextStr(subject));
+                document_info.subject(sc.new_text_str(subject));
             }
 
             if let Some(keywords) = &self.keywords {
                 let joined = keywords.join(", ");
-                document_info.keywords(TextStr(&joined));
+                document_info.keywords(sc.new_text_str(&joined));
             }
 
             if let Some(authors) = &self.authors {
                 let joined = authors.join(", ");
-                document_info.author(TextStr(&joined));
+                document_info.author(sc.new_text_str(&joined));
             }
 
             if let Some(creator) = &self.creator {
-                document_info.creator(TextStr(creator));
+                document_info.creator(sc.new_text_str(creator));
             }
 
             if let Some(producer) = &self.producer {
-                document_info.producer(TextStr(producer));
+                document_info.producer(sc.new_text_str(producer));
             }
 
             if let Some(date_time) = self.modification_date {

@@ -1,0 +1,225 @@
+# Description
+PDF-A/2 requires PDF 1.7 and defines three conformance levels, 
+in the following order from less strict to more strict:
+- Level B
+- Level U
+- Level A
+
+Level U is a subset of level A, and level B is a subset of level U.
+
+See `README.md` for the meaning of each color.
+
+## Level B
+
+## 6.1 File structure
+
+6.1.2: `pdf-writer` always write the file header as described in the spec. Even if the
+user enables `ascii_compatible`, we still write a binary header marker. 🟢
+
+6.1.3: 
+- We always set the file ID. 🟢
+- We do not support encryption. 🔵
+
+6.1.4: `pdf-writer` always write the xref section as described in the spec. 🟢
+
+6.1.5: -
+
+6.1.6: `pdf-writer` always writes hex strings with an even number of characters. 🟢
+
+6.1.7: 
+- `pdf-writer` always write streams as described in the spec. 🟢
+- krilla does never write streams referencing external files. 🔵
+- krilla does never use `LZWDecode` or `Crypt`. 🔵
+
+6.1.8: krilla only ever writes UTF-8 strings as names. 🟢
+
+6.1.9: `pdf-writer` always writes indirect objects as described in the spec. 🟢
+
+6.1.10: krilla does never use inline image dictionaries. 🔵
+
+6.1.11: -
+
+6.1.12: krilla doesn't support permissions. 🔵
+
+6.1.13:
+- `pdf-writer` uses i32 for integers. 🟢
+- `pdf-writer` uses f32 for real numbers. 🟢
+- krilla always uses the `new_str` and `new_text_str` methods of the SerializerContext to create them, 
+  which returns a validation error in case it's too long. 🔵
+- krilla trims the names of fonts, and all other names cannot be longer than 127. 🔵
+- krilla fails export if more than 8388607 indirect objects exist. 🟢
+- krilla fails export if a higher nesting-level than 28 exists. 🟢
+- krilla does not use the DeviceN color space. 🟢
+- krilla only uses u16 for CIDs. 🟢
+
+## 6.2 Graphics
+
+6.2.2:
+- krilla doesn't use non-standard operators. 🟢
+- krilla doesn't use the `ri` or `i` operator. 🟢
+- krilla ensure that content stream has their own associated resource dictionary
+(TODO: what about glyph streams in Type3 fonts?). 🟢
+
+6.2.3: krilla always write an `sRGB` output intent for PDF/A. 🟢
+
+6.2.4.1: krilla overrides the `no_device_cs` property if PDF/A is selected, and
+in case CMYK is used but no profile was provided, export fails.
+
+6.2.4.2: 
+- sRGB/sGrey ICC profiles conform to ICC v4 specification. 🟢
+- krilla does not support overprinting. 🔵
+
+6.2.4.3: 
+- krilla always uses sRGB for RGB, and in addition also embeds an sRGB output intent. 🟢
+- krilla always uses sGrey (except for encoding the alpha channel in images, where DeviceGray
+  is required), and in addition always embeds an output intent. 🟢
+- krilla always uses an CMYK ICC profile, and always sets CMYK as the output intent. 🟢
+  It fails export if no CMYK ICC profile was provided. 🟢
+
+6.2.4.4: krilla does not support DeviceN/Separation color spaces. 🔵
+
+6.2.4.5: Fulfilled because patterns are treated the same as all other elements in krilla. 🟢
+
+6.2.5: krilla does not use the transfer functions, halftones, TR/HTP/RI/FL keys. 🔵
+
+6.2.6: krilla does never define a rendering intent. 🔵
+
+6.2.7: krilla is not a reader. 🔵
+
+6.2.8.1: krilla does not use the `Alternates`/`Interpolate`/`Intent` keys for images. 🔵
+
+6.2.8.2: krilla does not support thumbnails. 🔵
+
+6.2.8.3: krilla embeds JPEG images by converting them to a sampled representation. 🔵
+
+6.2.9.1: krilla does not use the `OPI`/`Subtype2`/`PS` keys for XObjects. 🔵
+
+6.2.9.2: krilla does not use reference XObjects. 🔵
+
+6.2.9.3: The spec only talks about PostScript XObjects, which we don't really use. 
+We only use PostScript functions. In any case, to be on the safe side, krilla fails exports
+when a PostScript function is used. 🟢
+
+6.2.10: krilla always includes an OutputIntent for PDF/A, so the /G attribute is not
+always required. 🟢
+
+6.2.11.1: krilla fails export in PDF/A when the .notdef glyph is referenced. 🟢
+
+6.2.11.2: krilla has made sure that the spec is followed in this regard. 🟢
+
+6.2.11.3.1: krilla always uses `Identity-H` as encoding. 🟢
+
+6.2.11.3.2: krilla always writes the `CIDToGidMap` entry. 🟢
+
+6.2.11.3.3: krilla always writes the `WMode` entry for cmaps and never references any other ones. 🟢
+
+6.2.11.4.1: 
+- krilla always embeds the used fonts. 6.2.11.4.2:
+- krilla does not verify the "legality" of the embedded font. 🟣
+
+6.2.11.4.2: 
+- krilla never writes the `CharSet` attribute. 🔵
+- krilla never writes the `CIDSet` attribute. 🔵
+
+6.2.11.5: krilla copies the font metrics directly from the font. 🟢
+
+6.2.11.6:
+- krilla embeds all fonts as symbolic. 🟢
+- krilla does not write the `Encoding` entry for TrueType fonts.
+- krilla only writes CIDFonts instead of TrueType fonts directly, so cmap is not needed. 🟢
+
+6.2.11.8:
+
+## 6.3 Annotations
+
+
+6.3.1: krilla does not support any non-standard annotation types, nor `3D`, `Sound`, `Screen` or `Movie`. 🔵
+
+6.3.2: 
+- krilla always sets the `F` flag for annotations. 🟢
+- krilla does not support text annotations. 🔵
+
+6.3.3: krilla always writes an empty appearence stream for PDF/A output. 🟢
+
+6.3.4: -
+
+## 6.4 Interactive forms
+
+6.4.1: krilla does not support interactive forms. 🔵
+
+6.4.2: krilla does not support interactive forms. 🔵
+
+6.4.3: krilla does not support digital signatures. 🔵
+
+## 6.5 Action
+
+6.5.1:
+- krilla does not support the `Launch`, `Sound`, `Movie`, `ResetForm`, `ImportData`, `Hide`, `SetOCGState`, `Rendition`, `Trans`,
+  `GoTo3DView` and `JavaScript` actions. 🔵
+- krilla does not use the `set-state` and `no-op` actions. 🔵
+- krilla does not support named actions. 🔵
+
+6.5.2:
+- krilla does not support widget annotations. 🔵
+- krilla does not write an AA entry in the document catalog. 🟢
+- krilla does not write an AA entry for pages. 🟢
+
+6.5.3: -
+
+## 6.6 Metadata
+
+6.6.1: -
+
+6.6.2.1: 
+- krilla overrides the `xmp_metadata` attribute for PDF/A exports so that it's always contained. 🟢
+- `xmp-writer` always creates conforming XMP streams. 🟢
+- We never include the `bytes` or `encoding` attributes. 🟢
+
+6.6.2.2: -
+
+6.6.2.3.1: krilla doesn't use any non-standard properties. 🟢
+
+6.6.2.3.2: krilla doesn't use extension schemas. 🔵
+
+6.6.2.3.3: krilla doesn't use extension schemas. 🔵
+
+6.6.3: krilla ensures that XMP metadata and document info dictionary are consistent. 🟢
+
+6.6.4: krilla writes pdfaid:conformance and pdfaid:part as specified. 🟢
+
+6.6.5: 
+- krilla writes a document and instance ID. 🟢
+- krilla does not write the `xmpMM:History` attribute. 🔵
+
+6.6.6: krilla does not write the `xmpMM:History` attribute. 🔵
+
+# 6.8 Embedding files
+
+krilla does not support embedding files. 🔵
+
+# 6.9 Optional content
+
+krilla does not support optional content. 🔵
+
+# 6.10 Use of alternate presentations and transitions
+
+- krilla never writes `AlternatePresentations` in the name dictionary. 🔵
+- krilla never writes `PresSteps` into page dictionaries. 🔵
+
+# 6.11 Document requirements
+
+krilla never writes the `Requirements` key in the document dictionary. 🔵
+
+## Level U
+
+6.2.11.7.1: -
+
+6.2.11.7.2: 
+- krilla always includes a `ToUnicode` mapping. 🟢
+- For levels U and A, krilla checks that all glyphs have a codepoint mapping that
+  does not contain 0x0, 0xFEFF or 0xFFFE. 🟢
+
+
+# Level A
+
+6.2.11.7.3: TODO

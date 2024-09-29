@@ -2,6 +2,7 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{RectExt, SipHashable, SliceExt};
+use crate::validation::ValidationError;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
@@ -12,8 +13,10 @@ use std::collections::BTreeMap;
 use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
 
-const CMAP_NAME: Name = Name(b"Custom");
-const SYSTEM_INFO: SystemInfo = SystemInfo {
+const SUBSET_TAG_LEN: usize = 6;
+const IDENTITY_H: &str = "Identity-H";
+pub(crate) const CMAP_NAME: Name = Name(b"Custom");
+pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo {
     registry: Str(b"Adobe"),
     ordering: Str(b"Identity"),
     supplement: 0,
@@ -106,7 +109,6 @@ impl CIDFont {
         let cmap_ref = sc.new_ref();
         let data_ref = sc.new_ref();
 
-        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
         let glyph_remapper = &self.glyph_remapper;
 
         let is_cff = self.font.font_ref().cff().is_ok();
@@ -140,11 +142,9 @@ impl CIDFont {
             FilterStream::new_from_binary_data(data, &sc.serialize_settings)
         };
 
-        let subset_tag = subset_tag(font_stream.encoded_data());
-
-        let base_font = format!("{subset_tag}+{postscript_name}");
+        let base_font = base_font_name(&self.font, font_stream.encoded_data());
         let base_font_type0 = if is_cff {
-            format!("{base_font}-Identity-H")
+            format!("{base_font}-{}", IDENTITY_H)
         } else {
             base_font.clone()
         };
@@ -152,7 +152,7 @@ impl CIDFont {
         chunk
             .type0_font(root_ref)
             .base_font(Name(base_font_type0.as_bytes()))
-            .encoding_predefined(Name(b"Identity-H"))
+            .encoding_predefined(Name(IDENTITY_H.as_bytes()))
             .descendant_font(cid_ref)
             .to_unicode(cmap_ref);
 
@@ -189,7 +189,12 @@ impl CIDFont {
         cid.finish();
 
         let mut flags = FontFlags::empty();
-        flags.set(FontFlags::SERIF, postscript_name.contains("Serif"));
+        flags.set(
+            FontFlags::SERIF,
+            self.font
+                .postscript_name()
+                .is_some_and(|n| n.contains("Serif")),
+        );
         flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
         flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
@@ -224,9 +229,33 @@ impl CIDFont {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in self.cmap_entries.iter() {
-                if !text.is_empty() {
-                    cmap.pair_with_multiple(*g, text.chars());
+
+            // For the .notdef glyph, it's fine if no mapping exists, since it is included
+            // even if it was not referenced in the text.
+            for g in 1..self.glyph_remapper.num_gids() {
+                match self.cmap_entries.get(&g) {
+                    None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                        self.font.clone(),
+                        GlyphId::new(g as u32),
+                        None,
+                    )),
+                    Some(text) => {
+                        if text
+                            .chars()
+                            .any(|c| matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE))
+                            || text.is_empty()
+                        {
+                            sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                                self.font.clone(),
+                                GlyphId::new(g as u32),
+                                Some(text.clone()),
+                            ))
+                        }
+
+                        if !text.is_empty() {
+                            cmap.pair_with_multiple(g, text.chars());
+                        }
+                    }
                 }
             }
 
@@ -252,15 +281,29 @@ impl CIDFont {
 
 /// Create a tag for a font subset.
 fn subset_tag(subsetted_font: &[u8]) -> String {
-    const LEN: usize = 6;
     const BASE: u128 = 26;
     let mut hash = subsetted_font.sip_hash();
-    let mut letter = [b'A'; LEN];
+    let mut letter = [b'A'; SUBSET_TAG_LEN];
     for l in letter.iter_mut() {
         *l = b'A' + (hash % BASE) as u8;
         hash /= BASE;
     }
     std::str::from_utf8(&letter).unwrap().to_string()
+}
+
+fn base_font_name(font: &Font, subset_data: &[u8]) -> String {
+    const REST_LEN: usize = SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len();
+    let postscript_name = font.postscript_name().unwrap_or("unknown");
+
+    let max_len = 127 - REST_LEN;
+
+    let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
+
+    // Hash the full name (we might have trimmed) and the glyphs to produce
+    // a fairly unique subset tag.
+    let subset_tag = subset_tag(&subset_data);
+
+    format!("{subset_tag}+{trimmed}")
 }
 
 #[cfg(test)]

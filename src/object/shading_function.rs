@@ -6,6 +6,7 @@ use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
+use crate::validation::ValidationError;
 use pdf_writer::types::FunctionShadingType;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::hash::{Hash, Hasher};
@@ -224,6 +225,7 @@ impl Object for ShadingFunction {
                 serialize_axial_radial_shading(sc, &mut chunk, root_ref, rag, self.0.use_opacities)
             }
             GradientProperties::PostScriptGradient(psg) => {
+                sc.register_validation_error(ValidationError::ContainsPostScript);
                 serialize_postscript_shading(sc, &mut chunk, root_ref, psg, self.0.use_opacities)
             }
         }
@@ -245,9 +247,7 @@ fn serialize_postscript_shading(
     let cs = if use_opacities {
         rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
-        post_script_gradient.stops[0]
-            .color
-            .color_space(&sc.serialize_settings, false)
+        post_script_gradient.stops[0].color.color_space(sc, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -276,9 +276,7 @@ fn serialize_axial_radial_shading(
     let cs = if use_opacities {
         rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
-        radial_axial_gradient.stops[0]
-            .color
-            .color_space(&sc.serialize_settings, false)
+        radial_axial_gradient.stops[0].color.color_space(sc, false)
     };
 
     let mut shading = chunk.function_shading(root_ref);

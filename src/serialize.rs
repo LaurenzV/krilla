@@ -1,7 +1,7 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCProfile, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontIdentifier, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -15,9 +15,12 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
+use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::{Array, Chunk, Dict, Name, Pdf, Ref};
+use pdf_writer::types::OutputIntentSubtype;
+use pdf_writer::writers::OutputIntent;
+use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -54,18 +57,54 @@ pub struct SerializeSettings {
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
+    ///
+    /// Note that this value might be overridden depending on which validator
+    /// you use. For example, when exporting to PDF/A, this value will be set to
+    /// true, regardless of what value will be passed.
     pub no_device_cs: bool,
     /// Whether the PDF should be ASCII-compatible, i.e. only consist of
     /// characters in the ASCII range.
+    ///
+    /// Note that this only on a best-effort basis. For example, XMP metadata always
+    /// contains a binary marker. In addition to that, some validators,
+    /// like PDF/A, require that the file header be a binary marker, meaning
+    /// that the header itself will not be ASCII-compatible.
+    ///
+    /// Binary streams will always be hex encoded and thus are ascii compatible, though.
     pub ascii_compatible: bool,
     /// Whether the PDF should contain XMP metadata.
+    ///
+    /// Note that this value might be overridden depending on which validator
+    /// you use. For example, when exporting to PDF/A, this value will be set to
+    /// true, regardless of what value will be passed.
     pub xmp_metadata: bool,
     /// Whether all fonts should be embedded as Type3 fonts.
     pub force_type3_fonts: bool,
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
-    pub cmyk_profile: Option<ICCProfile>,
+    ///
+    /// This is usually not required, but it is for example required when exporting
+    /// to PDF/A and using a CMYK color, since they have to be device-independent.
+    pub cmyk_profile: Option<ICCProfile<4>>,
+    /// A validator that allows for exporting to a specific substandard of PDF.
+    ///
+    /// In case validation fails, export will fail, and a list of validation errors that
+    /// occurred will be returned instead of the PDF.
+    ///
+    /// **Important**: Make sure to carefully read the documentation of the [`validation`] module
+    /// before using this feature! Just setting a validator might not be enough to ensure that
+    /// your output conforms to the given standard, as some requirements are semantic in nature
+    /// and cannot possibly be verified by krilla!
+    ///
+    /// However, as long as you carefully read and follow the documentation,
+    /// you can be certain that the resulting document will conform to the standard (unless there
+    /// is a bug).
+    ///
+    /// [`validation`]: crate::validation
+    pub validator: Validator,
 }
+
+const STR_BYTE_LEN: usize = 32767;
 
 #[cfg(test)]
 impl SerializeSettings {
@@ -77,6 +116,7 @@ impl SerializeSettings {
             xmp_metadata: false,
             force_type3_fonts: false,
             cmyk_profile: None,
+            validator: Validator::Dummy,
         }
     }
 
@@ -110,6 +150,44 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_7() -> Self {
+        Self {
+            validator: Validator::PdfA2B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_8() -> Self {
+        Self {
+            validator: Validator::PdfA2B,
+            cmyk_profile: Some(ICCProfile::new(Arc::new(
+                std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+            ))),
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_9() -> Self {
+        Self {
+            validator: Validator::PdfA2U,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_10() -> Self {
+        Self {
+            validator: Validator::PdfA3B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_11() -> Self {
+        Self {
+            validator: Validator::PdfA3U,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -121,6 +199,7 @@ impl Default for SerializeSettings {
             xmp_metadata: true,
             force_type3_fonts: false,
             cmyk_profile: None,
+            validator: Validator::Dummy,
         }
     }
 }
@@ -140,6 +219,7 @@ pub(crate) struct SerializerContext {
     cached_mappings: HashMap<u128, Ref>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
+    validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: SerializeSettings,
 }
 
@@ -162,7 +242,12 @@ impl PDFGlyph {
 }
 
 impl SerializerContext {
-    pub fn new(serialize_settings: SerializeSettings) -> Self {
+    pub fn new(mut serialize_settings: SerializeSettings) -> Self {
+        // If the validator requires/prefers no device color spaces
+        // set it to true, even if the user didn't set it.
+        serialize_settings.no_device_cs |= serialize_settings.validator.no_device_cs();
+        serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
+
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
@@ -173,6 +258,7 @@ impl SerializerContext {
             page_infos: vec![],
             pages: vec![],
             font_map: HashMap::new(),
+            validation_errors: vec![],
             serialize_settings,
         }
     }
@@ -187,6 +273,12 @@ impl SerializerContext {
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
+        if self.serialize_settings.validator.prohibits(&error) {
+            self.validation_errors.push(error);
+        }
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {
@@ -252,9 +344,25 @@ impl SerializerContext {
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize(ref_);
+        let chunk = page_label.serialize(self, ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
+    }
+
+    pub fn new_text_str<'a>(&mut self, text: &'a str) -> TextStr<'a> {
+        if text.as_bytes().len() > STR_BYTE_LEN {
+            self.register_validation_error(ValidationError::TooLongString);
+        }
+
+        TextStr(text)
+    }
+
+    pub fn new_str<'a>(&mut self, str: &'a [u8]) -> Str<'a> {
+        if str.len() > STR_BYTE_LEN {
+            self.register_validation_error(ValidationError::TooLongString);
+        }
+
+        Str(str)
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
@@ -304,8 +412,8 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(SRGB_ICC.clone()),
-            Resource::Gray => self.add_object(GREY_ICC.clone()),
+            Resource::Rgb => self.add_object(ICCBasedColorSpace(SRGB_ICC.clone())),
+            Resource::Gray => self.add_object(ICCBasedColorSpace(GREY_ICC.clone())),
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),
@@ -351,10 +459,38 @@ impl SerializerContext {
         map
     }
 
+    fn get_output_intents(&mut self, subtype: OutputIntentSubtype, root_ref: Ref) -> Chunk {
+        let mut chunk = Chunk::new();
+
+        let oi_ref = self.new_ref();
+        let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+        oi.dest_output_profile(self.add_object(SRGB_ICC.clone()))
+            .subtype(subtype)
+            .output_condition_identifier(TextStr("Custom"))
+            .output_condition(TextStr("sRGB"))
+            .registry_name(TextStr(""))
+            .info(TextStr("sRGB v4.2"));
+        oi.finish();
+
+        let mut array = chunk.indirect(root_ref).array();
+        array.item(oi_ref);
+        array.finish();
+
+        chunk
+    }
+
     pub fn finish(mut self) -> KrillaResult<Pdf> {
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use `std::mem::take` to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
+
+        // Write output intent, if required by the validator.
+        let validator = self.serialize_settings.validator;
+        self.chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
+            let root_ref = self.new_ref();
+            let chunk = self.get_output_intents(subtype, root_ref);
+            (root_ref, chunk)
+        });
 
         if let Some(container) = PageLabelContainer::new(
             &self
@@ -408,11 +544,23 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
+        if self.cur_ref > Ref::new(8388607) {
+            self.register_validation_error(ValidationError::TooManyIndirectObjects)
+        }
+
+        let chunk_container = std::mem::take(&mut self.chunk_container);
+        let serialized = chunk_container.finish(&mut self);
+
+        if !self.validation_errors.is_empty() {
+            return Err(KrillaError::ValidationError(self.validation_errors));
+        }
+
         // Just a sanity check.
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
+        // TODO: add check that chunk container is empty
 
-        Ok(self.chunk_container.finish(self.serialize_settings))
+        Ok(serialized)
     }
 }
 

@@ -21,7 +21,7 @@
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::SerializerContext;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use pdf_writer::{Chunk, Finish, Ref};
 
 /// An outline.
 ///
@@ -180,7 +180,7 @@ impl OutlineNode {
         }
 
         if !self.text.is_empty() {
-            outline_entry.title(TextStr(&self.text));
+            outline_entry.title(sc.new_text_str(&self.text));
         }
 
         self.destination.serialize(sc, outline_entry.dest());

@@ -232,10 +232,10 @@ end def
 <00> <FF>
 endcodespacerange
 4 beginbfchar
-<01> <0047>
-<02> <0046>
-<03> <004B>
-<04> <004C>
+<00> <0047>
+<01> <0046>
+<02> <004B>
+<03> <004C>
 endbfchar
 endcmap
 CMapName currentdict /CMap defineresource pop

@@ -1,15 +1,17 @@
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use crate::object::cid_font::{CMAP_NAME, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
+use crate::validation::ValidationError;
 use crate::{font, SvgSettings};
-use pdf_writer::types::{FontFlags, SystemInfo, UnicodeCmap};
+use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
+use pdf_writer::{Chunk, Content, Finish, Name, Ref};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -86,13 +88,6 @@ pub(crate) struct Type3Font {
     glyph_set: HashSet<OwnedCoveredGlyph>,
     index: usize,
 }
-
-const CMAP_NAME: Name = Name(b"Custom");
-const SYSTEM_INFO: SystemInfo = SystemInfo {
-    registry: Str(b"Adobe"),
-    ordering: Str(b"Identity"),
-    supplement: 0,
-};
 
 impl Type3Font {
     pub fn new(font: Font, index: usize) -> Self {
@@ -269,14 +264,12 @@ impl Type3Font {
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
 
-        let postscript_name = self.font.postscript_name();
-
         let mut flags = FontFlags::empty();
         flags.set(
             FontFlags::SERIF,
-            postscript_name
-                .map(|n| n.contains("Serif"))
-                .unwrap_or(false),
+            self.font
+                .postscript_name()
+                .is_some_and(|n| n.contains("Serif")),
         );
         flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
         flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
@@ -287,10 +280,14 @@ impl Type3Font {
         let ascender = font_bbox.bottom();
         let descender = font_bbox.top();
 
+        const MAX_LEN: usize = 127;
+        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
+        let trimmed = &postscript_name[..postscript_name.len().min(MAX_LEN)];
+
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
-            .name(Name(postscript_name.unwrap_or("unknown").as_bytes()))
+            .name(Name(trimmed.as_bytes()))
             .flags(flags)
             .bbox(font_bbox.to_pdf_rect())
             .italic_angle(italic_angle)
@@ -335,9 +332,31 @@ impl Type3Font {
 
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
-            for (g, text) in &self.cmap_entries {
-                if !text.is_empty() {
-                    cmap.pair_with_multiple(*g, text.chars());
+
+            for g in 0..self.glyphs.len() as u8 {
+                match self.cmap_entries.get(&g) {
+                    None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                        self.font.clone(),
+                        GlyphId::new(g as u32),
+                        None,
+                    )),
+                    Some(text) => {
+                        if text
+                            .chars()
+                            .any(|c| matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE))
+                            || text.is_empty()
+                        {
+                            sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                                self.font.clone(),
+                                GlyphId::new(g as u32),
+                                Some(text.clone()),
+                            ))
+                        }
+
+                        if !text.is_empty() {
+                            cmap.pair_with_multiple(g, text.chars());
+                        }
+                    }
                 }
             }
 
@@ -482,8 +501,8 @@ mod tests {
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
-                t3_font.set_codepoints(1, "A".to_string());
-                t3_font.set_codepoints(2, "B".to_string());
+                t3_font.set_codepoints(0, "A".to_string());
+                t3_font.set_codepoints(1, "B".to_string());
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
@@ -624,10 +643,10 @@ mod tests {
                 let t3_font = t3
                     .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
                     .unwrap();
-                t3_font.set_codepoints(1, "G".to_string());
-                t3_font.set_codepoints(2, "F".to_string());
-                t3_font.set_codepoints(3, "K".to_string());
-                t3_font.set_codepoints(4, "L".to_string());
+                t3_font.set_codepoints(0, "G".to_string());
+                t3_font.set_codepoints(1, "F".to_string());
+                t3_font.set_codepoints(2, "K".to_string());
+                t3_font.set_codepoints(3, "L".to_string());
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }

@@ -1,0 +1,145 @@
+%PDF-1.7
+%€€€€
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [5 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /OutputIntent
+  /DestOutputProfile 7 0 R
+  /S /GTS_PDFA1
+  /OutputConditionIdentifier (Custom)
+  /OutputCondition (sRGB)
+  /RegistryName ()
+  /Info (sRGB v4.2)
+>>
+endobj
+
+3 0 obj
+[2 0 R]
+endobj
+
+4 0 obj
+<<
+  /Type /Annot
+  /Subtype /Link
+  /Rect [50 50 150 150]
+  /Border [0 0 0]
+  /F 4
+  /AP <<
+    /N 8 0 R
+  >>
+  /A <<
+    /Type /Action
+    /S /URI
+    /URI (https://www.youtube.com)
+  >>
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 6 0 R
+  /Annots [4 0 R]
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+7 0 obj
+<<
+  /Length 649
+  /N 3
+  /Range [0 1 0 1 0 1]
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C7D90BD4BC35014C54FAC5A95AA831D1C1482162705D1C549A1957612A11FD2D629
+79E98790C4981729CEDAC1497110477511C4B98E76F00F100407511037D70A3A6889F7
+3542AAA0F772B93F0EF7C2E100D293CE0CDE290386E9D8C94454CEE6F272F0190184D1
+8B018C2A8C5B4BA9781A545CA970E6D83A7ED4DB1D24B16FA7CA8AA96DBD5CADE4E7A5
+DAF67835137F5F3EC7FFD5A71538A3FD49136196ED00924C3C56712CC18BC461565634
+E22CF1A44D068977845EF2F848B0EAF185603B9D8C11D789E5521BAB6D6CE89BECDB83
+701F2A989914ED1E9A1170249140F48F9BEED64D8C7A1A1079FDCE81176767BCAFD002
+D0F5E8BAAF1340701F681EB8EEC789EB364F81C00350DFF0FFD78F81B906E97BBEA61E
+0297BBC0F0BDAF45E86EB00AD4AE2DC5565A5280A6A3B80634CE80FE1C307443D1AE7E
+01E3E25FB1
+endstream
+endobj
+
+8 0 obj
+<<
+  /Length 0
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [50 50 150 150]
+>>
+stream
+
+endstream
+endobj
+
+9 0 obj
+<<
+  /Length 844
+  /Type /Metadata
+  /Subtype /XML
+>>
+stream
+<?xpacket begin="ï»¿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" ><pdfaid:part>2</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>L4NQMg3KPJFHEm8wSN3jrA==</xmpMM:InstanceID><xmpMM:DocumentID>L4NQMg3KPJFHEm8wSN3jrA==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+endstream
+endobj
+
+10 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Metadata 9 0 R
+  /OutputIntents 3 0 R
+>>
+endobj
+
+xref
+0 11
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000270 00000 n
+0000000294 00000 n
+0000000502 00000 n
+0000000679 00000 n
+0000000731 00000 n
+0000001505 00000 n
+0000001678 00000 n
+0000002610 00000 n
+trailer
+<<
+  /Size 11
+  /Root 10 0 R
+  /ID [(L4NQMg3KPJFHEm8wSN3jrA==) (L4NQMg3KPJFHEm8wSN3jrA==)]
+>>
+startxref
+2706
+%%EOF
