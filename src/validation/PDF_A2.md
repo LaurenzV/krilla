@@ -167,4 +167,16 @@ always required. 🟢
 
 ## 6.6 Metadata
 
+6.6.1: -
+
+6.6.2.1: 
+- krilla overrides the `xmp_metadata` attribute for PDF/A exports so that it's always contained. 🟢
+- `xmp-writer` always creates conforming XMP streams. 🟢
+- We never include the `bytes` or `encoding` attributes. 🟢
+
+6.6.2.2: -
+
+6.6.2.3.1: krilla doesn't use any non-standard properties. 🟢
+
+
 TODO

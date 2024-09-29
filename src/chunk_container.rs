@@ -29,6 +29,7 @@ pub struct ChunkContainer {
     pub(crate) annotations: Vec<Chunk>,
     pub(crate) fonts: Vec<Chunk>,
     pub(crate) color_spaces: Vec<Chunk>,
+    pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
     pub(crate) images: Vec<Deferred<Chunk>>,
@@ -104,7 +105,7 @@ impl ChunkContainer {
         remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
             &mut self.page_label_tree, &mut self.destination_profiles);
         remap_fields!(remapper, remapped_ref; &self.pages, &self.page_labels,
-            &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
+            &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
             &self.ext_g_states, &self.images, &self.masks, &self.x_objects, &self.shading_functions,
             &self.patterns
         );
@@ -133,7 +134,7 @@ impl ChunkContainer {
         write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
             &self.page_label_tree, &self.destination_profiles);
         write_fields!(remapper, &mut pdf; &self.pages, &self.page_labels,
-            &self.annotations, &self.fonts, &self.color_spaces, &self.destinations,
+            &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
             &self.ext_g_states, &self.images, &self.masks, &self.x_objects,
             &self.shading_functions, &self.patterns
         );

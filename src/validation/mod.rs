@@ -46,7 +46,14 @@ impl Validator {
         }
     }
 
-    pub fn prefers_no_device_cs(&self) -> bool {
+    pub fn no_device_cs(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::PdfA2(_) => true,
+        }
+    }
+
+    pub fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
             Validator::PdfA2(_) => true,

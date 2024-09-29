@@ -67,7 +67,7 @@ pub struct SerializeSettings {
     pub force_type3_fonts: bool,
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
-    pub cmyk_profile: Option<ICCProfile>,
+    pub cmyk_profile: Option<ICCProfile<4>>,
     pub validator: Validator,
 }
 
@@ -195,7 +195,8 @@ impl SerializerContext {
     pub fn new(mut serialize_settings: SerializeSettings) -> Self {
         // If the validator requires/prefers no device color spaces
         // set it to true, even if the user didn't set it.
-        serialize_settings.no_device_cs |= serialize_settings.validator.prefers_no_device_cs();
+        serialize_settings.no_device_cs |= serialize_settings.validator.no_device_cs();
+        serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
 
         Self {
             cached_mappings: HashMap::new(),
@@ -422,7 +423,6 @@ impl SerializerContext {
         oi.finish();
 
         let mut array = chunk.indirect(root_ref).array();
-        array.item(Name(b"ICCBased"));
         array.item(oi_ref);
         array.finish();
 

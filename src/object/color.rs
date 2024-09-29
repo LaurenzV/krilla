@@ -255,17 +255,39 @@ impl Hash for Repr {
 
 /// An ICC profile.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct ICCProfile(Arc<Prehashed<Repr>>);
+pub struct ICCProfile<const C: u8>(Arc<Prehashed<Repr>>);
 
-impl ICCProfile {
+impl<const C: u8> ICCProfile<C> {
     /// Create a new ICC profile.
     pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
         Self(Arc::new(Prehashed::new(Repr(data))))
     }
 }
 
+impl<const C: u8> Object for ICCProfile<C> {
+    fn chunk_container(&self) -> ChunkContainerFn {
+        Box::new(|cc| &mut cc.icc_profiles)
+    }
+
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        let mut chunk = Chunk::new();
+        let icc_stream = FilterStream::new_from_binary_data(
+            self.0.deref().0.as_ref().as_ref(),
+            &sc.serialize_settings,
+        );
+
+        let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
+        icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
+
+        icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
+        icc_profile.finish();
+
+        chunk
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile);
+pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile<C>);
 
 impl<const C: u8> Object for ICCBasedColorSpace<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
@@ -273,7 +295,7 @@ impl<const C: u8> Object for ICCBasedColorSpace<C> {
     }
 
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        let icc_ref = sc.new_ref();
+        let icc_ref = sc.add_object(self.0.clone());
 
         let mut chunk = Chunk::new();
 
@@ -281,17 +303,6 @@ impl<const C: u8> Object for ICCBasedColorSpace<C> {
         array.item(Name(b"ICCBased"));
         array.item(icc_ref);
         array.finish();
-
-        let icc_stream = FilterStream::new_from_binary_data(
-            self.0 .0.deref().0.as_ref().as_ref(),
-            &sc.serialize_settings,
-        );
-
-        let mut icc_profile = chunk.icc_profile(icc_ref, icc_stream.encoded_data());
-        icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
-
-        icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
-        icc_profile.finish();
 
         chunk
     }
