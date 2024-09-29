@@ -23,6 +23,7 @@ use crate::validation::ValidationError;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str};
+use skrifa::GlyphId;
 use std::cell::{RefCell, RefMut};
 use std::collections::HashSet;
 use std::ops::Range;
@@ -339,6 +340,10 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
+            if glyph.glyph_id() == GlyphId::new(0) {
+                sc.register_validation_error(ValidationError::ContainsNotDefGlyph);
+            }
+
             let pdf_glyph = pdf_font
                 .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode, size))
                 .unwrap();

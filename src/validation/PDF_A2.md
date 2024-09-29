@@ -102,7 +102,7 @@ when a PostScript function is used. 🟢
 6.2.10: krilla always includes an OutputIntent for PDF/A, so the /G attribute is not
 always required. 🟢
 
-6.2.11.1: -
+6.2.11.1: krilla fails export in PDF/A when the .notdef glyph is referenced. 🟢
 
 6.2.11.2: krilla has made sure that the spec is followed in this regard. 🟢
 
@@ -126,6 +126,8 @@ always required. 🟢
 - krilla embeds all fonts as symbolic. 🟢
 - krilla does not write the `Encoding` entry for TrueType fonts.
 - krilla only writes CIDFonts instead of TrueType fonts directly, so cmap is not needed. 🟢
+
+6.2.11.8:
 
 ## 6.3 Annotations
 

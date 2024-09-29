@@ -15,6 +15,7 @@ pub enum ValidationError {
     TooHighQNestingLevel,
     ContainsPostScript,
     MissingCMYKProfile,
+    ContainsNotDefGlyph,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -33,6 +34,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
                 ValidationError::MissingCMYKProfile => true,
+                ValidationError::ContainsNotDefGlyph => true,
             },
         }
     }
@@ -64,17 +66,18 @@ mod tests {
     use crate::action::LinkAction;
     use crate::annotation::{LinkAnnotation, Target};
     use crate::error::KrillaError;
+    use crate::font::Font;
     use crate::metadata::Metadata;
     use crate::page::Page;
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
-    use crate::surface::Surface;
-    use crate::tests::{cmyk_fill, rect_to_path, stops_with_2_solid_1};
+    use crate::surface::TextDirection;
+    use crate::tests::{cmyk_fill, rect_to_path, stops_with_2_solid_1, NOTO_SANS};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use std::iter;
-    use tiny_skia_path::Rect;
+    use tiny_skia_path::{Point, Rect};
 
     fn pdfa_document() -> Document {
         Document::new_with(SerializeSettings::settings_7())
@@ -212,6 +215,36 @@ mod tests {
             document.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::MissingCMYKProfile
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa_notdef_glyph() {
+        let mut document = pdfa_document();
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "你",
+            false,
+            TextDirection::Auto,
+        );
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::ContainsNotDefGlyph
             ]))
         )
     }
