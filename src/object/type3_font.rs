@@ -1,6 +1,6 @@
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
-use crate::object::cid_font::{CMAP_NAME, SYSTEM_INFO};
+use crate::object::cid_font::{base_font_name, subset_tag, CMAP_NAME, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
@@ -281,13 +281,19 @@ impl Type3Font {
         let descender = font_bbox.top();
 
         const MAX_LEN: usize = 127;
-        let postscript_name = self.font.postscript_name().unwrap_or("unknown");
-        let trimmed = &postscript_name[..postscript_name.len().min(MAX_LEN)];
+
+        let mut gids = self
+            .glyph_set
+            .iter()
+            .map(|g| g.glyph_id)
+            .collect::<Vec<_>>();
+        gids.sort();
+        let base_font = base_font_name(&self.font, &gids);
 
         // Write the font descriptor (contains metrics about the font).
         let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
         font_descriptor
-            .name(Name(trimmed.as_bytes()))
+            .name(Name(base_font.as_bytes()))
             .flags(flags)
             .bbox(font_bbox.to_pdf_rect())
             .italic_angle(italic_angle)
@@ -299,6 +305,8 @@ impl Type3Font {
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(&mut type3_font);
 
+        // See https://github.com/typst/typst/issues/5067 as to why we write this.
+        type3_font.name(Name(base_font.as_bytes()));
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
