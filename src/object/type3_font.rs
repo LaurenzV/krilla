@@ -282,7 +282,11 @@ impl Type3Font {
 
         const MAX_LEN: usize = 127;
 
-        let mut gids = self.glyph_set.iter().map(|g| g.glyph_id).collect::<Vec<_>>();
+        let mut gids = self
+            .glyph_set
+            .iter()
+            .map(|g| g.glyph_id)
+            .collect::<Vec<_>>();
         gids.sort();
         let base_font = base_font_name(&self.font, &gids);
 
