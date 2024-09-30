@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{CIDIdentifer, Font, FontIdentifier};
 use crate::serialize::{FilterStream, SerializerContext};
-use crate::util::{RectExt, SipHashable, SliceExt};
+use crate::util::{hash128, RectExt, SipHashable, SliceExt};
 use crate::validation::ValidationError;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
@@ -10,6 +10,7 @@ use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use skrifa::GlyphId;
 use std::collections::BTreeMap;
+use std::hash::Hash;
 use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
 
@@ -142,7 +143,7 @@ impl CIDFont {
             FilterStream::new_from_binary_data(data, &sc.serialize_settings)
         };
 
-        let base_font = base_font_name(&self.font, font_stream.encoded_data());
+        let base_font = base_font_name(&self.font, &self.glyph_remapper);
         let base_font_type0 = if is_cff {
             format!("{base_font}-{}", IDENTITY_H)
         } else {
@@ -280,9 +281,9 @@ impl CIDFont {
 }
 
 /// Create a tag for a font subset.
-fn subset_tag(subsetted_font: &[u8]) -> String {
+pub(crate) fn subset_tag<T: Hash>(data: &T) -> String {
     const BASE: u128 = 26;
-    let mut hash = subsetted_font.sip_hash();
+    let mut hash = hash128(data);
     let mut letter = [b'A'; SUBSET_TAG_LEN];
     for l in letter.iter_mut() {
         *l = b'A' + (hash % BASE) as u8;
@@ -291,7 +292,7 @@ fn subset_tag(subsetted_font: &[u8]) -> String {
     std::str::from_utf8(&letter).unwrap().to_string()
 }
 
-fn base_font_name(font: &Font, subset_data: &[u8]) -> String {
+pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
     const REST_LEN: usize = SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len();
     let postscript_name = font.postscript_name().unwrap_or("unknown");
 
@@ -301,7 +302,7 @@ fn base_font_name(font: &Font, subset_data: &[u8]) -> String {
 
     // Hash the full name (we might have trimmed) and the glyphs to produce
     // a fairly unique subset tag.
-    let subset_tag = subset_tag(&subset_data);
+    let subset_tag = subset_tag(&data);
 
     format!("{subset_tag}+{trimmed}")
 }

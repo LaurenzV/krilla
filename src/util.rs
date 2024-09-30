@@ -287,7 +287,7 @@ pub(crate) fn hash_base64<T: Hash + ?Sized>(value: &T) -> String {
 }
 
 /// Calculate a 128-bit siphash of a value.
-fn hash128<T: Hash + ?Sized>(value: &T) -> u128 {
+pub(crate) fn hash128<T: Hash + ?Sized>(value: &T) -> u128 {
     let mut state = SipHasher13::new();
     value.hash(&mut state);
     state.finish128().as_u128()

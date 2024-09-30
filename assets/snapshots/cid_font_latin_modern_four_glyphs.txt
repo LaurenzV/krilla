@@ -5,7 +5,7 @@
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /CVHVDW+LMRoman10-Regular-Identity-H
+  /BaseFont /PXNIEG+LMRoman10-Regular-Identity-H
   /Encoding /Identity-H
   /DescendantFonts [2 0 R]
   /ToUnicode 4 0 R
@@ -16,7 +16,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType0
-  /BaseFont /CVHVDW+LMRoman10-Regular
+  /BaseFont /PXNIEG+LMRoman10-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -31,7 +31,7 @@ endobj
 3 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /CVHVDW+LMRoman10-Regular
+  /FontName /PXNIEG+LMRoman10-Regular
   /Flags 131076
   /FontBBox [-430 -290 987 837]
   /ItalicAngle 0
