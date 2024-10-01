@@ -127,7 +127,7 @@ pub mod path;
 pub mod stream;
 pub mod surface;
 
-pub mod content;
+pub(crate) mod content;
 #[cfg(test)]
 pub mod tests;
 pub mod validation;

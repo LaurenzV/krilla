@@ -1,10 +1,5 @@
 //! Dealing with colors and color spaces.
 //!
-//! Unlike other graphics libraries, krilla does not use a single RGB color space that can be
-//! used to draw content with, the reason being that PDF supports much more complex color
-//! management, and krilla tried to expose at least some of that functionality, while still
-//! trying to abstract over the nitty-gritty details that are part of dealing with colors in PDF.
-//!
 //! # Color spaces
 //!
 //! krilla currently supports two color spaces:

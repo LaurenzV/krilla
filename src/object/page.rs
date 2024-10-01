@@ -210,7 +210,7 @@ impl PageLabel {
         }
 
         if let Some(prefix) = &self.prefix {
-            label.prefix(sc.new_text_str(&prefix));
+            label.prefix(sc.new_text_str(prefix));
         }
 
         if let Some(offset) = self.offset {

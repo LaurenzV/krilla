@@ -1,6 +1,6 @@
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
-use crate::object::cid_font::{base_font_name, subset_tag, CMAP_NAME, SYSTEM_INFO};
+use crate::object::cid_font::{base_font_name, CMAP_NAME, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
@@ -279,8 +279,6 @@ impl Type3Font {
         let italic_angle = self.font.italic_angle();
         let ascender = font_bbox.bottom();
         let descender = font_bbox.top();
-
-        const MAX_LEN: usize = 127;
 
         let mut gids = self
             .glyph_set

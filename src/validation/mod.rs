@@ -1,8 +1,24 @@
-//! Exporting with a specific validation level.
-
-// TODO: Add guide, mentioning manual invariants.
-// PDF-A: Legality of fonts
-
+//! Exporting with a specific PDF conformance level.
+//!
+//! PDF defines a number of additional conformance level that restrict the features of PDF that
+//! can be used to a specific subset. Currently, krilla only supports some PDF/A conformance levels,
+//! although more are planned for the future.
+//!
+//! You can use a [`Validator`] by setting the `validator` attribute of the [`SerializeSettings`]
+//! you create the document with. There are three important aspects that play into this:
+//! - krilla will internally write the file in a way that conforms to the given standard, i.e.
+//!   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
+//!   away from the user.
+//! - For aspects that are out of control of krilla and dependent on the input, krilla will perform
+//!   a validation that the input is compatible with the standard. krilla will record all violations,
+//!   and when calling `document.finish()`, in case there is at least one violation, krilla will
+//!   return them as an error, instead of returning the finished document. See [`ValidationError`].
+//! - Finally, some standards have requirements that cannot possibly be validated by krilla, as
+//!   they are semantic in nature. It is upon your, as a user of that library, to ensure that those
+//!   requirements are fulfilled.
+//!   You can find them under **Requirements** for each [`Validator`].
+//!
+//! [`SerializeSettings`]: crate::SerializeSettings
 use crate::font::Font;
 use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
@@ -48,20 +64,8 @@ pub enum ValidationError {
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
-///
-/// You can use the validator by setting the `validator` attribute of the [`SerializeSettings`]
-/// you create the document with. There are three important aspects that play into this:
-/// - krilla will internally write the file in a way that conforms to the given standard, i.e.
-///   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
-///   away from the user.
-/// - For aspects that are out of control of krilla and dependent on the input, krilla will perform
-///   a validation that the input is compatible with the standard. krilla will record all violations,
-///   and when calling `document.finish()`, in case there is at least one violation, krilla will
-///   return them as an error, instead of returning the finished document. See [`ValidationError`].
-/// - Finally, some standards have requirements that cannot possibly be validated by krilla, as
-///   they are semantic in nature. It is upon your, as a user of that library, to ensure that those
-///   requirements are fulfilled. You can find them under **Requirements** for each export standard.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
 pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.
     ///
@@ -71,26 +75,26 @@ pub enum Validator {
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
-    PdfA2B,
+    ///   universal rendering.
+    A2_B,
     /// The validator for the PDF/A2-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
-    PdfA2U,
+    ///   universal rendering.
+    A2_U,
     /// The validator for the PDF/A3-B standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
-    PdfA3B,
+    ///   universal rendering.
+    A3_B,
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
-    PdfA3U,
+    ///   universal rendering.
+    A3_U,
 }
 
 impl Validator {
@@ -98,7 +102,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
-            Validator::PdfA2B | Validator::PdfA2U => match validation_error {
+            Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -106,9 +110,9 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A2-U and PDF/A2-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA2B,
+                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
             },
-            Validator::PdfA3B | Validator::PdfA3U => match validation_error {
+            Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -116,7 +120,7 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A3-U and PDF/A3-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA3B,
+                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A3_B,
             },
         }
     }
@@ -128,19 +132,19 @@ impl Validator {
             //     xmp.pdfa_part("2");
             //     xmp.pdfa_conformance("A");
             // }
-            Validator::PdfA2B => {
+            Validator::A2_B => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("B");
             }
-            Validator::PdfA2U => {
+            Validator::A2_U => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("U");
             }
-            Validator::PdfA3B => {
+            Validator::A3_B => {
                 xmp.pdfa_part("3");
                 xmp.pdfa_conformance("B");
             }
-            Validator::PdfA3U => {
+            Validator::A3_U => {
                 xmp.pdfa_part("3");
                 xmp.pdfa_conformance("U");
             }
@@ -150,8 +154,8 @@ impl Validator {
     pub(crate) fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -159,8 +163,8 @@ impl Validator {
     pub(crate) fn no_device_cs(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -168,8 +172,8 @@ impl Validator {
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -177,8 +181,8 @@ impl Validator {
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -187,8 +191,8 @@ impl Validator {
         match self {
             Validator::Dummy => None,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
-            Validator::PdfA2B | Validator::PdfA2U => Some(OutputIntentSubtype::PDFA),
-            Validator::PdfA3B | Validator::PdfA3U => Some(OutputIntentSubtype::PDFA),
+            Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
+            Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
         }
     }
 }
@@ -208,7 +212,6 @@ mod tests {
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
-    use std::iter;
     use tiny_skia_path::{Point, Rect};
 
     fn pdfa_document() -> Document {
@@ -262,7 +265,7 @@ mod tests {
     #[test]
     pub fn validation_pdfa_string_length() {
         let mut document = pdfa_document();
-        let metadata = Metadata::new().creator(iter::repeat("A").take(32768).collect());
+        let metadata = Metadata::new().creator("A".repeat(32768));
         document.set_metadata(metadata);
         assert_eq!(
             document.finish(),
