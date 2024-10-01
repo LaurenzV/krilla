@@ -75,25 +75,25 @@ pub enum Validator {
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
+    ///   universal rendering.
     A2_B,
     /// The validator for the PDF/A2-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
+    ///   universal rendering.
     A2_U,
     /// The validator for the PDF/A3-B standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
+    ///   universal rendering.
     A3_B,
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    /// universal rendering.
+    ///   universal rendering.
     A3_U,
 }
 
@@ -212,7 +212,6 @@ mod tests {
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
-    use std::iter;
     use tiny_skia_path::{Point, Rect};
 
     fn pdfa_document() -> Document {
@@ -266,7 +265,7 @@ mod tests {
     #[test]
     pub fn validation_pdfa_string_length() {
         let mut document = pdfa_document();
-        let metadata = Metadata::new().creator(iter::repeat("A").take(32768).collect());
+        let metadata = Metadata::new().creator("A".repeat(32768));
         document.set_metadata(metadata);
         assert_eq!(
             document.finish(),
