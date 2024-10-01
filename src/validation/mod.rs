@@ -1,8 +1,24 @@
-//! Exporting with a specific validation level.
-
-// TODO: Add guide, mentioning manual invariants.
-// PDF-A: Legality of fonts
-
+//! Exporting with a specific PDF conformance level.
+//!
+//! PDF defines a number of additional conformance level that restrict the features of PDF that
+//! can be used to a specific subset. Currently, krilla only supports some PDF/A conformance levels,
+//! although more are planned for the future.
+//!
+//! You can use a [`Validator`] by setting the `validator` attribute of the [`SerializeSettings`]
+//! you create the document with. There are three important aspects that play into this:
+//! - krilla will internally write the file in a way that conforms to the given standard, i.e.
+//!   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
+//!   away from the user.
+//! - For aspects that are out of control of krilla and dependent on the input, krilla will perform
+//!   a validation that the input is compatible with the standard. krilla will record all violations,
+//!   and when calling `document.finish()`, in case there is at least one violation, krilla will
+//!   return them as an error, instead of returning the finished document. See [`ValidationError`].
+//! - Finally, some standards have requirements that cannot possibly be validated by krilla, as
+//!   they are semantic in nature. It is upon your, as a user of that library, to ensure that those
+//!   requirements are fulfilled.
+//!   You can find them under **Requirements** for each [`Validator`].
+//!
+//! [`SerializeSettings`]: crate::SerializeSettings
 use crate::font::Font;
 use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
@@ -48,19 +64,6 @@ pub enum ValidationError {
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
-///
-/// You can use the validator by setting the `validator` attribute of the [`SerializeSettings`]
-/// you create the document with. There are three important aspects that play into this:
-/// - krilla will internally write the file in a way that conforms to the given standard, i.e.
-///   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
-///   away from the user.
-/// - For aspects that are out of control of krilla and dependent on the input, krilla will perform
-///   a validation that the input is compatible with the standard. krilla will record all violations,
-///   and when calling `document.finish()`, in case there is at least one violation, krilla will
-///   return them as an error, instead of returning the finished document. See [`ValidationError`].
-/// - Finally, some standards have requirements that cannot possibly be validated by krilla, as
-///   they are semantic in nature. It is upon your, as a user of that library, to ensure that those
-///   requirements are fulfilled. You can find them under **Requirements** for each export standard.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.

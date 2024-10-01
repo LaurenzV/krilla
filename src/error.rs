@@ -18,6 +18,8 @@ pub enum KrillaError {
     /// a link to a page that doesn't exist).
     UserError(String),
     /// A list of validation errors. Can only occur if you set the `validator` in
-    /// the serialize settings to something else than the dummy validator.
+    /// the [`SerializeSettings`] to something else than the dummy validator.
+    ///
+    /// [`SerializeSettings`]: crate::SerializeSettings
     ValidationError(Vec<ValidationError>),
 }

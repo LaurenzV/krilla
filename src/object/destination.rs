@@ -2,7 +2,7 @@
 //!
 //! In some cases, you might want to refer to other locations within the same document, for
 //! example when defining the outline, or when link to a different section in the document
-//! from a link. To achieve, this, you can use destinations, which are associated with a page
+//! from a link. To achieve this, you can use destinations, which are associated with a page
 //! and a specific location on that page.
 
 use crate::serialize::SerializerContext;
