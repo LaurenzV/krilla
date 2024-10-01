@@ -65,6 +65,7 @@ pub enum ValidationError {
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
 pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.
     ///
@@ -75,25 +76,25 @@ pub enum Validator {
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     /// universal rendering.
-    PdfA2B,
+    A2_B,
     /// The validator for the PDF/A2-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     /// universal rendering.
-    PdfA2U,
+    A2_U,
     /// The validator for the PDF/A3-B standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     /// universal rendering.
-    PdfA3B,
+    A3_B,
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     /// universal rendering.
-    PdfA3U,
+    A3_U,
 }
 
 impl Validator {
@@ -101,7 +102,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
-            Validator::PdfA2B | Validator::PdfA2U => match validation_error {
+            Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -109,9 +110,9 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A2-U and PDF/A2-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA2B,
+                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
             },
-            Validator::PdfA3B | Validator::PdfA3U => match validation_error {
+            Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -119,7 +120,7 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A3-U and PDF/A3-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::PdfA3B,
+                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A3_B,
             },
         }
     }
@@ -131,19 +132,19 @@ impl Validator {
             //     xmp.pdfa_part("2");
             //     xmp.pdfa_conformance("A");
             // }
-            Validator::PdfA2B => {
+            Validator::A2_B => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("B");
             }
-            Validator::PdfA2U => {
+            Validator::A2_U => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("U");
             }
-            Validator::PdfA3B => {
+            Validator::A3_B => {
                 xmp.pdfa_part("3");
                 xmp.pdfa_conformance("B");
             }
-            Validator::PdfA3U => {
+            Validator::A3_U => {
                 xmp.pdfa_part("3");
                 xmp.pdfa_conformance("U");
             }
@@ -153,8 +154,8 @@ impl Validator {
     pub(crate) fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -162,8 +163,8 @@ impl Validator {
     pub(crate) fn no_device_cs(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -171,8 +172,8 @@ impl Validator {
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -180,8 +181,8 @@ impl Validator {
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::PdfA2B | Validator::PdfA2U => true,
-            Validator::PdfA3B | Validator::PdfA3U => true,
+            Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_B | Validator::A3_U => true,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
         }
     }
@@ -190,8 +191,8 @@ impl Validator {
         match self {
             Validator::Dummy => None,
             // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
-            Validator::PdfA2B | Validator::PdfA2U => Some(OutputIntentSubtype::PDFA),
-            Validator::PdfA3B | Validator::PdfA3U => Some(OutputIntentSubtype::PDFA),
+            Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
+            Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
         }
     }
 }

@@ -153,14 +153,14 @@ impl SerializeSettings {
 
     pub(crate) fn settings_7() -> Self {
         Self {
-            validator: Validator::PdfA2B,
+            validator: Validator::A2_B,
             ..Self::settings_1()
         }
     }
 
     pub(crate) fn settings_8() -> Self {
         Self {
-            validator: Validator::PdfA2B,
+            validator: Validator::A2_B,
             cmyk_profile: Some(ICCProfile::new(Arc::new(
                 std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
             ))),
@@ -170,21 +170,21 @@ impl SerializeSettings {
 
     pub(crate) fn settings_9() -> Self {
         Self {
-            validator: Validator::PdfA2U,
+            validator: Validator::A2_U,
             ..Self::settings_1()
         }
     }
 
     pub(crate) fn settings_10() -> Self {
         Self {
-            validator: Validator::PdfA3B,
+            validator: Validator::A3_B,
             ..Self::settings_1()
         }
     }
 
     pub(crate) fn settings_11() -> Self {
         Self {
-            validator: Validator::PdfA3U,
+            validator: Validator::A3_U,
             ..Self::settings_1()
         }
     }
