@@ -825,6 +825,17 @@ impl ContentBuilder {
             };
         }
     }
+
+    pub(crate) fn content_start_shape_glyph(
+        &mut self,
+        wx: f32,
+        ll_x: f32,
+        ll_y: f32,
+        ur_x: f32,
+        ur_y: f32,
+    ) {
+        self.content.start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
+    }
 }
 
 // TODO: Add stroke bbox too?

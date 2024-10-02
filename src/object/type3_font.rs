@@ -195,9 +195,10 @@ impl Type3Font {
 
                             content.finish()
                         } else {
-                            // If this is the case (i.e. no glyph was drawn, either because no table
+                            // If this is the case (i.e. no color glyph was drawn, either because no table
                             // exists or an error occurred, the surface is guaranteed to be empty.
-                            // So we can just safely draw the outline glyph instead.
+                            // So we can just safely draw the outline glyph instead without having to
+                            // worry about the surface being "dirty".
                             if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id)
                                 .and_then(|p| match &glyph.paint_mode {
                                     OwnedPaintMode::Fill(_) => Some(p),
@@ -220,32 +221,34 @@ impl Type3Font {
                                     }
                                 })
                             {
+                                let bbox = path.bounds();
+                                font_bbox.expand(&bbox);
+
+                                surface.start_shape_glyph(
+                                    self.widths[index],
+                                    bbox.left(),
+                                    bbox.top(),
+                                    bbox.right(),
+                                    bbox.bottom(),
+                                );
                                 // Just use a dummy fill. The Type3 glyph description is a shape glyph
                                 // so it doesn't contain any fill. Instead, it will be taken from
                                 // context where it is drawn.
                                 surface.fill_path_impl(&path, Fill::default(), false);
+                            } else {
+                                // An empty glyph with no outlines.
+                                let bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
+                                surface.start_shape_glyph(
+                                    self.widths[index],
+                                    bbox.left(),
+                                    bbox.top(),
+                                    bbox.right(),
+                                    bbox.bottom(),
+                                );
                             }
 
                             surface.finish();
-                            let stream = stream_surface.finish();
-                            let mut content = Content::new();
-
-                            // Use shape glyph for outline-based Type3 fonts.
-                            let bbox = stream.bbox;
-                            font_bbox.expand(&bbox);
-                            content.start_shape_glyph(
-                                self.widths[index],
-                                bbox.left(),
-                                bbox.top(),
-                                bbox.right(),
-                                bbox.bottom(),
-                            );
-
-                            // TODO: Find a type-safe way of doing this.
-                            let mut final_stream = content.finish();
-                            final_stream.push(b'\n');
-                            final_stream.extend(&stream.content);
-                            final_stream
+                            stream_surface.finish().content
                         };
 
                     let font_stream =
