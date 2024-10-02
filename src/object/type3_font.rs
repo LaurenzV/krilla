@@ -466,11 +466,13 @@ mod tests {
     use crate::color::rgb;
 
     use crate::object::type3_font::OwnedCoveredGlyph;
+    use crate::page::Page;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{
         red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
+        TWITTER_COLOR_EMOJI,
     };
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
@@ -694,5 +696,39 @@ mod tests {
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
+    }
+
+    #[snapshot(single_page, settings_4)]
+    fn type3_text_glyphs(page: &mut Page) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "Hi",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[snapshot(single_page, settings_4)]
+    fn type3_color_glyphs(page: &mut Page) {
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, vec![]).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "😀😃",
+            false,
+            TextDirection::Auto,
+        );
     }
 }
