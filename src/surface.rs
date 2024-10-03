@@ -140,7 +140,6 @@ impl<'a> Surface<'a> {
         glyph_units: GlyphUnits,
         paint_mode: PaintMode,
     ) {
-        // TODO: What to do with invalid COLR glyphs?
         let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
         let (mut cur_x, y) = (start.x, start.y);
 

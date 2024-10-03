@@ -207,7 +207,7 @@ where
     }
 }
 
-// TODO: Remove with new resvg release
+// TODO: Remove with new tiny-skia release
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct RectWrapper(pub Rect);
 
