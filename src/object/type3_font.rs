@@ -195,9 +195,10 @@ impl Type3Font {
 
                             content.finish()
                         } else {
-                            // If this is the case (i.e. no glyph was drawn, either because no table
+                            // If this is the case (i.e. no color glyph was drawn, either because no table
                             // exists or an error occurred, the surface is guaranteed to be empty.
-                            // So we can just safely draw the outline glyph instead.
+                            // So we can just safely draw the outline glyph instead without having to
+                            // worry about the surface being "dirty".
                             if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id)
                                 .and_then(|p| match &glyph.paint_mode {
                                     OwnedPaintMode::Fill(_) => Some(p),
@@ -220,32 +221,34 @@ impl Type3Font {
                                     }
                                 })
                             {
+                                let bbox = path.bounds();
+                                font_bbox.expand(&bbox);
+
+                                surface.start_shape_glyph(
+                                    self.widths[index],
+                                    bbox.left(),
+                                    bbox.top(),
+                                    bbox.right(),
+                                    bbox.bottom(),
+                                );
                                 // Just use a dummy fill. The Type3 glyph description is a shape glyph
                                 // so it doesn't contain any fill. Instead, it will be taken from
                                 // context where it is drawn.
                                 surface.fill_path_impl(&path, Fill::default(), false);
+                            } else {
+                                // An empty glyph with no outlines.
+                                let bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
+                                surface.start_shape_glyph(
+                                    self.widths[index],
+                                    bbox.left(),
+                                    bbox.top(),
+                                    bbox.right(),
+                                    bbox.bottom(),
+                                );
                             }
 
                             surface.finish();
-                            let stream = stream_surface.finish();
-                            let mut content = Content::new();
-
-                            // Use shape glyph for outline-based Type3 fonts.
-                            let bbox = stream.bbox;
-                            font_bbox.expand(&bbox);
-                            content.start_shape_glyph(
-                                self.widths[index],
-                                bbox.left(),
-                                bbox.top(),
-                                bbox.right(),
-                                bbox.bottom(),
-                            );
-
-                            // TODO: Find a type-safe way of doing this.
-                            let mut final_stream = content.finish();
-                            final_stream.push(b'\n');
-                            final_stream.extend(&stream.content);
-                            final_stream
+                            stream_surface.finish().content
                         };
 
                     let font_stream =
@@ -466,11 +469,13 @@ mod tests {
     use crate::color::rgb;
 
     use crate::object::type3_font::OwnedCoveredGlyph;
+    use crate::page::Page;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{
         red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,
+        TWITTER_COLOR_EMOJI,
     };
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
@@ -694,5 +699,39 @@ mod tests {
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
+    }
+
+    #[snapshot(single_page, settings_4)]
+    fn type3_text_glyphs(page: &mut Page) {
+        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "Hi",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[snapshot(single_page, settings_4)]
+    fn type3_color_glyphs(page: &mut Page) {
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, vec![]).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "😀😃",
+            false,
+            TextDirection::Auto,
+        );
     }
 }

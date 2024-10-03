@@ -284,10 +284,10 @@ impl ContentBuilder {
                 sb.expand_bbox(bbox);
                 sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
 
-                // There is a very weird and inconsistent interaction between Type3
-                // glyphs and stroking them. Each PDF viewer does something different.
-                // Because of this, we simply set BOTH, fill and stroke when stroking
-                // a run of glyphs.
+                // If we are rendering a Type3 glyph, then we actually need to set the fill
+                // color instead of the stroke color, because the Type3 glyphs contains the
+                // outlined stroke that needs to be filled. Because of this, we simply set both,
+                // fill and stroke color, when stroking some text.
                 sb.content_set_fill_properties(
                     // TODO: bbox doesnt consider stroke
                     bbox,
@@ -824,6 +824,17 @@ impl ContentBuilder {
                 }
             };
         }
+    }
+
+    pub(crate) fn content_start_shape_glyph(
+        &mut self,
+        wx: f32,
+        ll_x: f32,
+        ll_y: f32,
+        ur_x: f32,
+        ur_y: f32,
+    ) {
+        self.content.start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
     }
 }
 

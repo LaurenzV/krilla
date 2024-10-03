@@ -1,0 +1,330 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 7 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 3 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 96
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/DeviceGray cs
+0 scn
+BT
+0 Tr
+/f0 25 Tf
+1 0 0 -1 0 25 Tm
+[(\000\001)] TJ
+ET
+Q
+endstream
+endobj
+
+4 0 obj
+<<
+  /Length 16
+>>
+stream
+2048 0 d0
+/x0 Do
+endstream
+endobj
+
+5 0 obj
+<<
+  /Length 16
+>>
+stream
+2048 0 d0
+/x1 Do
+endstream
+endobj
+
+6 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /FLGXUR+TwitterColorEmojiSVGinOT
+  /Flags 131076
+  /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
+  /ItalicAngle 0
+  /Ascent 1645.15
+  /Descent -402.84998
+>>
+endobj
+
+7 0 obj
+<<
+  /Type /Font
+  /Subtype /Type3
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /XObject <<
+      /x0 9 0 R
+      /x1 10 0 R
+    >>
+  >>
+  /Name /FLGXUR+TwitterColorEmojiSVGinOT
+  /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
+  /ToUnicode 8 0 R
+  /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
+  /FirstChar 0
+  /LastChar 1
+  /Widths [2048 2048]
+  /FontDescriptor 6 0 R
+  /CharProcs <<
+    /g0 4 0 R
+    /g1 5 0 R
+  >>
+  /Encoding <<
+    /Type /Encoding
+    /Differences [0 /g0 /g1]
+  >>
+>>
+endobj
+
+8 0 obj
+<<
+  /Length 633
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<00> <FF>
+endcodespacerange
+2 beginbfchar
+<00> <D83DDE00>
+<01> <D83DDE03>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+9 0 obj
+<<
+  /Length 1163
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [-0.00000000000020210994 -402.84998 2048 1645.15]
+>>
+stream
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+1 0.8 0.3019608 scn
+36 18 m
+36 27.941126 27.941126 36 18 36 c
+8.058874 36 0.0000000000000035527137 27.941126 0 18 c
+-0.0000000000000035527137 8.058874 8.058874 0.0000000000000035527137 18 0 c
+27.941126 0 36 8.058874 36 18 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+0.4 0.27058825 0 scn
+18 21 m
+14.377 21 11.973 20.578 9 20 c
+8.321 19.869 7 20 7 22 c
+7 26 11.595 31 18 31 c
+24.404 31 29 26 29 22 c
+29 20 27.679 19.868 27 20 c
+24.027 20.578 21.623 21 18 21 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceGray cs
+1 scn
+9 22 m
+9 22 12 23 18 23 c
+24 23 27 22 27 22 c
+27 22 25 26 18 26 c
+11 26 9 22 9 22 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+0.4 0.27058825 0 scn
+14.5 13.5 m
+14.5 15.432997 13.380712 17 12 17 c
+10.619288 17 9.5 15.432997 9.5 13.5 c
+9.5 11.567003 10.619288 10 12 10 c
+13.380712 10 14.5 11.567003 14.5 13.5 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+0.4 0.27058825 0 scn
+26.5 13.5 m
+26.5 15.432997 25.380713 17 24 17 c
+22.619287 17 21.5 15.432997 21.5 13.5 c
+21.5 11.567003 22.619287 10 24 10 c
+25.380713 10 26.5 11.567003 26.5 13.5 c
+h
+f
+Q
+endstream
+endobj
+
+10 0 obj
+<<
+  /Length 1033
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [0 -402.84998 2048 1645.15]
+>>
+stream
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+1 0.8 0.3019608 scn
+36 18 m
+36 27.941 27.941 36 18 36 c
+8.06 36 0 27.941 0 18 c
+0 8.06 8.06 0 18 0 c
+27.941 0 36 8.06 36 18 c
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+0.4 0.27058825 0 scn
+14 12.5 m
+14 15.537566 12.880712 18 11.5 18 c
+10.119288 18 9 15.537566 9 12.5 c
+9 9.462434 10.119288 7 11.5 7 c
+12.880712 7 14 9.462434 14 12.5 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+0.4 0.27058825 0 scn
+27 12.5 m
+27 15.537566 25.880713 18 24.5 18 c
+23.119287 18 22 15.537566 22 12.5 c
+22 9.462434 23.119287 7 24.5 7 c
+25.880713 7 27 9.462434 27 12.5 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceRGB cs
+0.4 0.27058825 0 scn
+18 22 m
+14.377 22 11.973 21.578 9 21 c
+8.321 20.869 7 21 7 23 c
+7 27 11.595 32 18 32 c
+24.404 32 29 27 29 23 c
+29 21 27.679 20.868 27 21 c
+24.027 21.578 21.623 22 18 22 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+/DeviceGray cs
+1 scn
+9 23 m
+9 23 12 24 18 24 c
+24 24 27 23 27 23 c
+27 23 25 27 18 27 c
+11 27 9 23 9 23 c
+h
+f
+Q
+endstream
+endobj
+
+11 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 12
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000275 00000 n
+0000000424 00000 n
+0000000493 00000 n
+0000000562 00000 n
+0000000788 00000 n
+0000001328 00000 n
+0000002040 00000 n
+0000003413 00000 n
+0000004635 00000 n
+trailer
+<<
+  /Size 12
+  /Root 11 0 R
+  /ID [(VIwtRaYnUe6ibh7FW41aFg==) (VIwtRaYnUe6ibh7FW41aFg==)]
+>>
+startxref
+4690
+%%EOF

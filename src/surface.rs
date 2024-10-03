@@ -116,6 +116,21 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc)
     }
 
+    // It's very unfortunate that we have this method at the `Surface` level,
+    // but it's only used in one place and should be needed to be used anywhere
+    // else.
+    pub(crate) fn start_shape_glyph(
+        &mut self,
+        wx: f32,
+        ll_x: f32,
+        ll_y: f32,
+        ur_x: f32,
+        ur_y: f32,
+    ) {
+        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+            .content_start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
+    }
+
     fn outline_glyphs(
         &mut self,
         glyphs: &[impl Glyph],
@@ -125,7 +140,6 @@ impl<'a> Surface<'a> {
         glyph_units: GlyphUnits,
         paint_mode: PaintMode,
     ) {
-        // TODO: What to do with invalid COLR glyphs?
         let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
         let (mut cur_x, y) = (start.x, start.y);
 
