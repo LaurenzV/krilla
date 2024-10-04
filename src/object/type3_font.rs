@@ -342,7 +342,8 @@ impl Type3Font {
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
 
-            for g in 0..self.glyphs.len() as u8 {
+            for g in 0..self.glyphs.len() {
+                let g = u8::try_from(g).unwrap();
                 match self.cmap_entries.get(&g) {
                     None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                         self.font.clone(),
