@@ -1,7 +1,7 @@
 use crate::serialize::SerializerContext;
 use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructChildren, StructElement};
-use pdf_writer::{Chunk, Finish, Name, Ref, Str};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use tiny_skia_path::Rect;
 
