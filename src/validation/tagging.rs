@@ -25,32 +25,22 @@ pub enum ArtifactType {
 pub type Lang<'a> = &'a str;
 
 #[derive(Copy, Clone, Debug)]
-pub enum ContentTag<'a> {
-    /// A page artifact with a corresponding artifact type.
+pub enum ContentTag {
     Artifact(ArtifactType),
-    /// A span with text in a corresponding language tag as defined in RFC 3066.
-    /// If the language is unknown, you can pass an empty string.
-    Span(Lang<'a>),
-    /// A content tag for delimiting anything else that cannot be delimited with the
-    /// above tags, such as for example bitmap and SVG images, or other arbitrary
-    /// paths.
+    Span,
     Other,
 }
 
-impl ContentTag<'_> {
+impl ContentTag {
     pub(crate) fn name(&self) -> Name {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
-            ContentTag::Span(_) => Name(b"Span"),
+            ContentTag::Span => Name(b"Span"),
             ContentTag::Other => Name(b"P"),
         }
     }
 
-    pub(crate) fn write_properties(
-        &self,
-        sc: &mut SerializerContext,
-        mut properties: PropertyList,
-    ) {
+    pub(crate) fn write_properties(&self, _: &mut SerializerContext, mut properties: PropertyList) {
         match self {
             ContentTag::Artifact(at) => {
                 let mut artifact = properties.artifact();
@@ -74,9 +64,7 @@ impl ContentTag<'_> {
 
                 artifact.kind(artifact_type);
             }
-            ContentTag::Span(lang) => {
-                properties.pair(Name(b"Lang"), sc.new_str(lang.as_bytes()));
-            }
+            ContentTag::Span => {}
             ContentTag::Other => {}
         }
     }
@@ -263,6 +251,8 @@ impl TagGroup {
             parent_tree_map,
             struct_children,
         );
+        struct_elem.finish();
+        struct_elems.push(chunk);
 
         Reference::Ref(root_ref)
     }
@@ -350,5 +340,58 @@ fn serialize_children(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::font::Font;
+    use crate::path::Fill;
+    use crate::surface::{Surface, TextDirection};
+    use crate::tests::NOTO_SANS;
+    use crate::validation::tagging::{ContentTag, Tag, TagGroup, TagRoot};
+    use crate::Document;
+    use krilla_macros::snapshot;
+
+    pub trait SurfaceExt {
+        fn fill_text_(&mut self, y: f32, content: &str);
+    }
+
+    impl SurfaceExt for Surface<'_> {
+        fn fill_text_(&mut self, y: f32, content: &str) {
+            let font_data = NOTO_SANS.clone();
+            let font = Font::new(font_data, 0, vec![]).unwrap();
+
+            self.fill_text(
+                tiny_skia_path::Point::from_xy(0.0, y),
+                Fill::default(),
+                font,
+                20.0,
+                &[],
+                content,
+                false,
+                TextDirection::Auto,
+            );
+        }
+    }
+
+    #[snapshot(document, settings_12)]
+    fn tagging_simple(document: &mut Document) {
+        let mut tag_root = TagRoot::new();
+        let mut par = TagGroup::new(Tag::Paragraph);
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let id = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(25.0, "a paragraph");
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        par.push(id);
+        tag_root.push(par);
+
+        document.set_tag_tree(tag_root);
     }
 }
