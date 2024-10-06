@@ -82,9 +82,58 @@ impl ContentTag<'_> {
 }
 
 #[derive(Copy, Clone, Debug)]
+pub(crate) struct PageIdentifier {
+    pub(crate) page_index: usize,
+    pub(crate) mcid: i32,
+}
+
+impl From<PageIdentifier> for Identifier {
+    fn from(value: PageIdentifier) -> Self {
+        Identifier(IdentifierInner::Real(IdentifierType::PageIdentifier(value)))
+    }
+}
+
+impl PageIdentifier {
+    pub fn new(page_index: usize, mcid: i32) -> Self {
+        Self { page_index, mcid }
+    }
+
+    pub fn bump(&mut self) -> PageIdentifier {
+        let old = *self;
+
+        self.mcid = self.mcid.checked_add(1).unwrap();
+
+        old
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct AnnotationIdentifier {
+    page_index: usize,
+    annot_index: usize,
+}
+
+impl From<AnnotationIdentifier> for Identifier {
+    fn from(value: AnnotationIdentifier) -> Self {
+        Identifier(IdentifierInner::Real(IdentifierType::AnnotationIdentifier(
+            value,
+        )))
+    }
+}
+
+impl AnnotationIdentifier {
+    pub fn new(page_index: usize, annot_index: usize) -> Self {
+        Self {
+            page_index,
+            annot_index,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub(crate) enum IdentifierType {
-    PageIdentifier(usize, i32),
-    AnnotationIdentifier(usize, usize),
+    PageIdentifier(PageIdentifier),
+    AnnotationIdentifier(AnnotationIdentifier),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -97,38 +146,16 @@ pub(crate) enum IdentifierInner {
 pub struct Identifier(pub(crate) IdentifierInner);
 
 impl Identifier {
-    pub(crate) fn new_page(page_index: usize) -> Self {
-        Self(IdentifierInner::Real(IdentifierType::PageIdentifier(
-            page_index, 0,
-        )))
+    pub(crate) fn new_page(page_index: usize, mcid: i32) -> Self {
+        PageIdentifier::new(page_index, mcid).into()
     }
 
-    pub(crate) fn new_annotation(page_index: usize) -> Self {
-        Self(IdentifierInner::Real(IdentifierType::AnnotationIdentifier(
-            page_index, 0,
-        )))
+    pub(crate) fn new_annotation(page_index: usize, annot_index: usize) -> Self {
+        AnnotationIdentifier::new(page_index, annot_index).into()
     }
 
     pub(crate) fn new_dummy() -> Self {
         Self(IdentifierInner::Dummy)
-    }
-
-    pub fn bump(&mut self) -> Identifier {
-        let old = *self;
-
-        match &mut self.0 {
-            IdentifierInner::Real(rc) => match rc {
-                IdentifierType::PageIdentifier(_, i) => {
-                    *i = i.checked_add(1).unwrap();
-                }
-                IdentifierType::AnnotationIdentifier(_, i) => {
-                    *i = i.checked_add(1).unwrap();
-                }
-            },
-            IdentifierInner::Dummy => {}
-        }
-
-        old
     }
 }
 
@@ -287,14 +314,14 @@ fn serialize_children(
             }
             Reference::ContentIdentifier(it) => {
                 match it {
-                    IdentifierType::PageIdentifier(pi, ci) => {
+                    IdentifierType::PageIdentifier(pi) => {
                         struct_children
                             .marked_content_ref()
-                            .marked_content_id(ci)
+                            .marked_content_id(pi.mcid)
                             // TODO: Error handling
-                            .page(sc.page_infos()[pi].ref_);
+                            .page(sc.page_infos()[pi.page_index].ref_);
                     }
-                    IdentifierType::AnnotationIdentifier(_, _) => {
+                    IdentifierType::AnnotationIdentifier(_) => {
                         unimplemented!()
                     }
                 }

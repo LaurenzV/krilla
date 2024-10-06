@@ -8,6 +8,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::util::Deferred;
+use crate::validation::tagging::PageIdentifier;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
@@ -27,15 +28,21 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Page<'a> {
     sc: &'a mut SerializerContext,
     page_settings: PageSettings,
+    page_index: usize,
     page_stream: Stream,
     annotations: Vec<Annotation>,
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, page_settings: PageSettings) -> Self {
+    pub(crate) fn new(
+        sc: &'a mut SerializerContext,
+        page_index: usize,
+        page_settings: PageSettings,
+    ) -> Self {
         Self {
             sc,
             page_settings,
+            page_index,
             page_stream: Stream::empty(),
             annotations: vec![],
         }
@@ -64,7 +71,18 @@ impl<'a> Page<'a> {
 
         let finish_fn = Box::new(|stream| self.page_stream = stream);
 
-        Surface::new(self.sc, root_builder, finish_fn)
+        let page_identifier = if self.sc.serialize_settings.enable_tagging {
+            Some(PageIdentifier::new(self.page_index, 0))
+        }   else {
+            None
+        };
+
+        Surface::new(
+            self.sc,
+            root_builder,
+            page_identifier,
+            finish_fn,
+        )
     }
 
     /// A shorthand for `std::mem::drop`.

@@ -50,12 +50,18 @@ impl Document {
 
     /// Start a new page with default settings.
     pub fn start_page(&mut self) -> Page {
-        Page::new(&mut self.serializer_context, PageSettings::default())
+        let page_index = self.serializer_context.page_infos().iter().len();
+        Page::new(
+            &mut self.serializer_context,
+            page_index,
+            PageSettings::default(),
+        )
     }
 
     /// Start a new page with specific page settings.
     pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page {
-        Page::new(&mut self.serializer_context, page_settings)
+        let page_index = self.serializer_context.page_infos().iter().len();
+        Page::new(&mut self.serializer_context, page_index, page_settings)
     }
 
     /// Set the outline of the document.

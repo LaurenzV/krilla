@@ -17,6 +17,7 @@ use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
 use crate::util::RectExt;
+use crate::validation::tagging::{ContentTag, Identifier, PageIdentifier};
 use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -76,6 +77,7 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
+    page_identifier: Option<PageIdentifier>,
     finish_fn: Box<dyn FnMut(Stream) + 'a>,
 }
 
@@ -83,11 +85,13 @@ impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
+        page_identifier: Option<PageIdentifier>,
         finish_fn: Box<dyn FnMut(Stream) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
             root_builder,
+            page_identifier,
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,
@@ -116,8 +120,27 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc)
     }
 
+    pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
+        if let Some(id) = &mut self.page_identifier {
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).start_marked_content(
+                &mut self.sc,
+                id.mcid,
+                tag,
+            );
+            id.bump().into()
+        } else {
+            Identifier::new_dummy()
+        }
+    }
+
+    pub fn end_tagged(&mut self) {
+        if self.page_identifier.is_some() {
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
+        }
+    }
+
     // It's very unfortunate that we have this method at the `Surface` level,
-    // but it's only used in one place and should be needed to be used anywhere
+    // but it's only used in one place and should not be needed to be used anywhere
     // else.
     pub(crate) fn start_shape_glyph(
         &mut self,
