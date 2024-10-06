@@ -30,6 +30,7 @@ pub struct Page<'a> {
     page_settings: PageSettings,
     page_index: usize,
     page_stream: Stream,
+    num_mcids: i32,
     annotations: Vec<Annotation>,
 }
 
@@ -43,6 +44,7 @@ impl<'a> Page<'a> {
             sc,
             page_settings,
             page_index,
+            num_mcids: 0,
             page_stream: Stream::empty(),
             annotations: vec![],
         }
@@ -69,7 +71,10 @@ impl<'a> Page<'a> {
     pub fn surface(&mut self) -> Surface {
         let root_builder = ContentBuilder::new(self.root_transform());
 
-        let finish_fn = Box::new(|stream| self.page_stream = stream);
+        let finish_fn = Box::new(|stream, num_mcids| {
+            self.page_stream = stream;
+            self.num_mcids = num_mcids;
+        });
 
         let page_identifier = if self.sc.serialize_settings.enable_tagging {
             Some(PageIdentifier::new(self.page_index, 0))
@@ -90,7 +95,7 @@ impl Drop for Page<'_> {
         let page_settings = std::mem::take(&mut self.page_settings);
 
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(stream, self.sc, annotations, page_settings);
+        let page = InternalPage::new(stream, self.sc, annotations, None, page_settings);
         self.sc.add_page(page);
     }
 }
@@ -100,6 +105,7 @@ pub(crate) struct InternalPage {
     pub stream_resources: ResourceDictionary,
     pub stream_chunk: Deferred<Chunk>,
     pub page_settings: PageSettings,
+    pub struct_parent: Option<i32>,
     pub bbox: Rect,
     pub annotations: Vec<Annotation>,
 }
@@ -109,6 +115,7 @@ impl InternalPage {
         mut stream: Stream,
         sc: &mut SerializerContext,
         annotations: Vec<Annotation>,
+        struct_parent: Option<i32>,
         page_settings: PageSettings,
     ) -> Self {
         for validation_error in stream.validation_errors {
@@ -135,6 +142,7 @@ impl InternalPage {
             stream_resources,
             stream_ref,
             stream_chunk,
+            struct_parent,
             bbox: stream.bbox.0,
             annotations,
             page_settings,
@@ -173,6 +181,11 @@ impl InternalPage {
             media_box.x() + media_box.width(),
             self.page_settings.surface_size().height() - media_box.y(),
         ));
+
+        if let Some(struct_parent) = self.struct_parent {
+            page.struct_parents(struct_parent);
+        }
+
         page.parent(sc.page_tree_ref());
         page.contents(self.stream_ref);
 
@@ -315,7 +328,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings);
         sc.add_page(page);
     }
 
@@ -332,7 +345,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings);
         sc.add_page(page);
     }
 

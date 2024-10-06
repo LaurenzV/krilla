@@ -78,7 +78,7 @@ pub struct Surface<'a> {
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
     page_identifier: Option<PageIdentifier>,
-    finish_fn: Box<dyn FnMut(Stream) + 'a>,
+    finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
 }
 
 impl<'a> Surface<'a> {
@@ -86,7 +86,7 @@ impl<'a> Surface<'a> {
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
         page_identifier: Option<PageIdentifier>,
-        finish_fn: Box<dyn FnMut(Stream) + 'a>,
+        finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
@@ -508,9 +508,13 @@ impl Drop for Surface<'_> {
             &mut self.root_builder,
             ContentBuilder::new(Transform::identity()),
         );
+        let num_mcids = match self.page_identifier {
+            Some(pi) => pi.mcid,
+            None => 0,
+        };
         debug_assert!(self.sub_builders.is_empty());
         debug_assert!(self.push_instructions.is_empty());
-        (self.finish_fn)(root_builder.finish())
+        (self.finish_fn)(root_builder.finish(), num_mcids)
     }
 }
 

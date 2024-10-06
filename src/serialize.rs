@@ -15,7 +15,7 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
-use crate::validation::tagging::TagRoot;
+use crate::validation::tagging::{PageIdentifier, TagRoot};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -214,12 +214,17 @@ pub(crate) struct PageInfo {
     pub surface_size: Size,
 }
 
+enum StructParentElement {
+    Page(usize, i32),
+}
+
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
+    struct_parents: Vec<StructParentElement>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
     tag_tree: Option<TagRoot>,
@@ -260,6 +265,7 @@ impl SerializerContext {
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
+            struct_parents: vec![],
             outline: None,
             page_infos: vec![],
             pages: vec![],
@@ -267,6 +273,21 @@ impl SerializerContext {
             font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings,
+        }
+    }
+
+    pub fn get_page_struct_parent(&mut self, index: usize, num_mcids: i32) -> Option<i32> {
+        if self.serialize_settings.enable_tagging {
+            if num_mcids == 0 {
+                return None;
+            }
+
+            let id = self.struct_parents.len();
+            self.struct_parents
+                .push(StructParentElement::Page(id, num_mcids));
+            Some(i32::try_from(id).unwrap())
+        } else {
+            None
         }
     }
 
