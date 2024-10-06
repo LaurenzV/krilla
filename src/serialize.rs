@@ -15,6 +15,7 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
+use crate::validation::tagging::TagRoot;
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -221,6 +222,7 @@ pub(crate) struct SerializerContext {
     pages: Vec<(Ref, InternalPage)>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
+    tag_tree: Option<TagRoot>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
@@ -261,6 +263,7 @@ impl SerializerContext {
             outline: None,
             page_infos: vec![],
             pages: vec![],
+            tag_tree: None,
             font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings,
@@ -277,6 +280,10 @@ impl SerializerContext {
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub fn set_tag_tree(&mut self, root: TagRoot) {
+        self.tag_tree = Some(root)
     }
 
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
@@ -506,6 +513,22 @@ impl SerializerContext {
             let page_label_tree_ref = self.new_ref();
             let chunk = container.serialize(&mut self, page_label_tree_ref);
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
+        }
+
+        let tag_tree = std::mem::take(&mut self.tag_tree);
+        if self.serialize_settings.enable_tagging {
+            if let Some(root) = &tag_tree {
+                let struct_tree_root_ref = self.new_ref();
+                let (document_ref, struct_elems) = root.serialize(&mut self, struct_tree_root_ref);
+                self.chunk_container.struct_elements = struct_elems;
+
+                let mut chunk = Chunk::new();
+                let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
+                tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
+                tree.insert(Name(b"K")).array().item(document_ref);
+                tree.finish();
+                self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
+            }
         }
 
         let outline = std::mem::take(&mut self.outline);

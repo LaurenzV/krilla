@@ -173,7 +173,7 @@ impl From<Tag> for StructRole {
 }
 
 pub enum Node {
-    Group(Group),
+    Group(TagGroup),
     Leaf(Identifier),
 }
 
@@ -194,8 +194,8 @@ impl Node {
     }
 }
 
-impl From<Group> for Node {
-    fn from(value: Group) -> Self {
+impl From<TagGroup> for Node {
+    fn from(value: TagGroup) -> Self {
         Node::Group(value)
     }
 }
@@ -212,12 +212,12 @@ pub(crate) enum Reference {
     ContentIdentifier(IdentifierType),
 }
 
-pub struct Group {
+pub struct TagGroup {
     tag: Tag,
     children: Vec<Node>,
 }
 
-impl Group {
+impl TagGroup {
     pub fn new(tag: Tag) -> Self {
         Self {
             tag,
@@ -253,11 +253,11 @@ impl Group {
     }
 }
 
-pub struct Root {
+pub struct TagRoot {
     children: Vec<Node>,
 }
 
-impl Root {
+impl TagRoot {
     pub fn new() -> Self {
         Self { children: vec![] }
     }
@@ -270,11 +270,7 @@ impl Root {
         &self,
         sc: &mut SerializerContext,
         struct_tree_ref: Ref,
-    ) -> Option<Vec<Chunk>> {
-        if !sc.serialize_settings.enable_tagging {
-            return None;
-        }
-
+    ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();
         let mut struct_elems = vec![];
 
@@ -298,7 +294,7 @@ impl Root {
         // of in reverse.
         struct_elems = struct_elems.into_iter().rev().collect::<Vec<_>>();
 
-        Some(struct_elems)
+        (root_ref, struct_elems)
     }
 }
 

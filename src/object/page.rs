@@ -73,16 +73,11 @@ impl<'a> Page<'a> {
 
         let page_identifier = if self.sc.serialize_settings.enable_tagging {
             Some(PageIdentifier::new(self.page_index, 0))
-        }   else {
+        } else {
             None
         };
 
-        Surface::new(
-            self.sc,
-            root_builder,
-            page_identifier,
-            finish_fn,
-        )
+        Surface::new(self.sc, root_builder, page_identifier, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.
