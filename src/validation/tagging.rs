@@ -3,6 +3,7 @@ use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructChildren, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 use tiny_skia_path::Rect;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -81,15 +82,21 @@ impl ContentTag<'_> {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct PageIdentifier {
     pub(crate) page_index: usize,
     pub(crate) mcid: i32,
 }
 
+impl From<PageIdentifier> for IdentifierType {
+    fn from(value: PageIdentifier) -> Self {
+        IdentifierType::PageIdentifier(value)
+    }
+}
+
 impl From<PageIdentifier> for Identifier {
     fn from(value: PageIdentifier) -> Self {
-        Identifier(IdentifierInner::Real(IdentifierType::PageIdentifier(value)))
+        Identifier(IdentifierInner::Real(value.into()))
     }
 }
 
@@ -107,17 +114,21 @@ impl PageIdentifier {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct AnnotationIdentifier {
     page_index: usize,
     annot_index: usize,
 }
 
+impl From<AnnotationIdentifier> for IdentifierType {
+    fn from(value: AnnotationIdentifier) -> Self {
+        IdentifierType::AnnotationIdentifier(value)
+    }
+}
+
 impl From<AnnotationIdentifier> for Identifier {
     fn from(value: AnnotationIdentifier) -> Self {
-        Identifier(IdentifierInner::Real(IdentifierType::AnnotationIdentifier(
-            value,
-        )))
+        Identifier(IdentifierInner::Real(value.into()))
     }
 }
 
@@ -130,7 +141,7 @@ impl AnnotationIdentifier {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum IdentifierType {
     PageIdentifier(PageIdentifier),
     AnnotationIdentifier(AnnotationIdentifier),
@@ -146,15 +157,11 @@ pub(crate) enum IdentifierInner {
 pub struct Identifier(pub(crate) IdentifierInner);
 
 impl Identifier {
-    pub(crate) fn new_page(page_index: usize, mcid: i32) -> Self {
-        PageIdentifier::new(page_index, mcid).into()
-    }
-
     pub(crate) fn new_annotation(page_index: usize, annot_index: usize) -> Self {
         AnnotationIdentifier::new(page_index, annot_index).into()
     }
 
-    pub(crate) fn new_dummy() -> Self {
+    pub(crate) fn dummy() -> Self {
         Self(IdentifierInner::Dummy)
     }
 }
@@ -181,11 +188,12 @@ impl Node {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
+        parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         parent: Ref,
         struct_elems: &mut Vec<Chunk>,
     ) -> Option<Reference> {
         match self {
-            Node::Group(g) => Some(g.serialize(sc, parent, struct_elems)),
+            Node::Group(g) => Some(g.serialize(sc, parent_tree_map, parent, struct_elems)),
             Node::Leaf(ci) => match ci.0 {
                 IdentifierInner::Real(rci) => Some(Reference::ContentIdentifier(rci)),
                 IdentifierInner::Dummy => None,
@@ -232,6 +240,7 @@ impl TagGroup {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
+        parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         parent: Ref,
         struct_elems: &mut Vec<Chunk>,
     ) -> Reference {
@@ -239,7 +248,7 @@ impl TagGroup {
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, parent, struct_elems))
+            .flat_map(|n| n.serialize(sc, parent_tree_map, parent, struct_elems))
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -247,7 +256,13 @@ impl TagGroup {
         struct_elem.kind(self.tag.into());
         struct_elem.parent(parent);
         let struct_children = struct_elem.children();
-        serialize_children(sc, children_refs, struct_children);
+        serialize_children(
+            sc,
+            root_ref,
+            children_refs,
+            parent_tree_map,
+            struct_children,
+        );
 
         Reference::Ref(root_ref)
     }
@@ -269,6 +284,7 @@ impl TagRoot {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializerContext,
+        parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         struct_tree_ref: Ref,
     ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();
@@ -277,7 +293,7 @@ impl TagRoot {
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, root_ref, &mut struct_elems))
+            .flat_map(|n| n.serialize(sc, parent_tree_map, root_ref, &mut struct_elems))
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -285,7 +301,13 @@ impl TagRoot {
         struct_elem.kind(StructRole::Document);
         struct_elem.parent(struct_tree_ref);
         let struct_children = struct_elem.children();
-        serialize_children(sc, children_refs, struct_children);
+        serialize_children(
+            sc,
+            root_ref,
+            children_refs,
+            parent_tree_map,
+            struct_children,
+        );
 
         struct_elem.finish();
         struct_elems.push(chunk);
@@ -300,7 +322,9 @@ impl TagRoot {
 
 fn serialize_children(
     sc: &mut SerializerContext,
+    root_ref: Ref,
     children_refs: Vec<Reference>,
+    parent_tree_map: &mut HashMap<IdentifierType, Ref>,
     mut struct_children: StructChildren,
 ) {
     for child in children_refs {
@@ -311,6 +335,9 @@ fn serialize_children(
             Reference::ContentIdentifier(it) => {
                 match it {
                     IdentifierType::PageIdentifier(pi) => {
+                        // TODO: Ensure that pi doesn't already have a parent.
+                        parent_tree_map.insert(pi.into(), root_ref);
+
                         struct_children
                             .marked_content_ref()
                             .marked_content_id(pi.mcid)

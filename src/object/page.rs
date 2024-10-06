@@ -94,8 +94,12 @@ impl Drop for Page<'_> {
         let annotations = std::mem::take(&mut self.annotations);
         let page_settings = std::mem::take(&mut self.page_settings);
 
+        let struct_parent = self
+            .sc
+            .get_page_struct_parent(self.page_index, self.num_mcids);
+
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(stream, self.sc, annotations, None, page_settings);
+        let page = InternalPage::new(stream, self.sc, annotations, struct_parent, page_settings);
         self.sc.add_page(page);
     }
 }

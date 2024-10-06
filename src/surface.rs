@@ -129,7 +129,7 @@ impl<'a> Surface<'a> {
             );
             id.bump().into()
         } else {
-            Identifier::new_dummy()
+            Identifier::dummy()
         }
     }
 
