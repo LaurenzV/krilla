@@ -120,7 +120,7 @@ impl SerializeSettings {
             force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::Dummy,
-            enable_tagging: false,
+            enable_tagging: true,
         }
     }
 
@@ -189,13 +189,6 @@ impl SerializeSettings {
     pub(crate) fn settings_11() -> Self {
         Self {
             validator: Validator::A3_U,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_12() -> Self {
-        Self {
-            enable_tagging: true,
             ..Self::settings_1()
         }
     }

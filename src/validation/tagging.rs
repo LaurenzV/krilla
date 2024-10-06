@@ -473,7 +473,7 @@ mod tests {
         }
     }
 
-    #[snapshot(document, settings_12)]
+    #[snapshot(document)]
     fn tagging_simple(document: &mut Document) {
         let mut tag_root = TagRoot::new();
         let mut par = TagGroup::new(Tag::P);
