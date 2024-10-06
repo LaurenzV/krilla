@@ -133,20 +133,20 @@ impl Identifier {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum StructureTag {
+pub enum Tag {
     Paragraph,
 }
 
-impl From<StructureTag> for StructRole {
-    fn from(value: StructureTag) -> Self {
+impl From<Tag> for StructRole {
+    fn from(value: Tag) -> Self {
         match value {
-            StructureTag::Paragraph => StructRole::P,
+            Tag::Paragraph => StructRole::P,
         }
     }
 }
 
 pub enum Node {
-    Group(StructureGroup),
+    Group(Group),
     Leaf(Identifier),
 }
 
@@ -167,8 +167,8 @@ impl Node {
     }
 }
 
-impl From<StructureGroup> for Node {
-    fn from(value: StructureGroup) -> Self {
+impl From<Group> for Node {
+    fn from(value: Group) -> Self {
         Node::Group(value)
     }
 }
@@ -185,13 +185,13 @@ pub(crate) enum Reference {
     ContentIdentifier(IdentifierType),
 }
 
-pub struct StructureGroup {
-    tag: StructureTag,
+pub struct Group {
+    tag: Tag,
     children: Vec<Node>,
 }
 
-impl StructureGroup {
-    pub fn new(tag: StructureTag) -> Self {
+impl Group {
+    pub fn new(tag: Tag) -> Self {
         Self {
             tag,
             children: vec![],
@@ -226,11 +226,11 @@ impl StructureGroup {
     }
 }
 
-pub struct StructureRoot {
+pub struct Root {
     children: Vec<Node>,
 }
 
-impl StructureRoot {
+impl Root {
     pub fn new() -> Self {
         Self { children: vec![] }
     }
