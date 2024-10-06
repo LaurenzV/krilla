@@ -1,30 +1,84 @@
 use crate::serialize::SerializerContext;
-use pdf_writer::types::StructRole;
-use pdf_writer::writers::{StructChildren, StructElement};
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
+use pdf_writer::writers::{PropertyList, StructChildren, StructElement};
+use pdf_writer::{Chunk, Finish, Name, Ref, Str};
+use std::cmp::PartialEq;
 use tiny_skia_path::Rect;
 
-#[derive(Copy, Clone, Debug)]
-pub enum Attachment {
-    Top,
-    Bottom,
-    Left,
-    Right,
-}
-
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ArtifactType {
-    Pagination,
+    /// The header of a page.
+    Header,
+    /// The footer of the page.
+    Footer,
+    /// Page artifacts, such as for example cut marks or color bars.
     Page,
-    Layout,
+    /// The background of a page, which might for example include a watermark.
+    /// The rect should delimit the bounding box of the visible content of the
+    /// content to be delimited as the background of the page.
     Background(Rect),
 }
 
+/// A language identifier as specified in RFC 3066. It will not be validated, so
+/// it's on the user of the library to ensure the tag is valid.
+pub type Lang<'a> = &'a str;
+
 #[derive(Copy, Clone, Debug)]
-pub enum ContentTag {
+pub enum ContentTag<'a> {
+    /// A page artifact with a corresponding artifact type.
     Artifact(ArtifactType),
-    Span,
+    /// A span with text in a corresponding language tag as defined in RFC 3066.
+    /// If the language is unknown, you can pass an empty string.
+    Span(Lang<'a>),
+    /// A content tag for delimiting anything else that cannot be delimited with the
+    /// above tags, such as for example bitmap and SVG images, or other arbitrary
+    /// paths.
     Other,
+}
+
+impl ContentTag<'_> {
+    pub(crate) fn name(&self) -> Name {
+        match self {
+            ContentTag::Artifact(_) => Name(b"Artifact"),
+            ContentTag::Span(_) => Name(b"Span"),
+            ContentTag::Other => Name(b"P"),
+        }
+    }
+
+    pub(crate) fn write_properties(
+        &self,
+        sc: &mut SerializerContext,
+        mut properties: PropertyList,
+    ) {
+        match self {
+            ContentTag::Artifact(at) => {
+                let mut artifact = properties.artifact();
+
+                let artifact_type = match at {
+                    ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
+                    ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
+                    ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
+                    ArtifactType::Background(_) => pdf_writer::types::ArtifactType::Background,
+                };
+
+                if *at == ArtifactType::Header {
+                    artifact.attached([ArtifactAttachment::Top]);
+                    artifact.subtype(ArtifactSubtype::Header);
+                }
+
+                if *at == ArtifactType::Footer {
+                    artifact.attached([ArtifactAttachment::Bottom]);
+                    artifact.subtype(ArtifactSubtype::Footer);
+                }
+
+                artifact.kind(artifact_type);
+            }
+            ContentTag::Span(lang) => {
+                properties.pair(Name(b"Lang"), sc.new_str(lang.as_bytes()));
+            }
+            ContentTag::Other => {}
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

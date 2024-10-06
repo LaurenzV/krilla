@@ -19,6 +19,7 @@ use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::validation::tagging::{ContentTag, Identifier, IdentifierInner};
 use crate::validation::ValidationError;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
@@ -40,6 +41,7 @@ pub(crate) struct ContentBuilder {
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
+    active_mcid: Option<i32>,
 }
 
 impl ContentBuilder {
@@ -51,6 +53,7 @@ impl ContentBuilder {
             root_transform,
             graphics_states: GraphicsStates::new(),
             bbox: None,
+            active_mcid: None,
         }
     }
 
@@ -71,6 +74,30 @@ impl ContentBuilder {
             self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
         )
+    }
+
+    pub fn start_marked_content(&mut self, sc: &mut SerializerContext, mcid: i32, tag: ContentTag) {
+        if self.active_mcid.is_some() {
+            panic!("can't start marked content twice");
+        }
+
+        self.active_mcid = Some(mcid);
+        let mut mc = self
+            .content
+            .begin_marked_content_with_properties(tag.name());
+        let mut properties = mc.properties();
+        properties.pairs([(Name(b"MCID"), mcid)]);
+        tag.write_properties(sc, properties);
+    }
+
+    pub(crate) fn end_marked_content(&mut self) {
+        match self.active_mcid {
+            None => panic!("can't end marked content when none has been started"),
+            Some(_) => {
+                self.content.end_marked_content();
+                self.active_mcid = None;
+            }
+        }
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {
@@ -384,7 +411,7 @@ impl ContentBuilder {
         }
 
         if !encoded.is_empty() {
-            items.show(Str(&encoded));
+            items.show(sc.new_str(&encoded));
         }
 
         items.finish();
