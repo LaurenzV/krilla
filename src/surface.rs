@@ -122,12 +122,29 @@ impl<'a> Surface<'a> {
 
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
-            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).start_marked_content(
-                &mut self.sc,
-                id.mcid,
-                tag,
-            );
-            id.bump().into()
+            match tag {
+                // An artifact is actually not really part of tagged PDF and doesn't have
+                // a marked content identifier, so we need to return a dummy one here. It's just
+                // the API of krilla that conflates artifacts with tagged content,
+                // for the sake of simplicity. But the user of the library does not need to know
+                // about this.
+                ContentTag::Artifact(_) => {
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).start_marked_content(
+                        &mut self.sc,
+                        None,
+                        tag,
+                    );
+                    Identifier::dummy()
+                }
+                ContentTag::Span | ContentTag::Other => {
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).start_marked_content(
+                        &mut self.sc,
+                        Some(id.mcid),
+                        tag,
+                    );
+                    id.bump().into()
+                }
+            }
         } else {
             Identifier::dummy()
         }

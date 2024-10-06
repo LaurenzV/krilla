@@ -41,7 +41,7 @@ pub(crate) struct ContentBuilder {
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
-    active_mcid: Option<i32>,
+    active_marked_content: bool,
 }
 
 impl ContentBuilder {
@@ -53,7 +53,7 @@ impl ContentBuilder {
             root_transform,
             graphics_states: GraphicsStates::new(),
             bbox: None,
-            active_mcid: None,
+            active_marked_content: false,
         }
     }
 
@@ -76,28 +76,31 @@ impl ContentBuilder {
         )
     }
 
-    pub fn start_marked_content(&mut self, sc: &mut SerializerContext, mcid: i32, tag: ContentTag) {
-        if self.active_mcid.is_some() {
+    pub fn start_marked_content(&mut self, sc: &mut SerializerContext, mcid: Option<i32>, tag: ContentTag) {
+        if self.active_marked_content {
             panic!("can't start marked content twice");
         }
 
-        self.active_mcid = Some(mcid);
+        self.active_marked_content = true;
         let mut mc = self
             .content
             .begin_marked_content_with_properties(tag.name());
         let mut properties = mc.properties();
-        properties.pairs([(Name(b"MCID"), mcid)]);
+
+        if let Some(mcid) = mcid {
+            properties.pairs([(Name(b"MCID"), mcid)]);
+        }
+
         tag.write_properties(sc, properties);
     }
 
     pub(crate) fn end_marked_content(&mut self) {
-        match self.active_mcid {
-            None => panic!("can't end marked content when none has been started"),
-            Some(_) => {
-                self.content.end_marked_content();
-                self.active_mcid = None;
-            }
+        if !self.active_marked_content {
+            panic!("can't end marked content when none has been started");
         }
+
+        self.content.end_marked_content();
+        self.active_marked_content = false;
     }
 
     pub fn concat_transform(&mut self, transform: &Transform) {
