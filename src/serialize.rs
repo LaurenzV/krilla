@@ -15,7 +15,7 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
-use crate::validation::tagging::{PageIdentifier, TagRoot};
+use crate::validation::tagging::{PageTagIdentifier, TagRoot};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -611,7 +611,7 @@ impl SerializerContext {
                     match *struct_parent {
                         StructParentElement::Page(index, num_mcids) => {
                             for mcid in 0..num_mcids {
-                                let rci = PageIdentifier::new(index, mcid);
+                                let rci = PageTagIdentifier::new(index, mcid);
                                 // TODO: Graceful handling
                                 refs.item(parent_tree_map.get(&rci.into()).unwrap());
                             }

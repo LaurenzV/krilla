@@ -15,7 +15,7 @@ pub enum ArtifactType {
     /// Page artifacts, such as for example cut marks or color bars.
     Page,
     /// The background of a page, which might for example include a watermark.
-    /// The rect should delimit the bounding box of the visible content of the
+    /// The rectangle should delimit the bounding box of the visible content of the
     /// content to be delimited as the background of the page.
     Background(Rect),
 }
@@ -40,7 +40,7 @@ impl ContentTag {
         }
     }
 
-    pub(crate) fn write_properties(&self, _: &mut SerializerContext, mut properties: PropertyList) {
+    pub(crate) fn write_properties(&self, _: &mut SerializerContext, properties: PropertyList) {
         match self {
             ContentTag::Artifact(at) => {
                 let mut artifact = properties.artifact();
@@ -49,6 +49,7 @@ impl ContentTag {
                     ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
                     ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
                     ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
+                    // TODO: Handle bbox.
                     ArtifactType::Background(_) => pdf_writer::types::ArtifactType::Background,
                 };
 
@@ -71,29 +72,29 @@ impl ContentTag {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct PageIdentifier {
+pub(crate) struct PageTagIdentifier {
     pub(crate) page_index: usize,
     pub(crate) mcid: i32,
 }
 
-impl From<PageIdentifier> for IdentifierType {
-    fn from(value: PageIdentifier) -> Self {
+impl From<PageTagIdentifier> for IdentifierType {
+    fn from(value: PageTagIdentifier) -> Self {
         IdentifierType::PageIdentifier(value)
     }
 }
 
-impl From<PageIdentifier> for Identifier {
-    fn from(value: PageIdentifier) -> Self {
+impl From<PageTagIdentifier> for Identifier {
+    fn from(value: PageTagIdentifier) -> Self {
         Identifier(IdentifierInner::Real(value.into()))
     }
 }
 
-impl PageIdentifier {
+impl PageTagIdentifier {
     pub fn new(page_index: usize, mcid: i32) -> Self {
         Self { page_index, mcid }
     }
 
-    pub fn bump(&mut self) -> PageIdentifier {
+    pub fn bump(&mut self) -> PageTagIdentifier {
         let old = *self;
 
         self.mcid = self.mcid.checked_add(1).unwrap();
@@ -131,7 +132,7 @@ impl AnnotationIdentifier {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum IdentifierType {
-    PageIdentifier(PageIdentifier),
+    PageIdentifier(PageTagIdentifier),
     AnnotationIdentifier(AnnotationIdentifier),
 }
 
@@ -156,13 +157,110 @@ impl Identifier {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Tag {
-    Paragraph,
+    /// A part of a document that may contain multiple articles or sections.
+    Part,
+    /// An article with largely self-contained content.
+    Article,
+    /// Section of a larger document.
+    Section,
+    /// A paragraph-level quote.
+    BlockQuote,
+    /// An image or figure caption.
+    ///
+    /// **Best Practice**: In the tag tree, this should appear
+    /// as a sibling after the image (or other) content it describes.
+    Caption,
+    /// Table of contents.
+    ///
+    /// **Best Practice**: Should consist of TOCIs or other nested TOCs.
+    TOC,
+    /// Item in the table of contents.
+    ///
+    /// **Best Practice**: Should only appear within a TOC. Should only consist of
+    /// labels, references, paragraphs and TOCs.
+    TOCI,
+    /// Index of the key terms in the document.
+    ///
+    /// **Best Practice**: Should contain a sequence of text accompanied by
+    /// reference elements pointing to their occurrence in the text.
+    Index,
+    /// A paragraph.
+    P,
+    /// First-level heading.
+    H1,
+    /// Second-level heading.
+    H2,
+    /// Third-level heading.
+    H3,
+    /// Fourth-level heading.
+    H4,
+    /// Fifth-level heading.
+    H5,
+    /// Sixth-level heading.
+    H6,
+    /// A list.
+    ///
+    /// **Best practice**: Should consist of an optional caption followed by
+    /// list items.
+    L,
+    /// A list item.
+    ///
+    /// **Best practice**: Should consist of one or more list labels and/or list bodies.
+    LI,
+    /// Label for a list item.
+    Lbl,
+    /// Description of the list item.
+    LBody,
+    /// A table.
+    ///
+    /// **Best practice**: Should consist of an optional table header row,
+    /// one or more table body elements and an optional table footer. Can have
+    /// caption as the first or last child.
+    Table,
+    /// A table row.
+    ///
+    /// **Best practice**: May contain table headers cells and table data cells.
+    TR,
+    /// A table header cell.
+    TH,
+    /// A table data cell.
+    TD,
+    /// A table header row group.
+    THead,
+    /// A table data row group.
+    TBody,
+    /// A table footer row group.
+    TFoot,
+    /// An inline quotation.
+    InlineQuote,
+    /// A foot- or endnote, potentially referred to from within the text.
+    ///
+    /// **Best practice**: It may have a label as a child.
+    Note,
+    /// A reference to elsewhere in the document.
+    Reference,
+    /// A reference to the external source of some cited document.
+    ///
+    /// **Best practice**: It may have a label as a child.
+    BibEntry,
+    /// Computer code.
+    Code,
+    /// A link.
+    Link,
+    /// An association between an annotation and the content it belongs to. PDF
+    /// 1.5+
+    Annot,
+    /// Item of graphical content.
+    Figure,
+    /// A mathematical formula.
+    Formula,
 }
 
 impl From<Tag> for StructRole {
     fn from(value: Tag) -> Self {
         match value {
-            Tag::Paragraph => StructRole::P,
+            Tag::P => StructRole::P,
+            _ => unimplemented!(),
         }
     }
 }
@@ -378,7 +476,7 @@ mod tests {
     #[snapshot(document, settings_12)]
     fn tagging_simple(document: &mut Document) {
         let mut tag_root = TagRoot::new();
-        let mut par = TagGroup::new(Tag::Paragraph);
+        let mut par = TagGroup::new(Tag::P);
 
         let mut page = document.start_page();
         let mut surface = page.surface();

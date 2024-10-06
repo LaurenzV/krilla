@@ -76,7 +76,12 @@ impl ContentBuilder {
         )
     }
 
-    pub fn start_marked_content(&mut self, sc: &mut SerializerContext, mcid: Option<i32>, tag: ContentTag) {
+    pub fn start_marked_content(
+        &mut self,
+        sc: &mut SerializerContext,
+        mcid: Option<i32>,
+        tag: ContentTag,
+    ) {
         if self.active_marked_content {
             panic!("can't start marked content twice");
         }

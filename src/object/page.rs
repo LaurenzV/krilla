@@ -8,7 +8,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::util::Deferred;
-use crate::validation::tagging::PageIdentifier;
+use crate::validation::tagging::PageTagIdentifier;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
@@ -77,7 +77,7 @@ impl<'a> Page<'a> {
         });
 
         let page_identifier = if self.sc.serialize_settings.enable_tagging {
-            Some(PageIdentifier::new(self.page_index, 0))
+            Some(PageTagIdentifier::new(self.page_index, 0))
         } else {
             None
         };

@@ -17,7 +17,7 @@ use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
 use crate::util::RectExt;
-use crate::validation::tagging::{ContentTag, Identifier, PageIdentifier};
+use crate::validation::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -77,7 +77,7 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
-    page_identifier: Option<PageIdentifier>,
+    page_identifier: Option<PageTagIdentifier>,
     finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
 }
 
@@ -85,7 +85,7 @@ impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
-        page_identifier: Option<PageIdentifier>,
+        page_identifier: Option<PageTagIdentifier>,
         finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
@@ -129,19 +129,13 @@ impl<'a> Surface<'a> {
                 // for the sake of simplicity. But the user of the library does not need to know
                 // about this.
                 ContentTag::Artifact(_) => {
-                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).start_marked_content(
-                        &mut self.sc,
-                        None,
-                        tag,
-                    );
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        .start_marked_content(&mut self.sc, None, tag);
                     Identifier::dummy()
                 }
                 ContentTag::Span | ContentTag::Other => {
-                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).start_marked_content(
-                        &mut self.sc,
-                        Some(id.mcid),
-                        tag,
-                    );
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        .start_marked_content(&mut self.sc, Some(id.mcid), tag);
                     id.bump().into()
                 }
             }
