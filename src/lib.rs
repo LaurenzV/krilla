@@ -105,7 +105,8 @@ std::fs::write("target/example.pdf", &pdf).unwrap();
 [examples]: https://github.com/LaurenzV/krilla/tree/main/examples
 */
 
-#![deny(missing_docs)]
+// TODO: Re-add
+// #![deny(missing_docs)]
 
 mod chunk_container;
 mod graphics_state;

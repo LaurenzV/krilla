@@ -25,6 +25,8 @@ use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
 
+mod tagging;
+
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValidationError {

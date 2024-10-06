@@ -102,6 +102,8 @@ pub struct SerializeSettings {
     ///
     /// [`validation`]: crate::validation
     pub validator: Validator,
+
+    pub enable_tagging: bool,
 }
 
 const STR_BYTE_LEN: usize = 32767;
@@ -117,6 +119,7 @@ impl SerializeSettings {
             force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::Dummy,
+            enable_tagging: false,
         }
     }
 
@@ -200,6 +203,7 @@ impl Default for SerializeSettings {
             force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::Dummy,
+            enable_tagging: true,
         }
     }
 }
