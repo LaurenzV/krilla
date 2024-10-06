@@ -368,7 +368,7 @@ impl ContentBuilder {
                 }
 
                 // Adjustment is always in 1000 units, even for Type3 fonts.
-                items.adjust(- (adjustment / pdf_font.units_per_em() * 1000.0));
+                items.adjust(-(adjustment / pdf_font.units_per_em() * 1000.0));
                 adjustment = 0.0;
             }
 
