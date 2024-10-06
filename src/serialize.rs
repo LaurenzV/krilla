@@ -304,7 +304,10 @@ impl SerializerContext {
     }
 
     pub fn set_tag_tree(&mut self, root: TagTree) {
-        self.tag_tree = Some(root)
+        // Only set the tag tree if the user actually enabled tagging.
+        if self.serialize_settings.enable_tagging {
+            self.tag_tree = Some(root)
+        }
     }
 
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
@@ -578,57 +581,55 @@ impl SerializerContext {
 
         let tag_tree = std::mem::take(&mut self.tag_tree);
         let struct_parents = std::mem::take(&mut self.struct_parents);
-        if self.serialize_settings.enable_tagging {
-            if let Some(root) = &tag_tree {
-                let mut parent_tree_map = HashMap::new();
-                let struct_tree_root_ref = self.new_ref();
-                let (document_ref, struct_elems) =
-                    root.serialize(&mut self, &mut parent_tree_map, struct_tree_root_ref);
-                self.chunk_container.struct_elements = struct_elems;
+        if let Some(root) = &tag_tree {
+            let mut parent_tree_map = HashMap::new();
+            let struct_tree_root_ref = self.new_ref();
+            let (document_ref, struct_elems) =
+                root.serialize(&mut self, &mut parent_tree_map, struct_tree_root_ref);
+            self.chunk_container.struct_elements = struct_elems;
 
-                let mut chunk = Chunk::new();
-                let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
-                tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
-                tree.insert(Name(b"K")).array().item(document_ref);
+            let mut chunk = Chunk::new();
+            let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
+            tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
+            tree.insert(Name(b"K")).array().item(document_ref);
 
-                let mut sub_chunks = vec![];
-                let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
-                let mut tree_nums = parent_tree.nums();
+            let mut sub_chunks = vec![];
+            let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
+            let mut tree_nums = parent_tree.nums();
 
-                for (index, struct_parent) in struct_parents.iter().enumerate() {
-                    let mut list_chunk = Chunk::new();
-                    let list_ref = self.new_ref();
+            for (index, struct_parent) in struct_parents.iter().enumerate() {
+                let mut list_chunk = Chunk::new();
+                let list_ref = self.new_ref();
 
-                    let mut refs = list_chunk.indirect(list_ref).array();
+                let mut refs = list_chunk.indirect(list_ref).array();
 
-                    match *struct_parent {
-                        StructParentElement::Page(index, num_mcids) => {
-                            for mcid in 0..num_mcids {
-                                let rci = PageTagIdentifier::new(index, mcid);
-                                // TODO: Graceful handling
-                                refs.item(parent_tree_map.get(&rci.into()).unwrap());
-                            }
+                match *struct_parent {
+                    StructParentElement::Page(index, num_mcids) => {
+                        for mcid in 0..num_mcids {
+                            let rci = PageTagIdentifier::new(index, mcid);
+                            // TODO: Graceful handling
+                            refs.item(parent_tree_map.get(&rci.into()).unwrap());
                         }
                     }
-                    refs.finish();
-
-                    sub_chunks.push(list_chunk);
-                    tree_nums.insert(index as i32, list_ref);
                 }
+                refs.finish();
 
-                tree_nums.finish();
-                parent_tree.finish();
-
-                tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
-
-                tree.finish();
-
-                for sub_chunk in sub_chunks {
-                    chunk.extend(&sub_chunk);
-                }
-
-                self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
+                sub_chunks.push(list_chunk);
+                tree_nums.insert(index as i32, list_ref);
             }
+
+            tree_nums.finish();
+            parent_tree.finish();
+
+            tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
+
+            tree.finish();
+
+            for sub_chunk in sub_chunks {
+                chunk.extend(&sub_chunk);
+            }
+
+            self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
         }
 
         if self.cur_ref > Ref::new(8388607) {

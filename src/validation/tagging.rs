@@ -474,6 +474,12 @@ mod tests {
     }
 
     #[snapshot(document)]
+    fn tagging_empty(document: &mut Document) {
+        let tag_root = TagTree::new();
+        document.set_tag_tree(tag_root);
+    }
+
+    #[snapshot(document)]
     fn tagging_simple(document: &mut Document) {
         let mut tag_root = TagTree::new();
         let mut par = TagGroup::new(Tag::P);

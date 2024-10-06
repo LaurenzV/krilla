@@ -119,10 +119,7 @@ impl ChunkContainer {
             ($remapper:expr, $pdf:expr; $($field:expr),+) => {
                 $(
                     if let Some((_, chunk)) = $field {
-                        chunk.renumber_into($pdf, |old| {
-                            eprintln!("old: {:?}, remapped: {:?}", old, $remapper.get(&old));
-                            *$remapper.get(&old).unwrap()
-                        });
+                        chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
             };
@@ -138,8 +135,6 @@ impl ChunkContainer {
                 )+
             };
         }
-
-        eprintln!("{:?}", remapper.iter().collect::<Vec<_>>());
 
         write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
             &self.page_label_tree, &self.destination_profiles,
@@ -234,6 +229,7 @@ impl ChunkContainer {
 
             if let Some(st) = &self.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), st.0);
+                catalog.mark_info().marked(true);
             }
 
             // TODO: Add viewer preferences
