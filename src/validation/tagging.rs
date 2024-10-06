@@ -356,11 +356,11 @@ impl TagGroup {
     }
 }
 
-pub struct TagRoot {
+pub struct TagTree {
     children: Vec<Node>,
 }
 
-impl TagRoot {
+impl TagTree {
     pub fn new() -> Self {
         Self { children: vec![] }
     }
@@ -447,7 +447,7 @@ mod tests {
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::NOTO_SANS;
-    use crate::validation::tagging::{ContentTag, Tag, TagGroup, TagRoot};
+    use crate::validation::tagging::{ContentTag, Tag, TagGroup, TagTree};
     use crate::Document;
     use krilla_macros::snapshot;
 
@@ -475,7 +475,7 @@ mod tests {
 
     #[snapshot(document)]
     fn tagging_simple(document: &mut Document) {
-        let mut tag_root = TagRoot::new();
+        let mut tag_root = TagTree::new();
         let mut par = TagGroup::new(Tag::P);
 
         let mut page = document.start_page();

@@ -15,7 +15,7 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
-use crate::validation::tagging::{PageTagIdentifier, TagRoot};
+use crate::validation::tagging::{PageTagIdentifier, TagTree};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -227,7 +227,7 @@ pub(crate) struct SerializerContext {
     struct_parents: Vec<StructParentElement>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
-    tag_tree: Option<TagRoot>,
+    tag_tree: Option<TagTree>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
@@ -303,7 +303,7 @@ impl SerializerContext {
         self.chunk_container.metadata = Some(metadata);
     }
 
-    pub fn set_tag_tree(&mut self, root: TagRoot) {
+    pub fn set_tag_tree(&mut self, root: TagTree) {
         self.tag_tree = Some(root)
     }
 
