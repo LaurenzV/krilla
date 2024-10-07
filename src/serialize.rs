@@ -192,6 +192,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_12() -> Self {
+        Self {
+            enable_tagging: false,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
