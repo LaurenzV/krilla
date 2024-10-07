@@ -18,6 +18,7 @@ pub enum ArtifactType {
     /// The rectangle should delimit the bounding box of the visible content of the
     /// content to be delimited as the background of the page.
     Background(Rect),
+    Other,
 }
 
 /// A language identifier as specified in RFC 3066. It will not be validated, so
@@ -43,27 +44,30 @@ impl ContentTag {
     pub(crate) fn write_properties(&self, _: &mut SerializerContext, properties: PropertyList) {
         match self {
             ContentTag::Artifact(at) => {
-                let mut artifact = properties.artifact();
+                if *at != ArtifactType::Other {
+                    let mut artifact = properties.artifact();
 
-                let artifact_type = match at {
-                    ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
-                    ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
-                    ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
-                    // TODO: Handle bbox.
-                    ArtifactType::Background(_) => pdf_writer::types::ArtifactType::Background,
-                };
+                    let artifact_type = match at {
+                        ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
+                        ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
+                        ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
+                        // TODO: Handle bbox.
+                        ArtifactType::Background(_) => pdf_writer::types::ArtifactType::Background,
+                        ArtifactType::Other => unreachable!(),
+                    };
 
-                if *at == ArtifactType::Header {
-                    artifact.attached([ArtifactAttachment::Top]);
-                    artifact.subtype(ArtifactSubtype::Header);
+                    if *at == ArtifactType::Header {
+                        artifact.attached([ArtifactAttachment::Top]);
+                        artifact.subtype(ArtifactSubtype::Header);
+                    }
+
+                    if *at == ArtifactType::Footer {
+                        artifact.attached([ArtifactAttachment::Bottom]);
+                        artifact.subtype(ArtifactSubtype::Footer);
+                    }
+
+                    artifact.kind(artifact_type);
                 }
-
-                if *at == ArtifactType::Footer {
-                    artifact.attached([ArtifactAttachment::Bottom]);
-                    artifact.subtype(ArtifactSubtype::Footer);
-                }
-
-                artifact.kind(artifact_type);
             }
             ContentTag::Span => {}
             ContentTag::Other => {}

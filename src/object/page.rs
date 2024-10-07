@@ -2,6 +2,7 @@
 
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
+use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{FilterStream, SerializerContext};
@@ -153,7 +154,11 @@ impl InternalPage {
         }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut annotation_refs = vec![];
@@ -162,15 +167,13 @@ impl InternalPage {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
 
-                // If this fails than we have an unused reference, but this isn't really
-                // a big deal, especially since the chunk container will renumber everything,
-                // anyway.
-                if let Some(a) =
-                    annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height())
-                {
-                    chunk.extend(&a);
-                    annotation_refs.push(annot_ref);
-                }
+                let a = annotation.serialize(
+                    sc,
+                    annot_ref,
+                    self.page_settings.surface_size().height(),
+                )?;
+                chunk.extend(&a);
+                annotation_refs.push(annot_ref);
             }
         }
 
@@ -201,7 +204,7 @@ impl InternalPage {
 
         chunk.extend(self.stream_chunk.wait());
 
-        chunk
+        Ok(chunk)
     }
 }
 

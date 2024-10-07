@@ -6,6 +6,7 @@
 //! that are supported are "link annotations", which allow you associate a certain region of
 //! the page with a link.
 
+use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::object::xobject::XObject;
@@ -28,7 +29,7 @@ impl Annotation {
         sc: &mut SerializerContext,
         root_ref: Ref,
         page_size: f32,
-    ) -> Option<Chunk> {
+    ) -> KrillaResult<Chunk> {
         match self {
             Annotation::Link(link) => link.serialize(sc, root_ref, page_size),
         }
@@ -63,7 +64,7 @@ impl LinkAnnotation {
         sc: &mut SerializerContext,
         root_ref: Ref,
         page_size: f32,
-    ) -> Option<Chunk> {
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
         let mut annotation = chunk
             .indirect(root_ref)
@@ -94,7 +95,7 @@ impl LinkAnnotation {
 
         annotation.finish();
 
-        Some(chunk)
+        Ok(chunk)
     }
 }
 
@@ -111,6 +112,7 @@ mod tests {
 
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect};
+    use crate::SerializeSettings;
 
     #[snapshot(single_page)]
     fn annotation_to_link(page: &mut Page) {
@@ -125,8 +127,9 @@ mod tests {
         );
     }
 
-    #[snapshot(document)]
-    fn annotation_to_invalid_destination(d: &mut Document) {
+    #[test]
+    fn annotation_to_invalid_destination() {
+        let mut d = Document::new_with(SerializeSettings::settings_1());
         let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
         page.add_annotation(
             LinkAnnotation {
@@ -135,9 +138,10 @@ mod tests {
                     XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
                 ),
             }
-            .into(),
+                .into(),
         );
         page.finish();
+        assert!(d.finish().is_err())
     }
 
     #[snapshot(document)]

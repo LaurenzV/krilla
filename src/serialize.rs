@@ -566,7 +566,7 @@ impl SerializerContext {
 
         let pages = std::mem::take(&mut self.pages);
         for (ref_, page) in &pages {
-            let chunk = page.serialize(&mut self, *ref_);
+            let chunk = page.serialize(&mut self, *ref_)?;
             self.chunk_container.pages.push(chunk);
         }
 

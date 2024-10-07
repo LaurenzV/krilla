@@ -5,6 +5,7 @@
 //! from a link. To achieve this, you can use destinations, which are associated with a page
 //! and a specific location on that page.
 
+use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializerContext;
 use std::hash::{Hash, Hasher};
 use tiny_skia_path::{Point, Transform};
@@ -21,7 +22,7 @@ impl Destination {
         &self,
         sc: &mut SerializerContext,
         destination: pdf_writer::writers::Destination,
-    ) -> Option<()> {
+    ) -> KrillaResult<()> {
         match self {
             Destination::Xyz(xyz) => xyz.serialize(sc, destination),
         }
@@ -61,9 +62,16 @@ impl XyzDestination {
         &self,
         sc: &mut SerializerContext,
         destination: pdf_writer::writers::Destination,
-    ) -> Option<()> {
+    ) -> KrillaResult<()> {
         // Silently ignore invalid destinations that point to a non-existing page.
-        let page_info = sc.page_infos().get(self.page_index)?;
+        let page_info = sc
+            .page_infos()
+            .get(self.page_index)
+            .ok_or(KrillaError::UserError(format!(
+                "attempted to link to page {}, but document only has {} pages",
+                self.page_index,
+                sc.page_infos().len()
+            )))?;
         let page_ref = page_info.ref_;
         let page_size = page_info.surface_size.height();
 
@@ -76,6 +84,6 @@ impl XyzDestination {
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
 
-        Some(())
+        Ok(())
     }
 }
