@@ -23,28 +23,33 @@ pub enum ArtifactType {
 /// A language identifier as specified in RFC 3066. It will not be validated, so
 /// it's on the user of the library to ensure the tag is valid.
 pub type Lang<'a> = &'a str;
+pub type Alt<'a> = &'a str;
 
-#[derive(Copy, Clone, Debug)]
-pub enum ContentTag {
+#[derive(Clone, Copy, Debug)]
+pub enum ContentTag<'a> {
     Artifact(ArtifactType),
     Span,
-    Image,
+    Image(Option<Alt<'a>>),
     Other,
 }
 
-impl ContentTag {
+impl ContentTag<'_> {
     pub(crate) fn name(&self) -> Name {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
             ContentTag::Span => Name(b"Span"),
             // There isn't really anything better to encode it with, so we use P as a fallback
             // alternative. Word seems to do the same.
-            ContentTag::Image => Name(b"P"),
+            ContentTag::Image(_) => Name(b"P"),
             ContentTag::Other => Name(b"P"),
         }
     }
 
-    pub(crate) fn write_properties(&self, _: &mut SerializerContext, properties: PropertyList) {
+    pub(crate) fn write_properties(
+        &self,
+        sc: &mut SerializerContext,
+        mut properties: PropertyList,
+    ) {
         match self {
             ContentTag::Artifact(at) => {
                 let mut artifact = properties.artifact();
@@ -70,7 +75,12 @@ impl ContentTag {
                 artifact.kind(artifact_type);
             }
             ContentTag::Span => {}
-            ContentTag::Image => {}
+            ContentTag::Image(alt) => {
+                // TODO Alt text cannot be written like that.
+                if let Some(alt) = alt {
+                    properties.pair(Name(b"Alt"), sc.new_text_str(alt));
+                }
+            }
             ContentTag::Other => {}
         }
     }
@@ -484,10 +494,11 @@ mod tests {
     use crate::font::Font;
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
-    use crate::tests::NOTO_SANS;
-    use crate::validation::tagging::{ContentTag, Tag, TagGroup, TagTree};
-    use crate::Document;
+    use crate::tests::{load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
+    use crate::validation::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
+    use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
+    use tiny_skia_path::Transform;
 
     pub trait SurfaceExt {
         fn fill_text_(&mut self, y: f32, content: &str);
@@ -544,6 +555,53 @@ mod tests {
     #[snapshot(document, settings_12)]
     fn tagging_disabled(document: &mut Document) {
         tagging_simple_impl(document);
+    }
+
+    pub(crate) fn sample_svg() -> usvg::Tree {
+        let data = std::fs::read(SVGS_PATH.join("resvg_shapes_rect_simple_case.svg")).unwrap();
+        usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
+    }
+
+    #[snapshot(document)]
+    fn tagging_multiple_content_tags(document: &mut Document) {
+        let mut tag_tree = TagTree::new();
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let id1 = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(25.0, "a span");
+        surface.end_tagged();
+        let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
+        surface.fill_text_(50.0, "a header artifact");
+        surface.end_tagged();
+        let id3 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), Fill::default());
+        surface.end_tagged();
+
+        let id4 = surface.start_tagged(ContentTag::Image(Some("A super cool SVG image.")));
+        let tree = sample_svg();
+        surface.push_transform(&Transform::from_translate(100.0, 100.0));
+        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+        surface.pop();
+        surface.end_tagged();
+
+        let id5 = surface.start_tagged(ContentTag::Image(Some("A super cool bitmap image.")));
+        let image = load_png_image("rgb8.png");
+        surface.push_transform(&Transform::from_translate(100.0, 300.0));
+        surface.draw_image(image.clone(), image.size());
+        surface.pop();
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        tag_tree.push(id1);
+        tag_tree.push(id2);
+        tag_tree.push(id3);
+        tag_tree.push(id4);
+        tag_tree.push(id5);
+
+        document.set_tag_tree(tag_tree);
     }
 
     #[snapshot(document)]

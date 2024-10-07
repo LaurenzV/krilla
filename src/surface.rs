@@ -133,7 +133,7 @@ impl<'a> Surface<'a> {
                         .start_marked_content(&mut self.sc, None, tag);
                     Identifier::dummy()
                 }
-                ContentTag::Span | ContentTag::Image | ContentTag::Other => {
+                ContentTag::Span | ContentTag::Image(_) | ContentTag::Other => {
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                         .start_marked_content(&mut self.sc, Some(id.mcid), tag);
                     id.bump().into()
@@ -872,7 +872,7 @@ mod tests {
         surface.pop();
     }
 
-    fn sample_svg() -> usvg::Tree {
+    pub(crate) fn sample_svg() -> usvg::Tree {
         let data = std::fs::read(SVGS_PATH.join("resvg_masking_mask_with_opacity_1.svg")).unwrap();
         usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
     }
