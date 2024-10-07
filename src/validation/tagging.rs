@@ -495,13 +495,12 @@ fn serialize_children(
 
                         if struct_page_ref == Some(page_ref) {
                             struct_children.marked_content_id(pi.mcid);
-                        }   else {
+                        } else {
                             struct_children
                                 .marked_content_ref()
                                 .marked_content_id(pi.mcid)
                                 .page(page_ref);
                         }
-
                     }
                     IdentifierType::AnnotationIdentifier(_) => {
                         unimplemented!()
