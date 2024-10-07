@@ -12,6 +12,9 @@ endobj
 2 0 obj
 <<
   /Type /StructTreeRoot
+  /RoleMap <<
+    /Image /Figure
+  >>
   /K [6 0 R]
   /ParentTree <<
     /Nums [0 3 0 R]
@@ -45,11 +48,12 @@ endobj
 
 5 0 obj
 <<
-  /Length 1043
+  /Length 985
 >>
 stream
 /Span <<
   /MCID 0
+  /Lang ()
 >> BDC
 q
 1 0 0 -1 0 842 cm
@@ -97,7 +101,6 @@ Q
 EMC
 /P <<
   /MCID 2
-  /Alt (A super cool SVG image.)
 >> BDC
 q
 100 742 m
@@ -144,7 +147,6 @@ Q
 EMC
 /P <<
   /MCID 3
-  /Alt (A super cool bitmap image.)
 >> BDC
 q
 200 0 0 200 100 342 cm
@@ -384,23 +386,23 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000204 00000 n
-0000000246 00000 n
-0000000500 00000 n
-0000001598 00000 n
-0000001869 00000 n
-0000002031 00000 n
-0000002395 00000 n
-0000002626 00000 n
-0000003494 00000 n
-0000006370 00000 n
-0000008564 00000 n
+0000000242 00000 n
+0000000284 00000 n
+0000000538 00000 n
+0000001577 00000 n
+0000001848 00000 n
+0000002010 00000 n
+0000002374 00000 n
+0000002605 00000 n
+0000003473 00000 n
+0000006349 00000 n
+0000008543 00000 n
 trailer
 <<
   /Size 14
   /Root 13 0 R
-  /ID [(8Zimw+F2tXPy/Hq0wcwG3Q==) (8Zimw+F2tXPy/Hq0wcwG3Q==)]
+  /ID [(L1UMpHwi50BukIsL+0DCVg==) (L1UMpHwi50BukIsL+0DCVg==)]
 >>
 startxref
-8680
+8659
 %%EOF

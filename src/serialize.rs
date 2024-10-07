@@ -19,8 +19,8 @@ use crate::validation::tagging::{PageTagIdentifier, TagTree};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::writers::{NumberTree, OutputIntent};
+use pdf_writer::types::{OutputIntentSubtype, StructRole};
+use pdf_writer::writers::{NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
@@ -598,6 +598,9 @@ impl SerializerContext {
             let mut chunk = Chunk::new();
             let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
             tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
+            let mut role_map = tree.insert(Name(b"RoleMap")).start::<RoleMap>();
+            role_map.insert(Name(b"Image"), StructRole::Figure);
+            role_map.finish();
             tree.insert(Name(b"K")).array().item(document_ref);
 
             let mut sub_chunks = vec![];

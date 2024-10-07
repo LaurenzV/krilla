@@ -12,6 +12,9 @@ endobj
 2 0 obj
 <<
   /Type /StructTreeRoot
+  /RoleMap <<
+    /Image /Figure
+  >>
   /K [5 0 R]
   /ParentTree <<
     /Nums []
@@ -66,16 +69,16 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000197 00000 n
-0000000356 00000 n
-0000000408 00000 n
-0000000484 00000 n
+0000000235 00000 n
+0000000394 00000 n
+0000000446 00000 n
+0000000522 00000 n
 trailer
 <<
   /Size 7
   /Root 6 0 R
-  /ID [(m3Is59be5vuPkoy7F6Z2Rg==) (m3Is59be5vuPkoy7F6Z2Rg==)]
+  /ID [(EpXsZ7f0NDF4E+ON8j44DQ==) (EpXsZ7f0NDF4E+ON8j44DQ==)]
 >>
 startxref
-599
+637
 %%EOF

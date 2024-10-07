@@ -23,13 +23,11 @@ pub enum ArtifactType {
 /// A language identifier as specified in RFC 3066. It will not be validated, so
 /// it's on the user of the library to ensure the tag is valid.
 pub type Lang<'a> = &'a str;
-pub type Alt<'a> = &'a str;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ContentTag<'a> {
     Artifact(ArtifactType),
-    Span,
-    Image(Option<Alt<'a>>),
+    Span(Lang<'a>),
     Other,
 }
 
@@ -37,10 +35,7 @@ impl ContentTag<'_> {
     pub(crate) fn name(&self) -> Name {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
-            ContentTag::Span => Name(b"Span"),
-            // There isn't really anything better to encode it with, so we use P as a fallback
-            // alternative. Word seems to do the same.
-            ContentTag::Image(_) => Name(b"P"),
+            ContentTag::Span(_) => Name(b"Span"),
             ContentTag::Other => Name(b"P"),
         }
     }
@@ -74,12 +69,8 @@ impl ContentTag<'_> {
 
                 artifact.kind(artifact_type);
             }
-            ContentTag::Span => {}
-            ContentTag::Image(alt) => {
-                // TODO Alt text cannot be written like that.
-                if let Some(alt) = alt {
-                    properties.pair(Name(b"Alt"), sc.new_text_str(alt));
-                }
+            ContentTag::Span(lang) => {
+                properties.pair(Name(b"Lang"), sc.new_text_str(lang));
             }
             ContentTag::Other => {}
         }
@@ -170,7 +161,7 @@ impl Identifier {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Tag {
     /// A part of a document that may contain multiple articles or sections.
     Part,
@@ -260,6 +251,8 @@ pub enum Tag {
     BibEntry,
     /// Computer code.
     Code,
+    /// An image with an alt text.
+    Image(Option<String>),
     /// A link.
     Link,
     /// An association between an annotation and the content it belongs to. PDF
@@ -271,45 +264,47 @@ pub enum Tag {
     Formula,
 }
 
-impl From<Tag> for StructRole {
-    fn from(value: Tag) -> Self {
-        match value {
-            Tag::Part => StructRole::Part,
-            Tag::Article => StructRole::Art,
-            Tag::Section => StructRole::Sect,
-            Tag::BlockQuote => StructRole::BlockQuote,
-            Tag::Caption => StructRole::Caption,
-            Tag::TOC => StructRole::TOC,
-            Tag::TOCI => StructRole::TOCI,
-            Tag::Index => StructRole::Index,
-            Tag::P => StructRole::P,
-            Tag::H1 => StructRole::H1,
-            Tag::H2 => StructRole::H2,
-            Tag::H3 => StructRole::H3,
-            Tag::H4 => StructRole::H4,
-            Tag::H5 => StructRole::H5,
-            Tag::H6 => StructRole::H6,
-            Tag::L => StructRole::L,
-            Tag::LI => StructRole::LI,
-            Tag::Lbl => StructRole::Lbl,
-            Tag::LBody => StructRole::LBody,
-            Tag::Table => StructRole::Table,
-            Tag::TR => StructRole::TR,
-            Tag::TH => StructRole::TH,
-            Tag::TD => StructRole::TD,
-            Tag::THead => StructRole::THead,
-            Tag::TBody => StructRole::TBody,
-            Tag::TFoot => StructRole::TFoot,
-            Tag::InlineQuote => StructRole::Quote,
-            Tag::Note => StructRole::Note,
-            Tag::Reference => StructRole::Reference,
-            Tag::BibEntry => StructRole::BibEntry,
-            Tag::Code => StructRole::Code,
-            Tag::Link => StructRole::Link,
-            Tag::Annot => StructRole::Annot,
-            Tag::Figure => StructRole::Figure,
-            Tag::Formula => StructRole::Formula,
-        }
+impl Tag {
+    pub(crate) fn write_kind(&self, struct_elem: &mut StructElement) {
+        match self {
+            Tag::Part => struct_elem.kind(StructRole::Part),
+            Tag::Article => struct_elem.kind(StructRole::Art),
+            Tag::Section => struct_elem.kind(StructRole::Sect),
+            Tag::BlockQuote => struct_elem.kind(StructRole::BlockQuote),
+            Tag::Caption => struct_elem.kind(StructRole::Caption),
+            Tag::TOC => struct_elem.kind(StructRole::TOC),
+            Tag::TOCI => struct_elem.kind(StructRole::TOCI),
+            Tag::Index => struct_elem.kind(StructRole::Index),
+            Tag::P => struct_elem.kind(StructRole::P),
+            Tag::H1 => struct_elem.kind(StructRole::H1),
+            Tag::H2 => struct_elem.kind(StructRole::H2),
+            Tag::H3 => struct_elem.kind(StructRole::H3),
+            Tag::H4 => struct_elem.kind(StructRole::H4),
+            Tag::H5 => struct_elem.kind(StructRole::H5),
+            Tag::H6 => struct_elem.kind(StructRole::H6),
+            Tag::L => struct_elem.kind(StructRole::L),
+            Tag::LI => struct_elem.kind(StructRole::LI),
+            Tag::Lbl => struct_elem.kind(StructRole::Lbl),
+            Tag::LBody => struct_elem.kind(StructRole::LBody),
+            Tag::Table => struct_elem.kind(StructRole::Table),
+            Tag::TR => struct_elem.kind(StructRole::TR),
+            Tag::TH => struct_elem.kind(StructRole::TH),
+            Tag::TD => struct_elem.kind(StructRole::TD),
+            Tag::THead => struct_elem.kind(StructRole::THead),
+            Tag::TBody => struct_elem.kind(StructRole::TBody),
+            Tag::TFoot => struct_elem.kind(StructRole::TFoot),
+            Tag::InlineQuote => struct_elem.kind(StructRole::Quote),
+            Tag::Note => struct_elem.kind(StructRole::Note),
+            Tag::Reference => struct_elem.kind(StructRole::Reference),
+            Tag::BibEntry => struct_elem.kind(StructRole::BibEntry),
+            Tag::Code => struct_elem.kind(StructRole::Code),
+            Tag::Link => struct_elem.kind(StructRole::Link),
+            Tag::Annot => struct_elem.kind(StructRole::Annot),
+            Tag::Figure => struct_elem.kind(StructRole::Figure),
+            Tag::Formula => struct_elem.kind(StructRole::Formula),
+            // Every additional tag needs to be registered in the role map!
+            Tag::Image(_) => struct_elem.custom_kind(Name(b"Image")),
+        };
     }
 }
 
@@ -387,7 +382,7 @@ impl TagGroup {
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
-        struct_elem.kind(self.tag.into());
+        self.tag.write_kind(&mut struct_elem);
         struct_elem.parent(parent);
         let struct_children = struct_elem.children();
         serialize_children(
@@ -534,7 +529,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id = surface.start_tagged(ContentTag::Span);
+        let id = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(25.0, "a paragraph");
         surface.end_tagged();
 
@@ -568,7 +563,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id1 = surface.start_tagged(ContentTag::Span);
+        let id1 = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(25.0, "a span");
         surface.end_tagged();
         let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
@@ -578,14 +573,14 @@ mod tests {
         surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), Fill::default());
         surface.end_tagged();
 
-        let id4 = surface.start_tagged(ContentTag::Image(Some("A super cool SVG image.")));
+        let id4 = surface.start_tagged(ContentTag::Other);
         let tree = sample_svg();
         surface.push_transform(&Transform::from_translate(100.0, 100.0));
         surface.draw_svg(&tree, tree.size(), SvgSettings::default());
         surface.pop();
         surface.end_tagged();
 
-        let id5 = surface.start_tagged(ContentTag::Image(Some("A super cool bitmap image.")));
+        let id5 = surface.start_tagged(ContentTag::Other);
         let image = load_png_image("rgb8.png");
         surface.push_transform(&Transform::from_translate(100.0, 300.0));
         surface.draw_image(image.clone(), image.size());
@@ -614,10 +609,10 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let h1 = surface.start_tagged(ContentTag::Span);
+        let h1 = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(25.0, "a heading");
         surface.end_tagged();
-        let p1 = surface.start_tagged(ContentTag::Span);
+        let p1 = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(50.0, "a paragraph");
         surface.end_tagged();
         surface.finish();
@@ -625,7 +620,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let p2 = surface.start_tagged(ContentTag::Span);
+        let p2 = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(75.0, "a second paragraph");
         surface.end_tagged();
         surface.finish();
@@ -633,10 +628,10 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let h2 = surface.start_tagged(ContentTag::Span);
+        let h2 = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(25.0, "another heading");
         surface.end_tagged();
-        let p3 = surface.start_tagged(ContentTag::Span);
+        let p3 = surface.start_tagged(ContentTag::Span(""));
         surface.fill_text_(50.0, "another paragraph");
         surface.end_tagged();
         surface.finish();
