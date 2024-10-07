@@ -395,13 +395,12 @@ impl TagGroup {
             struct_elem.alt(sc.new_text_str(alt));
         }
 
-        let struct_children = struct_elem.children();
         serialize_children(
             sc,
             root_ref,
             children_refs,
             parent_tree_map,
-            struct_children,
+            &mut struct_elem,
         );
         struct_elem.finish();
         struct_elems.push(chunk);
@@ -442,13 +441,12 @@ impl TagTree {
         let mut struct_elem = chunk.indirect(root_ref).start::<StructElement>();
         struct_elem.kind(StructRole::Document);
         struct_elem.parent(struct_tree_ref);
-        let struct_children = struct_elem.children();
         serialize_children(
             sc,
             root_ref,
             children_refs,
             parent_tree_map,
-            struct_children,
+            &mut struct_elem,
         );
 
         struct_elem.finish();
@@ -467,8 +465,16 @@ fn serialize_children(
     root_ref: Ref,
     children_refs: Vec<Reference>,
     parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-    mut struct_children: StructChildren,
+    struct_elem: &mut StructElement,
 ) {
+    // We can define a /Pg element on the struct element. If a marked content reference
+    // is part of the same page as that entry, we can just write the mcid, otherwise, we
+    // need to write a full marked content reference.
+    // In our case, we just use the first marked content reference we can find as the
+    // entry in the /Pg dict.
+    let mut struct_page_ref = None;
+    let mut struct_children = struct_elem.children();
+
     for child in children_refs {
         match child {
             Reference::Ref(r) => {
@@ -477,14 +483,25 @@ fn serialize_children(
             Reference::ContentIdentifier(it) => {
                 match it {
                     IdentifierType::PageIdentifier(pi) => {
+                        // TODO: Error handling
+                        let page_ref = sc.page_infos()[pi.page_index].ref_;
+
+                        if struct_page_ref.is_none() {
+                            struct_page_ref = Some(page_ref);
+                        }
+
                         // TODO: Ensure that pi doesn't already have a parent.
                         parent_tree_map.insert(pi.into(), root_ref);
 
-                        struct_children
-                            .marked_content_ref()
-                            .marked_content_id(pi.mcid)
-                            // TODO: Error handling
-                            .page(sc.page_infos()[pi.page_index].ref_);
+                        if struct_page_ref == Some(page_ref) {
+                            struct_children.marked_content_id(pi.mcid);
+                        }   else {
+                            struct_children
+                                .marked_content_ref()
+                                .marked_content_id(pi.mcid)
+                                .page(page_ref);
+                        }
+
                     }
                     IdentifierType::AnnotationIdentifier(_) => {
                         unimplemented!()
@@ -492,6 +509,11 @@ fn serialize_children(
                 }
             }
         }
+    }
+    struct_children.finish();
+
+    if let Some(spr) = struct_page_ref {
+        struct_elem.page(spr);
     }
 }
 

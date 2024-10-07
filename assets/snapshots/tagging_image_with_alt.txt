@@ -109,11 +109,8 @@ endobj
   /S /Image
   /P 6 0 R
   /Alt (This is the alternate text.)
-  /K [<<
-    /Type /MCR
-    /MCID 0
-    /Pg 4 0 R
-  >>]
+  /K [0]
+  /Pg 4 0 R
 >>
 endobj
 
@@ -138,13 +135,13 @@ xref
 0000000444 00000 n
 0000000831 00000 n
 0000000912 00000 n
-0000001070 00000 n
+0000001035 00000 n
 trailer
 <<
   /Size 9
   /Root 8 0 R
-  /ID [(LVmVhWeV5wqBufI78dpnpg==) (LVmVhWeV5wqBufI78dpnpg==)]
+  /ID [(xMHTrQPmxqOcCnAKj4hjPg==) (xMHTrQPmxqOcCnAKj4hjPg==)]
 >>
 startxref
-1185
+1150
 %%EOF
