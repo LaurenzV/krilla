@@ -110,9 +110,9 @@ mod tests {
 
     use crate::tests::{green_fill, rect_to_path, red_fill};
 
+    use crate::SerializeSettings;
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect};
-    use crate::SerializeSettings;
 
     #[snapshot(single_page)]
     fn annotation_to_link(page: &mut Page) {
@@ -138,7 +138,7 @@ mod tests {
                     XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into(),
                 ),
             }
-                .into(),
+            .into(),
         );
         page.finish();
         assert!(d.finish().is_err())

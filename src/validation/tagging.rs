@@ -17,7 +17,7 @@ pub enum ArtifactType {
     /// The background of a page, which might for example include a watermark.
     /// The rectangle should delimit the bounding box of the visible content of the
     /// content to be delimited as the background of the page.
-    Background(Rect)
+    Background(Rect),
 }
 
 /// A language identifier as specified in RFC 3066. It will not be validated, so
@@ -28,6 +28,7 @@ pub type Lang<'a> = &'a str;
 pub enum ContentTag {
     Artifact(ArtifactType),
     Span,
+    Image,
     Other,
 }
 
@@ -36,6 +37,9 @@ impl ContentTag {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
             ContentTag::Span => Name(b"Span"),
+            // There isn't really anything better to encode it with, so we use P as a fallback
+            // alternative. Word seems to do the same.
+            ContentTag::Image => Name(b"P"),
             ContentTag::Other => Name(b"P"),
         }
     }
@@ -66,6 +70,7 @@ impl ContentTag {
                 artifact.kind(artifact_type);
             }
             ContentTag::Span => {}
+            ContentTag::Image => {}
             ContentTag::Other => {}
         }
     }
@@ -259,8 +264,41 @@ pub enum Tag {
 impl From<Tag> for StructRole {
     fn from(value: Tag) -> Self {
         match value {
+            Tag::Part => StructRole::Part,
+            Tag::Article => StructRole::Art,
+            Tag::Section => StructRole::Sect,
+            Tag::BlockQuote => StructRole::BlockQuote,
+            Tag::Caption => StructRole::Caption,
+            Tag::TOC => StructRole::TOC,
+            Tag::TOCI => StructRole::TOCI,
+            Tag::Index => StructRole::Index,
             Tag::P => StructRole::P,
-            _ => unimplemented!(),
+            Tag::H1 => StructRole::H1,
+            Tag::H2 => StructRole::H2,
+            Tag::H3 => StructRole::H3,
+            Tag::H4 => StructRole::H4,
+            Tag::H5 => StructRole::H5,
+            Tag::H6 => StructRole::H6,
+            Tag::L => StructRole::L,
+            Tag::LI => StructRole::LI,
+            Tag::Lbl => StructRole::Lbl,
+            Tag::LBody => StructRole::LBody,
+            Tag::Table => StructRole::Table,
+            Tag::TR => StructRole::TR,
+            Tag::TH => StructRole::TH,
+            Tag::TD => StructRole::TD,
+            Tag::THead => StructRole::THead,
+            Tag::TBody => StructRole::TBody,
+            Tag::TFoot => StructRole::TFoot,
+            Tag::InlineQuote => StructRole::Quote,
+            Tag::Note => StructRole::Note,
+            Tag::Reference => StructRole::Reference,
+            Tag::BibEntry => StructRole::BibEntry,
+            Tag::Code => StructRole::Code,
+            Tag::Link => StructRole::Link,
+            Tag::Annot => StructRole::Annot,
+            Tag::Figure => StructRole::Figure,
+            Tag::Formula => StructRole::Formula,
         }
     }
 }
@@ -480,7 +518,7 @@ mod tests {
     }
 
     fn tagging_simple_impl(document: &mut Document) {
-        let mut tag_root = TagTree::new();
+        let mut tag_tree = TagTree::new();
         let mut par = TagGroup::new(Tag::P);
 
         let mut page = document.start_page();
@@ -493,9 +531,9 @@ mod tests {
         page.finish();
 
         par.push(id);
-        tag_root.push(par);
+        tag_tree.push(par);
 
-        document.set_tag_tree(tag_root);
+        document.set_tag_tree(tag_tree);
     }
 
     #[snapshot(document)]
@@ -506,5 +544,63 @@ mod tests {
     #[snapshot(document, settings_12)]
     fn tagging_disabled(document: &mut Document) {
         tagging_simple_impl(document);
+    }
+
+    #[snapshot(document)]
+    fn tagging_multiple_pages(document: &mut Document) {
+        let mut tag_tree = TagTree::new();
+        let mut par_1 = TagGroup::new(Tag::P);
+        let mut par_2 = TagGroup::new(Tag::P);
+        let mut heading_1 = TagGroup::new(Tag::H1);
+        let mut heading_2 = TagGroup::new(Tag::H1);
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let h1 = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(25.0, "a heading");
+        surface.end_tagged();
+        let p1 = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(50.0, "a paragraph");
+        surface.end_tagged();
+        surface.finish();
+        page.finish();
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let p2 = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(75.0, "a second paragraph");
+        surface.end_tagged();
+        surface.finish();
+        page.finish();
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let h2 = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(25.0, "another heading");
+        surface.end_tagged();
+        let p3 = surface.start_tagged(ContentTag::Span);
+        surface.fill_text_(50.0, "another paragraph");
+        surface.end_tagged();
+        surface.finish();
+        page.finish();
+
+        heading_1.push(h1);
+        par_1.push(p1);
+        par_1.push(p2);
+
+        heading_2.push(h2);
+        par_2.push(p3);
+
+        let mut sect1 = TagGroup::new(Tag::Section);
+        sect1.push(heading_1);
+        sect1.push(par_1);
+        let mut sect2 = TagGroup::new(Tag::Section);
+        sect2.push(heading_2);
+        sect2.push(par_2);
+
+        tag_tree.push(sect1);
+        tag_tree.push(sect2);
+
+        document.set_tag_tree(tag_tree);
     }
 }
