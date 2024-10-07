@@ -306,6 +306,13 @@ impl Tag {
             Tag::Image(_) => struct_elem.custom_kind(Name(b"Image")),
         };
     }
+
+    pub(crate) fn alt(&self) -> Option<&str> {
+        match self {
+            Tag::Image(s) => s.as_deref(),
+            _ => None,
+        }
+    }
 }
 
 pub enum Node {
@@ -384,6 +391,10 @@ impl TagGroup {
         let mut struct_elem = chunk.struct_element(root_ref);
         self.tag.write_kind(&mut struct_elem);
         struct_elem.parent(parent);
+        if let Some(alt) = self.tag.alt() {
+            struct_elem.alt(sc.new_text_str(alt));
+        }
+
         let struct_children = struct_elem.children();
         serialize_children(
             sc,
@@ -555,6 +566,29 @@ mod tests {
     pub(crate) fn sample_svg() -> usvg::Tree {
         let data = std::fs::read(SVGS_PATH.join("resvg_shapes_rect_simple_case.svg")).unwrap();
         usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
+    }
+
+    #[snapshot(document)]
+    fn tagging_image_with_alt(document: &mut Document) {
+        let mut tag_tree = TagTree::new();
+        let mut image_group =
+            TagGroup::new(Tag::Image(Some("This is the alternate text.".to_string())));
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let id = surface.start_tagged(ContentTag::Other);
+        let tree = sample_svg();
+        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        image_group.push(id);
+        tag_tree.push(image_group);
+
+        document.set_tag_tree(tag_tree);
     }
 
     #[snapshot(document)]

@@ -1,0 +1,150 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [4 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /StructTreeRoot
+  /RoleMap <<
+    /Image /Figure
+  >>
+  /K [6 0 R]
+  /ParentTree <<
+    /Nums [0 3 0 R]
+  >>
+  /ParentTreeNextKey 1
+>>
+endobj
+
+3 0 obj
+[7 0 R]
+endobj
+
+4 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 595 842]
+  /StructParents 0
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 333
+>>
+stream
+/P <<
+  /MCID 0
+>> BDC
+q
+0 842 m
+200 842 l
+200 642 l
+0 642 l
+h
+W
+n
+q
+1 0 0 -1 0 842 cm
+/DeviceRGB cs
+1 0 0 scn
+20 20 m
+20 180 l
+180 180 l
+180 20 l
+f
+Q
+q
+1 0 0 -1 0 842 cm
+/DeviceRGB cs
+0 0.5019608 0 scn
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q
+q
+1 0 0 -1 0 842 cm
+/DeviceGray CS
+0 SCN
+4 M
+1 1 m
+199 1 l
+199 199 l
+1 199 l
+h
+S
+Q
+Q
+EMC
+endstream
+endobj
+
+6 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 2 0 R
+  /K [7 0 R]
+>>
+endobj
+
+7 0 obj
+<<
+  /Type /StructElem
+  /S /Image
+  /P 6 0 R
+  /Alt (This is the alternate text.)
+  /K [<<
+    /Type /MCR
+    /MCID 0
+    /Pg 4 0 R
+  >>]
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /StructTreeRoot 2 0 R
+  /MarkInfo <<
+    /Marked true
+  >>
+>>
+endobj
+
+xref
+0 9
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000242 00000 n
+0000000266 00000 n
+0000000444 00000 n
+0000000831 00000 n
+0000000912 00000 n
+0000001070 00000 n
+trailer
+<<
+  /Size 9
+  /Root 8 0 R
+  /ID [(LVmVhWeV5wqBufI78dpnpg==) (LVmVhWeV5wqBufI78dpnpg==)]
+>>
+startxref
+1185
+%%EOF
