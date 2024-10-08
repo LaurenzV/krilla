@@ -632,6 +632,9 @@ impl SerializerContext {
             tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
             let mut role_map = tree.insert(Name(b"RoleMap")).start::<RoleMap>();
             role_map.insert(Name(b"Image"), StructRole::Figure);
+            role_map.insert(Name(b"Datetime"), StructRole::Span);
+            role_map.insert(Name(b"Terms"), StructRole::Part);
+            role_map.insert(Name(b"Title"), StructRole::H1);
             role_map.finish();
             tree.insert(Name(b"K")).array().item(document_ref);
 

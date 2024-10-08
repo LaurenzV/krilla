@@ -255,8 +255,6 @@ pub enum Tag {
     BibEntry,
     /// Computer code.
     Code,
-    /// An image with an alt text.
-    Image(Option<String>),
     /// A link.
     ///
     /// **Best practice**: The first child of a tag group with this tag should be a link annotation
@@ -270,6 +268,16 @@ pub enum Tag {
     Figure,
     /// A mathematical formula.
     Formula(Option<String>),
+
+    // All below are non-standard attributes.
+    /// An image with an alt text.
+    Image(Option<String>),
+    /// A date or time.
+    Datetime,
+    /// A list of terms.
+    Terms,
+    /// A title.
+    Title,
 }
 
 impl Tag {
@@ -307,12 +315,16 @@ impl Tag {
             Tag::BibEntry => struct_elem.kind(StructRole::BibEntry),
             Tag::Code => struct_elem.kind(StructRole::Code),
             Tag::Link => struct_elem.kind(StructRole::Link),
+            // TODO: Should we keep this?
             // Tag::Annot => struct_elem.kind(StructRole::Annot),
             Tag::Figure => struct_elem.kind(StructRole::Figure),
             Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
 
             // Every additional tag needs to be registered in the role map!
             Tag::Image(_) => struct_elem.custom_kind(Name(b"Image")),
+            Tag::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
+            Tag::Terms => struct_elem.custom_kind(Name(b"Terms")),
+            Tag::Title => struct_elem.custom_kind(Name(b"Title")),
         };
     }
 
