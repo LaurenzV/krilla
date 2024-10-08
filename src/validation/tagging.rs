@@ -1,6 +1,6 @@
 use crate::serialize::SerializerContext;
 use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
-use pdf_writer::writers::{PropertyList, StructChildren, StructElement};
+use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
@@ -244,6 +244,10 @@ pub enum Tag {
     /// **Best practice**: It may have a label as a child.
     Note,
     /// A reference to elsewhere in the document.
+    ///
+    /// **Best practice**: The first child of a tag group with this tag should be a link annotation
+    /// linking to a destination in the document, and the second child should consist of
+    /// the children that should be associated with that reference.
     Reference,
     /// A reference to the external source of some cited document.
     ///
@@ -254,6 +258,10 @@ pub enum Tag {
     /// An image with an alt text.
     Image(Option<String>),
     /// A link.
+    ///
+    /// **Best practice**: The first child of a tag group with this tag should be a link annotation
+    /// linking to an URL, and the second child should consist of the children that should
+    /// be associated with that link.
     Link,
     /// An association between an annotation and the content it belongs to. PDF
     /// 1.5+
@@ -502,8 +510,19 @@ fn serialize_children(
                                 .page(page_ref);
                         }
                     }
-                    IdentifierType::AnnotationIdentifier(_) => {
-                        unimplemented!()
+                    IdentifierType::AnnotationIdentifier(a) => {
+                        // TODO: Error handling
+                        let page_ref = sc.page_infos()[a.page_index].ref_;
+                        let annotation_ref =
+                            sc.page_infos()[a.page_index].annotations[a.annot_index];
+
+                        // TODO: Ensure that pi doesn't already have a parent.
+                        parent_tree_map.insert(a.into(), annotation_ref);
+
+                        struct_children
+                            .object_ref()
+                            .page(page_ref)
+                            .object(annotation_ref);
                     }
                 }
             }

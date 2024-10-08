@@ -9,7 +9,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::util::Deferred;
-use crate::validation::tagging::PageTagIdentifier;
+use crate::validation::tagging::{Identifier, PageTagIdentifier};
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
@@ -67,6 +67,19 @@ impl<'a> Page<'a> {
         self.annotations.push(annotation);
     }
 
+    /// Add a tagged annotation to the page.
+    pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
+        let annot_index = self.annotations.len();
+        let struct_parent = self.sc.get_annotation_parent(self.page_index, annot_index);
+        annotation.set_struct_parent(struct_parent);
+        self.add_annotation(annotation);
+
+        match struct_parent {
+            None => Identifier::dummy(),
+            Some(_) => Identifier::new_annotation(self.page_index, annot_index),
+        }
+    }
+
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface {
@@ -100,7 +113,14 @@ impl Drop for Page<'_> {
             .get_page_struct_parent(self.page_index, self.num_mcids);
 
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(stream, self.sc, annotations, struct_parent, page_settings);
+        let page = InternalPage::new(
+            stream,
+            self.sc,
+            annotations,
+            struct_parent,
+            page_settings,
+            self.page_index,
+        );
         self.sc.add_page(page);
     }
 }
@@ -110,6 +130,7 @@ pub(crate) struct InternalPage {
     pub stream_resources: ResourceDictionary,
     pub stream_chunk: Deferred<Chunk>,
     pub page_settings: PageSettings,
+    pub page_index: usize,
     pub struct_parent: Option<i32>,
     pub bbox: Rect,
     pub annotations: Vec<Annotation>,
@@ -122,6 +143,7 @@ impl InternalPage {
         annotations: Vec<Annotation>,
         struct_parent: Option<i32>,
         page_settings: PageSettings,
+        page_index: usize,
     ) -> Self {
         for validation_error in stream.validation_errors {
             sc.register_validation_error(validation_error)
@@ -151,6 +173,7 @@ impl InternalPage {
             bbox: stream.bbox.0,
             annotations,
             page_settings,
+            page_index,
         }
     }
 
@@ -197,8 +220,12 @@ impl InternalPage {
         page.contents(self.stream_ref);
 
         if !annotation_refs.is_empty() {
-            page.annotations(annotation_refs);
+            page.annotations(annotation_refs.iter().copied());
         }
+
+        // Populate the refs for each annotation in page infos.
+        let page_info = &mut sc.page_infos_mut()[self.page_index];
+        page_info.annotations = annotation_refs;
 
         page.finish();
 
@@ -335,7 +362,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
         sc.add_page(page);
     }
 
@@ -352,7 +379,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
         sc.add_page(page);
     }
 

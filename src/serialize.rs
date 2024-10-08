@@ -15,7 +15,9 @@ use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::util::{NameExt, SipHashable};
-use crate::validation::tagging::{PageTagIdentifier, TagTree};
+use crate::validation::tagging::{
+    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
+};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
@@ -219,10 +221,16 @@ impl Default for SerializeSettings {
 pub(crate) struct PageInfo {
     pub ref_: Ref,
     pub surface_size: Size,
+    // The refs of the annotations that are used by that page.
+    //
+    // Note that this will be empty be default, and only once we have serialized the pages
+    // will these values be set.
+    pub annotations: Vec<Ref>,
 }
 
 enum StructParentElement {
     Page(usize, i32),
+    Annotation(usize, usize),
 }
 
 pub(crate) struct SerializerContext {
@@ -298,8 +306,29 @@ impl SerializerContext {
         }
     }
 
+    pub fn get_annotation_parent(
+        &mut self,
+        page_index: usize,
+        annotation_index: usize,
+    ) -> Option<i32> {
+        if self.serialize_settings.enable_tagging {
+            let id = self.struct_parents.len();
+            self.struct_parents.push(StructParentElement::Annotation(
+                page_index,
+                annotation_index,
+            ));
+            Some(i32::try_from(id).unwrap())
+        } else {
+            None
+        }
+    }
+
     pub fn page_infos(&self) -> &[PageInfo] {
         &self.page_infos
+    }
+
+    pub fn page_infos_mut(&mut self) -> &mut [PageInfo] {
+        &mut self.page_infos
     }
 
     pub fn set_outline(&mut self, outline: Outline) {
@@ -334,6 +363,8 @@ impl SerializerContext {
         self.page_infos.push(PageInfo {
             ref_,
             surface_size: page.page_settings.surface_size(),
+            // Will be populated when the page is serialized.
+            annotations: vec![],
         });
         self.pages.push((ref_, page));
     }
@@ -586,6 +617,9 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
+        // It is important that we serialize the tags AFTER we have serialized the pages,
+        // because page serialization will update the annotation refs of the page infos,
+        // and when serializing the parent tree map we need to know the refs of the annotations
         let tag_tree = std::mem::take(&mut self.tag_tree);
         let struct_parents = std::mem::take(&mut self.struct_parents);
         if let Some(root) = &tag_tree {
@@ -608,24 +642,33 @@ impl SerializerContext {
             let mut tree_nums = parent_tree.nums();
 
             for (index, struct_parent) in struct_parents.iter().enumerate() {
-                let mut list_chunk = Chunk::new();
-                let list_ref = self.new_ref();
-
-                let mut refs = list_chunk.indirect(list_ref).array();
-
                 match *struct_parent {
                     StructParentElement::Page(index, num_mcids) => {
+                        let mut list_chunk = Chunk::new();
+                        let list_ref = self.new_ref();
+
+                        let mut refs = list_chunk.indirect(list_ref).array();
+
                         for mcid in 0..num_mcids {
                             let rci = PageTagIdentifier::new(index, mcid);
                             // TODO: Graceful handling
                             refs.item(parent_tree_map.get(&rci.into()).unwrap());
                         }
+
+                        refs.finish();
+
+                        sub_chunks.push(list_chunk);
+                        tree_nums.insert(index as i32, list_ref);
+                    }
+                    StructParentElement::Annotation(page_index, annot_index) => {
+                        let it = IdentifierType::AnnotationIdentifier(AnnotationIdentifier::new(
+                            page_index,
+                            annot_index,
+                        ));
+                        let ref_ = parent_tree_map.get(&it.into()).unwrap();
+                        tree_nums.insert(index as i32, *ref_);
                     }
                 }
-                refs.finish();
-
-                sub_chunks.push(list_chunk);
-                tree_nums.insert(index as i32, list_ref);
             }
 
             tree_nums.finish();
