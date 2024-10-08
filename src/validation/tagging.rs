@@ -537,6 +537,8 @@ fn serialize_children(
 
 #[cfg(test)]
 mod tests {
+    use crate::action::{Action, LinkAction};
+    use crate::annotation::{Annotation, LinkAnnotation, Target};
     use crate::font::Font;
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
@@ -544,7 +546,7 @@ mod tests {
     use crate::validation::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
-    use tiny_skia_path::Transform;
+    use tiny_skia_path::{Rect, Transform};
 
     pub trait SurfaceExt {
         fn fill_text_(&mut self, y: f32, content: &str);
@@ -593,14 +595,52 @@ mod tests {
         document.set_tag_tree(tag_tree);
     }
 
+    fn tagging_simple_with_link_impl(document: &mut Document) {
+        let mut tag_tree = TagTree::new();
+        let mut par = TagGroup::new(Tag::P);
+        let mut link = TagGroup::new(Tag::Link);
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let id = surface.start_tagged(ContentTag::Span(""));
+        surface.fill_text_(25.0, "a paragraph");
+        surface.end_tagged();
+
+        surface.finish();
+
+        let link_id = page.add_tagged_annotation(Annotation::Link(LinkAnnotation::new(
+            Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+            Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
+        )));
+
+        page.finish();
+
+        link.push(link_id);
+        link.push(id);
+        par.push(link);
+        tag_tree.push(par);
+
+        document.set_tag_tree(tag_tree);
+    }
+
     #[snapshot(document)]
     fn tagging_simple(document: &mut Document) {
         tagging_simple_impl(document);
     }
 
+    #[snapshot(document)]
+    fn tagging_simple_with_link(document: &mut Document) {
+        tagging_simple_with_link_impl(document);
+    }
+
     #[snapshot(document, settings_12)]
     fn tagging_disabled(document: &mut Document) {
         tagging_simple_impl(document);
+    }
+
+    #[snapshot(document, settings_12)]
+    fn tagging_disabled_2(document: &mut Document) {
+        tagging_simple_with_link_impl(document);
     }
 
     pub(crate) fn sample_svg() -> usvg::Tree {
