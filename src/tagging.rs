@@ -263,13 +263,13 @@ pub enum Tag {
     /// linking to an URL, and the second child should consist of the children that should
     /// be associated with that link.
     Link,
-    /// An association between an annotation and the content it belongs to. PDF
-    /// 1.5+
-    Annot,
+    // /// An association between an annotation and the content it belongs to. PDF
+    // /// 1.5+
+    // Annot,
     /// Item of graphical content.
     Figure,
     /// A mathematical formula.
-    Formula,
+    Formula(Option<String>),
 }
 
 impl Tag {
@@ -307,9 +307,10 @@ impl Tag {
             Tag::BibEntry => struct_elem.kind(StructRole::BibEntry),
             Tag::Code => struct_elem.kind(StructRole::Code),
             Tag::Link => struct_elem.kind(StructRole::Link),
-            Tag::Annot => struct_elem.kind(StructRole::Annot),
+            // Tag::Annot => struct_elem.kind(StructRole::Annot),
             Tag::Figure => struct_elem.kind(StructRole::Figure),
-            Tag::Formula => struct_elem.kind(StructRole::Formula),
+            Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
+
             // Every additional tag needs to be registered in the role map!
             Tag::Image(_) => struct_elem.custom_kind(Name(b"Image")),
         };
@@ -318,6 +319,7 @@ impl Tag {
     pub(crate) fn alt(&self) -> Option<&str> {
         match self {
             Tag::Image(s) => s.as_deref(),
+            Tag::Formula(s) => s.as_deref(),
             _ => None,
         }
     }
