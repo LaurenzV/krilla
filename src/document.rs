@@ -20,7 +20,7 @@ use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
-use crate::validation::tagging::TagTree;
+use crate::tagging::TagTree;
 use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.

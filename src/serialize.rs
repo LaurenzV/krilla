@@ -14,10 +14,8 @@ use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
+use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
-use crate::validation::tagging::{
-    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
-};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};

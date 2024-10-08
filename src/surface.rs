@@ -16,8 +16,8 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
+use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::util::RectExt;
-use crate::validation::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};

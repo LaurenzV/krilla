@@ -25,8 +25,6 @@ use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
 
-pub mod tagging;
-
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValidationError {
@@ -82,8 +80,7 @@ pub enum Validator {
     /// The validator for the PDF/A2-U standard.
     ///
     /// **Requirements**:
-    /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    ///   universal rendering.
+    /// - All requirements of PDF/A2-B
     A2_U,
     /// The validator for the PDF/A3-B standard.
     ///
@@ -94,8 +91,7 @@ pub enum Validator {
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
-    /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    ///   universal rendering.
+    /// - All requirements for PDF/A3-B
     A3_U,
 }
 

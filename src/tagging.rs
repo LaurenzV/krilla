@@ -542,8 +542,8 @@ mod tests {
     use crate::font::Font;
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
+    use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
-    use crate::validation::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Rect, Transform};
