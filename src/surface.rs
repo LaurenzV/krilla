@@ -138,13 +138,13 @@ impl<'a> Surface<'a> {
                 // about this.
                 ContentTag::Artifact(_) => {
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                        .start_marked_content(&mut self.sc, None, tag);
+                        .start_marked_content(self.sc, None, tag);
                     self.active_mc = true;
                     Identifier::dummy()
                 }
                 ContentTag::Span(_) | ContentTag::Other => {
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
-                        .start_marked_content(&mut self.sc, Some(id.mcid), tag);
+                        .start_marked_content(self.sc, Some(id.mcid), tag);
                     self.active_mc = true;
                     id.bump().into()
                 }

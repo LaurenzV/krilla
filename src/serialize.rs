@@ -680,7 +680,7 @@ impl SerializerContext {
                             page_index,
                             annot_index,
                         ));
-                        let ref_ = parent_tree_map.get(&it.into()).unwrap();
+                        let ref_ = parent_tree_map.get(&it).unwrap();
                         tree_nums.insert(index as i32, *ref_);
                     }
                 }
