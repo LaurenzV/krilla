@@ -4,7 +4,6 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
-use tiny_skia_path::Rect;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ArtifactType {
@@ -14,10 +13,6 @@ pub enum ArtifactType {
     Footer,
     /// Page artifacts, such as for example cut marks or color bars.
     Page,
-    /// The background of a page, which might for example include a watermark.
-    /// The rectangle should delimit the bounding box of the visible content of the
-    /// content to be delimited as the background of the page.
-    Background(Rect),
 }
 
 /// A language identifier as specified in RFC 3066. It will not be validated, so
@@ -53,8 +48,6 @@ impl ContentTag<'_> {
                     ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
                     ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
                     ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
-                    // TODO: Handle bbox.
-                    ArtifactType::Background(_) => pdf_writer::types::ArtifactType::Background,
                 };
 
                 if *at == ArtifactType::Header {
@@ -261,14 +254,15 @@ pub enum Tag {
     /// linking to an URL, and the second child should consist of the children that should
     /// be associated with that link.
     Link,
-    // /// An association between an annotation and the content it belongs to. PDF
-    // /// 1.5+
-    // Annot,
+    /// An association between an annotation and the content it belongs to. PDF
+    ///
+    /// **Best practice**: Should be used for all annotations, except for link annotations and
+    /// widget annotations.
+    Annot,
     /// Item of graphical content.
     Figure,
     /// A mathematical formula.
     Formula(Option<String>),
-
     // All below are non-standard attributes.
     /// An image with an alt text.
     Image(Option<String>),
@@ -315,8 +309,7 @@ impl Tag {
             Tag::BibEntry => struct_elem.kind(StructRole::BibEntry),
             Tag::Code => struct_elem.kind(StructRole::Code),
             Tag::Link => struct_elem.kind(StructRole::Link),
-            // TODO: Should we keep this?
-            // Tag::Annot => struct_elem.kind(StructRole::Annot),
+            Tag::Annot => struct_elem.kind(StructRole::Annot),
             Tag::Figure => struct_elem.kind(StructRole::Figure),
             Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
 
