@@ -310,7 +310,6 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 #[cfg(test)]
 mod tests {
     use crate::font::Font;
-    use std::sync::Arc;
 
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializerContext};
@@ -403,8 +402,11 @@ mod tests {
         }
     }
 
+    #[cfg(target_os = "macos")]
     #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
+        use std::sync::Arc;
+
         let font_data =
             Arc::new(std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc").unwrap());
         let font_1 = Font::new(font_data.clone(), 0, vec![]).unwrap();
