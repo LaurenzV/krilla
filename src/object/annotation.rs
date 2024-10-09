@@ -66,6 +66,7 @@ impl From<LinkAnnotation> for Annotation {
 }
 
 impl LinkAnnotation {
+    /// Create a new link annotation.
     pub fn new(rect: Rect, target: Target) -> Self {
         Self {
             rect,

@@ -103,7 +103,21 @@ pub struct SerializeSettings {
     ///
     /// [`validation`]: crate::validation
     pub validator: Validator,
-
+    /// Whether to enable the creation of tagged documents. See the module documentation
+    /// of [`tagging`] for more information about tagged PDF documents.
+    ///
+    /// Note that enabling this does not automatically make your documents tagged, as tagging implies
+    /// enriching the document with semantic information, which krilla cannot do
+    /// for you, since it's content-agnostic. All this setting does is to allow you
+    /// to dynamically disable tagging if you wish to do so. This allows you to write
+    /// your code primarily with tagging in mind, but still allows you to
+    /// disable it dynamically, without having to make any changes to your code.
+    ///
+    /// Note that this value might be overridden depending on which validator
+    /// you use. For example, when exporting with PDF-UA, this value will always
+    /// be set to `true`.
+    ///
+    /// [`tagging`]: crate::tagging
     pub enable_tagging: bool,
 }
 

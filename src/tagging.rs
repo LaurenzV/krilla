@@ -1,3 +1,121 @@
+//! Creating accessible PDF documents.
+//!
+//! # Introduction
+//!
+//! A document usually consists of many smaller semantic building blocks, like for example
+//! titles, headings, paragraphs, tables, headers, footers, and so on. However, it is important
+//! to understand that, by default, when exporting a document to PDF, all of this semantic
+//! information is lost.
+//!
+//! By default, a PDF document doesn't have a notion of a table or a
+//! paragraph. Instead, it consists of very low-level instructions, such as "draw
+//! a path at that location" or "draw a line of glyphs at that font size". A table is
+//! not encoded as a "table", but instead as a number of rectangle-like paths that happen
+//! to surround lines of text. This is what made PDF popular in the first place, as encoding
+//! information at such a low level allows to ensure a consistent viewing experience across
+//! different platforms and viewers.
+//!
+//! However, this design has drawbacks, one of the main ones being that it leads to the
+//! production of non-accessible documents. Especially in recent years, ensuring the
+//! accessibility of documents has become an increasingly important requirement.
+//! To address this deficiency, PDF introduced the notion of "tagged PDF", which consists
+//! of enriching PDF documents with additional semantic information in a way that can be
+//! interpreted by different consumers. krilla supports the creation of such documents.
+//!
+//! # A word on krilla's implementation
+//!
+//! As nearly everything in PDF, tagging is a really complex topic, and getting it right
+//! is very hard. Because of this, in line with the general philosophy of krilla, some
+//! of the potential capabilities of tagged PDF are not directly supported. Instead, only
+//! a specific subset has been implemented, with a focus on features that improve the
+//! accessibility of documents.
+//!
+//! The goal in krilla's implementation of tagged PDF is to make it possible for users to create
+//! well-tagged PDF files simply by following the instructions in the documentation,
+//! without having to read or consult the PDF specification.
+//!
+//! # Basic Principles
+//!
+//! The way tagged PDFs are created is by attaching a tag tree to the PDF document
+//! that encodes the logical structure of the document. As mentioned above, a raw PDF file
+//! mainly consists of text- and path-drawing primitives, which are not necessarily
+//! drawn in the logical reading order of the document. What the tag tree does is
+//! maping the different "snippets" of the PDF file to the tree-like structure in a way
+//! that reflects the logical structure of the document, in reading-order.
+//!
+//! For example, a document can consist of multiple "sections", where each section might contain
+//! headings, paragraphs or figures. A figure might consist of a table as well as a caption.
+//! A table consists yet again of smaller semantic components, like a header, footer
+//! and the data cells, which usually contain some text. These kinds of hierarchical structures
+//! can be encoded with the help of tagging.
+//!
+//! A tag tree consists of two components:
+//! - Group nodes, which represents a component with certain semantics. A group node must have
+//!   at least one child, otherwise it's discarded.
+//! - Leaf nodes, which represent the actual pieces on the page that form part of a group.
+//!
+//! # How to create a tagged document
+//!
+//! If you want to create a tagged document, you need to follow the following steps:
+//!
+//! 1) Ensure that you activate the `enable_tagging` attribute in [`SerializeSettings`].
+//! 2) Create a [tag tree](TagTree), which represents the "root" of a tag tree.
+//! 3) As you create your document, create new [tag groups](TagGroup) with corresponding [tags](Tag).
+//!    Nest them with other tag groups, if necessary, by using the `push` method.
+//! 4) Populate tag groups with [identifiers](Identifier), which represent the leaf nodes
+//!    in the tag tree. Identifiers are unique and point to a sequence of content on the
+//!    page. If you push an identifier to a tag group, then all content that is marked by
+//!    that identifier belongs semantically to that tag group. There are currently two ways
+//!    of obtaining an identifier:
+//!
+//!    - Use the `add_tagged_annotation` method on [`Page`], which allows you to associate
+//!      annotations to the content they correspond to. Currently, krilla only supports link
+//!      annotations, and a link annotation should always be a child in a tag group with the
+//!      [Tag] `Link`, with its sibling being an identifier or another tag group that is
+//!      to be associated with the link.
+//!    - Use the `start_tagged` command on [`Surface`], which returns an [Identifier], and
+//!      indicates that all content drawn on the surface should be associated with that
+//!      identifier, until you call the `end_tagged` method. *Important*: Note that you cannot
+//!      nest calls to `start_tagged`, and you have to ensure that you always call a corresponding
+//!      `end_tagged`. Otherwise, krilla will panic.
+//!
+//!     It is very important that each identifier you create has exactly one parent in the tag
+//!     tree. This means that you cannot create an identifier and not use it at all (0 parents),
+//!     or use the same identifier in two different parts of the tree (1+ parents). Otherwise,
+//!     export will fail.
+//!
+//! 5) Once you have built your tag tree, simply call `set_tag_tree` on [`Document`]. That's it!
+//!
+//! # Other notes
+//!
+//! Make sure that you carefully read the documentation of the other parts of this module, as
+//! there are some more points as well as best practices you need to keep in mind
+//! when creating well-tagged documents. The PDF specification is in some places very vague
+//! on how a tagged document should look like, so there is quite a bit of room for flexibility.
+//!
+//! Apart from that, the PDF specification does make a few statements on requirements a well-tagged PDF
+//! should follows, although once again those are not really strict requirements and cannot be
+//! automatically checked, so it's not like not conforming to some of those suddenly makes your
+//! document invalid:
+//! - In general, all contents in your file should be tagged, either as an artifact or with
+//!   Span/Other.
+//! - The order of elements in the tag tree should represent the logical reading order.
+//! - Word breaks in text should be represented explicitly with spaces, instead of implicitly
+//!   by not including them, but instead positioning text in a way that "simulates" the spaces.
+//! - Hyphenation should be represented as a soft hyphen character (U+00AD) instead
+//!   of a hard hyphen (U+002D).
+//! - Tag groups should follow the best-practice of what kind of children they contain. See
+//!   [Tag] for more information.
+//! - You should provide "Alt" descriptions for formulas and images.
+//!
+//! [`SerializeSettings`]: crate::SerializeSettings
+//! [`Page`]: crate::page::Page
+//! [`Surface`]: crate::surface::Surface
+//! [`Document`]: crate::Document
+
+// TODO: Other notes: broken links should use quadpoint (14.8.4.4.2)
+// TODO: Support defining the expansion of word abbreviations.
+
 use crate::serialize::SerializerContext;
 use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
@@ -5,6 +123,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 
+/// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ArtifactType {
     /// The header of a page.
@@ -261,10 +380,10 @@ pub enum Tag {
     Annot,
     /// Item of graphical content.
     Figure,
-    /// A mathematical formula.
+    /// A mathematical formula with an alternate description.
     Formula(Option<String>),
     // All below are non-standard attributes.
-    /// An image with an alt text.
+    /// An image with an alternate description.
     Image(Option<String>),
     /// A date or time.
     Datetime,

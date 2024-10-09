@@ -79,6 +79,7 @@ pub struct Surface<'a> {
     push_instructions: Vec<PushInstruction>,
     page_identifier: Option<PageTagIdentifier>,
     finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
+    active_mc: bool,
 }
 
 impl<'a> Surface<'a> {
@@ -95,6 +96,7 @@ impl<'a> Surface<'a> {
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,
+            active_mc: false,
         }
     }
 
@@ -122,6 +124,8 @@ impl<'a> Surface<'a> {
 
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
+            assert!(!self.active_mc, "can't start a content tag twice.");
+
             match tag {
                 // An artifact is actually not really part of tagged PDF and doesn't have
                 // a marked content identifier, so we need to return a dummy one here. It's just
@@ -131,11 +135,13 @@ impl<'a> Surface<'a> {
                 ContentTag::Artifact(_) => {
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                         .start_marked_content(&mut self.sc, None, tag);
+                    self.active_mc = true;
                     Identifier::dummy()
                 }
                 ContentTag::Span(_) | ContentTag::Other => {
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                         .start_marked_content(&mut self.sc, Some(id.mcid), tag);
+                    self.active_mc = true;
                     id.bump().into()
                 }
             }
@@ -146,7 +152,12 @@ impl<'a> Surface<'a> {
 
     pub fn end_tagged(&mut self) {
         if self.page_identifier.is_some() {
+            assert!(
+                self.active_mc,
+                "can't end a content tag that hasn't been started."
+            );
             Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
+            self.active_mc = false;
         }
     }
 
@@ -523,8 +534,9 @@ impl Drop for Surface<'_> {
             Some(pi) => pi.mcid,
             None => 0,
         };
-        debug_assert!(self.sub_builders.is_empty());
-        debug_assert!(self.push_instructions.is_empty());
+        assert!(self.sub_builders.is_empty());
+        assert!(self.push_instructions.is_empty());
+        assert!(!self.active_mc);
         (self.finish_fn)(root_builder.finish(), num_mcids)
     }
 }
