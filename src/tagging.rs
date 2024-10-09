@@ -571,6 +571,7 @@ impl TagGroup {
 }
 
 /// A tag tree.
+#[derive(Default)]
 pub struct TagTree {
     children: Vec<Node>,
 }

@@ -444,7 +444,6 @@ mod tests {
     use crate::document::Document;
     use crate::tests::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
     use krilla_macros::visreg;
-    use std::sync::Arc;
 
     // We don't run on pdf.js because it leads to a high pixel difference in CI
     // for some reason.
@@ -454,9 +453,11 @@ mod tests {
         all_glyphs_to_pdf(font_data, None, false, document);
     }
 
-    #[visreg(document, all)]
     #[cfg(target_os = "macos")]
+    #[visreg(document, all)]
     fn apple_color_emoji(document: &mut Document) {
+        use std::sync::Arc;
+
         let font_data =
             Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
         all_glyphs_to_pdf(font_data, None, false, document);
