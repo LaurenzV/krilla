@@ -194,7 +194,7 @@ impl Validator {
     pub(crate) fn requires_tagging(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::A2_A  => true,
+            Validator::A2_A => true,
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
@@ -237,12 +237,12 @@ mod tests {
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
     use crate::surface::TextDirection;
+    use crate::tagging::{ArtifactType, ContentTag, TagTree};
     use crate::tests::{cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, NOTO_SANS};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect};
-    use crate::tagging::{ArtifactType, ContentTag, TagTree};
 
     fn pdfa_document() -> Document {
         Document::new_with(SerializeSettings::settings_7())
