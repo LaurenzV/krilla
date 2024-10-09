@@ -122,6 +122,10 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc)
     }
 
+    /// Start a new tagged content section.
+    ///
+    /// # Panics
+    /// Panics if a tagged section has already been started.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
             assert!(!self.active_mc, "can't start a content tag twice.");
@@ -150,6 +154,10 @@ impl<'a> Surface<'a> {
         }
     }
 
+    /// End the current tagged section.
+    ///
+    /// # Panics
+    /// Panics if no tagged section has been started.
     pub fn end_tagged(&mut self) {
         if self.page_identifier.is_some() {
             assert!(

@@ -75,6 +75,7 @@ impl Document {
         self.serializer_context.set_metadata(metadata);
     }
 
+    /// Set the tag tree of the document.
     pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
         self.serializer_context.set_tag_tree(tag_tree);
     }

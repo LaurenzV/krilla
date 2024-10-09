@@ -138,10 +138,23 @@ pub enum ArtifactType {
 /// it's on the user of the library to ensure the tag is valid.
 pub type Lang<'a> = &'a str;
 
+/// A content tag associated with the content it wraps.
 #[derive(Clone, Copy, Debug)]
 pub enum ContentTag<'a> {
+    /// Artifacts represent pieces of content that are not really part of the logical structure
+    /// of a document and should be excluded in the logical tree. These include for example headers,
+    /// footers, page background and similar.
     Artifact(ArtifactType),
+    /// A content tag that wraps some text with a specific language. If the language is unknown,
+    /// pass an empty string to it.
+    ///
+    /// Spans should not be too long. At most, they should contain a single like of text, but they
+    /// can obviously be shorter, if text within a single line contains text with different styles
+    /// or different languages.
     Span(Lang<'a>),
+    /// Use this tag for anything else that does not semantically fit into `Span` or `Artifact`.
+    /// This includes for example arbitrary paths, images or a mix of different content that cannot
+    /// be split up more.
     Other,
 }
 
@@ -260,6 +273,9 @@ pub(crate) enum IdentifierInner {
     Dummy,
 }
 
+/// An identifier for an annotation or certain parts of page content.
+///
+/// Need to be used as a leaf node in a tag tree.
 #[derive(Copy, Clone)]
 pub struct Identifier(pub(crate) IdentifierInner);
 
@@ -273,6 +289,7 @@ impl Identifier {
     }
 }
 
+/// A tag for group nodes.
 #[derive(Debug, Clone)]
 pub enum Tag {
     /// A part of a document that may contain multiple articles or sections.
@@ -449,8 +466,11 @@ impl Tag {
     }
 }
 
+/// A node in a tag tree.
 pub enum Node {
+    /// A group node.
     Group(TagGroup),
+    /// A leaf node.
     Leaf(Identifier),
 }
 
@@ -490,12 +510,16 @@ pub(crate) enum Reference {
     ContentIdentifier(IdentifierType),
 }
 
+/// A tag group.
 pub struct TagGroup {
+    /// The tag of the tag group.
     tag: Tag,
+    /// The children of the tag group.
     children: Vec<Node>,
 }
 
 impl TagGroup {
+    /// Create a new tag group with a specific tag.
     pub fn new(tag: Tag) -> Self {
         Self {
             tag,
@@ -503,6 +527,7 @@ impl TagGroup {
         }
     }
 
+    /// Append a new child to the tag group.
     pub fn push(&mut self, child: impl Into<Node>) {
         self.children.push(child.into())
     }
@@ -543,15 +568,18 @@ impl TagGroup {
     }
 }
 
+/// A tag tree.
 pub struct TagTree {
     children: Vec<Node>,
 }
 
 impl TagTree {
+    /// Create a new tag tree.
     pub fn new() -> Self {
         Self { children: vec![] }
     }
 
+    /// Append a new child to the tag tree.
     pub fn push(&mut self, child: impl Into<Node>) {
         self.children.push(child.into())
     }
