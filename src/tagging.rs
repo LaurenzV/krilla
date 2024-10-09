@@ -94,9 +94,11 @@
 //! on how a tagged document should look like, so there is quite a bit of room for flexibility.
 //!
 //! Apart from that, the PDF specification does make a few statements on requirements a well-tagged PDF
-//! should follows, although once again those are not really strict requirements and cannot be
-//! automatically checked, so it's not like not conforming to some of those suddenly makes your
-//! document invalid:
+//! should follows, although  those are not really "strict" requirements in the sense that they can
+//! be automatically checked by a PDF validator, so not conforming to some of those points does not
+//! suddenly make your document a badly-tagged document! However, if possible, you shoul still
+//! try to comply with the following requirements:
+//!
 //! - In general, all contents in your file should be tagged, either as an artifact or with
 //!   Span/Other.
 //! - The order of elements in the tag tree should represent the logical reading order.
