@@ -2,11 +2,13 @@
 
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
+use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
+use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::Deferred;
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
@@ -27,15 +29,23 @@ use tiny_skia_path::{Rect, Transform};
 pub struct Page<'a> {
     sc: &'a mut SerializerContext,
     page_settings: PageSettings,
+    page_index: usize,
     page_stream: Stream,
+    num_mcids: i32,
     annotations: Vec<Annotation>,
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext, page_settings: PageSettings) -> Self {
+    pub(crate) fn new(
+        sc: &'a mut SerializerContext,
+        page_index: usize,
+        page_settings: PageSettings,
+    ) -> Self {
         Self {
             sc,
             page_settings,
+            page_index,
+            num_mcids: 0,
             page_stream: Stream::empty(),
             annotations: vec![],
         }
@@ -57,14 +67,36 @@ impl<'a> Page<'a> {
         self.annotations.push(annotation);
     }
 
+    /// Add a tagged annotation to the page.
+    pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
+        let annot_index = self.annotations.len();
+        let struct_parent = self.sc.get_annotation_parent(self.page_index, annot_index);
+        annotation.set_struct_parent(struct_parent);
+        self.add_annotation(annotation);
+
+        match struct_parent {
+            None => Identifier::dummy(),
+            Some(_) => Identifier::new_annotation(self.page_index, annot_index),
+        }
+    }
+
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface {
         let root_builder = ContentBuilder::new(self.root_transform());
 
-        let finish_fn = Box::new(|stream| self.page_stream = stream);
+        let finish_fn = Box::new(|stream, num_mcids| {
+            self.page_stream = stream;
+            self.num_mcids = num_mcids;
+        });
 
-        Surface::new(self.sc, root_builder, finish_fn)
+        let page_identifier = if self.sc.serialize_settings.enable_tagging {
+            Some(PageTagIdentifier::new(self.page_index, 0))
+        } else {
+            None
+        };
+
+        Surface::new(self.sc, root_builder, page_identifier, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.
@@ -76,8 +108,19 @@ impl Drop for Page<'_> {
         let annotations = std::mem::take(&mut self.annotations);
         let page_settings = std::mem::take(&mut self.page_settings);
 
+        let struct_parent = self
+            .sc
+            .get_page_struct_parent(self.page_index, self.num_mcids);
+
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(stream, self.sc, annotations, page_settings);
+        let page = InternalPage::new(
+            stream,
+            self.sc,
+            annotations,
+            struct_parent,
+            page_settings,
+            self.page_index,
+        );
         self.sc.add_page(page);
     }
 }
@@ -87,6 +130,8 @@ pub(crate) struct InternalPage {
     pub stream_resources: ResourceDictionary,
     pub stream_chunk: Deferred<Chunk>,
     pub page_settings: PageSettings,
+    pub page_index: usize,
+    pub struct_parent: Option<i32>,
     pub bbox: Rect,
     pub annotations: Vec<Annotation>,
 }
@@ -96,7 +141,9 @@ impl InternalPage {
         mut stream: Stream,
         sc: &mut SerializerContext,
         annotations: Vec<Annotation>,
+        struct_parent: Option<i32>,
         page_settings: PageSettings,
+        page_index: usize,
     ) -> Self {
         for validation_error in stream.validation_errors {
             sc.register_validation_error(validation_error)
@@ -122,13 +169,19 @@ impl InternalPage {
             stream_resources,
             stream_ref,
             stream_chunk,
+            struct_parent,
             bbox: stream.bbox.0,
             annotations,
             page_settings,
+            page_index,
         }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut annotation_refs = vec![];
@@ -137,15 +190,13 @@ impl InternalPage {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
 
-                // If this fails than we have an unused reference, but this isn't really
-                // a big deal, especially since the chunk container will renumber everything,
-                // anyway.
-                if let Some(a) =
-                    annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height())
-                {
-                    chunk.extend(&a);
-                    annotation_refs.push(annot_ref);
-                }
+                let a = annotation.serialize(
+                    sc,
+                    annot_ref,
+                    self.page_settings.surface_size().height(),
+                )?;
+                chunk.extend(&a);
+                annotation_refs.push(annot_ref);
             }
         }
 
@@ -160,18 +211,27 @@ impl InternalPage {
             media_box.x() + media_box.width(),
             self.page_settings.surface_size().height() - media_box.y(),
         ));
+
+        if let Some(struct_parent) = self.struct_parent {
+            page.struct_parents(struct_parent);
+        }
+
         page.parent(sc.page_tree_ref());
         page.contents(self.stream_ref);
 
         if !annotation_refs.is_empty() {
-            page.annotations(annotation_refs);
+            page.annotations(annotation_refs.iter().copied());
         }
+
+        // Populate the refs for each annotation in page infos.
+        let page_info = &mut sc.page_infos_mut()[self.page_index];
+        page_info.annotations = annotation_refs;
 
         page.finish();
 
         chunk.extend(self.stream_chunk.wait());
 
-        chunk
+        Ok(chunk)
     }
 }
 
@@ -302,7 +362,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
         sc.add_page(page);
     }
 
@@ -319,7 +379,7 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], page_settings);
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
         sc.add_page(page);
     }
 

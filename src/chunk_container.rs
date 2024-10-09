@@ -23,8 +23,10 @@ pub struct ChunkContainer {
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
+    pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
 
     pub(crate) pages: Vec<Chunk>,
+    pub(crate) struct_elements: Vec<Chunk>,
     pub(crate) page_labels: Vec<Chunk>,
     pub(crate) annotations: Vec<Chunk>,
     pub(crate) fonts: Vec<Chunk>,
@@ -105,8 +107,9 @@ impl ChunkContainer {
         }
 
         remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
-            &mut self.page_label_tree, &mut self.destination_profiles);
-        remap_fields!(remapper, remapped_ref; &self.pages, &self.page_labels,
+            &mut self.page_label_tree, &mut self.destination_profiles,
+        &mut self.struct_tree_root);
+        remap_fields!(remapper, remapped_ref; &self.pages, &self.struct_elements, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
             &self.ext_g_states, &self.images, &self.masks, &self.x_objects, &self.shading_functions,
             &self.patterns
@@ -134,8 +137,9 @@ impl ChunkContainer {
         }
 
         write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
-            &self.page_label_tree, &self.destination_profiles);
-        write_fields!(remapper, &mut pdf; &self.pages, &self.page_labels,
+            &self.page_label_tree, &self.destination_profiles,
+        &mut self.struct_tree_root);
+        write_fields!(remapper, &mut pdf; &self.pages, &self.struct_elements, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
             &self.ext_g_states, &self.images, &self.masks, &self.x_objects,
             &self.shading_functions, &self.patterns
@@ -190,6 +194,7 @@ impl ChunkContainer {
             || self.outline.is_some()
             || self.page_label_tree.is_some()
             || self.destination_profiles.is_some()
+            || self.struct_tree_root.is_some()
         {
             let meta_ref = if sc.serialize_settings.xmp_metadata {
                 let meta_ref = remapped_ref.bump();
@@ -220,6 +225,11 @@ impl ChunkContainer {
 
             if let Some(oi) = &self.destination_profiles {
                 catalog.pair(Name(b"OutputIntents"), oi.0);
+            }
+
+            if let Some(st) = &self.struct_tree_root {
+                catalog.pair(Name(b"StructTreeRoot"), st.0);
+                catalog.mark_info().marked(true);
             }
 
             // TODO: Add viewer preferences

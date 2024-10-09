@@ -14,12 +14,13 @@ use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
+use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::writers::OutputIntent;
+use pdf_writer::types::{OutputIntentSubtype, StructRole};
+use pdf_writer::writers::{NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
@@ -102,6 +103,22 @@ pub struct SerializeSettings {
     ///
     /// [`validation`]: crate::validation
     pub validator: Validator,
+    /// Whether to enable the creation of tagged documents. See the module documentation
+    /// of [`tagging`] for more information about tagged PDF documents.
+    ///
+    /// Note that enabling this does not automatically make your documents tagged, as tagging implies
+    /// enriching the document with semantic information, which krilla cannot do
+    /// for you, since it's content-agnostic. All this setting does is to allow you
+    /// to dynamically disable tagging if you wish to do so. This allows you to write
+    /// your code primarily with tagging in mind, but still allows you to
+    /// disable it dynamically, without having to make any changes to your code.
+    ///
+    /// Note that this value might be overridden depending on which validator
+    /// you use. For example, when exporting with PDF-UA, this value will always
+    /// be set to `true`.
+    ///
+    /// [`tagging`]: crate::tagging
+    pub enable_tagging: bool,
 }
 
 const STR_BYTE_LEN: usize = 32767;
@@ -117,6 +134,7 @@ impl SerializeSettings {
             force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::Dummy,
+            enable_tagging: true,
         }
     }
 
@@ -188,6 +206,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_12() -> Self {
+        Self {
+            enable_tagging: false,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -200,6 +225,7 @@ impl Default for SerializeSettings {
             force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::Dummy,
+            enable_tagging: true,
         }
     }
 }
@@ -207,6 +233,16 @@ impl Default for SerializeSettings {
 pub(crate) struct PageInfo {
     pub ref_: Ref,
     pub surface_size: Size,
+    // The refs of the annotations that are used by that page.
+    //
+    // Note that this will be empty be default, and only once we have serialized the pages
+    // will these values be set.
+    pub annotations: Vec<Ref>,
+}
+
+enum StructParentElement {
+    Page(usize, i32),
+    Annotation(usize, usize),
 }
 
 pub(crate) struct SerializerContext {
@@ -215,8 +251,10 @@ pub(crate) struct SerializerContext {
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
+    struct_parents: Vec<StructParentElement>,
     outline: Option<Outline>,
     cached_mappings: HashMap<u128, Ref>,
+    tag_tree: Option<TagTree>,
     cur_ref: Ref,
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
@@ -254,17 +292,55 @@ impl SerializerContext {
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
+            struct_parents: vec![],
             outline: None,
             page_infos: vec![],
             pages: vec![],
+            tag_tree: None,
             font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings,
         }
     }
 
+    pub fn get_page_struct_parent(&mut self, page_index: usize, num_mcids: i32) -> Option<i32> {
+        if self.serialize_settings.enable_tagging {
+            if num_mcids == 0 {
+                return None;
+            }
+
+            let id = self.struct_parents.len();
+            self.struct_parents
+                .push(StructParentElement::Page(page_index, num_mcids));
+            Some(i32::try_from(id).unwrap())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_annotation_parent(
+        &mut self,
+        page_index: usize,
+        annotation_index: usize,
+    ) -> Option<i32> {
+        if self.serialize_settings.enable_tagging {
+            let id = self.struct_parents.len();
+            self.struct_parents.push(StructParentElement::Annotation(
+                page_index,
+                annotation_index,
+            ));
+            Some(i32::try_from(id).unwrap())
+        } else {
+            None
+        }
+    }
+
     pub fn page_infos(&self) -> &[PageInfo] {
         &self.page_infos
+    }
+
+    pub fn page_infos_mut(&mut self) -> &mut [PageInfo] {
+        &mut self.page_infos
     }
 
     pub fn set_outline(&mut self, outline: Outline) {
@@ -273,6 +349,13 @@ impl SerializerContext {
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub fn set_tag_tree(&mut self, root: TagTree) {
+        // Only set the tag tree if the user actually enabled tagging.
+        if self.serialize_settings.enable_tagging {
+            self.tag_tree = Some(root)
+        }
     }
 
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
@@ -292,6 +375,8 @@ impl SerializerContext {
         self.page_infos.push(PageInfo {
             ref_,
             surface_size: page.page_settings.surface_size(),
+            // Will be populated when the page is serialized.
+            annotations: vec![],
         });
         self.pages.push((ref_, page));
     }
@@ -531,7 +616,7 @@ impl SerializerContext {
 
         let pages = std::mem::take(&mut self.pages);
         for (ref_, page) in &pages {
-            let chunk = page.serialize(&mut self, *ref_);
+            let chunk = page.serialize(&mut self, *ref_)?;
             self.chunk_container.pages.push(chunk);
         }
 
@@ -542,6 +627,77 @@ impl SerializerContext {
                 .count(pages.len() as i32)
                 .kids(pages.iter().map(|(r, _)| *r));
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
+        }
+
+        // It is important that we serialize the tags AFTER we have serialized the pages,
+        // because page serialization will update the annotation refs of the page infos,
+        // and when serializing the parent tree map we need to know the refs of the annotations
+        let tag_tree = std::mem::take(&mut self.tag_tree);
+        let struct_parents = std::mem::take(&mut self.struct_parents);
+        if let Some(root) = &tag_tree {
+            let mut parent_tree_map = HashMap::new();
+            let struct_tree_root_ref = self.new_ref();
+            let (document_ref, struct_elems) =
+                root.serialize(&mut self, &mut parent_tree_map, struct_tree_root_ref);
+            self.chunk_container.struct_elements = struct_elems;
+
+            let mut chunk = Chunk::new();
+            let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
+            tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
+            let mut role_map = tree.insert(Name(b"RoleMap")).start::<RoleMap>();
+            role_map.insert(Name(b"Image"), StructRole::Figure);
+            role_map.insert(Name(b"Datetime"), StructRole::Span);
+            role_map.insert(Name(b"Terms"), StructRole::Part);
+            role_map.insert(Name(b"Title"), StructRole::H1);
+            role_map.finish();
+            tree.insert(Name(b"K")).array().item(document_ref);
+
+            let mut sub_chunks = vec![];
+            let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
+            let mut tree_nums = parent_tree.nums();
+
+            for (index, struct_parent) in struct_parents.iter().enumerate() {
+                match *struct_parent {
+                    StructParentElement::Page(index, num_mcids) => {
+                        let mut list_chunk = Chunk::new();
+                        let list_ref = self.new_ref();
+
+                        let mut refs = list_chunk.indirect(list_ref).array();
+
+                        for mcid in 0..num_mcids {
+                            let rci = PageTagIdentifier::new(index, mcid);
+                            // TODO: Graceful handling
+                            refs.item(parent_tree_map.get(&rci.into()).unwrap());
+                        }
+
+                        refs.finish();
+
+                        sub_chunks.push(list_chunk);
+                        tree_nums.insert(index as i32, list_ref);
+                    }
+                    StructParentElement::Annotation(page_index, annot_index) => {
+                        let it = IdentifierType::AnnotationIdentifier(AnnotationIdentifier::new(
+                            page_index,
+                            annot_index,
+                        ));
+                        let ref_ = parent_tree_map.get(&it.into()).unwrap();
+                        tree_nums.insert(index as i32, *ref_);
+                    }
+                }
+            }
+
+            tree_nums.finish();
+            parent_tree.finish();
+
+            tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
+
+            tree.finish();
+
+            for sub_chunk in sub_chunks {
+                chunk.extend(&sub_chunk);
+            }
+
+            self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
         }
 
         if self.cur_ref > Ref::new(8388607) {

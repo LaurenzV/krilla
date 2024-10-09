@@ -16,6 +16,7 @@ use crate::serialize::SerializerContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "svg")]
 use crate::svg;
+use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::util::RectExt;
 use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
@@ -76,21 +77,26 @@ pub struct Surface<'a> {
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
-    finish_fn: Box<dyn FnMut(Stream) + 'a>,
+    page_identifier: Option<PageTagIdentifier>,
+    finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
+    active_mc: bool,
 }
 
 impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializerContext,
         root_builder: ContentBuilder,
-        finish_fn: Box<dyn FnMut(Stream) + 'a>,
+        page_identifier: Option<PageTagIdentifier>,
+        finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
             root_builder,
+            page_identifier,
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,
+            active_mc: false,
         }
     }
 
@@ -116,8 +122,55 @@ impl<'a> Surface<'a> {
             .stroke_path(path, stroke, self.sc)
     }
 
+    /// Start a new tagged content section.
+    ///
+    /// # Panics
+    /// Panics if a tagged section has already been started.
+    pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
+        if let Some(id) = &mut self.page_identifier {
+            assert!(!self.active_mc, "can't start a content tag twice.");
+
+            match tag {
+                // An artifact is actually not really part of tagged PDF and doesn't have
+                // a marked content identifier, so we need to return a dummy one here. It's just
+                // the API of krilla that conflates artifacts with tagged content,
+                // for the sake of simplicity. But the user of the library does not need to know
+                // about this.
+                ContentTag::Artifact(_) => {
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        .start_marked_content(&mut self.sc, None, tag);
+                    self.active_mc = true;
+                    Identifier::dummy()
+                }
+                ContentTag::Span(_) | ContentTag::Other => {
+                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        .start_marked_content(&mut self.sc, Some(id.mcid), tag);
+                    self.active_mc = true;
+                    id.bump().into()
+                }
+            }
+        } else {
+            Identifier::dummy()
+        }
+    }
+
+    /// End the current tagged section.
+    ///
+    /// # Panics
+    /// Panics if no tagged section has been started.
+    pub fn end_tagged(&mut self) {
+        if self.page_identifier.is_some() {
+            assert!(
+                self.active_mc,
+                "can't end a content tag that hasn't been started."
+            );
+            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
+            self.active_mc = false;
+        }
+    }
+
     // It's very unfortunate that we have this method at the `Surface` level,
-    // but it's only used in one place and should be needed to be used anywhere
+    // but it's only used in one place and should not be needed to be used anywhere
     // else.
     pub(crate) fn start_shape_glyph(
         &mut self,
@@ -485,9 +538,14 @@ impl Drop for Surface<'_> {
             &mut self.root_builder,
             ContentBuilder::new(Transform::identity()),
         );
-        debug_assert!(self.sub_builders.is_empty());
-        debug_assert!(self.push_instructions.is_empty());
-        (self.finish_fn)(root_builder.finish())
+        let num_mcids = match self.page_identifier {
+            Some(pi) => pi.mcid,
+            None => 0,
+        };
+        assert!(self.sub_builders.is_empty());
+        assert!(self.push_instructions.is_empty());
+        assert!(!self.active_mc);
+        (self.finish_fn)(root_builder.finish(), num_mcids)
     }
 }
 
@@ -834,7 +892,7 @@ mod tests {
         surface.pop();
     }
 
-    fn sample_svg() -> usvg::Tree {
+    pub(crate) fn sample_svg() -> usvg::Tree {
         let data = std::fs::read(SVGS_PATH.join("resvg_masking_mask_with_opacity_1.svg")).unwrap();
         usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
     }

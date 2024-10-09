@@ -20,6 +20,7 @@ use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::tagging::TagTree;
 use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
@@ -50,12 +51,18 @@ impl Document {
 
     /// Start a new page with default settings.
     pub fn start_page(&mut self) -> Page {
-        Page::new(&mut self.serializer_context, PageSettings::default())
+        let page_index = self.serializer_context.page_infos().iter().len();
+        Page::new(
+            &mut self.serializer_context,
+            page_index,
+            PageSettings::default(),
+        )
     }
 
     /// Start a new page with specific page settings.
     pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page {
-        Page::new(&mut self.serializer_context, page_settings)
+        let page_index = self.serializer_context.page_infos().iter().len();
+        Page::new(&mut self.serializer_context, page_index, page_settings)
     }
 
     /// Set the outline of the document.
@@ -66,6 +73,11 @@ impl Document {
     /// Set the metadata of the document.
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.serializer_context.set_metadata(metadata);
+    }
+
+    /// Set the tag tree of the document.
+    pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
+        self.serializer_context.set_tag_tree(tag_tree);
     }
 
     /// Attempt to write the document to a PDF.

@@ -9,8 +9,12 @@ when adding new features.
 # Legend
 🟢: This means that krilla actively checks that this property is enforced, either by an
 invariant in the code, or by returning an error to the user in case it's not fulfillable.
+
 🔵: This means that krilla fulfills this property because it's not supported.
-🟣: This means that this property cannot be enforced by krilla, and thus is only documented.
+
+🟣: This means that this property cannot be enforced by krilla, and thus is only documented.  
 It is upon the user of the library to enforce it.
+
 🔴: This means that the property is currently not enforced by krilla.
+
 -: This means that the clause is not applicable to krilla (for example because it's not a reader application)

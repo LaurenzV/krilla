@@ -126,6 +126,7 @@ pub mod paint;
 pub mod path;
 pub mod stream;
 pub mod surface;
+pub mod tagging;
 
 pub(crate) mod content;
 #[cfg(test)]

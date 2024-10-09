@@ -80,8 +80,7 @@ pub enum Validator {
     /// The validator for the PDF/A2-U standard.
     ///
     /// **Requirements**:
-    /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    ///   universal rendering.
+    /// - All requirements of PDF/A2-B
     A2_U,
     /// The validator for the PDF/A3-B standard.
     ///
@@ -92,8 +91,7 @@ pub enum Validator {
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
-    /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    ///   universal rendering.
+    /// - All requirements for PDF/A3-B
     A3_U,
 }
 
@@ -278,12 +276,10 @@ mod tests {
     #[snapshot(single_page, settings_7)]
     fn validation_pdfa_annotation(page: &mut Page) {
         page.add_annotation(
-            LinkAnnotation {
-                rect: Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-                target: Target::Action(
-                    LinkAction::new("https://www.youtube.com".to_string()).into(),
-                ),
-            }
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            )
             .into(),
         );
     }

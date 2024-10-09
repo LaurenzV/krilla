@@ -1,0 +1,87 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [3 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /StructTreeRoot
+  /RoleMap <<
+    /Image /Figure
+    /Datetime /Span
+    /Terms /Part
+    /Title /H1
+  >>
+  /K [5 0 R]
+  /ParentTree <<
+    /Nums []
+  >>
+  /ParentTreeNextKey 0
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+5 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 2 0 R
+  /K []
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /StructTreeRoot 2 0 R
+  /MarkInfo <<
+    /Marked true
+  >>
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000287 00000 n
+0000000446 00000 n
+0000000498 00000 n
+0000000574 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(C6frGKDd+RgvnlQfQzvFhQ==) (C6frGKDd+RgvnlQfQzvFhQ==)]
+>>
+startxref
+689
+%%EOF
