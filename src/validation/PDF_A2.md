@@ -222,4 +222,37 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 # Level A
 
-6.2.11.7.3: TODO
+TODO: Fix the remaining red ones before next release!
+
+6.2.11.7.3: krilla currently does not provide an ActualText entry for characters in the Unicode private area. 🔴
+
+# 6.7 Logical Structure
+
+6.7.1: -
+
+6.7.2.1: General conformance to tagged PDF cannot be checked, but is documented. 🟣
+
+6.7.2.2: krilla always writes the mark info dictionary for this export mode. 🟢
+
+6.7.3.1: The need to specify artifacts is documented.
+
+6.7.3.2: The need to specify word boundaries is documented. 🟣
+
+6.7.3.3: The need to specify the structure hierarchy is documented. 🟣
+
+6.7.3.4: krilla maps all non-standard structure types. 🟢
+
+6.7.4:
+- krilla currently does not force writing a language in the catalog. 🔴
+- krilla forces the user to specify the language on each span. 🟢
+- The need for correctness of language tags is documented. 🟣
+
+6.7.5: The need to document images and formulas with alt text is documented. 🟣
+
+6.7.6: krilla currently does not support any non-textual annotations. 🔵
+
+6.7.7: krilla currently does not support manual specification of replacement text. 🔴
+
+6.7.8: krilla currently does not support expansion of abbreviations and acronyms. 🔴
+
+

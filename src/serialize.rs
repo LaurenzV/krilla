@@ -213,6 +213,23 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_13() -> Self {
+        Self {
+            // Just to check that krilla enables tagging
+            // for this validator even if explicitly disabled.
+            enable_tagging: false,
+            validator: Validator::A2_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_14() -> Self {
+        Self {
+            validator: Validator::A3_A,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -283,7 +300,8 @@ impl SerializerContext {
     pub fn new(mut serialize_settings: SerializeSettings) -> Self {
         // If the validator requires/prefers no device color spaces
         // set it to true, even if the user didn't set it.
-        serialize_settings.no_device_cs |= serialize_settings.validator.no_device_cs();
+        serialize_settings.no_device_cs |= serialize_settings.validator.requires_no_device_cs();
+        serialize_settings.enable_tagging |= serialize_settings.validator.requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
 
         Self {

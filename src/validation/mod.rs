@@ -71,6 +71,24 @@ pub enum Validator {
     ///
     /// **Requirements**: -
     Dummy,
+    /// The validator for the PDF/A2-A standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A2-B.
+    /// - You need to follow all requirements outlined in the _Other Notes_ section of the
+    ///   [`tagging`] module.
+    /// - You need to follow all best practices when using [tags](`crate::tagging::Tag`), as outlined in the documentation
+    ///   of each tag.
+    /// - Artifacts such as page numbers, backgrounds, cut marks and color bars should be specified
+    ///   correspondingly as artifacts.
+    /// - Word boundaries need to be explicitly specified with a space. The same applies to words at
+    ///   the end of a line that are not followed by punctuation.
+    /// - To the fullest extent possible, the logical structure of the document should be encoded
+    ///   correspondingly in the tag tree using appropriate grouping tags.
+    /// - Language identifiers used must be valid according to RFC 3066.
+    ///
+    /// [`tagging`]: crate::tagging
+    A2_A,
     /// The validator for the PDF/A2-B standard.
     ///
     /// **Requirements**:
@@ -82,16 +100,20 @@ pub enum Validator {
     /// **Requirements**:
     /// - All requirements of PDF/A2-B
     A2_U,
+    /// The validator for the PDF/A3-A standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A2-A
+    A3_A,
     /// The validator for the PDF/A3-B standard.
     ///
     /// **Requirements**:
-    /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    ///   universal rendering.
+    /// - All requirements of PDF/A2-B
     A3_B,
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
-    /// - All requirements for PDF/A3-B
+    /// - All requirements of PDF/A2-B
     A3_U,
 }
 
@@ -99,8 +121,7 @@ impl Validator {
     pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
             Validator::Dummy => false,
-            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => match validation_error {
-            Validator::A2_B | Validator::A2_U => match validation_error {
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -110,7 +131,7 @@ impl Validator {
                 // Only applies for PDF/A2-U and PDF/A2-A
                 ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
             },
-            Validator::A3_B | Validator::A3_U => match validation_error {
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -126,10 +147,10 @@ impl Validator {
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             Validator::Dummy => {}
-            // Validator::PdfA2A => {
-            //     xmp.pdfa_part("2");
-            //     xmp.pdfa_conformance("A");
-            // }
+            Validator::A2_A => {
+                xmp.pdfa_part("2");
+                xmp.pdfa_conformance("A");
+            }
             Validator::A2_B => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("B");
@@ -137,6 +158,10 @@ impl Validator {
             Validator::A2_U => {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("U");
+            }
+            Validator::A3_A => {
+                xmp.pdfa_part("3");
+                xmp.pdfa_conformance("A");
             }
             Validator::A3_B => {
                 xmp.pdfa_part("3");
@@ -152,45 +177,50 @@ impl Validator {
     pub(crate) fn annotation_ap_stream(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
-            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
-    pub(crate) fn no_device_cs(&self) -> bool {
+    pub(crate) fn requires_no_device_cs(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
-            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+        }
+    }
+
+    pub(crate) fn requires_tagging(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::A2_A => true,
+            Validator::A2_B | Validator::A2_U => false,
+            Validator::A3_A => true,
+            Validator::A3_B | Validator::A3_U => false,
         }
     }
 
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
-            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
-            Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
-            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
     pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype> {
         match self {
             Validator::Dummy => None,
-            // Validator::PdfA2A | Validator::PdfA2B | Validator::PdfA2U => {
-            Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
-            Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
         }
     }
 }
@@ -206,6 +236,7 @@ mod tests {
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
     use crate::surface::TextDirection;
+    use crate::tagging::{ArtifactType, ContentTag, TagTree};
     use crate::tests::{cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, NOTO_SANS};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
@@ -412,6 +443,39 @@ mod tests {
         page.finish();
     }
 
+    fn validation_pdf_tagged_full_example(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let id1 = surface.start_tagged(ContentTag::Span(""));
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "This is some text",
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+
+        let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
+        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(0.5));
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        let mut tag_tree = TagTree::new();
+        tag_tree.push(id1);
+        tag_tree.push(id2);
+        document.set_tag_tree(tag_tree);
+    }
+
     #[test]
     fn validation_pdfu_invalid_codepoint() {
         let mut document = Document::new_with(SerializeSettings::settings_9());
@@ -451,6 +515,11 @@ mod tests {
         )
     }
 
+    #[snapshot(document, settings_13)]
+    fn validation_pdfa2_a_full_example(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
+    }
+
     #[snapshot(document, settings_7)]
     fn validation_pdfa2_b_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
@@ -459,6 +528,11 @@ mod tests {
     #[snapshot(document, settings_9)]
     fn validation_pdfa2_u_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_14)]
+    fn validation_pdfa3_a_full_example(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
     }
 
     #[snapshot(document, settings_10)]
