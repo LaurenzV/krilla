@@ -101,16 +101,20 @@ pub enum Validator {
     /// **Requirements**:
     /// - All requirements of PDF/A2-B
     A2_U,
+    /// The validator for the PDF/A3-A standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A2-A
+    A3_A,
     /// The validator for the PDF/A3-B standard.
     ///
     /// **Requirements**:
-    /// - You should only use fonts that are legally embeddable in a file for unlimited,
-    ///   universal rendering.
+    /// - All requirements of PDF/A2-B
     A3_B,
     /// The validator for the PDF/A3-U standard.
     ///
     /// **Requirements**:
-    /// - All requirements for PDF/A3-B
+    /// - All requirements of PDF/A2-B
     A3_U,
 }
 
@@ -128,7 +132,7 @@ impl Validator {
                 // Only applies for PDF/A2-U and PDF/A2-A
                 ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
             },
-            Validator::A3_B | Validator::A3_U => match validation_error {
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
@@ -156,6 +160,10 @@ impl Validator {
                 xmp.pdfa_part("2");
                 xmp.pdfa_conformance("U");
             }
+            Validator::A3_A => {
+                xmp.pdfa_part("3");
+                xmp.pdfa_conformance("A");
+            }
             Validator::A3_B => {
                 xmp.pdfa_part("3");
                 xmp.pdfa_conformance("B");
@@ -171,7 +179,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
@@ -179,7 +187,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
@@ -188,6 +196,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A  => true,
             Validator::A2_B | Validator::A2_U => false,
+            Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
         }
     }
@@ -196,7 +205,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
@@ -204,7 +213,7 @@ impl Validator {
         match self {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_B | Validator::A3_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
         }
     }
 
@@ -212,7 +221,7 @@ impl Validator {
         match self {
             Validator::Dummy => None,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
-            Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
         }
     }
 }
@@ -520,6 +529,11 @@ mod tests {
     #[snapshot(document, settings_9)]
     fn validation_pdfa2_u_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_14)]
+    fn validation_pdfa3_a_full_example(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
     }
 
     #[snapshot(document, settings_10)]
