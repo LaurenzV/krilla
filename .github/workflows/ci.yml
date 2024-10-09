@@ -183,4 +183,4 @@ jobs:
       - run: cargo clippy
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
-      - run: cargo hack check --each-feature
+      - run: RUSTFLAGS=-Awarnings cargo hack check --each-feature
