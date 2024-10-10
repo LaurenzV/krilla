@@ -243,7 +243,7 @@ TODO: Fix the remaining red ones before next release!
 6.7.3.4: krilla maps all non-standard structure types. 🟢
 
 6.7.4:
-- krilla currently does not force writing a language in the catalog. 🔴
+- krilla requires the user to set the document language in that export mode. 🟢
 - krilla forces the user to specify the language on each span. 🟢
 - The need for correctness of language tags is documented. 🟣
 

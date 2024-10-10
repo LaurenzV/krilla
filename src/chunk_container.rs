@@ -1,6 +1,7 @@
 use crate::metadata::Metadata;
 use crate::serialize::SerializerContext;
 use crate::util::{hash_base64, Deferred};
+use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
@@ -229,6 +230,8 @@ impl ChunkContainer {
 
             if let Some(lang) = self.metadata.and_then(|m| m.language).as_ref() {
                 catalog.lang(sc.new_text_str(lang));
+            } else {
+                sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
 
             if let Some(st) = &self.struct_tree_root {

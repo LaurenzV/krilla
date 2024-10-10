@@ -61,6 +61,9 @@ pub enum ValidationError {
     /// Can occur if those codepoints appeared in the input text, or were explicitly
     /// mapped to that glyph.
     InvalidCodepointMapping(Font, GlyphId, Option<String>),
+    /// No document language was set via the metadata, even though it is required
+    /// by the standard.
+    NoDocumentLanguage,
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -130,6 +133,8 @@ impl Validator {
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A2-U and PDF/A2-A
                 ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
+                // Only applies to PDF/A2-A
+                ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -140,6 +145,8 @@ impl Validator {
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A3-U and PDF/A3-A
                 ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A3_B,
+                // Only applies to PDF/A3-A
+                ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
             },
         }
     }
@@ -474,6 +481,9 @@ mod tests {
         tag_tree.push(id1);
         tag_tree.push(id2);
         document.set_tag_tree(tag_tree);
+
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
     }
 
     #[test]
