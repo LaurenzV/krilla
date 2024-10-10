@@ -10,13 +10,13 @@ use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::object::xobject::XObject;
+use crate::page::page_root_transform;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::{AnnotationFlags, AnnotationType};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::{Rect, Transform};
-use crate::page::page_root_transform;
 
 /// A type of annotation.
 pub enum Annotation {

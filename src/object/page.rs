@@ -97,14 +97,7 @@ impl<'a> Page<'a> {
 }
 
 pub(crate) fn page_root_transform(height: f32) -> Transform {
-    Transform::from_row(
-        1.0,
-        0.0,
-        0.0,
-        -1.0,
-        0.0,
-        height,
-    )
+    Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, height)
 }
 
 impl Drop for Page<'_> {
@@ -207,8 +200,13 @@ impl InternalPage {
         let mut page = chunk.page(root_ref);
         self.stream_resources.to_pdf_resources(&mut page);
 
-        let media_box = self.page_settings.media_box().unwrap_or(self.bbox)
-            .transform(page_root_transform(self.page_settings.surface_size().height()))
+        let media_box = self
+            .page_settings
+            .media_box()
+            .unwrap_or(self.bbox)
+            .transform(page_root_transform(
+                self.page_settings.surface_size().height(),
+            ))
             .unwrap();
         // Convert to the proper PDF values.
         page.media_box(media_box.to_pdf_rect());

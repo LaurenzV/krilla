@@ -227,13 +227,16 @@ impl ChunkContainer {
                 catalog.pair(Name(b"OutputIntents"), oi.0);
             }
 
+            if let Some(lang) = self.metadata.and_then(|m| m.language).as_ref() {
+                catalog.lang(sc.new_text_str(lang));
+            }
+
             if let Some(st) = &self.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), st.0);
                 catalog.mark_info().marked(true);
             }
 
             // TODO: Add viewer preferences
-            // TODO: Add lang
 
             if let Some(ol) = &self.outline {
                 catalog.outlines(ol.0);
