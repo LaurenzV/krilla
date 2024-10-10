@@ -124,6 +124,7 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
+use tiny_skia_path::Rect;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
