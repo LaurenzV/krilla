@@ -60,7 +60,12 @@ pub enum ValidationError {
     ///
     /// Can occur if those codepoints appeared in the input text, or were explicitly
     /// mapped to that glyph.
-    InvalidCodepointMapping(Font, GlyphId, Option<String>),
+    InvalidCodepointMapping(Font, GlyphId),
+    /// A glyph was mapped to a codepoint in the Unicode private use area, which is forbidden
+    /// by some standards, like for example PDF/A2-A.
+    // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
+    // attribute to be present. But we just completely forbid it, for simplicity.
+    NoUnicodePrivateArea(Font, GlyphId),
     /// No document language was set via the metadata, even though it is required
     /// by the standard.
     NoDocumentLanguage,
@@ -132,7 +137,9 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A2-U and PDF/A2-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
+                ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A2_B,
+                // Only applies to PDF/A2-A
+                ValidationError::NoUnicodePrivateArea(_, _) => *self == Validator::A2_A,
                 // Only applies to PDF/A2-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
             },
@@ -144,7 +151,9 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A3-U and PDF/A3-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A3_B,
+                ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A3_B,
+                // Only applies to PDF/A3-A
+                ValidationError::NoUnicodePrivateArea(_, _) => *self == Validator::A3_A,
                 // Only applies to PDF/A3-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
             },
@@ -486,14 +495,9 @@ mod tests {
         document.set_metadata(metadata);
     }
 
-    #[test]
-    fn validation_pdfu_invalid_codepoint() {
-        let mut document = Document::new_with(SerializeSettings::settings_9());
+    fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
         let mut page = document.start_page();
         let mut surface = page.surface();
-
-        let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
 
         let glyphs = vec![
             KrillaGlyph::new(GlyphId::new(3), 2048.0, 0.0, 0.0, 0.0, 0..1),
@@ -505,22 +509,43 @@ mod tests {
             Fill::default(),
             &glyphs,
             font.clone(),
-            "A\u{FEFF}B",
+            text,
             20.0,
             GlyphUnits::UnitsPerEm,
             false,
         );
         surface.finish();
         page.finish();
+    }
+
+    #[test]
+    fn validation_pdfu_invalid_codepoint() {
+        let mut document = Document::new_with(SerializeSettings::settings_9());
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+        invalid_codepoint_impl(&mut document, font.clone(), "A\u{FEFF}B");
 
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::InvalidCodepointMapping(
-                    font,
-                    GlyphId::new(2),
-                    Some("\u{FEFF}".to_string())
-                )
+                ValidationError::InvalidCodepointMapping(font, GlyphId::new(2),)
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa_private_unicode_codepoint() {
+        let mut document = Document::new_with(SerializeSettings::settings_13());
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+        invalid_codepoint_impl(&mut document, font.clone(), "A\u{E022}B");
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::NoUnicodePrivateArea(font, GlyphId::new(2))
             ]))
         )
     }

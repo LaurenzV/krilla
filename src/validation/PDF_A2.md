@@ -224,7 +224,7 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 TODO: Fix the remaining red ones before next release!
 
-6.2.11.7.3: krilla currently does not provide an ActualText entry for characters in the Unicode private area. 🔴
+6.2.11.7.3: krilla forbids all codepoints in the unicode private area for this export mode. 🟢
 
 # 6.7 Logical Structure
 
