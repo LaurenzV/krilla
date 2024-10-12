@@ -372,7 +372,7 @@ impl Type3Font {
                         }
 
                         if private_unicode {
-                            sc.register_validation_error(ValidationError::NoUnicodePrivateArea(
+                            sc.register_validation_error(ValidationError::UnicodePrivateArea(
                                 self.font.clone(),
                                 GlyphId::new(g as u32),
                             ))

@@ -38,7 +38,7 @@ proc-macro2 = "1.0.86"
 oxipng = "9.1.2"
 krilla-macros = {path = "krilla-macros"}
 parley = { git = "https://github.com/linebender/parley", rev = "14070d5" }
-xmp-writer = "0.2.0"
+xmp-writer = { git = "https://github.com/LaurenzV/xmp-writer", rev = "1c2b8ae9" }
 zune-png = "0.4.10"
 zune-jpeg = "0.4.13"
 gif = "0.13.1"

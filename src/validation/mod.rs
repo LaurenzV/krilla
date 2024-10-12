@@ -65,10 +65,13 @@ pub enum ValidationError {
     /// by some standards, like for example PDF/A2-A.
     // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
     // attribute to be present. But we just completely forbid it, for simplicity.
-    NoUnicodePrivateArea(Font, GlyphId),
+    UnicodePrivateArea(Font, GlyphId),
     /// No document language was set via the metadata, even though it is required
     /// by the standard.
     NoDocumentLanguage,
+    /// No title was provided for the document, even though it is required by
+    /// the standard.
+    NoDocumentTitle
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -125,6 +128,17 @@ pub enum Validator {
     /// **Requirements**:
     /// - All requirements of PDF/A2-B
     A3_U,
+    /// The validator for the PDF/UA-1 standard.
+    ///
+    /// **Requirements**:
+    /// - All real content should be tagged accordingly.
+    /// - All artifacts should be marked accordingly.
+    /// - The tag tree should reflect the logical reading order of the
+    ///   document.
+    /// - Information should not be conveyed by contrast, color, format
+    ///   or layout.
+    UA1
+
 }
 
 impl Validator {
@@ -141,9 +155,10 @@ impl Validator {
                 // Only applies for PDF/A2-U and PDF/A2-A
                 ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A2_B,
                 // Only applies to PDF/A2-A
-                ValidationError::NoUnicodePrivateArea(_, _) => *self == Validator::A2_A,
+                ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A2_A,
                 // Only applies to PDF/A2-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
+                ValidationError::NoDocumentTitle => false
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -155,9 +170,22 @@ impl Validator {
                 // Only applies for PDF/A3-U and PDF/A3-A
                 ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A3_B,
                 // Only applies to PDF/A3-A
-                ValidationError::NoUnicodePrivateArea(_, _) => *self == Validator::A3_A,
+                ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A3_A,
                 // Only applies to PDF/A3-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
+                ValidationError::NoDocumentTitle => false
+            },
+            Validator::UA1 => match validation_error {
+                ValidationError::TooLongString => unimplemented!(),
+                ValidationError::TooManyIndirectObjects => unimplemented!(),
+                ValidationError::TooHighQNestingLevel => unimplemented!(),
+                ValidationError::ContainsPostScript => unimplemented!(),
+                ValidationError::MissingCMYKProfile => unimplemented!(),
+                ValidationError::ContainsNotDefGlyph => unimplemented!(),
+                ValidationError::InvalidCodepointMapping(_, _) => unimplemented!(),
+                ValidationError::UnicodePrivateArea(_, _) => unimplemented!(),
+                ValidationError::NoDocumentLanguage => unimplemented!(),
+                ValidationError::NoDocumentTitle => true
             },
         }
     }
@@ -166,28 +194,31 @@ impl Validator {
         match self {
             Validator::Dummy => {}
             Validator::A2_A => {
-                xmp.pdfa_part("2");
+                xmp.pdfa_part(2);
                 xmp.pdfa_conformance("A");
             }
             Validator::A2_B => {
-                xmp.pdfa_part("2");
+                xmp.pdfa_part(2);
                 xmp.pdfa_conformance("B");
             }
             Validator::A2_U => {
-                xmp.pdfa_part("2");
+                xmp.pdfa_part(2);
                 xmp.pdfa_conformance("U");
             }
             Validator::A3_A => {
-                xmp.pdfa_part("3");
+                xmp.pdfa_part(3);
                 xmp.pdfa_conformance("A");
             }
             Validator::A3_B => {
-                xmp.pdfa_part("3");
+                xmp.pdfa_part(3);
                 xmp.pdfa_conformance("B");
             }
             Validator::A3_U => {
-                xmp.pdfa_part("3");
+                xmp.pdfa_part(3);
                 xmp.pdfa_conformance("U");
+            }
+            Validator::UA1 => {
+                xmp.pdfua_part(1);
             }
         }
     }
@@ -197,6 +228,16 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => unimplemented!()
+        }
+    }
+
+    pub(crate) fn requires_display_doc_title(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
+            Validator::UA1 => true,
         }
     }
 
@@ -205,6 +246,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => unimplemented!()
         }
     }
 
@@ -215,6 +257,7 @@ impl Validator {
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
+            Validator::UA1 => unimplemented!()
         }
     }
 
@@ -223,6 +266,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => unimplemented!()
         }
     }
 
@@ -231,6 +275,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => unimplemented!()
         }
     }
 
@@ -239,6 +284,7 @@ impl Validator {
             Validator::Dummy => None,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
+            Validator::UA1 => unimplemented!()
         }
     }
 }
@@ -547,7 +593,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::NoUnicodePrivateArea(font, GlyphId::new(2))
+                ValidationError::UnicodePrivateArea(font, GlyphId::new(2))
             ]))
         )
     }

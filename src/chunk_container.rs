@@ -146,10 +146,15 @@ impl ChunkContainer {
             &self.shading_functions, &self.patterns
         );
 
+        if !self.metadata.as_ref().is_some_and(|m| m.title.is_some()) {
+            sc.register_validation_error(ValidationError::NoDocumentTitle);
+        }
+
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
             metadata.serialize_document_info(&mut remapped_ref, sc, &mut pdf);
         }
+
 
         // Write the XMP data, if applicable
         const PDF_VERSION: &str = "PDF-1.7";
@@ -236,10 +241,17 @@ impl ChunkContainer {
 
             if let Some(st) = &self.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), st.0);
-                catalog.mark_info().marked(true);
+                catalog.mark_info()
+                    .marked(true)
+                    // We always set suspects to false because it's required by PDF/UA
+                    .suspects(false);
             }
 
-            // TODO: Add viewer preferences
+            if sc.serialize_settings.validator.requires_display_doc_title() {
+                catalog
+                    // TODO: Add to pdf-writer
+                    .viewer_preferences().pair(Name(b"DisplayDocTitle"), true);
+            }
 
             if let Some(ol) = &self.outline {
                 catalog.outlines(ol.0);
