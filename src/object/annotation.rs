@@ -16,7 +16,7 @@ use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::{AnnotationFlags, AnnotationType};
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 /// A type of annotation.
 pub enum Annotation {

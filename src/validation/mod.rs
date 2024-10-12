@@ -94,6 +94,8 @@ pub enum Validator {
     /// - To the fullest extent possible, the logical structure of the document should be encoded
     ///   correspondingly in the tag tree using appropriate grouping tags.
     /// - Language identifiers used must be valid according to RFC 3066.
+    /// - You should provide an alternate text to span content tags, if applicable.
+    /// - You should provide the expansion of abbreviations to span content tags, if applicable.
     ///
     /// [`tagging`]: crate::tagging
     A2_A,
@@ -466,7 +468,7 @@ mod tests {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, vec![]).unwrap();
 
-        let id1 = surface.start_tagged(ContentTag::Span(""));
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),

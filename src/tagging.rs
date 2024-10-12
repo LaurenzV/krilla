@@ -124,7 +124,6 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
-use tiny_skia_path::Rect;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -140,6 +139,10 @@ pub enum ArtifactType {
 /// A language identifier as specified in RFC 3066. It will not be validated, so
 /// it's on the user of the library to ensure the tag is valid.
 pub type Lang<'a> = &'a str;
+/// An alternate text that describes some element in natural language.
+pub type Alt<'a> = &'a str;
+/// The expanded form of an abbreviation.
+pub type Expanded<'a> = &'a str;
 
 /// A content tag associated with the content it wraps.
 #[derive(Clone, Copy, Debug)]
@@ -148,13 +151,18 @@ pub enum ContentTag<'a> {
     /// of a document and should be excluded in the logical tree. These include for example headers,
     /// footers, page background and similar.
     Artifact(ArtifactType),
-    /// A content tag that wraps some text with a specific language. If the language is unknown,
-    /// pass an empty string to it.
+    /// A content tag that wraps some text with specific properties. The properties you can/need to
+    /// set are:
+    /// - Lang: The language of the text. If the language is unknown, pass an empty string to it.
+    /// - Alt: An optional alternate text that describes the text (for example, if the text consists
+    ///   a star symbol, the alt text should describe that in natural language).
+    /// - Expanded: If the content of the span is an abbreviation, the expanded form of the
+    ///   abbreviation should be provided here.
     ///
     /// Spans should not be too long. At most, they should contain a single like of text, but they
     /// can obviously be shorter, if text within a single line contains text with different styles
     /// or different languages.
-    Span(Lang<'a>),
+    Span(Lang<'a>, Option<Alt<'a>>, Option<Expanded<'a>>),
     /// Use this tag for anything else that does not semantically fit into `Span` or `Artifact`.
     /// This includes for example arbitrary paths, images or a mix of different content that cannot
     /// be split up more.
@@ -165,7 +173,7 @@ impl ContentTag<'_> {
     pub(crate) fn name(&self) -> Name {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
-            ContentTag::Span(_) => Name(b"Span"),
+            ContentTag::Span(_, _, _) => Name(b"Span"),
             ContentTag::Other => Name(b"P"),
         }
     }
@@ -197,8 +205,16 @@ impl ContentTag<'_> {
 
                 artifact.kind(artifact_type);
             }
-            ContentTag::Span(lang) => {
+            ContentTag::Span(lang, alt, exp) => {
                 properties.pair(Name(b"Lang"), sc.new_text_str(lang));
+
+                if let Some(alt) = alt {
+                    properties.pair(Name(b"Alt"), sc.new_text_str(alt));
+                }
+
+                if let Some(exp) = exp {
+                    properties.pair(Name(b"E"), sc.new_text_str(exp));
+                }
             }
             ContentTag::Other => {}
         }
@@ -740,7 +756,11 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id = surface.start_tagged(ContentTag::Span(""));
+        let id = surface.start_tagged(ContentTag::Span(
+            "en",
+            Some("an alt text"),
+            Some("expanded"),
+        ));
         surface.fill_text_(25.0, "a paragraph");
         surface.end_tagged();
 
@@ -760,7 +780,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id = surface.start_tagged(ContentTag::Span(""));
+        let id = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(25.0, "a paragraph");
         surface.end_tagged();
 
@@ -835,7 +855,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id1 = surface.start_tagged(ContentTag::Span(""));
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(25.0, "a span");
         surface.end_tagged();
         let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
@@ -881,10 +901,10 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let h1 = surface.start_tagged(ContentTag::Span(""));
+        let h1 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(25.0, "a heading");
         surface.end_tagged();
-        let p1 = surface.start_tagged(ContentTag::Span(""));
+        let p1 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(50.0, "a paragraph");
         surface.end_tagged();
         surface.finish();
@@ -892,7 +912,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let p2 = surface.start_tagged(ContentTag::Span(""));
+        let p2 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(75.0, "a second paragraph");
         surface.end_tagged();
         surface.finish();
@@ -900,10 +920,10 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let h2 = surface.start_tagged(ContentTag::Span(""));
+        let h2 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(25.0, "another heading");
         surface.end_tagged();
-        let p3 = surface.start_tagged(ContentTag::Span(""));
+        let p3 = surface.start_tagged(ContentTag::Span("", None, None));
         surface.fill_text_(50.0, "another paragraph");
         surface.end_tagged();
         surface.finish();

@@ -251,8 +251,8 @@ TODO: Fix the remaining red ones before next release!
 
 6.7.6: krilla currently does not support any non-textual annotations. 🔵
 
-6.7.7: krilla currently does not support manual specification of replacement text. 🔴
+6.7.7: The requirement to specify alt text is documented. 🟣
 
-6.7.8: krilla currently does not support expansion of abbreviations and acronyms. 🔴
+6.7.8: The requirement to specify the expansions of abbreviations is documented. 🟣
 
 
