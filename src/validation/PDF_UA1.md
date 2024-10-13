@@ -9,8 +9,8 @@ See `README.md` for the meaning of each color.
 
 # 6.2 Conforming files
 
-- krilla  writes the `pdfuaid:part` attribute.
-- krilla does not adhere to the file format providions.
+- krilla writes the `pdfuaid:part` attribute.
+- krilla does not adhere to the file format provisions.
 
 # 6.3 Conforming reader
 

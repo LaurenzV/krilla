@@ -141,6 +141,10 @@ pub enum ArtifactType {
 pub type Lang<'a> = &'a str;
 /// An alternate text that describes some element in natural language.
 pub type Alt<'a> = &'a str;
+/// The actual intended textual content of a span. For example,
+/// if you have a hyphenated word, you can use `ActualText` to describe
+/// the same word without hyphens.
+pub type ActualText<'a> = &'a str;
 /// The expanded form of an abbreviation.
 pub type Expanded<'a> = &'a str;
 
@@ -162,7 +166,12 @@ pub enum ContentTag<'a> {
     /// Spans should not be too long. At most, they should contain a single like of text, but they
     /// can obviously be shorter, if text within a single line contains text with different styles
     /// or different languages.
-    Span(Lang<'a>, Option<Alt<'a>>, Option<Expanded<'a>>),
+    Span(
+        Lang<'a>,
+        Option<Alt<'a>>,
+        Option<Expanded<'a>>,
+        Option<ActualText<'a>>,
+    ),
     /// Use this tag for anything else that does not semantically fit into `Span` or `Artifact`.
     /// This includes for example arbitrary paths, images or a mix of different content that cannot
     /// be split up more.
@@ -173,7 +182,7 @@ impl ContentTag<'_> {
     pub(crate) fn name(&self) -> Name {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
-            ContentTag::Span(_, _, _) => Name(b"Span"),
+            ContentTag::Span(_, _, _, _) => Name(b"Span"),
             ContentTag::Other => Name(b"P"),
         }
     }
@@ -205,7 +214,7 @@ impl ContentTag<'_> {
 
                 artifact.kind(artifact_type);
             }
-            ContentTag::Span(lang, alt, exp) => {
+            ContentTag::Span(lang, alt, exp, actual) => {
                 properties.pair(Name(b"Lang"), sc.new_text_str(lang));
 
                 if let Some(alt) = alt {
@@ -214,6 +223,10 @@ impl ContentTag<'_> {
 
                 if let Some(exp) = exp {
                     properties.pair(Name(b"E"), sc.new_text_str(exp));
+                }
+
+                if let Some(actual) = actual {
+                    properties.actual_text(sc.new_text_str(actual));
                 }
             }
             ContentTag::Other => {}
@@ -760,6 +773,7 @@ mod tests {
             "en",
             Some("an alt text"),
             Some("expanded"),
+            Some("actual text"),
         ));
         surface.fill_text_(25.0, "a paragraph");
         surface.end_tagged();
@@ -780,7 +794,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id = surface.start_tagged(ContentTag::Span("", None, None));
+        let id = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(25.0, "a paragraph");
         surface.end_tagged();
 
@@ -855,7 +869,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let id1 = surface.start_tagged(ContentTag::Span("", None, None));
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(25.0, "a span");
         surface.end_tagged();
         let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
@@ -901,10 +915,10 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let h1 = surface.start_tagged(ContentTag::Span("", None, None));
+        let h1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(25.0, "a heading");
         surface.end_tagged();
-        let p1 = surface.start_tagged(ContentTag::Span("", None, None));
+        let p1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(50.0, "a paragraph");
         surface.end_tagged();
         surface.finish();
@@ -912,7 +926,7 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let p2 = surface.start_tagged(ContentTag::Span("", None, None));
+        let p2 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(75.0, "a second paragraph");
         surface.end_tagged();
         surface.finish();
@@ -920,10 +934,10 @@ mod tests {
 
         let mut page = document.start_page();
         let mut surface = page.surface();
-        let h2 = surface.start_tagged(ContentTag::Span("", None, None));
+        let h2 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(25.0, "another heading");
         surface.end_tagged();
-        let p3 = surface.start_tagged(ContentTag::Span("", None, None));
+        let p3 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text_(50.0, "another paragraph");
         surface.end_tagged();
         surface.finish();

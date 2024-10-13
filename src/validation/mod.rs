@@ -71,7 +71,7 @@ pub enum ValidationError {
     NoDocumentLanguage,
     /// No title was provided for the document, even though it is required by
     /// the standard.
-    NoDocumentTitle
+    NoDocumentTitle,
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -137,8 +137,7 @@ pub enum Validator {
     ///   document.
     /// - Information should not be conveyed by contrast, color, format
     ///   or layout.
-    UA1
-
+    UA1,
 }
 
 impl Validator {
@@ -158,7 +157,7 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A2_A,
                 // Only applies to PDF/A2-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
-                ValidationError::NoDocumentTitle => false
+                ValidationError::NoDocumentTitle => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -173,7 +172,7 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A3_A,
                 // Only applies to PDF/A3-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
-                ValidationError::NoDocumentTitle => false
+                ValidationError::NoDocumentTitle => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => unimplemented!(),
@@ -185,7 +184,7 @@ impl Validator {
                 ValidationError::InvalidCodepointMapping(_, _) => unimplemented!(),
                 ValidationError::UnicodePrivateArea(_, _) => unimplemented!(),
                 ValidationError::NoDocumentLanguage => unimplemented!(),
-                ValidationError::NoDocumentTitle => true
+                ValidationError::NoDocumentTitle => true,
             },
         }
     }
@@ -228,7 +227,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!()
+            Validator::UA1 => unimplemented!(),
         }
     }
 
@@ -246,7 +245,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!()
+            Validator::UA1 => unimplemented!(),
         }
     }
 
@@ -257,7 +256,7 @@ impl Validator {
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
-            Validator::UA1 => unimplemented!()
+            Validator::UA1 => unimplemented!(),
         }
     }
 
@@ -266,7 +265,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!()
+            Validator::UA1 => unimplemented!(),
         }
     }
 
@@ -275,7 +274,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!()
+            Validator::UA1 => unimplemented!(),
         }
     }
 
@@ -284,7 +283,7 @@ impl Validator {
             Validator::Dummy => None,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
-            Validator::UA1 => unimplemented!()
+            Validator::UA1 => unimplemented!(),
         }
     }
 }
@@ -514,7 +513,7 @@ mod tests {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, vec![]).unwrap();
 
-        let id1 = surface.start_tagged(ContentTag::Span("", None, None));
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
