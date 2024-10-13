@@ -66,3 +66,32 @@ See `README.md` for the meaning of each color.
 
 7.4.4:
 - The information there is hardly enforceable in an automated way, so not documented yet.
+
+# 7.5 Tables
+- The fact that tables should include headers is documented.
+- The scope attribute is currently not supported by krilla.
+- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is not documented.
+
+# 7.6 Lists
+- The fact that lists should be tagged
+  is documented.
+- The fact that Li, Lbl and LBody should be used is documented.
+- krilla does not allow creating a `ListNumbering` attribute.
+
+# 7.7 Mathematical expressions
+- The fact that mathematical expressions should be wrapped in `Formula` is documented.
+- The fact that mathematical expressions should have an alternate text is not checked yet.
+
+# 7.8 Page headers and footers
+- The fact that headers and footers should be tagged is documented.
+
+# 7.9 Notes and references
+- The fact that footnotes, endnotes, note labels and references should be tagged is documented.
+- The fact that footnotes and endnotes should be tagged with `Note` is documented.
+- krilla does currently not support the ID key.
+
+# 7.10 Optional content
+- krilla does currently not support optional content.
+
+# 7.11 Embedded files
+- krilla does currently not support embedded files.

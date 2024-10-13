@@ -158,6 +158,28 @@ pub enum Validator {
     /// - For not strongly structured documents, H1 should be the first
     ///   heading.
     ///
+    /// Tables:
+    /// - Tables should include headers and be tagged accordingly.
+    ///
+    /// Lists:
+    /// - List items should be tagged with Li tags, if necessary also with
+    ///   Lbl and LBody tags.
+    /// - Lists should only be used when the content is intended to be read
+    ///   as a list.
+    ///
+    /// Mathematical expressions:
+    /// - All mathematical expressions should be enclosed with
+    /// a `Formula` tag.
+    ///
+    /// Headers and footers:
+    /// - Headers and footers should be marked as corresponding
+    ///   artifacts.
+    ///
+    /// Notes and references:
+    /// - Footnotes, endnotes, note labels and references should be
+    ///   tagged accordingly and use tagged annotations.
+    /// - Footnotes and end notes should use the `Note` tag.
+    ///
     UA1,
 }
 
