@@ -131,12 +131,33 @@ pub enum Validator {
     /// The validator for the PDF/UA-1 standard.
     ///
     /// **Requirements**:
+    ///
+    /// General:
     /// - All real content should be tagged accordingly.
     /// - All artifacts should be marked accordingly.
     /// - The tag tree should reflect the logical reading order of the
     ///   document.
     /// - Information should not be conveyed by contrast, color, format
     ///   or layout.
+    ///
+    /// Text:
+    /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributs
+    ///   whenever possible.
+    /// - Stretchable characters (such as brackets, which often consist of several glyphs)
+    ///   should be marked accordingly with `ActualText`.
+    ///
+    ///  Graphics:
+    /// - Graphics should be tagged as figures (unless they are an artifact).
+    /// - Graphics need to be followed by a caption.
+    /// - Graphics that possess semantic values only in combination with other graphics
+    ///   should be tagged with a single Figure tag for each figure.
+    /// - If a more accessible representation exists, it should be used over graphics.
+    ///
+    /// Headings:
+    /// - Headings should be tagged as such.
+    /// - For not strongly structured documents, H1 should be the first
+    ///   heading.
+    ///
     UA1,
 }
 
@@ -181,7 +202,7 @@ impl Validator {
                 ValidationError::ContainsPostScript => unimplemented!(),
                 ValidationError::MissingCMYKProfile => unimplemented!(),
                 ValidationError::ContainsNotDefGlyph => unimplemented!(),
-                ValidationError::InvalidCodepointMapping(_, _) => unimplemented!(),
+                ValidationError::InvalidCodepointMapping(_, _) => true,
                 ValidationError::UnicodePrivateArea(_, _) => unimplemented!(),
                 ValidationError::NoDocumentLanguage => unimplemented!(),
                 ValidationError::NoDocumentTitle => true,
