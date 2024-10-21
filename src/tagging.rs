@@ -425,7 +425,9 @@ pub enum Tag {
     /// An association between an annotation and the content it belongs to. PDF
     ///
     /// **Best practice**: Should be used for all annotations, except for link annotations and
-    /// widget annotations.
+    /// widget annotations. The first child should be the identifier of a non-link annotation,
+    /// and all other subsequent children should be content identifiers associated with that
+    /// annotation.
     Annot,
     /// Item of graphical content.
     Figure,

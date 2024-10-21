@@ -139,6 +139,7 @@ pub enum Validator {
     ///   document.
     /// - Information should not be conveyed by contrast, color, format
     ///   or layout.
+    /// - All "best practice" notes in [`Tag`] need to be complied with.
     ///
     /// Text:
     /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributs
@@ -180,6 +181,19 @@ pub enum Validator {
     ///   tagged accordingly and use tagged annotations.
     /// - Footnotes and end notes should use the `Note` tag.
     ///
+    /// Navigation:
+    /// - The document must contain an outline, and it should reflect
+    ///   the reading order of the document.
+    /// - Page labels should be semantically appropriate.
+    ///
+    /// Annotations:
+    /// - Annotations should be present in the tag tree in the correct
+    /// reading order.
+    ///
+    /// Fonts:
+    /// - You should only use fonts that are legally embeddable in a file for unlimited,
+    ///   universal rendering.
+    /// [`Tag`]: crate::tagging::Tag
     UA1,
 }
 
@@ -218,15 +232,15 @@ impl Validator {
                 ValidationError::NoDocumentTitle => false,
             },
             Validator::UA1 => match validation_error {
-                ValidationError::TooLongString => unimplemented!(),
-                ValidationError::TooManyIndirectObjects => unimplemented!(),
-                ValidationError::TooHighQNestingLevel => unimplemented!(),
-                ValidationError::ContainsPostScript => unimplemented!(),
-                ValidationError::MissingCMYKProfile => unimplemented!(),
-                ValidationError::ContainsNotDefGlyph => unimplemented!(),
+                ValidationError::TooLongString => false,
+                ValidationError::TooManyIndirectObjects => false,
+                ValidationError::TooHighQNestingLevel => false,
+                ValidationError::ContainsPostScript => false,
+                ValidationError::MissingCMYKProfile => false,
+                ValidationError::ContainsNotDefGlyph => true,
                 ValidationError::InvalidCodepointMapping(_, _) => true,
-                ValidationError::UnicodePrivateArea(_, _) => unimplemented!(),
-                ValidationError::NoDocumentLanguage => unimplemented!(),
+                ValidationError::UnicodePrivateArea(_, _) => false,
+                ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
             },
         }
@@ -270,7 +284,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!(),
+            Validator::UA1 => false,
         }
     }
 
@@ -288,7 +302,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!(),
+            Validator::UA1 => false,
         }
     }
 
@@ -299,7 +313,7 @@ impl Validator {
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
-            Validator::UA1 => unimplemented!(),
+            Validator::UA1 => true,
         }
     }
 
@@ -308,7 +322,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!(),
+            Validator::UA1 => true,
         }
     }
 
@@ -317,7 +331,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => unimplemented!(),
+            Validator::UA1 => false,
         }
     }
 
@@ -326,7 +340,7 @@ impl Validator {
             Validator::Dummy => None,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
-            Validator::UA1 => unimplemented!(),
+            Validator::UA1 => None,
         }
     }
 }
