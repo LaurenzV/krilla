@@ -230,6 +230,13 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_15() -> Self {
+        Self {
+            validator: Validator::UA1,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {

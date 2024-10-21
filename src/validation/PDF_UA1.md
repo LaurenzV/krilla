@@ -10,7 +10,7 @@ See `README.md` for the meaning of each color.
 # 6.2 Conforming files
 
 - krilla writes the `pdfuaid:part` attribute. 🟢
-- krilla does not adhere to the file format provisions. 🔴
+- krilla does adhere to the file format provisions. 🟢
 
 # 6.3 Conforming reader
 
@@ -32,12 +32,12 @@ See `README.md` for the meaning of each color.
 - krilla does not support sounds. 🔵
 - krilla forces the user to provide a document title. 🟢
 - krilla always sets `DisplayDocTitle` to true for this mode. 🟢
-- krilla can't really control if the user provides raster-based images as content. 🔴
+- krilla can't really control if the user provides raster-based images as content. 🟠
 - krilla always writes the `Suspects` value as false. 🟢
 
 # 7.2 Text
 - The fact that logical reading order should be followed is documented. 🟣
-- krilla does currently not check that every character is mapped. 🔴
+- krilla checks that every character is mapped to a codepoint. 🟢
 - The fact that the user should make use of the natural language attributes is documented. 🟣
 - The fact that stretchable characters should be marked with `ActualText` is documented. 🟣
 

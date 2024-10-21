@@ -685,4 +685,36 @@ mod tests {
     fn validation_pdfa3_u_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
     }
+
+    #[snapshot(document, settings_15)]
+    fn validation_pdfua1_full_example(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "This is some text",
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        let mut tag_tree = TagTree::new();
+        tag_tree.push(id1);
+        document.set_tag_tree(tag_tree);
+
+        let metadata = Metadata::new().language("en".to_string()).title("a nice title".to_string());
+        document.set_metadata(metadata);
+    }
 }
