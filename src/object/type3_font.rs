@@ -356,12 +356,7 @@ impl Type3Font {
 
                         for c in text.chars() {
                             invalid_codepoint |= matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE);
-                            private_unicode |= match c as u32 {
-                                0xE000..=0xF8FF => true,
-                                0xF0000..=0xFFFFD => true,
-                                0x100000..=0x10FFFD => true,
-                                _ => false,
-                            }
+                            private_unicode |= matches!(c as u32, 0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD);
                         }
 
                         if invalid_codepoint {

@@ -74,6 +74,7 @@ pub enum ValidationError {
     NoDocumentTitle,
 }
 
+// TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
 /// A validator for exporting PDF documents to a specific subset of PDF.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
@@ -170,7 +171,7 @@ pub enum Validator {
     ///
     /// Mathematical expressions:
     /// - All mathematical expressions should be enclosed with
-    /// a `Formula` tag.
+    ///   a `Formula` tag.
     ///
     /// Headers and footers:
     /// - Headers and footers should be marked as corresponding
@@ -188,12 +189,12 @@ pub enum Validator {
     ///
     /// Annotations:
     /// - Annotations should be present in the tag tree in the correct
-    /// reading order.
+    ///   reading order.
     ///
     /// Fonts:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     ///   universal rendering.
-    /// [`Tag`]: crate::tagging::Tag
+    ///   [`Tag`]: crate::tagging::Tag
     UA1,
 }
 
