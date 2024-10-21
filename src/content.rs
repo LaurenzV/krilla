@@ -18,6 +18,7 @@ use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
+use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
 use float_cmp::approx_eq;
@@ -32,7 +33,6 @@ use std::sync::Arc;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
-use crate::tagging::ContentTag;
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -84,17 +84,16 @@ impl ContentBuilder {
         self.active_marked_content = true;
     }
 
-    pub fn start_marked_content(
-        &mut self, name: Name
-    ) {
+    pub fn start_marked_content(&mut self, name: Name) {
         self.start_marked_content_prelude();
         self.content.begin_marked_content(name);
     }
 
-    pub fn start_marked_content_with_properties(&mut self,
-                                                sc: &mut SerializerContext,
-                                                mcid: Option<i32>,
-                                                tag: ContentTag,
+    pub fn start_marked_content_with_properties(
+        &mut self,
+        sc: &mut SerializerContext,
+        mcid: Option<i32>,
+        tag: ContentTag,
     ) {
         self.start_marked_content_prelude();
 

@@ -136,7 +136,7 @@ impl<'a> Surface<'a> {
                     if at.requires_properties() {
                         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                             .start_marked_content_with_properties(self.sc, None, tag);
-                    }   else {
+                    } else {
                         Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                             .start_marked_content(tag.name());
                     }

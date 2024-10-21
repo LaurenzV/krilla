@@ -135,7 +135,7 @@ pub enum ArtifactType {
     /// Page artifacts, such as for example cut marks or color bars.
     Page,
     /// Any other type of artifact (e.g. table strokes).
-    Other
+    Other,
 }
 
 impl ArtifactType {
@@ -144,7 +144,7 @@ impl ArtifactType {
             ArtifactType::Header => true,
             ArtifactType::Footer => true,
             ArtifactType::Page => true,
-            ArtifactType::Other => false
+            ArtifactType::Other => false,
         }
     }
 }
@@ -215,7 +215,7 @@ impl ContentTag<'_> {
                     ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
                     // This method should only be called with artifacts that actually
                     // require a property.
-                    ArtifactType::Other => unreachable!()
+                    ArtifactType::Other => unreachable!(),
                 };
 
                 if *at == ArtifactType::Header {
