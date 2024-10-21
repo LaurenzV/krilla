@@ -194,7 +194,8 @@ pub enum Validator {
     /// Fonts:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     ///   universal rendering.
-    ///   [`Tag`]: crate::tagging::Tag
+    ///
+    /// [`Tag`]: crate::tagging::Tag
     UA1,
 }
 
