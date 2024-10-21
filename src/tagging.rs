@@ -446,12 +446,10 @@ pub enum Tag {
     /// annotation.
     Annot,
     /// Item of graphical content.
-    Figure,
+    Figure(Option<String>),
     /// A mathematical formula with an alternate description.
     Formula(Option<String>),
     // All below are non-standard attributes.
-    /// An image with an alternate description.
-    Image(Option<String>),
     /// A date or time.
     Datetime,
     /// A list of terms.
@@ -496,11 +494,10 @@ impl Tag {
             Tag::Code => struct_elem.kind(StructRole::Code),
             Tag::Link => struct_elem.kind(StructRole::Link),
             Tag::Annot => struct_elem.kind(StructRole::Annot),
-            Tag::Figure => struct_elem.kind(StructRole::Figure),
+            Tag::Figure(_) => struct_elem.kind(StructRole::Figure),
             Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
 
             // Every additional tag needs to be registered in the role map!
-            Tag::Image(_) => struct_elem.custom_kind(Name(b"Image")),
             Tag::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
             Tag::Terms => struct_elem.custom_kind(Name(b"Terms")),
             Tag::Title => struct_elem.custom_kind(Name(b"Title")),
@@ -509,7 +506,7 @@ impl Tag {
 
     pub(crate) fn alt(&self) -> Option<&str> {
         match self {
-            Tag::Image(s) => s.as_deref(),
+            Tag::Figure(s) => s.as_deref(),
             Tag::Formula(s) => s.as_deref(),
             _ => None,
         }
@@ -862,7 +859,7 @@ mod tests {
     fn tagging_image_with_alt(document: &mut Document) {
         let mut tag_tree = TagTree::new();
         let mut image_group =
-            TagGroup::new(Tag::Image(Some("This is the alternate text.".to_string())));
+            TagGroup::new(Tag::Figure(Some("This is the alternate text.".to_string())));
 
         let mut page = document.start_page();
         let mut surface = page.surface();

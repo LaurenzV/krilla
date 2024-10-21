@@ -109,7 +109,7 @@ endobj
 7 0 obj
 <<
   /Type /StructElem
-  /S /Image
+  /S /Figure
   /P 6 0 R
   /Alt (This is the alternate text.)
   /K [0]
@@ -139,13 +139,13 @@ xref
 0000000496 00000 n
 0000000883 00000 n
 0000000964 00000 n
-0000001087 00000 n
+0000001088 00000 n
 trailer
 <<
   /Size 9
   /Root 8 0 R
-  /ID [(KiWkKdWZTRCtriKNPqX+3w==) (KiWkKdWZTRCtriKNPqX+3w==)]
+  /ID [(G4WlxmWB19Vot2ql/s/sqg==) (G4WlxmWB19Vot2ql/s/sqg==)]
 >>
 startxref
-1222
+1223
 %%EOF
