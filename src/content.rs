@@ -41,7 +41,7 @@ pub(crate) struct ContentBuilder {
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
-    active_marked_content: bool,
+    pub(crate) active_marked_content: bool,
 }
 
 impl ContentBuilder {
@@ -76,17 +76,27 @@ impl ContentBuilder {
         )
     }
 
-    pub fn start_marked_content(
-        &mut self,
-        sc: &mut SerializerContext,
-        mcid: Option<i32>,
-        tag: ContentTag,
-    ) {
+    fn start_marked_content_prelude(&mut self) {
         if self.active_marked_content {
             panic!("can't start marked content twice");
         }
 
         self.active_marked_content = true;
+    }
+
+    pub fn start_marked_content(&mut self, name: Name) {
+        self.start_marked_content_prelude();
+        self.content.begin_marked_content(name);
+    }
+
+    pub fn start_marked_content_with_properties(
+        &mut self,
+        sc: &mut SerializerContext,
+        mcid: Option<i32>,
+        tag: ContentTag,
+    ) {
+        self.start_marked_content_prelude();
+
         let mut mc = self
             .content
             .begin_marked_content_with_properties(tag.name());

@@ -134,6 +134,19 @@ pub enum ArtifactType {
     Footer,
     /// Page artifacts, such as for example cut marks or color bars.
     Page,
+    /// Any other type of artifact (e.g. table strokes).
+    Other,
+}
+
+impl ArtifactType {
+    pub(crate) fn requires_properties(&self) -> bool {
+        match self {
+            ArtifactType::Header => true,
+            ArtifactType::Footer => true,
+            ArtifactType::Page => true,
+            ArtifactType::Other => false,
+        }
+    }
 }
 
 /// A language identifier as specified in RFC 3066. It will not be validated, so
@@ -200,6 +213,9 @@ impl ContentTag<'_> {
                     ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
                     ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
                     ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
+                    // This method should only be called with artifacts that actually
+                    // require a property.
+                    ArtifactType::Other => unreachable!(),
                 };
 
                 if *at == ArtifactType::Header {
@@ -895,6 +911,10 @@ mod tests {
         surface.pop();
         surface.end_tagged();
 
+        let id6 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Other));
+        surface.fill_text_(75.0, "a different type of artifact");
+        surface.end_tagged();
+
         surface.finish();
         page.finish();
 
@@ -903,6 +923,7 @@ mod tests {
         tag_tree.push(id3);
         tag_tree.push(id4);
         tag_tree.push(id5);
+        tag_tree.push(id6);
 
         document.set_tag_tree(tag_tree);
     }
