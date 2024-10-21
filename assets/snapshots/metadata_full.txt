@@ -47,6 +47,7 @@ endobj
 <<
   /Type /Catalog
   /Pages 1 0 R
+  /Lang (en)
 >>
 endobj
 
@@ -66,5 +67,5 @@ trailer
   /ID [(Xn98c+etTvGsMudT7fYSSg==) (j4s7vQi5tH1RUV+BhUAvDQ==)]
 >>
 startxref
-633
+646
 %%EOF

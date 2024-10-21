@@ -142,7 +142,7 @@ impl<'a> Surface<'a> {
                     self.active_mc = true;
                     Identifier::dummy()
                 }
-                ContentTag::Span(_) | ContentTag::Other => {
+                ContentTag::Span(_, _, _, _) | ContentTag::Other => {
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                         .start_marked_content(self.sc, Some(id.mcid), tag);
                     self.active_mc = true;

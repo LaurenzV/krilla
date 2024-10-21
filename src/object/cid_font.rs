@@ -238,18 +238,28 @@ impl CIDFont {
                     None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                         self.font.clone(),
                         GlyphId::new(g as u32),
-                        None,
                     )),
                     Some(text) => {
-                        if text
-                            .chars()
-                            .any(|c| matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE))
-                            || text.is_empty()
-                        {
+                        // Keep in sync with Type3
+                        let mut invalid_codepoint = false;
+                        let mut private_unicode = false;
+
+                        for c in text.chars() {
+                            invalid_codepoint |= matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE);
+                            private_unicode |= matches!(c as u32, 0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD);
+                        }
+
+                        if invalid_codepoint {
                             sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                                 self.font.clone(),
                                 GlyphId::new(g as u32),
-                                Some(text.clone()),
+                            ))
+                        }
+
+                        if private_unicode {
+                            sc.register_validation_error(ValidationError::UnicodePrivateArea(
+                                self.font.clone(),
+                                GlyphId::new(g as u32),
                             ))
                         }
 

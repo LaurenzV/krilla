@@ -60,9 +60,21 @@ pub enum ValidationError {
     ///
     /// Can occur if those codepoints appeared in the input text, or were explicitly
     /// mapped to that glyph.
-    InvalidCodepointMapping(Font, GlyphId, Option<String>),
+    InvalidCodepointMapping(Font, GlyphId),
+    /// A glyph was mapped to a codepoint in the Unicode private use area, which is forbidden
+    /// by some standards, like for example PDF/A2-A.
+    // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
+    // attribute to be present. But we just completely forbid it, for simplicity.
+    UnicodePrivateArea(Font, GlyphId),
+    /// No document language was set via the metadata, even though it is required
+    /// by the standard.
+    NoDocumentLanguage,
+    /// No title was provided for the document, even though it is required by
+    /// the standard.
+    NoDocumentTitle,
 }
 
+// TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
 /// A validator for exporting PDF documents to a specific subset of PDF.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
@@ -86,6 +98,8 @@ pub enum Validator {
     /// - To the fullest extent possible, the logical structure of the document should be encoded
     ///   correspondingly in the tag tree using appropriate grouping tags.
     /// - Language identifiers used must be valid according to RFC 3066.
+    /// - You should provide an alternate text to span content tags, if applicable.
+    /// - You should provide the expansion of abbreviations to span content tags, if applicable.
     ///
     /// [`tagging`]: crate::tagging
     A2_A,
@@ -115,6 +129,74 @@ pub enum Validator {
     /// **Requirements**:
     /// - All requirements of PDF/A2-B
     A3_U,
+    /// The validator for the PDF/UA-1 standard.
+    ///
+    /// **Requirements**:
+    ///
+    /// General:
+    /// - All real content should be tagged accordingly.
+    /// - All artifacts should be marked accordingly.
+    /// - The tag tree should reflect the logical reading order of the
+    ///   document.
+    /// - Information should not be conveyed by contrast, color, format
+    ///   or layout.
+    /// - All "best practice" notes in [`Tag`] need to be complied with.
+    ///
+    /// Text:
+    /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributs
+    ///   whenever possible.
+    /// - Stretchable characters (such as brackets, which often consist of several glyphs)
+    ///   should be marked accordingly with `ActualText`.
+    ///
+    ///  Graphics:
+    /// - Graphics should be tagged as figures (unless they are an artifact).
+    /// - Graphics need to be followed by a caption.
+    /// - Graphics that possess semantic values only in combination with other graphics
+    ///   should be tagged with a single Figure tag for each figure.
+    /// - If a more accessible representation exists, it should be used over graphics.
+    ///
+    /// Headings:
+    /// - Headings should be tagged as such.
+    /// - For not strongly structured documents, H1 should be the first
+    ///   heading.
+    ///
+    /// Tables:
+    /// - Tables should include headers and be tagged accordingly.
+    ///
+    /// Lists:
+    /// - List items should be tagged with Li tags, if necessary also with
+    ///   Lbl and LBody tags.
+    /// - Lists should only be used when the content is intended to be read
+    ///   as a list.
+    ///
+    /// Mathematical expressions:
+    /// - All mathematical expressions should be enclosed with
+    ///   a `Formula` tag.
+    ///
+    /// Headers and footers:
+    /// - Headers and footers should be marked as corresponding
+    ///   artifacts.
+    ///
+    /// Notes and references:
+    /// - Footnotes, endnotes, note labels and references should be
+    ///   tagged accordingly and use tagged annotations.
+    /// - Footnotes and end notes should use the `Note` tag.
+    ///
+    /// Navigation:
+    /// - The document must contain an outline, and it should reflect
+    ///   the reading order of the document.
+    /// - Page labels should be semantically appropriate.
+    ///
+    /// Annotations:
+    /// - Annotations should be present in the tag tree in the correct
+    ///   reading order.
+    ///
+    /// Fonts:
+    /// - You should only use fonts that are legally embeddable in a file for unlimited,
+    ///   universal rendering.
+    ///
+    /// [`Tag`]: crate::tagging::Tag
+    UA1,
 }
 
 impl Validator {
@@ -129,7 +211,12 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A2-U and PDF/A2-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A2_B,
+                ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A2_B,
+                // Only applies to PDF/A2-A
+                ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A2_A,
+                // Only applies to PDF/A2-A
+                ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
+                ValidationError::NoDocumentTitle => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -139,7 +226,24 @@ impl Validator {
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
                 // Only applies for PDF/A3-U and PDF/A3-A
-                ValidationError::InvalidCodepointMapping(_, _, _) => *self != Validator::A3_B,
+                ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A3_B,
+                // Only applies to PDF/A3-A
+                ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A3_A,
+                // Only applies to PDF/A3-A
+                ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
+                ValidationError::NoDocumentTitle => false,
+            },
+            Validator::UA1 => match validation_error {
+                ValidationError::TooLongString => false,
+                ValidationError::TooManyIndirectObjects => false,
+                ValidationError::TooHighQNestingLevel => false,
+                ValidationError::ContainsPostScript => false,
+                ValidationError::MissingCMYKProfile => false,
+                ValidationError::ContainsNotDefGlyph => true,
+                ValidationError::InvalidCodepointMapping(_, _) => true,
+                ValidationError::UnicodePrivateArea(_, _) => false,
+                ValidationError::NoDocumentLanguage => false,
+                ValidationError::NoDocumentTitle => true,
             },
         }
     }
@@ -148,28 +252,31 @@ impl Validator {
         match self {
             Validator::Dummy => {}
             Validator::A2_A => {
-                xmp.pdfa_part("2");
+                xmp.pdfa_part(2);
                 xmp.pdfa_conformance("A");
             }
             Validator::A2_B => {
-                xmp.pdfa_part("2");
+                xmp.pdfa_part(2);
                 xmp.pdfa_conformance("B");
             }
             Validator::A2_U => {
-                xmp.pdfa_part("2");
+                xmp.pdfa_part(2);
                 xmp.pdfa_conformance("U");
             }
             Validator::A3_A => {
-                xmp.pdfa_part("3");
+                xmp.pdfa_part(3);
                 xmp.pdfa_conformance("A");
             }
             Validator::A3_B => {
-                xmp.pdfa_part("3");
+                xmp.pdfa_part(3);
                 xmp.pdfa_conformance("B");
             }
             Validator::A3_U => {
-                xmp.pdfa_part("3");
+                xmp.pdfa_part(3);
                 xmp.pdfa_conformance("U");
+            }
+            Validator::UA1 => {
+                xmp.pdfua_part(1);
             }
         }
     }
@@ -179,6 +286,16 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => false,
+        }
+    }
+
+    pub(crate) fn requires_display_doc_title(&self) -> bool {
+        match self {
+            Validator::Dummy => false,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
+            Validator::UA1 => true,
         }
     }
 
@@ -187,6 +304,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => false,
         }
     }
 
@@ -197,6 +315,7 @@ impl Validator {
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
+            Validator::UA1 => true,
         }
     }
 
@@ -205,6 +324,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => true,
         }
     }
 
@@ -213,6 +333,7 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::UA1 => false,
         }
     }
 
@@ -221,6 +342,7 @@ impl Validator {
             Validator::Dummy => None,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
+            Validator::UA1 => None,
         }
     }
 }
@@ -450,7 +572,7 @@ mod tests {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, vec![]).unwrap();
 
-        let id1 = surface.start_tagged(ContentTag::Span(""));
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -474,16 +596,14 @@ mod tests {
         tag_tree.push(id1);
         tag_tree.push(id2);
         document.set_tag_tree(tag_tree);
+
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
     }
 
-    #[test]
-    fn validation_pdfu_invalid_codepoint() {
-        let mut document = Document::new_with(SerializeSettings::settings_9());
+    fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
         let mut page = document.start_page();
         let mut surface = page.surface();
-
-        let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
 
         let glyphs = vec![
             KrillaGlyph::new(GlyphId::new(3), 2048.0, 0.0, 0.0, 0.0, 0..1),
@@ -495,22 +615,43 @@ mod tests {
             Fill::default(),
             &glyphs,
             font.clone(),
-            "A\u{FEFF}B",
+            text,
             20.0,
             GlyphUnits::UnitsPerEm,
             false,
         );
         surface.finish();
         page.finish();
+    }
+
+    #[test]
+    fn validation_pdfu_invalid_codepoint() {
+        let mut document = Document::new_with(SerializeSettings::settings_9());
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+        invalid_codepoint_impl(&mut document, font.clone(), "A\u{FEFF}B");
 
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::InvalidCodepointMapping(
-                    font,
-                    GlyphId::new(2),
-                    Some("\u{FEFF}".to_string())
-                )
+                ValidationError::InvalidCodepointMapping(font, GlyphId::new(2),)
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa_private_unicode_codepoint() {
+        let mut document = Document::new_with(SerializeSettings::settings_13());
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+        invalid_codepoint_impl(&mut document, font.clone(), "A\u{E022}B");
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::UnicodePrivateArea(font, GlyphId::new(2))
             ]))
         )
     }

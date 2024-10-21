@@ -10,12 +10,13 @@ use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::object::xobject::XObject;
+use crate::page::page_root_transform;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::util::RectExt;
 use pdf_writer::types::{AnnotationFlags, AnnotationType};
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 /// A type of annotation.
 pub enum Annotation {
@@ -86,8 +87,7 @@ impl LinkAnnotation {
             .indirect(root_ref)
             .start::<pdf_writer::writers::Annotation>();
 
-        let invert_transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_size);
-        let actual_rect = self.rect.transform(invert_transform).unwrap();
+        let actual_rect = self.rect.transform(page_root_transform(page_size)).unwrap();
         annotation.subtype(AnnotationType::Link);
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);

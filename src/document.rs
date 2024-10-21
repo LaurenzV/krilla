@@ -192,6 +192,7 @@ mod tests {
             .modification_date(date)
             .creator("krilla".to_string())
             .producer("krilla".to_string())
+            .language("en".to_string())
             .keywords(vec![
                 "keyword1".to_string(),
                 "keyword2".to_string(),

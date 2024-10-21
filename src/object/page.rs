@@ -9,7 +9,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
-use crate::util::Deferred;
+use crate::util::{Deferred, RectExt};
 use pdf_writer::types::NumberingStyle;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
@@ -52,14 +52,7 @@ impl<'a> Page<'a> {
     }
 
     pub(crate) fn root_transform(&self) -> Transform {
-        Transform::from_row(
-            1.0,
-            0.0,
-            0.0,
-            -1.0,
-            0.0,
-            self.page_settings.surface_size().height(),
-        )
+        page_root_transform(self.page_settings.surface_size().height())
     }
 
     /// Add an annotation to the page.
@@ -101,6 +94,10 @@ impl<'a> Page<'a> {
 
     /// A shorthand for `std::mem::drop`.
     pub fn finish(self) {}
+}
+
+pub(crate) fn page_root_transform(height: f32) -> Transform {
+    Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, height)
 }
 
 impl Drop for Page<'_> {
@@ -203,14 +200,16 @@ impl InternalPage {
         let mut page = chunk.page(root_ref);
         self.stream_resources.to_pdf_resources(&mut page);
 
-        let media_box = self.page_settings.media_box().unwrap_or(self.bbox);
+        let media_box = self
+            .page_settings
+            .media_box()
+            .unwrap_or(self.bbox)
+            .transform(page_root_transform(
+                self.page_settings.surface_size().height(),
+            ))
+            .unwrap();
         // Convert to the proper PDF values.
-        page.media_box(pdf_writer::Rect::new(
-            media_box.x(),
-            -media_box.height() + (self.page_settings.surface_size().height() - media_box.y()),
-            media_box.x() + media_box.width(),
-            self.page_settings.surface_size().height() - media_box.y(),
-        ));
+        page.media_box(media_box.to_pdf_rect());
 
         if let Some(struct_parent) = self.struct_parent {
             page.struct_parents(struct_parent);

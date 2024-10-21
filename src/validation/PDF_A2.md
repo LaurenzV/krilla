@@ -224,7 +224,7 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 TODO: Fix the remaining red ones before next release!
 
-6.2.11.7.3: krilla currently does not provide an ActualText entry for characters in the Unicode private area. 🔴
+6.2.11.7.3: krilla forbids all codepoints in the unicode private area for this export mode. 🟢
 
 # 6.7 Logical Structure
 
@@ -243,7 +243,7 @@ TODO: Fix the remaining red ones before next release!
 6.7.3.4: krilla maps all non-standard structure types. 🟢
 
 6.7.4:
-- krilla currently does not force writing a language in the catalog. 🔴
+- krilla requires the user to set the document language in that export mode. 🟢
 - krilla forces the user to specify the language on each span. 🟢
 - The need for correctness of language tags is documented. 🟣
 
@@ -251,8 +251,8 @@ TODO: Fix the remaining red ones before next release!
 
 6.7.6: krilla currently does not support any non-textual annotations. 🔵
 
-6.7.7: krilla currently does not support manual specification of replacement text. 🔴
+6.7.7: The requirement to specify alt text is documented. 🟣
 
-6.7.8: krilla currently does not support expansion of abbreviations and acronyms. 🔴
+6.7.8: The requirement to specify the expansions of abbreviations is documented. 🟣
 
 

@@ -1,6 +1,7 @@
 use crate::metadata::Metadata;
 use crate::serialize::SerializerContext;
 use crate::util::{hash_base64, Deferred};
+use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
@@ -145,6 +146,10 @@ impl ChunkContainer {
             &self.shading_functions, &self.patterns
         );
 
+        if !self.metadata.as_ref().is_some_and(|m| m.title.is_some()) {
+            sc.register_validation_error(ValidationError::NoDocumentTitle);
+        }
+
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
             metadata.serialize_document_info(&mut remapped_ref, sc, &mut pdf);
@@ -227,13 +232,27 @@ impl ChunkContainer {
                 catalog.pair(Name(b"OutputIntents"), oi.0);
             }
 
-            if let Some(st) = &self.struct_tree_root {
-                catalog.pair(Name(b"StructTreeRoot"), st.0);
-                catalog.mark_info().marked(true);
+            if let Some(lang) = self.metadata.and_then(|m| m.language).as_ref() {
+                catalog.lang(sc.new_text_str(lang));
+            } else {
+                sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
 
-            // TODO: Add viewer preferences
-            // TODO: Add lang
+            if let Some(st) = &self.struct_tree_root {
+                catalog.pair(Name(b"StructTreeRoot"), st.0);
+                catalog
+                    .mark_info()
+                    .marked(true)
+                    // We always set suspects to false because it's required by PDF/UA
+                    .suspects(false);
+            }
+
+            if sc.serialize_settings.validator.requires_display_doc_title() {
+                catalog
+                    // TODO: Add to pdf-writer
+                    .viewer_preferences()
+                    .pair(Name(b"DisplayDocTitle"), true);
+            }
 
             if let Some(ol) = &self.outline {
                 catalog.outlines(ol.0);

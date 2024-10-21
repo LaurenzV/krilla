@@ -8,7 +8,7 @@
 
 use crate::serialize::SerializerContext;
 use pdf_writer::{Pdf, Ref};
-use xmp_writer::{Timezone, XmpWriter};
+use xmp_writer::{LangId, Timezone, XmpWriter};
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]
@@ -20,6 +20,7 @@ pub struct Metadata {
     pub(crate) keywords: Option<Vec<String>>,
     pub(crate) authors: Option<Vec<String>>,
     pub(crate) document_id: Option<String>,
+    pub(crate) language: Option<String>,
     pub(crate) modification_date: Option<DateTime>,
     pub(crate) creation_date: Option<DateTime>,
 }
@@ -47,6 +48,14 @@ impl Metadata {
     /// The keywords that describe the document.
     pub fn keywords(mut self, keywords: Vec<String>) -> Self {
         self.keywords = Some(keywords);
+        self
+    }
+
+    /// The main language of the document, as an RFC 3066 language tag.
+    ///
+    /// This property is required for some export modes, like for example PDF/A3-A
+    pub fn language(mut self, language: String) -> Self {
+        self.language = Some(language);
         self
     }
 
@@ -141,6 +150,10 @@ impl Metadata {
 
         if let Some(producer) = &self.producer {
             xmp.producer(producer);
+        }
+
+        if let Some(lang) = &self.language {
+            xmp.language([LangId(lang)]);
         }
 
         if let Some(date_time) = self.modification_date {
