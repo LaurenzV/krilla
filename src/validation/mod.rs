@@ -170,6 +170,7 @@ pub enum Validator {
     ///
     /// Tables:
     /// - Tables should include headers and be tagged accordingly.
+    /// - Tables should only be used to represent content within logical row/column relationship.
     ///
     /// Lists:
     /// - List items should be tagged with Li tags, if necessary also with

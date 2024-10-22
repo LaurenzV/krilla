@@ -66,7 +66,7 @@ See `README.md` for the meaning of each color.
 # 7.5 Tables
 - The fact that tables should include headers is documented. 🟣
 - The scope attribute is currently not supported by krilla. 🔴
-- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is not documented. 🟠
+- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is documented. 🟣
 
 # 7.6 Lists
 - The fact that lists should be tagged is documented. 🟣
