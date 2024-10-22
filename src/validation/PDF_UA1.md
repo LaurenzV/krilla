@@ -117,7 +117,7 @@ See `README.md` for the meaning of each color.
 - The fact that annotations should reflect the reading order is documented. 🟣
 - The fact that for visual formatting, annotations should 
   be tagged according to their semantic function is not documented. 🟠
-- The fact that annotations must have a Contents key or an alternative description is not enforced. 🔴
+- krilla ensures that annotations have an alternate text. 🟢
 
 7.18.2:
 - krilla only supports the default annotation types. 🟢
