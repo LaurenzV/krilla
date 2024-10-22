@@ -446,9 +446,13 @@ pub enum Tag {
     /// and all other subsequent children should be content identifiers associated with that
     /// annotation.
     Annot,
-    /// Item of graphical content.
+    /// Item of graphical content, with some optional alt text.
+    ///
+    /// Providing the alt text is required in some export modes, like for example PDF/UA1.
     Figure(Option<String>),
-    /// A mathematical formula with an alternate description.
+    /// A mathematical formula, with some optional alt text.
+    ///
+    /// Providing the alt text is required in some export modes, like for example PDF/UA1.
     Formula(Option<String>),
     // All below are non-standard attributes.
     /// A date or time.
