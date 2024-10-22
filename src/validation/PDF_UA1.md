@@ -107,7 +107,7 @@ See `README.md` for the meaning of each color.
 - krilla does not support encryption. 🔵
 
 # 7.17 Navigation
-- krilla does not enforce setting a document outline yet. 🔴
+- krilla enforces setting a document outline. 🟢
 - The fact that the outline should reflect the reading order is
   documented. 🟣
 - The fact that page labels should be semantically appropriate is documented. 🟣

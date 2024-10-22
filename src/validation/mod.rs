@@ -75,7 +75,9 @@ pub enum ValidationError {
     /// A figure or formula is missing an alt text.
     MissingAltText,
     /// A heading is missing a title.
-    MissingHeadingTitle
+    MissingHeadingTitle,
+    /// The document does not contain an outline.
+    MissingDocumentOutline
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -223,6 +225,7 @@ impl Validator {
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
+                ValidationError::MissingDocumentOutline => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -239,7 +242,8 @@ impl Validator {
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
-                ValidationError::MissingHeadingTitle => false
+                ValidationError::MissingHeadingTitle => false,
+                ValidationError::MissingDocumentOutline => false
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -253,7 +257,8 @@ impl Validator {
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
                 ValidationError::MissingAltText => true,
-                ValidationError::MissingHeadingTitle => true
+                ValidationError::MissingHeadingTitle => true,
+                ValidationError::MissingDocumentOutline => true
             },
         }
     }
@@ -374,6 +379,7 @@ mod tests {
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect};
+    use crate::outline::Outline;
 
     fn pdfa_document() -> Document {
         Document::new_with(SerializeSettings::settings_7())
@@ -726,6 +732,9 @@ mod tests {
 
         let metadata = Metadata::new().language("en".to_string()).title("a nice title".to_string());
         document.set_metadata(metadata);
+
+        let outline = Outline::new();
+        document.set_outline(outline);
     }
 
     #[test]
@@ -762,7 +771,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::MissingAltText, ValidationError::NoDocumentTitle
+                ValidationError::MissingDocumentOutline, ValidationError::MissingAltText, ValidationError::NoDocumentTitle
             ]))
         )
     }
