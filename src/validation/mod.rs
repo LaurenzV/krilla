@@ -72,6 +72,8 @@ pub enum ValidationError {
     /// No title was provided for the document, even though it is required by
     /// the standard.
     NoDocumentTitle,
+    /// A figure or formula is missing an alt text.
+    MissingAltText
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -217,6 +219,7 @@ impl Validator {
                 // Only applies to PDF/A2-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
+                ValidationError::MissingAltText => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -232,6 +235,7 @@ impl Validator {
                 // Only applies to PDF/A3-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
+                ValidationError::MissingAltText => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -244,6 +248,7 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _) => false,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
+                ValidationError::MissingAltText => true
             },
         }
     }
@@ -358,7 +363,7 @@ mod tests {
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
     use crate::surface::TextDirection;
-    use crate::tagging::{ArtifactType, ContentTag, TagTree};
+    use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, NOTO_SANS};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
@@ -716,5 +721,44 @@ mod tests {
 
         let metadata = Metadata::new().language("en".to_string()).title("a nice title".to_string());
         document.set_metadata(metadata);
+    }
+
+    #[test]
+    fn validation_pdfua1_missing_requirements() {
+        let mut document = Document::new_with(SerializeSettings::settings_15());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "Hi",
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        let mut tag_tree = TagTree::new();
+        let mut tag_group = TagGroup::new(Tag::Formula(None));
+        tag_group.push(id1);
+        tag_tree.push(tag_group);
+        document.set_tag_tree(tag_tree);
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::MissingAltText, ValidationError::NoDocumentTitle
+            ]))
+        )
     }
 }

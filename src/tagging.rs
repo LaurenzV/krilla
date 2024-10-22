@@ -124,6 +124,7 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
+use crate::validation::ValidationError;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -504,6 +505,14 @@ impl Tag {
         };
     }
 
+    pub(crate) fn can_have_alt(&self) -> bool {
+        match self {
+            Tag::Figure(_) => true,
+            Tag::Formula(_) => true,
+            _ => false,
+        }
+    }
+
     pub(crate) fn alt(&self) -> Option<&str> {
         match self {
             Tag::Figure(s) => s.as_deref(),
@@ -599,6 +608,10 @@ impl TagGroup {
         struct_elem.parent(parent);
         if let Some(alt) = self.tag.alt() {
             struct_elem.alt(sc.new_text_str(alt));
+        }   else {
+            if self.tag.can_have_alt() {
+                sc.register_validation_error(ValidationError::MissingAltText);
+            }
         }
 
         serialize_children(

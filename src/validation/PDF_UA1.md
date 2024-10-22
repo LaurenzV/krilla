@@ -44,7 +44,7 @@ See `README.md` for the meaning of each color.
 # 7.3 Graphics
 - The fact that figures should be tagged (as a figure or an artifact) is documented. 🟣
 - The fact that figures should be followed by a caption is documented. 🟣
-- The fact that an alternate text should be provided to figures is not checked yet. 🔴
+- The fact that an alternate text should be provided to figures is checked. 🟢
 - The fact graphics that possess semantic value only in combination with other graphics should be tagged with a single Figure tag for each group is documented. 🟣
 - The fact that a more accessible representation should be used if it exists is documented. 🟣
 
@@ -75,7 +75,7 @@ See `README.md` for the meaning of each color.
 
 # 7.7 Mathematical expressions
 - The fact that mathematical expressions should be wrapped in `Formula` is documented. 🟣
-- The fact that mathematical expressions should have an alternate text is not checked yet. 🔴
+- The fact that mathematical expressions should have an alternate text is checked. 🟢
 
 # 7.8 Page headers and footers
 - The fact that headers and footers should be tagged is documented. 🟣
