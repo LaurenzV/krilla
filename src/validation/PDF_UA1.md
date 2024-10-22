@@ -131,7 +131,7 @@ See `README.md` for the meaning of each color.
 
 7.18.5
 - The best practices for link tagging are documented. 🟣
-- krilla does not support alternate descriptions for link. 🔴
+- krilla enforces an alt text for all annotations. 🟢
 - krilla never writes the `IMap` key for URIs. 🔵
 
 7.18.6

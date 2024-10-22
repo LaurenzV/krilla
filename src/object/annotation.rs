@@ -15,17 +15,34 @@ use crate::util::RectExt;
 use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
+use crate::validation::ValidationError;
 
 /// An annotation.
 pub struct Annotation {
     pub(crate) annotation_type: AnnotationType,
+    pub(crate) alt: Option<String>,
     pub(crate) struct_parent: Option<i32>,
+}
+
+impl Annotation {
+    /// Create a new link annotation with some alt text.
+    ///
+    /// Note that the alt text might be required in some cases, for example
+    /// when exporting to PDF/UA.
+    pub fn new_link(annotation: LinkAnnotation, alt_text: Option<String>) -> Self {
+        Self {
+            annotation_type: AnnotationType::Link(annotation),
+            alt: alt_text,
+            struct_parent: None
+        }
+    }
 }
 
 impl From<LinkAnnotation> for Annotation {
     fn from(value: LinkAnnotation) -> Self {
         Self {
             annotation_type: AnnotationType::Link(value),
+            alt: None,
             struct_parent: None,
         }
     }
@@ -51,6 +68,12 @@ impl Annotation {
 
         if let Some(struct_parent) = self.struct_parent {
             annotation.struct_parent(struct_parent);
+        }
+
+        if let Some(alt_text) = &self.alt {
+            annotation.contents(sc.new_text_str(alt_text));
+        }   else {
+            sc.register_validation_error(ValidationError::MissingAnnotationAltText);
         }
 
         annotation.finish();

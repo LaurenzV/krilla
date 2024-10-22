@@ -78,6 +78,8 @@ pub enum ValidationError {
     MissingHeadingTitle,
     /// The document does not contain an outline.
     MissingDocumentOutline,
+    /// An annotation is missing an alt text.
+    MissingAnnotationAltText
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -226,6 +228,7 @@ impl Validator {
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
+                ValidationError::MissingAnnotationAltText => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -244,6 +247,7 @@ impl Validator {
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
+                ValidationError::MissingAnnotationAltText => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -259,6 +263,7 @@ impl Validator {
                 ValidationError::MissingAltText => true,
                 ValidationError::MissingHeadingTitle => true,
                 ValidationError::MissingDocumentOutline => true,
+                ValidationError::MissingAnnotationAltText => true,
             },
         }
     }
@@ -356,7 +361,7 @@ impl Validator {
 #[cfg(test)]
 mod tests {
     use crate::action::LinkAction;
-    use crate::annotation::{LinkAnnotation, Target};
+    use crate::annotation::{Annotation, LinkAnnotation, Target};
     use crate::error::KrillaError;
     use crate::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
     use crate::metadata::Metadata;
@@ -715,10 +720,17 @@ mod tests {
         surface.end_tagged();
 
         surface.finish();
+
+        let annotation = page.add_tagged_annotation(Annotation::new_link(LinkAnnotation::new(
+            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        ), Some("A link to youtube".to_string())));
+
         page.finish();
 
         let mut tag_tree = TagTree::new();
         tag_tree.push(id1);
+        tag_tree.push(annotation);
         document.set_tag_tree(tag_tree);
 
         let metadata = Metadata::new()
@@ -753,11 +765,18 @@ mod tests {
         surface.end_tagged();
 
         surface.finish();
+
+        let annot = page.add_tagged_annotation(Annotation::new_link(LinkAnnotation::new(
+            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        ), None));
+
         page.finish();
 
         let mut tag_tree = TagTree::new();
         let mut tag_group = TagGroup::new(Tag::Formula(None));
         tag_group.push(id1);
+        tag_group.push(annot);
         tag_tree.push(tag_group);
         document.set_tag_tree(tag_tree);
 
@@ -765,6 +784,7 @@ mod tests {
             document.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::MissingDocumentOutline,
+                ValidationError::MissingAnnotationAltText,
                 ValidationError::MissingAltText,
                 ValidationError::NoDocumentTitle
             ]))
