@@ -9,19 +9,26 @@
 use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
-use crate::object::xobject::XObject;
 use crate::page::page_root_transform;
 use crate::serialize::SerializerContext;
-use crate::stream::Stream;
 use crate::util::RectExt;
-use pdf_writer::types::{AnnotationFlags, AnnotationType};
+use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
-/// A type of annotation.
-pub enum Annotation {
-    /// A link annotation.
-    Link(LinkAnnotation),
+/// An annotation.
+pub struct Annotation {
+    pub(crate) annotation_type: AnnotationType,
+    pub(crate) struct_parent: Option<i32>,
+}
+
+impl From<LinkAnnotation> for Annotation {
+    fn from(value: LinkAnnotation) -> Self {
+        Self {
+            annotation_type: AnnotationType::Link(value),
+            struct_parent: None,
+        }
+    }
 }
 
 impl Annotation {
@@ -29,17 +36,45 @@ impl Annotation {
         &self,
         sc: &mut SerializerContext,
         root_ref: Ref,
-        page_size: f32,
+        page_height: f32,
     ) -> KrillaResult<Chunk> {
-        match self {
-            Annotation::Link(link) => link.serialize(sc, root_ref, page_size),
-        }
-    }
+        let mut chunk = Chunk::new();
+        let mut annotation = chunk
+            .indirect(root_ref)
+            .start::<pdf_writer::writers::Annotation>();
 
-    pub(crate) fn set_struct_parent(&mut self, parent: Option<i32>) {
+        self.annotation_type
+            .serialize_type(sc, &mut annotation, page_height)?;
+
+        // Only required by PDF/A, but we always write this regardless.
+        annotation.flags(AnnotationFlags::PRINT);
+
+        if let Some(struct_parent) = self.struct_parent {
+            annotation.struct_parent(struct_parent);
+        }
+
+        annotation.finish();
+
+        Ok(chunk)
+    }
+}
+
+/// A type of annotation.
+pub enum AnnotationType {
+    /// A link annotation.
+    Link(LinkAnnotation),
+}
+
+impl AnnotationType {
+    fn serialize_type(
+        &self,
+        sc: &mut SerializerContext,
+        annotation: &mut pdf_writer::writers::Annotation,
+        page_height: f32,
+    ) -> KrillaResult<()> {
         match self {
-            Annotation::Link(l) => l.struct_parent = parent,
-        };
+            AnnotationType::Link(l) => l.serialize_type(sc, annotation, page_height),
+        }
     }
 }
 
@@ -57,47 +92,28 @@ pub struct LinkAnnotation {
     pub(crate) rect: Rect,
     /// The target of the link annotation.
     pub(crate) target: Target,
-    pub(crate) struct_parent: Option<i32>,
-}
-
-impl From<LinkAnnotation> for Annotation {
-    fn from(value: LinkAnnotation) -> Self {
-        Annotation::Link(value)
-    }
 }
 
 impl LinkAnnotation {
     /// Create a new link annotation.
     pub fn new(rect: Rect, target: Target) -> Self {
-        Self {
-            rect,
-            target,
-            struct_parent: None,
-        }
+        Self { rect, target }
     }
 
-    fn serialize(
+    fn serialize_type(
         &self,
         sc: &mut SerializerContext,
-        root_ref: Ref,
-        page_size: f32,
-    ) -> KrillaResult<Chunk> {
-        let mut chunk = Chunk::new();
-        let mut annotation = chunk
-            .indirect(root_ref)
-            .start::<pdf_writer::writers::Annotation>();
+        annotation: &mut pdf_writer::writers::Annotation,
+        page_height: f32,
+    ) -> KrillaResult<()> {
+        annotation.subtype(pdf_writer::types::AnnotationType::Link);
 
-        let actual_rect = self.rect.transform(page_root_transform(page_size)).unwrap();
-        annotation.subtype(AnnotationType::Link);
+        let actual_rect = self
+            .rect
+            .transform(page_root_transform(page_height))
+            .unwrap();
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
-        annotation.flags(AnnotationFlags::PRINT);
-
-        if sc.serialize_settings.validator.annotation_ap_stream() {
-            let x_obj = XObject::new(Stream::empty(), false, false, Some(actual_rect));
-            let x_ref = sc.add_object(x_obj);
-            annotation.appearance().normal().stream(x_ref);
-        }
 
         match &self.target {
             Target::Destination(destination) => destination.serialize(
@@ -109,13 +125,7 @@ impl LinkAnnotation {
             Target::Action(action) => action.serialize(sc, annotation.action()),
         };
 
-        if let Some(struct_parent) = self.struct_parent {
-            annotation.struct_parent(struct_parent);
-        }
-
-        annotation.finish();
-
-        Ok(chunk)
+        Ok(())
     }
 }
 

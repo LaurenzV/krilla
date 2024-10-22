@@ -77,7 +77,7 @@ pub enum ValidationError {
     /// A heading is missing a title.
     MissingHeadingTitle,
     /// The document does not contain an outline.
-    MissingDocumentOutline
+    MissingDocumentOutline,
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -243,7 +243,7 @@ impl Validator {
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
-                ValidationError::MissingDocumentOutline => false
+                ValidationError::MissingDocumentOutline => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -258,7 +258,7 @@ impl Validator {
                 ValidationError::NoDocumentTitle => true,
                 ValidationError::MissingAltText => true,
                 ValidationError::MissingHeadingTitle => true,
-                ValidationError::MissingDocumentOutline => true
+                ValidationError::MissingDocumentOutline => true,
             },
         }
     }
@@ -293,15 +293,6 @@ impl Validator {
             Validator::UA1 => {
                 xmp.pdfua_part(1);
             }
-        }
-    }
-
-    pub(crate) fn annotation_ap_stream(&self) -> bool {
-        match self {
-            Validator::Dummy => false,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => false,
         }
     }
 
@@ -369,6 +360,7 @@ mod tests {
     use crate::error::KrillaError;
     use crate::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
     use crate::metadata::Metadata;
+    use crate::outline::Outline;
     use crate::page::Page;
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
@@ -379,7 +371,6 @@ mod tests {
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect};
-    use crate::outline::Outline;
 
     fn pdfa_document() -> Document {
         Document::new_with(SerializeSettings::settings_7())
@@ -730,7 +721,9 @@ mod tests {
         tag_tree.push(id1);
         document.set_tag_tree(tag_tree);
 
-        let metadata = Metadata::new().language("en".to_string()).title("a nice title".to_string());
+        let metadata = Metadata::new()
+            .language("en".to_string())
+            .title("a nice title".to_string());
         document.set_metadata(metadata);
 
         let outline = Outline::new();
@@ -771,7 +764,9 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::MissingDocumentOutline, ValidationError::MissingAltText, ValidationError::NoDocumentTitle
+                ValidationError::MissingDocumentOutline,
+                ValidationError::MissingAltText,
+                ValidationError::NoDocumentTitle
             ]))
         )
     }

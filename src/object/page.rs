@@ -64,7 +64,7 @@ impl<'a> Page<'a> {
     pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
         let annot_index = self.annotations.len();
         let struct_parent = self.sc.get_annotation_parent(self.page_index, annot_index);
-        annotation.set_struct_parent(struct_parent);
+        annotation.struct_parent = struct_parent;
         self.add_annotation(annotation);
 
         match struct_parent {

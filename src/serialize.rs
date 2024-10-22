@@ -619,7 +619,7 @@ impl SerializerContext {
             let outline_ref = self.new_ref();
             let chunk = outline.serialize(&mut self, outline_ref)?;
             self.chunk_container.outline = Some((outline_ref, chunk));
-        }   else {
+        } else {
             self.register_validation_error(ValidationError::MissingDocumentOutline);
         }
 

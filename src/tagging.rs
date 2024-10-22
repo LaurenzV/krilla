@@ -120,12 +120,12 @@
 // TODO: Support defining the expansion of word abbreviations.
 
 use crate::serialize::SerializerContext;
+use crate::validation::ValidationError;
 use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
-use crate::validation::ValidationError;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -547,7 +547,10 @@ impl Tag {
     }
 
     pub(crate) fn can_have_title(&self) -> bool {
-        matches!(self, Tag::H1(_) | Tag::H2(_) | Tag::H3(_) | Tag::H4(_) | Tag::H5(_) | Tag::H6(_))
+        matches!(
+            self,
+            Tag::H1(_) | Tag::H2(_) | Tag::H3(_) | Tag::H4(_) | Tag::H5(_) | Tag::H6(_)
+        )
     }
 }
 
@@ -638,7 +641,7 @@ impl TagGroup {
 
         if let Some(alt) = self.tag.alt() {
             struct_elem.alt(sc.new_text_str(alt));
-        }   else {
+        } else {
             if self.tag.can_have_alt() {
                 sc.register_validation_error(ValidationError::MissingAltText);
             }
@@ -646,7 +649,7 @@ impl TagGroup {
 
         if let Some(title) = self.tag.title() {
             struct_elem.title(sc.new_text_str(title));
-        }   else {
+        } else {
             if self.tag.can_have_title() {
                 sc.register_validation_error(ValidationError::MissingHeadingTitle);
             }
@@ -791,7 +794,7 @@ fn serialize_children(
 #[cfg(test)]
 mod tests {
     use crate::action::{Action, LinkAction};
-    use crate::annotation::{Annotation, LinkAnnotation, Target};
+    use crate::annotation::{LinkAnnotation, Target};
     use crate::font::Font;
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
@@ -866,10 +869,13 @@ mod tests {
 
         surface.finish();
 
-        let link_id = page.add_tagged_annotation(Annotation::Link(LinkAnnotation::new(
-            Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
-            Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
-        )));
+        let link_id = page.add_tagged_annotation(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
+            )
+            .into(),
+        );
 
         page.finish();
 
