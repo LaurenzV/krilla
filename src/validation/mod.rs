@@ -72,6 +72,14 @@ pub enum ValidationError {
     /// No title was provided for the document, even though it is required by
     /// the standard.
     NoDocumentTitle,
+    /// A figure or formula is missing an alt text.
+    MissingAltText,
+    /// A heading is missing a title.
+    MissingHeadingTitle,
+    /// The document does not contain an outline.
+    MissingDocumentOutline,
+    /// An annotation is missing an alt text.
+    MissingAnnotationAltText,
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -162,6 +170,7 @@ pub enum Validator {
     ///
     /// Tables:
     /// - Tables should include headers and be tagged accordingly.
+    /// - Tables should only be used to represent content within logical row/column relationship.
     ///
     /// Lists:
     /// - List items should be tagged with Li tags, if necessary also with
@@ -217,6 +226,10 @@ impl Validator {
                 // Only applies to PDF/A2-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
+                ValidationError::MissingAltText => false,
+                ValidationError::MissingHeadingTitle => false,
+                ValidationError::MissingDocumentOutline => false,
+                ValidationError::MissingAnnotationAltText => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -232,6 +245,10 @@ impl Validator {
                 // Only applies to PDF/A3-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
+                ValidationError::MissingAltText => false,
+                ValidationError::MissingHeadingTitle => false,
+                ValidationError::MissingDocumentOutline => false,
+                ValidationError::MissingAnnotationAltText => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -244,6 +261,10 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _) => false,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
+                ValidationError::MissingAltText => true,
+                ValidationError::MissingHeadingTitle => true,
+                ValidationError::MissingDocumentOutline => true,
+                ValidationError::MissingAnnotationAltText => true,
             },
         }
     }
@@ -278,15 +299,6 @@ impl Validator {
             Validator::UA1 => {
                 xmp.pdfua_part(1);
             }
-        }
-    }
-
-    pub(crate) fn annotation_ap_stream(&self) -> bool {
-        match self {
-            Validator::Dummy => false,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::UA1 => false,
         }
     }
 
@@ -350,19 +362,21 @@ impl Validator {
 #[cfg(test)]
 mod tests {
     use crate::action::LinkAction;
-    use crate::annotation::{LinkAnnotation, Target};
+    use crate::annotation::{Annotation, LinkAnnotation, Target};
     use crate::error::KrillaError;
     use crate::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
     use crate::metadata::Metadata;
+    use crate::outline::Outline;
     use crate::page::Page;
     use crate::paint::{LinearGradient, SpreadMethod};
     use crate::path::{Fill, FillRule};
     use crate::surface::TextDirection;
-    use crate::tagging::{ArtifactType, ContentTag, TagTree};
+    use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, NOTO_SANS};
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
+    use pdf_writer::types::{ListNumbering, TableHeaderScope};
     use tiny_skia_path::{Point, Rect};
 
     fn pdfa_document() -> Document {
@@ -684,5 +698,141 @@ mod tests {
     #[snapshot(document, settings_11)]
     fn validation_pdfa3_u_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_15)]
+    fn validation_pdfua1_full_example(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "This is some text",
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+
+        surface.finish();
+
+        let annotation = page.add_tagged_annotation(Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            ),
+            Some("A link to youtube".to_string()),
+        ));
+
+        page.finish();
+
+        let mut tag_tree = TagTree::new();
+        tag_tree.push(id1);
+        tag_tree.push(annotation);
+        document.set_tag_tree(tag_tree);
+
+        let metadata = Metadata::new()
+            .language("en".to_string())
+            .title("a nice title".to_string());
+        document.set_metadata(metadata);
+
+        let outline = Outline::new();
+        document.set_outline(outline);
+    }
+
+    #[test]
+    fn validation_pdfua1_missing_requirements() {
+        let mut document = Document::new_with(SerializeSettings::settings_15());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, vec![]).unwrap();
+
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            20.0,
+            &[],
+            "Hi",
+            false,
+            TextDirection::Auto,
+        );
+        surface.end_tagged();
+
+        surface.finish();
+
+        let annot = page.add_tagged_annotation(Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            ),
+            None,
+        ));
+
+        page.finish();
+
+        let mut tag_tree = TagTree::new();
+        let mut tag_group = TagGroup::new(Tag::Formula(None));
+        tag_group.push(id1);
+        tag_group.push(annot);
+        tag_tree.push(tag_group);
+        document.set_tag_tree(tag_tree);
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::MissingDocumentOutline,
+                ValidationError::MissingAnnotationAltText,
+                ValidationError::MissingAltText,
+                ValidationError::NoDocumentTitle
+            ]))
+        )
+    }
+
+    #[snapshot(document, settings_15)]
+    fn validation_pdfua1_attributes(document: &mut Document) {
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
+        surface.end_tagged();
+
+        let id2 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        let mut tag_tree = TagTree::new();
+
+        let mut group1 = TagGroup::new(Tag::L(ListNumbering::Circle));
+        group1.push(id1);
+
+        let mut group2 = TagGroup::new(Tag::TH(TableHeaderScope::Row));
+        group2.push(id2);
+
+        tag_tree.push(group1);
+        tag_tree.push(group2);
+        document.set_tag_tree(tag_tree);
+
+        let metadata = Metadata::new()
+            .language("en".to_string())
+            .title("a nice title".to_string());
+        document.set_metadata(metadata);
+
+        let outline = Outline::new();
+        document.set_outline(outline);
     }
 }

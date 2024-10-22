@@ -10,7 +10,7 @@ See `README.md` for the meaning of each color.
 # 6.2 Conforming files
 
 - krilla writes the `pdfuaid:part` attribute. 🟢
-- krilla does not adhere to the file format provisions. 🔴
+- krilla does adhere to the file format provisions. 🟢
 
 # 6.3 Conforming reader
 
@@ -32,19 +32,19 @@ See `README.md` for the meaning of each color.
 - krilla does not support sounds. 🔵
 - krilla forces the user to provide a document title. 🟢
 - krilla always sets `DisplayDocTitle` to true for this mode. 🟢
-- krilla can't really control if the user provides raster-based images as content. 🔴
+- krilla can't really control if the user provides raster-based images as content. 🟠
 - krilla always writes the `Suspects` value as false. 🟢
 
 # 7.2 Text
 - The fact that logical reading order should be followed is documented. 🟣
-- krilla does currently not check that every character is mapped. 🔴
+- krilla checks that every character is mapped to a codepoint. 🟢
 - The fact that the user should make use of the natural language attributes is documented. 🟣
 - The fact that stretchable characters should be marked with `ActualText` is documented. 🟣
 
 # 7.3 Graphics
 - The fact that figures should be tagged (as a figure or an artifact) is documented. 🟣
 - The fact that figures should be followed by a caption is documented. 🟣
-- The fact that an alternate text should be provided to figures is not checked yet. 🔴
+- The fact that an alternate text should be provided to figures is checked. 🟢
 - The fact graphics that possess semantic value only in combination with other graphics should be tagged with a single Figure tag for each group is documented. 🟣
 - The fact that a more accessible representation should be used if it exists is documented. 🟣
 
@@ -52,30 +52,30 @@ See `README.md` for the meaning of each color.
 
 7.4.1:
 - The fact that headings should be tagged is documented. 🟣
-- krilla does not support the T key yet. 🔴
+- krilla does not support the T key yet. 🟢
 
 7.4.2:
-- The information there is hardly enforceable in an automated way, so not documented yet. 🔴
+- The information there is hardly enforceable in an automated way, so not documented yet. 🟠
 
 7.4.3:
 - krilla does not support heading levels higher than 6. 🔵
 
 7.4.4:
-- The information there is hardly enforceable in an automated way, so not documented yet. 🔴
+- The information there is hardly enforceable in an automated way, so not documented yet. 🟠
 
 # 7.5 Tables
 - The fact that tables should include headers is documented. 🟣
-- The scope attribute is currently not supported by krilla. 🔴
-- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is not documented. 🔴
+- krilla always requires the user to provide a table header scope. 🟢
+- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is documented. 🟣
 
 # 7.6 Lists
 - The fact that lists should be tagged is documented. 🟣
 - The fact that Li, Lbl and LBody should be used is documented. 🟣
-- krilla does not allow creating a `ListNumbering` attribute. 🔴
+- krilla always forces writing the `ListNumbering` attribute for lists. 🟢
 
 # 7.7 Mathematical expressions
 - The fact that mathematical expressions should be wrapped in `Formula` is documented. 🟣
-- The fact that mathematical expressions should have an alternate text is not checked yet. 🔴
+- The fact that mathematical expressions should have an alternate text is checked. 🟢
 
 # 7.8 Page headers and footers
 - The fact that headers and footers should be tagged is documented. 🟣
@@ -83,7 +83,7 @@ See `README.md` for the meaning of each color.
 # 7.9 Notes and references
 - The fact that footnotes, endnotes, note labels and references should be tagged is documented. 🟣
 - The fact that footnotes and endnotes should be tagged with `Note` is documented. 🟣
-- krilla does currently not support the ID key. 🔴
+- krilla always generates an ID for notes. 🟢
 
 # 7.10 Optional content
 - krilla does currently not support optional content. 🔵
@@ -107,7 +107,7 @@ See `README.md` for the meaning of each color.
 - krilla does not support encryption. 🔵
 
 # 7.17 Navigation
-- krilla does not enforce setting a document outline yet. 🔴
+- krilla enforces setting a document outline. 🟢
 - The fact that the outline should reflect the reading order is
   documented. 🟣
 - The fact that page labels should be semantically appropriate is documented. 🟣
@@ -116,22 +116,22 @@ See `README.md` for the meaning of each color.
 7.18.1:
 - The fact that annotations should reflect the reading order is documented. 🟣
 - The fact that for visual formatting, annotations should 
-  be tagged according to their semantic function is not documented. 🔴
-- The fact that annotations must have a Contents key or an alternative description is not enforced. 🔴
+  be tagged according to their semantic function is not documented. 🟠
+- krilla ensures that annotations have an alternate text. 🟢
 
 7.18.2:
 - krilla only supports the default annotation types. 🟢
 - krilla does not use the `TrapNet` annotation. 🔵
 
 7.18.3
-- krilla does not enforce setting a tab order. 🔴
+- krilla always writes the `TabOrder` property for pages that have a struct parent. 🟢
 
 7.18.4
 - krilla does not support widget annotations. 🔵
 
 7.18.5
 - The best practices for link tagging are documented. 🟣
-- krilla does not support alternate descriptions for link. 🔴
+- krilla enforces an alt text for all annotations. 🟢
 - krilla never writes the `IMap` key for URIs. 🔵
 
 7.18.6

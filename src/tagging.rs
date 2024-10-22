@@ -101,7 +101,8 @@
 //!
 //! - In general, all contents in your file should be tagged, either as an artifact or with
 //!   Span/Other.
-//! - The order of elements in the tag tree should represent the logical reading order.
+//! - The order of elements in the tag tree should represent the logical reading order, including
+//!   annotations.
 //! - Word breaks in text should be represented explicitly with spaces, instead of implicitly
 //!   by not including them, but instead positioning text in a way that "simulates" the spaces.
 //! - Hyphenation should be represented as a soft hyphen character (U+00AD) instead
@@ -119,7 +120,10 @@
 // TODO: Support defining the expansion of word abbreviations.
 
 use crate::serialize::SerializerContext;
-use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
+use crate::validation::ValidationError;
+use pdf_writer::types::{
+    ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
+};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
@@ -369,23 +373,36 @@ pub enum Tag {
     Index,
     /// A paragraph.
     P,
-    /// First-level heading.
-    H1,
-    /// Second-level heading.
-    H2,
-    /// Third-level heading.
-    H3,
-    /// Fourth-level heading.
-    H4,
-    /// Fifth-level heading.
-    H5,
-    /// Sixth-level heading.
-    H6,
+    /// First-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H1(Option<String>),
+    /// Second-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H2(Option<String>),
+    /// Third-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H3(Option<String>),
+    /// Fourth-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H4(Option<String>),
+    /// Fifth-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H5(Option<String>),
+    /// Sixth-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H6(Option<String>),
     /// A list.
     ///
     /// **Best practice**: Should consist of an optional caption followed by
     /// list items.
-    L,
+    // List numbering is only required for PDF/UA, but we just enforce it for always.
+    L(ListNumbering),
     /// A list item.
     ///
     /// **Best practice**: Should consist of one or more list labels and/or list bodies.
@@ -405,7 +422,8 @@ pub enum Tag {
     /// **Best practice**: May contain table headers cells and table data cells.
     TR,
     /// A table header cell.
-    TH,
+    // Table header scope is only required for PDF/UA, but we include it always for simplicity.
+    TH(TableHeaderScope),
     /// A table data cell.
     TD,
     /// A table header row group.
@@ -445,13 +463,15 @@ pub enum Tag {
     /// and all other subsequent children should be content identifiers associated with that
     /// annotation.
     Annot,
-    /// Item of graphical content.
-    Figure,
-    /// A mathematical formula with an alternate description.
+    /// Item of graphical content, with some optional alt text.
+    ///
+    /// Providing the alt text is required in some export modes, like for example PDF/UA1.
+    Figure(Option<String>),
+    /// A mathematical formula, with some optional alt text.
+    ///
+    /// Providing the alt text is required in some export modes, like for example PDF/UA1.
     Formula(Option<String>),
     // All below are non-standard attributes.
-    /// An image with an alternate description.
-    Image(Option<String>),
     /// A date or time.
     Datetime,
     /// A list of terms.
@@ -472,19 +492,19 @@ impl Tag {
             Tag::TOCI => struct_elem.kind(StructRole::TOCI),
             Tag::Index => struct_elem.kind(StructRole::Index),
             Tag::P => struct_elem.kind(StructRole::P),
-            Tag::H1 => struct_elem.kind(StructRole::H1),
-            Tag::H2 => struct_elem.kind(StructRole::H2),
-            Tag::H3 => struct_elem.kind(StructRole::H3),
-            Tag::H4 => struct_elem.kind(StructRole::H4),
-            Tag::H5 => struct_elem.kind(StructRole::H5),
-            Tag::H6 => struct_elem.kind(StructRole::H6),
-            Tag::L => struct_elem.kind(StructRole::L),
+            Tag::H1(_) => struct_elem.kind(StructRole::H1),
+            Tag::H2(_) => struct_elem.kind(StructRole::H2),
+            Tag::H3(_) => struct_elem.kind(StructRole::H3),
+            Tag::H4(_) => struct_elem.kind(StructRole::H4),
+            Tag::H5(_) => struct_elem.kind(StructRole::H5),
+            Tag::H6(_) => struct_elem.kind(StructRole::H6),
+            Tag::L(_) => struct_elem.kind(StructRole::L),
             Tag::LI => struct_elem.kind(StructRole::LI),
             Tag::Lbl => struct_elem.kind(StructRole::Lbl),
             Tag::LBody => struct_elem.kind(StructRole::LBody),
             Tag::Table => struct_elem.kind(StructRole::Table),
             Tag::TR => struct_elem.kind(StructRole::TR),
-            Tag::TH => struct_elem.kind(StructRole::TH),
+            Tag::TH(_) => struct_elem.kind(StructRole::TH),
             Tag::TD => struct_elem.kind(StructRole::TD),
             Tag::THead => struct_elem.kind(StructRole::THead),
             Tag::TBody => struct_elem.kind(StructRole::TBody),
@@ -496,23 +516,45 @@ impl Tag {
             Tag::Code => struct_elem.kind(StructRole::Code),
             Tag::Link => struct_elem.kind(StructRole::Link),
             Tag::Annot => struct_elem.kind(StructRole::Annot),
-            Tag::Figure => struct_elem.kind(StructRole::Figure),
+            Tag::Figure(_) => struct_elem.kind(StructRole::Figure),
             Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
 
             // Every additional tag needs to be registered in the role map!
-            Tag::Image(_) => struct_elem.custom_kind(Name(b"Image")),
             Tag::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
             Tag::Terms => struct_elem.custom_kind(Name(b"Terms")),
             Tag::Title => struct_elem.custom_kind(Name(b"Title")),
         };
     }
 
+    pub(crate) fn can_have_alt(&self) -> bool {
+        matches!(self, Tag::Figure(_) | Tag::Formula(_))
+    }
+
     pub(crate) fn alt(&self) -> Option<&str> {
         match self {
-            Tag::Image(s) => s.as_deref(),
+            Tag::Figure(s) => s.as_deref(),
             Tag::Formula(s) => s.as_deref(),
             _ => None,
         }
+    }
+
+    pub(crate) fn title(&self) -> Option<&str> {
+        match self {
+            Tag::H1(s) => s.as_deref(),
+            Tag::H2(s) => s.as_deref(),
+            Tag::H3(s) => s.as_deref(),
+            Tag::H4(s) => s.as_deref(),
+            Tag::H5(s) => s.as_deref(),
+            Tag::H6(s) => s.as_deref(),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn can_have_title(&self) -> bool {
+        matches!(
+            self,
+            Tag::H1(_) | Tag::H2(_) | Tag::H3(_) | Tag::H4(_) | Tag::H5(_) | Tag::H6(_)
+        )
     }
 }
 
@@ -529,11 +571,15 @@ impl Node {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
+        id_tree: &mut HashMap<String, Ref>,
         parent: Ref,
+        note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
     ) -> Option<Reference> {
         match self {
-            Node::Group(g) => Some(g.serialize(sc, parent_tree_map, parent, struct_elems)),
+            Node::Group(g) => {
+                Some(g.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems))
+            }
             Node::Leaf(ci) => match ci.0 {
                 IdentifierInner::Real(rci) => Some(Reference::ContentIdentifier(rci)),
                 IdentifierInner::Dummy => None,
@@ -586,22 +632,50 @@ impl TagGroup {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
+        id_tree: &mut HashMap<String, Ref>,
         parent: Ref,
+        note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
     ) -> Reference {
         let root_ref = sc.new_ref();
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, parent_tree_map, parent, struct_elems))
+            .flat_map(|n| n.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems))
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
         self.tag.write_kind(&mut struct_elem);
         struct_elem.parent(parent);
+
         if let Some(alt) = self.tag.alt() {
             struct_elem.alt(sc.new_text_str(alt));
+        } else if self.tag.can_have_alt() {
+            sc.register_validation_error(ValidationError::MissingAltText);
+        }
+
+        if let Some(title) = self.tag.title() {
+            struct_elem.title(sc.new_text_str(title));
+        } else if self.tag.can_have_title() {
+            sc.register_validation_error(ValidationError::MissingHeadingTitle);
+        }
+
+        match self.tag {
+            Tag::L(ln) => {
+                struct_elem.attributes().push().list().list_numbering(ln);
+            }
+            Tag::TH(ths) => {
+                struct_elem.attributes().push().table().scope(ths);
+            }
+            Tag::Note => {
+                let id = format!("Note {}", note_id);
+                *note_id += 1;
+                id_tree.insert(id.clone(), root_ref);
+                // TODO: Add this to pdf-writer
+                struct_elem.pair(Name(b"ID"), sc.new_str(id.as_bytes()));
+            }
+            _ => {}
         }
 
         serialize_children(
@@ -639,15 +713,30 @@ impl TagTree {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
+        id_tree_map: &mut HashMap<String, Ref>,
         struct_tree_ref: Ref,
     ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();
         let mut struct_elems = vec![];
 
+        // Keeps track of the ID of notes in the IDTree. We currently only write IDs for notes,
+        // which is why we use this simple variable, but this should be refactored if we write
+        // the IDs for multiple types of struct elements in the future.
+        let mut note_id = 1;
+
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, parent_tree_map, root_ref, &mut struct_elems))
+            .flat_map(|n| {
+                n.serialize(
+                    sc,
+                    parent_tree_map,
+                    id_tree_map,
+                    root_ref,
+                    &mut note_id,
+                    &mut struct_elems,
+                )
+            })
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -743,12 +832,12 @@ fn serialize_children(
 #[cfg(test)]
 mod tests {
     use crate::action::{Action, LinkAction};
-    use crate::annotation::{Annotation, LinkAnnotation, Target};
+    use crate::annotation::{LinkAnnotation, Target};
     use crate::font::Font;
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-    use crate::tests::{load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
+    use crate::tests::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
     use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Rect, Transform};
@@ -818,10 +907,13 @@ mod tests {
 
         surface.finish();
 
-        let link_id = page.add_tagged_annotation(Annotation::Link(LinkAnnotation::new(
-            Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
-            Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
-        )));
+        let link_id = page.add_tagged_annotation(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
+            )
+            .into(),
+        );
 
         page.finish();
 
@@ -862,7 +954,7 @@ mod tests {
     fn tagging_image_with_alt(document: &mut Document) {
         let mut tag_tree = TagTree::new();
         let mut image_group =
-            TagGroup::new(Tag::Image(Some("This is the alternate text.".to_string())));
+            TagGroup::new(Tag::Figure(Some("This is the alternate text.".to_string())));
 
         let mut page = document.start_page();
         let mut surface = page.surface();
@@ -933,8 +1025,8 @@ mod tests {
         let mut tag_tree = TagTree::new();
         let mut par_1 = TagGroup::new(Tag::P);
         let mut par_2 = TagGroup::new(Tag::P);
-        let mut heading_1 = TagGroup::new(Tag::H1);
-        let mut heading_2 = TagGroup::new(Tag::H1);
+        let mut heading_1 = TagGroup::new(Tag::H1(Some("first heading".to_string())));
+        let mut heading_2 = TagGroup::new(Tag::H1(Some("second heading".to_string())));
 
         let mut page = document.start_page();
         let mut surface = page.surface();
@@ -982,6 +1074,34 @@ mod tests {
 
         tag_tree.push(sect1);
         tag_tree.push(sect2);
+
+        document.set_tag_tree(tag_tree);
+    }
+
+    #[snapshot(document)]
+    fn tagging_two_footnotes(document: &mut Document) {
+        let mut tag_tree = TagTree::new();
+        let mut fn_group_1 = TagGroup::new(Tag::Note);
+        let mut fn_group_2 = TagGroup::new(Tag::Note);
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let id1 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), green_fill(1.0));
+        surface.end_tagged();
+
+        let id2 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(100.0, 100.0, 150.0, 150.0), green_fill(1.0));
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        fn_group_1.push(id1);
+        fn_group_2.push(id2);
+        tag_tree.push(fn_group_1);
+        tag_tree.push(fn_group_2);
 
         document.set_tag_tree(tag_tree);
     }

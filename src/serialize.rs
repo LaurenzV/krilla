@@ -20,7 +20,7 @@ use crate::validation::{ValidationError, Validator};
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
-use pdf_writer::writers::{NumberTree, OutputIntent, RoleMap};
+use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
@@ -227,6 +227,13 @@ impl SerializeSettings {
     pub(crate) fn settings_14() -> Self {
         Self {
             validator: Validator::A3_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_15() -> Self {
+        Self {
+            validator: Validator::UA1,
             ..Self::settings_1()
         }
     }
@@ -612,6 +619,8 @@ impl SerializerContext {
             let outline_ref = self.new_ref();
             let chunk = outline.serialize(&mut self, outline_ref)?;
             self.chunk_container.outline = Some((outline_ref, chunk));
+        } else {
+            self.register_validation_error(ValidationError::MissingDocumentOutline);
         }
 
         let fonts = std::mem::take(&mut self.font_map);
@@ -654,16 +663,20 @@ impl SerializerContext {
         let struct_parents = std::mem::take(&mut self.struct_parents);
         if let Some(root) = &tag_tree {
             let mut parent_tree_map = HashMap::new();
+            let mut id_tree_map = HashMap::new();
             let struct_tree_root_ref = self.new_ref();
-            let (document_ref, struct_elems) =
-                root.serialize(&mut self, &mut parent_tree_map, struct_tree_root_ref);
+            let (document_ref, struct_elems) = root.serialize(
+                &mut self,
+                &mut parent_tree_map,
+                &mut id_tree_map,
+                struct_tree_root_ref,
+            );
             self.chunk_container.struct_elements = struct_elems;
 
             let mut chunk = Chunk::new();
             let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
             tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
             let mut role_map = tree.insert(Name(b"RoleMap")).start::<RoleMap>();
-            role_map.insert(Name(b"Image"), StructRole::Figure);
             role_map.insert(Name(b"Datetime"), StructRole::Span);
             role_map.insert(Name(b"Terms"), StructRole::Part);
             role_map.insert(Name(b"Title"), StructRole::H1);
@@ -706,6 +719,15 @@ impl SerializerContext {
 
             tree_nums.finish();
             parent_tree.finish();
+
+            if !id_tree_map.is_empty() {
+                let mut id_tree = tree.insert(Name(b"IDTree")).start::<NameTree<Ref>>();
+                let mut names = id_tree.names();
+
+                for (name, ref_) in id_tree_map {
+                    names.insert(self.new_str(name.as_bytes()), ref_);
+                }
+            }
 
             tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
 

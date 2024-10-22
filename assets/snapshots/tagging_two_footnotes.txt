@@ -21,12 +21,15 @@ endobj
   /ParentTree <<
     /Nums [0 3 0 R]
   >>
+  /IDTree <<
+    /Names [(Note 1) 8 0 R (Note 2) 7 0 R]
+  >>
   /ParentTreeNextKey 1
 >>
 endobj
 
 3 0 obj
-[7 0 R]
+[8 0 R 7 0 R]
 endobj
 
 4 0 obj
@@ -44,53 +47,37 @@ endobj
 
 5 0 obj
 <<
-  /Length 333
+  /Length 229
 >>
 stream
 /P <<
   /MCID 0
 >> BDC
 q
-0 842 m
-200 842 l
-200 642 l
-0 642 l
-h
-W
-n
-q
 1 0 0 -1 0 842 cm
 /DeviceRGB cs
-1 0 0 scn
-20 20 m
-20 180 l
-180 180 l
-180 20 l
-f
-Q
-q
-1 0 0 -1 0 842 cm
-/DeviceRGB cs
-0 0.5019608 0 scn
-20 20 m
-180 20 l
-180 180 l
-20 180 l
+0 1 0 scn
+50 50 m
+100 50 l
+100 100 l
+50 100 l
 h
 f
 Q
+EMC
+/P <<
+  /MCID 1
+>> BDC
 q
 1 0 0 -1 0 842 cm
-/DeviceGray CS
-0 SCN
-4 M
-1 1 m
-199 1 l
-199 199 l
-1 199 l
+/DeviceRGB cs
+0 1 0 scn
+100 100 m
+150 100 l
+150 150 l
+100 150 l
 h
-S
-Q
+f
 Q
 EMC
 endstream
@@ -101,22 +88,33 @@ endobj
   /Type /StructElem
   /S /Document
   /P 2 0 R
-  /K [7 0 R]
+  /K [8 0 R 7 0 R]
 >>
 endobj
 
 7 0 obj
 <<
   /Type /StructElem
-  /S /Figure
+  /S /Note
   /P 6 0 R
-  /Alt (This is the alternate text.)
-  /K [0]
+  /ID (Note 2)
+  /K [1]
   /Pg 4 0 R
 >>
 endobj
 
 8 0 obj
+<<
+  /Type /StructElem
+  /S /Note
+  /P 6 0 R
+  /ID (Note 1)
+  /K [0]
+  /Pg 4 0 R
+>>
+endobj
+
+9 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -129,22 +127,23 @@ endobj
 endobj
 
 xref
-0 9
+0 10
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000275 00000 n
-0000000299 00000 n
-0000000477 00000 n
-0000000864 00000 n
-0000000945 00000 n
-0000001069 00000 n
+0000000336 00000 n
+0000000366 00000 n
+0000000544 00000 n
+0000000827 00000 n
+0000000914 00000 n
+0000001014 00000 n
+0000001114 00000 n
 trailer
 <<
-  /Size 9
-  /Root 8 0 R
-  /ID [(sqfQVWMf7gp1mHyjl97kXw==) (sqfQVWMf7gp1mHyjl97kXw==)]
+  /Size 10
+  /Root 9 0 R
+  /ID [(gWXFtrsbnuEq1mGHrCv1Xg==) (gWXFtrsbnuEq1mGHrCv1Xg==)]
 >>
 startxref
-1204
+1249
 %%EOF
