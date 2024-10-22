@@ -101,7 +101,8 @@
 //!
 //! - In general, all contents in your file should be tagged, either as an artifact or with
 //!   Span/Other.
-//! - The order of elements in the tag tree should represent the logical reading order.
+//! - The order of elements in the tag tree should represent the logical reading order, including
+//!   annotations.
 //! - Word breaks in text should be represented explicitly with spaces, instead of implicitly
 //!   by not including them, but instead positioning text in a way that "simulates" the spaces.
 //! - Hyphenation should be represented as a soft hyphen character (U+00AD) instead

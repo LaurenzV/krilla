@@ -116,7 +116,7 @@ See `README.md` for the meaning of each color.
 7.18.1:
 - The fact that annotations should reflect the reading order is documented. 🟣
 - The fact that for visual formatting, annotations should 
-  be tagged according to their semantic function is not documented. 🔴
+  be tagged according to their semantic function is not documented. 🟠
 - The fact that annotations must have a Contents key or an alternative description is not enforced. 🔴
 
 7.18.2:
@@ -124,7 +124,7 @@ See `README.md` for the meaning of each color.
 - krilla does not use the `TrapNet` annotation. 🔵
 
 7.18.3
-- krilla does not enforce setting a tab order. 🔴
+- krilla always writes the `TabOrder` property for pages that have a struct parent. 🟢
 
 7.18.4
 - krilla does not support widget annotations. 🔵

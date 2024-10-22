@@ -10,7 +10,7 @@ use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
-use pdf_writer::types::NumberingStyle;
+use pdf_writer::types::{NumberingStyle, TabOrder};
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
 use std::num::NonZeroU32;
@@ -213,6 +213,11 @@ impl InternalPage {
 
         if let Some(struct_parent) = self.struct_parent {
             page.struct_parents(struct_parent);
+
+            // Only required for PDF/UA, but might as well always set it.
+            if !self.annotations.is_empty() {
+                page.tab_order(TabOrder::StructureOrder);
+            }
         }
 
         page.parent(sc.page_tree_ref());
