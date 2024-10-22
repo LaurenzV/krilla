@@ -121,7 +121,7 @@
 
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
-use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, StructRole};
+use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
@@ -399,7 +399,8 @@ pub enum Tag {
     ///
     /// **Best practice**: Should consist of an optional caption followed by
     /// list items.
-    L,
+    // List numbering is only required for PDF/UA, but we just enforce it for always.
+    L(ListNumbering),
     /// A list item.
     ///
     /// **Best practice**: Should consist of one or more list labels and/or list bodies.
@@ -494,7 +495,7 @@ impl Tag {
             Tag::H4(_) => struct_elem.kind(StructRole::H4),
             Tag::H5(_) => struct_elem.kind(StructRole::H5),
             Tag::H6(_) => struct_elem.kind(StructRole::H6),
-            Tag::L => struct_elem.kind(StructRole::L),
+            Tag::L(_) => struct_elem.kind(StructRole::L),
             Tag::LI => struct_elem.kind(StructRole::LI),
             Tag::Lbl => struct_elem.kind(StructRole::Lbl),
             Tag::LBody => struct_elem.kind(StructRole::LBody),
@@ -649,6 +650,13 @@ impl TagGroup {
             struct_elem.title(sc.new_text_str(title));
         } else if self.tag.can_have_title() {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
+        }
+
+        match self.tag {
+            Tag::L(ln) => {
+                struct_elem.attributes().push().list().list_numbering(ln);
+            }
+            _ => {}
         }
 
         serialize_children(

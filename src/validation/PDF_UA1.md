@@ -71,7 +71,7 @@ See `README.md` for the meaning of each color.
 # 7.6 Lists
 - The fact that lists should be tagged is documented. 🟣
 - The fact that Li, Lbl and LBody should be used is documented. 🟣
-- krilla does not allow creating a `ListNumbering` attribute. 🔴
+- krilla always forces writing the `ListNumbering` attribute for lists. 🟢
 
 # 7.7 Mathematical expressions
 - The fact that mathematical expressions should be wrapped in `Formula` is documented. 🟣
