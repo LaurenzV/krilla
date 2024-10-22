@@ -79,7 +79,7 @@ pub enum ValidationError {
     /// The document does not contain an outline.
     MissingDocumentOutline,
     /// An annotation is missing an alt text.
-    MissingAnnotationAltText
+    MissingAnnotationAltText,
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -721,10 +721,13 @@ mod tests {
 
         surface.finish();
 
-        let annotation = page.add_tagged_annotation(Annotation::new_link(LinkAnnotation::new(
-            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
-        ), Some("A link to youtube".to_string())));
+        let annotation = page.add_tagged_annotation(Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            ),
+            Some("A link to youtube".to_string()),
+        ));
 
         page.finish();
 
@@ -766,10 +769,13 @@ mod tests {
 
         surface.finish();
 
-        let annot = page.add_tagged_annotation(Annotation::new_link(LinkAnnotation::new(
-            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
-        ), None));
+        let annot = page.add_tagged_annotation(Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            ),
+            None,
+        ));
 
         page.finish();
 

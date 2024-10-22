@@ -641,18 +641,14 @@ impl TagGroup {
 
         if let Some(alt) = self.tag.alt() {
             struct_elem.alt(sc.new_text_str(alt));
-        } else {
-            if self.tag.can_have_alt() {
-                sc.register_validation_error(ValidationError::MissingAltText);
-            }
+        } else if self.tag.can_have_alt() {
+            sc.register_validation_error(ValidationError::MissingAltText);
         }
 
         if let Some(title) = self.tag.title() {
             struct_elem.title(sc.new_text_str(title));
-        } else {
-            if self.tag.can_have_title() {
-                sc.register_validation_error(ValidationError::MissingHeadingTitle);
-            }
+        } else if self.tag.can_have_title() {
+            sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
 
         serialize_children(

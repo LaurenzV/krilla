@@ -12,10 +12,10 @@ use crate::object::destination::Destination;
 use crate::page::page_root_transform;
 use crate::serialize::SerializerContext;
 use crate::util::RectExt;
+use crate::validation::ValidationError;
 use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
-use crate::validation::ValidationError;
 
 /// An annotation.
 pub struct Annotation {
@@ -33,7 +33,7 @@ impl Annotation {
         Self {
             annotation_type: AnnotationType::Link(annotation),
             alt: alt_text,
-            struct_parent: None
+            struct_parent: None,
         }
     }
 }
@@ -72,7 +72,7 @@ impl Annotation {
 
         if let Some(alt_text) = &self.alt {
             annotation.contents(sc.new_text_str(alt_text));
-        }   else {
+        } else {
             sc.register_validation_error(ValidationError::MissingAnnotationAltText);
         }
 
