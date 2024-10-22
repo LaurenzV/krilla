@@ -376,7 +376,7 @@ mod tests {
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
-    use pdf_writer::types::ListNumbering;
+    use pdf_writer::types::{ListNumbering, TableHeaderScope};
     use tiny_skia_path::{Point, Rect};
 
     fn pdfa_document() -> Document {
@@ -808,19 +808,23 @@ mod tests {
         surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
         surface.end_tagged();
 
-        // let id2 = surface.start_tagged(ContentTag::Other);
-        // surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
-        // surface.end_tagged();
+        let id2 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
+        surface.end_tagged();
 
         surface.finish();
         page.finish();
 
         let mut tag_tree = TagTree::new();
 
-        let mut group = TagGroup::new(Tag::L(ListNumbering::Circle));
-        group.push(id1);
+        let mut group1 = TagGroup::new(Tag::L(ListNumbering::Circle));
+        group1.push(id1);
 
-        tag_tree.push(group);
+        let mut group2 = TagGroup::new(Tag::TH(TableHeaderScope::Row));
+        group2.push(id2);
+
+        tag_tree.push(group1);
+        tag_tree.push(group2);
         document.set_tag_tree(tag_tree);
 
         let metadata = Metadata::new()

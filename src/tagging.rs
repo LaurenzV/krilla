@@ -121,7 +121,9 @@
 
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
-use pdf_writer::types::{ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole};
+use pdf_writer::types::{
+    ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
+};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
@@ -420,7 +422,8 @@ pub enum Tag {
     /// **Best practice**: May contain table headers cells and table data cells.
     TR,
     /// A table header cell.
-    TH,
+    // Table header scope is only required for PDF/UA, but we include it always for simplicity.
+    TH(TableHeaderScope),
     /// A table data cell.
     TD,
     /// A table header row group.
@@ -501,7 +504,7 @@ impl Tag {
             Tag::LBody => struct_elem.kind(StructRole::LBody),
             Tag::Table => struct_elem.kind(StructRole::Table),
             Tag::TR => struct_elem.kind(StructRole::TR),
-            Tag::TH => struct_elem.kind(StructRole::TH),
+            Tag::TH(_) => struct_elem.kind(StructRole::TH),
             Tag::TD => struct_elem.kind(StructRole::TD),
             Tag::THead => struct_elem.kind(StructRole::THead),
             Tag::TBody => struct_elem.kind(StructRole::TBody),
@@ -655,6 +658,9 @@ impl TagGroup {
         match self.tag {
             Tag::L(ln) => {
                 struct_elem.attributes().push().list().list_numbering(ln);
+            }
+            Tag::TH(ths) => {
+                struct_elem.attributes().push().table().scope(ths);
             }
             _ => {}
         }
