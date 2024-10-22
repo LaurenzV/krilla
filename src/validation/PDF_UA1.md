@@ -83,7 +83,7 @@ See `README.md` for the meaning of each color.
 # 7.9 Notes and references
 - The fact that footnotes, endnotes, note labels and references should be tagged is documented. 🟣
 - The fact that footnotes and endnotes should be tagged with `Note` is documented. 🟣
-- krilla does currently not support the ID key. 🔴
+- krilla always generates an ID for notes. 🟢
 
 # 7.10 Optional content
 - krilla does currently not support optional content. 🔵

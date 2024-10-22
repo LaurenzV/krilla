@@ -571,11 +571,15 @@ impl Node {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
+        id_tree: &mut HashMap<String, Ref>,
         parent: Ref,
+        note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
     ) -> Option<Reference> {
         match self {
-            Node::Group(g) => Some(g.serialize(sc, parent_tree_map, parent, struct_elems)),
+            Node::Group(g) => {
+                Some(g.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems))
+            }
             Node::Leaf(ci) => match ci.0 {
                 IdentifierInner::Real(rci) => Some(Reference::ContentIdentifier(rci)),
                 IdentifierInner::Dummy => None,
@@ -628,14 +632,16 @@ impl TagGroup {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
+        id_tree: &mut HashMap<String, Ref>,
         parent: Ref,
+        note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
     ) -> Reference {
         let root_ref = sc.new_ref();
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, parent_tree_map, parent, struct_elems))
+            .flat_map(|n| n.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems))
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -661,6 +667,13 @@ impl TagGroup {
             }
             Tag::TH(ths) => {
                 struct_elem.attributes().push().table().scope(ths);
+            }
+            Tag::Note => {
+                let id = format!("Note {}", note_id);
+                *note_id += 1;
+                id_tree.insert(id.clone(), root_ref);
+                // TODO: Add this to pdf-writer
+                struct_elem.pair(Name(b"ID"), sc.new_str(id.as_bytes()));
             }
             _ => {}
         }
@@ -700,15 +713,30 @@ impl TagTree {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
+        id_tree_map: &mut HashMap<String, Ref>,
         struct_tree_ref: Ref,
     ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();
         let mut struct_elems = vec![];
 
+        // Keeps track of the ID of notes in the IDTree. We currently only write IDs for notes,
+        // which is why we use this simple variable, but this should be refactored if we write
+        // the IDs for multiple types of struct elements in the future.
+        let mut note_id = 1;
+
         let children_refs = self
             .children
             .iter()
-            .flat_map(|n| n.serialize(sc, parent_tree_map, root_ref, &mut struct_elems))
+            .flat_map(|n| {
+                n.serialize(
+                    sc,
+                    parent_tree_map,
+                    id_tree_map,
+                    root_ref,
+                    &mut note_id,
+                    &mut struct_elems,
+                )
+            })
             .collect::<Vec<_>>();
 
         let mut chunk = Chunk::new();
@@ -809,7 +837,7 @@ mod tests {
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-    use crate::tests::{load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
+    use crate::tests::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
     use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Rect, Transform};
@@ -1046,6 +1074,34 @@ mod tests {
 
         tag_tree.push(sect1);
         tag_tree.push(sect2);
+
+        document.set_tag_tree(tag_tree);
+    }
+
+    #[snapshot(document)]
+    fn tagging_two_footnotes(document: &mut Document) {
+        let mut tag_tree = TagTree::new();
+        let mut fn_group_1 = TagGroup::new(Tag::Note);
+        let mut fn_group_2 = TagGroup::new(Tag::Note);
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let id1 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), green_fill(1.0));
+        surface.end_tagged();
+
+        let id2 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(100.0, 100.0, 150.0, 150.0), green_fill(1.0));
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        fn_group_1.push(id1);
+        fn_group_2.push(id2);
+        tag_tree.push(fn_group_1);
+        tag_tree.push(fn_group_2);
 
         document.set_tag_tree(tag_tree);
     }
