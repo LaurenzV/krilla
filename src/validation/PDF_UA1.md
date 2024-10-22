@@ -52,21 +52,21 @@ See `README.md` for the meaning of each color.
 
 7.4.1:
 - The fact that headings should be tagged is documented. 🟣
-- krilla does not support the T key yet. 🔴
+- krilla does not support the T key yet. 🟢
 
 7.4.2:
-- The information there is hardly enforceable in an automated way, so not documented yet. 🔴
+- The information there is hardly enforceable in an automated way, so not documented yet. 🟠
 
 7.4.3:
 - krilla does not support heading levels higher than 6. 🔵
 
 7.4.4:
-- The information there is hardly enforceable in an automated way, so not documented yet. 🔴
+- The information there is hardly enforceable in an automated way, so not documented yet. 🟠
 
 # 7.5 Tables
 - The fact that tables should include headers is documented. 🟣
 - The scope attribute is currently not supported by krilla. 🔴
-- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is not documented. 🔴
+- The fact that table tagging structures should only be used to tag content presented within logical row and/or column relationships is not documented. 🟠
 
 # 7.6 Lists
 - The fact that lists should be tagged is documented. 🟣

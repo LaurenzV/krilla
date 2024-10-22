@@ -370,18 +370,30 @@ pub enum Tag {
     Index,
     /// A paragraph.
     P,
-    /// First-level heading.
-    H1,
-    /// Second-level heading.
-    H2,
-    /// Third-level heading.
-    H3,
-    /// Fourth-level heading.
-    H4,
-    /// Fifth-level heading.
-    H5,
-    /// Sixth-level heading.
-    H6,
+    /// First-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H1(Option<String>),
+    /// Second-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H2(Option<String>),
+    /// Third-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H3(Option<String>),
+    /// Fourth-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H4(Option<String>),
+    /// Fifth-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H5(Option<String>),
+    /// Sixth-level heading, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    H6(Option<String>),
     /// A list.
     ///
     /// **Best practice**: Should consist of an optional caption followed by
@@ -475,12 +487,12 @@ impl Tag {
             Tag::TOCI => struct_elem.kind(StructRole::TOCI),
             Tag::Index => struct_elem.kind(StructRole::Index),
             Tag::P => struct_elem.kind(StructRole::P),
-            Tag::H1 => struct_elem.kind(StructRole::H1),
-            Tag::H2 => struct_elem.kind(StructRole::H2),
-            Tag::H3 => struct_elem.kind(StructRole::H3),
-            Tag::H4 => struct_elem.kind(StructRole::H4),
-            Tag::H5 => struct_elem.kind(StructRole::H5),
-            Tag::H6 => struct_elem.kind(StructRole::H6),
+            Tag::H1(_) => struct_elem.kind(StructRole::H1),
+            Tag::H2(_) => struct_elem.kind(StructRole::H2),
+            Tag::H3(_) => struct_elem.kind(StructRole::H3),
+            Tag::H4(_) => struct_elem.kind(StructRole::H4),
+            Tag::H5(_) => struct_elem.kind(StructRole::H5),
+            Tag::H6(_) => struct_elem.kind(StructRole::H6),
             Tag::L => struct_elem.kind(StructRole::L),
             Tag::LI => struct_elem.kind(StructRole::LI),
             Tag::Lbl => struct_elem.kind(StructRole::Lbl),
@@ -510,11 +522,7 @@ impl Tag {
     }
 
     pub(crate) fn can_have_alt(&self) -> bool {
-        match self {
-            Tag::Figure(_) => true,
-            Tag::Formula(_) => true,
-            _ => false,
-        }
+        matches!(self, Tag::Figure(_) | Tag::Formula(_))
     }
 
     pub(crate) fn alt(&self) -> Option<&str> {
@@ -523,6 +531,22 @@ impl Tag {
             Tag::Formula(s) => s.as_deref(),
             _ => None,
         }
+    }
+
+    pub(crate) fn title(&self) -> Option<&str> {
+        match self {
+            Tag::H1(s) => s.as_deref(),
+            Tag::H2(s) => s.as_deref(),
+            Tag::H3(s) => s.as_deref(),
+            Tag::H4(s) => s.as_deref(),
+            Tag::H5(s) => s.as_deref(),
+            Tag::H6(s) => s.as_deref(),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn can_have_title(&self) -> bool {
+        matches!(self, Tag::H1(_) | Tag::H2(_) | Tag::H3(_) | Tag::H4(_) | Tag::H5(_) | Tag::H6(_))
     }
 }
 
@@ -610,11 +634,20 @@ impl TagGroup {
         let mut struct_elem = chunk.struct_element(root_ref);
         self.tag.write_kind(&mut struct_elem);
         struct_elem.parent(parent);
+
         if let Some(alt) = self.tag.alt() {
             struct_elem.alt(sc.new_text_str(alt));
         }   else {
             if self.tag.can_have_alt() {
                 sc.register_validation_error(ValidationError::MissingAltText);
+            }
+        }
+
+        if let Some(title) = self.tag.title() {
+            struct_elem.title(sc.new_text_str(title));
+        }   else {
+            if self.tag.can_have_title() {
+                sc.register_validation_error(ValidationError::MissingHeadingTitle);
             }
         }
 
@@ -947,8 +980,8 @@ mod tests {
         let mut tag_tree = TagTree::new();
         let mut par_1 = TagGroup::new(Tag::P);
         let mut par_2 = TagGroup::new(Tag::P);
-        let mut heading_1 = TagGroup::new(Tag::H1);
-        let mut heading_2 = TagGroup::new(Tag::H1);
+        let mut heading_1 = TagGroup::new(Tag::H1(Some("first heading".to_string())));
+        let mut heading_2 = TagGroup::new(Tag::H1(Some("second heading".to_string())));
 
         let mut page = document.start_page();
         let mut surface = page.surface();

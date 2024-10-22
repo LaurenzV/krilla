@@ -73,7 +73,9 @@ pub enum ValidationError {
     /// the standard.
     NoDocumentTitle,
     /// A figure or formula is missing an alt text.
-    MissingAltText
+    MissingAltText,
+    /// A heading is missing a title.
+    MissingHeadingTitle
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -220,6 +222,7 @@ impl Validator {
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
+                ValidationError::MissingHeadingTitle => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -236,6 +239,7 @@ impl Validator {
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
+                ValidationError::MissingHeadingTitle => false
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -248,7 +252,8 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _) => false,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
-                ValidationError::MissingAltText => true
+                ValidationError::MissingAltText => true,
+                ValidationError::MissingHeadingTitle => true
             },
         }
     }
