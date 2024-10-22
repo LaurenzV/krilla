@@ -24,6 +24,7 @@ use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
+use crate::version::PdfVersion;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -245,6 +246,15 @@ impl Validator {
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
             },
+        }
+    }
+
+    pub(crate) fn compatible_with(&self, pdf_version: PdfVersion) -> bool {
+        match self {
+            Validator::Dummy => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
+            Validator::UA1 => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
         }
     }
 

@@ -1,5 +1,5 @@
 # Description
-PDF-A/2 requires PDF 1.7 and defines three conformance levels, 
+PDF-A/2 requires PDF a version <= 1.7 and defines three conformance levels, 
 in the following order from less strict to more strict:
 - Level B
 - Level U
