@@ -13,7 +13,6 @@ endobj
 <<
   /Type /StructTreeRoot
   /RoleMap <<
-    /Image /Figure
     /Datetime /Span
     /Terms /Part
     /Title /H1
@@ -73,16 +72,16 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000287 00000 n
-0000000446 00000 n
-0000000498 00000 n
-0000000574 00000 n
+0000000268 00000 n
+0000000427 00000 n
+0000000479 00000 n
+0000000555 00000 n
 trailer
 <<
   /Size 7
   /Root 6 0 R
-  /ID [(C6frGKDd+RgvnlQfQzvFhQ==) (C6frGKDd+RgvnlQfQzvFhQ==)]
+  /ID [(Q55P+0taYyw6pPtAdVgkLQ==) (Q55P+0taYyw6pPtAdVgkLQ==)]
 >>
 startxref
-709
+690
 %%EOF

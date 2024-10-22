@@ -29,7 +29,6 @@ endobj
 <<
   /Type /StructTreeRoot
   /RoleMap <<
-    /Image /Figure
     /Datetime /Span
     /Terms /Part
     /Title /H1
@@ -317,7 +316,7 @@ endobj
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfaid:part>2</pdfaid:part><pdfaid:conformance>A</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>/j13+fm/o391pE+2WpQ57Q==</xmpMM:InstanceID><xmpMM:DocumentID>/j13+fm/o391pE+2WpQ57Q==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfaid:part>2</pdfaid:part><pdfaid:conformance>A</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>KPmRh8DGKNuBmnjpKZGAvw==</xmpMM:InstanceID><xmpMM:DocumentID>KPmRh8DGKNuBmnjpKZGAvw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
@@ -343,28 +342,28 @@ xref
 0000000080 00000 n
 0000000271 00000 n
 0000000295 00000 n
-0000000509 00000 n
-0000000533 00000 n
-0000000849 00000 n
-0000001328 00000 n
-0000001417 00000 n
-0000001580 00000 n
-0000001924 00000 n
-0000002156 00000 n
-0000002982 00000 n
-0000005316 00000 n
-0000005352 00000 n
-0000005388 00000 n
-0000006045 00000 n
-0000006820 00000 n
-0000006872 00000 n
-0000007870 00000 n
+0000000490 00000 n
+0000000514 00000 n
+0000000830 00000 n
+0000001309 00000 n
+0000001398 00000 n
+0000001561 00000 n
+0000001905 00000 n
+0000002137 00000 n
+0000002963 00000 n
+0000005297 00000 n
+0000005333 00000 n
+0000005369 00000 n
+0000006026 00000 n
+0000006801 00000 n
+0000006853 00000 n
+0000007851 00000 n
 trailer
 <<
   /Size 21
   /Root 20 0 R
-  /ID [(/j13+fm/o391pE+2WpQ57Q==) (/j13+fm/o391pE+2WpQ57Q==)]
+  /ID [(KPmRh8DGKNuBmnjpKZGAvw==) (KPmRh8DGKNuBmnjpKZGAvw==)]
 >>
 startxref
-8061
+8042
 %%EOF
