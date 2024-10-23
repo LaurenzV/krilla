@@ -243,6 +243,13 @@ impl SerializeSettings {
         }
     }
 
+    pub(crate) fn settings_16() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            ..Self::settings_1()
+        }
+    }
+
     // TODO: Add test for version mismatch
 }
 

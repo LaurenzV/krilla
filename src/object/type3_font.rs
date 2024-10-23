@@ -17,6 +17,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use tiny_skia_path::{PathStroker, Rect, Transform};
+use crate::version::PdfVersion;
 
 pub type Gid = u8;
 
@@ -264,7 +265,12 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        let descriptor_ref = sc.new_ref();
+        // Descriptors for Type 3 fonts are only allowed for PDF >= 1.5
+        let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf17 {
+            Some(sc.new_ref())
+        }   else {
+            None
+        };
         let cmap_ref = sc.new_ref();
 
         let mut flags = FontFlags::empty();
@@ -291,17 +297,20 @@ impl Type3Font {
         gids.sort();
         let base_font = base_font_name(&self.font, &gids);
 
-        // Write the font descriptor (contains metrics about the font).
-        let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
-        font_descriptor
-            .name(Name(base_font.as_bytes()))
-            .flags(flags)
-            .bbox(font_bbox.to_pdf_rect())
-            .italic_angle(italic_angle)
-            .ascent(ascender)
-            .descent(descender);
+        if let Some(descriptor_ref) = descriptor_ref {
+            // Write the font descriptor (contains metrics about the font).
+            let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
+            font_descriptor
+                .name(Name(base_font.as_bytes()))
+                .flags(flags)
+                .bbox(font_bbox.to_pdf_rect())
+                .italic_angle(italic_angle)
+                .ascent(ascender)
+                .descent(descender);
 
-        font_descriptor.finish();
+            font_descriptor.finish();
+        }
+
 
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(&mut type3_font);
@@ -320,7 +329,9 @@ impl Type3Font {
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(self.widths.iter().copied());
-        type3_font.font_descriptor(descriptor_ref);
+        if let Some(descriptor_ref) = descriptor_ref {
+            type3_font.font_descriptor(descriptor_ref);
+        }
 
         let mut char_procs = type3_font.char_procs();
         for (gid, ref_) in glyph_streams.iter().enumerate() {
@@ -741,6 +752,23 @@ mod tests {
             25.0,
             &[],
             "😀😃",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[snapshot(single_page, settings_16)]
+    fn type3_pdf_14(page: &mut Page) {
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, vec![]).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "😀",
             false,
             TextDirection::Auto,
         );

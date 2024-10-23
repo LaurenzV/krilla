@@ -1,7 +1,7 @@
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PdfVersion {
     Pdf14,
     Pdf17,
