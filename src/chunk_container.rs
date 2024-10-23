@@ -100,6 +100,7 @@ impl ChunkContainer {
         // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
         // case, and thus give us better performance.
         let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
+        sc.serialize_settings.pdf_version.set_version(&mut pdf);
 
         if sc.serialize_settings.ascii_compatible
             && !sc.serialize_settings.validator.requires_binary_header()
@@ -155,9 +156,6 @@ impl ChunkContainer {
             metadata.serialize_document_info(&mut remapped_ref, sc, &mut pdf);
         }
 
-        // Write the XMP data, if applicable
-        const PDF_VERSION: &str = "PDF-1.7";
-
         let mut xmp = XmpWriter::new();
         if let Some(metadata) = &self.metadata {
             metadata.serialize_xmp_metadata(&mut xmp);
@@ -169,9 +167,13 @@ impl ChunkContainer {
 
         let document_id = if let Some(metadata) = &self.metadata {
             if let Some(document_id) = &metadata.document_id {
-                hash_base64(&(PDF_VERSION, document_id))
+                hash_base64(&(sc.serialize_settings.pdf_version.as_str(), document_id))
             } else if metadata.title.is_some() && metadata.authors.is_some() {
-                hash_base64(&(PDF_VERSION, &metadata.title, &metadata.authors))
+                hash_base64(&(
+                    sc.serialize_settings.pdf_version.as_str(),
+                    &metadata.title,
+                    &metadata.authors,
+                ))
             } else {
                 instance_id.clone()
             }
@@ -190,7 +192,7 @@ impl ChunkContainer {
         ));
 
         xmp.rendition_class(RenditionClass::Proof);
-        xmp.pdf_version("1.7");
+        sc.serialize_settings.pdf_version.write_xmp(&mut xmp);
 
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be

@@ -20,11 +20,11 @@
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
 use crate::font::Font;
+use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
-use crate::version::PdfVersion;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -252,8 +252,12 @@ impl Validator {
     pub(crate) fn compatible_with(&self, pdf_version: PdfVersion) -> bool {
         match self {
             Validator::Dummy => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => {
+                matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17)
+            }
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => {
+                matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17)
+            }
             Validator::UA1 => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
         }
     }
@@ -353,6 +357,20 @@ impl Validator {
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
             Validator::UA1 => None,
+        }
+    }
+
+    /// The string representation of the validator.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Validator::Dummy => "dummy validator",
+            Validator::A2_A => "PDF/A2-A",
+            Validator::A2_B => "PDF/A2-B",
+            Validator::A2_U => "PDF/A2-U",
+            Validator::A3_A => "PDF/A3-A",
+            Validator::A3_B => "PDF/A3-B",
+            Validator::A3_U => "PDF/A3-U",
+            Validator::UA1 => "PDF/UA1",
         }
     }
 }

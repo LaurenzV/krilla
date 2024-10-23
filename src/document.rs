@@ -212,4 +212,9 @@ mod tests {
     fn metadata_full_with_xmp(document: &mut Document) {
         metadata_impl(document);
     }
+
+    #[snapshot(document, settings_15)]
+    fn pdf_version_14(document: &mut Document) {
+        metadata_impl(document);
+    }
 }

@@ -17,6 +17,7 @@ use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
+use crate::version::PdfVersion;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
@@ -119,6 +120,8 @@ pub struct SerializeSettings {
     ///
     /// [`tagging`]: crate::tagging
     pub enable_tagging: bool,
+    /// The PDF version that should be used for export.
+    pub pdf_version: PdfVersion,
 }
 
 const STR_BYTE_LEN: usize = 32767;
@@ -135,6 +138,7 @@ impl SerializeSettings {
             cmyk_profile: None,
             validator: Validator::Dummy,
             enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
         }
     }
 
@@ -230,6 +234,16 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_15() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    // TODO: Add test for version mismatch
 }
 
 impl Default for SerializeSettings {
@@ -243,6 +257,7 @@ impl Default for SerializeSettings {
             cmyk_profile: None,
             validator: Validator::Dummy,
             enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
         }
     }
 }
@@ -583,6 +598,18 @@ impl SerializerContext {
     }
 
     pub fn finish(mut self) -> KrillaResult<Pdf> {
+        if !self
+            .serialize_settings
+            .validator
+            .compatible_with(self.serialize_settings.pdf_version)
+        {
+            return Err(KrillaError::UserError(format!(
+                "{} is not compatible with export mode {}",
+                self.serialize_settings.pdf_version.as_str(),
+                self.serialize_settings.validator.as_str()
+            )));
+        }
+
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use `std::mem::take` to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
