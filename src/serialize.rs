@@ -13,7 +13,7 @@ use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
+use crate::resource::{grey_icc, rgb_icc, Resource};
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
@@ -246,6 +246,14 @@ impl SerializeSettings {
     pub(crate) fn settings_16() -> Self {
         Self {
             pdf_version: PdfVersion::Pdf14,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_17() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            no_device_cs: true,
             ..Self::settings_1()
         }
     }
@@ -537,8 +545,8 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(ICCBasedColorSpace(SRGB_ICC.clone())),
-            Resource::Gray => self.add_object(ICCBasedColorSpace(GREY_ICC.clone())),
+            Resource::Rgb => self.add_object(ICCBasedColorSpace(rgb_icc(&self.serialize_settings))),
+            Resource::Gray => self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings))),
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),
@@ -589,7 +597,7 @@ impl SerializerContext {
 
         let oi_ref = self.new_ref();
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        oi.dest_output_profile(self.add_object(SRGB_ICC.clone()))
+        oi.dest_output_profile(self.add_object(rgb_icc(&self.serialize_settings)))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))

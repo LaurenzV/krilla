@@ -317,6 +317,7 @@ impl Type3Font {
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
         type3_font.name(Name(base_font.as_bytes()));
+        // TODO: Write font family, font stretch and font weight for tagged PDF?
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(

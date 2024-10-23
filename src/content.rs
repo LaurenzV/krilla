@@ -15,7 +15,7 @@ use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource::{ResourceDictionaryBuilder, GREY_ICC, SRGB_ICC};
+use crate::resource::{grey_icc, rgb_icc, ResourceDictionaryBuilder};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
@@ -671,10 +671,10 @@ impl ContentBuilder {
              allow_gray: bool| match color.color_space(sc, allow_gray) {
                 ColorSpace::Rgb => content_builder
                     .rd_builder
-                    .register_resource(ICCBasedColorSpace(SRGB_ICC.clone()), sc),
+                    .register_resource(ICCBasedColorSpace(rgb_icc(&sc.serialize_settings)), sc),
                 ColorSpace::Gray => content_builder
                     .rd_builder
-                    .register_resource(ICCBasedColorSpace(GREY_ICC.clone()), sc),
+                    .register_resource(ICCBasedColorSpace(grey_icc(&sc.serialize_settings)), sc),
                 ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
                 ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
                 ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
