@@ -26,7 +26,7 @@ use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -705,7 +705,7 @@ impl SerializerContext {
         let struct_parents = std::mem::take(&mut self.struct_parents);
         if let Some(root) = &tag_tree {
             let mut parent_tree_map = HashMap::new();
-            let mut id_tree_map = HashMap::new();
+            let mut id_tree_map = BTreeMap::new();
             let struct_tree_root_ref = self.new_ref();
             let (document_ref, struct_elems) = root.serialize(
                 &mut self,

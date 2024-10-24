@@ -603,14 +603,14 @@ mod tests {
         page.finish();
     }
 
-    fn validation_pdf_tagged_full_example(document: &mut Document) {
+    pub(crate) fn validation_pdf_tagged_full_example(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, vec![]).unwrap();
 
-        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        let id1 = surface.start_tagged(ContentTag::Span("", Some("Alt"), Some("Expanded"), Some("ActualText")));
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -858,5 +858,10 @@ mod tests {
 
         let outline = Outline::new();
         document.set_outline(outline);
+    }
+
+    #[snapshot(document, settings_16)]
+    fn pdf_version_14_tagged(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
     }
 }

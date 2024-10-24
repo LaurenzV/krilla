@@ -127,7 +127,8 @@ use pdf_writer::types::{
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use crate::version::PdfVersion;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -222,14 +223,16 @@ impl ContentTag<'_> {
                     ArtifactType::Other => unreachable!(),
                 };
 
-                if *at == ArtifactType::Header {
-                    artifact.attached([ArtifactAttachment::Top]);
-                    artifact.subtype(ArtifactSubtype::Header);
-                }
+                if sc.serialize_settings.pdf_version >= PdfVersion::Pdf17 {
+                    if *at == ArtifactType::Header {
+                        artifact.attached([ArtifactAttachment::Top]);
+                        artifact.subtype(ArtifactSubtype::Header);
+                    }
 
-                if *at == ArtifactType::Footer {
-                    artifact.attached([ArtifactAttachment::Bottom]);
-                    artifact.subtype(ArtifactSubtype::Footer);
+                    if *at == ArtifactType::Footer {
+                        artifact.attached([ArtifactAttachment::Bottom]);
+                        artifact.subtype(ArtifactSubtype::Footer);
+                    }
                 }
 
                 artifact.kind(artifact_type);
@@ -238,7 +241,9 @@ impl ContentTag<'_> {
                 properties.pair(Name(b"Lang"), sc.new_text_str(lang));
 
                 if let Some(alt) = alt {
-                    properties.pair(Name(b"Alt"), sc.new_text_str(alt));
+                    if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
+                        properties.pair(Name(b"Alt"), sc.new_text_str(alt));
+                    }
                 }
 
                 if let Some(exp) = exp {
@@ -246,7 +251,9 @@ impl ContentTag<'_> {
                 }
 
                 if let Some(actual) = actual {
-                    properties.actual_text(sc.new_text_str(actual));
+                    if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
+                        properties.actual_text(sc.new_text_str(actual));
+                    }
                 }
             }
             ContentTag::Other => {}
@@ -481,49 +488,55 @@ pub enum Tag {
 }
 
 impl Tag {
-    pub(crate) fn write_kind(&self, struct_elem: &mut StructElement) {
-        match self {
-            Tag::Part => struct_elem.kind(StructRole::Part),
-            Tag::Article => struct_elem.kind(StructRole::Art),
-            Tag::Section => struct_elem.kind(StructRole::Sect),
-            Tag::BlockQuote => struct_elem.kind(StructRole::BlockQuote),
-            Tag::Caption => struct_elem.kind(StructRole::Caption),
-            Tag::TOC => struct_elem.kind(StructRole::TOC),
-            Tag::TOCI => struct_elem.kind(StructRole::TOCI),
-            Tag::Index => struct_elem.kind(StructRole::Index),
-            Tag::P => struct_elem.kind(StructRole::P),
-            Tag::H1(_) => struct_elem.kind(StructRole::H1),
-            Tag::H2(_) => struct_elem.kind(StructRole::H2),
-            Tag::H3(_) => struct_elem.kind(StructRole::H3),
-            Tag::H4(_) => struct_elem.kind(StructRole::H4),
-            Tag::H5(_) => struct_elem.kind(StructRole::H5),
-            Tag::H6(_) => struct_elem.kind(StructRole::H6),
-            Tag::L(_) => struct_elem.kind(StructRole::L),
-            Tag::LI => struct_elem.kind(StructRole::LI),
-            Tag::Lbl => struct_elem.kind(StructRole::Lbl),
-            Tag::LBody => struct_elem.kind(StructRole::LBody),
-            Tag::Table => struct_elem.kind(StructRole::Table),
-            Tag::TR => struct_elem.kind(StructRole::TR),
-            Tag::TH(_) => struct_elem.kind(StructRole::TH),
-            Tag::TD => struct_elem.kind(StructRole::TD),
-            Tag::THead => struct_elem.kind(StructRole::THead),
-            Tag::TBody => struct_elem.kind(StructRole::TBody),
-            Tag::TFoot => struct_elem.kind(StructRole::TFoot),
-            Tag::InlineQuote => struct_elem.kind(StructRole::Quote),
-            Tag::Note => struct_elem.kind(StructRole::Note),
-            Tag::Reference => struct_elem.kind(StructRole::Reference),
-            Tag::BibEntry => struct_elem.kind(StructRole::BibEntry),
-            Tag::Code => struct_elem.kind(StructRole::Code),
-            Tag::Link => struct_elem.kind(StructRole::Link),
-            Tag::Annot => struct_elem.kind(StructRole::Annot),
-            Tag::Figure(_) => struct_elem.kind(StructRole::Figure),
-            Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
+    pub(crate) fn write_kind(&self, struct_elem: &mut StructElement, pdf_version: PdfVersion) {
+        if self.minimum_version() > pdf_version {
+            // Fall back to P in case the tag is not supported with the current
+            // PDF version
+            struct_elem.kind(StructRole::P);
+        }   else {
+            match self {
+                Tag::Part => struct_elem.kind(StructRole::Part),
+                Tag::Article => struct_elem.kind(StructRole::Art),
+                Tag::Section => struct_elem.kind(StructRole::Sect),
+                Tag::BlockQuote => struct_elem.kind(StructRole::BlockQuote),
+                Tag::Caption => struct_elem.kind(StructRole::Caption),
+                Tag::TOC => struct_elem.kind(StructRole::TOC),
+                Tag::TOCI => struct_elem.kind(StructRole::TOCI),
+                Tag::Index => struct_elem.kind(StructRole::Index),
+                Tag::P => struct_elem.kind(StructRole::P),
+                Tag::H1(_) => struct_elem.kind(StructRole::H1),
+                Tag::H2(_) => struct_elem.kind(StructRole::H2),
+                Tag::H3(_) => struct_elem.kind(StructRole::H3),
+                Tag::H4(_) => struct_elem.kind(StructRole::H4),
+                Tag::H5(_) => struct_elem.kind(StructRole::H5),
+                Tag::H6(_) => struct_elem.kind(StructRole::H6),
+                Tag::L(_) => struct_elem.kind(StructRole::L),
+                Tag::LI => struct_elem.kind(StructRole::LI),
+                Tag::Lbl => struct_elem.kind(StructRole::Lbl),
+                Tag::LBody => struct_elem.kind(StructRole::LBody),
+                Tag::Table => struct_elem.kind(StructRole::Table),
+                Tag::TR => struct_elem.kind(StructRole::TR),
+                Tag::TH(_) => struct_elem.kind(StructRole::TH),
+                Tag::TD => struct_elem.kind(StructRole::TD),
+                Tag::THead => struct_elem.kind(StructRole::THead),
+                Tag::TBody => struct_elem.kind(StructRole::TBody),
+                Tag::TFoot => struct_elem.kind(StructRole::TFoot),
+                Tag::InlineQuote => struct_elem.kind(StructRole::Quote),
+                Tag::Note => struct_elem.kind(StructRole::Note),
+                Tag::Reference => struct_elem.kind(StructRole::Reference),
+                Tag::BibEntry => struct_elem.kind(StructRole::BibEntry),
+                Tag::Code => struct_elem.kind(StructRole::Code),
+                Tag::Link => struct_elem.kind(StructRole::Link),
+                Tag::Annot => struct_elem.kind(StructRole::Annot),
+                Tag::Figure(_) => struct_elem.kind(StructRole::Figure),
+                Tag::Formula(_) => struct_elem.kind(StructRole::Formula),
+                // Every additional tag needs to be registered in the role map!
+                Tag::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
+                Tag::Terms => struct_elem.custom_kind(Name(b"Terms")),
+                Tag::Title => struct_elem.custom_kind(Name(b"Title")),
+            };
+        }
 
-            // Every additional tag needs to be registered in the role map!
-            Tag::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
-            Tag::Terms => struct_elem.custom_kind(Name(b"Terms")),
-            Tag::Title => struct_elem.custom_kind(Name(b"Title")),
-        };
     }
 
     pub(crate) fn can_have_alt(&self) -> bool {
@@ -535,6 +548,49 @@ impl Tag {
             Tag::Figure(s) => s.as_deref(),
             Tag::Formula(s) => s.as_deref(),
             _ => None,
+        }
+    }
+
+    pub(crate) fn minimum_version(&self) -> PdfVersion {
+        match self {
+            Tag::Part => PdfVersion::Pdf14,
+            Tag::Article => PdfVersion::Pdf14,
+            Tag::Section => PdfVersion::Pdf14,
+            Tag::BlockQuote => PdfVersion::Pdf14,
+            Tag::Caption => PdfVersion::Pdf14,
+            Tag::TOC => PdfVersion::Pdf14,
+            Tag::TOCI => PdfVersion::Pdf14,
+            Tag::Index => PdfVersion::Pdf14,
+            Tag::P => PdfVersion::Pdf14,
+            Tag::H1(_) => PdfVersion::Pdf14,
+            Tag::H2(_) => PdfVersion::Pdf14,
+            Tag::H3(_) => PdfVersion::Pdf14,
+            Tag::H4(_) => PdfVersion::Pdf14,
+            Tag::H5(_) => PdfVersion::Pdf14,
+            Tag::H6(_) => PdfVersion::Pdf14,
+            Tag::L(_) => PdfVersion::Pdf14,
+            Tag::LI => PdfVersion::Pdf14,
+            Tag::Lbl => PdfVersion::Pdf14,
+            Tag::LBody => PdfVersion::Pdf14,
+            Tag::Table => PdfVersion::Pdf14,
+            Tag::TR => PdfVersion::Pdf14,
+            Tag::TH(_) => PdfVersion::Pdf14,
+            Tag::TD => PdfVersion::Pdf14,
+            Tag::THead => PdfVersion::Pdf15,
+            Tag::TBody => PdfVersion::Pdf15,
+            Tag::TFoot => PdfVersion::Pdf15,
+            Tag::InlineQuote => PdfVersion::Pdf14,
+            Tag::Note => PdfVersion::Pdf14,
+            Tag::Reference => PdfVersion::Pdf14,
+            Tag::BibEntry => PdfVersion::Pdf14,
+            Tag::Code => PdfVersion::Pdf14,
+            Tag::Link => PdfVersion::Pdf14,
+            Tag::Annot => PdfVersion::Pdf15,
+            Tag::Figure(_) => PdfVersion::Pdf15,
+            Tag::Formula(_) => PdfVersion::Pdf15,
+            Tag::Datetime => PdfVersion::Pdf15,
+            Tag::Terms => PdfVersion::Pdf15,
+            Tag::Title => PdfVersion::Pdf15
         }
     }
 
@@ -571,7 +627,7 @@ impl Node {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree: &mut HashMap<String, Ref>,
+        id_tree: &mut BTreeMap<String, Ref>,
         parent: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
@@ -632,7 +688,7 @@ impl TagGroup {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree: &mut HashMap<String, Ref>,
+        id_tree: &mut BTreeMap<String, Ref>,
         parent: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
@@ -646,7 +702,7 @@ impl TagGroup {
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
-        self.tag.write_kind(&mut struct_elem);
+        self.tag.write_kind(&mut struct_elem, sc.serialize_settings.pdf_version);
         struct_elem.parent(parent);
 
         if let Some(alt) = self.tag.alt() {
@@ -666,7 +722,9 @@ impl TagGroup {
                 struct_elem.attributes().push().list().list_numbering(ln);
             }
             Tag::TH(ths) => {
-                struct_elem.attributes().push().table().scope(ths);
+                if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
+                    struct_elem.attributes().push().table().scope(ths);
+                }
             }
             Tag::Note => {
                 let id = format!("Note {}", note_id);
@@ -713,7 +771,7 @@ impl TagTree {
         &self,
         sc: &mut SerializerContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree_map: &mut HashMap<String, Ref>,
+        id_tree_map: &mut BTreeMap<String, Ref>,
         struct_tree_ref: Ref,
     ) -> (Ref, Vec<Chunk>) {
         let root_ref = sc.new_ref();

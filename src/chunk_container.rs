@@ -5,6 +5,7 @@ use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
+use crate::version::PdfVersion;
 
 trait ChunkExt {
     fn wait(&self) -> &Chunk;
@@ -242,11 +243,14 @@ impl ChunkContainer {
 
             if let Some(st) = &self.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), st.0);
-                catalog
-                    .mark_info()
-                    .marked(true)
+                let mut mark_info = catalog
+                    .mark_info();
+                mark_info.marked(true);
+                if sc.serialize_settings.pdf_version >= PdfVersion::Pdf16 {
                     // We always set suspects to false because it's required by PDF/UA
-                    .suspects(false);
+                    mark_info.suspects(false);
+                }
+                mark_info.finish();
             }
 
             if sc.serialize_settings.validator.requires_display_doc_title() {

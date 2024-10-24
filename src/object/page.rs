@@ -16,6 +16,7 @@ use pdf_writer::{Chunk, Finish, Ref};
 use std::num::NonZeroU32;
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
+use crate::version::PdfVersion;
 
 /// A single page.
 ///
@@ -215,7 +216,7 @@ impl InternalPage {
             page.struct_parents(struct_parent);
 
             // Only required for PDF/UA, but might as well always set it.
-            if !self.annotations.is_empty() {
+            if !self.annotations.is_empty() && sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
                 page.tab_order(TabOrder::StructureOrder);
             }
         }
