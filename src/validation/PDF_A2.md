@@ -30,6 +30,7 @@ user enables `ascii_compatible`, we still write a binary header marker. 🟢
 - `pdf-writer` always write streams as described in the spec. 🟢
 - krilla does never write streams referencing external files. 🔵
 - krilla does never use `LZWDecode` or `Crypt`. 🔵
+- krilla never writes F, FFIlter or FDecodeParams in streams. 🔵
 
 6.1.8: krilla only ever writes UTF-8 strings as names. 🟢
 
@@ -125,7 +126,7 @@ always required. 🟢
 
 6.2.11.6:
 - krilla embeds all fonts as symbolic. 🟢
-- krilla does not write the `Encoding` entry for TrueType fonts.
+- krilla does not write TrueType fonts directly. 🔵
 - krilla only writes CIDFonts instead of TrueType fonts directly, so cmap is not needed. 🟢
 
 6.2.11.8:
@@ -179,6 +180,7 @@ always required. 🟢
 
 6.6.2.3.1: krilla doesn't use any non-standard properties. 🟢
 
+TODO: CHeck the two below
 6.6.2.3.2: krilla doesn't use extension schemas. 🔵
 
 6.6.2.3.3: krilla doesn't use extension schemas. 🔵
@@ -234,7 +236,7 @@ TODO: Fix the remaining red ones before next release!
 
 6.7.2.2: krilla always writes the mark info dictionary for this export mode. 🟢
 
-6.7.3.1: The need to specify artifacts is documented.
+6.7.3.1: The need to specify artifacts is documented. 🟣
 
 6.7.3.2: The need to specify word boundaries is documented. 🟣
 

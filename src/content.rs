@@ -669,9 +669,10 @@ impl ContentBuilder {
              content_builder: &mut ContentBuilder,
              sc: &mut SerializerContext,
              allow_gray: bool| match color.color_space(sc, allow_gray) {
-                ColorSpace::Rgb => content_builder
-                    .rd_builder
-                    .register_resource(ICCBasedColorSpace(rgb_icc(&sc.serialize_settings)), sc),
+                ColorSpace::Rgb => content_builder.rd_builder.register_resource(
+                    ICCBasedColorSpace(rgb_icc(&sc.serialize_settings).profile()),
+                    sc,
+                ),
                 ColorSpace::Gray => content_builder
                     .rd_builder
                     .register_resource(ICCBasedColorSpace(grey_icc(&sc.serialize_settings)), sc),

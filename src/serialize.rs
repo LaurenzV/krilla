@@ -552,7 +552,9 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(ICCBasedColorSpace(rgb_icc(&self.serialize_settings))),
+            Resource::Rgb => self.add_object(ICCBasedColorSpace(
+                rgb_icc(&self.serialize_settings).profile(),
+            )),
             Resource::Gray => {
                 self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings)))
             }
@@ -606,12 +608,14 @@ impl SerializerContext {
 
         let oi_ref = self.new_ref();
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        oi.dest_output_profile(self.add_object(rgb_icc(&self.serialize_settings)))
+        let icc_profile = rgb_icc(&self.serialize_settings);
+
+        oi.dest_output_profile(self.add_object(icc_profile.profile()))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))
             .registry_name(TextStr(""))
-            .info(TextStr("sRGB v4.2"));
+            .info(TextStr(icc_profile.version()));
         oi.finish();
 
         let mut array = chunk.indirect(root_ref).array();
