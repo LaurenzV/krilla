@@ -252,13 +252,9 @@ impl Validator {
     pub(crate) fn compatible_with(&self, pdf_version: PdfVersion) -> bool {
         match self {
             Validator::Dummy => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => {
-                matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17)
-            }
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => {
-                matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17)
-            }
-            Validator::UA1 => matches!(pdf_version, PdfVersion::Pdf14 | PdfVersion::Pdf17),
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
+            Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
         }
     }
 

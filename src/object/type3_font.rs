@@ -265,8 +265,7 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        // Descriptors for Type 3 fonts are only allowed for PDF >= 1.5
-        let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf17 {
+        let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
         }   else {
             None

@@ -392,7 +392,7 @@ static GREY_V2_ICC: Lazy<ICCProfile<1>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v2-magic.icc"))));
 
 pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
-    if ss.pdf_version <= PdfVersion::Pdf14 {
+    if ss.pdf_version < PdfVersion::Pdf17 {
         GREY_V2_ICC.clone()
     }   else {
         GREY_V4_ICC.clone()
@@ -400,7 +400,7 @@ pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
 }
 
 pub fn rgb_icc(ss: &SerializeSettings) -> ICCProfile<3> {
-    if ss.pdf_version <= PdfVersion::Pdf14 {
+    if ss.pdf_version < PdfVersion::Pdf17 {
         SRGB_V2_ICC.clone()
     }   else {
         SRGB_V4_ICC.clone()
