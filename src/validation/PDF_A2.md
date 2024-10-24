@@ -139,7 +139,7 @@ always required. 🟢
 - krilla always sets the `F` flag for annotations. 🟢
 - krilla does not support text annotations. 🔵
 
-6.3.3: krilla always writes an empty appearence stream for PDF/A output. 🟢
+6.3.3: krilla only supports the Link subtype for annotations, which doesn't require an appearence stream. 🔵
 
 6.3.4: -
 

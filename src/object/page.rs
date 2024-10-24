@@ -10,7 +10,7 @@ use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
-use pdf_writer::types::NumberingStyle;
+use pdf_writer::types::{NumberingStyle, TabOrder};
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
 use std::num::NonZeroU32;
@@ -64,7 +64,7 @@ impl<'a> Page<'a> {
     pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
         let annot_index = self.annotations.len();
         let struct_parent = self.sc.get_annotation_parent(self.page_index, annot_index);
-        annotation.set_struct_parent(struct_parent);
+        annotation.struct_parent = struct_parent;
         self.add_annotation(annotation);
 
         match struct_parent {
@@ -213,6 +213,11 @@ impl InternalPage {
 
         if let Some(struct_parent) = self.struct_parent {
             page.struct_parents(struct_parent);
+
+            // Only required for PDF/UA, but might as well always set it.
+            if !self.annotations.is_empty() {
+                page.tab_order(TabOrder::StructureOrder);
+            }
         }
 
         page.parent(sc.page_tree_ref());

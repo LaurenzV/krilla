@@ -17,4 +17,7 @@ It is upon the user of the library to enforce it.
 
 🔴: This means that the property is currently not enforced by krilla.
 
+🟠: This means that the property should perhaps be documented/checked, but is
+currently not because it seems unnecessary or hard to implement.
+
 -: This means that the clause is not applicable to krilla (for example because it's not a reader application)
