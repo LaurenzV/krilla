@@ -213,7 +213,7 @@ mod tests {
         metadata_impl(document);
     }
 
-    #[snapshot(document, settings_15)]
+    #[snapshot(document, settings_16)]
     fn pdf_version_14(document: &mut Document) {
         metadata_impl(document);
     }

@@ -235,7 +235,7 @@ impl SerializeSettings {
         }
     }
 
-    pub(crate) fn settings_15() -> Self {
+    pub(crate) fn settings_16() -> Self {
         Self {
             pdf_version: PdfVersion::Pdf14,
             xmp_metadata: true,
@@ -243,14 +243,14 @@ impl SerializeSettings {
         }
     }
 
-    pub(crate) fn settings_16() -> Self {
+    pub(crate) fn settings_17() -> Self {
         Self {
             pdf_version: PdfVersion::Pdf14,
             ..Self::settings_1()
         }
     }
 
-    pub(crate) fn settings_17() -> Self {
+    pub(crate) fn settings_18() -> Self {
         Self {
             pdf_version: PdfVersion::Pdf14,
             no_device_cs: true,

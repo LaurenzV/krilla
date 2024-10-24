@@ -757,7 +757,7 @@ mod tests {
         );
     }
 
-    #[snapshot(single_page, settings_16)]
+    #[snapshot(single_page, settings_17)]
     fn type3_pdf_14(page: &mut Page) {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, vec![]).unwrap();
         let mut surface = page.surface();

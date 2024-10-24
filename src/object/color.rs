@@ -329,13 +329,13 @@ mod tests {
         sc.add_resource(Resource::Rgb);
     }
 
-    #[snapshot(single_page, settings_17)]
+    #[snapshot(single_page, settings_18)]
     fn icc_v2_srgb(page: &mut Page) {
         let mut surface = page.surface();
         surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), red_fill(1.0));
     }
 
-    #[snapshot(single_page, settings_17)]
+    #[snapshot(single_page, settings_18)]
     fn icc_v2_sgrey(page: &mut Page) {
         let mut surface = page.surface();
         surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), Fill::default());
