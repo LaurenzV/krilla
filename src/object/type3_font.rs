@@ -8,6 +8,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
+use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
@@ -264,7 +265,11 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        let descriptor_ref = sc.new_ref();
+        let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
+            Some(sc.new_ref())
+        } else {
+            None
+        };
         let cmap_ref = sc.new_ref();
 
         let mut flags = FontFlags::empty();
@@ -291,23 +296,26 @@ impl Type3Font {
         gids.sort();
         let base_font = base_font_name(&self.font, &gids);
 
-        // Write the font descriptor (contains metrics about the font).
-        let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
-        font_descriptor
-            .name(Name(base_font.as_bytes()))
-            .flags(flags)
-            .bbox(font_bbox.to_pdf_rect())
-            .italic_angle(italic_angle)
-            .ascent(ascender)
-            .descent(descender);
+        if let Some(descriptor_ref) = descriptor_ref {
+            // Write the font descriptor (contains metrics about the font).
+            let mut font_descriptor = chunk.font_descriptor(descriptor_ref);
+            font_descriptor
+                .name(Name(base_font.as_bytes()))
+                .flags(flags)
+                .bbox(font_bbox.to_pdf_rect())
+                .italic_angle(italic_angle)
+                .ascent(ascender)
+                .descent(descender);
 
-        font_descriptor.finish();
+            font_descriptor.finish();
+        }
 
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(&mut type3_font);
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
         type3_font.name(Name(base_font.as_bytes()));
+        // TODO: Write font family, font stretch and font weight for tagged PDF?
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(
@@ -320,7 +328,9 @@ impl Type3Font {
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(self.widths.iter().copied());
-        type3_font.font_descriptor(descriptor_ref);
+        if let Some(descriptor_ref) = descriptor_ref {
+            type3_font.font_descriptor(descriptor_ref);
+        }
 
         let mut char_procs = type3_font.char_procs();
         for (gid, ref_) in glyph_streams.iter().enumerate() {
@@ -741,6 +751,23 @@ mod tests {
             25.0,
             &[],
             "😀😃",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[snapshot(single_page, settings_17)]
+    fn type3_pdf_14(page: &mut Page) {
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, vec![]).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "😀",
             false,
             TextDirection::Auto,
         );

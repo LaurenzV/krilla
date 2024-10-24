@@ -10,6 +10,7 @@ use crate::stream::Stream;
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
+use crate::version::PdfVersion;
 use pdf_writer::types::{NumberingStyle, TabOrder};
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref};
@@ -215,7 +216,9 @@ impl InternalPage {
             page.struct_parents(struct_parent);
 
             // Only required for PDF/UA, but might as well always set it.
-            if !self.annotations.is_empty() {
+            if !self.annotations.is_empty()
+                && sc.serialize_settings.pdf_version >= PdfVersion::Pdf15
+            {
                 page.tab_order(TabOrder::StructureOrder);
             }
         }

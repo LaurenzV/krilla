@@ -6,6 +6,8 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::serialize::SerializerContext;
 use crate::util::NameExt;
+use crate::version::PdfVersion;
+use crate::SerializeSettings;
 use once_cell::sync::Lazy;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers::{FormXObject, Page, Pages, Resources, Type3Font};
@@ -375,12 +377,35 @@ where
 
 pub type ResourceNumber = u32;
 
-/// The ICC profile for the SRGB color space.
-pub static SRGB_ICC: Lazy<ICCProfile<3>> =
+// TODO: Are those ICC profiles good to use?
+/// The ICC v4 profile for the SRGB color space.
+static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))));
-/// The ICC profile for the sgray color space.
-pub static GREY_ICC: Lazy<ICCProfile<1>> =
+/// The ICC v2 profile for the SRGB color space.
+static SRGB_V2_ICC: Lazy<ICCProfile<3>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v2-magic.icc"))));
+/// The ICC v4 profile for the sgray color space.
+static GREY_V4_ICC: Lazy<ICCProfile<1>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v4.icc"))));
+/// The ICC v2 profile for the sgray color space.
+static GREY_V2_ICC: Lazy<ICCProfile<1>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v2-magic.icc"))));
+
+pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
+    if ss.pdf_version < PdfVersion::Pdf17 {
+        GREY_V2_ICC.clone()
+    } else {
+        GREY_V4_ICC.clone()
+    }
+}
+
+pub fn rgb_icc(ss: &SerializeSettings) -> ICCProfile<3> {
+    if ss.pdf_version < PdfVersion::Pdf17 {
+        SRGB_V2_ICC.clone()
+    } else {
+        SRGB_V4_ICC.clone()
+    }
+}
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {

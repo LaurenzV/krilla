@@ -312,9 +312,11 @@ mod tests {
 
     use crate::serialize::SerializerContext;
 
+    use crate::page::Page;
+    use crate::path::Fill;
     use crate::resource::Resource;
     use crate::surface::Surface;
-    use crate::tests::{cmyk_fill, rect_to_path};
+    use crate::tests::{cmyk_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
@@ -325,6 +327,18 @@ mod tests {
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
         sc.add_resource(Resource::Rgb);
+    }
+
+    #[snapshot(single_page, settings_18)]
+    fn icc_v2_srgb(page: &mut Page) {
+        let mut surface = page.surface();
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), red_fill(1.0));
+    }
+
+    #[snapshot(single_page, settings_18)]
+    fn icc_v2_sgrey(page: &mut Page) {
+        let mut surface = page.surface();
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), Fill::default());
     }
 
     #[visreg(all)]

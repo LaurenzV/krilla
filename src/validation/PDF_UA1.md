@@ -1,5 +1,5 @@
 # Description
-PDF-UA/1 requires PDF 1.7.
+PDF-UA/1 requires a version <= PDF 1.7.
 
 See `README.md` for the meaning of each color.
 

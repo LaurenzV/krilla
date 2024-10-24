@@ -13,10 +13,11 @@ use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::{Resource, GREY_ICC, SRGB_ICC};
+use crate::resource::{grey_icc, rgb_icc, Resource};
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
+use crate::version::PdfVersion;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
@@ -25,7 +26,7 @@ use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -119,6 +120,8 @@ pub struct SerializeSettings {
     ///
     /// [`tagging`]: crate::tagging
     pub enable_tagging: bool,
+    /// The PDF version that should be used for export.
+    pub pdf_version: PdfVersion,
 }
 
 const STR_BYTE_LEN: usize = 32767;
@@ -135,6 +138,7 @@ impl SerializeSettings {
             cmyk_profile: None,
             validator: Validator::Dummy,
             enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
         }
     }
 
@@ -237,6 +241,31 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_16() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_17() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_18() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            no_device_cs: true,
+            ..Self::settings_1()
+        }
+    }
+
+    // TODO: Add test for version mismatch
 }
 
 impl Default for SerializeSettings {
@@ -250,6 +279,7 @@ impl Default for SerializeSettings {
             cmyk_profile: None,
             validator: Validator::Dummy,
             enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
         }
     }
 }
@@ -522,8 +552,10 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(ICCBasedColorSpace(SRGB_ICC.clone())),
-            Resource::Gray => self.add_object(ICCBasedColorSpace(GREY_ICC.clone())),
+            Resource::Rgb => self.add_object(ICCBasedColorSpace(rgb_icc(&self.serialize_settings))),
+            Resource::Gray => {
+                self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings)))
+            }
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),
@@ -574,7 +606,7 @@ impl SerializerContext {
 
         let oi_ref = self.new_ref();
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        oi.dest_output_profile(self.add_object(SRGB_ICC.clone()))
+        oi.dest_output_profile(self.add_object(rgb_icc(&self.serialize_settings)))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))
@@ -590,6 +622,18 @@ impl SerializerContext {
     }
 
     pub fn finish(mut self) -> KrillaResult<Pdf> {
+        if !self
+            .serialize_settings
+            .validator
+            .compatible_with(self.serialize_settings.pdf_version)
+        {
+            return Err(KrillaError::UserError(format!(
+                "{} is not compatible with export mode {}",
+                self.serialize_settings.pdf_version.as_str(),
+                self.serialize_settings.validator.as_str()
+            )));
+        }
+
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use `std::mem::take` to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
@@ -663,7 +707,7 @@ impl SerializerContext {
         let struct_parents = std::mem::take(&mut self.struct_parents);
         if let Some(root) = &tag_tree {
             let mut parent_tree_map = HashMap::new();
-            let mut id_tree_map = HashMap::new();
+            let mut id_tree_map = BTreeMap::new();
             let struct_tree_root_ref = self.new_ref();
             let (document_ref, struct_elems) = root.serialize(
                 &mut self,

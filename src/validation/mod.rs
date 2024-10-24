@@ -20,6 +20,7 @@
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
 use crate::font::Font;
+use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
 use std::fmt::Debug;
@@ -269,6 +270,15 @@ impl Validator {
         }
     }
 
+    pub(crate) fn compatible_with(&self, pdf_version: PdfVersion) -> bool {
+        match self {
+            Validator::Dummy => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
+            Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
+        }
+    }
+
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             Validator::Dummy => {}
@@ -355,6 +365,20 @@ impl Validator {
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
             Validator::UA1 => None,
+        }
+    }
+
+    /// The string representation of the validator.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Validator::Dummy => "dummy validator",
+            Validator::A2_A => "PDF/A2-A",
+            Validator::A2_B => "PDF/A2-B",
+            Validator::A2_U => "PDF/A2-U",
+            Validator::A3_A => "PDF/A3-A",
+            Validator::A3_B => "PDF/A3-B",
+            Validator::A3_U => "PDF/A3-U",
+            Validator::UA1 => "PDF/UA1",
         }
     }
 }
@@ -579,14 +603,19 @@ mod tests {
         page.finish();
     }
 
-    fn validation_pdf_tagged_full_example(document: &mut Document) {
+    pub(crate) fn validation_pdf_tagged_full_example(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, vec![]).unwrap();
 
-        let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+        let id1 = surface.start_tagged(ContentTag::Span(
+            "",
+            Some("Alt"),
+            Some("Expanded"),
+            Some("ActualText"),
+        ));
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -834,5 +863,10 @@ mod tests {
 
         let outline = Outline::new();
         document.set_outline(outline);
+    }
+
+    #[snapshot(document, settings_16)]
+    fn pdf_version_14_tagged(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
     }
 }

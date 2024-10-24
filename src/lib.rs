@@ -132,6 +132,7 @@ pub(crate) mod content;
 #[cfg(test)]
 pub mod tests;
 pub mod validation;
+mod version;
 
 pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};
