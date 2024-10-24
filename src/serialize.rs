@@ -553,7 +553,9 @@ impl SerializerContext {
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
             Resource::Rgb => self.add_object(ICCBasedColorSpace(rgb_icc(&self.serialize_settings))),
-            Resource::Gray => self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings))),
+            Resource::Gray => {
+                self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings)))
+            }
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),

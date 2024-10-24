@@ -6,6 +6,8 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::serialize::SerializerContext;
 use crate::util::NameExt;
+use crate::version::PdfVersion;
+use crate::SerializeSettings;
 use once_cell::sync::Lazy;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers::{FormXObject, Page, Pages, Resources, Type3Font};
@@ -15,8 +17,6 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::SerializeSettings;
-use crate::version::PdfVersion;
 
 pub(crate) trait RegisterableResource<T>: Into<Resource>
 where
@@ -394,7 +394,7 @@ static GREY_V2_ICC: Lazy<ICCProfile<1>> =
 pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
     if ss.pdf_version < PdfVersion::Pdf17 {
         GREY_V2_ICC.clone()
-    }   else {
+    } else {
         GREY_V4_ICC.clone()
     }
 }
@@ -402,7 +402,7 @@ pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
 pub fn rgb_icc(ss: &SerializeSettings) -> ICCProfile<3> {
     if ss.pdf_version < PdfVersion::Pdf17 {
         SRGB_V2_ICC.clone()
-    }   else {
+    } else {
         SRGB_V4_ICC.clone()
     }
 }

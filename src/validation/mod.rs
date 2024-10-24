@@ -610,7 +610,12 @@ mod tests {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, vec![]).unwrap();
 
-        let id1 = surface.start_tagged(ContentTag::Span("", Some("Alt"), Some("Expanded"), Some("ActualText")));
+        let id1 = surface.start_tagged(ContentTag::Span(
+            "",
+            Some("Alt"),
+            Some("Expanded"),
+            Some("ActualText"),
+        ));
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),

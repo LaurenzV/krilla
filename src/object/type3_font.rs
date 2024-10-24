@@ -8,6 +8,7 @@ use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::StreamBuilder;
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
+use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
@@ -17,7 +18,6 @@ use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use tiny_skia_path::{PathStroker, Rect, Transform};
-use crate::version::PdfVersion;
 
 pub type Gid = u8;
 
@@ -267,7 +267,7 @@ impl Type3Font {
 
         let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
-        }   else {
+        } else {
             None
         };
         let cmap_ref = sc.new_ref();
@@ -309,7 +309,6 @@ impl Type3Font {
 
             font_descriptor.finish();
         }
-
 
         let mut type3_font = chunk.type3_font(root_ref);
         resource_dictionary.to_pdf_resources(&mut type3_font);

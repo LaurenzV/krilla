@@ -312,12 +312,12 @@ mod tests {
 
     use crate::serialize::SerializerContext;
 
+    use crate::page::Page;
+    use crate::path::Fill;
     use crate::resource::Resource;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
-    use crate::page::Page;
-    use crate::path::Fill;
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {

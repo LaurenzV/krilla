@@ -121,6 +121,7 @@
 
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
+use crate::version::PdfVersion;
 use pdf_writer::types::{
     ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
 };
@@ -128,7 +129,6 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
-use crate::version::PdfVersion;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -493,7 +493,7 @@ impl Tag {
             // Fall back to P in case the tag is not supported with the current
             // PDF version
             struct_elem.kind(StructRole::P);
-        }   else {
+        } else {
             match self {
                 Tag::Part => struct_elem.kind(StructRole::Part),
                 Tag::Article => struct_elem.kind(StructRole::Art),
@@ -536,7 +536,6 @@ impl Tag {
                 Tag::Title => struct_elem.custom_kind(Name(b"Title")),
             };
         }
-
     }
 
     pub(crate) fn can_have_alt(&self) -> bool {
@@ -590,7 +589,7 @@ impl Tag {
             Tag::Formula(_) => PdfVersion::Pdf15,
             Tag::Datetime => PdfVersion::Pdf15,
             Tag::Terms => PdfVersion::Pdf15,
-            Tag::Title => PdfVersion::Pdf15
+            Tag::Title => PdfVersion::Pdf15,
         }
     }
 
@@ -702,7 +701,8 @@ impl TagGroup {
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
-        self.tag.write_kind(&mut struct_elem, sc.serialize_settings.pdf_version);
+        self.tag
+            .write_kind(&mut struct_elem, sc.serialize_settings.pdf_version);
         struct_elem.parent(parent);
 
         if let Some(alt) = self.tag.alt() {
