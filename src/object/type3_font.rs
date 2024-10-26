@@ -181,14 +181,14 @@ impl Type3Font {
 
                     enum BufOrVec {
                         Buf(Buf),
-                        Vec(Vec<u8>)
+                        Vec(Vec<u8>),
                     }
 
                     impl BufOrVec {
                         fn as_slice(&self) -> &[u8] {
                             match self {
                                 BufOrVec::Buf(b) => b.as_slice(),
-                                BufOrVec::Vec(v) => v.as_slice()
+                                BufOrVec::Vec(v) => v.as_slice(),
                             }
                         }
                     }
@@ -266,8 +266,10 @@ impl Type3Font {
                             BufOrVec::Vec(stream_surface.finish().content)
                         };
 
-                    let font_stream =
-                        FilterStream::new_from_content_stream(stream.as_slice(), &sc.serialize_settings);
+                    let font_stream = FilterStream::new_from_content_stream(
+                        stream.as_slice(),
+                        &sc.serialize_settings,
+                    );
 
                     let stream_ref = sc.new_ref();
                     let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());

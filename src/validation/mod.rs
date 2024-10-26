@@ -99,7 +99,7 @@ pub enum ValidationError {
     /// An annotation is missing an alt text.
     MissingAnnotationAltText,
     /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
-    Transparency
+    Transparency,
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word

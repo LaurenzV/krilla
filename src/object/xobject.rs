@@ -4,10 +4,10 @@ use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
+use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
-use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {

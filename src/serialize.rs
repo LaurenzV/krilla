@@ -335,7 +335,7 @@ pub(crate) struct SerializerContext {
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: SerializeSettings,
-    pub(crate) limits: Limits
+    pub(crate) limits: Limits,
 }
 
 #[derive(Clone, Copy)]
@@ -378,7 +378,7 @@ impl SerializerContext {
             font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings,
-            limits: Limits::new()
+            limits: Limits::new(),
         }
     }
 

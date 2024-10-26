@@ -2,11 +2,11 @@ use crate::object::mask::Mask;
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
+use crate::validation::ValidationError;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
 use tiny_skia_path::NormalizedF32;
-use crate::validation::ValidationError;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

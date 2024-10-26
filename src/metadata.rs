@@ -164,11 +164,7 @@ impl Metadata {
         }
     }
 
-    pub(crate) fn serialize_document_info(
-        &self,
-        ref_: &mut Ref,
-        pdf: &mut Pdf,
-    ) {
+    pub(crate) fn serialize_document_info(&self, ref_: &mut Ref, pdf: &mut Pdf) {
         if self.has_document_info() {
             let ref_ = ref_.bump();
             let mut document_info = pdf.document_info(ref_);
