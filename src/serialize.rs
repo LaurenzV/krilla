@@ -124,7 +124,13 @@ pub struct SerializeSettings {
     pub pdf_version: PdfVersion,
 }
 
-const STR_BYTE_LEN: usize = 32767;
+const STR_LEN: usize = 32767;
+const NAME_LEN: usize = 127;
+
+// These only apply to PDF 1.4 and PDF/A-1.
+const MAX_FLOAT: f32 = 32767.0;
+const DICT_LEN: usize = 4095;
+const ARRAY_LEN: usize = 8191;
 
 #[cfg(test)]
 impl SerializeSettings {
@@ -781,8 +787,24 @@ impl SerializerContext {
         let chunk_container = std::mem::take(&mut self.chunk_container);
         let serialized = chunk_container.finish(&mut self);
 
-        if serialized.limits().str_len() > STR_BYTE_LEN {
+        if serialized.limits().str_len() > STR_LEN {
             self.register_validation_error(ValidationError::TooLongString);
+        }
+
+        if serialized.limits().name_len() > NAME_LEN {
+            self.register_validation_error(ValidationError::TooLongName);
+        }
+
+        if serialized.limits().real() > MAX_FLOAT {
+            self.register_validation_error(ValidationError::TooLargeFloat);
+        }
+
+        if serialized.limits().array_len() > ARRAY_LEN {
+            self.register_validation_error(ValidationError::TooLongArray);
+        }
+
+        if serialized.limits().dict_entries() > DICT_LEN {
+            self.register_validation_error(ValidationError::TooLongDictionary);
         }
 
         if !self.validation_errors.is_empty() {

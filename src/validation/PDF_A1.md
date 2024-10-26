@@ -44,12 +44,14 @@ with an even number of characters and without whitespaces. 🟢
 
 6.1.12:
 - `pdf-writer` uses i32 for integers. 🟢
-- krilla does not support the checking for these real numbers. 🔴 
+- krilla checks the that the maximum/minimum float number has not been exceeded. 🟢 
+- krilla does not round close real numbers to 0. 🟠 
+- krilla does not write at most 5 decimal places for real numbers. 🟠
 - krilla always uses the `new_str` and `new_text_str` methods of the SerializerContext to create them, 
   which returns a validation error in case it's too long. 🔵
 - krilla trims the names of fonts, and all other names cannot be longer than 127. 🔵
-- krilla does not check the maximum length of arrays. 🔴
-- krilla does not check the maximum entries of a dictionary. 🔴
+- krilla does check the maximum length of arrays. 🟢
+- krilla does check the maximum entries of a dictionary. 🟢
 - krilla fails export if more than 8388607 indirect objects exist. 🟢
 - krilla fails export if a higher nesting-level than 28 exists. 🔵
 - krilla does not use the DeviceN color space. 🟢
@@ -64,7 +66,7 @@ with an even number of characters and without whitespaces. 🟢
 - krilla always only writes one output intent. 🟢
 
 6.2.3.1: krilla overrides the `no_device_cs` property if PDF/A is selected, and
-in case CMYK is used but no profile was provided, export fails.
+in case CMYK is used but no profile was provided, export fails. 🟢
 
 6.2.3.2: 
 - sRGB/sGrey ICC profiles conform to ICC v2 specification. 🟢
@@ -96,41 +98,41 @@ when a PostScript function is used. 🟢
 
 # 6.3 Fonts
 
-6.3.2: krilla follows the specification when defining fonts.
+6.3.2: krilla follows the specification when defining fonts. 🟢
 
-6.3.3.1: krilla always writes the same Registry/Ordering for fonts.
+6.3.3.1: krilla always writes the same Registry/Ordering for fonts. 🟢
 
-6.3.3.2: krilla always includes a `CIDToGIDMap` for Type2 CID fonts.
+6.3.3.2: krilla always includes a `CIDToGIDMap` for Type2 CID fonts. 🟢
 
-6.3.3.3: krilla always writes the `WMode` entry for cmaps and never references any other ones.
+6.3.3.3: krilla always writes the `WMode` entry for cmaps and never references any other ones. 🟢
 
-6.3.4: krilla embeds all fonts that are used.
+6.3.4: krilla embeds all fonts that are used. 🟢
 
 6.3.5:
-- krilla does currently not write the `CIDSet` attribute.
-- krilla does currently not write the `CharSet` attribute.
+- krilla does currently not write the `CIDSet` attribute. 🔴
+- krilla does currently not write the `CharSet` attribute. 🔴
 
-6.3.6: krilla always adds the `Widths` entry and makes them consistent to the font program.
+6.3.6: krilla always adds the `Widths` entry and makes them consistent to the font program. 🟢
 
-6.3.7: krilla only embeds CID fonts.
+6.3.7: krilla only embeds CID fonts. 🔵
 
 
 # 6.4 Transparency
 
-- krilla does currently not forbid SMasks.
-- krilla does currently not check for the S key.
-- krilla does currently not forbid CA/ca/BM.
+- krilla does currently not forbid SMasks. 🔴
+- krilla does currently not check for the S key. 🔴
+- krilla does currently not forbid CA/ca/BM. 🔴
 
 ## 6.5 Annotations
 
 6.5.2: krilla does not support any non-standard annotation types, nor `FileAttachment`, `Sound` or `Movie`. 🔵
 
 6.5.3: 
-- krilla does not use the CA key of annotation dictionaries.
+- krilla does not use the CA key of annotation dictionaries. 🔴
 - krilla always sets the `F` flag for annotations. 🟢
-- krilla does not support text annotations.
-- krilla does not set the C key of annotations.
-- krilla does never write an appearence dictionary.
+- krilla does not support text annotations. 🔴
+- krilla does not set the C key of annotations. 🔴
+- krilla does never write an appearence dictionary. 🔵
 
 
 ## 6.6 Action
@@ -166,15 +168,15 @@ when a PostScript function is used. 🟢
 
 6.7.6: krilla writes pdfaid:conformance and pdfaid:part as specified. 🟢
 
-6.7.7: krilla does not write file provenance information.
+6.7.7: krilla does not write file provenance information. 🔴
 
-6.7.8: krilla does not write the extension schemas.
+6.7.8: krilla does not write the extension schemas. 🔴
 
-6.7.9: `xmp-writer` always produces valid XMP packets.
+6.7.9: `xmp-writer` always produces valid XMP packets. 🟢
 
-6.7.10: krilla does not write font metadata.
+6.7.10: krilla does not write font metadata. 🔴
 
-6.7.11: krilla writes the conformance level identification.
+6.7.11: krilla writes the conformance level identification. 🟢
 
 # Level A
 

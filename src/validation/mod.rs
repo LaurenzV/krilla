@@ -34,6 +34,23 @@ pub enum ValidationError {
     /// Can for example occur if someone set a title or an author that is longer than
     /// the given length.
     TooLongString,
+    /// There was a name that was longer than the maximum allowed length (127).
+    ///
+    /// Can for example occur if the font name is too long.
+    TooLongName,
+    /// There was an array that was longer than the maximum allowed length (8191).
+    /// Can only occur for PDF 1.4.
+    ///
+    /// Can for example occur if a text too long was written.
+    TooLongArray,
+    /// There was a dictionary with more entries than the maximum allowed (4095).
+    /// Can only occur for PDF 1.4.
+    ///
+    /// Can for example occur if too many annotations are added to a page.
+    TooLongDictionary,
+    /// There was a float that is higher than the maximum allowed (32767).
+    /// Can only occur for PDF 1.4.
+    TooLargeFloat,
     /// The PDF exceeds the upper limit for indirect objects (8388607).
     ///
     /// Occurs if the PDF is simply too long.
@@ -224,6 +241,10 @@ impl Validator {
             Validator::Dummy => false,
             Validator::A1_A | Validator::A1_B => match validation_error {
                 ValidationError::TooLongString => true,
+                ValidationError::TooLongName => true,
+                ValidationError::TooLongArray => true,
+                ValidationError::TooLargeFloat => true,
+                ValidationError::TooLongDictionary => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
@@ -240,6 +261,10 @@ impl Validator {
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
+                ValidationError::TooLongName => true,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
@@ -259,6 +284,10 @@ impl Validator {
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
+                ValidationError::TooLongName => true,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
@@ -278,6 +307,10 @@ impl Validator {
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooLongName => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => false,
                 ValidationError::TooHighQNestingLevel => false,
                 ValidationError::ContainsPostScript => false,
