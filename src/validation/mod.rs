@@ -24,6 +24,7 @@ use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
 use skrifa::GlyphId;
 use std::fmt::Debug;
+use pdf_writer::Finish;
 use xmp_writer::XmpWriter;
 
 /// An error that occurred during validation
@@ -344,7 +345,23 @@ impl Validator {
         }
     }
 
+    fn is_pdf_a(&self) -> bool {
+        matches!(self, Validator::A1_A | Validator::A1_B |
+            Validator::A2_A | Validator::A2_B | Validator::A2_U |
+            Validator::A3_A | Validator::A3_B | Validator::A3_U )
+    }
+
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
+        if self.is_pdf_a() {
+            let mut extension_schemas = xmp.extension_schemas();
+            extension_schemas
+                .xmp_media_management()
+                .properties()
+                .describe_instance_id();
+            extension_schemas.pdf().properties().describe_all();
+            extension_schemas.finish();
+        }
+
         match self {
             Validator::Dummy => {}
             Validator::A1_A => {

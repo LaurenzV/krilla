@@ -170,7 +170,7 @@ when a PostScript function is used. 🟢
 
 6.7.7: krilla is the original creator, and thus no history is necessary. 🟢
 
-6.7.8: krilla does not write the extension schemas. 🔴
+6.7.8: krilla writes the extension schemas. 🟢
 
 6.7.9: `xmp-writer` always produces valid XMP packets. 🟢
 
