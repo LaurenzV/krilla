@@ -98,6 +98,8 @@ pub enum ValidationError {
     MissingDocumentOutline,
     /// An annotation is missing an alt text.
     MissingAnnotationAltText,
+    /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
+    Transparency
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -258,6 +260,7 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -281,6 +284,7 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -304,6 +308,7 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -324,6 +329,7 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => true,
                 ValidationError::MissingDocumentOutline => true,
                 ValidationError::MissingAnnotationAltText => true,
+                ValidationError::Transparency => false,
             },
         }
     }
@@ -944,5 +950,24 @@ mod tests {
     #[snapshot(document, settings_16)]
     fn pdf_version_14_tagged(document: &mut Document) {
         validation_pdf_tagged_full_example(document);
+    }
+
+    #[test]
+    fn validation_pdfa1_no_transparency() {
+        let mut document = Document::new_with(SerializeSettings::settings_19());
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(0.5));
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::Transparency
+            ]))
+        )
     }
 }

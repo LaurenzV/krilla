@@ -119,9 +119,9 @@ when a PostScript function is used. 🟢
 
 # 6.4 Transparency
 
-- krilla does currently not forbid SMasks. 🔴
-- krilla does currently not check for the S key. 🔴
-- krilla does currently not forbid CA/ca/BM. 🔴
+- krilla forbids soft masks in this export mode. 🟢
+- krilla forbids the S key in this export mode. 🟢
+- krilla forbids non-default CA/ca/BM in this export mode. 🟢
 
 ## 6.5 Annotations
 

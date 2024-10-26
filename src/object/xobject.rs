@@ -7,6 +7,7 @@ use crate::util::{RectExt, RectWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
+use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {
@@ -66,6 +67,8 @@ impl Object for XObject {
         );
 
         if self.isolated || self.transparency_group_color_space {
+            sc.register_validation_error(ValidationError::Transparency);
+
             let mut group = x_object.group();
             let transparency = group.transparency();
 
