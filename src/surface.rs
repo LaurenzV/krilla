@@ -438,7 +438,7 @@ impl<'a> Surface<'a> {
             }
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
-                    let stream = self.sub_builders.pop().unwrap().finish(&mut self.sc);
+                    let stream = self.sub_builders.pop().unwrap().finish(self.sc);
                     Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                         .draw_opacified(self.sc, o, stream);
                 }
@@ -451,12 +451,12 @@ impl<'a> Surface<'a> {
                     .restore_graphics_state()
             }
             PushInstruction::Mask(mask) => {
-                let stream = self.sub_builders.pop().unwrap().finish(&mut self.sc);
+                let stream = self.sub_builders.pop().unwrap().finish(self.sc);
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                     .draw_masked(self.sc, *mask, stream)
             }
             PushInstruction::Isolated => {
-                let stream = self.sub_builders.pop().unwrap().finish(&mut self.sc);
+                let stream = self.sub_builders.pop().unwrap().finish(self.sc);
                 Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
                     .draw_isolated(self.sc, stream);
             }
@@ -540,7 +540,7 @@ impl Drop for Surface<'_> {
         assert!(self.sub_builders.is_empty());
         assert!(self.push_instructions.is_empty());
         assert!(!root_builder.active_marked_content);
-        (self.finish_fn)(root_builder.finish(&mut self.sc), num_mcids)
+        (self.finish_fn)(root_builder.finish(self.sc), num_mcids)
     }
 }
 
