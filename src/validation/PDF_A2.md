@@ -120,7 +120,7 @@ always required. 🟢
 
 6.2.11.4.2: 
 - krilla never writes the `CharSet` attribute. 🔵
-- krilla never writes the `CIDSet` attribute. 🔵
+- krilla always includes all CIDs in `CIDSet`. 🔵
 
 6.2.11.5: krilla copies the font metrics directly from the font. 🟢
 

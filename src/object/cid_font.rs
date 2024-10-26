@@ -108,6 +108,7 @@ impl CIDFont {
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
+        let cid_set_ref = sc.new_ref();
         let data_ref = sc.new_ref();
 
         let glyph_remapper = &self.glyph_remapper;
@@ -218,6 +219,7 @@ impl CIDFont {
             .ascent(ascender)
             .descent(descender)
             .cap_height(cap_height)
+            .cid_set(cid_set_ref)
             .stem_v(stem_v);
 
         if is_cff {
@@ -277,6 +279,25 @@ impl CIDFont {
         let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
+
+        let cid_data = {
+            // It's always guaranteed that CIDs start from 0 and are consecutive, so this encoding
+            // is very straight-forward.
+            let mut bytes = vec![];
+            bytes.extend([0xFFu8].repeat((self.glyph_remapper.num_gids() / 8) as usize));
+            let padding = self.glyph_remapper.num_gids() % 8;
+            if padding != 0 {
+                bytes.push(!(0xFF >> padding))
+            }
+
+            bytes
+        };
+
+        let cid_stream = FilterStream::new_plain(&cid_data, &sc.serialize_settings);
+        let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
+        cid_stream.write_filters(cid_set.deref_mut());
+        cid_set.finish();
+        cid_stream.finish();
 
         let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
         font_stream.write_filters(stream.deref_mut());

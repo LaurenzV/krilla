@@ -109,8 +109,8 @@ when a PostScript function is used. 🟢
 6.3.4: krilla embeds all fonts that are used. 🟢
 
 6.3.5:
-- krilla does currently not write the `CIDSet` attribute. 🔴
-- krilla does currently not write the `CharSet` attribute. 🔴
+- krilla doesn't support Type1 fonts and thus doesn't need the `CharSet` attribute. 🔵
+- krilla always writes the `CIDSet` attribute. 🟢
 
 6.3.6: krilla always adds the `Widths` entry and makes them consistent to the font program. 🟢
 

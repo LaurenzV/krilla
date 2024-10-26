@@ -990,6 +990,16 @@ impl<'a> FilterStream<'a> {
         filter_stream
     }
 
+    pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+        }
+
+        filter_stream
+    }
+
     pub fn add_filter(&mut self, filter: StreamFilter) {
         self.content = Cow::Owned(filter.apply(&self.content));
         self.filters.add(filter);
