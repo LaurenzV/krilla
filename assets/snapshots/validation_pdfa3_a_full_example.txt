@@ -54,9 +54,6 @@ endobj
       /c0 15 0 R
       /c1 16 0 R
     >>
-    /ExtGState <<
-      /g0 19 0 R
-    >>
     /Font <<
       /f0 9 0 R
     >>
@@ -70,7 +67,7 @@ endobj
 
 7 0 obj
 <<
-  /Length 481
+  /Length 474
 >>
 stream
 /Span <<
@@ -99,7 +96,6 @@ EMC
 >> BDC
 q
 1 0 0 -1 0 842 cm
-/g0 gs
 /c1 cs
 1 0 0 scn
 30 30 m
@@ -318,27 +314,20 @@ endobj
 
 19 0 obj
 <<
-  /Type /ExtGState
-  /ca 0.5
->>
-endobj
-
-20 0 obj
-<<
   /Length 909
   /Type /Metadata
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfaid:part>3</pdfaid:part><pdfaid:conformance>A</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>mKnAtlwJzxydf5K+n9+zDA==</xmpMM:InstanceID><xmpMM:DocumentID>mKnAtlwJzxydf5K+n9+zDA==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfaid:part>3</pdfaid:part><pdfaid:conformance>A</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>FOYclAW/jjPx2QYsOEhxAA==</xmpMM:InstanceID><xmpMM:DocumentID>FOYclAW/jjPx2QYsOEhxAA==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
-21 0 obj
+20 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
-  /Metadata 20 0 R
+  /Metadata 19 0 R
   /OutputIntents 3 0 R
   /Lang (en)
   /StructTreeRoot 4 0 R
@@ -350,7 +339,7 @@ endobj
 endobj
 
 xref
-0 22
+0 21
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
@@ -358,27 +347,26 @@ xref
 0000000295 00000 n
 0000000490 00000 n
 0000000514 00000 n
-0000000830 00000 n
-0000001365 00000 n
-0000001454 00000 n
-0000001617 00000 n
-0000001961 00000 n
-0000002210 00000 n
-0000003036 00000 n
-0000003119 00000 n
-0000005453 00000 n
-0000005489 00000 n
-0000005525 00000 n
-0000006182 00000 n
-0000006957 00000 n
-0000007009 00000 n
-0000008007 00000 n
+0000000788 00000 n
+0000001316 00000 n
+0000001405 00000 n
+0000001568 00000 n
+0000001912 00000 n
+0000002161 00000 n
+0000002987 00000 n
+0000003070 00000 n
+0000005404 00000 n
+0000005440 00000 n
+0000005476 00000 n
+0000006133 00000 n
+0000006908 00000 n
+0000007906 00000 n
 trailer
 <<
-  /Size 22
-  /Root 21 0 R
-  /ID [(mKnAtlwJzxydf5K+n9+zDA==) (mKnAtlwJzxydf5K+n9+zDA==)]
+  /Size 21
+  /Root 20 0 R
+  /ID [(FOYclAW/jjPx2QYsOEhxAA==) (FOYclAW/jjPx2QYsOEhxAA==)]
 >>
 startxref
-8198
+8097
 %%EOF

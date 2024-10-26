@@ -181,9 +181,9 @@ always required. 🟢
 6.6.2.3.1: krilla doesn't use any non-standard properties. 🟢
 
 TODO: CHeck the two below
-6.6.2.3.2: krilla doesn't use extension schemas. 🔵
+6.6.2.3.2: krilla doesn't use extension schemas. 🔴
 
-6.6.2.3.3: krilla doesn't use extension schemas. 🔵
+6.6.2.3.3: krilla doesn't use extension schemas. 🔴
 
 6.6.3: krilla ensures that XMP metadata and document info dictionary are consistent. 🟢
 

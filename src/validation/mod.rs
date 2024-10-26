@@ -679,7 +679,7 @@ mod tests {
             TextDirection::Auto,
         );
 
-        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(0.5));
+        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(1.0));
 
         surface.finish();
         page.finish();
@@ -711,7 +711,7 @@ mod tests {
         surface.end_tagged();
 
         let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
-        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(0.5));
+        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(1.0));
         surface.end_tagged();
 
         surface.finish();
@@ -779,6 +779,16 @@ mod tests {
                 ValidationError::UnicodePrivateArea(font, GlyphId::new(2))
             ]))
         )
+    }
+
+    #[snapshot(document, settings_20)]
+    fn validation_pdfa1_a_full_example(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
+    }
+
+    #[snapshot(document, settings_19)]
+    fn validation_pdfa1_b_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
     }
 
     #[snapshot(document, settings_13)]

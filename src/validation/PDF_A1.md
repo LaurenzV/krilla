@@ -128,10 +128,10 @@ when a PostScript function is used. 🟢
 6.5.2: krilla does not support any non-standard annotation types, nor `FileAttachment`, `Sound` or `Movie`. 🔵
 
 6.5.3: 
-- krilla does not use the CA key of annotation dictionaries. 🔴
+- krilla never sets the CA key of annotation dictionaries. 🔵
 - krilla always sets the `F` flag for annotations. 🟢
-- krilla does not support text annotations. 🔴
-- krilla does not set the C key of annotations. 🔴
+- krilla does not support text annotations. 🔵
+- krilla does not set the C key of annotations. 🔵
 - krilla does never write an appearence dictionary. 🔵
 
 
@@ -168,13 +168,13 @@ when a PostScript function is used. 🟢
 
 6.7.6: krilla writes pdfaid:conformance and pdfaid:part as specified. 🟢
 
-6.7.7: krilla does not write file provenance information. 🔴
+6.7.7: krilla is the original creator, and thus no history is necessary. 🟢
 
 6.7.8: krilla does not write the extension schemas. 🔴
 
 6.7.9: `xmp-writer` always produces valid XMP packets. 🟢
 
-6.7.10: krilla does not write font metadata. 🔴
+6.7.10: krilla doesn't use Type 0, Type 1 or TrueType fonts directly, thus no metadata needs to be provided. 🔵
 
 6.7.11: krilla writes the conformance level identification. 🟢
 
