@@ -22,9 +22,9 @@
 use crate::font::Font;
 use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
+use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
-use pdf_writer::Finish;
 use xmp_writer::XmpWriter;
 
 /// An error that occurred during validation
@@ -346,9 +346,17 @@ impl Validator {
     }
 
     fn is_pdf_a(&self) -> bool {
-        matches!(self, Validator::A1_A | Validator::A1_B |
-            Validator::A2_A | Validator::A2_B | Validator::A2_U |
-            Validator::A3_A | Validator::A3_B | Validator::A3_U )
+        matches!(
+            self,
+            Validator::A1_A
+                | Validator::A1_B
+                | Validator::A2_A
+                | Validator::A2_B
+                | Validator::A2_U
+                | Validator::A3_A
+                | Validator::A3_B
+                | Validator::A3_U
+        )
     }
 
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
