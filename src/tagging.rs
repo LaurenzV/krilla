@@ -126,7 +126,7 @@ use pdf_writer::types::{
     ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
 };
 use pdf_writer::writers::{PropertyList, StructElement};
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
 
@@ -238,21 +238,21 @@ impl ContentTag<'_> {
                 artifact.kind(artifact_type);
             }
             ContentTag::Span(lang, alt, exp, actual) => {
-                properties.pair(Name(b"Lang"), sc.new_text_str(lang));
+                properties.pair(Name(b"Lang"), TextStr(lang));
 
                 if let Some(alt) = alt {
                     if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
-                        properties.pair(Name(b"Alt"), sc.new_text_str(alt));
+                        properties.pair(Name(b"Alt"), TextStr(alt));
                     }
                 }
 
                 if let Some(exp) = exp {
-                    properties.pair(Name(b"E"), sc.new_text_str(exp));
+                    properties.pair(Name(b"E"), TextStr(exp));
                 }
 
                 if let Some(actual) = actual {
                     if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
-                        properties.actual_text(sc.new_text_str(actual));
+                        properties.actual_text(TextStr(actual));
                     }
                 }
             }
@@ -706,13 +706,13 @@ impl TagGroup {
         struct_elem.parent(parent);
 
         if let Some(alt) = self.tag.alt() {
-            struct_elem.alt(sc.new_text_str(alt));
+            struct_elem.alt(TextStr(alt));
         } else if self.tag.can_have_alt() {
             sc.register_validation_error(ValidationError::MissingAltText);
         }
 
         if let Some(title) = self.tag.title() {
-            struct_elem.title(sc.new_text_str(title));
+            struct_elem.title(TextStr(title));
         } else if self.tag.can_have_title() {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
@@ -731,7 +731,7 @@ impl TagGroup {
                 *note_id += 1;
                 id_tree.insert(id.clone(), root_ref);
                 // TODO: Add this to pdf-writer
-                struct_elem.pair(Name(b"ID"), sc.new_str(id.as_bytes()));
+                struct_elem.pair(Name(b"ID"), Str(id.as_bytes()));
             }
             _ => {}
         }

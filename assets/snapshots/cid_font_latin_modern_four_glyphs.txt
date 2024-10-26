@@ -38,8 +38,9 @@ endobj
   /Ascent 1127
   /Descent -290
   /CapHeight 683
+  /CIDSet 5 0 R
   /StemV 95.4
-  /FontFile3 5 0 R
+  /FontFile3 6 0 R
 >>
 endobj
 
@@ -88,6 +89,16 @@ endstream
 endobj
 
 5 0 obj
+<<
+  /Length 2
+  /Filter /ASCIIHexDecode
+>>
+stream
+F8
+endstream
+endobj
+
+6 0 obj
 <<
   /Length 1819
   /Filter [/ASCIIHexDecode /FlateDecode]

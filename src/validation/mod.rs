@@ -22,6 +22,7 @@
 use crate::font::Font;
 use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
+use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
@@ -34,6 +35,23 @@ pub enum ValidationError {
     /// Can for example occur if someone set a title or an author that is longer than
     /// the given length.
     TooLongString,
+    /// There was a name that was longer than the maximum allowed length (127).
+    ///
+    /// Can for example occur if the font name is too long.
+    TooLongName,
+    /// There was an array that was longer than the maximum allowed length (8191).
+    /// Can only occur for PDF 1.4.
+    ///
+    /// Can for example occur if a text too long was written.
+    TooLongArray,
+    /// There was a dictionary with more entries than the maximum allowed (4095).
+    /// Can only occur for PDF 1.4.
+    ///
+    /// Can for example occur if too many annotations are added to a page.
+    TooLongDictionary,
+    /// There was a float that is higher than the maximum allowed (32767).
+    /// Can only occur for PDF 1.4.
+    TooLargeFloat,
     /// The PDF exceeds the upper limit for indirect objects (8388607).
     ///
     /// Occurs if the PDF is simply too long.
@@ -81,6 +99,8 @@ pub enum ValidationError {
     MissingDocumentOutline,
     /// An annotation is missing an alt text.
     MissingAnnotationAltText,
+    /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
+    Transparency,
 }
 
 // TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
@@ -92,6 +112,15 @@ pub enum Validator {
     ///
     /// **Requirements**: -
     Dummy,
+    /// The validator for the PDF/A1-A standard.
+    ///
+    /// **Requirements**:
+    ///
+    A1_A,
+    /// The validator for the PDF/A1-B standard.
+    ///
+    /// **Requirements**: -
+    A1_B,
     /// The validator for the PDF/A2-A standard.
     ///
     /// **Requirements**:
@@ -213,8 +242,33 @@ impl Validator {
     pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
             Validator::Dummy => false,
+            Validator::A1_A | Validator::A1_B => match validation_error {
+                ValidationError::TooLongString => true,
+                ValidationError::TooLongName => true,
+                ValidationError::TooLongArray => true,
+                ValidationError::TooLargeFloat => true,
+                ValidationError::TooLongDictionary => true,
+                ValidationError::TooManyIndirectObjects => true,
+                ValidationError::TooHighQNestingLevel => true,
+                ValidationError::ContainsPostScript => true,
+                ValidationError::MissingCMYKProfile => true,
+                ValidationError::ContainsNotDefGlyph => false,
+                ValidationError::InvalidCodepointMapping(_, _) => false,
+                ValidationError::UnicodePrivateArea(_, _) => false,
+                ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
+                ValidationError::NoDocumentTitle => false,
+                ValidationError::MissingAltText => false,
+                ValidationError::MissingHeadingTitle => false,
+                ValidationError::MissingDocumentOutline => false,
+                ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => true,
+            },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
+                ValidationError::TooLongName => true,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
@@ -231,9 +285,14 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
+                ValidationError::TooLongName => true,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript => true,
@@ -250,9 +309,14 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooLongName => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => false,
                 ValidationError::TooHighQNestingLevel => false,
                 ValidationError::ContainsPostScript => false,
@@ -266,6 +330,7 @@ impl Validator {
                 ValidationError::MissingHeadingTitle => true,
                 ValidationError::MissingDocumentOutline => true,
                 ValidationError::MissingAnnotationAltText => true,
+                ValidationError::Transparency => false,
             },
         }
     }
@@ -273,15 +338,48 @@ impl Validator {
     pub(crate) fn compatible_with(&self, pdf_version: PdfVersion) -> bool {
         match self {
             Validator::Dummy => true,
+            Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
             Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
         }
     }
 
+    fn is_pdf_a(&self) -> bool {
+        matches!(
+            self,
+            Validator::A1_A
+                | Validator::A1_B
+                | Validator::A2_A
+                | Validator::A2_B
+                | Validator::A2_U
+                | Validator::A3_A
+                | Validator::A3_B
+                | Validator::A3_U
+        )
+    }
+
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
+        if self.is_pdf_a() {
+            let mut extension_schemas = xmp.extension_schemas();
+            extension_schemas
+                .xmp_media_management()
+                .properties()
+                .describe_instance_id();
+            extension_schemas.pdf().properties().describe_all();
+            extension_schemas.finish();
+        }
+
         match self {
             Validator::Dummy => {}
+            Validator::A1_A => {
+                xmp.pdfa_part(1);
+                xmp.pdfa_conformance("A");
+            }
+            Validator::A1_B => {
+                xmp.pdfa_part(1);
+                xmp.pdfa_conformance("B");
+            }
             Validator::A2_A => {
                 xmp.pdfa_part(2);
                 xmp.pdfa_conformance("A");
@@ -315,6 +413,7 @@ impl Validator {
     pub(crate) fn requires_display_doc_title(&self) -> bool {
         match self {
             Validator::Dummy => false,
+            Validator::A1_A | Validator::A1_B => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
             Validator::UA1 => true,
@@ -324,6 +423,7 @@ impl Validator {
     pub(crate) fn requires_no_device_cs(&self) -> bool {
         match self {
             Validator::Dummy => false,
+            Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
             Validator::UA1 => false,
@@ -333,6 +433,8 @@ impl Validator {
     pub(crate) fn requires_tagging(&self) -> bool {
         match self {
             Validator::Dummy => false,
+            Validator::A1_A => true,
+            Validator::A1_B => false,
             Validator::A2_A => true,
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
@@ -344,6 +446,7 @@ impl Validator {
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
             Validator::Dummy => false,
+            Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
             Validator::UA1 => true,
@@ -353,6 +456,7 @@ impl Validator {
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
             Validator::Dummy => false,
+            Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
             Validator::UA1 => false,
@@ -362,6 +466,7 @@ impl Validator {
     pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype> {
         match self {
             Validator::Dummy => None,
+            Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
             Validator::UA1 => None,
@@ -372,6 +477,8 @@ impl Validator {
     pub fn as_str(&self) -> &str {
         match self {
             Validator::Dummy => "dummy validator",
+            Validator::A1_A => "PDF/A1-A",
+            Validator::A1_B => "PDF/A1-B",
             Validator::A2_A => "PDF/A2-A",
             Validator::A2_B => "PDF/A2-B",
             Validator::A2_U => "PDF/A2-U",
@@ -597,7 +704,7 @@ mod tests {
             TextDirection::Auto,
         );
 
-        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(0.5));
+        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(1.0));
 
         surface.finish();
         page.finish();
@@ -629,7 +736,7 @@ mod tests {
         surface.end_tagged();
 
         let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
-        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(0.5));
+        surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(1.0));
         surface.end_tagged();
 
         surface.finish();
@@ -697,6 +804,16 @@ mod tests {
                 ValidationError::UnicodePrivateArea(font, GlyphId::new(2))
             ]))
         )
+    }
+
+    #[snapshot(document, settings_20)]
+    fn validation_pdfa1_a_full_example(document: &mut Document) {
+        validation_pdf_tagged_full_example(document);
+    }
+
+    #[snapshot(document, settings_19)]
+    fn validation_pdfa1_b_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
     }
 
     #[snapshot(document, settings_13)]
@@ -868,5 +985,24 @@ mod tests {
     #[snapshot(document, settings_16)]
     fn pdf_version_14_tagged(document: &mut Document) {
         validation_pdf_tagged_full_example(document);
+    }
+
+    #[test]
+    fn validation_pdfa1_no_transparency() {
+        let mut document = Document::new_with(SerializeSettings::settings_19());
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(0.5));
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::Transparency
+            ]))
+        )
     }
 }

@@ -399,11 +399,23 @@ pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
     }
 }
 
-pub fn rgb_icc(ss: &SerializeSettings) -> ICCProfile<3> {
+pub struct SrgbProfile(ICCProfile<3>, &'static str);
+
+impl SrgbProfile {
+    pub fn profile(&self) -> ICCProfile<3> {
+        self.0.clone()
+    }
+
+    pub fn version(&self) -> &str {
+        self.1
+    }
+}
+
+pub fn rgb_icc(ss: &SerializeSettings) -> SrgbProfile {
     if ss.pdf_version < PdfVersion::Pdf17 {
-        SRGB_V2_ICC.clone()
+        SrgbProfile(SRGB_V2_ICC.clone(), "sRGB v2.1")
     } else {
-        SRGB_V4_ICC.clone()
+        SrgbProfile(SRGB_V4_ICC.clone(), "sRGB v4.2")
     }
 }
 

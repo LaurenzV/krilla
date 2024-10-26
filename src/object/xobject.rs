@@ -4,6 +4,7 @@ use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::stream::Stream;
 use crate::util::{RectExt, RectWrapper};
+use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
@@ -66,6 +67,8 @@ impl Object for XObject {
         );
 
         if self.isolated || self.transparency_group_color_space {
+            sc.register_validation_error(ValidationError::Transparency);
+
             let mut group = x_object.group();
             let transparency = group.transparency();
 

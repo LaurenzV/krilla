@@ -2,6 +2,7 @@ use crate::object::mask::Mask;
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
+use crate::validation::ValidationError;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::sync::Arc;
@@ -106,23 +107,37 @@ impl Object for ExtGState {
         Box::new(|cc| &mut cc.ext_g_states)
     }
 
-    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
+            if nsa != NormalizedF32::ONE {
+                sc.register_validation_error(ValidationError::Transparency);
+            }
+
             ext_st.non_stroking_alpha(nsa.get());
         }
 
         if let Some(sa) = self.0.stroking_alpha {
+            if sa != NormalizedF32::ONE {
+                sc.register_validation_error(ValidationError::Transparency);
+            }
+
             ext_st.stroking_alpha(sa.get());
         }
 
         if let Some(bm) = self.0.blend_mode {
+            if bm != BlendMode::Normal {
+                sc.register_validation_error(ValidationError::Transparency);
+            }
+
             ext_st.blend_mode(bm);
         }
 
         if let Some(mask_ref) = self.0.mask {
+            sc.register_validation_error(ValidationError::Transparency);
+
             ext_st.pair(Name(b"SMask"), mask_ref);
         }
 

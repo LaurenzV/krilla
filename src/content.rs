@@ -23,7 +23,7 @@ use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectE
 use crate::validation::ValidationError;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Name};
+use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::cell::{RefCell, RefMut};
 use std::collections::HashSet;
@@ -66,9 +66,12 @@ impl ContentBuilder {
         }
     }
 
-    pub fn finish(self) -> Stream {
+    pub fn finish(self, sc: &mut SerializerContext) -> Stream {
+        let buf = self.content.finish();
+        sc.limits.merge(buf.limits());
+
         Stream::new(
-            self.content.finish(),
+            buf.to_bytes(),
             self.bbox
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
             self.validation_errors.into_iter().collect(),
@@ -408,7 +411,7 @@ impl ContentBuilder {
             // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
                 if !encoded.is_empty() {
-                    items.show(sc.new_str(&encoded));
+                    items.show(Str(&encoded));
                     encoded.clear();
                 }
 
@@ -429,7 +432,7 @@ impl ContentBuilder {
         }
 
         if !encoded.is_empty() {
-            items.show(sc.new_str(&encoded));
+            items.show(Str(&encoded));
         }
 
         items.finish();
@@ -472,7 +475,7 @@ impl ContentBuilder {
                         let mut actual_text = sb
                             .content
                             .begin_marked_content_with_properties(Name(b"Span"));
-                        actual_text.properties().actual_text(sc.new_text_str(text));
+                        actual_text.properties().actual_text(TextStr(text));
                     }
 
                     // Segment into glyph runs that can be encoded in one go using a PDF
@@ -669,9 +672,10 @@ impl ContentBuilder {
              content_builder: &mut ContentBuilder,
              sc: &mut SerializerContext,
              allow_gray: bool| match color.color_space(sc, allow_gray) {
-                ColorSpace::Rgb => content_builder
-                    .rd_builder
-                    .register_resource(ICCBasedColorSpace(rgb_icc(&sc.serialize_settings)), sc),
+                ColorSpace::Rgb => content_builder.rd_builder.register_resource(
+                    ICCBasedColorSpace(rgb_icc(&sc.serialize_settings).profile()),
+                    sc,
+                ),
                 ColorSpace::Gray => content_builder
                     .rd_builder
                     .register_resource(ICCBasedColorSpace(grey_icc(&sc.serialize_settings)), sc),

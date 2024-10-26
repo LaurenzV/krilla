@@ -22,7 +22,7 @@ use crate::version::PdfVersion;
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
-use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -124,7 +124,13 @@ pub struct SerializeSettings {
     pub pdf_version: PdfVersion,
 }
 
-const STR_BYTE_LEN: usize = 32767;
+const STR_LEN: usize = 32767;
+const NAME_LEN: usize = 127;
+
+// These only apply to PDF 1.4 and PDF/A-1.
+const MAX_FLOAT: f32 = 32767.0;
+const DICT_LEN: usize = 4095;
+const ARRAY_LEN: usize = 8191;
 
 #[cfg(test)]
 impl SerializeSettings {
@@ -265,6 +271,22 @@ impl SerializeSettings {
         }
     }
 
+    pub(crate) fn settings_19() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_20() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A1_A,
+            ..Self::settings_1()
+        }
+    }
+
     // TODO: Add test for version mismatch
 }
 
@@ -313,6 +335,7 @@ pub(crate) struct SerializerContext {
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: SerializeSettings,
+    pub(crate) limits: Limits,
 }
 
 #[derive(Clone, Copy)]
@@ -355,6 +378,7 @@ impl SerializerContext {
             font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings,
+            limits: Limits::new(),
         }
     }
 
@@ -484,25 +508,9 @@ impl SerializerContext {
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize(self, ref_);
+        let chunk = page_label.serialize(ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
-    }
-
-    pub fn new_text_str<'a>(&mut self, text: &'a str) -> TextStr<'a> {
-        if text.as_bytes().len() > STR_BYTE_LEN {
-            self.register_validation_error(ValidationError::TooLongString);
-        }
-
-        TextStr(text)
-    }
-
-    pub fn new_str<'a>(&mut self, str: &'a [u8]) -> Str<'a> {
-        if str.len() > STR_BYTE_LEN {
-            self.register_validation_error(ValidationError::TooLongString);
-        }
-
-        Str(str)
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
@@ -552,7 +560,9 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(ICCBasedColorSpace(rgb_icc(&self.serialize_settings))),
+            Resource::Rgb => self.add_object(ICCBasedColorSpace(
+                rgb_icc(&self.serialize_settings).profile(),
+            )),
             Resource::Gray => {
                 self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings)))
             }
@@ -606,12 +616,14 @@ impl SerializerContext {
 
         let oi_ref = self.new_ref();
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        oi.dest_output_profile(self.add_object(rgb_icc(&self.serialize_settings)))
+        let icc_profile = rgb_icc(&self.serialize_settings);
+
+        oi.dest_output_profile(self.add_object(icc_profile.profile()))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))
             .registry_name(TextStr(""))
-            .info(TextStr("sRGB v4.2"));
+            .info(TextStr(icc_profile.version()));
         oi.finish();
 
         let mut array = chunk.indirect(root_ref).array();
@@ -769,7 +781,7 @@ impl SerializerContext {
                 let mut names = id_tree.names();
 
                 for (name, ref_) in id_tree_map {
-                    names.insert(self.new_str(name.as_bytes()), ref_);
+                    names.insert(Str(name.as_bytes()), ref_);
                 }
             }
 
@@ -791,6 +803,26 @@ impl SerializerContext {
         let chunk_container = std::mem::take(&mut self.chunk_container);
         let serialized = chunk_container.finish(&mut self);
 
+        if serialized.limits().str_len() > STR_LEN {
+            self.register_validation_error(ValidationError::TooLongString);
+        }
+
+        if serialized.limits().name_len() > NAME_LEN {
+            self.register_validation_error(ValidationError::TooLongName);
+        }
+
+        if serialized.limits().real() > MAX_FLOAT {
+            self.register_validation_error(ValidationError::TooLargeFloat);
+        }
+
+        if serialized.limits().array_len() > ARRAY_LEN {
+            self.register_validation_error(ValidationError::TooLongArray);
+        }
+
+        if serialized.limits().dict_entries() > DICT_LEN {
+            self.register_validation_error(ValidationError::TooLongDictionary);
+        }
+
         if !self.validation_errors.is_empty() {
             return Err(KrillaError::ValidationError(self.validation_errors));
         }
@@ -811,7 +843,7 @@ pub enum CSWrapper {
 }
 
 impl pdf_writer::Primitive for CSWrapper {
-    fn write(self, buf: &mut Vec<u8>) {
+    fn write(self, buf: &mut Buf) {
         match self {
             CSWrapper::Ref(r) => r.write(buf),
             CSWrapper::Name(n) => n.write(buf),
@@ -966,6 +998,16 @@ impl<'a> FilterStream<'a> {
     pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_filter(StreamFilter::FlateDecode);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+        }
+
+        filter_stream
+    }
+
+    pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
 
         if serialize_settings.ascii_compatible {
             filter_stream.add_filter(StreamFilter::AsciiHexDecode);

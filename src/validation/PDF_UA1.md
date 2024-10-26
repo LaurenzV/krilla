@@ -169,7 +169,8 @@ See `README.md` for the meaning of each color.
 - krilla export only succeeds if all glyphs are available in the font (otherwise subsetting fails). 🟢
 
 7.21.4.2
-- krilla doesn't include a CharSet/CIDSet in font descriptors. 🟢
+- krilla doesn't include a CharSet in font descriptors. 🟢
+- krilla always includes all CIDs in `CIDSet`. 🟢
 
 7.21.5
 - Font metrics should (hopefully) be as consistent as possible. 🟢

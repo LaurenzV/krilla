@@ -3,7 +3,7 @@ use crate::serialize::SerializerContext;
 use crate::util::{hash_base64, Deferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref};
+use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, TextStr};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
 
@@ -154,7 +154,7 @@ impl ChunkContainer {
 
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
-            metadata.serialize_document_info(&mut remapped_ref, sc, &mut pdf);
+            metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
         }
 
         let mut xmp = XmpWriter::new();
@@ -236,7 +236,7 @@ impl ChunkContainer {
             }
 
             if let Some(lang) = self.metadata.and_then(|m| m.language).as_ref() {
-                catalog.lang(sc.new_text_str(lang));
+                catalog.lang(TextStr(lang));
             } else {
                 sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
