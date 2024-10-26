@@ -267,7 +267,7 @@ impl PageLabel {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)

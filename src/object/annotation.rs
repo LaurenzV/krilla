@@ -145,7 +145,7 @@ impl LinkAnnotation {
                     .insert(Name(b"Dest"))
                     .start::<pdf_writer::writers::Destination>(),
             )?,
-            Target::Action(action) => action.serialize(sc, annotation.action()),
+            Target::Action(action) => action.serialize(annotation.action()),
         };
 
         Ok(())

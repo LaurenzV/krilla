@@ -6,7 +6,6 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use crate::serialize::SerializerContext;
 use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
@@ -168,7 +167,6 @@ impl Metadata {
     pub(crate) fn serialize_document_info(
         &self,
         ref_: &mut Ref,
-        sc: &mut SerializerContext,
         pdf: &mut Pdf,
     ) {
         if self.has_document_info() {

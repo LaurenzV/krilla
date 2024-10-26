@@ -154,7 +154,7 @@ impl ChunkContainer {
 
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
-            metadata.serialize_document_info(&mut remapped_ref, sc, &mut pdf);
+            metadata.serialize_document_info(&mut remapped_ref, &mut pdf);
         }
 
         let mut xmp = XmpWriter::new();

@@ -486,7 +486,7 @@ impl SerializerContext {
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize(self, ref_);
+        let chunk = page_label.serialize(ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
     }

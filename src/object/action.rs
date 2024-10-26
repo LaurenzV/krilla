@@ -7,7 +7,6 @@
 //! should be opened, when activating the action.
 
 use pdf_writer::Str;
-use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
 
 /// A type of action.
@@ -19,11 +18,10 @@ pub enum Action {
 impl Action {
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
         action: pdf_writer::writers::Action,
     ) {
         match self {
-            Action::Link(link) => link.serialize(sc, action),
+            Action::Link(link) => link.serialize(action),
         }
     }
 }
@@ -47,7 +45,7 @@ impl LinkAction {
 }
 
 impl LinkAction {
-    fn serialize(&self, sc: &mut SerializerContext, mut action: pdf_writer::writers::Action) {
+    fn serialize(&self, mut action: pdf_writer::writers::Action) {
         action
             .action_type(ActionType::Uri)
             .uri(Str(self.uri.as_bytes()));
