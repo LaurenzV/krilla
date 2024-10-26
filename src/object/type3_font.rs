@@ -12,7 +12,7 @@ use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Content, Finish, Name, Ref};
+use pdf_writer::{Buf, Chunk, Content, Finish, Name, Ref};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -179,6 +179,20 @@ impl Type3Font {
                         &mut surface,
                     );
 
+                    enum BufOrVec {
+                        Buf(Buf),
+                        Vec(Vec<u8>)
+                    }
+
+                    impl BufOrVec {
+                        fn as_slice(&self) -> &[u8] {
+                            match self {
+                                BufOrVec::Buf(b) => b.as_slice(),
+                                BufOrVec::Vec(v) => v.as_slice()
+                            }
+                        }
+                    }
+
                     let stream =
                         if drawn_color_glyph.is_some() {
                             surface.finish();
@@ -194,7 +208,7 @@ impl Type3Font {
                             let x_name = rd_builder.register_resource(x_object, sc);
                             content.x_object(x_name.to_pdf_name());
 
-                            content.finish()
+                            BufOrVec::Buf(content.finish())
                         } else {
                             // If this is the case (i.e. no color glyph was drawn, either because no table
                             // exists or an error occurred, the surface is guaranteed to be empty.
@@ -249,11 +263,11 @@ impl Type3Font {
                             }
 
                             surface.finish();
-                            stream_surface.finish().content
+                            BufOrVec::Vec(stream_surface.finish().content)
                         };
 
                     let font_stream =
-                        FilterStream::new_from_content_stream(&stream, &sc.serialize_settings);
+                        FilterStream::new_from_content_stream(stream.as_slice(), &sc.serialize_settings);
 
                     let stream_ref = sc.new_ref();
                     let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());

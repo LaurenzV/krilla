@@ -66,9 +66,12 @@ impl ContentBuilder {
         }
     }
 
-    pub fn finish(self) -> Stream {
+    pub fn finish(self, sc: &mut SerializerContext) -> Stream {
+        let buf = self.content.finish();
+        sc.limits.merge(buf.limits());
+
         Stream::new(
-            self.content.finish(),
+            buf.to_bytes(),
             self.bbox
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
             self.validation_errors.into_iter().collect(),

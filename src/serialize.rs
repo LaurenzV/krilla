@@ -22,7 +22,7 @@ use crate::version::PdfVersion;
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
-use pdf_writer::{Array, Chunk, Dict, Finish, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -313,6 +313,7 @@ pub(crate) struct SerializerContext {
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: SerializeSettings,
+    pub(crate) limits: Limits
 }
 
 #[derive(Clone, Copy)]
@@ -355,6 +356,7 @@ impl SerializerContext {
             font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings,
+            limits: Limits::new()
         }
     }
 
@@ -815,7 +817,7 @@ pub enum CSWrapper {
 }
 
 impl pdf_writer::Primitive for CSWrapper {
-    fn write(self, buf: &mut Vec<u8>) {
+    fn write(self, buf: &mut Buf) {
         match self {
             CSWrapper::Ref(r) => r.write(buf),
             CSWrapper::Name(n) => n.write(buf),

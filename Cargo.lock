@@ -1060,8 +1060,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "pdf-writer"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be17f48d7fbbd22c6efedb58af5d409aa578e407f40b29a0bcb4e66ed84c5c98"
+source = "git+https://github.com/LaurenzV/pdf-writer?rev=9e99c77c#9e99c77c604277d39dc921658b2d95ec2fff8a24"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",

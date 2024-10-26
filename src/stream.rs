@@ -23,7 +23,6 @@
 //! [`Surface::stream_builder`]: crate::surface::Surface::stream_builder
 //! [`Pattern`]: crate::paint::Pattern
 //! [`Mask`]: crate::mask::Mask
-
 use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
