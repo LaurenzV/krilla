@@ -14,7 +14,7 @@ use crate::serialize::SerializerContext;
 use crate::util::RectExt;
 use crate::validation::ValidationError;
 use pdf_writer::types::AnnotationFlags;
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 use tiny_skia_path::Rect;
 
 /// An annotation.
@@ -71,7 +71,7 @@ impl Annotation {
         }
 
         if let Some(alt_text) = &self.alt {
-            annotation.contents(sc.new_text_str(alt_text));
+            annotation.contents(TextStr(alt_text));
         } else {
             sc.register_validation_error(ValidationError::MissingAnnotationAltText);
         }

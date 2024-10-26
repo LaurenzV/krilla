@@ -6,6 +6,7 @@
 //! the only available action is the link action, which allows you to specify a link that
 //! should be opened, when activating the action.
 
+use pdf_writer::Str;
 use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
 
@@ -49,7 +50,7 @@ impl LinkAction {
     fn serialize(&self, sc: &mut SerializerContext, mut action: pdf_writer::writers::Action) {
         action
             .action_type(ActionType::Uri)
-            .uri(sc.new_str(self.uri.as_bytes()));
+            .uri(Str(self.uri.as_bytes()));
     }
 }
 

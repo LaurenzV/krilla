@@ -23,7 +23,7 @@ use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectE
 use crate::validation::ValidationError;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Name};
+use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use skrifa::GlyphId;
 use std::cell::{RefCell, RefMut};
 use std::collections::HashSet;
@@ -411,7 +411,7 @@ impl ContentBuilder {
             // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
                 if !encoded.is_empty() {
-                    items.show(sc.new_str(&encoded));
+                    items.show(Str(&encoded));
                     encoded.clear();
                 }
 
@@ -432,7 +432,7 @@ impl ContentBuilder {
         }
 
         if !encoded.is_empty() {
-            items.show(sc.new_str(&encoded));
+            items.show(Str(&encoded));
         }
 
         items.finish();
@@ -475,7 +475,7 @@ impl ContentBuilder {
                         let mut actual_text = sb
                             .content
                             .begin_marked_content_with_properties(Name(b"Span"));
-                        actual_text.properties().actual_text(sc.new_text_str(text));
+                        actual_text.properties().actual_text(TextStr(text));
                     }
 
                     // Segment into glyph runs that can be encoded in one go using a PDF

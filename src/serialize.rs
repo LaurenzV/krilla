@@ -491,22 +491,6 @@ impl SerializerContext {
         ref_
     }
 
-    pub fn new_text_str<'a>(&mut self, text: &'a str) -> TextStr<'a> {
-        if text.as_bytes().len() > STR_BYTE_LEN {
-            self.register_validation_error(ValidationError::TooLongString);
-        }
-
-        TextStr(text)
-    }
-
-    pub fn new_str<'a>(&mut self, str: &'a [u8]) -> Str<'a> {
-        if str.len() > STR_BYTE_LEN {
-            self.register_validation_error(ValidationError::TooLongString);
-        }
-
-        Str(str)
-    }
-
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
         self.font_map
             .entry(font.clone())
@@ -775,7 +759,7 @@ impl SerializerContext {
                 let mut names = id_tree.names();
 
                 for (name, ref_) in id_tree_map {
-                    names.insert(self.new_str(name.as_bytes()), ref_);
+                    names.insert(Str(name.as_bytes()), ref_);
                 }
             }
 
@@ -796,6 +780,10 @@ impl SerializerContext {
 
         let chunk_container = std::mem::take(&mut self.chunk_container);
         let serialized = chunk_container.finish(&mut self);
+
+        if serialized.limits().str_len() > STR_BYTE_LEN {
+            self.register_validation_error(ValidationError::TooLongString);
+        }
 
         if !self.validation_errors.is_empty() {
             return Err(KrillaError::ValidationError(self.validation_errors));
