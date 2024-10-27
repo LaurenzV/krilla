@@ -1,4 +1,4 @@
-use crate::color::rgb;
+use crate::color::luma;
 use crate::object::color::Color;
 use crate::object::{ChunkContainerFn, Object};
 use crate::paint::SpreadMethod;
@@ -248,9 +248,9 @@ fn serialize_postscript_shading(
     let function_ref =
         select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
     let cs = if use_opacities {
-        rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
+        luma::Color::color_space(sc.serialize_settings.no_device_cs)
     } else {
-        post_script_gradient.stops[0].color.color_space(sc, false)
+        post_script_gradient.stops[0].color.color_space(sc)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -277,9 +277,9 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
+        luma::Color::color_space(sc.serialize_settings.no_device_cs)
     } else {
-        radial_axial_gradient.stops[0].color.color_space(sc, false)
+        radial_axial_gradient.stops[0].color.color_space(sc)
     };
 
     let mut shading = chunk.function_shading(root_ref);
@@ -334,12 +334,12 @@ fn select_axial_radial_function(
             serialize_exponential(
                 stops[0]
                     .color
-                    .to_pdf_color(false)
+                    .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops[1]
                     .color
-                    .to_pdf_color(false)
+                    .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 chunk,
@@ -667,7 +667,7 @@ fn encode_stops_impl<'a>(
         if use_opacities {
             code.push(Real(stops[0].opacity.get()));
         } else {
-            code.extend(stops[0].color.to_pdf_color(false).into_iter().map(Real));
+            code.extend(stops[0].color.to_pdf_color().into_iter().map(Real));
         }
     } else {
         let length = max - min;
@@ -688,12 +688,12 @@ fn encode_stops_impl<'a>(
             encode_two_stops(
                 &stops[0]
                     .color
-                    .to_pdf_color(false)
+                    .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 &stops[1]
                     .color
-                    .to_pdf_color(false)
+                    .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops_min,
@@ -728,16 +728,8 @@ fn serialize_stitching(
             (vec![first.opacity.get()], vec![second.opacity.get()])
         } else {
             (
-                first
-                    .color
-                    .to_pdf_color(false)
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                second
-                    .color
-                    .to_pdf_color(false)
-                    .into_iter()
-                    .collect::<Vec<_>>(),
+                first.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
             )
         };
         debug_assert!(c0_components.len() == c1_components.len());

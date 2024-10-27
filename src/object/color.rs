@@ -2,8 +2,9 @@
 //!
 //! # Color spaces
 //!
-//! krilla currently supports two color spaces:
-//! - Rgb (gray-scale colors will automatically be converted to the luma color space)
+//! krilla currently supports three color spaces:
+//! - Rgb
+//! - Luma
 //! - CMYK
 //!
 //! Each color space is associated with its specific color type, which you can use to create new
@@ -60,28 +61,82 @@ pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 pub(crate) enum Color {
     /// An RGB-based color.
     Rgb(rgb::Color),
+    /// A luma-based color.
+    Luma(luma::Color),
     /// A device CMYK color.
     Cmyk(cmyk::Color),
 }
 
 impl Color {
-    pub(crate) fn to_pdf_color(self, allow_gray: bool) -> Vec<f32> {
+    pub(crate) fn to_pdf_color(self) -> Vec<f32> {
         match self {
-            Color::Rgb(rgb) => rgb.to_pdf_color(allow_gray).into_iter().collect::<Vec<_>>(),
+            Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Luma(l) => l.to_pdf_color().into_iter().collect::<Vec<_>>(),
             Color::Cmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
         }
     }
 
-    pub(crate) fn color_space(&self, sc: &mut SerializerContext, allow_gray: bool) -> ColorSpace {
+    pub(crate) fn color_space(&self, sc: &mut SerializerContext) -> ColorSpace {
         match self {
-            Color::Rgb(rgb) => rgb.color_space(sc.serialize_settings.no_device_cs, allow_gray),
-            Color::Cmyk(cmyk) => {
-                let color_space = cmyk.color_space(&sc.serialize_settings);
+            Color::Rgb(_) => rgb::Color::color_space(sc.serialize_settings.no_device_cs),
+            Color::Luma(_) => luma::Color::color_space(sc.serialize_settings.no_device_cs),
+            Color::Cmyk(_) => {
+                let color_space = cmyk::Color::color_space(&sc.serialize_settings);
                 if color_space == ColorSpace::DeviceCmyk {
                     sc.register_validation_error(ValidationError::MissingCMYKProfile);
                 }
                 color_space
             }
+        }
+    }
+}
+
+/// Gray-scale colors.
+pub mod luma {
+    use crate::object::color::ColorSpace;
+
+    /// A luma color.
+    #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+    pub struct Color(pub(crate) u8);
+
+    impl Color {
+        /// Create a new luma color.
+        pub fn new(lightness: u8) -> Color {
+            Color(lightness)
+        }
+
+        /// Create a black luma color.
+        pub fn black() -> Self {
+            Self::new(0)
+        }
+
+        /// Create a white RGB color.
+        pub fn white() -> Self {
+            Self::new(255)
+        }
+
+        pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
+            [self.0 as f32 / 255.0]
+        }
+
+        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
+            if no_device_cs {
+                ColorSpace::Gray
+            } else {
+                ColorSpace::DeviceGray
+            }
+        }
+    }
+
+    impl From<Color> for super::Color {
+        fn from(val: Color) -> Self {
+            super::Color::Luma(val)
+        }
+    }
+
+    impl Default for Color {
+        fn default() -> Self {
+            Color::new(0)
         }
     }
 }
@@ -111,7 +166,7 @@ pub mod cmyk {
             ]
         }
 
-        pub(crate) fn color_space(&self, ss: &SerializeSettings) -> ColorSpace {
+        pub(crate) fn color_space(ss: &SerializeSettings) -> ColorSpace {
             if ss.no_device_cs {
                 ss.clone()
                     .cmyk_profile
@@ -166,52 +221,23 @@ pub mod rgb {
             Self::new(255, 255, 255)
         }
 
-        /// Create a gray RGB color.
-        pub fn gray(lightness: u8) -> Self {
-            Self::new(lightness, lightness, lightness)
-        }
-
-        fn is_gray_scale(&self) -> bool {
-            self.0 == self.1 && self.1 == self.2
-        }
-
         // For gradients, we don't want to coerce to luma if possible, because gradients
         // require the number of components for each stop to be the same. Because of this
         // we always use 3 components for RGB and 4 components for CMYK. No automatic
         // detection of greyscale colors.
-        pub(crate) fn to_pdf_color(self, allow_gray: bool) -> impl IntoIterator<Item = f32> {
-            if self.is_gray_scale() && allow_gray {
-                vec![self.0 as f32 / 255.0]
-            } else {
-                vec![
-                    self.0 as f32 / 255.0,
-                    self.1 as f32 / 255.0,
-                    self.2 as f32 / 255.0,
-                ]
-            }
+        pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
+            vec![
+                self.0 as f32 / 255.0,
+                self.1 as f32 / 255.0,
+                self.2 as f32 / 255.0,
+            ]
         }
 
-        pub(crate) fn luma_based_color_space(no_device_cs: bool) -> ColorSpace {
-            if no_device_cs {
-                ColorSpace::Gray
-            } else {
-                ColorSpace::DeviceGray
-            }
-        }
-
-        pub(crate) fn rgb_based_color_space(no_device_cs: bool) -> ColorSpace {
+        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
                 ColorSpace::Rgb
             } else {
                 ColorSpace::DeviceRgb
-            }
-        }
-
-        pub(crate) fn color_space(&self, no_device_cs: bool, allow_gray: bool) -> ColorSpace {
-            if self.is_gray_scale() && allow_gray {
-                Self::luma_based_color_space(no_device_cs)
-            } else {
-                Self::rgb_based_color_space(no_device_cs)
             }
         }
     }

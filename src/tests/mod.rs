@@ -1,4 +1,4 @@
-use crate::color::{cmyk, rgb};
+use crate::color::{cmyk, luma, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
@@ -162,7 +162,7 @@ pub fn purple_fill(opacity: f32) -> Fill {
 
 pub fn gray_fill(opacity: f32) -> Fill {
     Fill {
-        paint: rgb::Color::gray(127).into(),
+        paint: luma::Color::new(127).into(),
         opacity: NormalizedF32::new(opacity).unwrap(),
         rule: Default::default(),
     }

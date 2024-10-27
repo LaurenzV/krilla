@@ -1,3 +1,4 @@
+use crate::color::luma;
 use crate::mask::MaskType;
 use crate::object::color::rgb;
 use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
@@ -49,7 +50,14 @@ pub fn convert_paint(
     additional_transform: Transform,
 ) -> Paint {
     match paint {
-        usvg::Paint::Color(c) => rgb::Color::new(c.red, c.green, c.blue).into(),
+        usvg::Paint::Color(c) => {
+            if c.red == c.green && c.green == c.blue {
+                // Use gray-scale color if possible.
+                luma::Color::new(c.red).into()
+            } else {
+                rgb::Color::new(c.red, c.green, c.blue).into()
+            }
+        }
         usvg::Paint::LinearGradient(lg) => LinearGradient {
             x1: lg.x1(),
             y1: lg.y1(),
