@@ -7,7 +7,7 @@ use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
-use pdf_writer::types::FunctionShadingType;
+use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -374,7 +374,6 @@ fn select_postscript_function(
 // ) -> Ref {
 // let root_ref = sc.new_ref();
 //
-// // TODO: Improve formatting of PS code.
 // let start_code = [
 //     "{".to_string(),
 //     // Stack: x y
@@ -403,37 +402,37 @@ fn serialize_sweep_postscript(
     sc: &mut SerializerContext,
     use_opacities: bool,
 ) -> Ref {
+    use pdf_writer::types::PostScriptOp::*;
+
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min;
     let max: f32 = properties.max;
 
-    let start_code = [
-        "{".to_string(),
+    let mut code = vec![];
+    code.extend([
         // Stack: x y
-        "exch".to_string(),
+        Exch,
         // y x
         // Make sure x is never 0.
-        "dup dup 0.0001 lt exch -0.0001 gt and {pop 0.0001} if ".to_string(),
+        Dup,
+        Dup,
+        Real(0.0001),
+        Lt,
+        Exch,
+        Real(-0.0001),
+        Gt,
+        And,
+        If(vec![Pop, Real(0.0001)]),
         // Get the angle
-        "atan".to_string(),
-    ];
+        Atan,
+    ]);
 
-    let end_code = ["}".to_string()];
+    encode_spread_method(min, max, &mut code, properties.spread_method);
+    encode_postscript_stops(&properties.stops, min, max, &mut code, use_opacities);
 
-    let mut code = Vec::new();
-    code.extend(start_code);
-    code.push(encode_spread_method(min, max, properties.spread_method));
-    code.push(encode_postscript_stops(
-        &properties.stops,
-        min,
-        max,
-        use_opacities,
-    ));
-    code.extend(end_code);
-
-    let code = code.join(" ").into_bytes();
-    let mut postscript_function = chunk.post_script_function(root_ref, &code);
+    let encoded = PostScriptOp::encode(&code);
+    let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
     postscript_function.domain([
         properties.domain.left(),
         properties.domain.right(),
@@ -456,34 +455,26 @@ fn serialize_linear_postscript(
     sc: &mut SerializerContext,
     use_opacities: bool,
 ) -> Ref {
+    use pdf_writer::types::PostScriptOp::*;
+
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min;
     let max: f32 = properties.max;
 
-    let start_code = [
-        "{".to_string(),
+    let mut code = vec![];
+    code.extend([
         // Stack: x y
         // Ignore the y coordinate. We account for it in the gradient transform.
-        "pop".to_string(),
+        Pop,
         // x
-    ];
+    ]);
 
-    let end_code = ["}".to_string()];
+    encode_spread_method(min, max, &mut code, properties.spread_method);
+    encode_postscript_stops(&properties.stops, min, max, &mut code, use_opacities);
 
-    let mut code = Vec::new();
-    code.extend(start_code);
-    code.push(encode_spread_method(min, max, properties.spread_method));
-    code.push(encode_postscript_stops(
-        &properties.stops,
-        min,
-        max,
-        use_opacities,
-    ));
-    code.extend(end_code);
-
-    let code = code.join(" ").into_bytes();
-    let mut postscript_function = chunk.post_script_function(root_ref, &code);
+    let encoded = PostScriptOp::encode(&code);
+    let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
     postscript_function.domain([
         properties.domain.left(),
         properties.domain.right(),
@@ -504,14 +495,21 @@ fn serialize_linear_postscript(
 /// between min and max that yields the correct color, depending on the spread mode. In the case
 /// of the `Pad` spread methods, the coordinate will not be normalized since the Postscript functions
 /// assign the correct value by default.
-fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> String {
+fn encode_spread_method(
+    min: f32,
+    max: f32,
+    code: &mut Vec<PostScriptOp>,
+    spread_method: SpreadMethod,
+) {
+    use pdf_writer::types::PostScriptOp::*;
+
     if spread_method == SpreadMethod::Pad {
-        return "".to_string();
+        return;
     }
 
     let length = max - min;
 
-    [
+    code.extend([
         // We do the following:
         // 1. Normalize by doing n = x - min.
         // 2. Calculate the "interval" we are in by doing i = floor(n / length)
@@ -521,64 +519,79 @@ fn encode_spread_method(min: f32, max: f32, spread_method: SpreadMethod) -> Stri
 
         // Current stack:
         // x
-        format!("{length} {min}"),
+        Real(length),
+        Real(min),
         // x length min
-        "2 index".to_string(),
+        Integer(2),
+        Index,
         // x length min x
-        "1 index".to_string(),
+        Integer(1),
+        Index,
         // x length min x min
-        "sub".to_string(),
+        Sub,
         // x length min n
-        "dup".to_string(),
+        Dup,
         // x length min n n
-        "3 index".to_string(),
+        Integer(3),
+        Index,
         // x length min n n length
-        "div".to_string(),
+        Div,
         // x length min n {n/length}
-        "floor".to_string(),
+        Floor,
         // x length min n i
-        "exch".to_string(),
+        Exch,
         // x length min i n
-        "1 index".to_string(),
+        Integer(1),
+        Index,
         // x length min i n i
-        "4 index".to_string(),
+        Integer(4),
+        Index,
         // x length min i n i length
-        "mul".to_string(),
+        Mul,
         // x length min i n {i * length}
-        "sub".to_string(),
+        Sub,
         // x length min i o
-        "exch".to_string(),
+        Exch,
         // x length min o i
-        "cvi".to_string(),
-        "abs".to_string(),
+        Cvi,
+        Abs,
         // x length min o abs(i)
-        "2 mod".to_string(),
+        Integer(2),
+        Mod,
         // x length min o {abs(i) % 2}
         // See https://github.com/google/skia/blob/645b77ce61449951cb9f3cf754b47d4977b68e1a/src/pdf/SkPDFGradientShader.cpp#L402-L408
         // for why we check > 0 instead of == 1.
-        "0 gt".to_string(),
+        Integer(0),
+        Gt,
         // x length min o {(abs(i) % 2) > 0}
-        (if spread_method == SpreadMethod::Reflect {
-            "{2 index exch sub} if"
+        if spread_method == SpreadMethod::Reflect {
+            If(vec![Integer(2), Index, Exch, Sub])
         } else {
-            "pop"
-        })
-        .to_string(),
+            Pop
+        },
         // x length min o
-        "add".to_string(),
+        Add,
         // x length x_new
-        "3 1 roll".to_string(),
+        Integer(3),
+        Integer(1),
+        Roll,
         // x_new x length
-        "pop pop".to_string(),
+        Pop,
+        Pop,
         // x_new
-    ]
-    .join(" ")
+    ]);
 }
 
 /// Postscript code that, given an x coordinate between the min and max
 /// of a gradient, returns the interpolated color value depending on where it
 /// lies within the stops.
-fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32, use_opacities: bool) -> String {
+fn encode_postscript_stops(
+    stops: &[Stop],
+    min: f32,
+    max: f32,
+    code: &mut Vec<PostScriptOp>,
+    use_opacities: bool,
+) {
     // Our algorithm requires the stops to be padded.
     let mut stops = stops.to_vec();
 
@@ -594,67 +607,79 @@ fn encode_postscript_stops(stops: &[Stop], min: f32, max: f32, use_opacities: bo
         stops.push(last);
     }
 
-    encode_stops_impl(&stops, min, max, use_opacities)
+    encode_stops_impl(&stops, min, max, code, use_opacities);
 }
 
-fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) -> String {
-    let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32| {
-        if min == max {
-            return format!(
-                "pop {}",
-                c0.iter()
-                    .map(|n| n.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            );
-        }
+fn encode_stops_impl(
+    stops: &[Stop],
+    min: f32,
+    max: f32,
+    code: &mut Vec<PostScriptOp>,
+    use_opacities: bool,
+) {
+    use pdf_writer::types::PostScriptOp::*;
 
-        debug_assert_eq!(c0.len(), c1.len());
+    let encode_two_stops =
+        |c0: &[f32], c1: &[f32], min: f32, max: f32, code: &mut Vec<PostScriptOp>| {
+            if min == max {
+                code.push(Pop);
+                code.extend(c0.iter().map(|n| Real(*n)));
+                return;
+            }
 
-        let mut snippets = vec![
+            debug_assert_eq!(c0.len(), c1.len());
+
             // Normalize the x coordinate to be between 0 and 1.
-            format!("{min} sub {max} {min} sub div"),
-        ];
+            code.extend([Real(min), Sub, Real(max), Real(min), Sub, Div]);
 
-        for i in 0..c0.len() {
-            // Interpolate each color component c0 + x_norm * (x1 - c0).
-            snippets.push(format!(
-                "{} index {} exch {} {} sub mul add",
-                i, c0[i], c1[i], c0[i]
-            ));
-            // x_norm, c0, c1, ...
-        }
-        // Remove x_norm from the stack.
-        snippets.push(format!("{} -1 roll pop", c0.len() + 1));
-        // c0, c1, c2, ...
-
-        snippets.join(" ")
-    };
+            for i in 0..c0.len() {
+                // Interpolate each color component c0 + x_norm * (x1 - c0).
+                code.extend([
+                    Integer(i as i32),
+                    Index,
+                    Real(c0[i]),
+                    Exch,
+                    Real(c1[i]),
+                    Real(c0[i]),
+                    Sub,
+                    Mul,
+                    Add,
+                ]);
+                // x_norm, c0, c1, ...
+            }
+            // Remove x_norm from the stack.
+            code.extend([Integer((c0.len() + 1) as i32), Integer(-1), Roll, Pop]);
+            // c0, c1, c2, ...
+        };
 
     if stops.len() == 1 {
         if use_opacities {
-            stops[0].opacity.to_string()
+            code.push(Real(stops[0].opacity.get()));
         } else {
-            stops[0]
-                .color
-                .to_pdf_color(false)
-                .into_iter()
-                .map(|n| n.to_string())
-                .collect::<Vec<_>>()
-                .join(" ")
+            code.extend(
+                stops[0]
+                    .color
+                    .to_pdf_color(false)
+                    .into_iter()
+                    .map(|n| Real(n)),
+            );
         }
+
+        return;
     } else {
         let length = max - min;
         let stops_min = min + length * stops[0].offset.get();
         let stops_max = min + length * stops[1].offset.get();
         // Write the if conditions to find the corresponding set of two stops.
 
-        let encoded_stops = if use_opacities {
+        let mut if_stops = vec![];
+        if use_opacities {
             encode_two_stops(
                 &[stops[0].opacity.get()],
                 &[stops[1].opacity.get()],
                 stops_min,
                 stops_max,
+                &mut if_stops,
             )
         } else {
             encode_two_stops(
@@ -670,15 +695,13 @@ fn encode_stops_impl(stops: &[Stop], min: f32, max: f32, use_opacities: bool) ->
                     .collect::<Vec<_>>(),
                 stops_min,
                 stops_max,
+                &mut if_stops,
             )
         };
+        let mut else_stops = vec![];
+        encode_stops_impl(&stops[1..], min, max, &mut else_stops, use_opacities);
 
-        format!(
-            "dup {} le {{{}}} {{{}}} ifelse",
-            stops_max,
-            encoded_stops,
-            encode_stops_impl(&stops[1..], min, max, use_opacities)
-        )
+        code.extend([Dup, Real(stops_max), Le, IfElse(if_stops, else_stops)]);
     }
 }
 
