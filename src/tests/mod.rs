@@ -52,14 +52,14 @@ pub static SVGS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/svgs"));
 
 static DIFFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/diffs");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("diffs");
     let _ = std::fs::remove_dir_all(&path);
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static STORE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/store");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("store");
     let _ = std::fs::remove_dir_all(&path);
     let _ = std::fs::create_dir_all(&path);
     path
