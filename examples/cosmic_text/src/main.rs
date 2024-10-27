@@ -10,11 +10,10 @@
 //! that I try to keep in sync.
 
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
-use krilla::font::{GlyphUnits, KrillaGlyph};
+use krilla::font::{GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
-use skrifa::GlyphId;
-use tiny_skia_path::Point;
+use krilla::geom::Point;
 
 fn main() {
     // Set up `cosmic-text`. See their documentation for more information
@@ -87,7 +86,7 @@ fn main() {
     page.finish();
     let pdf = document.finish().unwrap();
 
-    std::fs::write("target/cosmic_text.pdf", &pdf).unwrap();
+    std::fs::write("../../target/cosmic_text.pdf", &pdf).unwrap();
 }
 
 pub trait SliceExt<T> {

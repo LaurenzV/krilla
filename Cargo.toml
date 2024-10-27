@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["krilla-macros"]
+members = [ "examples/cosmic_text", "krilla-macros"]
 
 [workspace.package]
 version = "0.3.0"
@@ -20,6 +20,7 @@ resvg = "0.44.0"
 bumpalo = "3.16.0"
 siphasher = "1.0.1"
 skrifa = "0.22.0"
+krilla = {path = "."}
 tiny-skia = "0.11.4"
 subsetter = "0.2.0"
 tiny-skia-path = "0.11.4"
@@ -32,7 +33,6 @@ difference = "2.0.0"
 paste = "1.0.15"
 rustybuzz = "0.18.0"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "664be71b" }
-cosmic-text = { git = "https://github.com/LaurenzV/cosmic-text", rev = "39c15e56" }
 quote = "1.0.37"
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 proc-macro2 = "1.0.86"
@@ -97,7 +97,6 @@ base64 = { workspace = true }
 bumpalo = { workspace = true }
 
 [dev-dependencies]
-cosmic-text = { workspace = true }
 difference = { workspace = true }
 image = { workspace = true }
 krilla-macros = { workspace = true }
