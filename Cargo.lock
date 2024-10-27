@@ -1060,7 +1060,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "pdf-writer"
 version = "0.12.0"
-source = "git+https://github.com/LaurenzV/pdf-writer?rev=664c270c#664c270cc8e9290853867428dd75ab7199ecd3aa"
+source = "git+https://github.com/LaurenzV/pdf-writer?rev=ea782ea2#ea782ea29f7032b8825585010988b7500639acc7"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",
