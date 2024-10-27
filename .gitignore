@@ -1,6 +1,6 @@
 target
 .idea
 data
-assets/diffs
-assets/store
+diffs
+store
 .DS_Store
