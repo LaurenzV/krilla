@@ -8,13 +8,13 @@
 
 use krilla::color::rgb;
 use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
+use krilla::geom::{NormalizedF32, Point};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
 use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
 use std::collections::HashMap;
-use krilla::geom::{NormalizedF32, Point};
 
 fn main() {
     // The text that we want to insert into the PDF.

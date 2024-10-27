@@ -36,8 +36,7 @@ const STORE: Option<&str> = option_env!("STORE");
 pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
     Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
 
-pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| WORKSPACE_PATH.join("assets"));
+pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = WORKSPACE_PATH.join("refs/snapshots");
@@ -51,8 +50,7 @@ static VISREG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     path
 });
 
-pub static SVGS_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| WORKSPACE_PATH.join("assets/svgs"));
+pub static SVGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets/svgs"));
 
 static DIFFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = WORKSPACE_PATH.join("diffs");
@@ -68,8 +66,7 @@ static STORE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     path
 });
 
-static FONT_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| WORKSPACE_PATH.join("assets/fonts"));
+static FONT_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets/fonts"));
 
 macro_rules! lazy_font {
     ($name:ident, $path:expr) => {

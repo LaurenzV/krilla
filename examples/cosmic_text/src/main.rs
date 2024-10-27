@@ -11,9 +11,9 @@
 
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
 use krilla::font::{GlyphId, GlyphUnits, KrillaGlyph};
+use krilla::geom::Point;
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
-use krilla::geom::Point;
 
 fn main() {
     // Set up `cosmic-text`. See their documentation for more information
