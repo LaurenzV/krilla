@@ -7,17 +7,14 @@
 //! but not other parley features like underline, strike-through, etc.
 
 use krilla::color::rgb;
-use krilla::font::{Font, GlyphUnits, KrillaGlyph};
+use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
 use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
-use skrifa::raw::collections::int_set::Domain;
-use skrifa::GlyphId;
 use std::collections::HashMap;
-use tiny_skia_path::Point;
-use usvg::NormalizedF32;
+use krilla::geom::{NormalizedF32, Point};
 
 fn main() {
     // The text that we want to insert into the PDF.
@@ -124,7 +121,7 @@ fn main() {
 
                     // Add the current glyph to our buffer of glyphs.
                     glyphs.push(KrillaGlyph::new(
-                        GlyphId::new(glyph.id.to_u32()),
+                        GlyphId::new(glyph.id as u32),
                         glyph.advance,
                         glyph.x,
                         glyph.y,
@@ -160,5 +157,5 @@ fn main() {
     page.finish();
 
     let pdf = document.finish().unwrap();
-    std::fs::write("target/parley.pdf", &pdf).unwrap();
+    std::fs::write("../../target/parley.pdf", &pdf).unwrap();
 }
