@@ -21,7 +21,6 @@ use crate::util::RectExt;
 use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
 use rustybuzz::ttf_parser::Tag;
 #[cfg(feature = "simple-text")]
@@ -34,6 +33,8 @@ use std::collections::HashMap;
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
+
+pub use pdf_writer::types::BlendMode;
 
 pub(crate) enum PushInstruction {
     Transform,
