@@ -7,11 +7,11 @@ use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
+use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use bumpalo::Bump;
 use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -245,7 +245,8 @@ fn serialize_postscript_shading(
     let domain = post_script_gradient.domain;
 
     let bump = Bump::new();
-    let function_ref = select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
+    let function_ref =
+        select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
     let cs = if use_opacities {
         rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
@@ -672,14 +673,14 @@ fn encode_stops_impl<'a>(
         let stops_max = min + length * stops[1].offset.get();
         // Write the if conditions to find the corresponding set of two stops.
 
-        let mut if_stops = bump.alloc(vec![]);
+        let if_stops = bump.alloc(vec![]);
         if use_opacities {
             encode_two_stops(
                 &[stops[0].opacity.get()],
                 &[stops[1].opacity.get()],
                 stops_min,
                 stops_max,
-                &mut if_stops,
+                if_stops,
             )
         } else {
             encode_two_stops(
@@ -695,11 +696,11 @@ fn encode_stops_impl<'a>(
                     .collect::<Vec<_>>(),
                 stops_min,
                 stops_max,
-                &mut if_stops,
+                if_stops,
             )
         };
-        let mut else_stops = bump.alloc(vec![]);
-        encode_stops_impl(&stops[1..], min, max, &mut else_stops, bump, use_opacities);
+        let else_stops = bump.alloc(vec![]);
+        encode_stops_impl(&stops[1..], min, max, else_stops, bump, use_opacities);
 
         code.extend([Dup, Real(stops_max), Le, IfElse(if_stops, else_stops)]);
     }
