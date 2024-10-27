@@ -164,7 +164,7 @@ jobs:
         run: cargo build
 
       - name: Run tests
-        run: cargo test -- --nocapture
+        run: cargo test --workspace -- --nocapture
 
       - name: Upload artifacts
         if: failure()
