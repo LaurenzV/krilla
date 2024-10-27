@@ -11,6 +11,7 @@ use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+use bumpalo::Bump;
 use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -243,7 +244,8 @@ fn serialize_postscript_shading(
 ) {
     let domain = post_script_gradient.domain;
 
-    let function_ref = select_postscript_function(post_script_gradient, chunk, sc, use_opacities);
+    let bump = Bump::new();
+    let function_ref = select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
     let cs = if use_opacities {
         rgb::Color::luma_based_color_space(sc.serialize_settings.no_device_cs)
     } else {
@@ -352,6 +354,7 @@ fn select_postscript_function(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
     sc: &mut SerializerContext,
+    bump: &Bump,
     use_opacities: bool,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
@@ -359,7 +362,7 @@ fn select_postscript_function(
     if properties.gradient_type == GradientType::Linear {
         serialize_linear_postscript(properties, chunk, sc, use_opacities)
     } else if properties.gradient_type == GradientType::Sweep {
-        serialize_sweep_postscript(properties, chunk, sc, use_opacities)
+        serialize_sweep_postscript(properties, chunk, sc, bump, use_opacities)
     } else {
         todo!();
         // serialize_radial_postscript(properties, sc, bbox)
@@ -400,6 +403,7 @@ fn serialize_sweep_postscript(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
     sc: &mut SerializerContext,
+    bump: &Bump,
     use_opacities: bool,
 ) -> Ref {
     use pdf_writer::types::PostScriptOp::*;
@@ -423,13 +427,13 @@ fn serialize_sweep_postscript(
         Real(-0.0001),
         Gt,
         And,
-        If(vec![Pop, Real(0.0001)]),
+        If(bump.alloc([Pop, Real(0.0001)])),
         // Get the angle
         Atan,
     ]);
 
-    encode_spread_method(min, max, &mut code, properties.spread_method);
-    encode_postscript_stops(&properties.stops, min, max, &mut code, use_opacities);
+    encode_spread_method(min, max, &mut code, bump, properties.spread_method);
+    encode_postscript_stops(&properties.stops, min, max, &mut code, bump, use_opacities);
 
     let encoded = PostScriptOp::encode(&code);
     let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
@@ -457,6 +461,7 @@ fn serialize_linear_postscript(
 ) -> Ref {
     use pdf_writer::types::PostScriptOp::*;
 
+    let bump = Bump::new();
     let root_ref = sc.new_ref();
 
     let min: f32 = properties.min;
@@ -470,8 +475,8 @@ fn serialize_linear_postscript(
         // x
     ]);
 
-    encode_spread_method(min, max, &mut code, properties.spread_method);
-    encode_postscript_stops(&properties.stops, min, max, &mut code, use_opacities);
+    encode_spread_method(min, max, &mut code, &bump, properties.spread_method);
+    encode_postscript_stops(&properties.stops, min, max, &mut code, &bump, use_opacities);
 
     let encoded = PostScriptOp::encode(&code);
     let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
@@ -495,10 +500,11 @@ fn serialize_linear_postscript(
 /// between min and max that yields the correct color, depending on the spread mode. In the case
 /// of the `Pad` spread methods, the coordinate will not be normalized since the Postscript functions
 /// assign the correct value by default.
-fn encode_spread_method(
+fn encode_spread_method<'a>(
     min: f32,
     max: f32,
-    code: &mut Vec<PostScriptOp>,
+    code: &mut Vec<PostScriptOp<'a>>,
+    bump: &'a Bump,
     spread_method: SpreadMethod,
 ) {
     use pdf_writer::types::PostScriptOp::*;
@@ -565,7 +571,7 @@ fn encode_spread_method(
         Gt,
         // x length min o {(abs(i) % 2) > 0}
         if spread_method == SpreadMethod::Reflect {
-            If(vec![Integer(2), Index, Exch, Sub])
+            If(bump.alloc([Integer(2), Index, Exch, Sub]))
         } else {
             Pop
         },
@@ -585,11 +591,12 @@ fn encode_spread_method(
 /// Postscript code that, given an x coordinate between the min and max
 /// of a gradient, returns the interpolated color value depending on where it
 /// lies within the stops.
-fn encode_postscript_stops(
+fn encode_postscript_stops<'a>(
     stops: &[Stop],
     min: f32,
     max: f32,
-    code: &mut Vec<PostScriptOp>,
+    code: &mut Vec<PostScriptOp<'a>>,
+    bump: &'a Bump,
     use_opacities: bool,
 ) {
     // Our algorithm requires the stops to be padded.
@@ -607,14 +614,15 @@ fn encode_postscript_stops(
         stops.push(last);
     }
 
-    encode_stops_impl(&stops, min, max, code, use_opacities);
+    encode_stops_impl(&stops, min, max, code, bump, use_opacities);
 }
 
-fn encode_stops_impl(
+fn encode_stops_impl<'a>(
     stops: &[Stop],
     min: f32,
     max: f32,
-    code: &mut Vec<PostScriptOp>,
+    code: &mut Vec<PostScriptOp<'a>>,
+    bump: &'a Bump,
     use_opacities: bool,
 ) {
     use pdf_writer::types::PostScriptOp::*;
@@ -664,7 +672,7 @@ fn encode_stops_impl(
         let stops_max = min + length * stops[1].offset.get();
         // Write the if conditions to find the corresponding set of two stops.
 
-        let mut if_stops = vec![];
+        let mut if_stops = bump.alloc(vec![]);
         if use_opacities {
             encode_two_stops(
                 &[stops[0].opacity.get()],
@@ -690,8 +698,8 @@ fn encode_stops_impl(
                 &mut if_stops,
             )
         };
-        let mut else_stops = vec![];
-        encode_stops_impl(&stops[1..], min, max, &mut else_stops, use_opacities);
+        let mut else_stops = bump.alloc(vec![]);
+        encode_stops_impl(&stops[1..], min, max, &mut else_stops, bump, use_opacities);
 
         code.extend([Dup, Real(stops_max), Le, IfElse(if_stops, else_stops)]);
     }
