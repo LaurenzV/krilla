@@ -1,3 +1,6 @@
+This directory contains the fonts that are used in the SVG tests. They were taken from the
+`resvg` repository and should be kept in sync, if possible.
+
 How fonts were subsetted:
 
 Twitter Color Emoji

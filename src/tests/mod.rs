@@ -37,13 +37,13 @@ pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
 
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/snapshots");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("refs/snapshots");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
-static REFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/refs");
+static VISREG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("refs/visreg");
     let _ = std::fs::create_dir_all(&path);
     path
 });
@@ -273,7 +273,7 @@ pub fn check_render(
     pdf: &[u8],
     ignore_renderer: bool,
 ) {
-    let refs_path = REFS_PATH.clone();
+    let refs_path = VISREG_PATH.clone();
 
     let renderer_suffix = if ignore_renderer {
         "".to_string()
