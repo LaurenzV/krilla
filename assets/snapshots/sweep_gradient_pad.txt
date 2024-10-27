@@ -3,13 +3,13 @@
 
 1 0 obj
 <<
-  /Length 520
+  /Length 616
   /FunctionType 4
   /Domain [-50 150 -50 150]
   /Range [0 1 0 1 0 1]
 >>
 stream
-{ exch dup dup 0.0001 lt exch -0.0001 gt and {pop 0.0001} if  atan  dup 18 le {0 sub 18 0 sub div 0 index 1 exch 1 1 sub mul add 1 index 0 exch 0 0 sub mul add 2 index 0 exch 0 0 sub mul add 4 -1 roll pop} {dup 72 le {18 sub 72 18 sub div 0 index 1 exch 1 1 sub mul add 1 index 0 exch 1 0 sub mul add 2 index 0 exch 0 0 sub mul add 4 -1 roll pop} {dup 90 le {72 sub 90 72 sub div 0 index 1 exch 1 1 sub mul add 1 index 1 exch 1 1 sub mul add 2 index 0 exch 0 0 sub mul add 4 -1 roll pop} {1 1 0} ifelse} ifelse} ifelse }
+{ exch dup dup 0.0001 lt exch -0.0001 gt and { pop 0.0001 } if atan dup 18.0 le { 0.0 sub 18.0 0.0 sub div 0 index 1.0 exch 1.0 1.0 sub mul add 1 index 0.0 exch 0.0 0.0 sub mul add 2 index 0.0 exch 0.0 0.0 sub mul add 4 -1 roll pop } { dup 72.0 le { 18.0 sub 72.0 18.0 sub div 0 index 1.0 exch 1.0 1.0 sub mul add 1 index 0.0 exch 1.0 0.0 sub mul add 2 index 0.0 exch 0.0 0.0 sub mul add 4 -1 roll pop } { dup 90.0 le { 72.0 sub 90.0 72.0 sub div 0 index 1.0 exch 1.0 1.0 sub mul add 1 index 1.0 exch 1.0 1.0 sub mul add 2 index 0.0 exch 0.0 0.0 sub mul add 4 -1 roll pop } { 1.0 1.0 0.0 } ifelse } ifelse } ifelse }
 endstream
 endobj
 
