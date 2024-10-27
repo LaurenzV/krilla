@@ -1,0 +1,12 @@
+[package]
+name = "parley"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[dependencies]
+parley = { git = "https://github.com/linebender/parley", rev = "14070d5" }
+krilla = { workspace = true }
