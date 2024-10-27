@@ -33,40 +33,43 @@ mod svg;
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
 
+pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
+    Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+
 pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets"));
+    LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 
 static SNAPSHOT_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("refs/snapshots");
+    let path = WORKSPACE_PATH.join("refs/snapshots");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static VISREG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("refs/visreg");
+    let path = WORKSPACE_PATH.join("refs/visreg");
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 pub static SVGS_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/svgs"));
+    LazyLock::new(|| WORKSPACE_PATH.join("assets/svgs"));
 
 static DIFFS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("diffs");
+    let path = WORKSPACE_PATH.join("diffs");
     let _ = std::fs::remove_dir_all(&path);
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static STORE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("store");
+    let path = WORKSPACE_PATH.join("store");
     let _ = std::fs::remove_dir_all(&path);
     let _ = std::fs::create_dir_all(&path);
     path
 });
 
 static FONT_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts"));
+    LazyLock::new(|| WORKSPACE_PATH.join("assets/fonts"));
 
 macro_rules! lazy_font {
     ($name:ident, $path:expr) => {
