@@ -661,11 +661,9 @@ fn encode_stops_impl(
                     .color
                     .to_pdf_color(false)
                     .into_iter()
-                    .map(|n| Real(n)),
+                    .map(Real),
             );
         }
-
-        return;
     } else {
         let length = max - min;
         let stops_min = min + length * stops[0].offset.get();
