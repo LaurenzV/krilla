@@ -656,13 +656,7 @@ fn encode_stops_impl(
         if use_opacities {
             code.push(Real(stops[0].opacity.get()));
         } else {
-            code.extend(
-                stops[0]
-                    .color
-                    .to_pdf_color(false)
-                    .into_iter()
-                    .map(Real),
-            );
+            code.extend(stops[0].color.to_pdf_color(false).into_iter().map(Real));
         }
     } else {
         let length = max - min;
