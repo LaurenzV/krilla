@@ -84,7 +84,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
                 let mut surface = stream_builder.surface();
                 #impl_ident(&mut surface);
                 surface.finish();
-                check_snapshot(#snapshot_name, &stream_builder.finish().content, true);
+                check_snapshot(#snapshot_name, &stream_builder.finish().content, false);
             }
         }
         SnapshotMode::SinglePage => {

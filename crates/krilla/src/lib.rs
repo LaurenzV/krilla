@@ -38,7 +38,7 @@ let mut document = Document::new();
 // Load a font.
 let mut font = {
     let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts/NotoSans-Regular.ttf");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
     let data = std::fs::read(&path).unwrap();
     Font::new(Arc::new(data), 0, vec![]).unwrap()
 };
@@ -81,7 +81,7 @@ page.finish();
 // Load an SVG.
 let svg_tree = {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
+        .join("../../assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
     let data = std::fs::read(&path).unwrap();
     usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
 };
@@ -97,7 +97,7 @@ surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
 surface.finish();
 page.finish();
 let pdf = document.finish().unwrap();
-std::fs::write("target/example.pdf", &pdf).unwrap();
+std::fs::write("../../target/example.pdf", &pdf).unwrap();
 # }
 ```
 [krilla]: https://github.com/LaurenzV/krilla

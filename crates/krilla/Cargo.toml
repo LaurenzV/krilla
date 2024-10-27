@@ -1,0 +1,54 @@
+[package]
+name = "krilla"
+description = "A high-level crate for creating PDF files."
+categories = ["graphics", "multimedia"]
+keywords = ["pdf"]
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
+exclude = ["src/tests"]
+
+[features]
+default = ["simple-text", "raster-images", "svg"]
+# Allow for rendering SVG images and SVG-based glyphs.
+"svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
+# Allow for rendering simple text without having to shape it yourself.
+"simple-text" = ["dep:rustybuzz"]
+# Add the convenience method for converting fontdb databases.
+"fontdb" = ["dep:fontdb"]
+# Allow for adding raster images to your document.
+"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp"]
+
+[dependencies]
+flate2 = { workspace = true }
+float-cmp = { workspace = true }
+fontdb = { workspace = true, optional = true }
+gif = { workspace = true, optional = true }
+image-webp = { workspace = true, optional = true }
+miniz_oxide = { workspace = true }
+once_cell = { workspace = true }
+pdf-writer = { workspace = true }
+resvg = { workspace = true, optional = true }
+rustybuzz = { workspace = true, optional = true }
+siphasher = { workspace = true }
+subsetter = { workspace = true }
+skrifa = { workspace = true }
+tiny-skia = { workspace = true, optional = true }
+tiny-skia-path = { workspace = true }
+usvg = { workspace = true, optional = true }
+yoke = { workspace = true }
+zune-png = { workspace = true, optional = true }
+zune-jpeg = { workspace = true, optional = true }
+xmp-writer = { workspace = true }
+base64 = { workspace = true }
+bumpalo = { workspace = true }
+
+[dev-dependencies]
+difference = { workspace = true }
+image = { workspace = true }
+krilla-macros = { workspace = true }
+oxipng = { workspace = true }
+paste = { workspace = true }
+sitro = { workspace = true }
