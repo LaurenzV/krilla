@@ -340,6 +340,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmic_text"
+version = "0.3.0"
+dependencies = [
+ "cosmic-text",
+ "krilla",
+]
+
+[[package]]
 name = "crc32fast"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -798,7 +806,6 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "bumpalo",
- "cosmic-text",
  "difference",
  "flate2",
  "float-cmp 0.10.0",
