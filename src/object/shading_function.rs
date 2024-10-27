@@ -437,6 +437,7 @@ fn serialize_sweep_postscript(
     encode_postscript_stops(&properties.stops, min, max, &mut code, bump, use_opacities);
 
     let encoded = PostScriptOp::encode(&code);
+    sc.limits.merge(encoded.limits());
     let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
     postscript_function.domain([
         properties.domain.left(),
@@ -480,6 +481,7 @@ fn serialize_linear_postscript(
     encode_postscript_stops(&properties.stops, min, max, &mut code, &bump, use_opacities);
 
     let encoded = PostScriptOp::encode(&code);
+    sc.limits.merge(encoded.limits());
     let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
     postscript_function.domain([
         properties.domain.left(),
