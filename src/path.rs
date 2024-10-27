@@ -1,6 +1,6 @@
 //! Path-related properties.
 
-use crate::color::rgb;
+use crate::color::luma;
 use crate::paint::Paint;
 use std::hash::{Hash, Hasher};
 use tiny_skia_path::NormalizedF32;
@@ -107,7 +107,7 @@ impl Hash for Stroke {
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
-            paint: rgb::Color::black().into(),
+            paint: luma::Color::black().into(),
             width: 1.0,
             miter_limit: 10.0,
             line_cap: LineCap::default(),
@@ -173,7 +173,7 @@ pub struct Fill {
 impl Default for Fill {
     fn default() -> Self {
         Fill {
-            paint: rgb::Color::black().into(),
+            paint: luma::Color::black().into(),
             opacity: NormalizedF32::ONE,
             rule: FillRule::default(),
         }

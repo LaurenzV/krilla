@@ -667,23 +667,23 @@ impl ContentBuilder {
             transform.post_concat(self.cur_transform_with_root_transform())
         };
 
-        let color_to_string =
-            |color: Color,
-             content_builder: &mut ContentBuilder,
-             sc: &mut SerializerContext,
-             allow_gray: bool| match color.color_space(sc, allow_gray) {
-                ColorSpace::Rgb => content_builder.rd_builder.register_resource(
-                    ICCBasedColorSpace(rgb_icc(&sc.serialize_settings).profile()),
-                    sc,
-                ),
-                ColorSpace::Gray => content_builder
-                    .rd_builder
-                    .register_resource(ICCBasedColorSpace(grey_icc(&sc.serialize_settings)), sc),
-                ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
-                ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
-                ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
-                ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
-            };
+        let color_to_string = |color: Color,
+                               content_builder: &mut ContentBuilder,
+                               sc: &mut SerializerContext| match color
+            .color_space(sc)
+        {
+            ColorSpace::Rgb => content_builder.rd_builder.register_resource(
+                ICCBasedColorSpace(rgb_icc(&sc.serialize_settings).profile()),
+                sc,
+            ),
+            ColorSpace::Gray => content_builder
+                .rd_builder
+                .register_resource(ICCBasedColorSpace(grey_icc(&sc.serialize_settings)), sc),
+            ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
+            ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
+            ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
+            ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
+        };
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
@@ -694,7 +694,7 @@ impl ContentBuilder {
                     // Write gradients with one stop as a solid color fill.
                     // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder, sc, false);
+                    let color_space = color_to_string(color, content_builder, sc);
                     set_solid_fn(&mut content_builder.content, color_space, color);
                 } else {
                     let shading_mask =
@@ -723,7 +723,7 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::Color(c) => {
-                let color_space = color_to_string(*c, self, sc, true);
+                let color_space = color_to_string(*c, self, sc);
                 set_solid_fn(&mut self.content, color_space, *c);
             }
             InnerPaint::LinearGradient(lg) => {
@@ -770,7 +770,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_fill_color_space(color_space.to_pdf_name());
-            content.set_fill_color(color.to_pdf_color(true));
+            content.set_fill_color(color.to_pdf_color());
         }
 
         self.content_set_fill_stroke_properties(
@@ -796,7 +796,7 @@ impl ContentBuilder {
 
         fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
             content.set_stroke_color_space(color_space.to_pdf_name());
-            content.set_stroke_color(color.to_pdf_color(true));
+            content.set_stroke_color(color.to_pdf_color());
         }
 
         self.content_set_fill_stroke_properties(

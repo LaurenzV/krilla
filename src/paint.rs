@@ -1,6 +1,6 @@
 //! Paints that can be used for filling and stroking text or paths.
 
-use crate::color::{cmyk, rgb, Color};
+use crate::color::{cmyk, luma, rgb, Color};
 use crate::stream::Stream;
 use crate::util::HashExt;
 use std::hash::Hash;
@@ -197,6 +197,7 @@ impl Paint {
         match self.0 {
             InnerPaint::Color(c) => match c {
                 Color::Rgb(rgb) => Some(rgb),
+                Color::Luma(l) => Some(rgb::Color::new(l.0, l.0, l.0)),
                 Color::Cmyk(_) => None,
             },
             _ => None,
@@ -206,6 +207,12 @@ impl Paint {
 
 impl From<rgb::Color> for Paint {
     fn from(value: rgb::Color) -> Self {
+        Paint(InnerPaint::Color(value.into()))
+    }
+}
+
+impl From<luma::Color> for Paint {
+    fn from(value: luma::Color) -> Self {
         Paint(InnerPaint::Color(value.into()))
     }
 }
