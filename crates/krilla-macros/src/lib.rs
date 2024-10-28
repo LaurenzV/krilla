@@ -147,7 +147,7 @@ impl RendererExt for Renderer {
     }
 }
 
-const SKIP_VISREG: Option<&str> = option_env!("SKIP_VISREG");
+const VISREG: Option<&str> = option_env!("VISREG");
 const SKIP_SVG: Option<&str> = option_env!("SKIP_SVG");
 
 #[proc_macro_attribute]
@@ -254,7 +254,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
-        let ignore_snippet = if SKIP_VISREG.is_some() || ignore || (SKIP_SVG.is_some() && is_svg) {
+        let ignore_snippet = if VISREG.is_none() || ignore || (SKIP_SVG.is_some() && is_svg) {
             quote! { #[ignore] }
         } else {
             quote! {}
