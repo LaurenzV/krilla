@@ -142,7 +142,7 @@ impl SerializeSettings {
             xmp_metadata: false,
             force_type3_fonts: false,
             cmyk_profile: None,
-            validator: Validator::Dummy,
+            validator: Validator::None,
             enable_tagging: true,
             pdf_version: PdfVersion::Pdf17,
         }
@@ -299,7 +299,7 @@ impl Default for SerializeSettings {
             xmp_metadata: true,
             force_type3_fonts: false,
             cmyk_profile: None,
-            validator: Validator::Dummy,
+            validator: Validator::None,
             enable_tagging: true,
             pdf_version: PdfVersion::Pdf17,
         }
@@ -637,7 +637,7 @@ impl SerializerContext {
         if !self
             .serialize_settings
             .validator
-            .compatible_with(self.serialize_settings.pdf_version)
+            .recommended_version(self.serialize_settings.pdf_version)
         {
             return Err(KrillaError::UserError(format!(
                 "{} is not compatible with export mode {}",

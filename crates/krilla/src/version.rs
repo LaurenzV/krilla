@@ -10,7 +10,7 @@ pub enum PdfVersion {
 }
 
 impl PdfVersion {
-    pub fn write_xmp(&self, xmp: &mut XmpWriter) {
+    pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             PdfVersion::Pdf14 => xmp.pdf_version("1.4"),
             PdfVersion::Pdf15 => xmp.pdf_version("1.5"),
@@ -28,7 +28,7 @@ impl PdfVersion {
         }
     }
 
-    pub fn set_version(&self, pdf: &mut Pdf) {
+    pub(crate) fn set_version(&self, pdf: &mut Pdf) {
         match self {
             PdfVersion::Pdf14 => pdf.set_version(1, 4),
             PdfVersion::Pdf15 => pdf.set_version(1, 5),

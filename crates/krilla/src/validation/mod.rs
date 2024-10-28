@@ -111,7 +111,7 @@ pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.
     ///
     /// **Requirements**: -
-    Dummy,
+    None,
     /// The validator for the PDF/A1-A standard.
     ///
     /// **Requirements**:
@@ -241,7 +241,7 @@ pub enum Validator {
 impl Validator {
     pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
-            Validator::Dummy => false,
+            Validator::None => false,
             Validator::A1_A | Validator::A1_B => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooLongName => true,
@@ -335,13 +335,23 @@ impl Validator {
         }
     }
 
-    pub(crate) fn compatible_with(&self, pdf_version: PdfVersion) -> bool {
+    pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
         match self {
-            Validator::Dummy => true,
+            Validator::None => true,
             Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
             Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
+        }
+    }
+
+    pub fn recommended_version(&self) -> PdfVersion {
+        match self {
+            Validator::None => PdfVersion::Pdf17,
+            Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => PdfVersion::Pdf17,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => PdfVersion::Pdf17,
+            Validator::UA1 => PdfVersion::Pdf17,
         }
     }
 
@@ -371,7 +381,7 @@ impl Validator {
         }
 
         match self {
-            Validator::Dummy => {}
+            Validator::None => {}
             Validator::A1_A => {
                 xmp.pdfa_part(1);
                 xmp.pdfa_conformance("A");
@@ -412,7 +422,7 @@ impl Validator {
 
     pub(crate) fn requires_display_doc_title(&self) -> bool {
         match self {
-            Validator::Dummy => false,
+            Validator::None => false,
             Validator::A1_A | Validator::A1_B => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
@@ -422,7 +432,7 @@ impl Validator {
 
     pub(crate) fn requires_no_device_cs(&self) -> bool {
         match self {
-            Validator::Dummy => false,
+            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -432,7 +442,7 @@ impl Validator {
 
     pub(crate) fn requires_tagging(&self) -> bool {
         match self {
-            Validator::Dummy => false,
+            Validator::None => false,
             Validator::A1_A => true,
             Validator::A1_B => false,
             Validator::A2_A => true,
@@ -445,7 +455,7 @@ impl Validator {
 
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
-            Validator::Dummy => false,
+            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -455,7 +465,7 @@ impl Validator {
 
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
-            Validator::Dummy => false,
+            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -465,7 +475,7 @@ impl Validator {
 
     pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype> {
         match self {
-            Validator::Dummy => None,
+            Validator::None => None,
             Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
@@ -476,7 +486,7 @@ impl Validator {
     /// The string representation of the validator.
     pub fn as_str(&self) -> &str {
         match self {
-            Validator::Dummy => "dummy validator",
+            Validator::None => "None",
             Validator::A1_A => "PDF/A1-A",
             Validator::A1_B => "PDF/A1-B",
             Validator::A2_A => "PDF/A2-A",
