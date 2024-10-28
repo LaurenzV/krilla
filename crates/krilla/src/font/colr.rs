@@ -27,7 +27,6 @@ pub fn draw_glyph(
     // convert the glyph into a more accessible bytecode representation and only
     // if that succeeds do we iterate over the bytecode to draw onto the canvas.
 
-    // TODO: Also support CMYK?
     let context_color = match paint_mode {
         PaintMode::Fill(f) => f.paint.as_rgb(),
         PaintMode::Stroke(s) => s.paint.as_rgb(),

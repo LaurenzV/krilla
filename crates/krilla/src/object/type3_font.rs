@@ -79,7 +79,6 @@ impl Hash for OwnedCoveredGlyph {
     }
 }
 
-// TODO: Add FontDescriptor, required for Tagged PDF
 #[derive(Debug)]
 pub(crate) struct Type3Font {
     font: Font,

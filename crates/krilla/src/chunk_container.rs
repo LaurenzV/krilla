@@ -254,7 +254,7 @@ impl ChunkContainer {
 
             if sc.serialize_settings.validator.requires_display_doc_title() {
                 catalog
-                    // TODO: Add to pdf-writer
+                    // TODO: Use the pdf-writer API once available
                     .viewer_preferences()
                     .pair(Name(b"DisplayDocTitle"), true);
             }
