@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 env:
   KRILLA_THRESHOLD: "200"
+  VISREG: ""
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
 
