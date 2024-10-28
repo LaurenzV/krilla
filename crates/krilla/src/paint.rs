@@ -174,7 +174,6 @@ impl Hash for Pattern {
     }
 }
 
-// TODO: Wrap linear/stroke etc. in Arc
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub(crate) enum InnerPaint {
     Color(Color),

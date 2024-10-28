@@ -58,8 +58,7 @@ user enables `ascii_compatible`, we still write a binary header marker. 🟢
 6.2.2:
 - krilla doesn't use non-standard operators. 🟢
 - krilla doesn't use the `ri` or `i` operator. 🟢
-- krilla ensure that content stream has their own associated resource dictionary
-(TODO: what about glyph streams in Type3 fonts?). 🟢
+- krilla ensure that content stream has their own associated resource dictionary. 🟢
 
 6.2.3: krilla always write an `sRGB` output intent for PDF/A. 🟢
 
@@ -222,8 +221,6 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 
 # Level A
-
-TODO: Fix the remaining red ones before next release!
 
 6.2.11.7.3: krilla forbids all codepoints in the unicode private area for this export mode. 🟢
 

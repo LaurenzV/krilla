@@ -33,7 +33,6 @@ pub fn draw_glyph(
         data = &decoded;
     }
 
-    // TODO: Support CMYK?
     let context_color = match paint_mode {
         PaintMode::Fill(f) => f.paint.as_rgb(),
         PaintMode::Stroke(s) => s.paint.as_rgb(),

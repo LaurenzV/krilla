@@ -117,7 +117,6 @@
 //! [`Document`]: crate::Document
 
 // TODO: Other notes: broken links should use quadpoint (14.8.4.4.2)
-// TODO: Support defining the expansion of word abbreviations.
 
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
@@ -730,7 +729,7 @@ impl TagGroup {
                 let id = format!("Note {}", note_id);
                 *note_id += 1;
                 id_tree.insert(id.clone(), root_ref);
-                // TODO: Add this to pdf-writer
+                // TODO: Update this with pdf-writer API once updated
                 struct_elem.pair(Name(b"ID"), Str(id.as_bytes()));
             }
             _ => {}
