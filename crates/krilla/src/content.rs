@@ -388,7 +388,7 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
-            if glyph.glyph_id() == GlyphId::new(0) {
+            if glyph.glyph_id() == GlyphId::new(0) || pdf_font.font().postscript_name() == Some("LastResort") {
                 sc.register_validation_error(ValidationError::ContainsNotDefGlyph);
             }
 
