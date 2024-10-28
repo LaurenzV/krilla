@@ -268,12 +268,17 @@ pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
 
 pub fn check_render(
     name: &str,
+    sub_folder: Option<&str>,
     renderer: &Renderer,
     document: RenderedDocument,
     pdf: &[u8],
     ignore_renderer: bool,
 ) {
-    let refs_path = VISREG_PATH.clone();
+    let mut refs_path = VISREG_PATH.clone();
+
+    if let Some(sub_folder) = sub_folder {
+        refs_path = refs_path.join(sub_folder);
+    }
 
     let renderer_suffix = if ignore_renderer {
         "".to_string()
@@ -687,7 +692,8 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     let pdf = d.finish().unwrap();
     let rendered = render_document(&pdf, &renderer);
     check_render(
-        &format!("svg_{}", name),
+        name,
+        Some("svg"),
         &renderer,
         rendered,
         &pdf,

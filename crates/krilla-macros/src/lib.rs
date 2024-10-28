@@ -231,7 +231,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = d.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
+            check_render(stringify!(#fn_name), None, &renderer, rendered, &pdf, #ignore_renderer);
         }
     } else {
         quote! {
@@ -246,7 +246,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             let pdf = d.finish().unwrap();
 
             let rendered = render_document(&pdf, &renderer);
-            check_render(stringify!(#fn_name), &renderer, rendered, &pdf, #ignore_renderer);
+            check_render(stringify!(#fn_name), None, &renderer, rendered, &pdf, #ignore_renderer);
         }
     };
 
