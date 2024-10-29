@@ -10,13 +10,13 @@
 //! ICC profiles will currently not be embedded, and CMYK images will be naively
 //! converted into the RGB color space.
 
-use crate::color::DEVICE_RGB;
+use crate::color::{DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tiny_skia_path::Size;
 use zune_jpeg::zune_core::result::DecodingResult;
@@ -24,7 +24,7 @@ use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 enum BitsPerComponent {
     Eight,
     Sixteen,
@@ -39,10 +39,21 @@ impl BitsPerComponent {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 enum ImageColorspace {
     Rgb,
     Luma,
+    Cmyk,
+}
+
+impl ImageColorspace {
+    fn num_components(&self) -> u8 {
+        match self {
+            ImageColorspace::Rgb => 3,
+            ImageColorspace::Luma => 1,
+            ImageColorspace::Cmyk => 4,
+        }
+    }
 }
 
 impl TryFrom<ColorSpace> for ImageColorspace {
@@ -52,20 +63,61 @@ impl TryFrom<ColorSpace> for ImageColorspace {
         match value {
             ColorSpace::RGB => Ok(ImageColorspace::Rgb),
             ColorSpace::RGBA => Ok(ImageColorspace::Rgb),
+            ColorSpace::YCbCr => Ok(ImageColorspace::Rgb),
             ColorSpace::Luma => Ok(ImageColorspace::Luma),
             ColorSpace::LumaA => Ok(ImageColorspace::Luma),
+            ColorSpace::YCCK => Ok(ImageColorspace::Cmyk),
+            ColorSpace::CMYK => Ok(ImageColorspace::Cmyk),
             _ => Err(()),
         }
     }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-struct Repr {
+struct SampledRepr {
     image_data: Vec<u8>,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
     image_color_space: ImageColorspace,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+struct JpegRepr {
+    data: Vec<u8>,
+    size: SizeWrapper,
+    bits_per_component: BitsPerComponent,
+    image_color_space: ImageColorspace,
+    invert: bool,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+enum Repr {
+    Sampled(SampledRepr),
+    Jpeg(JpegRepr),
+}
+
+impl Repr {
+    fn bits_per_component(&self) -> BitsPerComponent {
+        match self {
+            Repr::Sampled(s) => s.bits_per_component,
+            Repr::Jpeg(j) => j.bits_per_component,
+        }
+    }
+
+    fn size(&self) -> Size {
+        match self {
+            Repr::Sampled(s) => s.size.0,
+            Repr::Jpeg(j) => j.size.0,
+        }
+    }
+
+    fn color_space(&self) -> ImageColorspace {
+        match self {
+            Repr::Sampled(s) => s.image_color_space,
+            Repr::Jpeg(j) => j.image_color_space,
+        }
+    }
 }
 
 /// A bitmap image.
@@ -97,13 +149,13 @@ impl Image {
             _ => return None,
         };
 
-        Some(Self(Arc::new(Prehashed::new(Repr {
+        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
             image_data,
             mask_data,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
-        }))))
+        })))))
     }
 
     /// Create a new bitmap image from a `.jpg` file.
@@ -117,19 +169,40 @@ impl Image {
             Size::from_wh(dimensions.0 as f32, dimensions.1 as f32)?
         };
 
-        let color_space = decoder.get_output_colorspace()?;
-        let image_color_space = color_space.try_into().ok()?;
+        let input_color_space = decoder.get_input_colorspace()?;
 
-        let decoded = decoder.decode().ok()?;
-        let (image_data, _, bits_per_component) = handle_u8_image(decoded, color_space);
+        // TODO: Support CMYK once we can find the APP14 marker
+        if matches!(
+            input_color_space,
+            ColorSpace::Luma | ColorSpace::YCbCr | ColorSpace::RGB
+        ) {
+            // Don't decode the image and save it with the existing DCT encoding.
+            let image_color_space = input_color_space.try_into().ok()?;
 
-        Some(Self(Arc::new(Prehashed::new(Repr {
-            image_data,
-            mask_data: None,
-            bits_per_component,
-            image_color_space,
-            size: SizeWrapper(size),
-        }))))
+            Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
+                data: data.to_vec(),
+                size: SizeWrapper(size),
+                bits_per_component: BitsPerComponent::Eight,
+                image_color_space,
+                invert: input_color_space == ColorSpace::YCCK,
+            })))))
+        } else {
+            // Unknown color space, fall back to decoding the JPEG into RGB8 and saving
+            // it in the sampled representation.
+            let output_color_space = decoder.get_output_colorspace()?;
+            let image_color_space = output_color_space.try_into().ok()?;
+
+            let decoded = decoder.decode().ok()?;
+            let (image_data, _, bits_per_component) = handle_u8_image(decoded, output_color_space);
+
+            Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+                image_data,
+                mask_data: None,
+                bits_per_component,
+                image_color_space,
+                size: SizeWrapper(size),
+            })))))
+        }
     }
 
     /// Create a new bitmap image from a `.gif` file.
@@ -146,13 +219,13 @@ impl Image {
         let (image_data, mask_data, bits_per_component) =
             handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
 
-        Some(Self(Arc::new(Prehashed::new(Repr {
+        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
             image_data,
             mask_data,
             bits_per_component,
             image_color_space: ImageColorspace::Rgb,
             size: SizeWrapper(size),
-        }))))
+        })))))
     }
 
     /// Create a new bitmap image from a `.webp` file.
@@ -177,62 +250,82 @@ impl Image {
 
         let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
 
-        Some(Self(Arc::new(Prehashed::new(Repr {
+        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
             image_data,
             mask_data,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
-        }))))
+        })))))
     }
 
     /// Returns the dimensions of the image.
     pub fn size(&self) -> Size {
-        self.0.size.0
+        self.0.size()
     }
 
     pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
-        let soft_mask_id = self.0.mask_data.as_ref().map(|_| sc.new_ref());
+        let soft_mask_id = match self.0.deref().deref() {
+            Repr::Sampled(s) => s.mask_data.as_ref().map(|_| sc.new_ref()),
+            Repr::Jpeg(_) => None,
+        };
         let serialize_settings = sc.serialize_settings.clone();
 
         Deferred::new(move || {
             let mut chunk = Chunk::new();
 
-            let alpha_mask = self.0.mask_data.as_ref().map(|mask_data| {
-                let soft_mask_id = soft_mask_id.unwrap();
-                let mask_stream =
-                    FilterStream::new_from_binary_data(mask_data, &serialize_settings);
-                let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
-                mask_stream.write_filters(s_mask.deref_mut().deref_mut());
-                s_mask.width(self.0.size.width() as i32);
-                s_mask.height(self.0.size.height() as i32);
-                s_mask.pair(
-                    Name(b"ColorSpace"),
-                    // Mask color space must be device gray -- see Table 145.
-                    DEVICE_GRAY.to_pdf_name(),
-                );
-                s_mask.bits_per_component(self.0.bits_per_component.as_u8() as i32);
-                soft_mask_id
-            });
+            let alpha_mask = match self.0.deref().deref() {
+                Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
+                    let soft_mask_id = soft_mask_id.unwrap();
+                    let mask_stream =
+                        FilterStream::new_from_binary_data(mask_data, &serialize_settings);
+                    let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
+                    mask_stream.write_filters(s_mask.deref_mut().deref_mut());
+                    s_mask.width(sampled.size.0.width() as i32);
+                    s_mask.height(sampled.size.0.height() as i32);
+                    s_mask.pair(
+                        Name(b"ColorSpace"),
+                        // Mask color space must be device gray -- see Table 145.
+                        DEVICE_GRAY.to_pdf_name(),
+                    );
+                    s_mask.bits_per_component(sampled.bits_per_component.as_u8() as i32);
+                    soft_mask_id
+                }),
+                Repr::Jpeg(_) => None,
+            };
 
-            let image_stream =
-                FilterStream::new_from_binary_data(&self.0.image_data, &serialize_settings);
+            let image_stream = match self.0.deref().deref() {
+                Repr::Sampled(s) => {
+                    FilterStream::new_from_binary_data(&s.image_data, &serialize_settings)
+                }
+                Repr::Jpeg(j) => FilterStream::new_from_jpeg_data(&j.data, &serialize_settings),
+            };
 
             let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
             image_stream.write_filters(image_x_object.deref_mut().deref_mut());
-            image_x_object.width(self.0.size.width() as i32);
-            image_x_object.height(self.0.size.height() as i32);
+            image_x_object.width(self.size().width() as i32);
+            image_x_object.height(self.size().height() as i32);
 
-            match self.0.image_color_space {
+            match self.0.color_space() {
                 ImageColorspace::Rgb => {
                     image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
                 }
                 ImageColorspace::Luma => {
                     image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
                 }
+                ImageColorspace::Cmyk => {
+                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_CMYK.to_pdf_name());
+                }
             };
 
-            image_x_object.bits_per_component(self.0.bits_per_component.as_u8() as i32);
+            if let Repr::Jpeg(j) = &self.0.deref().deref() {
+                if j.invert {
+                    image_x_object
+                        .decode([1.0, 0.0].repeat(j.image_color_space.num_components() as usize));
+                }
+            }
+
+            image_x_object.bits_per_component(self.0.bits_per_component().as_u8() as i32);
             if let Some(soft_mask_id) = alpha_mask {
                 image_x_object.s_mask(soft_mask_id);
             }

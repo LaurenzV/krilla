@@ -637,7 +637,7 @@ impl SerializerContext {
         if !self
             .serialize_settings
             .validator
-            .recommended_version(self.serialize_settings.pdf_version)
+            .compatible_with_version(self.serialize_settings.pdf_version)
         {
             return Err(KrillaError::UserError(format!(
                 "{} is not compatible with export mode {}",
@@ -924,6 +924,7 @@ impl FontContainer {
 pub enum StreamFilter {
     FlateDecode,
     AsciiHexDecode,
+    DCTDecode,
 }
 
 impl StreamFilter {
@@ -931,15 +932,28 @@ impl StreamFilter {
         match self {
             Self::AsciiHexDecode => Name(b"ASCIIHexDecode"),
             Self::FlateDecode => Name(b"FlateDecode"),
+            Self::DCTDecode => Name(b"DCTDecode"),
         }
     }
 }
 
 impl StreamFilter {
+    pub fn can_apply(&self) -> bool {
+        match self {
+            StreamFilter::FlateDecode => true,
+            StreamFilter::AsciiHexDecode => true,
+            StreamFilter::DCTDecode => false,
+        }
+    }
+
     pub fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
             StreamFilter::FlateDecode => deflate_encode(content),
             StreamFilter::AsciiHexDecode => hex_encode(content),
+            // Note: We don't actually encode manually with DCT, because
+            // this is only used for JPEG images which are already encoded,
+            // so this shouldn't be called at all.
+            StreamFilter::DCTDecode => panic!("can't apply dct decode"),
         }
     }
 }
@@ -1006,6 +1020,17 @@ impl<'a> FilterStream<'a> {
         filter_stream
     }
 
+    pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream.add_filter(StreamFilter::DCTDecode);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+        }
+
+        filter_stream
+    }
+
     pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
 
@@ -1017,7 +1042,10 @@ impl<'a> FilterStream<'a> {
     }
 
     pub fn add_filter(&mut self, filter: StreamFilter) {
-        self.content = Cow::Owned(filter.apply(&self.content));
+        if filter.can_apply() {
+            self.content = Cow::Owned(filter.apply(&self.content));
+        }
+
         self.filters.add(filter);
     }
 
