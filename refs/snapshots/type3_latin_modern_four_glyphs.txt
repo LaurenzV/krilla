@@ -172,6 +172,9 @@ endobj
   /ItalicAngle 0
   /Ascent 705
   /Descent -22
+  /FontFamily (LMRoman10-Regular)
+  /FontStretch /Normal
+  /FontWeight 400
 >>
 endobj
 

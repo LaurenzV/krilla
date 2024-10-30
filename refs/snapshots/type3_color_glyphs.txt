@@ -72,6 +72,9 @@ endobj
   /ItalicAngle 0
   /Ascent 1645.15
   /Descent -402.84998
+  /FontFamily (TwitterColorEmojiSVGinOT)
+  /FontStretch /Normal
+  /FontWeight 400
 >>
 endobj
 
@@ -314,17 +317,17 @@ xref
 0000000424 00000 n
 0000000493 00000 n
 0000000562 00000 n
-0000000781 00000 n
-0000001314 00000 n
-0000002026 00000 n
-0000003399 00000 n
-0000004621 00000 n
+0000000863 00000 n
+0000001396 00000 n
+0000002108 00000 n
+0000003481 00000 n
+0000004703 00000 n
 trailer
 <<
   /Size 12
   /Root 11 0 R
-  /ID [(tpv/bsPeKpcTUrMuhRuzmw==) (tpv/bsPeKpcTUrMuhRuzmw==)]
+  /ID [(9U+VHGanWh6hFo4etA9U4A==) (9U+VHGanWh6hFo4etA9U4A==)]
 >>
 startxref
-4676
+4758
 %%EOF

@@ -12,7 +12,7 @@ use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Buf, Chunk, Content, Finish, Name, Ref};
+use pdf_writer::{Buf, Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -320,7 +320,37 @@ impl Type3Font {
                 .bbox(font_bbox.to_pdf_rect())
                 .italic_angle(italic_angle)
                 .ascent(ascender)
-                .descent(descender);
+                .descent(descender)
+                // Adobe recommends these for tagged PDF for 1.5+ (descriptors for Type3 fonts
+                // are only written for 1.5+ in the first place, so no additional checks needed)
+                // so we write them as well.
+
+                // Unfortunately we have no way of determining the actual family name, so we just
+                // take the next best thing
+                .family(Str(base_font.as_bytes()))
+                .stretch(match skrifa::attribute::Stretch::new(self.font().stretch()) {
+                    skrifa::attribute::Stretch::ULTRA_CONDENSED => pdf_writer::types::FontStretch::UltraCondensed,
+                    skrifa::attribute::Stretch::EXTRA_CONDENSED => pdf_writer::types::FontStretch::ExtraCondensed,
+                    skrifa::attribute::Stretch::CONDENSED => pdf_writer::types::FontStretch::Condensed,
+                    skrifa::attribute::Stretch::SEMI_CONDENSED => pdf_writer::types::FontStretch::SemiCondensed,
+                    skrifa::attribute::Stretch::NORMAL => pdf_writer::types::FontStretch::Normal,
+                    skrifa::attribute::Stretch::SEMI_EXPANDED => pdf_writer::types::FontStretch::SemiExpanded,
+                    skrifa::attribute::Stretch::EXPANDED => pdf_writer::types::FontStretch::Expanded,
+                    skrifa::attribute::Stretch::EXTRA_EXPANDED => pdf_writer::types::FontStretch::ExtraExpanded,
+                    skrifa::attribute::Stretch::ULTRA_EXPANDED => pdf_writer::types::FontStretch::UltraExpanded,
+                    // Fallback
+                    _ => pdf_writer::types::FontStretch::Normal
+                })
+                .weight(match self.font.weight() as i32 {
+                    150..250 => 200,
+                    250..350 => 300,
+                    350..450 => 400,
+                    450..550 => 500,
+                    550..650 => 600,
+                    650..750 => 700,
+                    750..850 => 800,
+                    other => if other < 150 { 100 } else { 900 }
+                });
 
             font_descriptor.finish();
         }
@@ -330,7 +360,6 @@ impl Type3Font {
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
         type3_font.name(Name(base_font.as_bytes()));
-        // TODO: Write font family, font stretch and font weight for tagged PDF?
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
         type3_font.matrix(

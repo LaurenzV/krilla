@@ -117,6 +117,10 @@ impl Font {
         self.0.font_info.weight.get()
     }
 
+    pub(crate) fn stretch(&self) -> f32 {
+        self.0.font_info.stretch.get()
+    }
+
     pub(crate) fn descent(&self) -> f32 {
         self.0.font_info.descent.get()
     }
@@ -197,6 +201,7 @@ pub(crate) struct FontInfo {
     is_monospaced: bool,
     italic_angle: FiniteF32,
     weight: FiniteF32,
+    stretch: FiniteF32,
 }
 
 struct Repr {
@@ -225,12 +230,13 @@ impl FontInfo {
             .axes()
             .location(variations.iter().map(|n| (n.0.as_str(), n.1)));
         let metrics = font_ref.metrics(Size::unscaled(), &location);
-        let ascent = FiniteF32::new(metrics.ascent).unwrap();
-        let descent = FiniteF32::new(metrics.descent).unwrap();
+        let ascent = FiniteF32::new(metrics.ascent)?;
+        let descent = FiniteF32::new(metrics.descent)?;
         let is_monospaced = metrics.is_monospace;
         let cap_height = metrics.cap_height.map(|n| FiniteF32::new(n).unwrap());
         let italic_angle = FiniteF32::new(metrics.italic_angle).unwrap();
-        let weight = FiniteF32::new(font_ref.attributes().weight.value()).unwrap();
+        let weight = FiniteF32::new(font_ref.attributes().weight.value())?;
+        let stretch = FiniteF32::new(font_ref.attributes().stretch.ratio())?;
         let units_per_em = metrics.units_per_em;
         let global_bbox = metrics
             .bounds
@@ -275,6 +281,7 @@ impl FontInfo {
             descent,
             is_monospaced,
             weight,
+            stretch,
             italic_angle,
             global_bbox: RectWrapper(global_bbox),
         })

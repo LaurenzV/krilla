@@ -82,6 +82,9 @@ endobj
   /ItalicAngle 0
   /Ascent 717
   /Descent 0
+  /FontFamily (NotoSans-Regular)
+  /FontStretch /Normal
+  /FontWeight 400
 >>
 endobj
 
