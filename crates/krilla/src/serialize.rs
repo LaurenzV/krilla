@@ -922,17 +922,17 @@ impl FontContainer {
 
 #[derive(Debug, Copy, Clone)]
 pub enum StreamFilter {
-    FlateDecode,
-    AsciiHexDecode,
-    DCTDecode,
+    Flate,
+    AsciiHex,
+    Dct,
 }
 
 impl StreamFilter {
     pub(crate) fn to_name(self) -> Name<'static> {
         match self {
-            Self::AsciiHexDecode => Name(b"ASCIIHexDecode"),
-            Self::FlateDecode => Name(b"FlateDecode"),
-            Self::DCTDecode => Name(b"DCTDecode"),
+            Self::AsciiHex => Name(b"ASCIIHexDecode"),
+            Self::Flate => Name(b"FlateDecode"),
+            Self::Dct => Name(b"DCTDecode"),
         }
     }
 }
@@ -940,20 +940,20 @@ impl StreamFilter {
 impl StreamFilter {
     pub fn can_apply(&self) -> bool {
         match self {
-            StreamFilter::FlateDecode => true,
-            StreamFilter::AsciiHexDecode => true,
-            StreamFilter::DCTDecode => false,
+            StreamFilter::Flate => true,
+            StreamFilter::AsciiHex => true,
+            StreamFilter::Dct => false,
         }
     }
 
     pub fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
-            StreamFilter::FlateDecode => deflate_encode(content),
-            StreamFilter::AsciiHexDecode => hex_encode(content),
+            StreamFilter::Flate => deflate_encode(content),
+            StreamFilter::AsciiHex => hex_encode(content),
             // Note: We don't actually encode manually with DCT, because
             // this is only used for JPEG images which are already encoded,
             // so this shouldn't be called at all.
-            StreamFilter::DCTDecode => panic!("can't apply dct decode"),
+            StreamFilter::Dct => panic!("can't apply dct decode"),
         }
     }
 }
@@ -999,10 +999,10 @@ impl<'a> FilterStream<'a> {
         let mut filter_stream = Self::empty(content);
 
         if serialize_settings.compress_content_streams {
-            filter_stream.add_filter(StreamFilter::FlateDecode);
+            filter_stream.add_filter(StreamFilter::Flate);
 
             if serialize_settings.ascii_compatible {
-                filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+                filter_stream.add_filter(StreamFilter::AsciiHex);
             }
         }
 
@@ -1011,10 +1011,10 @@ impl<'a> FilterStream<'a> {
 
     pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::FlateDecode);
+        filter_stream.add_filter(StreamFilter::Flate);
 
         if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+            filter_stream.add_filter(StreamFilter::AsciiHex);
         }
 
         filter_stream
@@ -1022,10 +1022,10 @@ impl<'a> FilterStream<'a> {
 
     pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::DCTDecode);
+        filter_stream.add_filter(StreamFilter::Dct);
 
         if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+            filter_stream.add_filter(StreamFilter::AsciiHex);
         }
 
         filter_stream
@@ -1035,7 +1035,7 @@ impl<'a> FilterStream<'a> {
         let mut filter_stream = Self::empty(content);
 
         if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHexDecode);
+            filter_stream.add_filter(StreamFilter::AsciiHex);
         }
 
         filter_stream
