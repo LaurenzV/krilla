@@ -1017,4 +1017,14 @@ mod tests {
             ]))
         )
     }
+
+    #[snapshot(document, settings_21)]
+    fn validation_version_mismatch(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_22)]
+    fn validation_other_version(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
 }

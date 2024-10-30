@@ -287,7 +287,21 @@ impl SerializeSettings {
         }
     }
 
-    // TODO: Add test for version mismatch
+    pub(crate) fn settings_21() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf17,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_22() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A2_B,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -358,11 +372,14 @@ impl PDFGlyph {
 
 impl SerializerContext {
     pub fn new(mut serialize_settings: SerializeSettings) -> Self {
-        // If the validator requires/prefers no device color spaces
-        // set it to true, even if the user didn't set it.
+        // Override flags as required by the validator
         serialize_settings.no_device_cs |= serialize_settings.validator.requires_no_device_cs();
         serialize_settings.enable_tagging |= serialize_settings.validator.requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
+
+        if !serialize_settings.validator.compatible_with_version(serialize_settings.pdf_version) {
+            serialize_settings.pdf_version = serialize_settings.validator.recommended_version();
+        }
 
         Self {
             cached_mappings: HashMap::new(),
@@ -634,18 +651,6 @@ impl SerializerContext {
     }
 
     pub fn finish(mut self) -> KrillaResult<Pdf> {
-        if !self
-            .serialize_settings
-            .validator
-            .compatible_with_version(self.serialize_settings.pdf_version)
-        {
-            return Err(KrillaError::UserError(format!(
-                "{} is not compatible with export mode {}",
-                self.serialize_settings.pdf_version.as_str(),
-                self.serialize_settings.validator.as_str()
-            )));
-        }
-
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use `std::mem::take` to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
