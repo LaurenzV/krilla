@@ -90,7 +90,7 @@ in case CMYK is used but no profile was provided, export fails.
 
 6.2.8.2: krilla does not support thumbnails. 🔵
 
-6.2.8.3: krilla embeds JPEG images by converting them to a sampled representation. 🔵
+6.2.8.3: krilla doesn't support JPEG2000 images. 🔵
 
 6.2.9.1: krilla does not use the `OPI`/`Subtype2`/`PS` keys for XObjects. 🔵
 

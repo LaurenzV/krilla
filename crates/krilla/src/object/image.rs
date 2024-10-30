@@ -88,7 +88,7 @@ struct JpegRepr {
     size: SizeWrapper,
     bits_per_component: BitsPerComponent,
     image_color_space: ImageColorspace,
-    invert: bool,
+    invert_cmyk: bool,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -171,10 +171,10 @@ impl Image {
 
         let input_color_space = decoder.get_input_colorspace()?;
 
-        // TODO: Support CMYK once we can find the APP14 marker
+        // TODO: what to do in PDF/A?
         if matches!(
             input_color_space,
-            ColorSpace::Luma | ColorSpace::YCbCr | ColorSpace::RGB
+            ColorSpace::Luma | ColorSpace::YCbCr | ColorSpace::RGB | ColorSpace::CMYK | ColorSpace::YCCK
         ) {
             // Don't decode the image and save it with the existing DCT encoding.
             let image_color_space = input_color_space.try_into().ok()?;
@@ -184,7 +184,7 @@ impl Image {
                 size: SizeWrapper(size),
                 bits_per_component: BitsPerComponent::Eight,
                 image_color_space,
-                invert: input_color_space == ColorSpace::YCCK,
+                invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
             })))))
         } else {
             // Unknown color space, fall back to decoding the JPEG into RGB8 and saving
@@ -318,8 +318,13 @@ impl Image {
                 }
             };
 
+            // Photoshop CMYK images need to be inverted, see
+            // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
+            // I'm not sure if this applies to all JPEG CMYK images out there, but for now we just
+            // always do it. In libtexpdf, they only seem to do it if they can find the Adobe APP
+            // marker.
             if let Repr::Jpeg(j) = &self.0.deref().deref() {
-                if j.invert {
+                if j.invert_cmyk {
                     image_x_object
                         .decode([1.0, 0.0].repeat(j.image_color_space.num_components() as usize));
                 }
