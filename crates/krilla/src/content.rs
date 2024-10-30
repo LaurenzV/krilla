@@ -328,6 +328,7 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Stroke,
             |sb, sc| {
+                // TODO: Bbox should also account for stroke.
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
                 sb.expand_bbox(bbox);
                 sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
@@ -337,7 +338,6 @@ impl ContentBuilder {
                 // outlined stroke that needs to be filled. Because of this, we simply set both,
                 // fill and stroke color, when stroking some text.
                 sb.content_set_fill_properties(
-                    // TODO: bbox doesnt consider stroke
                     bbox,
                     &Fill {
                         paint: stroke.paint.clone(),
@@ -694,7 +694,6 @@ impl ContentBuilder {
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
-                    // TODO: Does this leak the opacity?
                     content_builder.set_fill_opacity(opacity);
                     let color_space = color_to_string(color, content_builder, sc);
                     set_solid_fn(&mut content_builder.content, color_space, color);
@@ -890,7 +889,6 @@ impl ContentBuilder {
     }
 }
 
-// TODO: Add stroke bbox too?
 fn get_glyphs_bbox(
     glyphs: &[impl Glyph],
     mut x: f32,

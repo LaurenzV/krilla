@@ -252,9 +252,7 @@ impl ChunkContainer {
             }
 
             if sc.serialize_settings.validator.requires_display_doc_title() {
-                catalog
-                    .viewer_preferences()
-                    .display_doc_title(true);
+                catalog.viewer_preferences().display_doc_title(true);
             }
 
             if let Some(ol) = &self.outline {

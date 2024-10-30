@@ -839,7 +839,6 @@ impl SerializerContext {
         // Just a sanity check.
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
-        // TODO: add check that chunk container is empty
 
         Ok(serialized)
     }

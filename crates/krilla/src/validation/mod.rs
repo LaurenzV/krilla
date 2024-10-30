@@ -103,7 +103,6 @@ pub enum ValidationError {
     Transparency,
 }
 
-// TODO: Ensure that the XML metadata for PDF/UA corresponds to Adobe/Word
 /// A validator for exporting PDF documents to a specific subset of PDF.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
