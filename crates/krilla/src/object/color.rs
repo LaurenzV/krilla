@@ -274,6 +274,27 @@ impl Hash for Repr {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) enum ICCProfileType {
+    Luma(ICCProfile<1>),
+    Rgb(ICCProfile<3>),
+    Cmyk(ICCProfile<4>),
+}
+
+impl Object for ICCProfileType {
+    fn chunk_container(&self) -> ChunkContainerFn {
+        Box::new(|cc| &mut cc.icc_profiles)
+    }
+
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        match self {
+            ICCProfileType::Luma(l) => l.serialize(sc, root_ref),
+            ICCProfileType::Rgb(r) => r.serialize(sc, root_ref),
+            ICCProfileType::Cmyk(c) => c.serialize(sc, root_ref),
+        }
+    }
+}
+
 /// An ICC profile.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct ICCProfile<const C: u8>(Arc<Prehashed<Repr>>);

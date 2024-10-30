@@ -10,7 +10,7 @@
 //! ICC profiles will currently not be embedded, and CMYK images will be naively
 //! converted into the RGB color space.
 
-use crate::color::{DEVICE_CMYK, DEVICE_RGB};
+use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileType, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
@@ -76,6 +76,7 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct SampledRepr {
     image_data: Vec<u8>,
+    icc: Option<ICCProfileType>,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
@@ -85,6 +86,7 @@ struct SampledRepr {
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct JpegRepr {
     data: Vec<u8>,
+    icc: Option<ICCProfileType>,
     size: SizeWrapper,
     bits_per_component: BitsPerComponent,
     image_color_space: ImageColorspace,
@@ -112,6 +114,13 @@ impl Repr {
         }
     }
 
+    fn icc(&self) -> Option<ICCProfileType> {
+        match self {
+            Repr::Sampled(s) => s.icc.clone(),
+            Repr::Jpeg(j) => j.icc.clone(),
+        }
+    }
+
     fn color_space(&self) -> ImageColorspace {
         match self {
             Repr::Sampled(s) => s.image_color_space,
@@ -125,6 +134,14 @@ impl Repr {
 /// This type is cheap to hash and clone, but expensive to create.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
+
+fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> ICCProfileType {
+    match color_space {
+        ImageColorspace::Rgb => ICCProfileType::Rgb(ICCProfile::new(Arc::new(data))),
+        ImageColorspace::Luma => ICCProfileType::Luma(ICCProfile::new(Arc::new(data))),
+        ImageColorspace::Cmyk => ICCProfileType::Cmyk(ICCProfile::new(Arc::new(data))),
+    }
+}
 
 impl Image {
     /// Create a new bitmap image from a `.png` file.
@@ -149,8 +166,15 @@ impl Image {
             _ => return None,
         };
 
+        let icc = decoder
+            .get_info()?
+            .icc_profile
+            .as_ref()
+            .map(|d| get_icc_profile_type(d.clone(), image_color_space));
+
         Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
             image_data,
+            icc,
             mask_data,
             bits_per_component,
             image_color_space,
@@ -171,15 +195,22 @@ impl Image {
 
         let input_color_space = decoder.get_input_colorspace()?;
 
-        // TODO: what to do in PDF/A?
         if matches!(
             input_color_space,
-            ColorSpace::Luma | ColorSpace::YCbCr | ColorSpace::RGB | ColorSpace::CMYK | ColorSpace::YCCK
+            ColorSpace::Luma
+                | ColorSpace::YCbCr
+                | ColorSpace::RGB
+                | ColorSpace::CMYK
+                | ColorSpace::YCCK
         ) {
             // Don't decode the image and save it with the existing DCT encoding.
             let image_color_space = input_color_space.try_into().ok()?;
+            let icc = decoder
+                .icc_profile()
+                .map(|d| get_icc_profile_type(d.clone(), image_color_space));
 
             Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
+                icc,
                 data: data.to_vec(),
                 size: SizeWrapper(size),
                 bits_per_component: BitsPerComponent::Eight,
@@ -196,6 +227,8 @@ impl Image {
             let (image_data, _, bits_per_component) = handle_u8_image(decoded, output_color_space);
 
             Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+                // Cannot embed ICC profile in this case, since we are converting to RGB.
+                icc: None,
                 image_data,
                 mask_data: None,
                 bits_per_component,
@@ -220,6 +253,7 @@ impl Image {
             handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
 
         Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+            icc: None,
             image_data,
             mask_data,
             bits_per_component,
@@ -248,9 +282,15 @@ impl Image {
         };
         let image_color_space = color_space.try_into().ok()?;
 
+        let icc = decoder
+            .icc_profile()
+            .ok()?
+            .map(|d| get_icc_profile_type(d.clone(), image_color_space));
+
         let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
 
         Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+            icc,
             image_data,
             mask_data,
             bits_per_component,
@@ -269,6 +309,13 @@ impl Image {
             Repr::Sampled(s) => s.mask_data.as_ref().map(|_| sc.new_ref()),
             Repr::Jpeg(_) => None,
         };
+
+        let icc_ref = self.0.icc().map(|ic| match ic {
+            ICCProfileType::Luma(l) => sc.add_object(ICCBasedColorSpace(l)),
+            ICCProfileType::Rgb(r) => sc.add_object(ICCBasedColorSpace(r)),
+            ICCProfileType::Cmyk(c) => sc.add_object(ICCBasedColorSpace(c)),
+        });
+
         let serialize_settings = sc.serialize_settings.clone();
 
         Deferred::new(move || {
@@ -306,17 +353,21 @@ impl Image {
             image_x_object.width(self.size().width() as i32);
             image_x_object.height(self.size().height() as i32);
 
-            match self.0.color_space() {
-                ImageColorspace::Rgb => {
-                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
-                }
-                ImageColorspace::Luma => {
-                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
-                }
-                ImageColorspace::Cmyk => {
-                    image_x_object.pair(Name(b"ColorSpace"), DEVICE_CMYK.to_pdf_name());
-                }
-            };
+            if let Some(icc_ref) = icc_ref {
+                image_x_object.pair(Name(b"ColorSpace"), icc_ref);
+            } else {
+                match self.0.color_space() {
+                    ImageColorspace::Rgb => {
+                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
+                    }
+                    ImageColorspace::Luma => {
+                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
+                    }
+                    ImageColorspace::Cmyk => {
+                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_CMYK.to_pdf_name());
+                    }
+                };
+            }
 
             // Photoshop CMYK images need to be inverted, see
             // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
@@ -581,6 +632,31 @@ mod tests {
     #[visreg(all)]
     fn image_rgba8_webp(surface: &mut Surface) {
         image_visreg_impl(surface, "rgba8.webp", load_webp_image);
+    }
+
+    #[visreg]
+    fn image_cmyk_icc_jpg(surface: &mut Surface) {
+        image_visreg_impl(surface, "cmyk_icc.jpg", load_jpg_image);
+    }
+
+    #[visreg]
+    fn image_rgb8_icc_jpg(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb8_icc.jpg", load_jpg_image);
+    }
+
+    #[visreg]
+    fn image_luma8_icc_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "luma8_icc.png", load_png_image);
+    }
+
+    #[visreg]
+    fn image_rgba8_icc_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgba8_icc.png", load_png_image);
+    }
+
+    #[visreg]
+    fn image_rgb8_icc_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb8_icc.png", load_png_image);
     }
 
     #[visreg]
