@@ -515,7 +515,9 @@ mod tests {
     use crate::path::{Fill, FillRule};
     use crate::surface::TextDirection;
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-    use crate::tests::{cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, NOTO_SANS};
+    use crate::tests::{
+        cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+    };
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
@@ -1026,5 +1028,27 @@ mod tests {
     #[snapshot(document, settings_22)]
     fn validation_other_version(document: &mut Document) {
         validation_pdf_full_example(document);
+    }
+
+    #[test]
+    fn validation_pdfa1_limits() {
+        let mut document = Document::new_with(SerializeSettings::settings_19());
+        let mut page = document.start_page();
+
+        // An array can only have 8191 elements, so it must not be possible to have that many.
+        for _ in 0..8193 {
+            page.add_annotation(youtube_link(100.0, 100.0, 100.0, 100.0));
+        }
+
+        page.add_annotation(youtube_link(66000.1, 66000.1, 100.0, 100.0));
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::TooLargeFloat,
+                ValidationError::TooLongArray,
+            ]))
+        )
     }
 }

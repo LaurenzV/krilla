@@ -1,3 +1,5 @@
+use crate::action::LinkAction;
+use crate::annotation::{Annotation, LinkAnnotation, Target};
 use crate::color::{cmyk, luma, rgb};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
@@ -598,6 +600,14 @@ pub fn stops_with_3_solid_1() -> Stops {
             opacity: NormalizedF32::ONE,
         },
     ]
+    .into()
+}
+
+pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
+    LinkAnnotation::new(
+        Rect::from_xywh(x, y, w, h).unwrap(),
+        Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+    )
     .into()
 }
 

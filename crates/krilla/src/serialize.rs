@@ -377,7 +377,10 @@ impl SerializerContext {
         serialize_settings.enable_tagging |= serialize_settings.validator.requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
 
-        if !serialize_settings.validator.compatible_with_version(serialize_settings.pdf_version) {
+        if !serialize_settings
+            .validator
+            .compatible_with_version(serialize_settings.pdf_version)
+        {
             serialize_settings.pdf_version = serialize_settings.validator.recommended_version();
         }
 
@@ -807,24 +810,25 @@ impl SerializerContext {
 
         let chunk_container = std::mem::take(&mut self.chunk_container);
         let serialized = chunk_container.finish(&mut self);
+        self.limits.merge(serialized.limits());
 
-        if serialized.limits().str_len() > STR_LEN {
+        if self.limits.str_len() > STR_LEN {
             self.register_validation_error(ValidationError::TooLongString);
         }
 
-        if serialized.limits().name_len() > NAME_LEN {
+        if self.limits.name_len() > NAME_LEN {
             self.register_validation_error(ValidationError::TooLongName);
         }
 
-        if serialized.limits().real() > MAX_FLOAT {
+        if self.limits.real() > MAX_FLOAT {
             self.register_validation_error(ValidationError::TooLargeFloat);
         }
 
-        if serialized.limits().array_len() > ARRAY_LEN {
+        if self.limits.array_len() > ARRAY_LEN {
             self.register_validation_error(ValidationError::TooLongArray);
         }
 
-        if serialized.limits().dict_entries() > DICT_LEN {
+        if self.limits.dict_entries() > DICT_LEN {
             self.register_validation_error(ValidationError::TooLongDictionary);
         }
 
