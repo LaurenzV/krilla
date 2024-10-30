@@ -377,7 +377,6 @@ where
 
 pub type ResourceNumber = u32;
 
-// TODO: Are those ICC profiles good to use?
 /// The ICC v4 profile for the SRGB color space.
 static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))));
