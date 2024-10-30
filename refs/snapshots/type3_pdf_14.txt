@@ -63,7 +63,7 @@ endobj
       /x0 7 0 R
     >>
   >>
-  /Name /SDUKQX+TwitterColorEmojiSVGinOT
+  /Name /TwitterColorEmojiSVGinOT
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
   /ToUnicode 6 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
@@ -212,15 +212,15 @@ xref
 0000000275 00000 n
 0000000420 00000 n
 0000000489 00000 n
-0000000965 00000 n
-0000001661 00000 n
-0000003034 00000 n
+0000000958 00000 n
+0000001654 00000 n
+0000003027 00000 n
 trailer
 <<
   /Size 9
   /Root 8 0 R
-  /ID [(XaISR5MnE2pBsTnuUjjYCA==) (XaISR5MnE2pBsTnuUjjYCA==)]
+  /ID [(/9moPJNPPoj1y16/ozDTzw==) (/9moPJNPPoj1y16/ozDTzw==)]
 >>
 startxref
-3088
+3081
 %%EOF

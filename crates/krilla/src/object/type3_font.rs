@@ -1,6 +1,6 @@
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
-use crate::object::cid_font::{base_font_name, CMAP_NAME, SYSTEM_INFO};
+use crate::object::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
@@ -309,7 +309,7 @@ impl Type3Font {
             .map(|g| g.glyph_id)
             .collect::<Vec<_>>();
         gids.sort();
-        let base_font = base_font_name(&self.font, &gids);
+        let base_font = base_font_name(&self.font);
 
         if let Some(descriptor_ref) = descriptor_ref {
             // Write the font descriptor (contains metrics about the font).
@@ -496,6 +496,18 @@ impl Type3FontMapper {
             (id, gid)
         }
     }
+}
+
+pub(crate) fn base_font_name(font: &Font) -> String {
+    const REST_LEN: usize = 1 + 1 + IDENTITY_H.len();
+    let postscript_name = font.postscript_name().unwrap_or("unknown");
+
+    let max_len = 127 - REST_LEN;
+
+    let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
+
+
+    trimmed.to_string()
 }
 
 #[cfg(test)]

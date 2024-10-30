@@ -64,7 +64,6 @@ impl ExtGState {
     /// Create a new graphics state with a mask.
     #[must_use]
     pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
-        // TODO: Don't unwrap
         let mask_ref = sc.add_object(mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self

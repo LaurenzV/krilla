@@ -76,7 +76,7 @@ endobj
 3 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /TMCKTH+NotoSans-Regular
+  /FontName /NotoSans-Regular
   /Flags 131076
   /FontBBox [0 0 638 717]
   /ItalicAngle 0
@@ -92,7 +92,7 @@ endobj
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
-  /Name /TMCKTH+NotoSans-Regular
+  /Name /NotoSans-Regular
   /FontBBox [0 0 638 717]
   /ToUnicode 5 0 R
   /FontMatrix [0.001 0 0 0.001 0 0]
