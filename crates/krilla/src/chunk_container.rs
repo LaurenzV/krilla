@@ -184,7 +184,6 @@ impl ChunkContainer {
 
         xmp.num_pages(self.pages.len() as u32);
         xmp.format("application/pdf");
-        // TODO: Add XMP languages
         xmp.instance_id(&instance_id);
         xmp.document_id(&document_id);
         pdf.set_file_id((
@@ -254,9 +253,8 @@ impl ChunkContainer {
 
             if sc.serialize_settings.validator.requires_display_doc_title() {
                 catalog
-                    // TODO: Use the pdf-writer API once available
                     .viewer_preferences()
-                    .pair(Name(b"DisplayDocTitle"), true);
+                    .display_doc_title(true);
             }
 
             if let Some(ol) = &self.outline {

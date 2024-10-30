@@ -729,8 +729,7 @@ impl TagGroup {
                 let id = format!("Note {}", note_id);
                 *note_id += 1;
                 id_tree.insert(id.clone(), root_ref);
-                // TODO: Update this with pdf-writer API once updated
-                struct_elem.pair(Name(b"ID"), Str(id.as_bytes()));
+                struct_elem.id(Str(id.as_bytes()));
             }
             _ => {}
         }
