@@ -22,7 +22,7 @@ use crate::version::PdfVersion;
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
-use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Null, Obj, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -943,6 +943,22 @@ impl StreamFilter {
             Self::Dct => Name(b"DCTDecode"),
         }
     }
+
+    pub(crate) fn has_decode_params(&self) -> bool {
+        match self {
+            StreamFilter::Flate => false,
+            StreamFilter::AsciiHex => false,
+            StreamFilter::Dct => false,
+        }
+    }
+
+    pub(crate) fn write_decode_params(&self, array: &mut Array) {
+        match self {
+            StreamFilter::Flate => array.item(Null),
+            StreamFilter::AsciiHex => array.item(Null),
+            StreamFilter::Dct => array.item(Null),
+        };
+    }
 }
 
 impl StreamFilter {
@@ -1068,13 +1084,14 @@ impl<'a> FilterStream<'a> {
         match &self.filters {
             StreamFilters::None => {}
             StreamFilters::Single(filter) => {
-                dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
+                let mut arr =
+                dict.deref_mut().pair(Name(b"Filter"), filter.write_filter_name());
             }
             StreamFilters::Multiple(filters) => {
                 dict.deref_mut()
                     .insert(Name(b"Filter"))
                     .start::<Array>()
-                    .items(filters.iter().map(|f| f.to_name()).rev());
+                    .items(filters.iter().map(|f| f.write_filter_name()).rev());
             }
         }
     }
