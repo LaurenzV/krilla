@@ -13,7 +13,7 @@
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileType, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::serialize::{FilterStream, PngParams, SerializerContext};
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::{Deref, DerefMut};
@@ -77,6 +77,7 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 struct SampledRepr {
     image_data: Vec<u8>,
     icc: Option<ICCProfileType>,
+    // TODO: Use IntSize
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
@@ -325,7 +326,7 @@ impl Image {
                 Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
                     let soft_mask_id = soft_mask_id.unwrap();
                     let mask_stream =
-                        FilterStream::new_from_binary_data(mask_data, &serialize_settings);
+                        FilterStream::new_from_png_data(mask_data, PngParams::new(1, sampled.bits_per_component.as_u8(), sampled.size.width() as usize, sampled.size.height() as usize), &serialize_settings);
                     let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
                     mask_stream.write_filters(s_mask.deref_mut().deref_mut());
                     s_mask.width(sampled.size.0.width() as i32);
@@ -343,7 +344,7 @@ impl Image {
 
             let image_stream = match self.0.deref().deref() {
                 Repr::Sampled(s) => {
-                    FilterStream::new_from_binary_data(&s.image_data, &serialize_settings)
+                    FilterStream::new_from_png_data(&s.image_data, PngParams::new(s.image_color_space.num_components(), s.bits_per_component.as_u8(), s.size.width() as usize, s.size.height() as usize), &serialize_settings)
                 }
                 Repr::Jpeg(j) => FilterStream::new_from_jpeg_data(&j.data, &serialize_settings),
             };

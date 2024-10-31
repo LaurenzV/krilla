@@ -295,6 +295,7 @@ impl Object for ICCProfileType {
     }
 }
 
+// TODO: Add validation for ICC profile
 /// An ICC profile.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct ICCProfile<const C: u8>(Arc<Prehashed<Repr>>);

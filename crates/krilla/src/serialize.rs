@@ -20,7 +20,7 @@ use crate::validation::{ValidationError, Validator};
 use crate::version::PdfVersion;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::types::{OutputIntentSubtype, StructRole};
+use pdf_writer::types::{OutputIntentSubtype, Predictor, StructRole};
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Null, Obj, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
@@ -928,35 +928,67 @@ impl FontContainer {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
+pub(crate) struct PngParams {
+    components: u8,
+    bits_per_component: u8,
+    width: usize,
+    height: usize
+}
+
+impl PngParams {
+    pub fn new(components: u8, bits_per_component: u8, width: usize, height: usize) -> Self {
+        Self {
+            components,
+            bits_per_component,
+            width,
+            height
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum StreamFilter {
     Flate,
+    PngFlate(PngParams),
     AsciiHex,
     Dct,
 }
 
 impl StreamFilter {
-    pub(crate) fn to_name(self) -> Name<'static> {
-        match self {
+    pub(crate) fn write_filter_name(&self, obj: Obj) {
+        let name = match self {
             Self::AsciiHex => Name(b"ASCIIHexDecode"),
             Self::Flate => Name(b"FlateDecode"),
+            Self::PngFlate(_) => Name(b"FlateDecode"),
             Self::Dct => Name(b"DCTDecode"),
-        }
+        };
+
+        obj.primitive(name)
     }
 
     pub(crate) fn has_decode_params(&self) -> bool {
         match self {
             StreamFilter::Flate => false,
             StreamFilter::AsciiHex => false,
+            StreamFilter::PngFlate(_) => true,
             StreamFilter::Dct => false,
         }
     }
 
-    pub(crate) fn write_decode_params(&self, array: &mut Array) {
+    pub(crate) fn write_decode_params(&self, obj: Obj) {
         match self {
-            StreamFilter::Flate => array.item(Null),
-            StreamFilter::AsciiHex => array.item(Null),
-            StreamFilter::Dct => array.item(Null),
+            StreamFilter::Flate => obj.primitive(Null),
+            StreamFilter::AsciiHex => obj.primitive(Null),
+            StreamFilter::PngFlate(params) => obj.start::<pdf_writer::writers::DecodeParms>()
+                .predictor(Predictor::PngSub)
+                // We only support 8 bits per component for now. Need to figure out how the encoding
+                // works properly with 16.
+                .bits_per_component(params.bits_per_component as i32)
+                .colors(params.components as i32)
+                .columns(params.width as i32)
+                .finish(),
+            StreamFilter::Dct => obj.primitive(Null),
         };
     }
 }
@@ -965,6 +997,7 @@ impl StreamFilter {
     pub fn can_apply(&self) -> bool {
         match self {
             StreamFilter::Flate => true,
+            StreamFilter::PngFlate(_) => true,
             StreamFilter::AsciiHex => true,
             StreamFilter::Dct => false,
         }
@@ -973,6 +1006,7 @@ impl StreamFilter {
     pub fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
             StreamFilter::Flate => deflate_encode(content),
+            StreamFilter::PngFlate(params) => deflate_encode(&png_sub_filter(content, params.clone())),
             StreamFilter::AsciiHex => hex_encode(content),
             // Note: We don't actually encode manually with DCT, because
             // this is only used for JPEG images which are already encoded,
@@ -980,6 +1014,35 @@ impl StreamFilter {
             StreamFilter::Dct => panic!("can't apply dct decode"),
         }
     }
+}
+
+
+
+pub fn png_sub_filter(input: &[u8], png_params: PngParams) -> Vec<u8> {
+    // TODO: Refactor this
+    let PngParams {width, height, components, bits_per_component} = png_params;
+    let components = components as usize;
+    let bytes_per_component = bits_per_component as usize / 8;
+
+    let mut res = Vec::with_capacity(width * height * components * bytes_per_component + height);
+
+    for i in 0..height {
+        // Each row must start with the marker for the PNG "Sub" filter.
+        res.push(1);
+        for j in 0..width*components*bytes_per_component {
+            let index = width * i * components * bytes_per_component + j;
+            let current = input[index];
+
+            if j < components*bytes_per_component {
+                res.push(current);
+            }   else {
+                let last = input[index - components*bytes_per_component];
+                res.push(current.wrapping_sub(last));
+            }
+        }
+    }
+
+    res
 }
 
 // Allows us to keep track of the filters that a stream has and
@@ -996,7 +1059,7 @@ impl StreamFilters {
         match self {
             StreamFilters::None => *self = StreamFilters::Single(stream_filter),
             StreamFilters::Single(cur) => {
-                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
+                *self = StreamFilters::Multiple(vec![cur.clone(), stream_filter])
             }
             StreamFilters::Multiple(cur) => cur.push(stream_filter),
         }
@@ -1044,6 +1107,17 @@ impl<'a> FilterStream<'a> {
         filter_stream
     }
 
+    pub fn new_from_png_data(content: &'a [u8], png_params: PngParams, serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream.add_filter(StreamFilter::PngFlate(png_params));
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHex);
+        }
+
+        filter_stream
+    }
+
     pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_filter(StreamFilter::Dct);
@@ -1065,7 +1139,9 @@ impl<'a> FilterStream<'a> {
         filter_stream
     }
 
-    pub fn add_filter(&mut self, filter: StreamFilter) {
+    // Note: If a DCT filter is added, it will not actually be encoded! The data must
+    // already be in the given encoding.
+    fn add_filter(&mut self, filter: StreamFilter) {
         if filter.can_apply() {
             self.content = Cow::Owned(filter.apply(&self.content));
         }
@@ -1084,14 +1160,27 @@ impl<'a> FilterStream<'a> {
         match &self.filters {
             StreamFilters::None => {}
             StreamFilters::Single(filter) => {
-                let mut arr =
-                dict.deref_mut().pair(Name(b"Filter"), filter.write_filter_name());
+                filter.write_filter_name(dict.deref_mut().insert(Name(b"Filter")));
+
+                if filter.has_decode_params() {
+                    filter.write_decode_params(dict.deref_mut().insert(Name(b"DecodeParms")))
+                }
             }
             StreamFilters::Multiple(filters) => {
-                dict.deref_mut()
+                let mut arr = dict.deref_mut()
                     .insert(Name(b"Filter"))
-                    .start::<Array>()
-                    .items(filters.iter().map(|f| f.write_filter_name()).rev());
+                    .start::<Array>();
+
+                filters.iter().rev().for_each(|f| f.write_filter_name(arr.push()));
+                arr.finish();
+
+                if filters.iter().any(|f| f.has_decode_params()) {
+                    let mut arr = dict.deref_mut()
+                        .insert(Name(b"DecodeParms"))
+                        .start::<Array>();
+
+                    filters.iter().rev().for_each(|f| f.write_decode_params(arr.push()))
+                }
             }
         }
     }
