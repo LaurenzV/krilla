@@ -138,11 +138,11 @@ impl XyzDestination {
 mod tests {
     use crate::annotation::{LinkAnnotation, Target};
     use crate::destination::{NamedDestination, XyzDestination};
+    use crate::error::KrillaError;
     use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
     use crate::Document;
     use krilla_macros::snapshot;
     use tiny_skia_path::{Point, Rect};
-    use crate::error::KrillaError;
 
     #[snapshot(document)]
     fn named_destination_basic(d: &mut Document) {
@@ -151,11 +151,11 @@ mod tests {
 
         d.add_named_destination(
             dest1.clone(),
-            XyzDestination::new(0, Point::from_xy(100.0, 100.0)).into(),
+            XyzDestination::new(0, Point::from_xy(100.0, 100.0)),
         );
         d.add_named_destination(
             dest2.clone(),
-            XyzDestination::new(1, Point::from_xy(0.0, 0.0)).into(),
+            XyzDestination::new(1, Point::from_xy(0.0, 0.0)),
         );
         let mut page = d.start_page();
         page.add_annotation(
@@ -204,7 +204,7 @@ mod tests {
                 Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
                 Target::Destination(dest.clone().into()),
             )
-                .into(),
+            .into(),
         );
         page.finish();
 
