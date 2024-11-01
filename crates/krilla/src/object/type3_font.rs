@@ -113,7 +113,6 @@ impl Type3Font {
         u16::try_from(self.glyphs.len()).unwrap()
     }
 
-    // TODO: Can we used COveredGlyphRef instead?
     pub fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
         self.glyph_set.contains(glyph)
     }
@@ -324,23 +323,42 @@ impl Type3Font {
                 // Adobe recommends these for tagged PDF for 1.5+ (descriptors for Type3 fonts
                 // are only written for 1.5+ in the first place, so no additional checks needed)
                 // so we write them as well.
-
                 // Unfortunately we have no way of determining the actual family name, so we just
                 // take the next best thing
                 .family(Str(base_font.as_bytes()))
-                .stretch(match skrifa::attribute::Stretch::new(self.font().stretch()) {
-                    skrifa::attribute::Stretch::ULTRA_CONDENSED => pdf_writer::types::FontStretch::UltraCondensed,
-                    skrifa::attribute::Stretch::EXTRA_CONDENSED => pdf_writer::types::FontStretch::ExtraCondensed,
-                    skrifa::attribute::Stretch::CONDENSED => pdf_writer::types::FontStretch::Condensed,
-                    skrifa::attribute::Stretch::SEMI_CONDENSED => pdf_writer::types::FontStretch::SemiCondensed,
-                    skrifa::attribute::Stretch::NORMAL => pdf_writer::types::FontStretch::Normal,
-                    skrifa::attribute::Stretch::SEMI_EXPANDED => pdf_writer::types::FontStretch::SemiExpanded,
-                    skrifa::attribute::Stretch::EXPANDED => pdf_writer::types::FontStretch::Expanded,
-                    skrifa::attribute::Stretch::EXTRA_EXPANDED => pdf_writer::types::FontStretch::ExtraExpanded,
-                    skrifa::attribute::Stretch::ULTRA_EXPANDED => pdf_writer::types::FontStretch::UltraExpanded,
-                    // Fallback
-                    _ => pdf_writer::types::FontStretch::Normal
-                })
+                .stretch(
+                    match skrifa::attribute::Stretch::new(self.font().stretch()) {
+                        skrifa::attribute::Stretch::ULTRA_CONDENSED => {
+                            pdf_writer::types::FontStretch::UltraCondensed
+                        }
+                        skrifa::attribute::Stretch::EXTRA_CONDENSED => {
+                            pdf_writer::types::FontStretch::ExtraCondensed
+                        }
+                        skrifa::attribute::Stretch::CONDENSED => {
+                            pdf_writer::types::FontStretch::Condensed
+                        }
+                        skrifa::attribute::Stretch::SEMI_CONDENSED => {
+                            pdf_writer::types::FontStretch::SemiCondensed
+                        }
+                        skrifa::attribute::Stretch::NORMAL => {
+                            pdf_writer::types::FontStretch::Normal
+                        }
+                        skrifa::attribute::Stretch::SEMI_EXPANDED => {
+                            pdf_writer::types::FontStretch::SemiExpanded
+                        }
+                        skrifa::attribute::Stretch::EXPANDED => {
+                            pdf_writer::types::FontStretch::Expanded
+                        }
+                        skrifa::attribute::Stretch::EXTRA_EXPANDED => {
+                            pdf_writer::types::FontStretch::ExtraExpanded
+                        }
+                        skrifa::attribute::Stretch::ULTRA_EXPANDED => {
+                            pdf_writer::types::FontStretch::UltraExpanded
+                        }
+                        // Fallback
+                        _ => pdf_writer::types::FontStretch::Normal,
+                    },
+                )
                 .weight(match self.font.weight() as i32 {
                     150..250 => 200,
                     250..350 => 300,
@@ -349,7 +367,13 @@ impl Type3Font {
                     550..650 => 600,
                     650..750 => 700,
                     750..850 => 800,
-                    other => if other < 150 { 100 } else { 900 }
+                    other => {
+                        if other < 150 {
+                            100
+                        } else {
+                            900
+                        }
+                    }
                 });
 
             font_descriptor.finish();
@@ -534,7 +558,6 @@ pub(crate) fn base_font_name(font: &Font) -> String {
     let max_len = 127 - REST_LEN;
 
     let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
-
 
     trimmed.to_string()
 }

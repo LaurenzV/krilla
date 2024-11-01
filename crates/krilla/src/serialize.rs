@@ -734,7 +734,7 @@ impl SerializerContext {
                 &mut parent_tree_map,
                 &mut id_tree_map,
                 struct_tree_root_ref,
-            );
+            )?;
             self.chunk_container.struct_elements = struct_elems;
 
             let mut chunk = Chunk::new();
@@ -761,8 +761,8 @@ impl SerializerContext {
 
                         for mcid in 0..num_mcids {
                             let rci = PageTagIdentifier::new(index, mcid);
-                            // TODO: Graceful handling
-                            refs.item(parent_tree_map.get(&rci.into()).unwrap());
+                            refs.item(parent_tree_map.get(&rci.into())
+                                .ok_or(KrillaError::UserError("a identifier doesn't appear in the tag tree".to_string()))?);
                         }
 
                         refs.finish();
