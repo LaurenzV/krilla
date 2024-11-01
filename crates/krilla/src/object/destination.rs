@@ -35,7 +35,7 @@ impl Destination {
 }
 
 /// A destination associated with a name.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct NamedDestination {
     name: Arc<String>,
 }

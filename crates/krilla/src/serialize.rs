@@ -27,7 +27,7 @@ use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, T
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -339,7 +339,7 @@ enum StructParentElement {
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
-    pub(crate) used_named_destinations: HashSet<NamedDestination>,
+    pub(crate) used_named_destinations: BTreeSet<NamedDestination>,
     font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
     xyz_dests: Vec<(Ref, XyzDestination)>,
     page_tree_ref: Option<Ref>,
@@ -392,7 +392,7 @@ impl SerializerContext {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
             named_destinations: HashMap::new(),
-            used_named_destinations: HashSet::new(),
+            used_named_destinations: BTreeSet::new(),
             xyz_dests: Vec::new(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
