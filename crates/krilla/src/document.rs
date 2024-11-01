@@ -14,6 +14,7 @@
 //!
 //! [`Page`]: crate::page::Page
 
+use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::object::outline::Outline;
@@ -78,6 +79,11 @@ impl Document {
     /// Set the tag tree of the document.
     pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
         self.serializer_context.set_tag_tree(tag_tree);
+    }
+
+    /// Add a new named destination.
+    pub fn add_named_destination(&mut self, nd: NamedDestination, location: XyzDestination) {
+        self.serializer_context.add_named_destination(nd, location);
     }
 
     /// Attempt to write the document to a PDF.

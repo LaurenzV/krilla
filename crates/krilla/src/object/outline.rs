@@ -22,7 +22,7 @@ use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::SerializerContext;
 use pdf_writer::writers::OutlineItem;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 /// An outline.
 ///
@@ -176,7 +176,8 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        self.destination.serialize(sc, outline_entry.dest())?;
+        let dest_ref = sc.add_xyz_dest(self.destination.clone());
+        outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
 

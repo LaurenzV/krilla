@@ -15,7 +15,7 @@ endobj
   /Subtype /Link
   /Rect [50 100 150 200]
   /Border [0 0 0]
-  /Dest [6 0 R /XYZ 100 100 0]
+  /Dest 8 0 R
   /F 4
 >>
 endobj
@@ -58,7 +58,7 @@ endobj
   /Subtype /Link
   /Rect [50 0 150 100]
   /Border [0 0 0]
-  /Dest [3 0 R /XYZ 0 200 0]
+  /Dest 9 0 R
   /F 4
 >>
 endobj
@@ -96,6 +96,14 @@ endstream
 endobj
 
 8 0 obj
+[6 0 R /XYZ 100 100 0]
+endobj
+
+9 0 obj
+[3 0 R /XYZ 0 200 0]
+endobj
+
+10 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -103,22 +111,24 @@ endobj
 endobj
 
 xref
-0 9
+0 11
 0000000000 65535 f
 0000000016 00000 n
 0000000086 00000 n
-0000000221 00000 n
-0000000398 00000 n
-0000000534 00000 n
-0000000665 00000 n
-0000000842 00000 n
-0000000982 00000 n
+0000000204 00000 n
+0000000381 00000 n
+0000000517 00000 n
+0000000633 00000 n
+0000000810 00000 n
+0000000950 00000 n
+0000000989 00000 n
+0000001026 00000 n
 trailer
 <<
-  /Size 9
-  /Root 8 0 R
-  /ID [(Y++qI+6zxUBr99zZBFEISQ==) (Y++qI+6zxUBr99zZBFEISQ==)]
+  /Size 11
+  /Root 10 0 R
+  /ID [(mTrLG0JthFKqMiqP9VfzYg==) (mTrLG0JthFKqMiqP9VfzYg==)]
 >>
 startxref
-1036
+1081
 %%EOF

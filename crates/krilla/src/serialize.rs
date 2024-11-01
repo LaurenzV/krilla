@@ -1,6 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
+use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontIdentifier, FontInfo};
 #[cfg(feature = "raster-images")]
@@ -26,7 +27,7 @@ use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, T
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -337,7 +338,10 @@ enum StructParentElement {
 
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
+    pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
+    pub(crate) used_named_destinations: HashSet<NamedDestination>,
     font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
+    xyz_dests: Vec<(Ref, XyzDestination)>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
@@ -387,6 +391,9 @@ impl SerializerContext {
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
+            named_destinations: HashMap::new(),
+            used_named_destinations: HashSet::new(),
+            xyz_dests: Vec::new(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
@@ -448,6 +455,11 @@ impl SerializerContext {
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub fn add_named_destination(&mut self, nd: NamedDestination, location: XyzDestination) {
+        let dest_ref = self.add_xyz_dest(location);
+        self.named_destinations.insert(nd, dest_ref);
     }
 
     pub fn set_tag_tree(&mut self, root: TagTree) {
@@ -514,6 +526,7 @@ impl SerializerContext {
 
     #[cfg(feature = "raster-images")]
     pub fn add_image(&mut self, image: Image) -> Ref {
+        // TODO: Deduplicate
         let hash = image.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
@@ -524,6 +537,12 @@ impl SerializerContext {
             self.chunk_container.images.push(chunk);
             root_ref
         }
+    }
+
+    pub fn add_xyz_dest(&mut self, dest: XyzDestination) -> Ref {
+        let root_ref = self.new_ref();
+        self.xyz_dests.push((root_ref, dest));
+        root_ref
     }
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
@@ -720,6 +739,12 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
+        let xyz_dests = std::mem::take(&mut self.xyz_dests);
+        for (ref_, dest) in &xyz_dests {
+            let chunk = dest.serialize(&mut self, *ref_)?;
+            self.chunk_container.destinations.push(chunk);
+        }
+
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
@@ -761,8 +786,11 @@ impl SerializerContext {
 
                         for mcid in 0..num_mcids {
                             let rci = PageTagIdentifier::new(index, mcid);
-                            refs.item(parent_tree_map.get(&rci.into())
-                                .ok_or(KrillaError::UserError("a identifier doesn't appear in the tag tree".to_string()))?);
+                            refs.item(parent_tree_map.get(&rci.into()).ok_or(
+                                KrillaError::UserError(
+                                    "a identifier doesn't appear in the tag tree".to_string(),
+                                ),
+                            )?);
                         }
 
                         refs.finish();
@@ -809,7 +837,7 @@ impl SerializerContext {
         }
 
         let chunk_container = std::mem::take(&mut self.chunk_container);
-        let serialized = chunk_container.finish(&mut self);
+        let serialized = chunk_container.finish(&mut self)?;
         self.limits.merge(serialized.limits());
 
         if self.limits.str_len() > STR_LEN {

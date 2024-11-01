@@ -850,74 +850,73 @@ fn serialize_children(
             Reference::Ref(r) => {
                 struct_children.struct_element(r);
             }
-            Reference::ContentIdentifier(it) => {
-                match it {
-                    IdentifierType::PageIdentifier(pi) => {
-                        let page_ref = sc
+            Reference::ContentIdentifier(it) => match it {
+                IdentifierType::PageIdentifier(pi) => {
+                    let page_ref = sc
                             .page_infos()
                             .get(pi.page_index)
                             .ok_or(KrillaError::UserError(format!(
                                 "tag tree contains identifier from page {}, but document only has {} pages",
-                                pi.page_index,
+                                pi.page_index + 1,
                                 sc.page_infos().len()
                             )))?
                             .ref_;
 
-                        if struct_page_ref.is_none() {
-                            struct_page_ref = Some(page_ref);
-                        }
-
-                        if parent_tree_map.contains_key(&pi.into()) {
-                            return Err(KrillaError::UserError(
-                                "an identifier appears twice in the tag tree".to_string(),
-                            ));
-                        }
-
-                        parent_tree_map.insert(pi.into(), root_ref);
-
-                        if struct_page_ref == Some(page_ref) {
-                            struct_children.marked_content_id(pi.mcid);
-                        } else {
-                            struct_children
-                                .marked_content_ref()
-                                .marked_content_id(pi.mcid)
-                                .page(page_ref);
-                        }
+                    if struct_page_ref.is_none() {
+                        struct_page_ref = Some(page_ref);
                     }
-                    IdentifierType::AnnotationIdentifier(ai) => {
-                        let page_info = sc.page_infos()
+
+                    if parent_tree_map.contains_key(&pi.into()) {
+                        return Err(KrillaError::UserError(
+                            "an identifier appears twice in the tag tree".to_string(),
+                        ));
+                    }
+
+                    parent_tree_map.insert(pi.into(), root_ref);
+
+                    if struct_page_ref == Some(page_ref) {
+                        struct_children.marked_content_id(pi.mcid);
+                    } else {
+                        struct_children
+                            .marked_content_ref()
+                            .marked_content_id(pi.mcid)
+                            .page(page_ref);
+                    }
+                }
+                IdentifierType::AnnotationIdentifier(ai) => {
+                    let page_info =
+                        sc.page_infos()
                             .get(ai.page_index)
                             .ok_or(KrillaError::UserError(format!(
-                                "tag tree contains identifier from page {}, but document only has {} pages",
-                                ai.page_index,
-                                sc.page_infos().len()
-                            )))?;
+                        "tag tree contains identifier from page {}, but document only has {} pages",
+                        ai.page_index + 1,
+                        sc.page_infos().len()
+                    )))?;
 
-                        let page_ref = page_info.ref_;
-                        let annotation_ref =
+                    let page_ref = page_info.ref_;
+                    let annotation_ref =
                             *page_info.annotations
                                 .get(ai.annot_index)
                                 .ok_or(KrillaError::UserError(format!(
                                     "tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
-                                    ai.annot_index,
-                                    ai.page_index,
+                                    ai.annot_index + 1,
+                                    ai.page_index + 1,
                                     page_info.annotations.len()
                                 )))?;
 
-                        if parent_tree_map.contains_key(&ai.into()) {
-                            return Err(KrillaError::UserError(
-                                "an identifier appears twice in the tag tree".to_string(),
-                            ));
-                        }
-                        parent_tree_map.insert(ai.into(), annotation_ref);
-
-                        struct_children
-                            .object_ref()
-                            .page(page_ref)
-                            .object(annotation_ref);
+                    if parent_tree_map.contains_key(&ai.into()) {
+                        return Err(KrillaError::UserError(
+                            "an identifier appears twice in the tag tree".to_string(),
+                        ));
                     }
+                    parent_tree_map.insert(ai.into(), annotation_ref);
+
+                    struct_children
+                        .object_ref()
+                        .page(page_ref)
+                        .object(annotation_ref);
                 }
-            }
+            },
         }
     }
     struct_children.finish();
@@ -1247,7 +1246,7 @@ mod tests {
                 Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
                 Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
             )
-                .into(),
+            .into(),
         );
         page.finish();
 
@@ -1275,7 +1274,6 @@ mod tests {
 
         surface.finish();
         page.finish();
-
 
         document.set_tag_tree(tag_tree);
 

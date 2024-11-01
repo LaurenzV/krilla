@@ -1,9 +1,10 @@
+use crate::error::{KrillaError, KrillaResult};
 use crate::metadata::Metadata;
 use crate::serialize::SerializerContext;
 use crate::util::{hash_base64, Deferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, TextStr};
+use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
 
@@ -50,7 +51,7 @@ impl ChunkContainer {
         Self::default()
     }
 
-    pub fn finish(mut self, sc: &mut SerializerContext) -> Pdf {
+    pub fn finish(mut self, sc: &mut SerializerContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -259,9 +260,30 @@ impl ChunkContainer {
                 catalog.outlines(ol.0);
             }
 
+            if !sc.used_named_destinations.is_empty() {
+                // Cannot use pdf-writer API here because it requires Ref's, while
+                // we write our destinations directly into the array.
+                let mut names = catalog.names();
+                let mut name_tree = names.destinations();
+                let mut name_entries = name_tree.names();
+
+                let used_destinations = std::mem::take(&mut sc.used_named_destinations);
+                let named_destinations = std::mem::take(&mut sc.named_destinations);
+                for name in &used_destinations {
+                    let dest =
+                        named_destinations
+                            .get(name)
+                            .ok_or(KrillaError::UserError(format!(
+                                "named destination {} was used, but not registered in document",
+                                name.inner()
+                            )))?;
+                    name_entries.insert(Str(name.inner().as_bytes()), *remapper.get(dest).unwrap());
+                }
+            }
+
             catalog.finish();
         }
 
-        pdf
+        Ok(pdf)
     }
 }
