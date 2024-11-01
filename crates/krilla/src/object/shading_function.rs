@@ -366,7 +366,6 @@ fn select_postscript_function(
         serialize_sweep_postscript(properties, chunk, sc, bump, use_opacities)
     } else {
         todo!();
-        // serialize_radial_postscript(properties, sc, bbox)
     }
 }
 

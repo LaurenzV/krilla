@@ -139,13 +139,10 @@ impl LinkAnnotation {
         annotation.border(0.0, 0.0, 0.0, None);
 
         match &self.target {
-            Target::Destination(destination) => destination.serialize(
-                sc,
-                annotation
-                    .insert(Name(b"Dest"))
-                    .start::<pdf_writer::writers::Destination>(),
-            )?,
-            Target::Action(action) => action.serialize(annotation.action()),
+            Target::Destination(destination) => {
+                destination.serialize(sc, annotation.insert(Name(b"Dest")))?
+            }
+            Target::Action(action) => action.serialize(sc, annotation.action())?,
         };
 
         Ok(())

@@ -1,6 +1,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
+use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontIdentifier, FontInfo};
 #[cfg(feature = "raster-images")]
@@ -26,7 +27,7 @@ use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, T
 use skrifa::raw::TableProvider;
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -287,7 +288,21 @@ impl SerializeSettings {
         }
     }
 
-    // TODO: Add test for version mismatch
+    pub(crate) fn settings_21() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf17,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_22() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A2_B,
+            ..Self::settings_1()
+        }
+    }
 }
 
 impl Default for SerializeSettings {
@@ -323,7 +338,10 @@ enum StructParentElement {
 
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
+    pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
+    pub(crate) used_named_destinations: BTreeSet<NamedDestination>,
     font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
+    xyz_dests: Vec<(Ref, XyzDestination)>,
     page_tree_ref: Option<Ref>,
     page_infos: Vec<PageInfo>,
     pages: Vec<(Ref, InternalPage)>,
@@ -358,15 +376,24 @@ impl PDFGlyph {
 
 impl SerializerContext {
     pub fn new(mut serialize_settings: SerializeSettings) -> Self {
-        // If the validator requires/prefers no device color spaces
-        // set it to true, even if the user didn't set it.
+        // Override flags as required by the validator
         serialize_settings.no_device_cs |= serialize_settings.validator.requires_no_device_cs();
         serialize_settings.enable_tagging |= serialize_settings.validator.requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
 
+        if !serialize_settings
+            .validator
+            .compatible_with_version(serialize_settings.pdf_version)
+        {
+            serialize_settings.pdf_version = serialize_settings.validator.recommended_version();
+        }
+
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
+            named_destinations: HashMap::new(),
+            used_named_destinations: BTreeSet::new(),
+            xyz_dests: Vec::new(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
@@ -428,6 +455,11 @@ impl SerializerContext {
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub fn add_named_destination(&mut self, nd: NamedDestination, location: XyzDestination) {
+        let dest_ref = self.add_xyz_dest(location);
+        self.named_destinations.insert(nd, dest_ref);
     }
 
     pub fn set_tag_tree(&mut self, root: TagTree) {
@@ -494,6 +526,7 @@ impl SerializerContext {
 
     #[cfg(feature = "raster-images")]
     pub fn add_image(&mut self, image: Image) -> Ref {
+        // TODO: Deduplicate
         let hash = image.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
@@ -504,6 +537,12 @@ impl SerializerContext {
             self.chunk_container.images.push(chunk);
             root_ref
         }
+    }
+
+    pub fn add_xyz_dest(&mut self, dest: XyzDestination) -> Ref {
+        let root_ref = self.new_ref();
+        self.xyz_dests.push((root_ref, dest));
+        root_ref
     }
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
@@ -634,18 +673,6 @@ impl SerializerContext {
     }
 
     pub fn finish(mut self) -> KrillaResult<Pdf> {
-        if !self
-            .serialize_settings
-            .validator
-            .compatible_with_version(self.serialize_settings.pdf_version)
-        {
-            return Err(KrillaError::UserError(format!(
-                "{} is not compatible with export mode {}",
-                self.serialize_settings.pdf_version.as_str(),
-                self.serialize_settings.validator.as_str()
-            )));
-        }
-
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use `std::mem::take` to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
@@ -712,6 +739,12 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
+        let xyz_dests = std::mem::take(&mut self.xyz_dests);
+        for (ref_, dest) in &xyz_dests {
+            let chunk = dest.serialize(&mut self, *ref_)?;
+            self.chunk_container.destinations.push(chunk);
+        }
+
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
@@ -726,7 +759,7 @@ impl SerializerContext {
                 &mut parent_tree_map,
                 &mut id_tree_map,
                 struct_tree_root_ref,
-            );
+            )?;
             self.chunk_container.struct_elements = struct_elems;
 
             let mut chunk = Chunk::new();
@@ -753,8 +786,11 @@ impl SerializerContext {
 
                         for mcid in 0..num_mcids {
                             let rci = PageTagIdentifier::new(index, mcid);
-                            // TODO: Graceful handling
-                            refs.item(parent_tree_map.get(&rci.into()).unwrap());
+                            refs.item(parent_tree_map.get(&rci.into()).ok_or(
+                                KrillaError::UserError(
+                                    "a identifier doesn't appear in the tag tree".to_string(),
+                                ),
+                            )?);
                         }
 
                         refs.finish();
@@ -801,25 +837,26 @@ impl SerializerContext {
         }
 
         let chunk_container = std::mem::take(&mut self.chunk_container);
-        let serialized = chunk_container.finish(&mut self);
+        let serialized = chunk_container.finish(&mut self)?;
+        self.limits.merge(serialized.limits());
 
-        if serialized.limits().str_len() > STR_LEN {
+        if self.limits.str_len() > STR_LEN {
             self.register_validation_error(ValidationError::TooLongString);
         }
 
-        if serialized.limits().name_len() > NAME_LEN {
+        if self.limits.name_len() > NAME_LEN {
             self.register_validation_error(ValidationError::TooLongName);
         }
 
-        if serialized.limits().real() > MAX_FLOAT {
+        if self.limits.real() > MAX_FLOAT {
             self.register_validation_error(ValidationError::TooLargeFloat);
         }
 
-        if serialized.limits().array_len() > ARRAY_LEN {
+        if self.limits.array_len() > ARRAY_LEN {
             self.register_validation_error(ValidationError::TooLongArray);
         }
 
-        if serialized.limits().dict_entries() > DICT_LEN {
+        if self.limits.dict_entries() > DICT_LEN {
             self.register_validation_error(ValidationError::TooLongDictionary);
         }
 
@@ -830,7 +867,6 @@ impl SerializerContext {
         // Just a sanity check.
         assert!(self.font_map.is_empty());
         assert!(self.pages.is_empty());
-        // TODO: add check that chunk container is empty
 
         Ok(serialized)
     }

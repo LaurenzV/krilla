@@ -15,7 +15,7 @@ use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
 
 const SUBSET_TAG_LEN: usize = 6;
-const IDENTITY_H: &str = "Identity-H";
+pub(crate) const IDENTITY_H: &str = "Identity-H";
 pub(crate) const CMAP_NAME: Name = Name(b"Custom");
 pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo {
     registry: Str(b"Adobe"),

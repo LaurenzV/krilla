@@ -161,6 +161,7 @@ impl From<Image> for Resource {
 }
 
 // TODO: Overthink this design
+// TODO: Validate ICC profiles
 impl From<ICCBasedColorSpace<3>> for Resource {
     fn from(_: ICCBasedColorSpace<3>) -> Self {
         Self::Rgb
@@ -377,7 +378,6 @@ where
 
 pub type ResourceNumber = u32;
 
-// TODO: Are those ICC profiles good to use?
 /// The ICC v4 profile for the SRGB color space.
 static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))));

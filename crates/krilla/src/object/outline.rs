@@ -21,7 +21,8 @@
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::SerializerContext;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use pdf_writer::writers::OutlineItem;
+use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 /// An outline.
 ///
@@ -37,6 +38,40 @@ impl Default for Outline {
     }
 }
 
+trait Outlineable {
+    fn first(&mut self, item: Ref) -> &mut Self;
+    fn last(&mut self, item: Ref) -> &mut Self;
+    fn count(&mut self, count: i32) -> &mut Self;
+}
+
+impl Outlineable for pdf_writer::writers::Outline<'_> {
+    fn first(&mut self, item: Ref) -> &mut Self {
+        self.first(item)
+    }
+
+    fn last(&mut self, item: Ref) -> &mut Self {
+        self.last(item)
+    }
+
+    fn count(&mut self, count: i32) -> &mut Self {
+        self.count(count)
+    }
+}
+
+impl Outlineable for OutlineItem<'_> {
+    fn first(&mut self, item: Ref) -> &mut Self {
+        self.first(item)
+    }
+
+    fn last(&mut self, item: Ref) -> &mut Self {
+        self.last(item)
+    }
+
+    fn count(&mut self, count: i32) -> &mut Self {
+        self.count(count)
+    }
+}
+
 impl Outline {
     /// Create a new, empty outline.
     pub fn new() -> Self {
@@ -48,44 +83,20 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializerContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];
 
-        let mut outline = chunk.outline(root_ref);
-
-        if !self.children.is_empty() {
-            let first = sc.new_ref();
-            let mut last = first;
-
-            let mut prev = None;
-            let mut cur = Some(first);
-
-            for i in 0..self.children.len() {
-                let next = if i < self.children.len() - 1 {
-                    Some(sc.new_ref())
-                } else {
-                    None
-                };
-
-                last = cur.unwrap();
-
-                sub_chunks.push(self.children[i].serialize(sc, root_ref, last, next, prev)?);
-
-                prev = cur;
-                cur = next;
-            }
-
-            outline.first(first);
-            outline.last(last);
-            outline.count(i32::try_from(self.children.len()).unwrap());
-        }
-
+        let mut outline = chunk.outline(root);
+        serialize_children(
+            &self.children,
+            root,
+            &mut sub_chunks,
+            sc,
+            &mut outline,
+            false,
+        )?;
         outline.finish();
 
         for sub_chunk in sub_chunks {
@@ -152,39 +163,21 @@ impl OutlineNode {
             outline_entry.prev(prev);
         }
 
-        if !self.children.is_empty() {
-            let first = sc.new_ref();
-            let mut last = first;
-
-            let mut prev = None;
-            let mut cur = Some(first);
-
-            // TODO: Deduplicate
-            for i in 0..self.children.len() {
-                let next = if i < self.children.len() - 1 {
-                    Some(sc.new_ref())
-                } else {
-                    None
-                };
-
-                last = cur.unwrap();
-
-                sub_chunks.push(self.children[i].serialize(sc, root, last, next, prev)?);
-
-                prev = cur;
-                cur = next;
-            }
-
-            outline_entry.first(first);
-            outline_entry.last(last);
-            outline_entry.count(-i32::try_from(self.children.len()).unwrap());
-        }
+        serialize_children(
+            &self.children,
+            root,
+            &mut sub_chunks,
+            sc,
+            &mut outline_entry,
+            true,
+        )?;
 
         if !self.text.is_empty() {
             outline_entry.title(TextStr(&self.text));
         }
 
-        self.destination.serialize(sc, outline_entry.dest())?;
+        let dest_ref = sc.add_xyz_dest(self.destination.clone());
+        outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
 
@@ -194,6 +187,49 @@ impl OutlineNode {
 
         Ok(chunk)
     }
+}
+
+fn serialize_children(
+    children: &[OutlineNode],
+    root: Ref,
+    sub_chunks: &mut Vec<Chunk>,
+    sc: &mut SerializerContext,
+    outlineable: &mut impl Outlineable,
+    negate_count: bool,
+) -> KrillaResult<()> {
+    if !children.is_empty() {
+        let first = sc.new_ref();
+        let mut last = first;
+
+        let mut prev = None;
+        let mut cur = Some(first);
+
+        for i in 0..children.len() {
+            let next = if i < children.len() - 1 {
+                Some(sc.new_ref())
+            } else {
+                None
+            };
+
+            last = cur.unwrap();
+
+            sub_chunks.push(children[i].serialize(sc, root, last, next, prev)?);
+
+            prev = cur;
+            cur = next;
+        }
+
+        outlineable.first(first);
+        outlineable.last(last);
+
+        let mut count = i32::try_from(children.len()).unwrap();
+        if negate_count {
+            count = -count;
+        }
+        outlineable.count(count);
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

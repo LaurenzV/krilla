@@ -118,6 +118,7 @@
 
 // TODO: Other notes: broken links should use quadpoint (14.8.4.4.2)
 
+use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
@@ -629,14 +630,19 @@ impl Node {
         parent: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
-    ) -> Option<Reference> {
+    ) -> KrillaResult<Option<Reference>> {
         match self {
-            Node::Group(g) => {
-                Some(g.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems))
-            }
+            Node::Group(g) => Ok(Some(g.serialize(
+                sc,
+                parent_tree_map,
+                id_tree,
+                parent,
+                note_id,
+                struct_elems,
+            )?)),
             Node::Leaf(ci) => match ci.0 {
-                IdentifierInner::Real(rci) => Some(Reference::ContentIdentifier(rci)),
-                IdentifierInner::Dummy => None,
+                IdentifierInner::Real(rci) => Ok(Some(Reference::ContentIdentifier(rci))),
+                IdentifierInner::Dummy => Ok(None),
             },
         }
     }
@@ -690,13 +696,17 @@ impl TagGroup {
         parent: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
-    ) -> Reference {
+    ) -> KrillaResult<Reference> {
         let root_ref = sc.new_ref();
-        let children_refs = self
-            .children
-            .iter()
-            .flat_map(|n| n.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems))
-            .collect::<Vec<_>>();
+        let mut children_refs = vec![];
+
+        for child in &self.children {
+            let serialized =
+                child.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems)?;
+            if let Some(ref_) = serialized {
+                children_refs.push(ref_);
+            }
+        }
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
@@ -729,8 +739,7 @@ impl TagGroup {
                 let id = format!("Note {}", note_id);
                 *note_id += 1;
                 id_tree.insert(id.clone(), root_ref);
-                // TODO: Update this with pdf-writer API once updated
-                struct_elem.pair(Name(b"ID"), Str(id.as_bytes()));
+                struct_elem.id(Str(id.as_bytes()));
             }
             _ => {}
         }
@@ -741,11 +750,11 @@ impl TagGroup {
             children_refs,
             parent_tree_map,
             &mut struct_elem,
-        );
+        )?;
         struct_elem.finish();
         struct_elems.push(chunk);
 
-        Reference::Ref(root_ref)
+        Ok(Reference::Ref(root_ref))
     }
 }
 
@@ -772,7 +781,7 @@ impl TagTree {
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree_map: &mut BTreeMap<String, Ref>,
         struct_tree_ref: Ref,
-    ) -> (Ref, Vec<Chunk>) {
+    ) -> KrillaResult<(Ref, Vec<Chunk>)> {
         let root_ref = sc.new_ref();
         let mut struct_elems = vec![];
 
@@ -781,20 +790,22 @@ impl TagTree {
         // the IDs for multiple types of struct elements in the future.
         let mut note_id = 1;
 
-        let children_refs = self
-            .children
-            .iter()
-            .flat_map(|n| {
-                n.serialize(
-                    sc,
-                    parent_tree_map,
-                    id_tree_map,
-                    root_ref,
-                    &mut note_id,
-                    &mut struct_elems,
-                )
-            })
-            .collect::<Vec<_>>();
+        let mut children_refs = vec![];
+
+        for child in &self.children {
+            let serialized = child.serialize(
+                sc,
+                parent_tree_map,
+                id_tree_map,
+                root_ref,
+                &mut note_id,
+                &mut struct_elems,
+            )?;
+
+            if let Some(ref_) = serialized {
+                children_refs.push(ref_);
+            }
+        }
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.indirect(root_ref).start::<StructElement>();
@@ -806,7 +817,7 @@ impl TagTree {
             children_refs,
             parent_tree_map,
             &mut struct_elem,
-        );
+        )?;
 
         struct_elem.finish();
         struct_elems.push(chunk);
@@ -815,7 +826,7 @@ impl TagTree {
         // of in reverse.
         struct_elems = struct_elems.into_iter().rev().collect::<Vec<_>>();
 
-        (root_ref, struct_elems)
+        Ok((root_ref, struct_elems))
     }
 }
 
@@ -825,7 +836,7 @@ fn serialize_children(
     children_refs: Vec<Reference>,
     parent_tree_map: &mut HashMap<IdentifierType, Ref>,
     struct_elem: &mut StructElement,
-) {
+) -> KrillaResult<()> {
     // We can define a /Pg element on the struct element. If a marked content reference
     // is part of the same page as that entry, we can just write the mcid, otherwise, we
     // need to write a full marked content reference.
@@ -839,44 +850,73 @@ fn serialize_children(
             Reference::Ref(r) => {
                 struct_children.struct_element(r);
             }
-            Reference::ContentIdentifier(it) => {
-                match it {
-                    IdentifierType::PageIdentifier(pi) => {
-                        // TODO: Error handling
-                        let page_ref = sc.page_infos()[pi.page_index].ref_;
+            Reference::ContentIdentifier(it) => match it {
+                IdentifierType::PageIdentifier(pi) => {
+                    let page_ref = sc
+                            .page_infos()
+                            .get(pi.page_index)
+                            .ok_or(KrillaError::UserError(format!(
+                                "tag tree contains identifier from page {}, but document only has {} pages",
+                                pi.page_index + 1,
+                                sc.page_infos().len()
+                            )))?
+                            .ref_;
 
-                        if struct_page_ref.is_none() {
-                            struct_page_ref = Some(page_ref);
-                        }
-
-                        // TODO: Ensure that pi doesn't already have a parent.
-                        parent_tree_map.insert(pi.into(), root_ref);
-
-                        if struct_page_ref == Some(page_ref) {
-                            struct_children.marked_content_id(pi.mcid);
-                        } else {
-                            struct_children
-                                .marked_content_ref()
-                                .marked_content_id(pi.mcid)
-                                .page(page_ref);
-                        }
+                    if struct_page_ref.is_none() {
+                        struct_page_ref = Some(page_ref);
                     }
-                    IdentifierType::AnnotationIdentifier(a) => {
-                        // TODO: Error handling
-                        let page_ref = sc.page_infos()[a.page_index].ref_;
-                        let annotation_ref =
-                            sc.page_infos()[a.page_index].annotations[a.annot_index];
 
-                        // TODO: Ensure that pi doesn't already have a parent.
-                        parent_tree_map.insert(a.into(), annotation_ref);
+                    if parent_tree_map.contains_key(&pi.into()) {
+                        return Err(KrillaError::UserError(
+                            "an identifier appears twice in the tag tree".to_string(),
+                        ));
+                    }
 
+                    parent_tree_map.insert(pi.into(), root_ref);
+
+                    if struct_page_ref == Some(page_ref) {
+                        struct_children.marked_content_id(pi.mcid);
+                    } else {
                         struct_children
-                            .object_ref()
-                            .page(page_ref)
-                            .object(annotation_ref);
+                            .marked_content_ref()
+                            .marked_content_id(pi.mcid)
+                            .page(page_ref);
                     }
                 }
-            }
+                IdentifierType::AnnotationIdentifier(ai) => {
+                    let page_info =
+                        sc.page_infos()
+                            .get(ai.page_index)
+                            .ok_or(KrillaError::UserError(format!(
+                        "tag tree contains identifier from page {}, but document only has {} pages",
+                        ai.page_index + 1,
+                        sc.page_infos().len()
+                    )))?;
+
+                    let page_ref = page_info.ref_;
+                    let annotation_ref =
+                            *page_info.annotations
+                                .get(ai.annot_index)
+                                .ok_or(KrillaError::UserError(format!(
+                                    "tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
+                                    ai.annot_index + 1,
+                                    ai.page_index + 1,
+                                    page_info.annotations.len()
+                                )))?;
+
+                    if parent_tree_map.contains_key(&ai.into()) {
+                        return Err(KrillaError::UserError(
+                            "an identifier appears twice in the tag tree".to_string(),
+                        ));
+                    }
+                    parent_tree_map.insert(ai.into(), annotation_ref);
+
+                    struct_children
+                        .object_ref()
+                        .page(page_ref)
+                        .object(annotation_ref);
+                }
+            },
         }
     }
     struct_children.finish();
@@ -884,12 +924,15 @@ fn serialize_children(
     if let Some(spr) = struct_page_ref {
         struct_elem.page(spr);
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use crate::action::{Action, LinkAction};
     use crate::annotation::{LinkAnnotation, Target};
+    use crate::error::KrillaError;
     use crate::font::Font;
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
@@ -1161,5 +1204,79 @@ mod tests {
         tag_tree.push(fn_group_2);
 
         document.set_tag_tree(tag_tree);
+    }
+
+    #[test]
+    fn tagging_page_identifer_appears_twice() {
+        let mut document = Document::new();
+        let mut tag_tree = TagTree::new();
+        let mut fn_group_1 = TagGroup::new(Tag::P);
+        let mut fn_group_2 = TagGroup::new(Tag::P);
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let id1 = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), green_fill(1.0));
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        fn_group_1.push(id1);
+        fn_group_2.push(id1);
+        tag_tree.push(fn_group_1);
+        tag_tree.push(fn_group_2);
+
+        document.set_tag_tree(tag_tree);
+
+        assert!(matches!(document.finish(), Err(KrillaError::UserError(_))))
+    }
+
+    #[test]
+    fn tagging_annotation_identifer_appears_twice() {
+        let mut document = Document::new();
+        let mut tag_tree = TagTree::new();
+        let mut fn_group_1 = TagGroup::new(Tag::P);
+        let mut fn_group_2 = TagGroup::new(Tag::P);
+
+        let mut page = document.start_page();
+        let link_id = page.add_tagged_annotation(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
+            )
+            .into(),
+        );
+        page.finish();
+
+        fn_group_1.push(link_id);
+        fn_group_2.push(link_id);
+        tag_tree.push(fn_group_1);
+        tag_tree.push(fn_group_2);
+
+        document.set_tag_tree(tag_tree);
+
+        assert!(matches!(document.finish(), Err(KrillaError::UserError(_))))
+    }
+
+    #[test]
+    fn tagging_missing_identifier_in_tree() {
+        let mut document = Document::new();
+        let tag_tree = TagTree::new();
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let _ = surface.start_tagged(ContentTag::Other);
+        surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), green_fill(1.0));
+        surface.end_tagged();
+
+        surface.finish();
+        page.finish();
+
+        document.set_tag_tree(tag_tree);
+
+        assert!(matches!(document.finish(), Err(KrillaError::UserError(_))))
     }
 }

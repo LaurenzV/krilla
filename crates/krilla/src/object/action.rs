@@ -6,20 +6,36 @@
 //! the only available action is the link action, which allows you to specify a link that
 //! should be opened, when activating the action.
 
+use crate::destination::Destination;
+use crate::error::KrillaResult;
+use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
-use pdf_writer::Str;
+use pdf_writer::{Name, Str};
 
 /// A type of action.
 pub enum Action {
     /// A link action.
+    // TODO: Replace this with string
     Link(LinkAction),
+    /// A go-to action.
+    Goto(Destination),
 }
 
 impl Action {
-    pub(crate) fn serialize(&self, action: pdf_writer::writers::Action) {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializerContext,
+        mut action: pdf_writer::writers::Action,
+    ) -> KrillaResult<()> {
         match self {
             Action::Link(link) => link.serialize(action),
-        }
+            Action::Goto(dest) => {
+                let dest_entry = action.action_type(ActionType::GoTo).insert(Name(b"D"));
+                dest.serialize(sc, dest_entry)?
+            }
+        };
+
+        Ok(())
     }
 }
 
@@ -48,5 +64,3 @@ impl LinkAction {
             .uri(Str(self.uri.as_bytes()));
     }
 }
-
-// No tests here, because we test through `Annotation`.

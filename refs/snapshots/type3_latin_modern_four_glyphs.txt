@@ -166,12 +166,15 @@ endobj
 5 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /GZEPTF+LMRoman10-Regular
+  /FontName /LMRoman10-Regular
   /Flags 131076
   /FontBBox [0 -22 736 705]
   /ItalicAngle 0
   /Ascent 705
   /Descent -22
+  /FontFamily (LMRoman10-Regular)
+  /FontStretch /Normal
+  /FontWeight 400
 >>
 endobj
 
@@ -182,7 +185,7 @@ endobj
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
   >>
-  /Name /GZEPTF+LMRoman10-Regular
+  /Name /LMRoman10-Regular
   /FontBBox [0 -22 736 705]
   /ToUnicode 7 0 R
   /FontMatrix [0.001 0 0 0.001 0 0]

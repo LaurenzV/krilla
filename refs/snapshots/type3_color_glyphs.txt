@@ -66,12 +66,15 @@ endobj
 6 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /FLGXUR+TwitterColorEmojiSVGinOT
+  /FontName /TwitterColorEmojiSVGinOT
   /Flags 131076
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
   /ItalicAngle 0
   /Ascent 1645.15
   /Descent -402.84998
+  /FontFamily (TwitterColorEmojiSVGinOT)
+  /FontStretch /Normal
+  /FontWeight 400
 >>
 endobj
 
@@ -86,7 +89,7 @@ endobj
       /x1 10 0 R
     >>
   >>
-  /Name /FLGXUR+TwitterColorEmojiSVGinOT
+  /Name /TwitterColorEmojiSVGinOT
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
   /ToUnicode 8 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
@@ -314,17 +317,17 @@ xref
 0000000424 00000 n
 0000000493 00000 n
 0000000562 00000 n
-0000000788 00000 n
-0000001328 00000 n
-0000002040 00000 n
-0000003413 00000 n
-0000004635 00000 n
+0000000863 00000 n
+0000001396 00000 n
+0000002108 00000 n
+0000003481 00000 n
+0000004703 00000 n
 trailer
 <<
   /Size 12
   /Root 11 0 R
-  /ID [(VIwtRaYnUe6ibh7FW41aFg==) (VIwtRaYnUe6ibh7FW41aFg==)]
+  /ID [(9U+VHGanWh6hFo4etA9U4A==) (9U+VHGanWh6hFo4etA9U4A==)]
 >>
 startxref
-4690
+4758
 %%EOF
