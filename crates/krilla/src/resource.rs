@@ -161,6 +161,7 @@ impl From<Image> for Resource {
 }
 
 // TODO: Overthink this design
+// TODO: Validate ICC profiles
 impl From<ICCBasedColorSpace<3>> for Resource {
     fn from(_: ICCBasedColorSpace<3>) -> Self {
         Self::Rgb
