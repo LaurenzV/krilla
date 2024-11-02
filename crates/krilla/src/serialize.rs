@@ -43,9 +43,7 @@ pub struct SvgSettings {
 
 impl Default for SvgSettings {
     fn default() -> Self {
-        Self {
-            embed_text: true,
-        }
+        Self { embed_text: true }
     }
 }
 

@@ -6,10 +6,7 @@ use tiny_skia_path::{Size, Transform};
 /// the image.
 ///
 /// Returns `None` if converting the filter was unsuccessful.
-pub fn render(
-    group: &usvg::Group,
-    surface: &mut Surface,
-) -> Option<()> {
+pub fn render(group: &usvg::Group, surface: &mut Surface) -> Option<()> {
     let layer_bbox = group.layer_bounding_box().transform(group.transform())?;
 
     let raster_scale = {
@@ -22,19 +19,26 @@ pub fn render(
         // Note that this is not a 100% accurate, because the `cur_transform` method of surface will
         // only return the transform in the current content stream, so it's not accurate in case we
         // are currently in a XObject. But it's as good as it gets.
-        let actual_bbox = group.layer_bounding_box()
+        let actual_bbox = group
+            .layer_bounding_box()
             .transform(surface.cur_transform())?
             .transform(group.transform())?;
         // Calculate the necessary scale in the x/y direction, and take the maximum of that.
         let scale = {
-            let (x_scale, y_scale) = ((actual_bbox.width() / layer_bbox.width()), (actual_bbox.height() / layer_bbox.height()));
+            let (x_scale, y_scale) = (
+                (actual_bbox.width() / layer_bbox.width()),
+                (actual_bbox.height() / layer_bbox.height()),
+            );
             x_scale.max(y_scale) * DEFAULT_SCALE
         };
 
         let max_scale = {
             // Let's try to avoid generating images that have more than 5000 pixels in either direction.
             const PIXEL_THRESHOLD: f32 = 5000.0;
-            let (x_scale, y_scale) = ((PIXEL_THRESHOLD / layer_bbox.width()), (PIXEL_THRESHOLD / layer_bbox.height()));
+            let (x_scale, y_scale) = (
+                (PIXEL_THRESHOLD / layer_bbox.width()),
+                (PIXEL_THRESHOLD / layer_bbox.height()),
+            );
             // Take the minimum of that.
             x_scale.min(y_scale)
         };

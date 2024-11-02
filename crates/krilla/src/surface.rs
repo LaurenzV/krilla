@@ -161,7 +161,8 @@ impl<'a> Surface<'a> {
     /// Panics if no tagged section has been started.
     pub fn end_tagged(&mut self) {
         if self.page_identifier.is_some() {
-            Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
+            Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
+                .end_marked_content();
         }
     }
 
@@ -445,7 +446,8 @@ impl<'a> Surface<'a> {
                 }
             }
             PushInstruction::ClipPath => {
-                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).pop_clip_path()
+                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
+                    .pop_clip_path()
             }
             PushInstruction::BlendMode => {
                 Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
@@ -521,8 +523,7 @@ impl<'a> Surface<'a> {
     }
 
     pub(crate) fn cur_transform(&self) -> Transform {
-        Self::cur_builder(&self.root_builder, &self.sub_builders)
-            .cur_transform()
+        Self::cur_builder(&self.root_builder, &self.sub_builders).cur_transform()
     }
 
     fn cur_builder_mut<'b>(
@@ -952,16 +953,16 @@ mod tests {
     #[visreg]
     fn svg_with_filter(surface: &mut Surface) {
         let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
-        let tree = usvg::Tree::from_data(&data, &usvg::Options {
-            fontdb: FONTDB.clone(),
-            ..usvg::Options::default()
-        }).unwrap();
+        let tree = usvg::Tree::from_data(
+            &data,
+            &usvg::Options {
+                fontdb: FONTDB.clone(),
+                ..usvg::Options::default()
+            },
+        )
+        .unwrap();
 
-        surface.draw_svg(
-            &tree,
-            tree.size(),
-            SvgSettings::default(),
-        );
+        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
     }
 
     fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
