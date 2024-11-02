@@ -15,7 +15,7 @@ use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource::{grey_icc, rgb_icc, ResourceDictionaryBuilder};
+use crate::resource::{ResourceDictionaryBuilder};
 use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
@@ -675,12 +675,12 @@ impl ContentBuilder {
             .color_space(sc)
         {
             ColorSpace::Rgb => content_builder.rd_builder.register_resource(
-                ICCBasedColorSpace(rgb_icc(&sc.serialize_settings).profile()),
+                ICCBasedColorSpace(sc.serialize_settings.pdf_version.rgb_icc()),
                 sc,
             ),
             ColorSpace::Gray => content_builder
                 .rd_builder
-                .register_resource(ICCBasedColorSpace(grey_icc(&sc.serialize_settings)), sc),
+                .register_resource(ICCBasedColorSpace(sc.serialize_settings.pdf_version.grey_icc()), sc),
             ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
             ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
             ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),

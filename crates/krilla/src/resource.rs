@@ -6,8 +6,6 @@ use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::serialize::SerializerContext;
 use crate::util::NameExt;
-use crate::version::PdfVersion;
-use crate::SerializeSettings;
 use once_cell::sync::Lazy;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers::{FormXObject, Page, Pages, Resources, Type3Font};
@@ -379,45 +377,17 @@ where
 pub type ResourceNumber = u32;
 
 /// The ICC v4 profile for the SRGB color space.
-static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
-    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))));
+pub(crate) static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))).unwrap());
 /// The ICC v2 profile for the SRGB color space.
-static SRGB_V2_ICC: Lazy<ICCProfile<3>> =
-    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v2-magic.icc"))));
+pub(crate) static SRGB_V2_ICC: Lazy<ICCProfile<3>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v2-magic.icc"))).unwrap());
 /// The ICC v4 profile for the sgray color space.
-static GREY_V4_ICC: Lazy<ICCProfile<1>> =
-    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v4.icc"))));
+pub(crate) static GREY_V4_ICC: Lazy<ICCProfile<1>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v4.icc"))).unwrap());
 /// The ICC v2 profile for the sgray color space.
-static GREY_V2_ICC: Lazy<ICCProfile<1>> =
-    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v2-magic.icc"))));
-
-pub fn grey_icc(ss: &SerializeSettings) -> ICCProfile<1> {
-    if ss.pdf_version < PdfVersion::Pdf17 {
-        GREY_V2_ICC.clone()
-    } else {
-        GREY_V4_ICC.clone()
-    }
-}
-
-pub struct SrgbProfile(ICCProfile<3>, &'static str);
-
-impl SrgbProfile {
-    pub fn profile(&self) -> ICCProfile<3> {
-        self.0.clone()
-    }
-
-    pub fn version(&self) -> &str {
-        self.1
-    }
-}
-
-pub fn rgb_icc(ss: &SerializeSettings) -> SrgbProfile {
-    if ss.pdf_version < PdfVersion::Pdf17 {
-        SrgbProfile(SRGB_V2_ICC.clone(), "sRGB v2.1")
-    } else {
-        SrgbProfile(SRGB_V4_ICC.clone(), "sRGB v4.2")
-    }
-}
+pub(crate) static GREY_V2_ICC: Lazy<ICCProfile<1>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v2-magic.icc"))).unwrap());
 
 /// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {

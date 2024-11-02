@@ -14,7 +14,7 @@ use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::{grey_icc, rgb_icc, Resource};
+use crate::resource::{Resource};
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
@@ -175,7 +175,7 @@ impl SerializeSettings {
             no_device_cs: true,
             cmyk_profile: Some(ICCProfile::new(Arc::new(
                 std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-            ))),
+            )).unwrap()),
             ..Self::settings_1()
         }
     }
@@ -192,7 +192,7 @@ impl SerializeSettings {
             validator: Validator::A2_B,
             cmyk_profile: Some(ICCProfile::new(Arc::new(
                 std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-            ))),
+            )).unwrap()),
             ..Self::settings_1()
         }
     }
@@ -600,10 +600,10 @@ impl SerializerContext {
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
             Resource::Rgb => self.add_object(ICCBasedColorSpace(
-                rgb_icc(&self.serialize_settings).profile(),
+                self.serialize_settings.pdf_version.rgb_icc()
             )),
             Resource::Gray => {
-                self.add_object(ICCBasedColorSpace(grey_icc(&self.serialize_settings)))
+                self.add_object(ICCBasedColorSpace( self.serialize_settings.pdf_version.grey_icc()))
             }
             // Unwrap is safe, because we only emit `IccCmyk`
             // if a profile has been set in the first place.
@@ -655,14 +655,14 @@ impl SerializerContext {
 
         let oi_ref = self.new_ref();
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        let icc_profile = rgb_icc(&self.serialize_settings);
+        let icc_profile =  self.serialize_settings.pdf_version.rgb_icc();
 
-        oi.dest_output_profile(self.add_object(icc_profile.profile()))
+        oi.dest_output_profile(self.add_object(icc_profile.clone()))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))
             .registry_name(TextStr(""))
-            .info(TextStr(icc_profile.version()));
+            .info(TextStr(format!("sRGB v{}.{}", icc_profile.metadata().major, icc_profile.metadata().minor).as_str()));
         oi.finish();
 
         let mut array = chunk.indirect(root_ref).array();

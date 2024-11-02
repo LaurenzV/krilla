@@ -260,7 +260,10 @@ pub(crate) enum ColorSpace {
 }
 
 #[derive(Clone)]
-struct Repr(Arc<dyn AsRef<[u8]> + Send + Sync>);
+struct Repr {
+    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    metadata: ICCMetadata
+}
 
 impl Debug for Repr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -270,27 +273,38 @@ impl Debug for Repr {
 
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_ref().as_ref().hash(state);
+        self.data.as_ref().as_ref().hash(state);
+        self.metadata.hash(state);
     }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) enum ICCProfileType {
+pub(crate) enum ICCProfileWrapper {
     Luma(ICCProfile<1>),
     Rgb(ICCProfile<3>),
     Cmyk(ICCProfile<4>),
 }
 
-impl Object for ICCProfileType {
+impl ICCProfileWrapper {
+    pub fn metadata(&self) -> &ICCMetadata {
+        match self {
+            ICCProfileWrapper::Luma(l) => l.metadata(),
+            ICCProfileWrapper::Rgb(r) => r.metadata(),
+            ICCProfileWrapper::Cmyk(c) => c.metadata()
+        }
+    }
+}
+
+impl Object for ICCProfileWrapper {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.icc_profiles)
     }
 
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         match self {
-            ICCProfileType::Luma(l) => l.serialize(sc, root_ref),
-            ICCProfileType::Rgb(r) => r.serialize(sc, root_ref),
-            ICCProfileType::Cmyk(c) => c.serialize(sc, root_ref),
+            ICCProfileWrapper::Luma(l) => l.serialize(sc, root_ref),
+            ICCProfileWrapper::Rgb(r) => r.serialize(sc, root_ref),
+            ICCProfileWrapper::Cmyk(c) => c.serialize(sc, root_ref),
         }
     }
 }
@@ -301,8 +315,25 @@ pub struct ICCProfile<const C: u8>(Arc<Prehashed<Repr>>);
 
 impl<const C: u8> ICCProfile<C> {
     /// Create a new ICC profile.
-    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
-        Self(Arc::new(Prehashed::new(Repr(data))))
+    ///
+    /// Returns `None` if the metadata of the profile couldn't be read or if the
+    /// number of channels of the underlying data does not correspond to the one
+    /// indicated in the constant parameter.
+    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
+        let metadata = ICCMetadata::from_data(data.as_ref().as_ref())?;
+
+        if metadata.color_space.num_components() != C {
+            return None;
+        }
+
+        Some(Self(Arc::new(Prehashed::new(Repr {
+            data,
+            metadata
+        }))))
+    }
+
+    pub(crate) fn metadata(&self) -> &ICCMetadata {
+        &self.0.metadata
     }
 }
 
@@ -314,7 +345,7 @@ impl<const C: u8> Object for ICCProfile<C> {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStream::new_from_binary_data(
-            self.0.deref().0.as_ref().as_ref(),
+            self.0.deref().data.as_ref().as_ref(),
             &sc.serialize_settings,
         );
 
@@ -347,6 +378,97 @@ impl<const C: u8> Object for ICCBasedColorSpace<C> {
         array.finish();
 
         chunk
+    }
+}
+
+#[derive(Clone, Hash, Debug, Eq, PartialEq)]
+pub(crate) enum ICCColorSpace {
+    Xyz,
+    Lab,
+    Luv,
+    Ycbr,
+    Yxy,
+    Lms,
+    Rgb,
+    Gray,
+    Hsv,
+    Hls,
+    Cmyk,
+    Cmy,
+    OneClr,
+    ThreeClr,
+    FourClr,
+    // There are more, but those should be the most important
+    // ones.
+}
+
+impl ICCColorSpace {
+    pub fn num_components(&self) -> u8 {
+        match self {
+            ICCColorSpace::Xyz => 3,
+            ICCColorSpace::Lab => 3,
+            ICCColorSpace::Luv => 3,
+            ICCColorSpace::Ycbr => 3,
+            ICCColorSpace::Yxy => 3,
+            ICCColorSpace::Lms => 3,
+            ICCColorSpace::Rgb => 3,
+            ICCColorSpace::Gray => 1,
+            ICCColorSpace::Hsv => 3,
+            ICCColorSpace::Hls => 3,
+            ICCColorSpace::Cmyk => 4,
+            ICCColorSpace::Cmy => 3,
+            ICCColorSpace::OneClr => 1,
+            ICCColorSpace::ThreeClr => 3,
+            ICCColorSpace::FourClr => 4,
+        }
+    }
+}
+
+impl TryFrom<u32> for ICCColorSpace {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0x58595A20 => Ok(ICCColorSpace::Xyz),
+            0x4C616220 => Ok(ICCColorSpace::Lab),
+            0x4C757620 => Ok(ICCColorSpace::Luv),
+            0x59436272 => Ok(ICCColorSpace::Ycbr),
+            0x59787920 => Ok(ICCColorSpace::Yxy),
+            0x4C4D5320 => Ok(ICCColorSpace::Lms),
+            0x52474220 => Ok(ICCColorSpace::Rgb),
+            0x47524159 => Ok(ICCColorSpace::Gray),
+            0x48535620 => Ok(ICCColorSpace::Hsv),
+            0x484C5320 => Ok(ICCColorSpace::Hls),
+            0x434D594B => Ok(ICCColorSpace::Cmyk),
+            0x434D5920 => Ok(ICCColorSpace::Cmy),
+            0x31434C52 => Ok(ICCColorSpace::OneClr),
+            0x33434C52 => Ok(ICCColorSpace::ThreeClr),
+            0x34434C52 => Ok(ICCColorSpace::FourClr),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Clone, Hash, Debug, Eq, PartialEq)]
+pub(crate) struct ICCMetadata {
+    pub(crate) major: u8,
+    pub(crate) minor: u8,
+    pub(crate) color_space: ICCColorSpace
+}
+
+impl ICCMetadata {
+    pub fn from_data(data: &[u8]) -> Option<Self> {
+        let major = *data.get(8)?;
+        let minor = *data.get(9)? >> 4;
+        let color_space = {
+            let marker = u32::from_be_bytes(data.get(16..20)?.try_into().ok()?);
+            ICCColorSpace::try_from(marker).ok()?
+        };
+        Some(Self {
+            major,
+            minor,
+            color_space
+        })
     }
 }
 
