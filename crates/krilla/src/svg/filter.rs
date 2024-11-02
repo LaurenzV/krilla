@@ -14,7 +14,45 @@ pub fn render(
 ) -> Option<()> {
     let layer_bbox = group.layer_bounding_box().transform(group.transform())?;
 
-    let raster_scale = process_context.svg_settings.filter_scale;
+    let raster_scale = if let Some(filter_scale) = process_context.svg_settings.filter_scale {
+        filter_scale
+    } else {
+        // By default, I think having a scale of 4 in terms of user space units should be enough.
+        // Meaning for example if you have a A4 PDF with dimensions 595x841 and an SVG with a
+        // filter across the whole page, you end up with an image of 2380x3364.
+        const DEFAULT_SCALE: f32 = 4.0;
+        // Find out what dimensions the SVG will actually have in user space units inside of the
+        // PDF.
+        // Note that this is not a 100% accurate, because the `cur_transform` method of surface will
+        // only return the transform in the current content stream, so it's not accurate in case we
+        // are currently in a XObject. But it's as good as it gets.
+        let actual_bbox = group
+            .layer_bounding_box()
+            .transform(surface.cur_transform())?
+            .transform(group.transform())?;
+        // Calculate the necessary scale in the x/y direction, and take the maximum of that.
+        let scale = {
+            let (x_scale, y_scale) = (
+                (actual_bbox.width() / layer_bbox.width()),
+                (actual_bbox.height() / layer_bbox.height()),
+            );
+            x_scale.max(y_scale) * DEFAULT_SCALE
+        };
+
+        let max_scale = {
+            // Let's try to avoid generating images that have more than 5000 pixels in either direction.
+            const PIXEL_THRESHOLD: f32 = 5000.0;
+            let (x_scale, y_scale) = (
+                (PIXEL_THRESHOLD / layer_bbox.width()),
+                (PIXEL_THRESHOLD / layer_bbox.height()),
+            );
+            // Take the minimum of that.
+            x_scale.min(y_scale)
+        };
+
+        // Take whichever is smaller.
+        scale.min(max_scale)
+    };
 
     let pixmap_size = Size::from_wh(
         layer_bbox.width() * raster_scale,

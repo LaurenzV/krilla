@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Small text with filter</title>
+
+    <filter id="filter1">
+        <feGaussianBlur stdDeviation="0.2"/>
+    </filter>
+    <g transform="translate(80, 120) scale(20, 20)">
+        <text font-size="3" filter="url(#filter1)">Hi</text>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

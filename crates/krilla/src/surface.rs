@@ -106,18 +106,18 @@ impl<'a> Surface<'a> {
 
     /// Fill a path.
     pub fn fill_path(&mut self, path: &Path, fill: Fill) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .fill_path(path, fill, self.sc);
     }
 
     pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: Fill, fill_props: bool) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .fill_path_impl(path, fill, self.sc, fill_props)
     }
 
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .stroke_path(path, stroke, self.sc)
     }
 
@@ -135,17 +135,17 @@ impl<'a> Surface<'a> {
                 // about this.
                 ContentTag::Artifact(at) => {
                     if at.requires_properties() {
-                        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                             .start_marked_content_with_properties(self.sc, None, tag);
                     } else {
-                        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                             .start_marked_content(tag.name());
                     }
 
                     Identifier::dummy()
                 }
                 ContentTag::Span(_, _, _, _) | ContentTag::Other => {
-                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                         .start_marked_content_with_properties(self.sc, Some(id.mcid), tag);
                     id.bump().into()
                 }
@@ -161,7 +161,8 @@ impl<'a> Surface<'a> {
     /// Panics if no tagged section has been started.
     pub fn end_tagged(&mut self) {
         if self.page_identifier.is_some() {
-            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).end_marked_content();
+            Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
+                .end_marked_content();
         }
     }
 
@@ -176,7 +177,7 @@ impl<'a> Surface<'a> {
         ur_x: f32,
         ur_y: f32,
     ) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .content_start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
     }
 
@@ -241,7 +242,7 @@ impl<'a> Surface<'a> {
                 PaintMode::Fill(&fill),
             );
         } else {
-            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
+            Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
                 start,
                 self.sc,
                 fill,
@@ -321,7 +322,7 @@ impl<'a> Surface<'a> {
                 PaintMode::Stroke(&stroke),
             );
         } else {
-            Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
+            Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
                 start,
                 self.sc,
                 stroke,
@@ -377,23 +378,23 @@ impl<'a> Surface<'a> {
     /// Concatenate a new transform to the current transformation matrix.
     pub fn push_transform(&mut self, transform: &Transform) {
         self.push_instructions.push(PushInstruction::Transform);
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .concat_transform(transform);
     }
 
     /// Push a new blend mode.
     pub fn push_blend_mode(&mut self, blend_mode: BlendMode) {
         self.push_instructions.push(PushInstruction::BlendMode);
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .set_blend_mode(blend_mode);
     }
 
     /// Push a new clip path.
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.push_instructions.push(PushInstruction::ClipPath);
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .push_clip_path(path, clip_rule);
     }
 
@@ -434,31 +435,32 @@ impl<'a> Surface<'a> {
     pub fn pop(&mut self) {
         match self.push_instructions.pop().unwrap() {
             PushInstruction::Transform => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                     .restore_graphics_state()
             }
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
                     let stream = self.sub_builders.pop().unwrap().finish(self.sc);
-                    Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                    Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                         .draw_opacified(self.sc, o, stream);
                 }
             }
             PushInstruction::ClipPath => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders).pop_clip_path()
+                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
+                    .pop_clip_path()
             }
             PushInstruction::BlendMode => {
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                     .restore_graphics_state()
             }
             PushInstruction::Mask(mask) => {
                 let stream = self.sub_builders.pop().unwrap().finish(self.sc);
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                     .draw_masked(self.sc, *mask, stream)
             }
             PushInstruction::Isolated => {
                 let stream = self.sub_builders.pop().unwrap().finish(self.sc);
-                Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+                Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
                     .draw_isolated(self.sc, stream);
             }
         }
@@ -467,7 +469,7 @@ impl<'a> Surface<'a> {
     #[cfg(feature = "raster-images")]
     /// Draw a new bitmap image.
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .draw_image(image, size, self.sc);
     }
 
@@ -498,7 +500,7 @@ impl<'a> Surface<'a> {
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .draw_shading(shading, self.sc);
     }
 
@@ -516,15 +518,26 @@ impl<'a> Surface<'a> {
     pub fn finish(self) {}
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
-        Self::cur_builder(&mut self.root_builder, &mut self.sub_builders)
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .draw_opacified(self.sc, opacity, stream)
     }
 
-    fn cur_builder<'b>(
+    pub(crate) fn cur_transform(&self) -> Transform {
+        Self::cur_builder(&self.root_builder, &self.sub_builders).cur_transform()
+    }
+
+    fn cur_builder_mut<'b>(
         root_builder: &'b mut ContentBuilder,
         sub_builders: &'b mut [ContentBuilder],
     ) -> &'b mut ContentBuilder {
         sub_builders.last_mut().unwrap_or(root_builder)
+    }
+
+    fn cur_builder<'b>(
+        root_builder: &'b ContentBuilder,
+        sub_builders: &'b [ContentBuilder],
+    ) -> &'b ContentBuilder {
+        sub_builders.last().unwrap_or(root_builder)
     }
 }
 
@@ -935,6 +948,21 @@ mod tests {
         surface.push_transform(&Transform::from_translate(100.0, 0.0));
         surface.draw_svg(&tree, tree.size(), SvgSettings::default());
         surface.pop();
+    }
+
+    #[visreg]
+    fn svg_with_filter(surface: &mut Surface) {
+        let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
+        let tree = usvg::Tree::from_data(
+            &data,
+            &usvg::Options {
+                fontdb: FONTDB.clone(),
+                ..usvg::Options::default()
+            },
+        )
+        .unwrap();
+
+        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
     }
 
     fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {

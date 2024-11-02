@@ -126,8 +126,11 @@ impl ContentBuilder {
     }
 
     fn cur_transform_with_root_transform(&self) -> Transform {
-        self.root_transform
-            .pre_concat(self.graphics_states.cur().transform())
+        self.root_transform.pre_concat(self.cur_transform())
+    }
+
+    pub(crate) fn cur_transform(&self) -> Transform {
+        self.graphics_states.cur().transform()
     }
 
     pub fn save_graphics_state(&mut self) {
