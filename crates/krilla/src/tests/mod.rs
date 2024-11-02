@@ -695,7 +695,14 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
 
     let mut page = d.start_page_with(PageSettings::new(tree.size().width(), tree.size().height()));
     let mut surface = page.surface();
-    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    surface.draw_svg(
+        &tree,
+        tree.size(),
+        SvgSettings {
+            embed_text: true,
+            filter_scale: Some(1.5),
+        },
+    );
     surface.finish();
     page.finish();
 

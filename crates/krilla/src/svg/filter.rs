@@ -1,15 +1,22 @@
 use crate::object::image::Image;
 use crate::surface::Surface;
+use crate::svg::ProcessContext;
 use tiny_skia_path::{Size, Transform};
 
 /// Render a filter into a surface by rasterizing it with `resvg` and drawing
 /// the image.
 ///
 /// Returns `None` if converting the filter was unsuccessful.
-pub fn render(group: &usvg::Group, surface: &mut Surface) -> Option<()> {
+pub fn render(
+    group: &usvg::Group,
+    surface: &mut Surface,
+    process_context: &ProcessContext,
+) -> Option<()> {
     let layer_bbox = group.layer_bounding_box().transform(group.transform())?;
 
-    let raster_scale = {
+    let raster_scale = if let Some(filter_scale) = process_context.svg_settings.filter_scale {
+        filter_scale
+    } else {
         // By default, I think having a scale of 4 in terms of user space units should be enough.
         // Meaning for example if you have a A4 PDF with dimensions 595x841 and an SVG with a
         // filter across the whole page, you end up with an image of 2380x3364.
