@@ -1,7 +1,7 @@
-use pdf_writer::Pdf;
-use xmp_writer::XmpWriter;
 use crate::color::{ICCMetadata, ICCProfile};
 use crate::resource::{GREY_V2_ICC, GREY_V4_ICC, SRGB_V2_ICC, SRGB_V4_ICC};
+use pdf_writer::Pdf;
+use xmp_writer::XmpWriter;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PdfVersion {
@@ -35,7 +35,7 @@ impl PdfVersion {
             PdfVersion::Pdf14 => SRGB_V2_ICC.clone(),
             PdfVersion::Pdf15 => SRGB_V2_ICC.clone(),
             PdfVersion::Pdf16 => SRGB_V2_ICC.clone(),
-            PdfVersion::Pdf17 => SRGB_V4_ICC.clone()
+            PdfVersion::Pdf17 => SRGB_V4_ICC.clone(),
         }
     }
 

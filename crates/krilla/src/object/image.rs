@@ -313,7 +313,11 @@ impl Image {
         };
 
         let icc_ref = self.0.icc().and_then(|ic| {
-            if sc.serialize_settings.pdf_version.supports_icc(ic.metadata()) {
+            if sc
+                .serialize_settings
+                .pdf_version
+                .supports_icc(ic.metadata())
+            {
                 let ref_ = match ic {
                     ICCProfileWrapper::Luma(l) => sc.add_object(ICCBasedColorSpace(l)),
                     ICCProfileWrapper::Rgb(r) => sc.add_object(ICCBasedColorSpace(r)),
@@ -321,7 +325,7 @@ impl Image {
                 };
 
                 Some(ref_)
-            }   else {
+            } else {
                 // Don't embed ICC profiles from images if the current
                 // PDF version does not support it.
                 None

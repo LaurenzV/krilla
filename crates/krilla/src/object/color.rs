@@ -262,7 +262,7 @@ pub(crate) enum ColorSpace {
 #[derive(Clone)]
 struct Repr {
     data: Arc<dyn AsRef<[u8]> + Send + Sync>,
-    metadata: ICCMetadata
+    metadata: ICCMetadata,
 }
 
 impl Debug for Repr {
@@ -290,7 +290,7 @@ impl ICCProfileWrapper {
         match self {
             ICCProfileWrapper::Luma(l) => l.metadata(),
             ICCProfileWrapper::Rgb(r) => r.metadata(),
-            ICCProfileWrapper::Cmyk(c) => c.metadata()
+            ICCProfileWrapper::Cmyk(c) => c.metadata(),
         }
     }
 }
@@ -326,10 +326,7 @@ impl<const C: u8> ICCProfile<C> {
             return None;
         }
 
-        Some(Self(Arc::new(Prehashed::new(Repr {
-            data,
-            metadata
-        }))))
+        Some(Self(Arc::new(Prehashed::new(Repr { data, metadata }))))
     }
 
     pub(crate) fn metadata(&self) -> &ICCMetadata {
@@ -444,7 +441,7 @@ impl TryFrom<u32> for ICCColorSpace {
             0x31434C52 => Ok(ICCColorSpace::OneClr),
             0x33434C52 => Ok(ICCColorSpace::ThreeClr),
             0x34434C52 => Ok(ICCColorSpace::FourClr),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -453,7 +450,7 @@ impl TryFrom<u32> for ICCColorSpace {
 pub(crate) struct ICCMetadata {
     pub(crate) major: u8,
     pub(crate) minor: u8,
-    pub(crate) color_space: ICCColorSpace
+    pub(crate) color_space: ICCColorSpace,
 }
 
 impl ICCMetadata {
@@ -467,7 +464,7 @@ impl ICCMetadata {
         Some(Self {
             major,
             minor,
-            color_space
+            color_space,
         })
     }
 }
