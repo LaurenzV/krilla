@@ -10,7 +10,7 @@
 //! ICC profiles will currently not be embedded, and CMYK images will be naively
 //! converted into the RGB color space.
 
-use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileType, DEVICE_CMYK, DEVICE_RGB};
+use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
 use crate::serialize::{FilterStream, SerializerContext};
@@ -76,7 +76,7 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct SampledRepr {
     image_data: Vec<u8>,
-    icc: Option<ICCProfileType>,
+    icc: Option<ICCProfileWrapper>,
     size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
@@ -86,7 +86,7 @@ struct SampledRepr {
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct JpegRepr {
     data: Vec<u8>,
-    icc: Option<ICCProfileType>,
+    icc: Option<ICCProfileWrapper>,
     size: SizeWrapper,
     bits_per_component: BitsPerComponent,
     image_color_space: ImageColorspace,
@@ -114,7 +114,7 @@ impl Repr {
         }
     }
 
-    fn icc(&self) -> Option<ICCProfileType> {
+    fn icc(&self) -> Option<ICCProfileWrapper> {
         match self {
             Repr::Sampled(s) => s.icc.clone(),
             Repr::Jpeg(j) => j.icc.clone(),
@@ -135,12 +135,14 @@ impl Repr {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<Prehashed<Repr>>);
 
-fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> ICCProfileType {
-    match color_space {
-        ImageColorspace::Rgb => ICCProfileType::Rgb(ICCProfile::new(Arc::new(data))),
-        ImageColorspace::Luma => ICCProfileType::Luma(ICCProfile::new(Arc::new(data))),
-        ImageColorspace::Cmyk => ICCProfileType::Cmyk(ICCProfile::new(Arc::new(data))),
-    }
+fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
+    let wrapper = match color_space {
+        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(Arc::new(data))?),
+        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(Arc::new(data))?),
+        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(Arc::new(data))?),
+    };
+
+    Some(wrapper)
 }
 
 impl Image {
@@ -170,7 +172,7 @@ impl Image {
             .get_info()?
             .icc_profile
             .as_ref()
-            .map(|d| get_icc_profile_type(d.clone(), image_color_space));
+            .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
 
         Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
             image_data,
@@ -207,7 +209,7 @@ impl Image {
             let image_color_space = input_color_space.try_into().ok()?;
             let icc = decoder
                 .icc_profile()
-                .map(|d| get_icc_profile_type(d.clone(), image_color_space));
+                .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
 
             Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
                 icc,
@@ -285,7 +287,7 @@ impl Image {
         let icc = decoder
             .icc_profile()
             .ok()?
-            .map(|d| get_icc_profile_type(d.clone(), image_color_space));
+            .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
 
         let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
 
@@ -310,10 +312,24 @@ impl Image {
             Repr::Jpeg(_) => None,
         };
 
-        let icc_ref = self.0.icc().map(|ic| match ic {
-            ICCProfileType::Luma(l) => sc.add_object(ICCBasedColorSpace(l)),
-            ICCProfileType::Rgb(r) => sc.add_object(ICCBasedColorSpace(r)),
-            ICCProfileType::Cmyk(c) => sc.add_object(ICCBasedColorSpace(c)),
+        let icc_ref = self.0.icc().and_then(|ic| {
+            if sc
+                .serialize_settings
+                .pdf_version
+                .supports_icc(ic.metadata())
+            {
+                let ref_ = match ic {
+                    ICCProfileWrapper::Luma(l) => sc.add_object(ICCBasedColorSpace(l)),
+                    ICCProfileWrapper::Rgb(r) => sc.add_object(ICCBasedColorSpace(r)),
+                    ICCProfileWrapper::Cmyk(c) => sc.add_object(ICCBasedColorSpace(c)),
+                };
+
+                Some(ref_)
+            } else {
+                // Don't embed ICC profiles from images if the current
+                // PDF version does not support it.
+                None
+            }
         });
 
         let serialize_settings = sc.serialize_settings.clone();

@@ -1,3 +1,5 @@
+use crate::color::{ICCMetadata, ICCProfile};
+use crate::resource::{GREY_V2_ICC, GREY_V4_ICC, SRGB_V2_ICC, SRGB_V4_ICC};
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
@@ -25,6 +27,33 @@ impl PdfVersion {
             PdfVersion::Pdf15 => "PDF-1.5",
             PdfVersion::Pdf16 => "PDF-1.6",
             PdfVersion::Pdf17 => "PDF-1.7",
+        }
+    }
+
+    pub(crate) fn rgb_icc(&self) -> ICCProfile<3> {
+        match self {
+            PdfVersion::Pdf14 => SRGB_V2_ICC.clone(),
+            PdfVersion::Pdf15 => SRGB_V2_ICC.clone(),
+            PdfVersion::Pdf16 => SRGB_V2_ICC.clone(),
+            PdfVersion::Pdf17 => SRGB_V4_ICC.clone(),
+        }
+    }
+
+    pub(crate) fn grey_icc(&self) -> ICCProfile<1> {
+        match self {
+            PdfVersion::Pdf14 => GREY_V2_ICC.clone(),
+            PdfVersion::Pdf15 => GREY_V2_ICC.clone(),
+            PdfVersion::Pdf16 => GREY_V2_ICC.clone(),
+            PdfVersion::Pdf17 => GREY_V4_ICC.clone(),
+        }
+    }
+
+    pub(crate) fn supports_icc(&self, metadata: &ICCMetadata) -> bool {
+        match self {
+            PdfVersion::Pdf14 => metadata.major <= 2 && metadata.minor <= 2,
+            PdfVersion::Pdf15 => metadata.major <= 4,
+            PdfVersion::Pdf16 => metadata.major <= 4 && metadata.minor <= 1,
+            PdfVersion::Pdf17 => metadata.major <= 4 && metadata.minor <= 2,
         }
     }
 
