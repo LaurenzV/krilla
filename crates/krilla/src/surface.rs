@@ -952,7 +952,10 @@ mod tests {
     #[visreg]
     fn svg_with_filter(surface: &mut Surface) {
         let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
-        let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+        let tree = usvg::Tree::from_data(&data, &usvg::Options {
+            fontdb: FONTDB.clone(),
+            ..usvg::Options::default()
+        }).unwrap();
 
         surface.draw_svg(
             &tree,
