@@ -36,9 +36,6 @@ use tiny_skia_path::Size;
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
-    /// How much filters, which will be converted to bitmaps, should be scaled. Higher values
-    /// mean better quality, but also bigger file sizes.
-    pub filter_scale: f32,
     /// Whether text should be embedded as properly selectable text. Otherwise,
     /// it will be drawn as outlined paths instead.
     pub embed_text: bool,
@@ -47,7 +44,6 @@ pub struct SvgSettings {
 impl Default for SvgSettings {
     fn default() -> Self {
         Self {
-            filter_scale: 1.5,
             embed_text: true,
         }
     }

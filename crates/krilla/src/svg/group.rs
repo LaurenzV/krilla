@@ -5,7 +5,7 @@ use usvg::Node;
 
 pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !group.filters().is_empty() {
-        filter::render(group, surface, process_context);
+        filter::render(group, surface);
         return;
     }
 
