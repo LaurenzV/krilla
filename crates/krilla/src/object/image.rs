@@ -6,9 +6,6 @@
 //! - JPG
 //! - GIF
 //! - WEBP
-//!
-//! ICC profiles will currently not be embedded, and CMYK images will be naively
-//! converted into the RGB color space.
 
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
@@ -49,8 +46,8 @@ enum ImageColorspace {
 impl ImageColorspace {
     fn num_components(&self) -> u8 {
         match self {
-            ImageColorspace::Rgb => 3,
             ImageColorspace::Luma => 1,
+            ImageColorspace::Rgb => 3,
             ImageColorspace::Cmyk => 4,
         }
     }
@@ -73,6 +70,7 @@ impl TryFrom<ColorSpace> for ImageColorspace {
     }
 }
 
+/// Representation of a raw, decode image.
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct SampledRepr {
     image_data: Vec<u8>,
@@ -83,6 +81,7 @@ struct SampledRepr {
     image_color_space: ImageColorspace,
 }
 
+/// Representation of an encoded jpg image.
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct JpegRepr {
     data: Vec<u8>,
@@ -213,6 +212,7 @@ impl Image {
 
             Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
                 icc,
+                // TODO: Avoid cloning here?
                 data: data.to_vec(),
                 size: SizeWrapper(size),
                 bits_per_component: BitsPerComponent::Eight,

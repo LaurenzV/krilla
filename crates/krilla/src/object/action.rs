@@ -15,7 +15,6 @@ use pdf_writer::{Name, Str};
 /// A type of action.
 pub enum Action {
     /// A link action.
-    // TODO: Replace this with string
     Link(LinkAction),
     /// A go-to action.
     Goto(Destination),

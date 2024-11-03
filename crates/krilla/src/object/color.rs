@@ -221,10 +221,6 @@ pub mod rgb {
             Self::new(255, 255, 255)
         }
 
-        // For gradients, we don't want to coerce to luma if possible, because gradients
-        // require the number of components for each stop to be the same. Because of this
-        // we always use 3 components for RGB and 4 components for CMYK. No automatic
-        // detection of greyscale colors.
         pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
             vec![
                 self.0 as f32 / 255.0,

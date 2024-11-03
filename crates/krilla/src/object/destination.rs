@@ -49,7 +49,7 @@ impl From<NamedDestination> for Destination {
 impl NamedDestination {
     /// Create a new named destination.
     /// Note that named destinations need to be added via
-    /// `add_named_destination` on [`Document`] before being used!
+    /// `add_named_destination` on [`Document`] when being used!
     ///
     /// [`Document`]: crate::Document
     pub fn new(name: String) -> Self {
