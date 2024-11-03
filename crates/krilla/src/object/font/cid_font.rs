@@ -346,6 +346,7 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 mod tests {
     use crate::font::Font;
 
+    use crate::object::font::FontContainer;
     use crate::path::Fill;
     use crate::serialize::SerializerContext;
     use crate::surface::{Surface, TextDirection};
@@ -353,7 +354,6 @@ mod tests {
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
-    use crate::object::font::FontContainer;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {

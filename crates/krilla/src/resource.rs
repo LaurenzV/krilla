@@ -1,3 +1,5 @@
+//! Dealing with PDF resources.
+
 use crate::color::{ICCBasedColorSpace, ICCProfile};
 use crate::object::font::FontIdentifier;
 #[cfg(feature = "raster-images")]

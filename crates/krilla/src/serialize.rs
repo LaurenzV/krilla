@@ -10,6 +10,7 @@ use crate::metadata::Metadata;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::Type3FontMapper;
+use crate::object::font::FontContainer;
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::Object;
@@ -32,7 +33,6 @@ use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use crate::object::font::FontContainer;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]

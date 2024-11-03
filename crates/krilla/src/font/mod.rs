@@ -37,10 +37,10 @@ pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
 
+use crate::content::PdfFont;
 use crate::object::font::PaintMode;
 use skrifa::instance::Location;
 pub use skrifa::GlyphId;
-use crate::content::PdfFont;
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
