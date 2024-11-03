@@ -1,3 +1,4 @@
+use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::font::outline::glyph_path;
 use crate::font::Font;
 use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
@@ -18,7 +19,6 @@ use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use tiny_skia_path::{PathStroker, Rect, Transform};
-use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 
 pub type Gid = u8;
 
@@ -579,6 +579,7 @@ mod tests {
     use crate::color::rgb;
 
     use crate::object::font::type3_font::OwnedCoveredGlyph;
+    use crate::object::font::{FontIdentifier, OwnedPaintMode, Type3Identifier};
     use crate::page::Page;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
@@ -590,7 +591,6 @@ mod tests {
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
-    use crate::object::font::{FontIdentifier, OwnedPaintMode, Type3Identifier};
 
     impl OwnedCoveredGlyph {
         pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode, font_size: f32) -> Self {

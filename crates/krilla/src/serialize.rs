@@ -7,11 +7,12 @@ use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::font::cid_font::CIDFont;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::font::cid_font::CIDFont;
+use crate::object::font::type3_font::{CoveredGlyph, Type3FontMapper};
+use crate::object::font::FontIdentifier;
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::font::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::Resource;
@@ -32,7 +33,6 @@ use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
-use crate::object::font::FontIdentifier;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -361,7 +361,7 @@ pub(crate) struct SerializerContext {
     cur_ref: Ref,
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
-    pub(crate) serialize_settings: SerializeSettings,
+    pub(crate) serialize_settings: Arc<SerializeSettings>,
     pub(crate) limits: Limits,
 }
 
@@ -413,7 +413,7 @@ impl SerializerContext {
             tag_tree: None,
             font_map: HashMap::new(),
             validation_errors: vec![],
-            serialize_settings,
+            serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
         }
     }

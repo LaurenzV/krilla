@@ -34,8 +34,8 @@ use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
-pub use pdf_writer::types::BlendMode;
 use crate::object::font::PaintMode;
+pub use pdf_writer::types::BlendMode;
 
 pub(crate) enum PushInstruction {
     Transform,

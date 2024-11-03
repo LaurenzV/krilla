@@ -372,17 +372,13 @@ impl Image {
             if let Some(icc_ref) = icc_ref {
                 image_x_object.pair(Name(b"ColorSpace"), icc_ref);
             } else {
-                match self.0.color_space() {
-                    ImageColorspace::Rgb => {
-                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
-                    }
-                    ImageColorspace::Luma => {
-                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
-                    }
-                    ImageColorspace::Cmyk => {
-                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_CMYK.to_pdf_name());
-                    }
+                let name = match self.0.color_space() {
+                    ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
+                    ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
+                    ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
                 };
+
+                image_x_object.pair(Name(b"ColorSpace"), name);
             }
 
             // Photoshop CMYK images need to be inverted, see
@@ -412,11 +408,7 @@ impl RegisterableResource<crate::resource::XObject> for Image {}
 
 fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {
-        if cs.num_components() == 2 {
-            Vec::with_capacity(data.len() / 2)
-        } else {
-            Vec::with_capacity(data.len() / 4)
-        }
+        Vec::with_capacity(data.len() / cs.num_components())
     } else {
         Vec::new()
     };
@@ -464,7 +456,12 @@ fn handle_u16_image(
     data: Vec<u16>,
     cs: ColorSpace,
 ) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
-    let mut alphas = Vec::new();
+    let mut alphas = if cs.has_alpha() {
+        // * 2 because we are going from u16 to u8
+        Vec::with_capacity(2 * data.len() / cs.num_components())
+    } else {
+        Vec::new()
+    };
 
     let encoded_image = match cs {
         ColorSpace::RGB => data

@@ -1,3 +1,4 @@
+use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
 use crate::serialize::{FilterStream, SerializerContext};
@@ -13,7 +14,6 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
-use super::{CIDIdentifer, FontIdentifier};
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
