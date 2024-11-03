@@ -28,9 +28,10 @@ In addition to that, the library also supports the following PDF features:
 - Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.
 - Creating document outlines.
 - Setting page labels.
-- Inserting links to webpages or intra-document positions.
+- Annotations, links, (named) destinations.
 - Adding document metadata.
-
+- Creating accessible PDFs via tagged PDF.
+- Support for different PDF versions (1.4, 1.5, 1.6, 1.7) and specific export modes (PDF/A1, PDF/A2, PDF/A3, PDF/UA).
 
 ## Scope
 This crate labels itself as a high-level crate, and this is what it is: It abstracts away most

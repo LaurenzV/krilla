@@ -103,6 +103,8 @@ pub(crate) fn page_root_transform(height: f32) -> Transform {
 
 impl Drop for Page<'_> {
     fn drop(&mut self) {
+        // Since we cannot take ownership in `drop`, just make use `mem::take` to pick
+        // what we need.
         let annotations = std::mem::take(&mut self.annotations);
         let page_settings = std::mem::take(&mut self.page_settings);
 
@@ -209,7 +211,7 @@ impl InternalPage {
                 self.page_settings.surface_size().height(),
             ))
             .unwrap();
-        // Convert to the proper PDF values.
+
         page.media_box(media_box.to_pdf_rect());
 
         if let Some(struct_parent) = self.struct_parent {
@@ -272,6 +274,7 @@ impl PageLabel {
         let mut label = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::PageLabel>();
+
         if let Some(style) = self.style {
             label.style(style);
         }
