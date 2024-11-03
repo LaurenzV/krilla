@@ -3,7 +3,7 @@ use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::content::PdfFont;
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, FontIdentifier, FontInfo};
+use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
@@ -32,6 +32,7 @@ use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::object::font::FontIdentifier;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]

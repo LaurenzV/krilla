@@ -1,5 +1,5 @@
 use crate::color::{ICCBasedColorSpace, ICCProfile};
-use crate::font::FontIdentifier;
+use crate::object::font::FontIdentifier;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::shading_pattern::ShadingPattern;

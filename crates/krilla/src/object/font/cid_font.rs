@@ -1,5 +1,5 @@
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{CIDIdentifer, Font, FontIdentifier};
+use crate::font::Font;
 use crate::serialize::{FilterStream, SerializerContext};
 use crate::util::{hash128, RectExt, SliceExt};
 use crate::validation::ValidationError;
@@ -13,6 +13,7 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::ops::DerefMut;
 use subsetter::GlyphRemapper;
+use super::{CIDIdentifer, FontIdentifier};
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
@@ -28,7 +29,7 @@ pub type Cid = u16;
 /// A CID-keyed font.
 #[derive(Debug, Clone)]
 pub(crate) struct CIDFont {
-    /// The _actual_ underlying font of the CID-keyed font.
+    /// The _actual_ underlying OTF font of the CID-keyed font.
     font: Font,
     /// A mapper that maps GIDs from the original font to CIDs, i.e. the corresponding GID in the font
     /// subset. The subsetter will ensure that for CID-keyed CFF fonts, the CID-to-GID mapping

@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
+use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -33,6 +33,7 @@ use std::sync::Arc;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
+use crate::object::font::{FontIdentifier, PaintMode};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,

@@ -1,7 +1,7 @@
 //! Drawing SVG-based glyphs on a surface.
 
 use crate::color::rgb;
-use crate::font::{Font, PaintMode};
+use crate::font::Font;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::svg;
@@ -9,6 +9,7 @@ use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
 use std::io::Read;
 use usvg::roxmltree;
+use crate::object::font::PaintMode;
 
 /// Draw an SVG-based glyph on a surface.
 pub fn draw_glyph(

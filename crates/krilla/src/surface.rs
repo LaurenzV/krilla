@@ -6,7 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph, PaintMode};
+use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph};
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -35,6 +35,7 @@ use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
 pub use pdf_writer::types::BlendMode;
+use crate::object::font::PaintMode;
 
 pub(crate) enum PushInstruction {
     Transform,
