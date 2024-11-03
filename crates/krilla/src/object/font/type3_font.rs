@@ -579,10 +579,10 @@ mod tests {
     use crate::color::rgb;
 
     use crate::object::font::type3_font::OwnedCoveredGlyph;
-    use crate::object::font::{FontIdentifier, OwnedPaintMode, Type3Identifier};
+    use crate::object::font::{FontContainer, FontIdentifier, OwnedPaintMode, Type3Identifier};
     use crate::page::Page;
     use crate::path::Fill;
-    use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
+    use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{
         red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,

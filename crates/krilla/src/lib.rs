@@ -127,12 +127,12 @@ pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod tagging;
+pub mod validation;
+pub mod version;
 
 pub(crate) mod content;
 #[cfg(test)]
-pub mod tests;
-pub mod validation;
-mod version;
+pub(crate) mod tests;
 
 pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};

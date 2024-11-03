@@ -347,12 +347,13 @@ mod tests {
     use crate::font::Font;
 
     use crate::path::Fill;
-    use crate::serialize::{FontContainer, SerializerContext};
+    use crate::serialize::SerializerContext;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
+    use crate::object::font::FontContainer;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {

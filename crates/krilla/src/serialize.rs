@@ -9,8 +9,7 @@ use crate::image::Image;
 use crate::metadata::Metadata;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
-use crate::object::font::type3_font::{CoveredGlyph, Type3FontMapper};
-use crate::object::font::FontIdentifier;
+use crate::object::font::type3_font::Type3FontMapper;
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::Object;
@@ -33,6 +32,7 @@ use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
+use crate::object::font::FontContainer;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -363,24 +363,6 @@ pub(crate) struct SerializerContext {
     validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: Arc<SerializeSettings>,
     pub(crate) limits: Limits,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) enum PDFGlyph {
-    Type3(u8),
-    Cid(u16),
-}
-
-impl PDFGlyph {
-    pub fn encode_into(&self, slice: &mut Vec<u8>) {
-        match self {
-            PDFGlyph::Type3(cg) => slice.push(*cg),
-            PDFGlyph::Cid(cid) => {
-                slice.push((cid >> 8) as u8);
-                slice.push((cid & 0xff) as u8);
-            }
-        }
-    }
 }
 
 impl SerializerContext {
@@ -899,75 +881,6 @@ impl pdf_writer::Primitive for CSWrapper {
         match self {
             CSWrapper::Ref(r) => r.write(buf),
             CSWrapper::Name(n) => n.write(buf),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum FontContainer {
-    Type3(Type3FontMapper),
-    CIDFont(CIDFont),
-}
-
-impl FontContainer {
-    pub fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
-        match self {
-            FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
-            FontContainer::CIDFont(cid) => cid.get_cid(glyph.glyph_id).map(|_| cid.identifier()),
-        }
-    }
-
-    pub fn get_from_identifier_mut(
-        &mut self,
-        font_identifier: FontIdentifier,
-    ) -> Option<&mut dyn PdfFont> {
-        match self {
-            FontContainer::Type3(t3) => {
-                if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
-                    Some(t3_font)
-                } else {
-                    None
-                }
-            }
-            FontContainer::CIDFont(cid) => {
-                if cid.identifier() == font_identifier {
-                    Some(cid)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
-    pub fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
-        match self {
-            FontContainer::Type3(t3) => {
-                if let Some(t3_font) = t3.font_from_id(font_identifier) {
-                    Some(t3_font)
-                } else {
-                    None
-                }
-            }
-            FontContainer::CIDFont(cid) => {
-                if cid.identifier() == font_identifier {
-                    Some(cid)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
-    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
-        match self {
-            FontContainer::Type3(t3) => {
-                let (identifier, gid) = t3.add_glyph(glyph.to_owned());
-                (identifier, PDFGlyph::Type3(gid))
-            }
-            FontContainer::CIDFont(cid_font) => {
-                let cid = cid_font.add_glyph(glyph.glyph_id);
-                (cid_font.identifier(), PDFGlyph::Cid(cid))
-            }
         }
     }
 }
