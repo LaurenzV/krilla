@@ -1,8 +1,8 @@
 use crate::color::rgb;
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::Stream;
+use crate::serialize::SerializerContext;
+use crate::stream::{FilterStream, Stream};
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};

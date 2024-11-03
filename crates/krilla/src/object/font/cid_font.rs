@@ -1,7 +1,8 @@
 use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::serialize::SerializerContext;
+use crate::stream::FilterStream;
 use crate::util::{hash128, RectExt, SliceExt};
 use crate::validation::ValidationError;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};

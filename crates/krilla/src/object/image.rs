@@ -10,7 +10,8 @@
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::serialize::SerializerContext;
+use crate::stream::FilterStream;
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::{Deref, DerefMut};

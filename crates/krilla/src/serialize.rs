@@ -1,13 +1,12 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
-use crate::content::PdfFont;
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color::{CSWrapper, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::Type3FontMapper;
 use crate::object::font::FontContainer;
@@ -24,12 +23,10 @@ use crate::version::PdfVersion;
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
-use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
-use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
@@ -868,190 +865,4 @@ impl SerializerContext {
 
         Ok(serialized)
     }
-}
-
-#[derive(Copy, Clone)]
-pub enum CSWrapper {
-    Ref(Ref),
-    Name(Name<'static>),
-}
-
-impl pdf_writer::Primitive for CSWrapper {
-    fn write(self, buf: &mut Buf) {
-        match self {
-            CSWrapper::Ref(r) => r.write(buf),
-            CSWrapper::Name(n) => n.write(buf),
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum StreamFilter {
-    Flate,
-    AsciiHex,
-    Dct,
-}
-
-impl StreamFilter {
-    pub(crate) fn to_name(self) -> Name<'static> {
-        match self {
-            Self::AsciiHex => Name(b"ASCIIHexDecode"),
-            Self::Flate => Name(b"FlateDecode"),
-            Self::Dct => Name(b"DCTDecode"),
-        }
-    }
-}
-
-impl StreamFilter {
-    pub fn can_apply(&self) -> bool {
-        match self {
-            StreamFilter::Flate => true,
-            StreamFilter::AsciiHex => true,
-            StreamFilter::Dct => false,
-        }
-    }
-
-    pub fn apply(&self, content: &[u8]) -> Vec<u8> {
-        match self {
-            StreamFilter::Flate => deflate_encode(content),
-            StreamFilter::AsciiHex => hex_encode(content),
-            // Note: We don't actually encode manually with DCT, because
-            // this is only used for JPEG images which are already encoded,
-            // so this shouldn't be called at all.
-            StreamFilter::Dct => panic!("can't apply dct decode"),
-        }
-    }
-}
-
-// Allows us to keep track of the filters that a stream has and
-// apply them in an orderly fashion.
-#[derive(Debug, Clone)]
-pub enum StreamFilters {
-    None,
-    Single(StreamFilter),
-    Multiple(Vec<StreamFilter>),
-}
-
-impl StreamFilters {
-    pub fn add(&mut self, stream_filter: StreamFilter) {
-        match self {
-            StreamFilters::None => *self = StreamFilters::Single(stream_filter),
-            StreamFilters::Single(cur) => {
-                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
-            }
-            StreamFilters::Multiple(cur) => cur.push(stream_filter),
-        }
-    }
-}
-
-pub struct FilterStream<'a> {
-    content: Cow<'a, [u8]>,
-    filters: StreamFilters,
-}
-
-impl<'a> FilterStream<'a> {
-    fn empty(content: &'a [u8]) -> Self {
-        Self {
-            content: Cow::Borrowed(content),
-            filters: StreamFilters::None,
-        }
-    }
-
-    pub fn new_from_content_stream(
-        content: &'a [u8],
-        serialize_settings: &SerializeSettings,
-    ) -> Self {
-        let mut filter_stream = Self::empty(content);
-
-        if serialize_settings.compress_content_streams {
-            filter_stream.add_filter(StreamFilter::Flate);
-
-            if serialize_settings.ascii_compatible {
-                filter_stream.add_filter(StreamFilter::AsciiHex);
-            }
-        }
-
-        filter_stream
-    }
-
-    pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::Flate);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
-        filter_stream
-    }
-
-    pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::Dct);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
-        filter_stream
-    }
-
-    pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
-        filter_stream
-    }
-
-    pub fn add_filter(&mut self, filter: StreamFilter) {
-        if filter.can_apply() {
-            self.content = Cow::Owned(filter.apply(&self.content));
-        }
-
-        self.filters.add(filter);
-    }
-
-    pub fn encoded_data(&self) -> &[u8] {
-        &self.content
-    }
-
-    pub fn write_filters<'b, T>(&self, mut dict: T)
-    where
-        T: DerefMut<Target = Dict<'b>>,
-    {
-        match &self.filters {
-            StreamFilters::None => {}
-            StreamFilters::Single(filter) => {
-                dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
-            }
-            StreamFilters::Multiple(filters) => {
-                dict.deref_mut()
-                    .insert(Name(b"Filter"))
-                    .start::<Array>()
-                    .items(filters.iter().map(|f| f.to_name()).rev());
-            }
-        }
-    }
-}
-
-fn deflate_encode(data: &[u8]) -> Vec<u8> {
-    const COMPRESSION_LEVEL: u8 = 6;
-    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
-}
-
-fn hex_encode(data: &[u8]) -> Vec<u8> {
-    data.iter()
-        .enumerate()
-        .map(|(index, byte)| {
-            let mut formatted = format!("{:02X}", byte);
-            if index % 35 == 34 {
-                formatted.push('\n');
-            }
-            formatted
-        })
-        .collect::<String>()
-        .into_bytes()
 }

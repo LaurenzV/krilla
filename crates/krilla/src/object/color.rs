@@ -40,10 +40,11 @@
 
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::serialize::SerializerContext;
+use crate::stream::FilterStream;
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Buf, Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -515,5 +516,22 @@ mod tests {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
         surface.fill_path(&path, cmyk_fill(1.0));
+    }
+}
+
+/// Stores either the name of one of the default color spaces (i.e. DeviceRGB), or
+/// a reference to a color space in the PDF.
+#[derive(Copy, Clone)]
+pub(crate) enum CSWrapper {
+    Ref(Ref),
+    Name(Name<'static>),
+}
+
+impl pdf_writer::Primitive for CSWrapper {
+    fn write(self, buf: &mut Buf) {
+        match self {
+            CSWrapper::Ref(r) => r.write(buf),
+            CSWrapper::Name(n) => n.write(buf),
+        }
     }
 }

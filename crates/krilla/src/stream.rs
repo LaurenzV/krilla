@@ -29,6 +29,10 @@ use crate::serialize::SerializerContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
 use crate::validation::ValidationError;
+use crate::SerializeSettings;
+use pdf_writer::{Array, Dict, Name};
+use std::borrow::Cow;
+use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
 /// A stream.
@@ -106,4 +110,176 @@ impl<'a> StreamBuilder<'a> {
     pub fn finish(self) -> Stream {
         self.stream
     }
+}
+
+/// A PDF stream filter.
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum StreamFilter {
+    Flate,
+    AsciiHex,
+    Dct,
+}
+
+impl StreamFilter {
+    pub(crate) fn to_name(self) -> Name<'static> {
+        match self {
+            Self::AsciiHex => Name(b"ASCIIHexDecode"),
+            Self::Flate => Name(b"FlateDecode"),
+            Self::Dct => Name(b"DCTDecode"),
+        }
+    }
+}
+
+impl StreamFilter {
+    pub fn can_apply(&self) -> bool {
+        match self {
+            StreamFilter::Flate => true,
+            StreamFilter::AsciiHex => true,
+            StreamFilter::Dct => false,
+        }
+    }
+
+    pub fn apply(&self, content: &[u8]) -> Vec<u8> {
+        match self {
+            StreamFilter::Flate => deflate_encode(content),
+            StreamFilter::AsciiHex => hex_encode(content),
+            // Note: We don't actually encode manually with DCT, because
+            // this is only used for JPEG images which are already encoded,
+            // so this shouldn't be called at all.
+            StreamFilter::Dct => panic!("can't apply dct decode"),
+        }
+    }
+}
+
+/// Allows us to keep track of the filters that a stream has and
+/// apply them in an orderly fashion.
+#[derive(Debug, Clone)]
+pub(crate) enum StreamFilters {
+    None,
+    Single(StreamFilter),
+    Multiple(Vec<StreamFilter>),
+}
+
+impl StreamFilters {
+    pub fn add(&mut self, stream_filter: StreamFilter) {
+        match self {
+            StreamFilters::None => *self = StreamFilters::Single(stream_filter),
+            StreamFilters::Single(cur) => {
+                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
+            }
+            StreamFilters::Multiple(cur) => cur.push(stream_filter),
+        }
+    }
+}
+
+pub(crate) struct FilterStream<'a> {
+    content: Cow<'a, [u8]>,
+    filters: StreamFilters,
+}
+
+impl<'a> FilterStream<'a> {
+    fn empty(content: &'a [u8]) -> Self {
+        Self {
+            content: Cow::Borrowed(content),
+            filters: StreamFilters::None,
+        }
+    }
+
+    pub fn new_from_content_stream(
+        content: &'a [u8],
+        serialize_settings: &SerializeSettings,
+    ) -> Self {
+        let mut filter_stream = Self::empty(content);
+
+        if serialize_settings.compress_content_streams {
+            filter_stream.add_filter(StreamFilter::Flate);
+
+            if serialize_settings.ascii_compatible {
+                filter_stream.add_filter(StreamFilter::AsciiHex);
+            }
+        }
+
+        filter_stream
+    }
+
+    pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream.add_filter(StreamFilter::Flate);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHex);
+        }
+
+        filter_stream
+    }
+
+    pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream.add_filter(StreamFilter::Dct);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHex);
+        }
+
+        filter_stream
+    }
+
+    pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+        let mut filter_stream = Self::empty(content);
+
+        if serialize_settings.ascii_compatible {
+            filter_stream.add_filter(StreamFilter::AsciiHex);
+        }
+
+        filter_stream
+    }
+
+    pub fn add_filter(&mut self, filter: StreamFilter) {
+        if filter.can_apply() {
+            self.content = Cow::Owned(filter.apply(&self.content));
+        }
+
+        self.filters.add(filter);
+    }
+
+    pub fn encoded_data(&self) -> &[u8] {
+        &self.content
+    }
+
+    pub fn write_filters<'b, T>(&self, mut dict: T)
+    where
+        T: DerefMut<Target = Dict<'b>>,
+    {
+        match &self.filters {
+            StreamFilters::None => {}
+            StreamFilters::Single(filter) => {
+                dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
+            }
+            StreamFilters::Multiple(filters) => {
+                dict.deref_mut()
+                    .insert(Name(b"Filter"))
+                    .start::<Array>()
+                    .items(filters.iter().map(|f| f.to_name()).rev());
+            }
+        }
+    }
+}
+
+fn deflate_encode(data: &[u8]) -> Vec<u8> {
+    const COMPRESSION_LEVEL: u8 = 6;
+    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
+}
+
+fn hex_encode(data: &[u8]) -> Vec<u8> {
+    data.iter()
+        .enumerate()
+        .map(|(index, byte)| {
+            let mut formatted = format!("{:02X}", byte);
+            if index % 35 == 34 {
+                formatted.push('\n');
+            }
+            formatted
+        })
+        .collect::<String>()
+        .into_bytes()
 }

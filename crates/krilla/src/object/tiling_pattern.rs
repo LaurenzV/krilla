@@ -1,8 +1,8 @@
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::Stream;
+use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
+use crate::stream::{FilterStream, Stream};
 use crate::util::HashExt;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};

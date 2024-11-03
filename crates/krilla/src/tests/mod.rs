@@ -80,8 +80,6 @@ macro_rules! lazy_font {
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
 #[rustfmt::skip]
-lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
-#[rustfmt::skip]
 lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS_ARABIC, FONT_PATH.join("NotoSansArabic-Regular.ttf"));
@@ -212,16 +210,6 @@ fn write_render_to_store(name: &str, content: &[u8]) {
     let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
     std::fs::write(&path, content).unwrap();
-}
-
-pub fn write_manual_to_store(name: &str, data: &[u8]) {
-    let path = STORE_PATH.clone().join("manual");
-    let _ = std::fs::create_dir_all(&path);
-
-    let pdf_path = path.join(format!("{}.pdf", name));
-    let txt_path = path.join(format!("{}.txt", name));
-    std::fs::write(pdf_path, data).unwrap();
-    std::fs::write(txt_path, data).unwrap();
 }
 
 pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
@@ -550,38 +538,6 @@ pub fn stops_with_2_solid_1() -> Stops {
     .into()
 }
 
-pub fn stops_with_2_solid_2() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::ONE,
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::ONE,
-        },
-    ]
-    .into()
-}
-
-pub fn stops_with_2_opacity() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::new(0.8).unwrap(),
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::new(0.2).unwrap(),
-        },
-    ]
-    .into()
-}
-
 pub fn stops_with_3_solid_1() -> Stops {
     vec![
         Stop {
@@ -608,48 +564,6 @@ pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
         Rect::from_xywh(x, y, w, h).unwrap(),
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )
-    .into()
-}
-
-pub fn stops_with_3_solid_2() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.1).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::ONE,
-        },
-        Stop {
-            offset: NormalizedF32::new(0.5).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::ONE,
-        },
-        Stop {
-            offset: NormalizedF32::new(1.0).unwrap(),
-            color: rgb::Color::new(235, 52, 110),
-            opacity: NormalizedF32::ONE,
-        },
-    ]
-    .into()
-}
-
-pub fn stops_with_3_opacity() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::new(0.4).unwrap(),
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::new(0.8).unwrap(),
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(235, 52, 110),
-            opacity: NormalizedF32::new(0.1).unwrap(),
-        },
-    ]
     .into()
 }
 
