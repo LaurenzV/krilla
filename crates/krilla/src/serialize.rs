@@ -338,10 +338,20 @@ pub(crate) struct PageInfo {
 }
 
 enum StructParentElement {
+    /// The index of the page and the number of marked content IDs present on that page.
     Page(usize, i32),
+    /// The index of the page where the annotation is present, as well as the index of the
+    /// annotation within that one page.
     Annotation(usize, usize),
 }
 
+/// The serializer context is more or less the core piece of krilla. It is passed around
+/// throughout pretty much the whole conversion process, and contains all mutable state
+/// that is needed when writing a PDF file. This includes for example:
+/// - Storing all chunks that are produced.
+/// - The mappings from OTF fonts to CID/Type 3 fonts.
+/// - Annotations used in the document.
+/// etc.
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
