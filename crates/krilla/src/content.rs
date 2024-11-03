@@ -6,12 +6,12 @@ use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::mask::Mask;
-use crate::object::cid_font::CIDFont;
+use crate::object::font::cid_font::CIDFont;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
-use crate::object::type3_font::{CoveredGlyph, Type3Font};
+use crate::object::font::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};

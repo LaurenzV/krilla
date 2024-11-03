@@ -1,6 +1,6 @@
 use crate::font::outline::glyph_path;
 use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
-use crate::object::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
+use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
@@ -568,7 +568,7 @@ mod tests {
 
     use crate::color::rgb;
 
-    use crate::object::type3_font::OwnedCoveredGlyph;
+    use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::page::Page;
     use crate::path::Fill;
     use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};

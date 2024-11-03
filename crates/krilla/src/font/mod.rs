@@ -18,7 +18,7 @@
 
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
-use crate::type3_font::Type3ID;
+use crate::object::font::type3_font::Type3ID;
 use crate::util::{Prehashed, RectWrapper};
 use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
@@ -54,7 +54,7 @@ pub use skrifa::GlyphId;
 /// While an object of this type is associated with an OTF font, it is only associated
 /// with a specific instance, i.e. with specific variation coordinates and with a specific
 /// index for TrueType collections. This means that if you want to use the same font with
-/// different variation axes, you need to create separate instances.
+/// different variation axes, you need to create separate instances of [`Font`].
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Font(Arc<Prehashed<Repr>>);
 
@@ -63,6 +63,8 @@ impl Font {
     /// associated with this font for TrueType collections, otherwise this value should be
     /// set to 0. The location indicates the variation axes that should be associated with
     /// the font.
+    ///
+    /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(
         data: Arc<dyn AsRef<[u8]> + Send + Sync>,
         index: u32,
@@ -150,18 +152,15 @@ impl Font {
             .map(|v| (v.0.as_str(), v.1.get()))
     }
 
-    /// Return the `LocationRef` of the font.
-    pub fn location_ref(&self) -> LocationRef {
+    pub(crate) fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
     }
 
-    /// Return the `FontRef` of the font.
-    pub fn font_ref(&self) -> &FontRef {
+    pub(crate) fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }
 
-    /// Return the underlying data of the font.
-    pub fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
+    pub(crate) fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
         self.0.font_data.clone()
     }
 
@@ -213,7 +212,7 @@ struct Repr {
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // We assume that if the font info is distinct, the font itself is distinct as well. This
-        // strictly doesn't have to be the case, while the font does have a checksum, it's "only" a
+        // doesn't have to be the case: while the font does have a checksum, it's "only" a
         // u32. The proper way would be to hash the whole font data, but this is just too expensive.
         // However, the odds of the checksum AND all font metrics (including font name) being the same
         // with the font being different is diminishingly low.
@@ -334,6 +333,7 @@ pub(crate) fn draw_color_glyph(
     drawn
 }
 
+/// The owned version of `PaintMode`.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum OwnedPaintMode {
     Fill(Fill),
@@ -361,6 +361,8 @@ impl OwnedPaintMode {
     }
 }
 
+/// A wrapper enum for fills/strokes. We use that to keep track whether a Type3 font contains
+/// filled or stroked outlines of a glyph.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum PaintMode<'a> {
     Fill(&'a Fill),

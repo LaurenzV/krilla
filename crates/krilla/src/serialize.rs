@@ -7,11 +7,11 @@ use crate::font::{Font, FontIdentifier, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::cid_font::CIDFont;
+use crate::object::font::cid_font::CIDFont;
 use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
+use crate::object::font::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::Resource;
