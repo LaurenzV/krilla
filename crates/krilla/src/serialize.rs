@@ -328,12 +328,16 @@ impl Default for SerializeSettings {
 }
 
 pub(crate) struct PageInfo {
+    /// The reference of the page in the chunk.
     pub ref_: Ref,
+    /// The page size, necessary so that we can convert from PDF coordinates to
+    /// krilla coordinates.
     pub surface_size: Size,
-    // The refs of the annotations that are used by that page.
-    //
-    // Note that this will be empty be default, and only once we have serialized the pages
-    // will these values be set.
+    /// The refs of the annotations that are used by that page.
+    ///
+    /// Note that this will be empty be default when adding a new `PageInfo` to
+    /// `page_infos` in `SerializerContext`, and only once we actually serialize
+    /// the page will the annotations be populated.
     pub annotations: Vec<Ref>,
 }
 
@@ -359,13 +363,31 @@ pub(crate) struct SerializerContext {
     font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
     xyz_dests: Vec<(Ref, XyzDestination)>,
     page_tree_ref: Option<Ref>,
+    /// Keep track of some necessary information for each page we have written so far.
+    /// This is necessary because in the end, we might for example need to get the Ref
+    /// of specific pages. Another use case is that we need access to the height of a page
+    /// to convert from krilla coordinates to PDF coordinates.
     page_infos: Vec<PageInfo>,
+    /// All the pages we have written so far. Unlike other objects, pages cannot be written
+    /// as soon as they are finished, but we need defer writing to until we call `finish()`.
+    /// The (one?) reason for this is that as part of serializing pages, we also serialize its
+    /// annotations. However, annotations can also reference future pages which have not been
+    /// written yet, and thus do not have a Ref. Because of this, this can only be done in the
+    /// very end.
     pages: Vec<(Ref, InternalPage)>,
     struct_parents: Vec<StructParentElement>,
+    /// The outline of the document, optionally set by the user.
     outline: Option<Outline>,
+    /// Keep track of object hashes and their corresponding reference. This is used for
+    /// caching, so that for example same images will not be embedded twice in the document.
     cached_mappings: HashMap<u128, Ref>,
+    /// The tag tree of the document, optionally set by the user.
     tag_tree: Option<TagTree>,
+    /// The current ref in use. All serializers should use the `new_ref` method (which indirectly
+    /// is based on this field) to generate a new Ref, instead of creating one manually with
+    /// `Ref::new`.
     cur_ref: Ref,
+    /// Collect all chunks that are generated as part of the PDF writing process.
     chunk_container: ChunkContainer,
     validation_errors: Vec<ValidationError>,
     pub(crate) serialize_settings: Arc<SerializeSettings>,
