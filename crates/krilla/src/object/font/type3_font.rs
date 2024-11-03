@@ -48,7 +48,8 @@ impl<'a> CoveredGlyph<'a> {
         if matches!(paint_mode, PaintMode::Fill(_)) {
             // The only reason we need the font size is that
             // when drawing a stroked glyph as a Type3 glyph, we stroke
-            // it using tiny-skia and then draw it as a filled glyph instead.
+            // it using tiny-skia and then draw it as a filled glyph instead. In this case, the
+            // font size is important.
             // This is because stroking pretty much doesn't work with type 3 fonts.
             // For fills, we don't care about the font size, so we always set it to one.
             // so that we don't allocate new glyphs for each font size it is used at.
@@ -102,6 +103,7 @@ impl Type3Font {
         }
     }
 
+    // Unlike CID fonts, the units per em of type 3 fonts does not have to be 1000.
     pub fn unit_per_em(&self) -> f32 {
         self.font.units_per_em()
     }
@@ -169,6 +171,7 @@ impl Type3Font {
                     let mut stream_surface = StreamBuilder::new(sc);
                     let mut surface = stream_surface.surface();
 
+                    // In case this returns `None`, the surface is guaranteed to be empty.
                     let drawn_color_glyph = font::draw_color_glyph(
                         self.font.clone(),
                         SvgSettings::default(),
@@ -429,7 +432,7 @@ impl Type3Font {
                         GlyphId::new(g as u32),
                     )),
                     Some(text) => {
-                        // Keep in sync with CIDFont
+                        // Note: Keep in sync with CIDFont
                         let mut invalid_codepoint = false;
                         let mut private_unicode = false;
 
@@ -473,6 +476,8 @@ impl Type3Font {
 
 pub type Type3ID = usize;
 
+// A font can have multiple Type3 fonts, if more than 256 glyphs are used.
+// We use this struct to keep track of them.
 #[derive(Debug)]
 pub(crate) struct Type3FontMapper {
     font: Font,
@@ -489,6 +494,8 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
+    /// Given a requested glyph coverage, find the corresponding font identifier of the
+    /// font that contains it.
     pub fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
@@ -496,6 +503,8 @@ impl Type3FontMapper {
             .map(|p| self.fonts[p].identifier())
     }
 
+    /// Given a font identifier, return the corresponding Type3 font if it is part of
+    /// that type 3 font mapper.
     pub fn font_from_id(&self, identifier: FontIdentifier) -> Option<&Type3Font> {
         let pos = self
             .fonts

@@ -63,6 +63,8 @@ impl CIDFont {
         self.font.clone()
     }
 
+    // Note that this refers to the units per em in PDF (which is always 1000), and not the
+    // units per em of the underlying font.
     pub fn units_per_em(&self) -> f32 {
         1000.0
     }
@@ -138,6 +140,7 @@ impl CIDFont {
                     "failed to read font subset".to_string(),
                 )
             })?;
+
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
                 data = cff.as_bytes();
             }
@@ -243,7 +246,7 @@ impl CIDFont {
                         GlyphId::new(g as u32),
                     )),
                     Some(text) => {
-                        // Keep in sync with Type3
+                        // Note: Keep in sync with Type3
                         let mut invalid_codepoint = false;
                         let mut private_unicode = false;
 
@@ -281,7 +284,7 @@ impl CIDFont {
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
 
-        let cid_data = {
+        let cid_stream_data = {
             // It's always guaranteed that CIDs start from 0 and are consecutive, so this encoding
             // is very straight-forward.
             let mut bytes = vec![];
@@ -294,7 +297,7 @@ impl CIDFont {
             bytes
         };
 
-        let cid_stream = FilterStream::new_plain(&cid_data, &sc.serialize_settings);
+        let cid_stream = FilterStream::new_plain(&cid_stream_data, &sc.serialize_settings);
         let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
         cid_stream.write_filters(cid_set.deref_mut());
         cid_set.finish();
