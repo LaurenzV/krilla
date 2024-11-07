@@ -1,6 +1,6 @@
 use crate::action::LinkAction;
 use crate::annotation::{Annotation, LinkAnnotation, Target};
-use crate::color::{cmyk, luma, rgb};
+use crate::color::{cmyk, luma, rgb, ICCProfile};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
@@ -27,6 +27,8 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
+use crate::validation::Validator;
+use crate::version::PdfVersion;
 
 #[allow(dead_code)]
 #[rustfmt::skip]
@@ -630,4 +632,179 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
         &pdf,
         ignore_renderer,
     );
+}
+
+#[cfg(test)]
+impl SerializeSettings {
+    pub(crate) fn settings_1() -> Self {
+        Self {
+            ascii_compatible: true,
+            compress_content_streams: false,
+            no_device_cs: false,
+            xmp_metadata: false,
+            force_type3_fonts: false,
+            cmyk_profile: None,
+            validator: Validator::None,
+            enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
+        }
+    }
+
+    pub(crate) fn settings_2() -> Self {
+        Self {
+            no_device_cs: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_4() -> Self {
+        Self {
+            force_type3_fonts: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_5() -> Self {
+        Self {
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_6() -> Self {
+        Self {
+            no_device_cs: true,
+            cmyk_profile: Some(
+                ICCProfile::new(Arc::new(
+                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+                ))
+                    .unwrap(),
+            ),
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_7() -> Self {
+        Self {
+            validator: Validator::A2_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_8() -> Self {
+        Self {
+            validator: Validator::A2_B,
+            cmyk_profile: Some(
+                ICCProfile::new(Arc::new(
+                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+                ))
+                    .unwrap(),
+            ),
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_9() -> Self {
+        Self {
+            validator: Validator::A2_U,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_10() -> Self {
+        Self {
+            validator: Validator::A3_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_11() -> Self {
+        Self {
+            validator: Validator::A3_U,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_12() -> Self {
+        Self {
+            enable_tagging: false,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_13() -> Self {
+        Self {
+            validator: Validator::A2_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_14() -> Self {
+        Self {
+            validator: Validator::A3_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_15() -> Self {
+        Self {
+            validator: Validator::UA1,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_16() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_17() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_18() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            no_device_cs: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_19() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_20() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A1_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_21() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf17,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_22() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A2_B,
+            ..Self::settings_1()
+        }
+    }
 }
