@@ -79,10 +79,10 @@ impl Color {
 
     pub(crate) fn color_space(&self, sc: &mut SerializerContext) -> ColorSpace {
         match self {
-            Color::Rgb(_) => rgb::Color::color_space(sc.serialize_settings.no_device_cs),
-            Color::Luma(_) => luma::Color::color_space(sc.serialize_settings.no_device_cs),
+            Color::Rgb(_) => rgb::Color::color_space(sc.serialize_settings().no_device_cs),
+            Color::Luma(_) => luma::Color::color_space(sc.serialize_settings().no_device_cs),
             Color::Cmyk(_) => {
-                let color_space = cmyk::Color::color_space(&sc.serialize_settings);
+                let color_space = cmyk::Color::color_space(&sc.serialize_settings());
                 if color_space == ColorSpace::DeviceCmyk {
                     sc.register_validation_error(ValidationError::MissingCMYKProfile);
                 }
@@ -340,7 +340,7 @@ impl<const C: u8> Object for ICCProfile<C> {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStream::new_from_binary_data(
             self.0.deref().data.as_ref().as_ref(),
-            &sc.serialize_settings,
+            &sc.serialize_settings(),
         );
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());

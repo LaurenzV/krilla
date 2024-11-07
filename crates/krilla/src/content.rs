@@ -69,7 +69,7 @@ impl ContentBuilder {
 
     pub fn finish(self, sc: &mut SerializerContext) -> Stream {
         let buf = self.content.finish();
-        sc.limits.merge(buf.limits());
+        sc.register_limits(buf.limits());
 
         Stream::new(
             buf.to_bytes(),
@@ -677,11 +677,11 @@ impl ContentBuilder {
             |color: Color, content_builder: &mut ContentBuilder, sc: &mut SerializerContext| {
                 match color.color_space(sc) {
                     ColorSpace::Rgb => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings.pdf_version.rgb_icc()),
+                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.rgb_icc()),
                         sc,
                     ),
                     ColorSpace::Gray => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings.pdf_version.grey_icc()),
+                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.grey_icc()),
                         sc,
                     ),
                     ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),

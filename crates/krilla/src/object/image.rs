@@ -315,7 +315,7 @@ impl Image {
 
         let icc_ref = self.0.icc().and_then(|ic| {
             if sc
-                .serialize_settings
+                .serialize_settings()
                 .pdf_version
                 .supports_icc(ic.metadata())
             {
@@ -333,7 +333,7 @@ impl Image {
             }
         });
 
-        let serialize_settings = sc.serialize_settings.clone();
+        let serialize_settings = sc.serialize_settings().clone();
 
         Deferred::new(move || {
             let mut chunk = Chunk::new();

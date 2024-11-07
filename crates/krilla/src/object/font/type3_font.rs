@@ -270,7 +270,7 @@ impl Type3Font {
 
                     let font_stream = FilterStream::new_from_content_stream(
                         stream.as_slice(),
-                        &sc.serialize_settings,
+                        &sc.serialize_settings(),
                     );
 
                     let stream_ref = sc.new_ref();
@@ -283,7 +283,7 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
+        let descriptor_ref = if sc.serialize_settings().pdf_version >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
         } else {
             None

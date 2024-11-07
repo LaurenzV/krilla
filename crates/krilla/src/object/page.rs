@@ -84,7 +84,7 @@ impl<'a> Page<'a> {
             self.num_mcids = num_mcids;
         });
 
-        let page_identifier = if self.sc.serialize_settings.enable_tagging {
+        let page_identifier = if self.sc.serialize_settings().enable_tagging {
             Some(PageTagIdentifier::new(self.page_index, 0))
         } else {
             None
@@ -150,7 +150,7 @@ impl InternalPage {
         }
 
         let stream_ref = sc.new_ref();
-        let serialize_settings = sc.serialize_settings.clone();
+        let serialize_settings = sc.serialize_settings().clone();
         let stream_resources = std::mem::take(&mut stream.resource_dictionary);
 
         let stream_chunk = Deferred::new(move || {
@@ -219,7 +219,7 @@ impl InternalPage {
 
             // Only required for PDF/UA, but might as well always set it.
             if !self.annotations.is_empty()
-                && sc.serialize_settings.pdf_version >= PdfVersion::Pdf15
+                && sc.serialize_settings().pdf_version >= PdfVersion::Pdf15
             {
                 page.tab_order(TabOrder::StructureOrder);
             }

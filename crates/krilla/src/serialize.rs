@@ -375,6 +375,9 @@ pub(crate) struct SerializerContext {
     /// written yet, and thus do not have a Ref. Because of this, this can only be done in the
     /// very end.
     pages: Vec<(Ref, InternalPage)>,
+    /// This array keeps track of the values we need to write for the struct parent tree. Each
+    /// element can either be from an annotation (identified by page index and annotation index) or
+    /// from a page (identified by page index and the number of mcids on that page).
     struct_parents: Vec<StructParentElement>,
     /// The outline of the document, optionally set by the user.
     outline: Option<Outline>,
@@ -389,9 +392,15 @@ pub(crate) struct SerializerContext {
     cur_ref: Ref,
     /// Collect all chunks that are generated as part of the PDF writing process.
     chunk_container: ChunkContainer,
+    /// All validation errors that are collected as part of the export process.
     validation_errors: Vec<ValidationError>,
-    pub(crate) serialize_settings: Arc<SerializeSettings>,
-    pub(crate) limits: Limits,
+    serialize_settings: Arc<SerializeSettings>,
+    /// The limits created as part of the serialization process. In principle, we could
+    /// just keep track of this in `ChunkContainer`, where all used chunks are stored.
+    /// The only reason why `SerializerContext` needs to know about them is that we also
+    /// need to merge limits from postscript functions, which are not directly accessible
+    /// from the chunk they are written to.
+    limits: Limits,
 }
 
 impl SerializerContext {
@@ -493,6 +502,14 @@ impl SerializerContext {
         if self.serialize_settings.validator.prohibits(&error) {
             self.validation_errors.push(error);
         }
+    }
+
+    pub(crate) fn serialize_settings(&self) -> Arc<SerializeSettings> {
+        self.serialize_settings.clone()
+    }
+
+    pub(crate) fn register_limits(&mut self, limits: &Limits) {
+        self.limits.merge(limits);
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {
@@ -625,8 +642,6 @@ impl SerializerContext {
             Resource::Gray => self.add_object(ICCBasedColorSpace(
                 self.serialize_settings.pdf_version.grey_icc(),
             )),
-            // Unwrap is safe, because we only emit `IccCmyk`
-            // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),
             Resource::ShadingFunction(s) => self.add_object(s),
             Resource::FontIdentifier(f) => {
