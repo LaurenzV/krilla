@@ -3,7 +3,7 @@
 //! # Color spaces
 //!
 //! krilla currently supports three color spaces:
-//! - Rgb
+//! - Rgb (including linear RGB)
 //! - Luma
 //! - CMYK
 //!
@@ -39,7 +39,7 @@
 //! it will fall back to device CMYK.
 
 use crate::object::{ChunkContainerFn, Object};
-use crate::resource::RegisterableResource;
+use crate::resource::{RegisterableResource, Resource};
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::Prehashed;
@@ -79,7 +79,7 @@ impl Color {
 
     pub(crate) fn color_space(&self, sc: &mut SerializerContext) -> ColorSpace {
         match self {
-            Color::Rgb(_) => rgb::Color::color_space(sc.serialize_settings().no_device_cs),
+            Color::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
             Color::Luma(_) => luma::Color::color_space(sc.serialize_settings().no_device_cs),
             Color::Cmyk(_) => {
                 let color_space = cmyk::Color::color_space(&sc.serialize_settings());
@@ -122,7 +122,7 @@ pub mod luma {
 
         pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpace::Gray
+                ColorSpace::Luma
             } else {
                 ColorSpace::DeviceGray
             }
@@ -198,7 +198,7 @@ pub mod rgb {
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8);
+    pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8, pub(crate) bool);
 
     impl Default for Color {
         fn default() -> Self {
@@ -209,7 +209,12 @@ pub mod rgb {
     impl Color {
         /// Create a new RGB color.
         pub fn new(red: u8, green: u8, blue: u8) -> Self {
-            Color(red, green, blue)
+            Color(red, green, blue, false)
+        }
+
+        /// Create a new linear RGB color.
+        pub fn new_linear(red: u8, green: u8, blue: u8) -> Self {
+            Color(red, green, blue, true)
         }
 
         /// Create a black RGB color.
@@ -230,9 +235,17 @@ pub mod rgb {
             ]
         }
 
-        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
+        pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpace {
+            if self.3 {
+                ColorSpace::LinearRgb
+            } else {
+                Color::rgb_color_space(no_device_cs)
+            }
+        }
+
+        pub(crate) fn rgb_color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
-                ColorSpace::Rgb
+                ColorSpace::Srgb
             } else {
                 ColorSpace::DeviceRgb
             }
@@ -251,8 +264,9 @@ pub(crate) enum ColorSpace {
     DeviceRgb,
     DeviceGray,
     DeviceCmyk,
-    Rgb,
-    Gray,
+    Srgb,
+    LinearRgb,
+    Luma,
     Cmyk(ICCBasedColorSpace<4>),
 }
 
@@ -470,6 +484,37 @@ impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<4>
 impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<3> {}
 impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<1> {}
 
+#[derive(Copy, Clone, Hash)]
+pub(crate) struct LinearRgbColorSpace;
+
+impl Object for LinearRgbColorSpace {
+    fn chunk_container(&self) -> ChunkContainerFn {
+        Box::new(|cc| &mut cc.color_spaces)
+    }
+
+    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        let mut chunk = Chunk::new();
+        chunk.color_space(root_ref).cal_rgb(
+            [0.9505, 1.0, 1.0888],
+            None,
+            Some([1.0, 1.0, 1.0]),
+            Some([
+                0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
+            ]),
+        );
+
+        chunk
+    }
+}
+
+impl From<LinearRgbColorSpace> for Resource {
+    fn from(_: LinearRgbColorSpace) -> Self {
+        Resource::LinearRgb
+    }
+}
+
+impl RegisterableResource<crate::resource::ColorSpace> for LinearRgbColorSpace {}
+
 #[cfg(test)]
 mod tests {
 
@@ -484,12 +529,12 @@ mod tests {
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Gray);
+        sc.add_resource(Resource::Luma);
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Rgb);
+        sc.add_resource(Resource::Srgb);
     }
 
     #[snapshot(single_page, settings_18)]

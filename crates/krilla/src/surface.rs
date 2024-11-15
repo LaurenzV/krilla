@@ -641,14 +641,15 @@ fn naive_shape(
 mod tests {
     use crate::font::Font;
     use crate::mask::MaskType;
+    use crate::page::Page;
     use crate::paint::{LinearGradient, Paint, SpreadMethod};
     use crate::path::Fill;
     use crate::surface::Surface;
     use crate::surface::{Stroke, TextDirection};
     use crate::tests::{
-        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
-        rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR,
-        NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, linear_rgb_red_fill,
+        load_png_image, rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB,
+        NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};
@@ -1114,6 +1115,23 @@ mod tests {
             "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
             true,
             TextDirection::Auto,
+        );
+    }
+
+    #[visreg]
+    fn color_linear_rgb(surface: &mut Surface) {
+        surface.fill_path(
+            &rect_to_path(50.0, 50.0, 150.0, 150.0),
+            linear_rgb_red_fill(1.0),
+        );
+    }
+
+    #[snapshot(single_page)]
+    fn color_linear_rgb(page: &mut Page) {
+        let mut surface = page.surface();
+        surface.fill_path(
+            &rect_to_path(50.0, 50.0, 150.0, 150.0),
+            linear_rgb_red_fill(1.0),
         );
     }
 }

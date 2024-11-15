@@ -1,0 +1,77 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 4 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 3 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 78
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/c0 cs
+1 0 0 scn
+50 50 m
+150 50 l
+150 150 l
+50 150 l
+h
+f
+Q
+endstream
+endobj
+
+4 0 obj
+[/CalRGB <<
+  /WhitePoint [0.9505 1 1.0888]
+  /Gamma [1 1 1]
+  /Matrix [0.4124 0.2126 0.0193 0.3576 0.715 0.1192 0.1805 0.0722 0.9505]
+>>]
+endobj
+
+5 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000281 00000 n
+0000000412 00000 n
+0000000567 00000 n
+trailer
+<<
+  /Size 6
+  /Root 5 0 R
+  /ID [(rAi2Pz7Wzs+noT5h0YsPgg==) (rAi2Pz7Wzs+noT5h0YsPgg==)]
+>>
+startxref
+621
+%%EOF

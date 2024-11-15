@@ -81,7 +81,7 @@ impl Object for XObject {
             }
 
             if self.transparency_group_color_space {
-                let cs = rgb::Color::color_space(sc.serialize_settings().no_device_cs);
+                let cs = rgb::Color::rgb_color_space(sc.serialize_settings().no_device_cs);
                 transparency.pair(Name(b"CS"), sc.add_cs(cs));
             }
 

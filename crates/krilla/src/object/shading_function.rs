@@ -250,6 +250,9 @@ fn serialize_postscript_shading(
     let cs = if use_opacities {
         luma::Color::color_space(sc.serialize_settings().no_device_cs)
     } else {
+        // Note: This means for example if the user provides a linear RGB stop as the first
+        // and sRGB as the remaining ones, the whole gradient will
+        // use linear RGB.
         post_script_gradient.stops[0].color.color_space(sc)
     };
 
@@ -279,6 +282,9 @@ fn serialize_axial_radial_shading(
     let cs = if use_opacities {
         luma::Color::color_space(sc.serialize_settings().no_device_cs)
     } else {
+        // Note: This means for example if the user provides a linear RGB stop as the first
+        // and sRGB as the remaining ones, the whole gradient will
+        // use linear RGB.
         radial_axial_gradient.stops[0].color.color_space(sc)
     };
 
@@ -637,6 +643,7 @@ fn encode_stops_impl<'a>(
                 return;
             }
 
+            // Sanity check that both stops have the same number of components.
             debug_assert_eq!(c0.len(), c1.len());
 
             // Normalize the x coordinate to be between 0 and 1.
