@@ -177,7 +177,7 @@ enum StructParentElement {
 /// - Storing all chunks that are produced.
 /// - The mappings from OTF fonts to CID/Type 3 fonts.
 /// - Annotations used in the document.
-/// etc.
+///   etc.
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
