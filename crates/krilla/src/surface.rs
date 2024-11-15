@@ -165,21 +165,6 @@ impl<'a> Surface<'a> {
         }
     }
 
-    // It's very unfortunate that we have this method at the `Surface` level,
-    // but it's only used in one place and should not be needed to be used anywhere
-    // else.
-    pub(crate) fn start_shape_glyph(
-        &mut self,
-        wx: f32,
-        ll_x: f32,
-        ll_y: f32,
-        ur_x: f32,
-        ur_y: f32,
-    ) {
-        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .content_start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
-    }
-
     fn outline_glyphs(
         &mut self,
         glyphs: &[impl Glyph],

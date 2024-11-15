@@ -13,7 +13,7 @@ use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Buf, Chunk, Content, Finish, Name, Ref, Str};
+use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use skrifa::GlyphId;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -160,20 +160,6 @@ impl Type3Font {
                         Transform::default(),
                         &mut surface,
                     );
-
-                    enum BufOrVec {
-                        Buf(Buf),
-                        Vec(Vec<u8>),
-                    }
-
-                    impl BufOrVec {
-                        fn as_slice(&self) -> &[u8] {
-                            match self {
-                                BufOrVec::Buf(b) => b.as_slice(),
-                                BufOrVec::Vec(v) => v.as_slice(),
-                            }
-                        }
-                    }
 
                     if !drawn_color_glyph.is_some() {
                         // If this code path is reached, it means we tried to create a Type3
@@ -537,15 +523,13 @@ mod tests {
     use crate::font::Font;
 
     use crate::object::font::type3_font::OwnedCoveredGlyph;
-    use crate::object::font::{FontContainer, FontIdentifier, OwnedPaintMode, Type3Identifier};
+    use crate::object::font::{FontContainer, OwnedPaintMode};
     use crate::page::Page;
     use crate::path::Fill;
     use crate::serialize::{SerializeSettings, SerializerContext};
-    use crate::surface::{Surface, TextDirection};
-    use crate::tests::{
-        red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, TWITTER_COLOR_EMOJI,
-    };
-    use krilla_macros::{snapshot, visreg};
+    use crate::surface::TextDirection;
+    use crate::tests::TWITTER_COLOR_EMOJI;
+    use krilla_macros::snapshot;
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
 
