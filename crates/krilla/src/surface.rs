@@ -109,11 +109,6 @@ impl<'a> Surface<'a> {
             .fill_path(path, fill, self.sc);
     }
 
-    pub(crate) fn fill_path_impl(&mut self, path: &Path, fill: Fill, fill_props: bool) {
-        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path_impl(path, fill, self.sc, fill_props)
-    }
-
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
