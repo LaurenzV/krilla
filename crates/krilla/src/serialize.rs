@@ -1,5 +1,5 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, LinearRgbColorSpace, DEVICE_CMYK};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
@@ -355,8 +355,9 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Rgb => CSWrapper::Ref(self.add_resource(Resource::Rgb)),
-            ColorSpace::Gray => CSWrapper::Ref(self.add_resource(Resource::Gray)),
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
+            ColorSpace::LinearRgb => CSWrapper::Ref(self.add_resource(Resource::LinearRgb)),
+            ColorSpace::Luma => CSWrapper::Ref(self.add_resource(Resource::Luma)),
             ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::Cmyk(cs))),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
@@ -453,10 +454,11 @@ impl SerializerContext {
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),
-            Resource::Rgb => self.add_object(ICCBasedColorSpace(
+            Resource::Srgb => self.add_object(ICCBasedColorSpace(
                 self.serialize_settings.pdf_version.rgb_icc(),
             )),
-            Resource::Gray => self.add_object(ICCBasedColorSpace(
+            Resource::LinearRgb => self.add_object(LinearRgbColorSpace),
+            Resource::Luma => self.add_object(ICCBasedColorSpace(
                 self.serialize_settings.pdf_version.grey_icc(),
             )),
             Resource::Cmyk(cs) => self.add_object(cs),

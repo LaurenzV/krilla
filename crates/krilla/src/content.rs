@@ -1,6 +1,9 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::{Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::{
+    Color, ColorSpace, ICCBasedColorSpace, LinearRgbColorSpace, DEVICE_CMYK, DEVICE_GRAY,
+    DEVICE_RGB,
+};
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -650,11 +653,14 @@ impl ContentBuilder {
         let color_to_string =
             |color: Color, content_builder: &mut ContentBuilder, sc: &mut SerializerContext| {
                 match color.color_space(sc) {
-                    ColorSpace::Rgb => content_builder.rd_builder.register_resource(
+                    ColorSpace::LinearRgb => content_builder
+                        .rd_builder
+                        .register_resource(LinearRgbColorSpace, sc),
+                    ColorSpace::Srgb => content_builder.rd_builder.register_resource(
                         ICCBasedColorSpace(sc.serialize_settings().pdf_version.rgb_icc()),
                         sc,
                     ),
-                    ColorSpace::Gray => content_builder.rd_builder.register_resource(
+                    ColorSpace::Luma => content_builder.rd_builder.register_resource(
                         ICCBasedColorSpace(sc.serialize_settings().pdf_version.grey_icc()),
                         sc,
                     ),

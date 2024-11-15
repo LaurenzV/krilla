@@ -143,6 +143,14 @@ pub fn red_fill(opacity: f32) -> Fill {
     }
 }
 
+pub fn linear_rgb_red_fill(opacity: f32) -> Fill {
+    Fill {
+        paint: rgb::Color::new_linear(255, 0, 0).into(),
+        opacity: NormalizedF32::new(opacity).unwrap(),
+        rule: Default::default(),
+    }
+}
+
 pub fn red_stroke(opacity: f32, width: f32) -> Stroke {
     Stroke {
         paint: rgb::Color::new(255, 0, 0).into(),
