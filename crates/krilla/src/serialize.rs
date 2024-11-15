@@ -430,6 +430,7 @@ impl SerializerContext {
                 // to a series of Type3 fonts or to a single CID font, but not a mix of both.
                 let font_ref = font.font_ref();
                 let use_type3 = self.serialize_settings.force_type3_fonts
+                    || font_ref.svg().is_ok()
                     || font_ref.colr().is_ok()
                     || font_ref.sbix().is_ok()
                     || font_ref.cbdt().is_ok()
