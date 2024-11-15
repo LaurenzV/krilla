@@ -1,5 +1,7 @@
+//! Dealing with PDF resources.
+
 use crate::color::{ICCBasedColorSpace, ICCProfile};
-use crate::font::FontIdentifier;
+use crate::object::font::FontIdentifier;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::shading_pattern::ShadingPattern;
@@ -158,8 +160,6 @@ impl From<Image> for Resource {
     }
 }
 
-// TODO: Overthink this design
-// TODO: Validate ICC profiles
 impl From<ICCBasedColorSpace<3>> for Resource {
     fn from(_: ICCBasedColorSpace<3>) -> Self {
         Self::Rgb

@@ -1,11 +1,12 @@
+use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::font::outline::glyph_path;
-use crate::font::{Font, FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
-use crate::object::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
+use crate::font::Font;
+use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
-use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::StreamBuilder;
+use crate::serialize::SerializerContext;
+use crate::stream::{FilterStream, StreamBuilder};
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
@@ -47,7 +48,8 @@ impl<'a> CoveredGlyph<'a> {
         if matches!(paint_mode, PaintMode::Fill(_)) {
             // The only reason we need the font size is that
             // when drawing a stroked glyph as a Type3 glyph, we stroke
-            // it using tiny-skia and then draw it as a filled glyph instead.
+            // it using tiny-skia and then draw it as a filled glyph instead. In this case, the
+            // font size is important.
             // This is because stroking pretty much doesn't work with type 3 fonts.
             // For fills, we don't care about the font size, so we always set it to one.
             // so that we don't allocate new glyphs for each font size it is used at.
@@ -101,6 +103,7 @@ impl Type3Font {
         }
     }
 
+    // Unlike CID fonts, the units per em of type 3 fonts does not have to be 1000.
     pub fn unit_per_em(&self) -> f32 {
         self.font.units_per_em()
     }
@@ -168,6 +171,7 @@ impl Type3Font {
                     let mut stream_surface = StreamBuilder::new(sc);
                     let mut surface = stream_surface.surface();
 
+                    // In case this returns `None`, the surface is guaranteed to be empty.
                     let drawn_color_glyph = font::draw_color_glyph(
                         self.font.clone(),
                         SvgSettings::default(),
@@ -266,7 +270,7 @@ impl Type3Font {
 
                     let font_stream = FilterStream::new_from_content_stream(
                         stream.as_slice(),
-                        &sc.serialize_settings,
+                        &sc.serialize_settings(),
                     );
 
                     let stream_ref = sc.new_ref();
@@ -279,7 +283,7 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        let descriptor_ref = if sc.serialize_settings.pdf_version >= PdfVersion::Pdf15 {
+        let descriptor_ref = if sc.serialize_settings().pdf_version >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
         } else {
             None
@@ -428,7 +432,7 @@ impl Type3Font {
                         GlyphId::new(g as u32),
                     )),
                     Some(text) => {
-                        // Keep in sync with CIDFont
+                        // Note: Keep in sync with CIDFont
                         let mut invalid_codepoint = false;
                         let mut private_unicode = false;
 
@@ -472,6 +476,8 @@ impl Type3Font {
 
 pub type Type3ID = usize;
 
+// A font can have multiple Type3 fonts, if more than 256 glyphs are used.
+// We use this struct to keep track of them.
 #[derive(Debug)]
 pub(crate) struct Type3FontMapper {
     font: Font,
@@ -488,6 +494,8 @@ impl Type3FontMapper {
 }
 
 impl Type3FontMapper {
+    /// Given a requested glyph coverage, find the corresponding font identifier of the
+    /// font that contains it.
     pub fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
@@ -495,6 +503,8 @@ impl Type3FontMapper {
             .map(|p| self.fonts[p].identifier())
     }
 
+    /// Given a font identifier, return the corresponding Type3 font if it is part of
+    /// that type 3 font mapper.
     pub fn font_from_id(&self, identifier: FontIdentifier) -> Option<&Type3Font> {
         let pos = self
             .fonts
@@ -564,14 +574,15 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, FontIdentifier, OwnedPaintMode, Type3Identifier};
+    use crate::font::Font;
 
     use crate::color::rgb;
 
-    use crate::object::type3_font::OwnedCoveredGlyph;
+    use crate::object::font::type3_font::OwnedCoveredGlyph;
+    use crate::object::font::{FontContainer, FontIdentifier, OwnedPaintMode, Type3Identifier};
     use crate::page::Page;
     use crate::path::Fill;
-    use crate::serialize::{FontContainer, SerializeSettings, SerializerContext};
+    use crate::serialize::{SerializeSettings, SerializerContext};
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{
         red_fill, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC, NOTO_SANS_VARIABLE,

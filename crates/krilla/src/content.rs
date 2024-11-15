@@ -1,22 +1,23 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::font::{Font, FontIdentifier, Glyph, GlyphUnits, PaintMode};
+use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::mask::Mask;
-use crate::object::cid_font::CIDFont;
 use crate::object::ext_g_state::ExtGState;
+use crate::object::font::cid_font::CIDFont;
+use crate::object::font::type3_font::{CoveredGlyph, Type3Font};
+use crate::object::font::{FontContainer, FontIdentifier, PDFGlyph, PaintMode};
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
-use crate::object::type3_font::{CoveredGlyph, Type3Font};
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::ResourceDictionaryBuilder;
-use crate::serialize::{FontContainer, PDFGlyph, SerializerContext};
+use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -68,7 +69,7 @@ impl ContentBuilder {
 
     pub fn finish(self, sc: &mut SerializerContext) -> Stream {
         let buf = self.content.finish();
-        sc.limits.merge(buf.limits());
+        sc.register_limits(buf.limits());
 
         Stream::new(
             buf.to_bytes(),
@@ -676,11 +677,11 @@ impl ContentBuilder {
             |color: Color, content_builder: &mut ContentBuilder, sc: &mut SerializerContext| {
                 match color.color_space(sc) {
                     ColorSpace::Rgb => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings.pdf_version.rgb_icc()),
+                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.rgb_icc()),
                         sc,
                     ),
                     ColorSpace::Gray => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings.pdf_version.grey_icc()),
+                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.grey_icc()),
                         sc,
                     ),
                     ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),

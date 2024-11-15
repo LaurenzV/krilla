@@ -18,9 +18,7 @@
 
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
-use crate::type3_font::Type3ID;
 use crate::util::{Prehashed, RectWrapper};
-use skrifa::outline::OutlinePen;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
@@ -29,7 +27,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
 use std::sync::Arc;
-use tiny_skia_path::{FiniteF32, Path, PathBuilder, Rect, Transform};
+use tiny_skia_path::{FiniteF32, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
 #[cfg(feature = "raster-images")]
@@ -39,11 +37,9 @@ pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
 
-use crate::path::{Fill, Stroke};
-use crate::resource::RegisterableResource;
+use crate::object::font::PaintMode;
 use skrifa::instance::Location;
 pub use skrifa::GlyphId;
-
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
@@ -54,7 +50,7 @@ pub use skrifa::GlyphId;
 /// While an object of this type is associated with an OTF font, it is only associated
 /// with a specific instance, i.e. with specific variation coordinates and with a specific
 /// index for TrueType collections. This means that if you want to use the same font with
-/// different variation axes, you need to create separate instances.
+/// different variation axes, you need to create separate instances of [`Font`].
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Font(Arc<Prehashed<Repr>>);
 
@@ -63,6 +59,8 @@ impl Font {
     /// associated with this font for TrueType collections, otherwise this value should be
     /// set to 0. The location indicates the variation axes that should be associated with
     /// the font.
+    ///
+    /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(
         data: Arc<dyn AsRef<[u8]> + Send + Sync>,
         index: u32,
@@ -150,18 +148,15 @@ impl Font {
             .map(|v| (v.0.as_str(), v.1.get()))
     }
 
-    /// Return the `LocationRef` of the font.
-    pub fn location_ref(&self) -> LocationRef {
+    pub(crate) fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
     }
 
-    /// Return the `FontRef` of the font.
-    pub fn font_ref(&self) -> &FontRef {
+    pub(crate) fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }
 
-    /// Return the underlying data of the font.
-    pub fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
+    pub(crate) fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
         self.0.font_data.clone()
     }
 
@@ -213,7 +208,7 @@ struct Repr {
 impl Hash for Repr {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // We assume that if the font info is distinct, the font itself is distinct as well. This
-        // strictly doesn't have to be the case, while the font does have a checksum, it's "only" a
+        // doesn't have to be the case: while the font does have a checksum, it's "only" a
         // u32. The proper way would be to hash the whole font data, but this is just too expensive.
         // However, the odds of the checksum AND all font metrics (including font name) being the same
         // with the font being different is diminishingly low.
@@ -334,48 +329,6 @@ pub(crate) fn draw_color_glyph(
     drawn
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) enum OwnedPaintMode {
-    Fill(Fill),
-    Stroke(Stroke),
-}
-
-impl From<Fill> for OwnedPaintMode {
-    fn from(value: Fill) -> Self {
-        Self::Fill(value)
-    }
-}
-
-impl From<Stroke> for OwnedPaintMode {
-    fn from(value: Stroke) -> Self {
-        Self::Stroke(value)
-    }
-}
-
-impl OwnedPaintMode {
-    pub fn as_ref(&self) -> PaintMode {
-        match self {
-            OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
-            OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum PaintMode<'a> {
-    Fill(&'a Fill),
-    Stroke(&'a Stroke),
-}
-
-impl PaintMode<'_> {
-    pub fn to_owned(self) -> OwnedPaintMode {
-        match self {
-            PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
-            PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),
-        }
-    }
-}
-
 /// Draw a color glyph or outline glyph to a surface.
 pub(crate) fn draw_glyph(
     font: Font,
@@ -394,61 +347,6 @@ pub(crate) fn draw_glyph(
         surface,
     )
     .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
-}
-
-/// A unique CID identifier.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) struct CIDIdentifer(pub Font);
-
-/// A unique Type3 font identifier. Type3 fonts can only hold 256 glyphs, which
-/// means that we might have to create more than one Type3 font. This is why we
-/// additionally store an index that indicates which specific Type3Font we are
-/// referring to.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) struct Type3Identifier(pub Font, pub Type3ID);
-
-/// A font identifier for a PDF font.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) enum FontIdentifier {
-    Cid(CIDIdentifer),
-    Type3(Type3Identifier),
-}
-
-impl RegisterableResource<crate::resource::Font> for FontIdentifier {}
-
-/// A wrapper struct for implementing the `OutlinePen` trait.
-struct OutlineBuilder(PathBuilder);
-
-impl OutlineBuilder {
-    pub fn new() -> Self {
-        Self(PathBuilder::new())
-    }
-
-    pub fn finish(self) -> Option<Path> {
-        self.0.finish()
-    }
-}
-
-impl OutlinePen for OutlineBuilder {
-    fn move_to(&mut self, x: f32, y: f32) {
-        self.0.move_to(x, y);
-    }
-
-    fn line_to(&mut self, x: f32, y: f32) {
-        self.0.line_to(x, y);
-    }
-
-    fn quad_to(&mut self, cx0: f32, cy0: f32, x: f32, y: f32) {
-        self.0.quad_to(cx0, cy0, x, y);
-    }
-
-    fn curve_to(&mut self, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x: f32, y: f32) {
-        self.0.cubic_to(cx0, cy0, cx1, cy1, x, y);
-    }
-
-    fn close(&mut self) {
-        self.0.close()
-    }
 }
 
 /// A glyph with certain properties.

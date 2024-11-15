@@ -1,7 +1,9 @@
 //! Drawing COLR-based glyphs to a surface.
 
-use crate::font::{Font, OutlineBuilder, PaintMode};
+use crate::font::outline::OutlineBuilder;
+use crate::font::Font;
 use crate::object::color::rgb;
+use crate::object::font::PaintMode;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
 use crate::surface::Surface;
@@ -205,7 +207,7 @@ impl ColorPainter for ColrBuilder {
             return;
         };
 
-        let mut glyph_builder = OutlineBuilder(PathBuilder::new());
+        let mut glyph_builder = OutlineBuilder::new();
         let outline_glyphs = self.font.font_ref().outline_glyphs();
         let Some(outline_glyph) = outline_glyphs.get(glyph_id) else {
             self.error = true;

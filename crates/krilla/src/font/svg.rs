@@ -1,7 +1,8 @@
 //! Drawing SVG-based glyphs on a surface.
 
 use crate::color::rgb;
-use crate::font::{Font, PaintMode};
+use crate::font::Font;
+use crate::object::font::PaintMode;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::svg;

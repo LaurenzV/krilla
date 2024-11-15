@@ -102,10 +102,10 @@ impl ChunkContainer {
         // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
         // case, and thus give us better performance.
         let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
-        sc.serialize_settings.pdf_version.set_version(&mut pdf);
+        sc.serialize_settings().pdf_version.set_version(&mut pdf);
 
-        if sc.serialize_settings.ascii_compatible
-            && !sc.serialize_settings.validator.requires_binary_header()
+        if sc.serialize_settings().ascii_compatible
+            && !sc.serialize_settings().validator.requires_binary_header()
         {
             pdf.set_binary_marker(b"AAAA")
         }
@@ -163,16 +163,16 @@ impl ChunkContainer {
             metadata.serialize_xmp_metadata(&mut xmp);
         }
 
-        sc.serialize_settings.validator.write_xmp(&mut xmp);
+        sc.serialize_settings().validator.write_xmp(&mut xmp);
 
         let instance_id = hash_base64(pdf.as_bytes());
 
         let document_id = if let Some(metadata) = &self.metadata {
             if let Some(document_id) = &metadata.document_id {
-                hash_base64(&(sc.serialize_settings.pdf_version.as_str(), document_id))
+                hash_base64(&(sc.serialize_settings().pdf_version.as_str(), document_id))
             } else if metadata.title.is_some() && metadata.authors.is_some() {
                 hash_base64(&(
-                    sc.serialize_settings.pdf_version.as_str(),
+                    sc.serialize_settings().pdf_version.as_str(),
                     &metadata.title,
                     &metadata.authors,
                 ))
@@ -193,7 +193,7 @@ impl ChunkContainer {
         ));
 
         xmp.rendition_class(RenditionClass::Proof);
-        sc.serialize_settings.pdf_version.write_xmp(&mut xmp);
+        sc.serialize_settings().pdf_version.write_xmp(&mut xmp);
 
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
@@ -204,7 +204,7 @@ impl ChunkContainer {
             || self.destination_profiles.is_some()
             || self.struct_tree_root.is_some()
         {
-            let meta_ref = if sc.serialize_settings.xmp_metadata {
+            let meta_ref = if sc.serialize_settings().xmp_metadata {
                 let meta_ref = remapped_ref.bump();
                 let xmp_buf = xmp.finish(None);
                 pdf.stream(meta_ref, xmp_buf.as_bytes())
@@ -245,14 +245,18 @@ impl ChunkContainer {
                 catalog.pair(Name(b"StructTreeRoot"), st.0);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
-                if sc.serialize_settings.pdf_version >= PdfVersion::Pdf16 {
+                if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16 {
                     // We always set suspects to false because it's required by PDF/UA
                     mark_info.suspects(false);
                 }
                 mark_info.finish();
             }
 
-            if sc.serialize_settings.validator.requires_display_doc_title() {
+            if sc
+                .serialize_settings()
+                .validator
+                .requires_display_doc_title()
+            {
                 catalog.viewer_preferences().display_doc_title(true);
             }
 

@@ -1,8 +1,8 @@
 use crate::color::rgb;
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::Stream;
+use crate::serialize::SerializerContext;
+use crate::stream::{FilterStream, Stream};
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -52,7 +52,7 @@ impl Object for XObject {
         }
 
         let x_object_stream =
-            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings);
+            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings());
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
         x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
@@ -77,7 +77,7 @@ impl Object for XObject {
             }
 
             if self.transparency_group_color_space {
-                let cs = rgb::Color::color_space(sc.serialize_settings.no_device_cs);
+                let cs = rgb::Color::color_space(sc.serialize_settings().no_device_cs);
                 transparency.pair(Name(b"CS"), sc.add_cs(cs));
             }
 

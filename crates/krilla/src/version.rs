@@ -1,13 +1,20 @@
+//! Choosing between PDF versions.
+
 use crate::color::{ICCMetadata, ICCProfile};
 use crate::resource::{GREY_V2_ICC, GREY_V4_ICC, SRGB_V2_ICC, SRGB_V4_ICC};
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
+/// The version of a PDF document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PdfVersion {
+    /// PDF 1.4.
     Pdf14,
+    /// PDF 1.5.
     Pdf15,
+    /// PDF 1.6.
     Pdf16,
+    /// PDF 1.7.
     Pdf17,
 }
 
@@ -21,6 +28,7 @@ impl PdfVersion {
         };
     }
 
+    /// Get a string representation of the PDF version.
     pub fn as_str(&self) -> &str {
         match self {
             PdfVersion::Pdf14 => "PDF-1.4",

@@ -1,6 +1,6 @@
 use crate::action::LinkAction;
 use crate::annotation::{Annotation, LinkAnnotation, Target};
-use crate::color::{cmyk, luma, rgb};
+use crate::color::{cmyk, luma, rgb, ICCProfile};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
 use crate::image::Image;
@@ -10,6 +10,8 @@ use crate::path::{Fill, Stroke};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
+use crate::validation::Validator;
+use crate::version::PdfVersion;
 use crate::{SerializeSettings, SvgSettings};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
@@ -79,8 +81,6 @@ macro_rules! lazy_font {
 
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
-#[rustfmt::skip]
-lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
 #[rustfmt::skip]
 lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
 #[rustfmt::skip]
@@ -212,16 +212,6 @@ fn write_render_to_store(name: &str, content: &[u8]) {
     let _ = std::fs::create_dir_all(&path);
     path.push(format!("{}.pdf", name));
     std::fs::write(&path, content).unwrap();
-}
-
-pub fn write_manual_to_store(name: &str, data: &[u8]) {
-    let path = STORE_PATH.clone().join("manual");
-    let _ = std::fs::create_dir_all(&path);
-
-    let pdf_path = path.join(format!("{}.pdf", name));
-    let txt_path = path.join(format!("{}.txt", name));
-    std::fs::write(pdf_path, data).unwrap();
-    std::fs::write(txt_path, data).unwrap();
 }
 
 pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
@@ -550,38 +540,6 @@ pub fn stops_with_2_solid_1() -> Stops {
     .into()
 }
 
-pub fn stops_with_2_solid_2() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::ONE,
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::ONE,
-        },
-    ]
-    .into()
-}
-
-pub fn stops_with_2_opacity() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::new(0.8).unwrap(),
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::new(0.2).unwrap(),
-        },
-    ]
-    .into()
-}
-
 pub fn stops_with_3_solid_1() -> Stops {
     vec![
         Stop {
@@ -608,48 +566,6 @@ pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
         Rect::from_xywh(x, y, w, h).unwrap(),
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )
-    .into()
-}
-
-pub fn stops_with_3_solid_2() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.1).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::ONE,
-        },
-        Stop {
-            offset: NormalizedF32::new(0.5).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::ONE,
-        },
-        Stop {
-            offset: NormalizedF32::new(1.0).unwrap(),
-            color: rgb::Color::new(235, 52, 110),
-            opacity: NormalizedF32::ONE,
-        },
-    ]
-    .into()
-}
-
-pub fn stops_with_3_opacity() -> Stops {
-    vec![
-        Stop {
-            offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(85, 235, 52),
-            opacity: NormalizedF32::new(0.4).unwrap(),
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(89, 52, 235),
-            opacity: NormalizedF32::new(0.8).unwrap(),
-        },
-        Stop {
-            offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(235, 52, 110),
-            opacity: NormalizedF32::new(0.1).unwrap(),
-        },
-    ]
     .into()
 }
 
@@ -716,4 +632,179 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
         &pdf,
         ignore_renderer,
     );
+}
+
+#[cfg(test)]
+impl SerializeSettings {
+    pub(crate) fn settings_1() -> Self {
+        Self {
+            ascii_compatible: true,
+            compress_content_streams: false,
+            no_device_cs: false,
+            xmp_metadata: false,
+            force_type3_fonts: false,
+            cmyk_profile: None,
+            validator: Validator::None,
+            enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
+        }
+    }
+
+    pub(crate) fn settings_2() -> Self {
+        Self {
+            no_device_cs: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_4() -> Self {
+        Self {
+            force_type3_fonts: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_5() -> Self {
+        Self {
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_6() -> Self {
+        Self {
+            no_device_cs: true,
+            cmyk_profile: Some(
+                ICCProfile::new(Arc::new(
+                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+                ))
+                .unwrap(),
+            ),
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_7() -> Self {
+        Self {
+            validator: Validator::A2_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_8() -> Self {
+        Self {
+            validator: Validator::A2_B,
+            cmyk_profile: Some(
+                ICCProfile::new(Arc::new(
+                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+                ))
+                .unwrap(),
+            ),
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_9() -> Self {
+        Self {
+            validator: Validator::A2_U,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_10() -> Self {
+        Self {
+            validator: Validator::A3_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_11() -> Self {
+        Self {
+            validator: Validator::A3_U,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_12() -> Self {
+        Self {
+            enable_tagging: false,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_13() -> Self {
+        Self {
+            validator: Validator::A2_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_14() -> Self {
+        Self {
+            validator: Validator::A3_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_15() -> Self {
+        Self {
+            validator: Validator::UA1,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_16() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            xmp_metadata: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_17() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_18() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            no_device_cs: true,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_19() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_20() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A1_A,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_21() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf17,
+            validator: Validator::A1_B,
+            ..Self::settings_1()
+        }
+    }
+
+    pub(crate) fn settings_22() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf14,
+            validator: Validator::A2_B,
+            ..Self::settings_1()
+        }
+    }
 }

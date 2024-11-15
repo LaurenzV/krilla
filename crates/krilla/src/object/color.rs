@@ -40,10 +40,11 @@
 
 use crate::object::{ChunkContainerFn, Object};
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::serialize::SerializerContext;
+use crate::stream::FilterStream;
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Buf, Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -78,10 +79,10 @@ impl Color {
 
     pub(crate) fn color_space(&self, sc: &mut SerializerContext) -> ColorSpace {
         match self {
-            Color::Rgb(_) => rgb::Color::color_space(sc.serialize_settings.no_device_cs),
-            Color::Luma(_) => luma::Color::color_space(sc.serialize_settings.no_device_cs),
+            Color::Rgb(_) => rgb::Color::color_space(sc.serialize_settings().no_device_cs),
+            Color::Luma(_) => luma::Color::color_space(sc.serialize_settings().no_device_cs),
             Color::Cmyk(_) => {
-                let color_space = cmyk::Color::color_space(&sc.serialize_settings);
+                let color_space = cmyk::Color::color_space(&sc.serialize_settings());
                 if color_space == ColorSpace::DeviceCmyk {
                     sc.register_validation_error(ValidationError::MissingCMYKProfile);
                 }
@@ -221,10 +222,6 @@ pub mod rgb {
             Self::new(255, 255, 255)
         }
 
-        // For gradients, we don't want to coerce to luma if possible, because gradients
-        // require the number of components for each stop to be the same. Because of this
-        // we always use 3 components for RGB and 4 components for CMYK. No automatic
-        // detection of greyscale colors.
         pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
             vec![
                 self.0 as f32 / 255.0,
@@ -343,7 +340,7 @@ impl<const C: u8> Object for ICCProfile<C> {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStream::new_from_binary_data(
             self.0.deref().data.as_ref().as_ref(),
-            &sc.serialize_settings,
+            &sc.serialize_settings(),
         );
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
@@ -519,5 +516,22 @@ mod tests {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
         surface.fill_path(&path, cmyk_fill(1.0));
+    }
+}
+
+/// Stores either the name of one of the default color spaces (i.e. DeviceRGB), or
+/// a reference to a color space in the PDF.
+#[derive(Copy, Clone)]
+pub(crate) enum CSWrapper {
+    Ref(Ref),
+    Name(Name<'static>),
+}
+
+impl pdf_writer::Primitive for CSWrapper {
+    fn write(self, buf: &mut Buf) {
+        match self {
+            CSWrapper::Ref(r) => r.write(buf),
+            CSWrapper::Name(n) => n.write(buf),
+        }
     }
 }

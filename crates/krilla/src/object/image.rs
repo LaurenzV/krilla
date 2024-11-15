@@ -6,14 +6,12 @@
 //! - JPG
 //! - GIF
 //! - WEBP
-//!
-//! ICC profiles will currently not be embedded, and CMYK images will be naively
-//! converted into the RGB color space.
 
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::serialize::SerializerContext;
+use crate::stream::FilterStream;
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::{Deref, DerefMut};
@@ -49,8 +47,8 @@ enum ImageColorspace {
 impl ImageColorspace {
     fn num_components(&self) -> u8 {
         match self {
-            ImageColorspace::Rgb => 3,
             ImageColorspace::Luma => 1,
+            ImageColorspace::Rgb => 3,
             ImageColorspace::Cmyk => 4,
         }
     }
@@ -73,6 +71,7 @@ impl TryFrom<ColorSpace> for ImageColorspace {
     }
 }
 
+/// Representation of a raw, decode image.
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct SampledRepr {
     image_data: Vec<u8>,
@@ -83,6 +82,7 @@ struct SampledRepr {
     image_color_space: ImageColorspace,
 }
 
+/// Representation of an encoded jpg image.
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct JpegRepr {
     data: Vec<u8>,
@@ -213,6 +213,7 @@ impl Image {
 
             Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
                 icc,
+                // TODO: Avoid cloning here?
                 data: data.to_vec(),
                 size: SizeWrapper(size),
                 bits_per_component: BitsPerComponent::Eight,
@@ -314,7 +315,7 @@ impl Image {
 
         let icc_ref = self.0.icc().and_then(|ic| {
             if sc
-                .serialize_settings
+                .serialize_settings()
                 .pdf_version
                 .supports_icc(ic.metadata())
             {
@@ -332,7 +333,7 @@ impl Image {
             }
         });
 
-        let serialize_settings = sc.serialize_settings.clone();
+        let serialize_settings = sc.serialize_settings().clone();
 
         Deferred::new(move || {
             let mut chunk = Chunk::new();
@@ -372,17 +373,13 @@ impl Image {
             if let Some(icc_ref) = icc_ref {
                 image_x_object.pair(Name(b"ColorSpace"), icc_ref);
             } else {
-                match self.0.color_space() {
-                    ImageColorspace::Rgb => {
-                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_RGB.to_pdf_name());
-                    }
-                    ImageColorspace::Luma => {
-                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_GRAY.to_pdf_name());
-                    }
-                    ImageColorspace::Cmyk => {
-                        image_x_object.pair(Name(b"ColorSpace"), DEVICE_CMYK.to_pdf_name());
-                    }
+                let name = match self.0.color_space() {
+                    ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
+                    ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
+                    ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
                 };
+
+                image_x_object.pair(Name(b"ColorSpace"), name);
             }
 
             // Photoshop CMYK images need to be inverted, see
@@ -412,11 +409,7 @@ impl RegisterableResource<crate::resource::XObject> for Image {}
 
 fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {
-        if cs.num_components() == 2 {
-            Vec::with_capacity(data.len() / 2)
-        } else {
-            Vec::with_capacity(data.len() / 4)
-        }
+        Vec::with_capacity(data.len() / cs.num_components())
     } else {
         Vec::new()
     };
@@ -464,7 +457,12 @@ fn handle_u16_image(
     data: Vec<u16>,
     cs: ColorSpace,
 ) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
-    let mut alphas = Vec::new();
+    let mut alphas = if cs.has_alpha() {
+        // * 2 because we are going from u16 to u8
+        Vec::with_capacity(2 * data.len() / cs.num_components())
+    } else {
+        Vec::new()
+    };
 
     let encoded_image = match cs {
         ColorSpace::RGB => data

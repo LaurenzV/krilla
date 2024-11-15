@@ -1,6 +1,8 @@
+use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{CIDIdentifer, Font, FontIdentifier};
-use crate::serialize::{FilterStream, SerializerContext};
+use crate::font::Font;
+use crate::serialize::SerializerContext;
+use crate::stream::FilterStream;
 use crate::util::{hash128, RectExt, SliceExt};
 use crate::validation::ValidationError;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -28,7 +30,7 @@ pub type Cid = u16;
 /// A CID-keyed font.
 #[derive(Debug, Clone)]
 pub(crate) struct CIDFont {
-    /// The _actual_ underlying font of the CID-keyed font.
+    /// The _actual_ underlying OTF font of the CID-keyed font.
     font: Font,
     /// A mapper that maps GIDs from the original font to CIDs, i.e. the corresponding GID in the font
     /// subset. The subsetter will ensure that for CID-keyed CFF fonts, the CID-to-GID mapping
@@ -62,6 +64,8 @@ impl CIDFont {
         self.font.clone()
     }
 
+    // Note that this refers to the units per em in PDF (which is always 1000), and not the
+    // units per em of the underlying font.
     pub fn units_per_em(&self) -> f32 {
         1000.0
     }
@@ -137,11 +141,12 @@ impl CIDFont {
                     "failed to read font subset".to_string(),
                 )
             })?;
+
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
                 data = cff.as_bytes();
             }
 
-            FilterStream::new_from_binary_data(data, &sc.serialize_settings)
+            FilterStream::new_from_binary_data(data, &sc.serialize_settings())
         };
 
         let base_font = base_font_name(&self.font, &self.glyph_remapper);
@@ -242,7 +247,7 @@ impl CIDFont {
                         GlyphId::new(g as u32),
                     )),
                     Some(text) => {
-                        // Keep in sync with Type3
+                        // Note: Keep in sync with Type3
                         let mut invalid_codepoint = false;
                         let mut private_unicode = false;
 
@@ -280,7 +285,7 @@ impl CIDFont {
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
 
-        let cid_data = {
+        let cid_stream_data = {
             // It's always guaranteed that CIDs start from 0 and are consecutive, so this encoding
             // is very straight-forward.
             let mut bytes = vec![];
@@ -293,7 +298,7 @@ impl CIDFont {
             bytes
         };
 
-        let cid_stream = FilterStream::new_plain(&cid_data, &sc.serialize_settings);
+        let cid_stream = FilterStream::new_plain(&cid_stream_data, &sc.serialize_settings());
         let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
         cid_stream.write_filters(cid_set.deref_mut());
         cid_set.finish();
@@ -342,8 +347,9 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 mod tests {
     use crate::font::Font;
 
+    use crate::object::font::FontContainer;
     use crate::path::Fill;
-    use crate::serialize::{FontContainer, SerializerContext};
+    use crate::serialize::SerializerContext;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
     use krilla_macros::{snapshot, visreg};

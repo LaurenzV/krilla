@@ -5,8 +5,8 @@ use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
-use crate::serialize::{FilterStream, SerializerContext};
-use crate::stream::Stream;
+use crate::serialize::SerializerContext;
+use crate::stream::{FilterStream, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
@@ -84,7 +84,7 @@ impl<'a> Page<'a> {
             self.num_mcids = num_mcids;
         });
 
-        let page_identifier = if self.sc.serialize_settings.enable_tagging {
+        let page_identifier = if self.sc.serialize_settings().enable_tagging {
             Some(PageTagIdentifier::new(self.page_index, 0))
         } else {
             None
@@ -103,6 +103,8 @@ pub(crate) fn page_root_transform(height: f32) -> Transform {
 
 impl Drop for Page<'_> {
     fn drop(&mut self) {
+        // Since we cannot take ownership in `drop`, just make use `mem::take` to pick
+        // what we need.
         let annotations = std::mem::take(&mut self.annotations);
         let page_settings = std::mem::take(&mut self.page_settings);
 
@@ -148,7 +150,7 @@ impl InternalPage {
         }
 
         let stream_ref = sc.new_ref();
-        let serialize_settings = sc.serialize_settings.clone();
+        let serialize_settings = sc.serialize_settings().clone();
         let stream_resources = std::mem::take(&mut stream.resource_dictionary);
 
         let stream_chunk = Deferred::new(move || {
@@ -209,7 +211,7 @@ impl InternalPage {
                 self.page_settings.surface_size().height(),
             ))
             .unwrap();
-        // Convert to the proper PDF values.
+
         page.media_box(media_box.to_pdf_rect());
 
         if let Some(struct_parent) = self.struct_parent {
@@ -217,7 +219,7 @@ impl InternalPage {
 
             // Only required for PDF/UA, but might as well always set it.
             if !self.annotations.is_empty()
-                && sc.serialize_settings.pdf_version >= PdfVersion::Pdf15
+                && sc.serialize_settings().pdf_version >= PdfVersion::Pdf15
             {
                 page.tab_order(TabOrder::StructureOrder);
             }
@@ -272,6 +274,7 @@ impl PageLabel {
         let mut label = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::PageLabel>();
+
         if let Some(style) = self.style {
             label.style(style);
         }

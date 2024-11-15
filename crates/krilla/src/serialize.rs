@@ -1,17 +1,17 @@
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
-use crate::content::PdfFont;
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, FontIdentifier, FontInfo};
+use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::cid_font::CIDFont;
-use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color::{CSWrapper, DEVICE_GRAY, DEVICE_RGB};
+use crate::object::font::cid_font::CIDFont;
+use crate::object::font::type3_font::Type3FontMapper;
+use crate::object::font::FontContainer;
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::type3_font::{CoveredGlyph, Type3FontMapper};
 use crate::object::Object;
 use crate::page::PageLabel;
 use crate::resource::Resource;
@@ -23,12 +23,10 @@ use crate::version::PdfVersion;
 use fontdb::{Database, ID};
 use pdf_writer::types::{OutputIntentSubtype, StructRole};
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
-use pdf_writer::{Array, Buf, Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
-use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::ops::DerefMut;
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
@@ -135,184 +133,6 @@ const MAX_FLOAT: f32 = 32767.0;
 const DICT_LEN: usize = 4095;
 const ARRAY_LEN: usize = 8191;
 
-#[cfg(test)]
-impl SerializeSettings {
-    pub(crate) fn settings_1() -> Self {
-        Self {
-            ascii_compatible: true,
-            compress_content_streams: false,
-            no_device_cs: false,
-            xmp_metadata: false,
-            force_type3_fonts: false,
-            cmyk_profile: None,
-            validator: Validator::None,
-            enable_tagging: true,
-            pdf_version: PdfVersion::Pdf17,
-        }
-    }
-
-    pub(crate) fn settings_2() -> Self {
-        Self {
-            no_device_cs: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_4() -> Self {
-        Self {
-            force_type3_fonts: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_5() -> Self {
-        Self {
-            xmp_metadata: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_6() -> Self {
-        Self {
-            no_device_cs: true,
-            cmyk_profile: Some(
-                ICCProfile::new(Arc::new(
-                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-                ))
-                .unwrap(),
-            ),
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_7() -> Self {
-        Self {
-            validator: Validator::A2_B,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_8() -> Self {
-        Self {
-            validator: Validator::A2_B,
-            cmyk_profile: Some(
-                ICCProfile::new(Arc::new(
-                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-                ))
-                .unwrap(),
-            ),
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_9() -> Self {
-        Self {
-            validator: Validator::A2_U,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_10() -> Self {
-        Self {
-            validator: Validator::A3_B,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_11() -> Self {
-        Self {
-            validator: Validator::A3_U,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_12() -> Self {
-        Self {
-            enable_tagging: false,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_13() -> Self {
-        Self {
-            // Just to check that krilla enables tagging
-            // for this validator even if explicitly disabled.
-            enable_tagging: false,
-            validator: Validator::A2_A,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_14() -> Self {
-        Self {
-            validator: Validator::A3_A,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_15() -> Self {
-        Self {
-            validator: Validator::UA1,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_16() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf14,
-            xmp_metadata: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_17() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf14,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_18() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf14,
-            no_device_cs: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_19() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf14,
-            validator: Validator::A1_B,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_20() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf14,
-            validator: Validator::A1_A,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_21() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf17,
-            validator: Validator::A1_B,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_22() -> Self {
-        Self {
-            pdf_version: PdfVersion::Pdf14,
-            validator: Validator::A2_B,
-            ..Self::settings_1()
-        }
-    }
-}
-
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
@@ -330,20 +150,34 @@ impl Default for SerializeSettings {
 }
 
 pub(crate) struct PageInfo {
+    /// The reference of the page in the chunk.
     pub ref_: Ref,
+    /// The page size, necessary so that we can convert from PDF coordinates to
+    /// krilla coordinates.
     pub surface_size: Size,
-    // The refs of the annotations that are used by that page.
-    //
-    // Note that this will be empty be default, and only once we have serialized the pages
-    // will these values be set.
+    /// The refs of the annotations that are used by that page.
+    ///
+    /// Note that this will be empty be default when adding a new `PageInfo` to
+    /// `page_infos` in `SerializerContext`, and only once we actually serialize
+    /// the page will the annotations be populated.
     pub annotations: Vec<Ref>,
 }
 
 enum StructParentElement {
+    /// The index of the page and the number of marked content IDs present on that page.
     Page(usize, i32),
+    /// The index of the page where the annotation is present, as well as the index of the
+    /// annotation within that one page.
     Annotation(usize, usize),
 }
 
+/// The serializer context is more or less the core piece of krilla. It is passed around
+/// throughout pretty much the whole conversion process, and contains all mutable state
+/// that is needed when writing a PDF file. This includes for example:
+/// - Storing all chunks that are produced.
+/// - The mappings from OTF fonts to CID/Type 3 fonts.
+/// - Annotations used in the document.
+///   etc.
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
@@ -351,35 +185,45 @@ pub(crate) struct SerializerContext {
     font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
     xyz_dests: Vec<(Ref, XyzDestination)>,
     page_tree_ref: Option<Ref>,
+    /// Keep track of some necessary information for each page we have written so far.
+    /// This is necessary because in the end, we might for example need to get the Ref
+    /// of specific pages. Another use case is that we need access to the height of a page
+    /// to convert from krilla coordinates to PDF coordinates.
     page_infos: Vec<PageInfo>,
+    /// All the pages we have written so far. Unlike other objects, pages cannot be written
+    /// as soon as they are finished, but we need defer writing to until we call `finish()`.
+    /// The (one?) reason for this is that as part of serializing pages, we also serialize its
+    /// annotations. However, annotations can also reference future pages which have not been
+    /// written yet, and thus do not have a Ref. Because of this, this can only be done in the
+    /// very end.
     pages: Vec<(Ref, InternalPage)>,
+    /// This array keeps track of the values we need to write for the struct parent tree. Each
+    /// element can either be from an annotation (identified by page index and annotation index) or
+    /// from a page (identified by page index and the number of mcids on that page).
     struct_parents: Vec<StructParentElement>,
+    /// The outline of the document, optionally set by the user.
     outline: Option<Outline>,
+    /// Keep track of object hashes and their corresponding reference. This is used for
+    /// caching, so that for example same images will not be embedded twice in the document.
     cached_mappings: HashMap<u128, Ref>,
+    /// The tag tree of the document, optionally set by the user.
     tag_tree: Option<TagTree>,
+    /// The current ref in use. All serializers should use the `new_ref` method (which indirectly
+    /// is based on this field) to generate a new Ref, instead of creating one manually with
+    /// `Ref::new`.
     cur_ref: Ref,
+    /// Collect all chunks that are generated as part of the PDF writing process.
     chunk_container: ChunkContainer,
+    /// All validation errors that are collected as part of the export process.
     validation_errors: Vec<ValidationError>,
-    pub(crate) serialize_settings: SerializeSettings,
-    pub(crate) limits: Limits,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) enum PDFGlyph {
-    Type3(u8),
-    Cid(u16),
-}
-
-impl PDFGlyph {
-    pub fn encode_into(&self, slice: &mut Vec<u8>) {
-        match self {
-            PDFGlyph::Type3(cg) => slice.push(*cg),
-            PDFGlyph::Cid(cid) => {
-                slice.push((cid >> 8) as u8);
-                slice.push((cid & 0xff) as u8);
-            }
-        }
-    }
+    /// Settings used for serialization.
+    serialize_settings: Arc<SerializeSettings>,
+    /// The limits created as part of the serialization process. In principle, we could
+    /// just keep track of this in `ChunkContainer`, where all used chunks are stored.
+    /// The only reason why `SerializerContext` needs to know about them is that we also
+    /// need to merge limits from postscript functions, which are not directly accessible
+    /// from the chunk they are written to.
+    limits: Limits,
 }
 
 impl SerializerContext {
@@ -412,7 +256,7 @@ impl SerializerContext {
             tag_tree: None,
             font_map: HashMap::new(),
             validation_errors: vec![],
-            serialize_settings,
+            serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
         }
     }
@@ -481,6 +325,14 @@ impl SerializerContext {
         if self.serialize_settings.validator.prohibits(&error) {
             self.validation_errors.push(error);
         }
+    }
+
+    pub(crate) fn serialize_settings(&self) -> Arc<SerializeSettings> {
+        self.serialize_settings.clone()
+    }
+
+    pub(crate) fn register_limits(&mut self, limits: &Limits) {
+        self.limits.merge(limits);
     }
 
     pub fn page_tree_ref(&mut self) -> Ref {
@@ -613,8 +465,6 @@ impl SerializerContext {
             Resource::Gray => self.add_object(ICCBasedColorSpace(
                 self.serialize_settings.pdf_version.grey_icc(),
             )),
-            // Unwrap is safe, because we only emit `IccCmyk`
-            // if a profile has been set in the first place.
             Resource::Cmyk(cs) => self.add_object(cs),
             Resource::ShadingFunction(s) => self.add_object(s),
             Resource::FontIdentifier(f) => {
@@ -885,259 +735,4 @@ impl SerializerContext {
 
         Ok(serialized)
     }
-}
-
-#[derive(Copy, Clone)]
-pub enum CSWrapper {
-    Ref(Ref),
-    Name(Name<'static>),
-}
-
-impl pdf_writer::Primitive for CSWrapper {
-    fn write(self, buf: &mut Buf) {
-        match self {
-            CSWrapper::Ref(r) => r.write(buf),
-            CSWrapper::Name(n) => n.write(buf),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum FontContainer {
-    Type3(Type3FontMapper),
-    CIDFont(CIDFont),
-}
-
-impl FontContainer {
-    pub fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
-        match self {
-            FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
-            FontContainer::CIDFont(cid) => cid.get_cid(glyph.glyph_id).map(|_| cid.identifier()),
-        }
-    }
-
-    pub fn get_from_identifier_mut(
-        &mut self,
-        font_identifier: FontIdentifier,
-    ) -> Option<&mut dyn PdfFont> {
-        match self {
-            FontContainer::Type3(t3) => {
-                if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
-                    Some(t3_font)
-                } else {
-                    None
-                }
-            }
-            FontContainer::CIDFont(cid) => {
-                if cid.identifier() == font_identifier {
-                    Some(cid)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
-    pub fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
-        match self {
-            FontContainer::Type3(t3) => {
-                if let Some(t3_font) = t3.font_from_id(font_identifier) {
-                    Some(t3_font)
-                } else {
-                    None
-                }
-            }
-            FontContainer::CIDFont(cid) => {
-                if cid.identifier() == font_identifier {
-                    Some(cid)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
-    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
-        match self {
-            FontContainer::Type3(t3) => {
-                let (identifier, gid) = t3.add_glyph(glyph.to_owned());
-                (identifier, PDFGlyph::Type3(gid))
-            }
-            FontContainer::CIDFont(cid_font) => {
-                let cid = cid_font.add_glyph(glyph.glyph_id);
-                (cid_font.identifier(), PDFGlyph::Cid(cid))
-            }
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum StreamFilter {
-    Flate,
-    AsciiHex,
-    Dct,
-}
-
-impl StreamFilter {
-    pub(crate) fn to_name(self) -> Name<'static> {
-        match self {
-            Self::AsciiHex => Name(b"ASCIIHexDecode"),
-            Self::Flate => Name(b"FlateDecode"),
-            Self::Dct => Name(b"DCTDecode"),
-        }
-    }
-}
-
-impl StreamFilter {
-    pub fn can_apply(&self) -> bool {
-        match self {
-            StreamFilter::Flate => true,
-            StreamFilter::AsciiHex => true,
-            StreamFilter::Dct => false,
-        }
-    }
-
-    pub fn apply(&self, content: &[u8]) -> Vec<u8> {
-        match self {
-            StreamFilter::Flate => deflate_encode(content),
-            StreamFilter::AsciiHex => hex_encode(content),
-            // Note: We don't actually encode manually with DCT, because
-            // this is only used for JPEG images which are already encoded,
-            // so this shouldn't be called at all.
-            StreamFilter::Dct => panic!("can't apply dct decode"),
-        }
-    }
-}
-
-// Allows us to keep track of the filters that a stream has and
-// apply them in an orderly fashion.
-#[derive(Debug, Clone)]
-pub enum StreamFilters {
-    None,
-    Single(StreamFilter),
-    Multiple(Vec<StreamFilter>),
-}
-
-impl StreamFilters {
-    pub fn add(&mut self, stream_filter: StreamFilter) {
-        match self {
-            StreamFilters::None => *self = StreamFilters::Single(stream_filter),
-            StreamFilters::Single(cur) => {
-                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
-            }
-            StreamFilters::Multiple(cur) => cur.push(stream_filter),
-        }
-    }
-}
-
-pub struct FilterStream<'a> {
-    content: Cow<'a, [u8]>,
-    filters: StreamFilters,
-}
-
-impl<'a> FilterStream<'a> {
-    fn empty(content: &'a [u8]) -> Self {
-        Self {
-            content: Cow::Borrowed(content),
-            filters: StreamFilters::None,
-        }
-    }
-
-    pub fn new_from_content_stream(
-        content: &'a [u8],
-        serialize_settings: &SerializeSettings,
-    ) -> Self {
-        let mut filter_stream = Self::empty(content);
-
-        if serialize_settings.compress_content_streams {
-            filter_stream.add_filter(StreamFilter::Flate);
-
-            if serialize_settings.ascii_compatible {
-                filter_stream.add_filter(StreamFilter::AsciiHex);
-            }
-        }
-
-        filter_stream
-    }
-
-    pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::Flate);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
-        filter_stream
-    }
-
-    pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::Dct);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
-        filter_stream
-    }
-
-    pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
-        filter_stream
-    }
-
-    pub fn add_filter(&mut self, filter: StreamFilter) {
-        if filter.can_apply() {
-            self.content = Cow::Owned(filter.apply(&self.content));
-        }
-
-        self.filters.add(filter);
-    }
-
-    pub fn encoded_data(&self) -> &[u8] {
-        &self.content
-    }
-
-    pub fn write_filters<'b, T>(&self, mut dict: T)
-    where
-        T: DerefMut<Target = Dict<'b>>,
-    {
-        match &self.filters {
-            StreamFilters::None => {}
-            StreamFilters::Single(filter) => {
-                dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
-            }
-            StreamFilters::Multiple(filters) => {
-                dict.deref_mut()
-                    .insert(Name(b"Filter"))
-                    .start::<Array>()
-                    .items(filters.iter().map(|f| f.to_name()).rev());
-            }
-        }
-    }
-}
-
-fn deflate_encode(data: &[u8]) -> Vec<u8> {
-    const COMPRESSION_LEVEL: u8 = 6;
-    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
-}
-
-fn hex_encode(data: &[u8]) -> Vec<u8> {
-    data.iter()
-        .enumerate()
-        .map(|(index, byte)| {
-            let mut formatted = format!("{:02X}", byte);
-            if index % 35 == 34 {
-                formatted.push('\n');
-            }
-            formatted
-        })
-        .collect::<String>()
-        .into_bytes()
 }
