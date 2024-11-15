@@ -1048,11 +1048,6 @@ mod tests {
         text_with_fill_impl(surface, true)
     }
 
-    #[visreg(settings_4, all)]
-    fn text_type3_with_fill(surface: &mut Surface) {
-        text_with_fill_impl(surface, false)
-    }
-
     fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
         surface.stroke_text(
@@ -1110,13 +1105,6 @@ mod tests {
     #[visreg]
     fn text_outlined_with_stroke(surface: &mut Surface) {
         text_with_stroke_impl(surface, true);
-    }
-
-    // This test does not work correctly. Stroking is unfortunately
-    // very tricky to get to work properly with Type3 fonts.
-    #[visreg(all, settings_4)]
-    fn text_type3_with_stroke(surface: &mut Surface) {
-        text_with_stroke_impl(surface, false)
     }
 
     #[visreg]

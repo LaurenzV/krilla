@@ -129,6 +129,7 @@ impl Font {
         self.0.font_info.global_bbox.0
     }
 
+    // For now, location will always be default, until we support variable fonts.
     pub(crate) fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
     }

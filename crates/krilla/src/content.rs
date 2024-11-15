@@ -399,7 +399,7 @@ impl ContentBuilder {
             }
 
             let pdf_glyph = pdf_font
-                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode, size))
+                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode))
                 .unwrap();
 
             let normalize =
@@ -891,6 +891,10 @@ impl ContentBuilder {
     ) {
         self.content.start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
     }
+
+    pub(crate) fn content_start_color_glyph(&mut self, wx: f32) {
+        self.content.start_color_glyph(wx);
+    }
 }
 
 fn get_glyphs_bbox(
@@ -1104,7 +1108,7 @@ where
             U: Glyph,
         {
             let (identifier, pdf_glyph) =
-                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), paint_mode, font_size));
+                font_container.add_glyph(CoveredGlyph::new(g.glyph_id(), paint_mode));
             let pdf_font = font_container
                 .get_from_identifier_mut(identifier.clone())
                 .unwrap();
@@ -1311,7 +1315,6 @@ where
             fn func<U>(
                 g: &U,
                 paint_mode: PaintMode,
-                font_size: f32,
                 font_container: RefMut<FontContainer>,
             ) -> GlyphProps
             where
@@ -1319,7 +1322,7 @@ where
             {
                 // Safe because we've already added all glyphs in the text spanner.
                 let font_identifier = font_container
-                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode, font_size))
+                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode))
                     .unwrap();
 
                 GlyphProps {
@@ -1335,17 +1338,11 @@ where
             let first = func(
                 iter.next()?,
                 self.paint_mode,
-                self.font_size,
                 self.font_container.borrow_mut(),
             );
 
             for next in iter {
-                let temp_glyph = func(
-                    next,
-                    self.paint_mode,
-                    self.font_size,
-                    self.font_container.borrow_mut(),
-                );
+                let temp_glyph = func(next, self.paint_mode, self.font_container.borrow_mut());
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier

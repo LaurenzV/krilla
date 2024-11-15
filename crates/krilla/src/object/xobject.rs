@@ -32,6 +32,10 @@ impl XObject {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.stream.is_empty()
+    }
+
     pub fn bbox(&self) -> Rect {
         self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox.0)
     }

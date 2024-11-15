@@ -430,13 +430,10 @@ impl SerializerContext {
                 // to a series of Type3 fonts or to a single CID font, but not a mix of both.
                 let font_ref = font.font_ref();
                 let use_type3 = self.serialize_settings.force_type3_fonts
-                    || !font.location_ref().coords().is_empty()
-                    || font_ref.svg().is_ok()
                     || font_ref.colr().is_ok()
                     || font_ref.sbix().is_ok()
                     || font_ref.cbdt().is_ok()
-                    || font_ref.ebdt().is_ok()
-                    || font_ref.cff2().is_ok();
+                    || font_ref.ebdt().is_ok();
 
                 if use_type3 {
                     Rc::new(RefCell::new(FontContainer::Type3(Type3FontMapper::new(
