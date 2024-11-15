@@ -12,8 +12,8 @@ pub type KrillaResult<T> = Result<T, KrillaError>;
 /// An error in krilla.
 #[derive(Debug, PartialEq, Eq)]
 pub enum KrillaError {
-    /// An error while attempting to subset a font.
-    SubsetError(Font, String),
+    /// An error while attempting to embed a font.
+    FontError(Font, String),
     /// A user-related error, indicating API misuse (for example attempting to add
     /// a link to a page that doesn't exist).
     UserError(String),

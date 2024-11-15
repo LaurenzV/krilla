@@ -66,6 +66,10 @@ impl Stream {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.content.is_empty()
+    }
+
     pub(crate) fn empty() -> Self {
         Self {
             content: vec![],
