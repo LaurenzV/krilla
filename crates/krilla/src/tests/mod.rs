@@ -10,6 +10,8 @@ use crate::path::{Fill, Stroke};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
+use crate::validation::Validator;
+use crate::version::PdfVersion;
 use crate::{SerializeSettings, SvgSettings};
 use difference::{Changeset, Difference};
 use image::{load_from_memory, Rgba, RgbaImage};
@@ -27,8 +29,6 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
-use crate::validation::Validator;
-use crate::version::PdfVersion;
 
 #[allow(dead_code)]
 #[rustfmt::skip]
@@ -678,7 +678,7 @@ impl SerializeSettings {
                 ICCProfile::new(Arc::new(
                     std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
                 ))
-                    .unwrap(),
+                .unwrap(),
             ),
             ..Self::settings_1()
         }
@@ -698,7 +698,7 @@ impl SerializeSettings {
                 ICCProfile::new(Arc::new(
                     std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
                 ))
-                    .unwrap(),
+                .unwrap(),
             ),
             ..Self::settings_1()
         }
