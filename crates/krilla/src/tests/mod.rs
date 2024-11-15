@@ -640,7 +640,6 @@ impl SerializeSettings {
             compress_content_streams: false,
             no_device_cs: false,
             xmp_metadata: false,
-            force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::None,
             enable_tagging: true,
@@ -651,13 +650,6 @@ impl SerializeSettings {
     pub(crate) fn settings_2() -> Self {
         Self {
             no_device_cs: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub(crate) fn settings_4() -> Self {
-        Self {
-            force_type3_fonts: true,
             ..Self::settings_1()
         }
     }

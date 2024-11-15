@@ -81,8 +81,6 @@ pub struct SerializeSettings {
     /// you use. For example, when exporting to PDF/A, this value will be set to
     /// true, regardless of what value will be passed.
     pub xmp_metadata: bool,
-    /// Whether all fonts should be embedded as Type3 fonts.
-    pub force_type3_fonts: bool,
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
     ///
@@ -140,7 +138,6 @@ impl Default for SerializeSettings {
             compress_content_streams: true,
             no_device_cs: false,
             xmp_metadata: true,
-            force_type3_fonts: false,
             cmyk_profile: None,
             validator: Validator::None,
             enable_tagging: true,
@@ -429,8 +426,7 @@ impl SerializerContext {
                 // For now, we make the simplifying assumption that a font is either mapped
                 // to a series of Type3 fonts or to a single CID font, but not a mix of both.
                 let font_ref = font.font_ref();
-                let use_type3 = self.serialize_settings.force_type3_fonts
-                    || font_ref.svg().is_ok()
+                let use_type3 = font_ref.svg().is_ok()
                     || font_ref.colr().is_ok()
                     || font_ref.sbix().is_ok()
                     || font_ref.cbdt().is_ok()
