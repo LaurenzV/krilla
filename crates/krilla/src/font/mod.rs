@@ -9,12 +9,6 @@
 //! Even better is the fact that you do not need to take care of choosing the right
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index and variation coordinates.
-//!
-//! krilla, in principle, also supports variable fonts. However, at the moment, variable
-//! fonts are not encoded in the most efficient way (they are stored as Type3 fonts instead
-//! of embedded TTF/CFF fonts, due to the lack of an instancing crate in the Rust ecosystem),
-//! so if possible you should prefer static versions of font and not setting any variation
-//! coordinates.
 
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
@@ -61,12 +55,8 @@ impl Font {
     /// the font.
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
-    pub fn new(
-        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
-        index: u32,
-        variations: Vec<(String, f32)>,
-    ) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref().as_ref(), index, variations)?;
+    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>, index: u32) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index)?;
 
         Font::new_with_info(data, Arc::new(font_info))
     }
@@ -139,15 +129,6 @@ impl Font {
         self.0.font_info.global_bbox.0
     }
 
-    #[cfg(feature = "simple-text")]
-    pub(crate) fn variations(&self) -> impl IntoIterator<Item = (&str, f32)> {
-        self.0
-            .font_info
-            .variations
-            .iter()
-            .map(|v| (v.0.as_str(), v.1.get()))
-    }
-
     pub(crate) fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
     }
@@ -185,7 +166,6 @@ impl Debug for Font {
 pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
-    variations: Vec<(String, FiniteF32)>,
     location: Location,
     units_per_em: u16,
     global_bbox: RectWrapper,
@@ -217,13 +197,11 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, variations: Vec<(String, f32)>) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().ok()?.checksum_adjustment();
 
-        let location = font_ref
-            .axes()
-            .location(variations.iter().map(|n| (n.0.as_str(), n.1)));
+        let location = Location::default();
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let ascent = FiniteF32::new(metrics.ascent)?;
         let descent = FiniteF32::new(metrics.descent)?;
@@ -259,15 +237,9 @@ impl FontInfo {
             }
         };
 
-        let variations = variations
-            .into_iter()
-            .map(|v| (v.0, FiniteF32::new(v.1).unwrap()))
-            .collect::<Vec<_>>();
-
         Some(FontInfo {
             index,
             checksum,
-            variations,
             location,
             units_per_em,
             postscript_name,

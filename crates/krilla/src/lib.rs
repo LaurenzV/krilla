@@ -40,7 +40,7 @@ let mut font = {
     let path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
     let data = std::fs::read(&path).unwrap();
-    Font::new(Arc::new(data), 0, vec![]).unwrap()
+    Font::new(Arc::new(data), 0).unwrap()
 };
 
 // Add a new page with dimensions 200x200.

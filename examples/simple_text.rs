@@ -102,44 +102,6 @@ fn main() {
         TextDirection::Auto,
     );
 
-    let mut y = 125.0;
-
-    let axes = vec![
-        vec![("wght".to_string(), 100.0), ("wdth".to_string(), 62.5)],
-        vec![("wght".to_string(), 233.33), ("wdth".to_string(), 68.75)],
-        vec![("wght".to_string(), 366.67), ("wdth".to_string(), 75.0)],
-        vec![("wght".to_string(), 500.0), ("wdth".to_string(), 81.25)],
-        vec![("wght".to_string(), 633.33), ("wdth".to_string(), 87.5)],
-        vec![("wght".to_string(), 766.67), ("wdth".to_string(), 93.75)],
-        vec![("wght".to_string(), 900.0), ("wdth".to_string(), 100.0)],
-    ];
-
-    // krilla also supports variable fonts!
-    for coordinates in axes {
-        let noto_font_variable = Font::new(
-            Arc::new(std::fs::read("assets/fonts/NotoSans_variable.ttf").unwrap()),
-            0,
-            coordinates,
-        )
-        .unwrap();
-
-        surface.fill_text(
-            Point::from_xy(0.0, y),
-            Fill {
-                paint: rgb::Color::new(0, 0, 255).into(),
-                ..Default::default()
-            },
-            noto_font_variable.clone(),
-            25.0,
-            &[],
-            "Variable fonts rock!",
-            false,
-            TextDirection::Auto,
-        );
-
-        y += 25.0;
-    }
-
     surface.finish();
     page.finish();
     let pdf = document.finish().unwrap();

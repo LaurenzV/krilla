@@ -949,7 +949,7 @@ mod tests {
     impl SurfaceExt for Surface<'_> {
         fn fill_text_(&mut self, y: f32, content: &str) {
             let font_data = NOTO_SANS.clone();
-            let font = Font::new(font_data, 0, vec![]).unwrap();
+            let font = Font::new(font_data, 0).unwrap();
 
             self.fill_text(
                 tiny_skia_path::Point::from_xy(0.0, y),

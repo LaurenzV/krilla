@@ -676,7 +676,7 @@ mod tests {
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -704,7 +704,7 @@ mod tests {
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -728,7 +728,7 @@ mod tests {
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         let id1 = surface.start_tagged(ContentTag::Span(
             "",
@@ -791,7 +791,7 @@ mod tests {
     fn validation_pdfu_invalid_codepoint() {
         let mut document = Document::new_with(SerializeSettings::settings_9());
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
         invalid_codepoint_impl(&mut document, font.clone(), "A\u{FEFF}B");
 
         assert_eq!(
@@ -808,7 +808,7 @@ mod tests {
         let metadata = Metadata::new().language("en".to_string());
         document.set_metadata(metadata);
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
         invalid_codepoint_impl(&mut document, font.clone(), "A\u{E022}B");
 
         assert_eq!(
@@ -865,7 +865,7 @@ mod tests {
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text(
@@ -913,7 +913,7 @@ mod tests {
         let mut surface = page.surface();
 
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
         surface.fill_text(
