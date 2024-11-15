@@ -358,7 +358,7 @@ mod tests {
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -375,7 +375,7 @@ mod tests {
 
     #[visreg(all)]
     fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, vec![]).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -390,7 +390,7 @@ mod tests {
 
     #[visreg(all)]
     fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -405,7 +405,7 @@ mod tests {
 
     #[visreg(all)]
     fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, vec![]).unwrap();
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
@@ -420,7 +420,7 @@ mod tests {
 
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, vec![]).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -446,9 +446,9 @@ mod tests {
 
         let font_data =
             Arc::new(std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc").unwrap());
-        let font_1 = Font::new(font_data.clone(), 0, vec![]).unwrap();
-        let font_2 = Font::new(font_data.clone(), 3, vec![]).unwrap();
-        let font_3 = Font::new(font_data, 6, vec![]).unwrap();
+        let font_1 = Font::new(font_data.clone(), 0).unwrap();
+        let font_2 = Font::new(font_data.clone(), 3).unwrap();
+        let font_3 = Font::new(font_data, 6).unwrap();
 
         surface.fill_text(
             Point::from_xy(0.0, 75.0),

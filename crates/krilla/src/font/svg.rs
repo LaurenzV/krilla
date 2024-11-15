@@ -86,7 +86,7 @@ mod tests {
     #[visreg]
     fn svg_extra(surface: &mut Surface) {
         let font_data = SVG_EXTRA.clone();
-        let font = Font::new(font_data, 0, vec![]).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         surface.fill_text(
             Point::from_xy(0., 30.0),
