@@ -558,132 +558,10 @@ mod tests {
         }
     }
 
-    #[snapshot(settings_4)]
-    fn type3_noto_sans_two_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
-        let container = sc.create_or_get_font_container(font.clone());
-        let mut font_container = container.borrow_mut();
-
-        match &mut *font_container {
-            FontContainer::Type3(t3) => {
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(36),
-                    Fill::default().into(),
-                ));
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(37),
-                    Fill::default().into(),
-                ));
-                let t3_font = t3
-                    .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
-                    .unwrap();
-                t3_font.set_codepoints(0, "A".to_string());
-                t3_font.set_codepoints(1, "B".to_string());
-            }
-            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
-        }
-    }
-
-    #[visreg(all, settings_4)]
-    fn type3_noto_sans_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "hello world",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg(all, settings_4)]
-    fn type3_latin_modern_simple_text(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "hello world",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg(all, settings_4)]
-    fn type3_with_color(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            red_fill(0.8),
-            font,
-            32.0,
-            &[],
-            "hello world",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg(all, settings_4)]
-    fn type3_noto_arabic_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "مرحبا بالعالم",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(settings_4)]
-    fn type3_latin_modern_four_glyphs(sc: &mut SerializerContext) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
-        let container = sc.create_or_get_font_container(font.clone());
-        let mut font_container = container.borrow_mut();
-
-        match &mut *font_container {
-            FontContainer::Type3(t3) => {
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(58),
-                    Fill::default().into(),
-                ));
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(54),
-                    Fill::default().into(),
-                ));
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(69),
-                    Fill::default().into(),
-                ));
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(71),
-                    Fill::default().into(),
-                ));
-                let t3_font = t3
-                    .font_mut_from_id(FontIdentifier::Type3(Type3Identifier(font.clone(), 0)))
-                    .unwrap();
-                t3_font.set_codepoints(0, "G".to_string());
-                t3_font.set_codepoints(1, "F".to_string());
-                t3_font.set_codepoints(2, "K".to_string());
-                t3_font.set_codepoints(3, "L".to_string());
-            }
-            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
-        }
-    }
-
     #[test]
     fn type3_more_than_256_glyphs() {
-        let mut sc = SerializerContext::new(SerializeSettings::settings_4());
-        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+        let mut sc = SerializerContext::new(SerializeSettings::settings_1());
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -715,24 +593,7 @@ mod tests {
         }
     }
 
-    #[snapshot(single_page, settings_4)]
-    fn type3_text_glyphs(page: &mut Page) {
-        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
-        let mut surface = page.surface();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 25.0),
-            Fill::default(),
-            font.clone(),
-            25.0,
-            &[],
-            "Hi",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page, settings_4)]
+    #[snapshot(single_page, settings_1)]
     fn type3_color_glyphs(page: &mut Page) {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
         let mut surface = page.surface();

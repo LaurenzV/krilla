@@ -77,26 +77,3 @@ impl OutlinePen for OutlineBuilder {
         self.0.close()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::document::Document;
-    use crate::tests::{all_glyphs_to_pdf, NOTO_SANS};
-    use krilla_macros::visreg;
-    use skrifa::GlyphId;
-
-    #[visreg(document, settings_4, all)]
-    fn noto_sans_type3_glyphs(document: &mut Document) {
-        let font_data = NOTO_SANS.clone();
-        all_glyphs_to_pdf(
-            font_data,
-            Some(
-                (20..=50)
-                    .map(|n| (GlyphId::new(n), "".to_string()))
-                    .collect::<Vec<_>>(),
-            ),
-            true,
-            document,
-        );
-    }
-}
