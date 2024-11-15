@@ -193,7 +193,7 @@ impl Type3Font {
                                 ),
                             })
                         {
-                            surface.fill_path_impl(&path, fill, true);
+                            surface.fill_path(&path, fill);
                         }
                     };
 
