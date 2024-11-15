@@ -161,7 +161,7 @@ impl Type3Font {
                         &mut surface,
                     );
 
-                    if !drawn_color_glyph.is_some() {
+                    if drawn_color_glyph.is_none() {
                         // If this code path is reached, it means we tried to create a Type3
                         // font from a font that does not have any (valid) color table. This
                         // should be avoided because non-color fonts should always be embedded

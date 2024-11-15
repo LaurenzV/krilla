@@ -158,12 +158,7 @@ impl ContentBuilder {
         }
     }
 
-    pub fn fill_path(
-        &mut self,
-        path: &Path,
-        fill: Fill,
-        sc: &mut SerializerContext,
-    ) {
+    pub fn fill_path(&mut self, path: &Path, fill: Fill, sc: &mut SerializerContext) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
