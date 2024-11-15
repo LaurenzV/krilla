@@ -473,8 +473,7 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned =
-                    TextSpanner::new(glyphs, text, paint_mode, font_size, font_container.clone());
+                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_container.clone());
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -486,12 +485,8 @@ impl ContentBuilder {
 
                     // Segment into glyph runs that can be encoded in one go using a PDF
                     // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                    let segmented = GlyphGrouper::new(
-                        font_container.clone(),
-                        paint_mode,
-                        font_size,
-                        fragment.glyphs(),
-                    );
+                    let segmented =
+                        GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
 
                     for glyph_group in segmented {
                         let borrowed = font_container.borrow();
@@ -880,21 +875,6 @@ impl ContentBuilder {
             };
         }
     }
-
-    pub(crate) fn content_start_shape_glyph(
-        &mut self,
-        wx: f32,
-        ll_x: f32,
-        ll_y: f32,
-        ur_x: f32,
-        ur_y: f32,
-    ) {
-        self.content.start_shape_glyph(wx, ll_x, ll_y, ur_x, ur_y);
-    }
-
-    pub(crate) fn content_start_color_glyph(&mut self, wx: f32) {
-        self.content.start_color_glyph(wx);
-    }
 }
 
 fn get_glyphs_bbox(
@@ -1064,7 +1044,6 @@ where
 {
     slice: &'a [T],
     paint_mode: PaintMode<'a>,
-    font_size: f32,
     font_container: Rc<RefCell<FontContainer>>,
     text: &'a str,
 }
@@ -1077,7 +1056,6 @@ where
         slice: &'a [T],
         text: &'a str,
         paint_mode: PaintMode<'a>,
-        font_size: f32,
         font_container: Rc<RefCell<FontContainer>>,
     ) -> Self {
         Self {
@@ -1085,7 +1063,6 @@ where
             paint_mode,
             text,
             font_container,
-            font_size,
         }
     }
 }
@@ -1100,7 +1077,6 @@ where
         fn func<U>(
             g: &U,
             paint_mode: PaintMode,
-            font_size: f32,
             mut font_container: RefMut<FontContainer>,
             text: &str,
         ) -> (Range<usize>, bool)
@@ -1138,7 +1114,6 @@ where
         let (first_range, first_incompatible) = func(
             iter.next()?,
             self.paint_mode,
-            self.font_size,
             self.font_container.borrow_mut(),
             self.text,
         );
@@ -1149,7 +1124,6 @@ where
             let (next_range, next_incompatible) = func(
                 next,
                 self.paint_mode,
-                self.font_size,
                 self.font_container.borrow_mut(),
                 self.text,
             );
@@ -1273,7 +1247,6 @@ where
 {
     font_container: Rc<RefCell<FontContainer>>,
     paint_mode: PaintMode<'a>,
-    font_size: f32,
     slice: &'a [T],
 }
 
@@ -1284,13 +1257,11 @@ where
     pub fn new(
         font_container: Rc<RefCell<FontContainer>>,
         paint_mode: PaintMode<'a>,
-        font_size: f32,
         slice: &'a [T],
     ) -> Self {
         Self {
             font_container,
             paint_mode,
-            font_size,
             slice,
         }
     }
