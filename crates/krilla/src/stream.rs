@@ -269,11 +269,13 @@ impl<'a> FilterStream<'a> {
     }
 }
 
+#[cfg_attr(feature = "comemo", comemo::memoize)]
 fn deflate_encode(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;
     miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
 }
 
+#[cfg_attr(feature = "comemo", comemo::memoize)]
 fn hex_encode(data: &[u8]) -> Vec<u8> {
     data.iter()
         .enumerate()

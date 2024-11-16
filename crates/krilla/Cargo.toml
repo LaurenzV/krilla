@@ -12,6 +12,7 @@ exclude = ["src/tests"]
 
 [features]
 default = ["simple-text", "raster-images", "svg"]
+"comemo" = ["dep:comemo"]
 # Allow for rendering SVG images and SVG-based glyphs.
 "svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
 # Allow for rendering simple text without having to shape it yourself.
@@ -22,6 +23,9 @@ default = ["simple-text", "raster-images", "svg"]
 "raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp"]
 
 [dependencies]
+base64 = { workspace = true }
+bumpalo = { workspace = true }
+comemo = { workspace = true, optional = true }
 flate2 = { workspace = true }
 float-cmp = { workspace = true }
 fontdb = { workspace = true, optional = true }
@@ -38,12 +42,10 @@ skrifa = { workspace = true }
 tiny-skia = { workspace = true, optional = true }
 tiny-skia-path = { workspace = true }
 usvg = { workspace = true, optional = true }
+xmp-writer = { workspace = true }
 yoke = { workspace = true }
 zune-png = { workspace = true, optional = true }
 zune-jpeg = { workspace = true, optional = true }
-xmp-writer = { workspace = true }
-base64 = { workspace = true }
-bumpalo = { workspace = true }
 
 [dev-dependencies]
 difference = { workspace = true }

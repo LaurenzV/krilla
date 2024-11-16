@@ -119,17 +119,7 @@ impl CIDFont {
 
         let is_cff = self.font.font_ref().cff().is_ok();
 
-        let subsetted = {
-            let font_data = self.font.font_data();
-            subsetter::subset(
-                font_data.as_ref().as_ref(),
-                self.font.index(),
-                glyph_remapper,
-            )
-            .map_err(|e| {
-                KrillaError::FontError(self.font.clone(), format!("failed to subset font: {}", e))
-            })
-        }?;
+        let subsetted = subset_font(self.font.clone(), glyph_remapper)?;
 
         let font_stream = {
             let mut data = subsetted.as_slice();
@@ -338,6 +328,13 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
     let subset_tag = subset_tag(&data);
 
     format!("{subset_tag}+{trimmed}")
+}
+
+#[cfg_attr(feature = "comemo", comemo::memoize)]
+fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u8>> {
+    let font_data = font.font_data();
+    subsetter::subset(font_data.as_ref().as_ref(), font.index(), glyph_remapper)
+        .map_err(|e| KrillaError::FontError(font.clone(), format!("failed to subset font: {}", e)))
 }
 
 #[cfg(test)]
