@@ -10,7 +10,7 @@ use crate::validation::ValidationError;
 pub type KrillaResult<T> = Result<T, KrillaError>;
 
 /// An error in krilla.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum KrillaError {
     /// An error while attempting to embed a font.
     FontError(Font, String),
