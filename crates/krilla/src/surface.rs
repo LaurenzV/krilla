@@ -951,6 +951,7 @@ mod tests {
             transform: Default::default(),
             spread_method,
             stops: stops_with_3_solid_1(),
+            anti_alias: false,
         }
     }
 

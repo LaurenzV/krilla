@@ -57,6 +57,8 @@ pub struct LinearGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
     pub stops: Stops,
+    /// Whether the gradient should be anti-aliased.
+    pub anti_alias: bool,
 }
 
 impl Eq for LinearGradient {}
@@ -70,6 +72,7 @@ impl Hash for LinearGradient {
         self.transform.hash(state);
         self.spread_method.hash(state);
         self.stops.hash(state);
+        self.anti_alias.hash(state);
     }
 }
 
@@ -97,6 +100,8 @@ pub struct RadialGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
     pub stops: Stops,
+    /// Whether the gradient should be anti-aliased.
+    pub anti_alias: bool,
 }
 
 impl Eq for RadialGradient {}
@@ -112,6 +117,7 @@ impl Hash for RadialGradient {
         self.transform.hash(state);
         self.spread_method.hash(state);
         self.stops.hash(state);
+        self.anti_alias.hash(state);
     }
 }
 
@@ -134,6 +140,8 @@ pub struct SweepGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
     pub stops: Stops,
+    /// Whether the gradient should be anti-aliased.
+    pub anti_alias: bool,
 }
 
 impl Eq for SweepGradient {}
@@ -147,6 +155,7 @@ impl Hash for SweepGradient {
         self.transform.hash(state);
         self.spread_method.hash(state);
         self.stops.hash(state);
+        self.anti_alias.hash(state);
     }
 }
 

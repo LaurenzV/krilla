@@ -82,6 +82,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         let (props, transform) =
@@ -100,6 +101,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Repeat,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         let (props, transform) =
@@ -119,6 +121,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         surface.fill_path(
@@ -142,6 +145,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Repeat,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         surface.fill_path(
@@ -164,6 +168,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         let (props, transform) =
@@ -182,6 +187,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Repeat,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         let (props, transform) =
@@ -201,6 +207,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         surface.fill_path(
@@ -224,6 +231,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Repeat,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         surface.fill_path(
@@ -248,6 +256,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         let (props, transform) =
@@ -272,6 +281,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_1_solid(),
+            anti_alias: false,
         };
 
         surface.fill_path(
@@ -297,6 +307,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Pad,
             stops: stops_with_3_solid_1(),
+            anti_alias: false,
         };
 
         surface.fill_path(
