@@ -71,6 +71,7 @@ pub fn convert_paint(
                 .map(convert_stop)
                 .collect::<Vec<_>>()
                 .into(),
+            anti_alias: false,
         }
         .into(),
         usvg::Paint::RadialGradient(rg) => RadialGradient {
@@ -88,6 +89,7 @@ pub fn convert_paint(
                 .map(convert_stop)
                 .collect::<Vec<_>>()
                 .into(),
+            anti_alias: false,
         }
         .into(),
         usvg::Paint::Pattern(pat) => {

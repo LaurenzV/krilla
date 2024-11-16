@@ -49,6 +49,7 @@ endobj
 <<
   /ShadingType 3
   /ColorSpace /DeviceRGB
+  /AntiAlias false
   /Function 4 0 R
   /Coords [120 120 50 100 100 50]
   /Extend [true true]

@@ -18,6 +18,7 @@ endobj
   /ShadingType 1
   /ColorSpace /DeviceRGB
   /Matrix [1 0 0 1 0 0]
+  /AntiAlias false
   /Function 1 0 R
   /Domain [50 150 50 150]
 >>

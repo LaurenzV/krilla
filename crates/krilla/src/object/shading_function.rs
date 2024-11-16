@@ -32,6 +32,7 @@ pub(crate) struct RadialAxialGradient {
     pub coords: Vec<f32>,
     pub shading_type: FunctionShadingType,
     pub stops: Vec<Stop>,
+    pub anti_alias: bool,
 }
 
 impl Eq for RadialAxialGradient {}
@@ -44,6 +45,7 @@ impl Hash for RadialAxialGradient {
 
         self.shading_type.hash(state);
         self.stops.hash(state);
+        self.anti_alias.hash(state);
     }
 }
 
@@ -55,6 +57,7 @@ pub(crate) struct PostScriptGradient {
     pub domain: RectWrapper,
     pub spread_method: SpreadMethod,
     pub gradient_type: GradientType,
+    pub anti_alias: bool,
 }
 
 impl Eq for PostScriptGradient {}
@@ -67,6 +70,7 @@ impl Hash for PostScriptGradient {
         self.domain.hash(state);
         self.spread_method.hash(state);
         self.gradient_type.hash(state);
+        self.anti_alias.hash(state);
     }
 }
 
@@ -133,6 +137,7 @@ impl GradientPropertiesExt for LinearGradient {
                     coords: vec![self.x1, self.y1, self.x2, self.y2],
                     shading_type: FunctionShadingType::Axial,
                     stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                    anti_alias: self.anti_alias,
                 }),
                 self.transform,
             )
@@ -149,6 +154,7 @@ impl GradientPropertiesExt for LinearGradient {
                     domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
+                    anti_alias: self.anti_alias,
                 }),
                 self.transform.pre_concat(ts),
             )
@@ -173,6 +179,7 @@ impl GradientPropertiesExt for SweepGradient {
                 domain: RectWrapper(get_expanded_bbox(bbox, transform)),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
+                anti_alias: self.anti_alias,
             }),
             transform,
         )
@@ -187,6 +194,7 @@ impl GradientPropertiesExt for RadialGradient {
                 coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
                 shading_type: FunctionShadingType::Radial,
                 stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                anti_alias: self.anti_alias,
             }),
             self.transform,
         )
@@ -263,7 +271,7 @@ fn serialize_postscript_shading(
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
     shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
-
+    shading.anti_alias(post_script_gradient.anti_alias);
     shading.function(function_ref);
 
     shading.domain([domain.left(), domain.right(), domain.top(), domain.bottom()]);
@@ -296,6 +304,7 @@ fn serialize_axial_radial_shading(
     }
     shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
 
+    shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);
     shading.coords(radial_axial_gradient.coords.iter().copied());
     shading.extend([true, true]);

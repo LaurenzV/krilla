@@ -313,6 +313,7 @@ impl ColorPainter for ColrBuilder {
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
                     transform,
+                    anti_alias: false,
                 };
 
                 Some(Fill {
@@ -352,6 +353,7 @@ impl ColorPainter for ColrBuilder {
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
                     transform,
+                    anti_alias: false,
                 };
 
                 Some(Fill {
@@ -388,6 +390,7 @@ impl ColorPainter for ColrBuilder {
                     stops: stops.into(),
                     spread_method: extend.to_spread_method(),
                     transform,
+                    anti_alias: false,
                 };
 
                 Some(Fill {

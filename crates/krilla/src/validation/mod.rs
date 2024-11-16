@@ -608,6 +608,7 @@ mod tests {
             transform: Default::default(),
             spread_method: SpreadMethod::Repeat,
             stops: stops_with_2_solid_1(),
+            anti_alias: false,
         };
 
         let fill = Fill {
