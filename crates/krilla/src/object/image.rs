@@ -571,7 +571,6 @@ mod tests {
     use crate::tests::load_image;
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
-    
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
