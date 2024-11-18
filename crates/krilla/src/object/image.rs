@@ -357,7 +357,6 @@ impl Image {
 
             let alpha_mask = match &repr {
                 Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
-                    let soft_mask_id = soft_mask_id;
                     let mask_stream =
                         FilterStream::new_from_binary_data(mask_data, &serialize_settings);
                     let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
@@ -411,7 +410,7 @@ impl Image {
 
             if use_icc {
                 image_x_object.pair(Name(b"ColorSpace"), cs_ref);
-            }   else {
+            } else {
                 let name = match repr.color_space() {
                     ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
                     ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
