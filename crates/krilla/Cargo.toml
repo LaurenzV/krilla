@@ -30,6 +30,7 @@ flate2 = { workspace = true }
 float-cmp = { workspace = true }
 fontdb = { workspace = true, optional = true }
 gif = { workspace = true, optional = true }
+imagesize = { workspace = true }
 image-webp = { workspace = true, optional = true }
 miniz_oxide = { workspace = true }
 once_cell = { workspace = true }

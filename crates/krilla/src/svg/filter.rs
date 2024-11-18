@@ -1,6 +1,8 @@
+use crate::image::ImageSize;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use crate::svg::ProcessContext;
+use std::sync::Arc;
 use tiny_skia_path::{Size, Transform};
 
 /// Render a filter into a surface by rasterizing it with `resvg` and drawing
@@ -81,7 +83,7 @@ pub fn render(
     );
 
     let encoded_image = pixmap.encode_png().ok()?;
-    let image = Image::from_png(&encoded_image)?;
+    let image = Image::new(Arc::new(encoded_image))?;
     let size = Size::from_wh(layer_bbox.width(), layer_bbox.height())?;
 
     surface.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));

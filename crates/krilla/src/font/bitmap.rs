@@ -5,6 +5,7 @@ use crate::font::Font;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use skrifa::{GlyphId, MetadataProvider};
+use std::sync::Arc;
 use tiny_skia_path::Transform;
 
 /// Draw a bitmap-based glyph on a surface.
@@ -20,7 +21,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
 
     match bitmap_glyph.data {
         BitmapData::Png(data) => {
-            let image = Image::from_png(data)?;
+            let image = Image::new(Arc::new(data.to_vec()))?;
             let size = image.size();
 
             // Adapted from vello.
@@ -32,7 +33,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
 
             transform = match bitmap_glyph.placement_origin {
                 Origin::TopLeft => transform,
-                Origin::BottomLeft => transform.pre_translate(0.0, -image.size().height()),
+                Origin::BottomLeft => transform.pre_translate(0.0, -(image.size().height() as f32)),
             };
 
             transform = if let Some(format) = bitmap_strikes.format() {
@@ -54,7 +55,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
             };
 
             surface.push_transform(&transform);
-            surface.draw_image(image, size);
+            surface.draw_image(image, size.to_tiny_skia());
             surface.pop();
 
             Some(())

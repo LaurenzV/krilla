@@ -44,6 +44,7 @@ use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
+use crate::SerializeSettings;
 use pdf_writer::{Buf, Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -304,6 +305,18 @@ impl ICCProfileWrapper {
             ICCProfileWrapper::Cmyk(c) => c.metadata(),
         }
     }
+
+    pub(crate) fn serialize_with_settings(
+        &self,
+        ss: Arc<SerializeSettings>,
+        root_ref: Ref,
+    ) -> Chunk {
+        match self {
+            ICCProfileWrapper::Luma(l) => l.serialize_with_settings(ss, root_ref),
+            ICCProfileWrapper::Rgb(r) => r.serialize_with_settings(ss, root_ref),
+            ICCProfileWrapper::Cmyk(c) => c.serialize_with_settings(ss, root_ref),
+        }
+    }
 }
 
 impl Object for ICCProfileWrapper {
@@ -343,19 +356,15 @@ impl<const C: u8> ICCProfile<C> {
     pub(crate) fn metadata(&self) -> &ICCMetadata {
         &self.0.metadata
     }
-}
 
-impl<const C: u8> Object for ICCProfile<C> {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.icc_profiles)
-    }
-
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize_with_settings(
+        &self,
+        ss: Arc<SerializeSettings>,
+        root_ref: Ref,
+    ) -> Chunk {
         let mut chunk = Chunk::new();
-        let icc_stream = FilterStream::new_from_binary_data(
-            self.0.deref().data.as_ref().as_ref(),
-            &sc.serialize_settings(),
-        );
+        let icc_stream =
+            FilterStream::new_from_binary_data(self.0.deref().data.as_ref().as_ref(), &ss);
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
@@ -364,6 +373,16 @@ impl<const C: u8> Object for ICCProfile<C> {
         icc_profile.finish();
 
         chunk
+    }
+}
+
+impl<const C: u8> Object for ICCProfile<C> {
+    fn chunk_container(&self) -> ChunkContainerFn {
+        Box::new(|cc| &mut cc.icc_profiles)
+    }
+
+    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+        self.serialize_with_settings(sc.serialize_settings(), root_ref)
     }
 }
 

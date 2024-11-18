@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::metadata::Metadata;
 use crate::serialize::SerializerContext;
-use crate::util::{hash_base64, Deferred};
+use crate::util::{hash_base64, Deferred, OptionDeferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
@@ -37,7 +37,7 @@ pub struct ChunkContainer {
     pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
-    pub(crate) images: Vec<Deferred<Chunk>>,
+    pub(crate) images: Vec<OptionDeferred<Chunk>>,
     pub(crate) masks: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,

@@ -937,7 +937,7 @@ mod tests {
     use crate::path::Fill;
     use crate::surface::{Surface, TextDirection};
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-    use crate::tests::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
+    use crate::tests::{green_fill, load_image, rect_to_path, NOTO_SANS, SVGS_PATH};
     use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
     use tiny_skia_path::{Rect, Transform};
@@ -1097,9 +1097,9 @@ mod tests {
         surface.end_tagged();
 
         let id5 = surface.start_tagged(ContentTag::Other);
-        let image = load_png_image("rgb8.png");
+        let image = load_image("rgb8.png");
         surface.push_transform(&Transform::from_translate(100.0, 300.0));
-        surface.draw_image(image.clone(), image.size());
+        surface.draw_image(image.clone(), image.size().to_tiny_skia());
         surface.pop();
         surface.end_tagged();
 

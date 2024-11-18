@@ -310,6 +310,23 @@ impl<T: Send + Sync + 'static> Deferred<T> {
     }
 }
 
+/// Just a stub, until we re-add the `Deferred` functionality
+/// with rayon.
+pub(crate) struct OptionDeferred<T>(Option<T>);
+
+impl<T: Send + Sync + 'static> OptionDeferred<T> {
+    pub fn new<F>(f: F) -> Self
+    where
+        F: FnOnce() -> Option<T> + Send + Sync + 'static,
+    {
+        Self(f())
+    }
+
+    pub fn wait(&self) -> &T {
+        self.0.as_ref().unwrap()
+    }
+}
+
 // /// A value that is lazily executed on another thread.
 // ///
 // /// Execution will be started in the background and can be waited on.
