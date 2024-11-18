@@ -46,7 +46,7 @@ impl ImageSize {
 
     /// Return the height.
     pub fn height(&self) -> u32 {
-        self.0
+        self.1
     }
 
     pub(crate) fn to_tiny_skia(&self) -> tiny_skia_path::Size {
@@ -54,11 +54,16 @@ impl ImageSize {
     }
 }
 
+/// The format of an image.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-enum ImageType {
+pub enum ImageType {
+    /// The PNG format.
     Png,
+    /// The JPG format.
     Jpeg,
+    /// The WEBP format.
     Webp,
+    /// The GIF format.
     Gif,
 }
 
@@ -338,6 +343,7 @@ impl Image {
         // will renumber everything, anyway.
         let soft_mask_id = sc.new_ref();
         let icc_ref = sc.new_ref();
+        let cs_ref = sc.new_ref();
         let serialize_settings = sc.serialize_settings().clone();
 
         OptionDeferred::new(move || {
@@ -383,14 +389,19 @@ impl Image {
 
             let mut use_icc = false;
 
-            // Unfortunately we cannot add the ICC profile via the serializer context
+            // TODO: Unfortunately we cannot add the ICC profile via the serializer context
             // (and thus ensure that they are deduplicated, because we cannot access
             // it in a deferred closure. Because of this, we have to manually append
             // the ICC profile to the chunk. Maybe there is some way of avoiding it.
             let icc_chunk = repr.icc().and_then(|ic| {
                 if serialize_settings.pdf_version.supports_icc(ic.metadata()) {
                     use_icc = true;
-                    Some(ic.serialize_with_settings(serialize_settings.clone(), icc_ref))
+                    let mut chunk = ic.serialize_with_settings(serialize_settings.clone(), icc_ref);
+                    let mut array = chunk.indirect(cs_ref).array();
+                    array.item(Name(b"ICCBased"));
+                    array.item(icc_ref);
+                    array.finish();
+                    Some(chunk)
                 } else {
                     // Don't embed ICC profiles from images if the current
                     // PDF version does not support it.
@@ -399,7 +410,7 @@ impl Image {
             });
 
             if use_icc {
-                image_x_object.pair(Name(b"ColorSpace"), icc_ref);
+                image_x_object.pair(Name(b"ColorSpace"), cs_ref);
             }   else {
                 let name = match repr.color_space() {
                     ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
