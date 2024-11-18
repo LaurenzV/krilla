@@ -34,14 +34,17 @@ pub struct Image(Arc<Prehashed<ImageRepr>>);
 pub struct ImageSize(u32, u32);
 
 impl ImageSize {
+    /// Create a new image size.
     pub fn new(width: u32, height: u32) -> Self {
         Self(width, height)
     }
 
+    /// Return the width.
     pub fn width(&self) -> u32 {
         self.0
     }
 
+    /// Return the height.
     pub fn height(&self) -> u32 {
         self.0
     }
@@ -378,28 +381,34 @@ impl Image {
             image_x_object.width(self.size().width() as i32);
             image_x_object.height(self.size().height() as i32);
 
+            let mut use_icc = false;
+
             // Unfortunately we cannot add the ICC profile via the serializer context
             // (and thus ensure that they are deduplicated, because we cannot access
             // it in a deferred closure. Because of this, we have to manually append
             // the ICC profile to the chunk. Maybe there is some way of avoiding it.
             let icc_chunk = repr.icc().and_then(|ic| {
                 if serialize_settings.pdf_version.supports_icc(ic.metadata()) {
-                    image_x_object.pair(Name(b"ColorSpace"), icc_ref);
+                    use_icc = true;
                     Some(ic.serialize_with_settings(serialize_settings.clone(), icc_ref))
                 } else {
-                    let name = match repr.color_space() {
-                        ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
-                        ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
-                        ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
-                    };
-
-                    image_x_object.pair(Name(b"ColorSpace"), name);
-
                     // Don't embed ICC profiles from images if the current
                     // PDF version does not support it.
                     None
                 }
             });
+
+            if use_icc {
+                image_x_object.pair(Name(b"ColorSpace"), icc_ref);
+            }   else {
+                let name = match repr.color_space() {
+                    ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
+                    ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
+                    ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
+                };
+
+                image_x_object.pair(Name(b"ColorSpace"), name);
+            }
 
             // Photoshop CMYK images need to be inverted, see
             // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
