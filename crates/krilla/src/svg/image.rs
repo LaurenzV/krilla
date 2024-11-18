@@ -21,22 +21,22 @@ pub fn render(
     match image.kind() {
         ImageKind::JPEG(d) => {
             let image = Image::new(d.clone())?;
-            let size = image.size().to_tiny_skia();
+            let size = image.size().into_tiny_skia();
             surface.draw_image(image, size);
         }
         ImageKind::PNG(d) => {
             let image = Image::new(d.clone())?;
-            let size = image.size().to_tiny_skia();
+            let size = image.size().into_tiny_skia();
             surface.draw_image(image, size);
         }
         ImageKind::GIF(d) => {
             let image = Image::new(d.clone())?;
-            let size = image.size().to_tiny_skia();
+            let size = image.size().into_tiny_skia();
             surface.draw_image(image, size);
         }
         ImageKind::WEBP(d) => {
             let image = Image::new(d.clone())?;
-            let size = image.size().to_tiny_skia();
+            let size = image.size().into_tiny_skia();
             surface.draw_image(image, size);
         }
         ImageKind::SVG(t) => {

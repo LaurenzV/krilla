@@ -1,4 +1,3 @@
-use crate::image::ImageSize;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use crate::svg::ProcessContext;

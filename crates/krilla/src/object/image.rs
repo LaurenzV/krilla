@@ -7,17 +7,17 @@
 //! - GIF
 //! - WEBP
 
-use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
+use crate::color::{ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
-use crate::util::{Deferred, NameExt, OptionDeferred, Prehashed, SizeWrapper};
+use crate::util::{NameExt, OptionDeferred, Prehashed};
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::hash::{Hash, Hasher};
-use std::ops::{Deref, DerefMut};
+use std::hash::Hash;
+use std::ops::DerefMut;
 use std::sync::Arc;
-use tiny_skia_path::{IntSize, Size};
+use tiny_skia_path::Size;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::zune_core::result::DecodingResult;
@@ -49,7 +49,7 @@ impl ImageSize {
         self.1
     }
 
-    pub(crate) fn to_tiny_skia(&self) -> tiny_skia_path::Size {
+    pub(crate) fn into_tiny_skia(self) -> tiny_skia_path::Size {
         Size::from_wh(self.0 as f32, self.1 as f32).unwrap()
     }
 }
@@ -571,7 +571,7 @@ mod tests {
     use crate::tests::load_image;
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::Size;
+    
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
@@ -636,7 +636,7 @@ mod tests {
 
     fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
         let image = load_fn(name);
-        let size = image.size().to_tiny_skia();
+        let size = image.size().into_tiny_skia();
         surface.draw_image(image, size);
     }
 
@@ -728,12 +728,12 @@ mod tests {
     #[visreg]
     fn image_resized(surface: &mut Surface) {
         let image = load_image("rgba8.png");
-        surface.draw_image(image, ImageSize::new(100, 80).to_tiny_skia());
+        surface.draw_image(image, ImageSize::new(100, 80).into_tiny_skia());
     }
 
     #[snapshot(document)]
     fn image_deduplication(document: &mut Document) {
-        let size = load_image("luma8.png").size().to_tiny_skia();
+        let size = load_image("luma8.png").size().into_tiny_skia();
         let mut page = document.start_page();
         let mut surface = page.surface();
         surface.draw_image(load_image("luma8.png"), size);

@@ -1,7 +1,7 @@
 use crate::error::{KrillaError, KrillaResult};
 use crate::metadata::Metadata;
 use crate::serialize::SerializerContext;
-use crate::util::{hash_base64, Deferred, OptionDeferred};
+use crate::util::{hash_base64, OptionDeferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};

@@ -55,7 +55,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
             };
 
             surface.push_transform(&transform);
-            surface.draw_image(image, size.to_tiny_skia());
+            surface.draw_image(image, size.into_tiny_skia());
             surface.pop();
 
             Some(())

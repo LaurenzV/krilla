@@ -32,7 +32,6 @@ use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
-use crate::image::ImageSize;
 use crate::object::font::PaintMode;
 pub use pdf_writer::types::BlendMode;
 
@@ -866,7 +865,7 @@ mod tests {
     #[snapshot(stream)]
     fn stream_image(surface: &mut Surface) {
         let image = load_image("rgb8.png");
-        let size = image.size().to_tiny_skia();
+        let size = image.size().into_tiny_skia();
         surface.draw_image(image, size);
     }
 

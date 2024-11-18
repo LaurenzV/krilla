@@ -1099,7 +1099,7 @@ mod tests {
         let id5 = surface.start_tagged(ContentTag::Other);
         let image = load_image("rgb8.png");
         surface.push_transform(&Transform::from_translate(100.0, 300.0));
-        surface.draw_image(image.clone(), image.size().to_tiny_skia());
+        surface.draw_image(image.clone(), image.size().into_tiny_skia());
         surface.pop();
         surface.end_tagged();
 

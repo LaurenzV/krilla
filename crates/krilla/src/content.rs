@@ -8,7 +8,6 @@ use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
-use crate::image::ImageSize;
 use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::font::cid_font::CIDFont;
@@ -570,12 +569,12 @@ impl ContentBuilder {
             |sb, _| {
                 // Scale the image from 1x1 to the actual dimensions.
                 let transform = Transform::from_row(
-                    size.width() as f32,
+                    size.width(),
                     0.0,
                     0.0,
-                    -(size.height() as f32),
+                    -{ size.height() },
                     0.0,
-                    size.height() as f32,
+                    size.height(),
                 );
                 sb.concat_transform(&transform);
                 sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
