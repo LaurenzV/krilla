@@ -347,6 +347,7 @@ impl ContentBuilder {
     /// Encode a successive sequence of glyphs that share the same properties and
     /// can be encoded with one text showing operator.
     #[allow(clippy::too_many_arguments)]
+    #[inline(always)]
     fn encode_consecutive_glyph_run(
         &mut self,
         sc: &mut SerializerContext,
@@ -862,16 +863,32 @@ impl ContentBuilder {
     }
 }
 
+// Note that this isn't a 100% accurate calculation, it can overestimate (and in a few cases
+// even underestimate), but it should be good enough for the majority of the cases.
+// The bbox is mostly needed for automatic size detection and postscript gradient, so it's
+// not too critical if it doesn't work in edge cases. What matters most is that the performance
+// is good, since this code is on the hot path in text-intensive PDFs.
+// TODO: Improve this so that `zalgo_text` test case shows up fully in the reference image.
 fn get_glyphs_bbox(
     glyphs: &[impl Glyph],
-    mut x: f32,
-    mut y: f32,
+    x: f32,
+    y: f32,
     size: f32,
     font: Font,
     glyph_units: GlyphUnits,
 ) -> Rect {
-    let mut bbox = Rect::from_xywh(x, y, 1.0, 1.0).unwrap();
+    let font_bbox = font.bbox();
+    let (mut bl, mut bt, mut br, mut bb) = font_bbox
+        .transform(Transform::from_scale(
+            size / font.units_per_em(),
+            -size / font.units_per_em(),
+        ))
+        .and_then(|b| b.transform(Transform::from_translate(x, y)))
+        .map(|b| (b.left(), b.top(), b.right(), b.bottom()))
+        .unwrap_or((x, y, x + 1.0, y + 1.0));
 
+    let mut x = x;
+    let mut y = y;
     let normalize = |v| unit_normalize(glyph_units, font.units_per_em(), size, v);
 
     for glyph in glyphs {
@@ -880,22 +897,16 @@ fn get_glyphs_bbox(
         let yo = normalize(glyph.y_offset()) * size;
         let ya = normalize(glyph.y_advance()) * size;
 
-        if let Some(glyph_bbox) = font
-            .bbox()
-            .transform(Transform::from_scale(
-                size / font.units_per_em(),
-                -size / font.units_per_em(),
-            ))
-            .and_then(|b| b.transform(Transform::from_translate(x + xo, y - yo)))
-        {
-            bbox.expand(&glyph_bbox);
-        }
-
         x += xa;
         y -= ya;
+
+        bl = bl.min(x + xo);
+        br = br.max(x + xo);
+        bt = bt.min(y - yo);
+        bb = bb.max(y - yo);
     }
 
-    bbox
+    Rect::from_ltrb(bl, bt, br, bb).unwrap()
 }
 
 pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {
@@ -1058,6 +1069,7 @@ where
 {
     type Item = TextSpan<'a, T>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         fn func<U>(
             g: &U,
@@ -1258,6 +1270,7 @@ where
 {
     type Item = GlyphGroup<'a, T>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // Guarantees: All glyphs in `head` have the font identifier that is given in
         // `props`, the same size and the same y offset.

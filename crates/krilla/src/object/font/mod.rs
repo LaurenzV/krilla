@@ -101,6 +101,7 @@ pub(crate) enum FontContainer {
 }
 
 impl FontContainer {
+    #[inline]
     pub fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
         match self {
             FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
@@ -108,6 +109,7 @@ impl FontContainer {
         }
     }
 
+    #[inline]
     pub fn get_from_identifier_mut(
         &mut self,
         font_identifier: FontIdentifier,
@@ -130,6 +132,7 @@ impl FontContainer {
         }
     }
 
+    #[inline]
     pub fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
         match self {
             FontContainer::Type3(t3) => {
@@ -149,6 +152,7 @@ impl FontContainer {
         }
     }
 
+    #[inline]
     pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
         match self {
             FontContainer::Type3(t3) => {

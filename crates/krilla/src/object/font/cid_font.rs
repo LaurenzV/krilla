@@ -70,12 +70,14 @@ impl CIDFont {
         1000.0
     }
 
+    #[inline]
     pub fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
         self.glyph_remapper
             .get(u16::try_from(glyph_id.to_u32()).unwrap())
     }
 
     /// Add a new glyph (if it has not already been added) and return its CID.
+    #[inline]
     pub fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
         let new_id = self
             .glyph_remapper
@@ -90,14 +92,17 @@ impl CIDFont {
         new_id
     }
 
+    #[inline]
     pub fn get_codepoints(&self, cid: Cid) -> Option<&str> {
         self.cmap_entries.get(&cid).map(|s| s.as_str())
     }
 
+    #[inline]
     pub fn set_codepoints(&mut self, cid: Cid, text: String) {
         self.cmap_entries.insert(cid, text);
     }
 
+    #[inline]
     pub fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }

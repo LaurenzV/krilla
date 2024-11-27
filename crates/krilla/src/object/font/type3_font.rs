@@ -96,10 +96,12 @@ impl Type3Font {
         u16::try_from(self.glyphs.len()).unwrap()
     }
 
+    #[inline]
     pub fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
         self.glyph_set.contains(glyph)
     }
 
+    #[inline]
     pub fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
@@ -107,6 +109,7 @@ impl Type3Font {
             .and_then(|n| u8::try_from(n).ok())
     }
 
+    #[inline]
     pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
         if let Some(pos) = self.get_gid(&glyph) {
             pos
@@ -121,18 +124,22 @@ impl Type3Font {
         }
     }
 
+    #[inline]
     pub fn get_codepoints(&self, gid: Gid) -> Option<&str> {
         self.cmap_entries.get(&gid).map(|s| s.as_str())
     }
 
+    #[inline]
     pub fn set_codepoints(&mut self, gid: Gid, text: String) {
         self.cmap_entries.insert(gid, text);
     }
 
+    #[inline]
     pub fn font(&self) -> Font {
         self.font.clone()
     }
 
+    #[inline]
     pub fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }

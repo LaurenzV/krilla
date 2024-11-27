@@ -33,7 +33,9 @@ pub(crate) mod svg;
 
 use crate::object::font::PaintMode;
 use skrifa::instance::Location;
+use skrifa::metrics::GlyphMetrics;
 pub use skrifa::GlyphId;
+
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
@@ -68,8 +70,13 @@ impl Font {
         let font_ref_yoke =
             Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.clone(),
-                |data| FontRefWrapper {
-                    font_ref: FontRef::from_index(data.as_ref(), 0).unwrap(),
+                |data| {
+                    let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
+                    FontRefWrapper {
+                        font_ref: font_ref.clone(),
+                        glyph_metrics: font_ref
+                            .glyph_metrics(Size::unscaled(), LocationRef::default()),
+                    }
                 },
             );
 
@@ -138,14 +145,17 @@ impl Font {
         &self.0.font_ref_yoke.get().font_ref
     }
 
+    pub(crate) fn glyph_metrics(&self) -> &GlyphMetrics {
+        &self.0.font_ref_yoke.get().glyph_metrics
+    }
+
     pub(crate) fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
         self.0.font_data.clone()
     }
 
+    #[inline]
     pub(crate) fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
-        self.font_ref()
-            .glyph_metrics(Size::unscaled(), self.location_ref())
-            .advance_width(glyph_id)
+        self.glyph_metrics().advance_width(glyph_id)
     }
 }
 
@@ -261,6 +271,7 @@ impl FontInfo {
 #[derive(Yokeable, Clone)]
 struct FontRefWrapper<'a> {
     pub font_ref: FontRef<'a>,
+    pub glyph_metrics: GlyphMetrics<'a>,
 }
 
 /// Draw a color glyph to a surface.
