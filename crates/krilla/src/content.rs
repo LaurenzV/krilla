@@ -863,41 +863,49 @@ impl ContentBuilder {
     }
 }
 
+// Note that this isn't a 100% accurate calculation, it can overestimate (and in a few cases
+// even underestimate), but it should be good enough for the majority of the cases.
+// The bbox is mostly needed for automatic size detection and postscript gradient, so it's
+// not too critical if it doesn't work in edge cases. What matters most is that the performance
+// is good, since this code is on the hot path in text-intensive PDFs.
 fn get_glyphs_bbox(
     glyphs: &[impl Glyph],
-    mut x: f32,
-    mut y: f32,
+    x: f32,
+    y: f32,
     size: f32,
     font: Font,
     glyph_units: GlyphUnits,
 ) -> Rect {
-    let (bx, by, bw, bh) = font
-        .bbox()
+    let font_bbox = font.bbox();
+    let (mut bl, mut bt, mut br, mut bb) = font_bbox
         .transform(Transform::from_scale(
             size / font.units_per_em(),
             -size / font.units_per_em(),
         ))
         .and_then(|b| b.transform(Transform::from_translate(x, y)))
-        // .and_then(|b| b.transform(Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, b.height())))
-        .map(|b| (b.x(), b.y(), b.width(), b.height()))
-        .unwrap_or((x, y, 1.0, 1.0));
+        .map(|b| (b.left(), b.top(), b.right(), b.bottom()))
+        .unwrap_or((x, y, x + 1.0, y + 1.0));
 
+    let mut x = x;
+    let mut y = y;
     let normalize = |v| unit_normalize(glyph_units, font.units_per_em(), size, v);
 
-    let total_x_advance: f32 = glyphs
-        .iter()
-        .rev()
-        .skip(1)
-        .map(|g| normalize(g.x_advance()) * size)
-        .sum();
-    let total_y_advance: f32 = glyphs
-        .iter()
-        .rev()
-        .skip(1)
-        .map(|g| normalize(g.y_advance()) * size)
-        .sum();
+    for glyph in glyphs {
+        let xo = normalize(glyph.x_offset()) * size;
+        let xa = normalize(glyph.x_advance()) * size;
+        let yo = normalize(glyph.y_offset()) * size;
+        let ya = normalize(glyph.y_advance()) * size;
 
-    Rect::from_xywh(bx, by, bw + total_x_advance, bh).unwrap()
+        x += xa;
+        y -= ya;
+
+        bl = bl.min(x + xo);
+        br = br.max(x + xo);
+        bt = bt.min(y - yo);
+        bb = bb.max(y - yo);
+    }
+
+    Rect::from_ltrb(bl, bt, br, bb).unwrap()
 }
 
 pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {
