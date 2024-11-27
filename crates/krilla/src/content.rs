@@ -269,9 +269,9 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Fill,
             |sb, sc| {
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
-                sb.expand_bbox(bbox);
-                sb.content_set_fill_properties(bbox, &fill, sc)
+                // let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                // sb.expand_bbox(bbox);
+                // sb.content_set_fill_properties(bbox, &fill, sc)
             },
             glyphs,
             font.clone(),
@@ -347,6 +347,7 @@ impl ContentBuilder {
     /// Encode a successive sequence of glyphs that share the same properties and
     /// can be encoded with one text showing operator.
     #[allow(clippy::too_many_arguments)]
+    #[inline(always)]
     fn encode_consecutive_glyph_run(
         &mut self,
         sc: &mut SerializerContext,
@@ -1058,6 +1059,7 @@ where
 {
     type Item = TextSpan<'a, T>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         fn func<U>(
             g: &U,
@@ -1258,6 +1260,7 @@ where
 {
     type Item = GlyphGroup<'a, T>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // Guarantees: All glyphs in `head` have the font identifier that is given in
         // `props`, the same size and the same y offset.
