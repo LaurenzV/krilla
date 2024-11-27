@@ -91,7 +91,7 @@ impl CIDFont {
 
         new_id
     }
-    
+
     #[inline]
     pub fn get_codepoints(&self, cid: Cid) -> Option<&str> {
         self.cmap_entries.get(&cid).map(|s| s.as_str())

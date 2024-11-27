@@ -269,9 +269,9 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Fill,
             |sb, sc| {
-                // let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
-                // sb.expand_bbox(bbox);
-                // sb.content_set_fill_properties(bbox, &fill, sc)
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                sb.expand_bbox(bbox);
+                sb.content_set_fill_properties(bbox, &fill, sc)
             },
             glyphs,
             font.clone(),
@@ -871,32 +871,33 @@ fn get_glyphs_bbox(
     font: Font,
     glyph_units: GlyphUnits,
 ) -> Rect {
-    let mut bbox = Rect::from_xywh(x, y, 1.0, 1.0).unwrap();
+    let (bx, by, bw, bh) = font
+        .bbox()
+        .transform(Transform::from_scale(
+            size / font.units_per_em(),
+            -size / font.units_per_em(),
+        ))
+        .and_then(|b| b.transform(Transform::from_translate(x, y)))
+        // .and_then(|b| b.transform(Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, b.height())))
+        .map(|b| (b.x(), b.y(), b.width(), b.height()))
+        .unwrap_or((x, y, 1.0, 1.0));
 
     let normalize = |v| unit_normalize(glyph_units, font.units_per_em(), size, v);
 
-    for glyph in glyphs {
-        let xo = normalize(glyph.x_offset()) * size;
-        let xa = normalize(glyph.x_advance()) * size;
-        let yo = normalize(glyph.y_offset()) * size;
-        let ya = normalize(glyph.y_advance()) * size;
+    let total_x_advance: f32 = glyphs
+        .iter()
+        .rev()
+        .skip(1)
+        .map(|g| normalize(g.x_advance()) * size)
+        .sum();
+    let total_y_advance: f32 = glyphs
+        .iter()
+        .rev()
+        .skip(1)
+        .map(|g| normalize(g.y_advance()) * size)
+        .sum();
 
-        if let Some(glyph_bbox) = font
-            .bbox()
-            .transform(Transform::from_scale(
-                size / font.units_per_em(),
-                -size / font.units_per_em(),
-            ))
-            .and_then(|b| b.transform(Transform::from_translate(x + xo, y - yo)))
-        {
-            bbox.expand(&glyph_bbox);
-        }
-
-        x += xa;
-        y -= ya;
-    }
-
-    bbox
+    Rect::from_xywh(bx, by, bw + total_x_advance, bh).unwrap()
 }
 
 pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {
