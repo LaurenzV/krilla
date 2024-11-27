@@ -868,6 +868,7 @@ impl ContentBuilder {
 // The bbox is mostly needed for automatic size detection and postscript gradient, so it's
 // not too critical if it doesn't work in edge cases. What matters most is that the performance
 // is good, since this code is on the hot path in text-intensive PDFs.
+// TODO: Improve this so that `zalgo_text` test case shows up fully in the reference image.
 fn get_glyphs_bbox(
     glyphs: &[impl Glyph],
     x: f32,
