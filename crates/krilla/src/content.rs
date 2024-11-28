@@ -7,7 +7,8 @@ use crate::color::{
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
-use crate::image::Image;
+use crate::image::KrillaImage;
+use crate::image::{Image, ImageIdentifier};
 use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::font::cid_font::CIDFont;
@@ -565,7 +566,7 @@ impl ContentBuilder {
     }
 
     #[cfg(feature = "raster-images")]
-    pub fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializerContext) {
+    pub fn draw_image(&mut self, image: impl Image, size: Size, sc: &mut SerializerContext) {
         self.apply_isolated_op(
             |sb, _| {
                 // Scale the image from 1x1 to the actual dimensions.
@@ -575,7 +576,10 @@ impl ContentBuilder {
                 sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
             },
             move |sb, sc| {
-                let image_name = sb.rd_builder.register_resource(image, sc);
+                let image_ref = sc.add_image(image);
+                let image_name = sb
+                    .rd_builder
+                    .register_resource(ImageIdentifier(image_ref), sc);
 
                 sb.content.x_object(image_name.to_pdf_name());
             },

@@ -2,7 +2,7 @@
 
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::Font;
-use crate::object::image::Image;
+use crate::object::image::KrillaImage;
 use crate::surface::Surface;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::Transform;
@@ -20,7 +20,7 @@ pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<(
 
     match bitmap_glyph.data {
         BitmapData::Png(data) => {
-            let image = Image::from_png(data)?;
+            let image = KrillaImage::from_png(data)?;
             let size = image.size();
 
             // Adapted from vello.

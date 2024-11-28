@@ -1,9 +1,10 @@
 //! Dealing with PDF resources.
 
 use crate::color::{ICCBasedColorSpace, ICCProfile};
+use crate::image::ImageIdentifier;
 use crate::object::font::FontIdentifier;
 #[cfg(feature = "raster-images")]
-use crate::object::image::Image;
+use crate::object::image::KrillaImage;
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
 use crate::serialize::SerializerContext;
@@ -136,7 +137,7 @@ impl ResourceTrait for Font {
 pub(crate) enum Resource {
     XObject(crate::object::xobject::XObject),
     #[cfg(feature = "raster-images")]
-    Image(Image),
+    ImageIdentifier(ImageIdentifier),
     ShadingPattern(ShadingPattern),
     TilingPattern(TilingPattern),
     ExtGState(crate::object::ext_g_state::ExtGState),
@@ -155,9 +156,9 @@ impl From<crate::object::xobject::XObject> for Resource {
 }
 
 #[cfg(feature = "raster-images")]
-impl From<Image> for Resource {
-    fn from(value: Image) -> Self {
-        Self::Image(value)
+impl From<KrillaImage> for Resource {
+    fn from(value: KrillaImage) -> Self {
+        todo!()
     }
 }
 

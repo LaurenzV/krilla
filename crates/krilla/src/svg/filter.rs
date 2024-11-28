@@ -1,4 +1,4 @@
-use crate::object::image::Image;
+use crate::object::image::KrillaImage;
 use crate::surface::Surface;
 use crate::svg::ProcessContext;
 use tiny_skia_path::{Size, Transform};
@@ -81,7 +81,7 @@ pub fn render(
     );
 
     let encoded_image = pixmap.encode_png().ok()?;
-    let image = Image::from_png(&encoded_image)?;
+    let image = KrillaImage::from_png(&encoded_image)?;
     let size = Size::from_wh(layer_bbox.width(), layer_bbox.height())?;
 
     surface.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));

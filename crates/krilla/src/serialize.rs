@@ -4,7 +4,8 @@ use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
-use crate::image::Image;
+use crate::image::KrillaImage;
+use crate::image::{serialize_image, Image};
 use crate::metadata::Metadata;
 use crate::object::color::{CSWrapper, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
@@ -383,14 +384,13 @@ impl SerializerContext {
     }
 
     #[cfg(feature = "raster-images")]
-    pub fn add_image(&mut self, image: Image) -> Ref {
-        // TODO: Deduplicate
+    pub fn add_image(&mut self, image: impl Image) -> Ref {
         let hash = image.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
         } else {
             let root_ref = self.new_ref();
-            let chunk = image.serialize(self, root_ref);
+            let chunk = serialize_image(image, self, root_ref);
             self.cached_mappings.insert(hash, root_ref);
             self.chunk_container.images.push(chunk);
             root_ref
@@ -450,7 +450,7 @@ impl SerializerContext {
         match resource.into() {
             Resource::XObject(x) => self.add_object(x),
             #[cfg(feature = "raster-images")]
-            Resource::Image(i) => self.add_image(i),
+            Resource::ImageIdentifier(i) => i.0,
             Resource::ShadingPattern(sp) => self.add_object(sp),
             Resource::TilingPattern(tp) => self.add_object(tp),
             Resource::ExtGState(e) => self.add_object(e),

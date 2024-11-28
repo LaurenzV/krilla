@@ -1,4 +1,4 @@
-use crate::image::Image;
+use crate::image::KrillaImage;
 use crate::path::FillRule;
 use crate::surface::Surface;
 use crate::svg::{group, ProcessContext};
@@ -20,22 +20,22 @@ pub fn render(
 
     match image.kind() {
         ImageKind::JPEG(d) => {
-            let image = Image::from_jpeg(d)?;
+            let image = KrillaImage::from_jpeg(d.clone())?;
             let size = image.size();
             surface.draw_image(image, size);
         }
         ImageKind::PNG(d) => {
-            let image = Image::from_png(d)?;
+            let image = KrillaImage::from_png(d)?;
             let size = image.size();
             surface.draw_image(image, size);
         }
         ImageKind::GIF(d) => {
-            let image = Image::from_gif(d)?;
+            let image = KrillaImage::from_gif(d)?;
             let size = image.size();
             surface.draw_image(image, size);
         }
         ImageKind::WEBP(d) => {
-            let image = Image::from_webp(d)?;
+            let image = KrillaImage::from_webp(d)?;
             let size = image.size();
             surface.draw_image(image, size);
         }

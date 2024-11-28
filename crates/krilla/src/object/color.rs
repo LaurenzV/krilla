@@ -304,6 +304,14 @@ impl ICCProfileWrapper {
             ICCProfileWrapper::Cmyk(c) => c.metadata(),
         }
     }
+
+    pub(crate) fn data(&self) -> &[u8] {
+        match self {
+            ICCProfileWrapper::Luma(l) => l.data(),
+            ICCProfileWrapper::Rgb(r) => r.data(),
+            ICCProfileWrapper::Cmyk(c) => c.data(),
+        }
+    }
 }
 
 impl Object for ICCProfileWrapper {
@@ -338,6 +346,10 @@ impl<const C: u8> ICCProfile<C> {
         }
 
         Some(Self(Arc::new(Prehashed::new(Repr { data, metadata }))))
+    }
+
+    fn data(&self) -> &[u8] {
+        self.0.data.as_ref().as_ref()
     }
 
     pub(crate) fn metadata(&self) -> &ICCMetadata {

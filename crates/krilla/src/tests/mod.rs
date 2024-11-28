@@ -3,7 +3,7 @@ use crate::annotation::{Annotation, LinkAnnotation, Target};
 use crate::color::{cmyk, luma, rgb, ICCProfile};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
-use crate::image::Image;
+use crate::image::KrillaImage;
 use crate::mask::{Mask, MaskType};
 use crate::paint::{Stop, Stops};
 use crate::path::{Fill, Stroke};
@@ -190,20 +190,23 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     builder.finish().unwrap()
 }
 
-pub fn load_png_image(name: &str) -> Image {
-    Image::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+pub fn load_png_image(name: &str) -> KrillaImage {
+    KrillaImage::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
 }
 
-pub fn load_jpg_image(name: &str) -> Image {
-    Image::from_jpeg(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+pub fn load_jpg_image(name: &str) -> KrillaImage {
+    KrillaImage::from_jpeg(Arc::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+    ))
+    .unwrap()
 }
 
-pub fn load_gif_image(name: &str) -> Image {
-    Image::from_gif(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+pub fn load_gif_image(name: &str) -> KrillaImage {
+    KrillaImage::from_gif(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
 }
 
-pub fn load_webp_image(name: &str) -> Image {
-    Image::from_webp(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+pub fn load_webp_image(name: &str) -> KrillaImage {
+    KrillaImage::from_webp(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {

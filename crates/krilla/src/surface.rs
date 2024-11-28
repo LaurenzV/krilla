@@ -8,7 +8,7 @@
 use crate::content::{unit_normalize, ContentBuilder};
 use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph};
 #[cfg(feature = "raster-images")]
-use crate::object::image::Image;
+use crate::object::image::KrillaImage;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
 use crate::path::{Fill, FillRule, Stroke};
@@ -32,6 +32,7 @@ use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
+use crate::image::Image;
 use crate::object::font::PaintMode;
 pub use pdf_writer::types::BlendMode;
 
@@ -447,7 +448,7 @@ impl<'a> Surface<'a> {
 
     #[cfg(feature = "raster-images")]
     /// Draw a new bitmap image.
-    pub fn draw_image(&mut self, image: Image, size: Size) {
+    pub fn draw_image(&mut self, image: impl Image, size: Size) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .draw_image(image, size, self.sc);
     }
