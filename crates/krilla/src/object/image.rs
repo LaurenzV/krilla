@@ -12,7 +12,7 @@ use crate::object::color::DEVICE_GRAY;
 use crate::resource::{RegisterableResource};
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
-use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
+use crate::util::{Deferred, NameExt, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -137,7 +137,7 @@ impl Repr {
 ///
 /// This type is cheap to hash and clone, but expensive to create.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Image(Arc<Prehashed<Repr>>);
+pub struct Image(Arc<Repr>);
 
 fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
     let wrapper = match color_space {
@@ -178,14 +178,14 @@ impl Image {
             .as_ref()
             .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
 
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+        Some(Self(Arc::new(Repr::Sampled(SampledRepr {
             image_data,
             icc,
             mask_data,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
-        })))))
+        }))))
     }
 
     /// Create a new bitmap image from a `.jpg` file.
@@ -215,7 +215,7 @@ impl Image {
                 .icc_profile()
                 .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
 
-            Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
+            Some(Self(Arc::new(Repr::Jpeg(JpegRepr {
                 icc,
                 // TODO: Avoid cloning here?
                 data: data.to_vec(),
@@ -223,7 +223,7 @@ impl Image {
                 bits_per_component: BitsPerComponent::Eight,
                 image_color_space,
                 invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
-            })))))
+            }))))
         } else {
             // Unknown color space, fall back to decoding the JPEG into RGB8 and saving
             // it in the sampled representation.
@@ -233,7 +233,7 @@ impl Image {
             let decoded = decoder.decode().ok()?;
             let (image_data, _, bits_per_component) = handle_u8_image(decoded, output_color_space);
 
-            Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+            Some(Self(Arc::new(Repr::Sampled(SampledRepr {
                 // Cannot embed ICC profile in this case, since we are converting to RGB.
                 icc: None,
                 image_data,
@@ -241,7 +241,7 @@ impl Image {
                 bits_per_component,
                 image_color_space,
                 size: SizeWrapper(size),
-            })))))
+            }))))
         }
     }
 
@@ -259,14 +259,14 @@ impl Image {
         let (image_data, mask_data, bits_per_component) =
             handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
 
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+        Some(Self(Arc::new(Repr::Sampled(SampledRepr {
             icc: None,
             image_data,
             mask_data,
             bits_per_component,
             image_color_space: ImageColorspace::Rgb,
             size: SizeWrapper(size),
-        })))))
+        }))))
     }
 
     /// Create a new bitmap image from a `.webp` file.
@@ -296,14 +296,14 @@ impl Image {
 
         let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
 
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+        Some(Self(Arc::new(Repr::Sampled(SampledRepr {
             icc,
             image_data,
             mask_data,
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
-        })))))
+        }))))
     }
 
     /// Create a new image from a custom decoded image representation.
@@ -328,14 +328,14 @@ impl Image {
             return None;
         }
 
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+        Some(Self(Arc::new(Repr::Sampled(SampledRepr {
             icc: icc_profile,
             image_data,
             mask_data: alpha_data,
             bits_per_component: BitsPerComponent::Eight,
             image_color_space: color_space,
             size: SizeWrapper(Size::from_wh(width as f32, height as f32).unwrap()),
-        })))))
+        }))))
     }
 
     /// Returns the dimensions of the image.
@@ -344,7 +344,7 @@ impl Image {
     }
 
     pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
-        let soft_mask_id = match self.0.deref().deref() {
+        let soft_mask_id = match self.0.deref() {
             Repr::Sampled(s) => s.mask_data.as_ref().map(|_| sc.new_ref()),
             Repr::Jpeg(_) => None,
         };
@@ -374,7 +374,7 @@ impl Image {
         Deferred::new(move || {
             let mut chunk = Chunk::new();
 
-            let alpha_mask = match self.0.deref().deref() {
+            let alpha_mask = match self.0.deref() {
                 Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
                     let soft_mask_id = soft_mask_id.unwrap();
                     let mask_stream =
@@ -394,7 +394,7 @@ impl Image {
                 Repr::Jpeg(_) => None,
             };
 
-            let image_stream = match self.0.deref().deref() {
+            let image_stream = match self.0.deref() {
                 Repr::Sampled(s) => {
                     FilterStream::new_from_binary_data(&s.image_data, &serialize_settings)
                 }
@@ -423,7 +423,7 @@ impl Image {
             // I'm not sure if this applies to all JPEG CMYK images out there, but for now we just
             // always do it. In libtexpdf, they only seem to do it if they can find the Adobe APP
             // marker.
-            if let Repr::Jpeg(j) = &self.0.deref().deref() {
+            if let Repr::Jpeg(j) = &self.0.deref() {
                 if j.invert_cmyk {
                     image_x_object
                         .decode([1.0, 0.0].repeat(j.image_color_space.num_components() as usize));
