@@ -9,7 +9,7 @@
 
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
-use crate::resource::RegisterableResource;
+use crate::resource::{RegisterableResource};
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
@@ -37,10 +37,14 @@ impl BitsPerComponent {
     }
 }
 
+/// The colorspace of an image.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
-enum ImageColorspace {
+pub enum ImageColorspace {
+    /// The RGB color space.
     Rgb,
+    /// The luma color space.
     Luma,
+    /// The CMYK color space.
     Cmyk,
 }
 
@@ -299,6 +303,38 @@ impl Image {
             bits_per_component,
             image_color_space,
             size: SizeWrapper(size),
+        })))))
+    }
+
+    /// Create a new image from a custom decoded image representation.
+    pub fn from_sampled(image_data: Vec<u8>,
+                        alpha_data: Option<Vec<u8>>,
+                        width: u32,
+                        height: u32,
+                        icc_profile: Option<Vec<u8>>,
+                        color_space: ImageColorspace
+    ) -> Option<Self> {
+        if image_data.len() != (width * height) as usize * color_space.num_components() as usize {
+            return None;
+        }
+
+        let icc_profile = if let Some(icc_profile) = icc_profile {
+            Some(get_icc_profile_type(icc_profile, color_space)?)
+        }   else {
+            None
+        };
+
+        if alpha_data.as_ref().is_some_and(|d| d.len() != (width * height) as usize) {
+            return None;
+        }
+
+        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
+            icc: icc_profile,
+            image_data,
+            mask_data: alpha_data,
+            bits_per_component: BitsPerComponent::Eight,
+            image_color_space: color_space,
+            size: SizeWrapper(Size::from_wh(width as f32, height as f32).unwrap()),
         })))))
     }
 
