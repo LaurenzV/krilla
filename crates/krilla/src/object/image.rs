@@ -129,8 +129,8 @@ impl ImageRepr {
 }
 
 impl Debug for ImageRepr {
-    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ImageRepr {{..}}")
     }
 }
 
