@@ -150,156 +150,28 @@ impl Image {
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_png(data: &[u8]) -> Option<Self> {
-        let mut decoder = PngDecoder::new(data);
-        decoder.decode_headers().ok()?;
-
-        let color_space = decoder.get_colorspace()?;
-        let image_color_space = color_space.try_into().ok()?;
-
-        let size = {
-            let info = decoder.get_info()?;
-            Size::from_wh(info.width as f32, info.height as f32)?
-        };
-        let decoded = decoder.decode().ok()?;
-
-        let (image_data, mask_data, bits_per_component) = match decoded {
-            DecodingResult::U8(u8) => handle_u8_image(u8, color_space),
-            DecodingResult::U16(u16) => handle_u16_image(u16, color_space),
-            _ => return None,
-        };
-
-        let icc = decoder
-            .get_info()?
-            .icc_profile
-            .as_ref()
-            .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
-
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
-            image_data,
-            icc,
-            mask_data,
-            bits_per_component,
-            image_color_space,
-            size: SizeWrapper(size),
-        })))))
+        Some(Self(Arc::new(Prehashed::new(decode_png(data)?))))
     }
 
     /// Create a new bitmap image from a `.jpg` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_jpeg(data: &[u8]) -> Option<Self> {
-        let mut decoder = JpegDecoder::new(data);
-        decoder.decode_headers().ok()?;
-        let size = {
-            let dimensions = decoder.dimensions()?;
-            Size::from_wh(dimensions.0 as f32, dimensions.1 as f32)?
-        };
-
-        let input_color_space = decoder.get_input_colorspace()?;
-
-        if matches!(
-            input_color_space,
-            ColorSpace::Luma
-                | ColorSpace::YCbCr
-                | ColorSpace::RGB
-                | ColorSpace::CMYK
-                | ColorSpace::YCCK
-        ) {
-            // Don't decode the image and save it with the existing DCT encoding.
-            let image_color_space = input_color_space.try_into().ok()?;
-            let icc = decoder
-                .icc_profile()
-                .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
-
-            Some(Self(Arc::new(Prehashed::new(Repr::Jpeg(JpegRepr {
-                icc,
-                // TODO: Avoid cloning here?
-                data: data.to_vec(),
-                size: SizeWrapper(size),
-                bits_per_component: BitsPerComponent::Eight,
-                image_color_space,
-                invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
-            })))))
-        } else {
-            // Unknown color space, fall back to decoding the JPEG into RGB8 and saving
-            // it in the sampled representation.
-            let output_color_space = decoder.get_output_colorspace()?;
-            let image_color_space = output_color_space.try_into().ok()?;
-
-            let decoded = decoder.decode().ok()?;
-            let (image_data, _, bits_per_component) = handle_u8_image(decoded, output_color_space);
-
-            Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
-                // Cannot embed ICC profile in this case, since we are converting to RGB.
-                icc: None,
-                image_data,
-                mask_data: None,
-                bits_per_component,
-                image_color_space,
-                size: SizeWrapper(size),
-            })))))
-        }
+        Some(Self(Arc::new(Prehashed::new(decode_jpeg(data)?))))
     }
 
     /// Create a new bitmap image from a `.gif` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_gif(data: &[u8]) -> Option<Self> {
-        let mut decoder = gif::DecodeOptions::new();
-        decoder.set_color_output(gif::ColorOutput::RGBA);
-        let mut decoder = decoder.read_info(data).ok()?;
-        let first_frame = decoder.read_next_frame().ok()??;
-
-        let size = Size::from_wh(first_frame.width as f32, first_frame.height as f32)?;
-
-        let (image_data, mask_data, bits_per_component) =
-            handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
-
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
-            icc: None,
-            image_data,
-            mask_data,
-            bits_per_component,
-            image_color_space: ImageColorspace::Rgb,
-            size: SizeWrapper(size),
-        })))))
+        Some(Self(Arc::new(Prehashed::new(decode_gif(data)?))))
     }
 
     /// Create a new bitmap image from a `.webp` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_webp(data: &[u8]) -> Option<Self> {
-        let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
-        let mut first_frame = vec![0; decoder.output_buffer_size()?];
-        decoder.read_image(&mut first_frame).ok()?;
-
-        let size = {
-            let (w, h) = decoder.dimensions();
-            Size::from_wh(w as f32, h as f32)?
-        };
-
-        let color_space = if decoder.has_alpha() {
-            ColorSpace::RGBA
-        } else {
-            ColorSpace::RGB
-        };
-        let image_color_space = color_space.try_into().ok()?;
-
-        let icc = decoder
-            .icc_profile()
-            .ok()?
-            .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
-
-        let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
-
-        Some(Self(Arc::new(Prehashed::new(Repr::Sampled(SampledRepr {
-            icc,
-            image_data,
-            mask_data,
-            bits_per_component,
-            image_color_space,
-            size: SizeWrapper(size),
-        })))))
+        Some(Self(Arc::new(Prehashed::new(decode_webp(data)?))))
     }
 
     /// Returns the dimensions of the image.
@@ -403,6 +275,150 @@ impl Image {
             chunk
         })
     }
+}
+
+fn decode_png(data: &[u8]) -> Option<Repr> {
+    let mut decoder = PngDecoder::new(data);
+    decoder.decode_headers().ok()?;
+
+    let color_space = decoder.get_colorspace()?;
+    let image_color_space = color_space.try_into().ok()?;
+
+    let size = {
+        let info = decoder.get_info()?;
+        Size::from_wh(info.width as f32, info.height as f32)?
+    };
+    let decoded = decoder.decode().ok()?;
+
+    let (image_data, mask_data, bits_per_component) = match decoded {
+        DecodingResult::U8(u8) => handle_u8_image(u8, color_space),
+        DecodingResult::U16(u16) => handle_u16_image(u16, color_space),
+        _ => return None,
+    };
+
+    let icc = decoder
+        .get_info()?
+        .icc_profile
+        .as_ref()
+        .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
+
+    Some(Repr::Sampled(SampledRepr {
+        image_data,
+        icc,
+        mask_data,
+        bits_per_component,
+        image_color_space,
+        size: SizeWrapper(size),
+    }))
+}
+
+fn decode_jpeg(data: &[u8]) -> Option<Repr> {
+    let mut decoder = JpegDecoder::new(data);
+    decoder.decode_headers().ok()?;
+    let size = {
+        let dimensions = decoder.dimensions()?;
+        Size::from_wh(dimensions.0 as f32, dimensions.1 as f32)?
+    };
+
+    let input_color_space = decoder.get_input_colorspace()?;
+
+    if matches!(
+            input_color_space,
+            ColorSpace::Luma
+                | ColorSpace::YCbCr
+                | ColorSpace::RGB
+                | ColorSpace::CMYK
+                | ColorSpace::YCCK
+        ) {
+        // Don't decode the image and save it with the existing DCT encoding.
+        let image_color_space = input_color_space.try_into().ok()?;
+        let icc = decoder
+            .icc_profile()
+            .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
+
+        Some(Repr::Jpeg(JpegRepr {
+            icc,
+            // TODO: Avoid cloning here?
+            data: data.to_vec(),
+            size: SizeWrapper(size),
+            bits_per_component: BitsPerComponent::Eight,
+            image_color_space,
+            invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
+        }))
+    } else {
+        // Unknown color space, fall back to decoding the JPEG into RGB8 and saving
+        // it in the sampled representation.
+        let output_color_space = decoder.get_output_colorspace()?;
+        let image_color_space = output_color_space.try_into().ok()?;
+
+        let decoded = decoder.decode().ok()?;
+        let (image_data, _, bits_per_component) = handle_u8_image(decoded, output_color_space);
+
+        Some(Repr::Sampled(SampledRepr {
+            // Cannot embed ICC profile in this case, since we are converting to RGB.
+            icc: None,
+            image_data,
+            mask_data: None,
+            bits_per_component,
+            image_color_space,
+            size: SizeWrapper(size),
+        }))
+    }
+}
+
+fn decode_gif(data: &[u8]) -> Option<Repr> {
+    let mut decoder = gif::DecodeOptions::new();
+    decoder.set_color_output(gif::ColorOutput::RGBA);
+    let mut decoder = decoder.read_info(data).ok()?;
+    let first_frame = decoder.read_next_frame().ok()??;
+
+    let size = Size::from_wh(first_frame.width as f32, first_frame.height as f32)?;
+
+    let (image_data, mask_data, bits_per_component) =
+        handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
+
+    Some(Repr::Sampled(SampledRepr {
+        icc: None,
+        image_data,
+        mask_data,
+        bits_per_component,
+        image_color_space: ImageColorspace::Rgb,
+        size: SizeWrapper(size),
+    }))
+}
+
+fn decode_webp(data: &[u8]) -> Option<Repr> {
+    let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
+    let mut first_frame = vec![0; decoder.output_buffer_size()?];
+    decoder.read_image(&mut first_frame).ok()?;
+
+    let size = {
+        let (w, h) = decoder.dimensions();
+        Size::from_wh(w as f32, h as f32)?
+    };
+
+    let color_space = if decoder.has_alpha() {
+        ColorSpace::RGBA
+    } else {
+        ColorSpace::RGB
+    };
+    let image_color_space = color_space.try_into().ok()?;
+
+    let icc = decoder
+        .icc_profile()
+        .ok()?
+        .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
+
+    let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
+
+    Some(Repr::Sampled(SampledRepr {
+        icc,
+        image_data,
+        mask_data,
+        bits_per_component,
+        image_color_space,
+        size: SizeWrapper(size),
+    }))
 }
 
 impl RegisterableResource<crate::resource::XObject> for Image {}
