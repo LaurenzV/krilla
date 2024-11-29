@@ -7,6 +7,8 @@
 //! - GIF
 //! - WEBP
 
+// TODO: CLean up and update docs
+
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
@@ -435,7 +437,7 @@ fn decode_gif(data: &[u8]) -> Option<Repr> {
 }
 
 fn gif_metadata(data: &[u8]) -> Option<ImageMetadata> {
-    let size = imagesize::blob_size(data.as_ref().as_ref()).ok()?;
+    let size = imagesize::blob_size(data).ok()?;
 
     Some(ImageMetadata {
         size: (size.width as u32, size.height as u32),
