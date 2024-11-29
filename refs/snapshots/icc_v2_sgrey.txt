@@ -5,49 +5,15 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [2 0 R]
+  /Kids [4 0 R]
 >>
 endobj
 
 2 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 4 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 3 0 R
->>
+[/ICCBased 3 0 R]
 endobj
 
 3 0 obj
-<<
-  /Length 74
->>
-stream
-q
-1 0 0 -1 0 200 cm
-/c0 cs
-0 scn
-50 50 m
-100 50 l
-100 100 l
-50 100 l
-h
-f
-Q
-endstream
-endobj
-
-4 0 obj
-[/ICCBased 5 0 R]
-endobj
-
-5 0 obj
 <<
   /Length 1196
   /N 1
@@ -75,6 +41,40 @@ EED4FDFAFEB901F360DAD0F823FC09CFEE19313984632CE7E478DFABB6D772CFEE77C9
 endstream
 endobj
 
+4 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 2 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 74
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/c0 cs
+0 scn
+50 50 m
+100 50 l
+100 100 l
+50 100 l
+h
+f
+Q
+endstream
+endobj
+
 6 0 obj
 <<
   /Type /Catalog
@@ -87,15 +87,15 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000281 00000 n
-0000000408 00000 n
-0000000442 00000 n
+0000000114 00000 n
+0000001428 00000 n
+0000001629 00000 n
 0000001756 00000 n
 trailer
 <<
   /Size 7
   /Root 6 0 R
-  /ID [(T16NzD8+x3u/nBk/ddODwQ==) (T16NzD8+x3u/nBk/ddODwQ==)]
+  /ID [(syiQd2Vxijt0DoAEoHCKPg==) (syiQd2Vxijt0DoAEoHCKPg==)]
 >>
 startxref
 1810

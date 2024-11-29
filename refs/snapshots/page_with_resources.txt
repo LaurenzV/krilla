@@ -5,48 +5,15 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [2 0 R]
+  /Kids [4 0 R]
 >>
 endobj
 
 2 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 4 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 3 0 R
->>
+[/ICCBased 3 0 R]
 endobj
 
 3 0 obj
-<<
-  /Length 56
->>
-stream
-q
-/c0 cs
-0 scn
-20 20 m
-180 20 l
-180 180 l
-20 180 l
-h
-f
-Q
-endstream
-endobj
-
-4 0 obj
-[/ICCBased 5 0 R]
-endobj
-
-5 0 obj
 <<
   /Length 539
   /N 1
@@ -62,6 +29,39 @@ D2BFCC9C6741235951F24038989A5E0D5AE8D5439B7956F9E72E5A2E7D6DFDBF14BEEF
 4E125F101BAEF3C427FF840D6239EF2A431EEE24209182C0F39CCCEA2893A477048437
 CFDE22F327C7E3ADD829D56C28D5DD0722AFC0E04DA9FEBB52830F40AF53F5479F0936
 CAEAA4A57C01E87C021B26B05D01D66F87D81E49EC
+endstream
+endobj
+
+4 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 2 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 56
+>>
+stream
+q
+/c0 cs
+0 scn
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q
 endstream
 endobj
 

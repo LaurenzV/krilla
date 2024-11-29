@@ -586,8 +586,8 @@ impl SerializerContext {
         }
 
         let pages = std::mem::take(&mut self.pages);
-        for (ref_, page) in &pages {
-            let chunk = page.serialize(&mut self, *ref_)?;
+        for (ref_, page) in pages {
+            let chunk = page.serialize(&mut self, ref_)?;
             self.chunk_container.pages.push(chunk);
         }
 
@@ -595,8 +595,8 @@ impl SerializerContext {
             let mut page_tree_chunk = Chunk::new();
             page_tree_chunk
                 .pages(page_tree_ref)
-                .count(pages.len() as i32)
-                .kids(pages.iter().map(|(r, _)| *r));
+                .count(self.page_infos.len() as i32)
+                .kids(self.page_infos.iter().map(|i| i.ref_));
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
