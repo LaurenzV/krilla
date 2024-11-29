@@ -7,8 +7,6 @@
 //! - GIF
 //! - WEBP
 
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
@@ -16,6 +14,8 @@ use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::{Deferred, NameExt, SipHashable};
 use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use std::sync::Arc;
 use zune_jpeg::zune_core::result::DecodingResult;
@@ -102,13 +102,13 @@ impl Repr {
 struct ImageMetadata {
     size: (u32, u32),
     color_space: ImageColorspace,
-    icc: Option<ICCProfileWrapper>
+    icc: Option<ICCProfileWrapper>,
 }
 
 struct ImageRepr {
     inner: Deferred<Option<Repr>>,
     metadata: ImageMetadata,
-    sip: u128
+    sip: u128,
 }
 
 impl ImageRepr {
@@ -400,14 +400,13 @@ fn decode_jpeg(data: &[u8]) -> Option<Repr> {
     let input_color_space = decoder.get_input_colorspace()?;
 
     if matches!(
-            input_color_space,
-            ColorSpace::Luma
-                | ColorSpace::YCbCr
-                | ColorSpace::RGB
-                | ColorSpace::CMYK
-                | ColorSpace::YCCK
-        ) {
-
+        input_color_space,
+        ColorSpace::Luma
+            | ColorSpace::YCbCr
+            | ColorSpace::RGB
+            | ColorSpace::CMYK
+            | ColorSpace::YCCK
+    ) {
         Some(Repr::Jpeg(JpegRepr {
             // TODO: Avoid cloning here?
             data: data.to_vec(),

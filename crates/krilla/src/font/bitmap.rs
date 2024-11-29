@@ -1,11 +1,11 @@
 //! Drawing bitmap-based glyphs to a surface.
 
-use std::sync::Arc;
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::Font;
 use crate::object::image::Image;
 use crate::surface::Surface;
 use skrifa::{GlyphId, MetadataProvider};
+use std::sync::Arc;
 use tiny_skia_path::{Size, Transform};
 
 /// Draw a bitmap-based glyph on a surface.
