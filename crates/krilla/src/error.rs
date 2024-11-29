@@ -22,4 +22,7 @@ pub enum KrillaError {
     ///
     /// [`SerializeSettings`]: crate::SerializeSettings
     ValidationError(Vec<ValidationError>),
+    /// An image couldn't be processed properly.
+    #[cfg(feature = "raster-images")]
+    ImageError(crate::image::Image),
 }

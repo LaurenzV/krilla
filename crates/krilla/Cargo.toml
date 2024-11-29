@@ -13,6 +13,8 @@ exclude = ["src/tests"]
 [features]
 default = ["simple-text", "raster-images", "svg"]
 "comemo" = ["dep:comemo"]
+# Allow for multi-threaded PDF creation.
+"rayon" = ["dep:rayon"]
 # Allow for rendering SVG images and SVG-based glyphs.
 "svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
 # Allow for rendering simple text without having to shape it yourself.
@@ -20,7 +22,7 @@ default = ["simple-text", "raster-images", "svg"]
 # Add the convenience method for converting fontdb databases.
 "fontdb" = ["dep:fontdb"]
 # Allow for adding raster images to your document.
-"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp"]
+"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
 
 [dependencies]
 base64 = { workspace = true }
@@ -31,10 +33,11 @@ float-cmp = { workspace = true }
 fontdb = { workspace = true, optional = true }
 gif = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
-imagesize = { workspace = true }
+imagesize = { workspace = true, optional = true }
 miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
+rayon = { workspace = true, optional = true }
 resvg = { workspace = true, optional = true }
 rustybuzz = { workspace = true, optional = true }
 siphasher = { workspace = true }

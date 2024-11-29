@@ -23,6 +23,8 @@ krilla supports most features you would expect from a 2D graphics library, inclu
 - Excellent OpenType font support, supporting all major font types, including color fonts.
 - Linear, radial and sweep gradients, as well as patterns.
 - Embedding bitmap and SVG images.
+- Optional support for multi-threading via `rayon`, allowing for great speedups when creating
+compressed PDFs or PDF with lots of images.
 
 In addition to that, the library also supports the following PDF features:
 - Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.

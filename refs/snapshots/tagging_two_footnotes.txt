@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [4 0 R]
+  /Kids [7 0 R]
 >>
 endobj
 
@@ -17,22 +17,53 @@ endobj
     /Terms /Part
     /Title /H1
   >>
-  /K [6 0 R]
+  /K [4 0 R]
   /ParentTree <<
     /Nums [0 3 0 R]
   >>
   /IDTree <<
-    /Names [(Note 1) 8 0 R (Note 2) 7 0 R]
+    /Names [(Note 1) 6 0 R (Note 2) 5 0 R]
   >>
   /ParentTreeNextKey 1
 >>
 endobj
 
 3 0 obj
-[8 0 R 7 0 R]
+[6 0 R 5 0 R]
 endobj
 
 4 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 2 0 R
+  /K [6 0 R 5 0 R]
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /StructElem
+  /S /Note
+  /P 4 0 R
+  /ID (Note 2)
+  /K [1]
+  /Pg 7 0 R
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /StructElem
+  /S /Note
+  /P 4 0 R
+  /ID (Note 1)
+  /K [0]
+  /Pg 7 0 R
+>>
+endobj
+
+7 0 obj
 <<
   /Type /Page
   /Resources <<
@@ -41,11 +72,11 @@ endobj
   /MediaBox [0 0 595 842]
   /StructParents 0
   /Parent 1 0 R
-  /Contents 5 0 R
+  /Contents 8 0 R
 >>
 endobj
 
-5 0 obj
+8 0 obj
 <<
   /Length 229
 >>
@@ -83,37 +114,6 @@ EMC
 endstream
 endobj
 
-6 0 obj
-<<
-  /Type /StructElem
-  /S /Document
-  /P 2 0 R
-  /K [8 0 R 7 0 R]
->>
-endobj
-
-7 0 obj
-<<
-  /Type /StructElem
-  /S /Note
-  /P 6 0 R
-  /ID (Note 2)
-  /K [1]
-  /Pg 4 0 R
->>
-endobj
-
-8 0 obj
-<<
-  /Type /StructElem
-  /S /Note
-  /P 6 0 R
-  /ID (Note 1)
-  /K [0]
-  /Pg 4 0 R
->>
-endobj
-
 9 0 obj
 <<
   /Type /Catalog
@@ -133,16 +133,16 @@ xref
 0000000080 00000 n
 0000000336 00000 n
 0000000366 00000 n
-0000000544 00000 n
-0000000827 00000 n
-0000000914 00000 n
-0000001014 00000 n
+0000000453 00000 n
+0000000553 00000 n
+0000000653 00000 n
+0000000831 00000 n
 0000001114 00000 n
 trailer
 <<
   /Size 10
   /Root 9 0 R
-  /ID [(gWXFtrsbnuEq1mGHrCv1Xg==) (gWXFtrsbnuEq1mGHrCv1Xg==)]
+  /ID [(c3ryVfoEpR5xUIu0yZJ34A==) (c3ryVfoEpR5xUIu0yZJ34A==)]
 >>
 startxref
 1249

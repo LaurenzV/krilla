@@ -8,11 +8,27 @@ use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
 use std::collections::HashMap;
 use xmp_writer::{RenditionClass, XmpWriter};
 
-trait ChunkExt {
+trait ResExt {
+    fn res(&self) -> KrillaResult<&Chunk>;
+}
+
+trait WaitExt {
     fn wait(&self) -> &Chunk;
 }
 
-impl ChunkExt for Chunk {
+impl ResExt for Chunk {
+    fn res(&self) -> KrillaResult<&Chunk> {
+        Ok(self)
+    }
+}
+
+impl ResExt for KrillaResult<Chunk> {
+    fn res(&self) -> KrillaResult<&Chunk> {
+        self.as_ref().map_err(|e| e.clone())
+    }
+}
+
+impl WaitExt for Chunk {
     fn wait(&self) -> &Chunk {
         self
     }
@@ -28,7 +44,6 @@ pub struct ChunkContainer {
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
     pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
 
-    pub(crate) pages: Vec<Chunk>,
     pub(crate) struct_elements: Vec<Chunk>,
     pub(crate) page_labels: Vec<Chunk>,
     pub(crate) annotations: Vec<Chunk>,
@@ -37,11 +52,12 @@ pub struct ChunkContainer {
     pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
-    pub(crate) images: Vec<Deferred<Chunk>>,
     pub(crate) masks: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,
     pub(crate) patterns: Vec<Chunk>,
+    pub(crate) pages: Vec<Deferred<Chunk>>,
+    pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -85,7 +101,7 @@ impl ChunkContainer {
             ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
                 $(
                     for chunk in $field {
-                        let chunk = chunk.wait();
+                        let chunk = chunk.wait().res()?;
                         chunks_len += chunk.len();
                         for ref_ in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&ref_));
@@ -113,10 +129,10 @@ impl ChunkContainer {
         remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
             &mut self.page_label_tree, &mut self.destination_profiles,
         &mut self.struct_tree_root);
-        remap_fields!(remapper, remapped_ref; &self.pages, &self.struct_elements, &self.page_labels,
+        remap_fields!(remapper, remapped_ref; &self.struct_elements, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
-            &self.ext_g_states, &self.images, &self.masks, &self.x_objects, &self.shading_functions,
-            &self.patterns
+            &self.ext_g_states, &self.masks, &self.x_objects, &self.shading_functions,
+            &self.patterns, &self.pages, &self.images
         );
 
         macro_rules! write_field {
@@ -133,7 +149,7 @@ impl ChunkContainer {
             ($remapper:expr, $pdf:expr; $($field:expr),+) => {
                 $(
                     for chunk in $field {
-                        let chunk = chunk.wait();
+                        let chunk = chunk.wait().res()?;
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+
@@ -143,10 +159,10 @@ impl ChunkContainer {
         write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
             &self.page_label_tree, &self.destination_profiles,
         &mut self.struct_tree_root);
-        write_fields!(remapper, &mut pdf; &self.pages, &self.struct_elements, &self.page_labels,
+        write_fields!(remapper, &mut pdf; &self.struct_elements, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
-            &self.ext_g_states, &self.images, &self.masks, &self.x_objects,
-            &self.shading_functions, &self.patterns
+            &self.ext_g_states, &self.masks, &self.x_objects,
+            &self.shading_functions, &self.patterns, &self.pages, &self.images
         );
 
         if self.metadata.as_ref().is_none_or(|m| m.title.is_none()) {

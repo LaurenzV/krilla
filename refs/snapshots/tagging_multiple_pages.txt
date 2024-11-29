@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 3
-  /Kids [6 0 R 8 0 R 10 0 R]
+  /Kids [19 0 R 21 0 R 23 0 R]
 >>
 endobj
 
@@ -17,7 +17,7 @@ endobj
     /Terms /Part
     /Title /H1
   >>
-  /K [12 0 R]
+  /K [6 0 R]
   /ParentTree <<
     /Nums [0 3 0 R 1 4 0 R 2 5 0 R]
   >>
@@ -26,254 +26,102 @@ endobj
 endobj
 
 3 0 obj
-[18 0 R 17 0 R]
+[12 0 R 11 0 R]
 endobj
 
 4 0 obj
-[17 0 R]
+[11 0 R]
 endobj
 
 5 0 obj
-[15 0 R 14 0 R]
+[9 0 R 8 0 R]
 endobj
 
 6 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 19 0 R
-    >>
-  >>
-  /MediaBox [0 0 595 842]
-  /StructParents 0
-  /Parent 1 0 R
-  /Contents 7 0 R
+  /Type /StructElem
+  /S /Document
+  /P 2 0 R
+  /K [10 0 R 7 0 R]
 >>
 endobj
 
 7 0 obj
 <<
-  /Length 419
+  /Type /StructElem
+  /S /Sect
+  /P 6 0 R
+  /K [9 0 R 8 0 R]
 >>
-stream
-/Span <<
-  /MCID 0
-  /Lang ()
->> BDC
-q
-1 0 0 -1 0 842 cm
-/DeviceGray cs
-0 scn
-BT
-0 Tr
-/f0 20 Tf
-1 0 0 -1 0 25 Tm
-[(\000\001\000\002\000\003\000\004\000\001\000\005\000\006\000\007\000\b)] TJ
-ET
-Q
-EMC
-/Span <<
-  /MCID 1
-  /Lang ()
->> BDC
-q
-1 0 0 -1 0 842 cm
-/DeviceGray cs
-0 scn
-BT
-0 Tr
-/f0 20 Tf
-1 0 0 -1 0 50 Tm
-[(\000\001\000\002\000\t\000\001\000\n) 20 (\000\001\000\b\000\n) 20 (\000\001\000\t\000\003)] TJ
-ET
-Q
-EMC
-endstream
 endobj
 
 8 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 19 0 R
-    >>
-  >>
-  /MediaBox [0 0 595 842]
-  /StructParents 1
-  /Parent 1 0 R
-  /Contents 9 0 R
+  /Type /StructElem
+  /S /P
+  /P 6 0 R
+  /K [1]
+  /Pg 23 0 R
 >>
 endobj
 
 9 0 obj
 <<
-  /Length 277
+  /Type /StructElem
+  /S /H1
+  /P 6 0 R
+  /T (second heading)
+  /K [0]
+  /Pg 23 0 R
 >>
-stream
-/Span <<
-  /MCID 0
-  /Lang ()
->> BDC
-q
-1 0 0 -1 0 842 cm
-/DeviceGray cs
-0 scn
-BT
-0 Tr
-/f0 20 Tf
-1 0 0 -1 0 75 Tm
-[(\000\001\000\002\000\013\000\004\000\f\000\r\000\007\000\005\000\002\000\t\000\001\000\n) 20.00003 (\000\001\000\b\000\n) 20 (\000\001\000\t\000\003)] TJ
-ET
-Q
-EMC
-endstream
 endobj
 
 10 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 19 0 R
-    >>
-  >>
-  /MediaBox [0 0 595 842]
-  /StructParents 2
-  /Parent 1 0 R
-  /Contents 11 0 R
+  /Type /StructElem
+  /S /Sect
+  /P 6 0 R
+  /K [12 0 R 11 0 R]
 >>
 endobj
 
 11 0 obj
 <<
-  /Length 513
+  /Type /StructElem
+  /S /P
+  /P 6 0 R
+  /K [1 <<
+    /Type /MCR
+    /MCID 0
+    /Pg 21 0 R
+  >>]
+  /Pg 19 0 R
 >>
-stream
-/Span <<
-  /MCID 0
-  /Lang ()
->> BDC
-q
-1 0 0 -1 0 842 cm
-/DeviceGray cs
-0 scn
-BT
-0 Tr
-/f0 20 Tf
-1 0 0 -1 0 25 Tm
-[(\000\001\000\007\000\r\000\016\000\003\000\004\000\n\000\002\000\003\000\004\000\001\000\005\000\006\000\007\000\b)] TJ
-ET
-Q
-EMC
-/Span <<
-  /MCID 1
-  /Lang ()
->> BDC
-q
-1 0 0 -1 0 842 cm
-/DeviceGray cs
-0 scn
-BT
-0 Tr
-/f0 20 Tf
-1 0 0 -1 0 50 Tm
-[(\000\001\000\007\000\r\000\016\000\003\000\004\000\n\000\002\000\t\000\001\000\n) 19.99997 (\000\001\000\b\000\n) 20 (\000\001\000\t\000\003)] TJ
-ET
-Q
-EMC
-endstream
 endobj
 
 12 0 obj
 <<
   /Type /StructElem
-  /S /Document
-  /P 2 0 R
-  /K [16 0 R 13 0 R]
+  /S /H1
+  /P 6 0 R
+  /T (first heading)
+  /K [0]
+  /Pg 19 0 R
 >>
 endobj
 
 13 0 obj
 <<
-  /Type /StructElem
-  /S /Sect
-  /P 12 0 R
-  /K [15 0 R 14 0 R]
->>
-endobj
-
-14 0 obj
-<<
-  /Type /StructElem
-  /S /P
-  /P 12 0 R
-  /K [1]
-  /Pg 10 0 R
->>
-endobj
-
-15 0 obj
-<<
-  /Type /StructElem
-  /S /H1
-  /P 12 0 R
-  /T (second heading)
-  /K [0]
-  /Pg 10 0 R
->>
-endobj
-
-16 0 obj
-<<
-  /Type /StructElem
-  /S /Sect
-  /P 12 0 R
-  /K [18 0 R 17 0 R]
->>
-endobj
-
-17 0 obj
-<<
-  /Type /StructElem
-  /S /P
-  /P 12 0 R
-  /K [1 <<
-    /Type /MCR
-    /MCID 0
-    /Pg 8 0 R
-  >>]
-  /Pg 6 0 R
->>
-endobj
-
-18 0 obj
-<<
-  /Type /StructElem
-  /S /H1
-  /P 12 0 R
-  /T (first heading)
-  /K [0]
-  /Pg 6 0 R
->>
-endobj
-
-19 0 obj
-<<
   /Type /Font
   /Subtype /Type0
   /BaseFont /WSZUMN+NotoSans-Regular
   /Encoding /Identity-H
-  /DescendantFonts [20 0 R]
-  /ToUnicode 22 0 R
+  /DescendantFonts [14 0 R]
+  /ToUnicode 16 0 R
 >>
 endobj
 
-20 0 obj
+14 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -283,14 +131,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 21 0 R
+  /FontDescriptor 15 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 561 2 2 260 3 3 618 4 4 564 5 5 615 6 6 258 7 7 618 8 9 615 10 10 413 11 11 479 12 12 480 13 13 605 14 14 361]
 >>
 endobj
 
-21 0 obj
+15 0 obj
 <<
   /Type /FontDescriptor
   /FontName /WSZUMN+NotoSans-Regular
@@ -300,13 +148,13 @@ endobj
   /Ascent 1069
   /Descent -293
   /CapHeight 714
-  /CIDSet 23 0 R
+  /CIDSet 17 0 R
   /StemV 95.4
-  /FontFile2 24 0 R
+  /FontFile2 18 0 R
 >>
 endobj
 
-22 0 obj
+16 0 obj
 <<
   /Length 802
   /Type /CMap
@@ -360,7 +208,7 @@ end
 endstream
 endobj
 
-23 0 obj
+17 0 obj
 <<
   /Length 4
   /Filter /ASCIIHexDecode
@@ -370,7 +218,7 @@ FFFE
 endstream
 endobj
 
-24 0 obj
+18 0 obj
 <<
   /Length 2992
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -422,6 +270,158 @@ B1790D7DFEEBC2F3173CC86517F8106B104210C05861CCD88991066E92CDB5CF984BF0
 endstream
 endobj
 
+19 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 13 0 R
+    >>
+  >>
+  /MediaBox [0 0 595 842]
+  /StructParents 0
+  /Parent 1 0 R
+  /Contents 20 0 R
+>>
+endobj
+
+20 0 obj
+<<
+  /Length 419
+>>
+stream
+/Span <<
+  /MCID 0
+  /Lang ()
+>> BDC
+q
+1 0 0 -1 0 842 cm
+/DeviceGray cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 25 Tm
+[(\000\001\000\002\000\003\000\004\000\001\000\005\000\006\000\007\000\b)] TJ
+ET
+Q
+EMC
+/Span <<
+  /MCID 1
+  /Lang ()
+>> BDC
+q
+1 0 0 -1 0 842 cm
+/DeviceGray cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 50 Tm
+[(\000\001\000\002\000\t\000\001\000\n) 20 (\000\001\000\b\000\n) 20 (\000\001\000\t\000\003)] TJ
+ET
+Q
+EMC
+endstream
+endobj
+
+21 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 13 0 R
+    >>
+  >>
+  /MediaBox [0 0 595 842]
+  /StructParents 1
+  /Parent 1 0 R
+  /Contents 22 0 R
+>>
+endobj
+
+22 0 obj
+<<
+  /Length 277
+>>
+stream
+/Span <<
+  /MCID 0
+  /Lang ()
+>> BDC
+q
+1 0 0 -1 0 842 cm
+/DeviceGray cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 75 Tm
+[(\000\001\000\002\000\013\000\004\000\f\000\r\000\007\000\005\000\002\000\t\000\001\000\n) 20.00003 (\000\001\000\b\000\n) 20 (\000\001\000\t\000\003)] TJ
+ET
+Q
+EMC
+endstream
+endobj
+
+23 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 13 0 R
+    >>
+  >>
+  /MediaBox [0 0 595 842]
+  /StructParents 2
+  /Parent 1 0 R
+  /Contents 24 0 R
+>>
+endobj
+
+24 0 obj
+<<
+  /Length 513
+>>
+stream
+/Span <<
+  /MCID 0
+  /Lang ()
+>> BDC
+q
+1 0 0 -1 0 842 cm
+/DeviceGray cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 25 Tm
+[(\000\001\000\007\000\r\000\016\000\003\000\004\000\n\000\002\000\003\000\004\000\001\000\005\000\006\000\007\000\b)] TJ
+ET
+Q
+EMC
+/Span <<
+  /MCID 1
+  /Lang ()
+>> BDC
+q
+1 0 0 -1 0 842 cm
+/DeviceGray cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 50 Tm
+[(\000\001\000\007\000\r\000\016\000\003\000\004\000\n\000\002\000\t\000\001\000\n) 19.99997 (\000\001\000\b\000\n) 20 (\000\001\000\t\000\003)] TJ
+ET
+Q
+EMC
+endstream
+endobj
+
 25 0 obj
 <<
   /Type /Catalog
@@ -438,36 +438,36 @@ xref
 0 26
 0000000000 65535 f
 0000000016 00000 n
-0000000093 00000 n
-0000000305 00000 n
-0000000337 00000 n
-0000000362 00000 n
-0000000394 00000 n
-0000000609 00000 n
-0000001082 00000 n
-0000001297 00000 n
-0000001628 00000 n
-0000001845 00000 n
-0000002413 00000 n
-0000002503 00000 n
-0000002590 00000 n
-0000002675 00000 n
-0000002783 00000 n
-0000002870 00000 n
-0000003003 00000 n
-0000003109 00000 n
-0000003273 00000 n
-0000003649 00000 n
-0000003898 00000 n
-0000004780 00000 n
-0000004863 00000 n
-0000007952 00000 n
+0000000095 00000 n
+0000000306 00000 n
+0000000338 00000 n
+0000000363 00000 n
+0000000393 00000 n
+0000000481 00000 n
+0000000564 00000 n
+0000000647 00000 n
+0000000753 00000 n
+0000000839 00000 n
+0000000973 00000 n
+0000001079 00000 n
+0000001243 00000 n
+0000001619 00000 n
+0000001868 00000 n
+0000002750 00000 n
+0000002833 00000 n
+0000005922 00000 n
+0000006139 00000 n
+0000006613 00000 n
+0000006830 00000 n
+0000007162 00000 n
+0000007379 00000 n
+0000007947 00000 n
 trailer
 <<
   /Size 26
   /Root 25 0 R
-  /ID [(ShG2fZCcMEPRfbH9rhh/rQ==) (ShG2fZCcMEPRfbH9rhh/rQ==)]
+  /ID [(WII2XNL4cHv5NNRmgo3Jqg==) (WII2XNL4cHv5NNRmgo3Jqg==)]
 >>
 startxref
-8088
+8083
 %%EOF

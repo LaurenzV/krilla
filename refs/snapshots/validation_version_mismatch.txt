@@ -5,14 +5,14 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [4 0 R]
+  /Kids [14 0 R]
 >>
 endobj
 
 2 0 obj
 <<
   /Type /OutputIntent
-  /DestOutputProfile 15 0 R
+  /DestOutputProfile 13 0 R
   /S /GTS_PDFA1
   /OutputConditionIdentifier (Custom)
   /OutputCondition (sRGB)
@@ -27,65 +27,16 @@ endobj
 
 4 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 12 0 R
-      /c1 13 0 R
-    >>
-    /Font <<
-      /f0 6 0 R
-    >>
-  >>
-  /MediaBox [0 0 595 842]
-  /Parent 1 0 R
-  /Contents 5 0 R
->>
-endobj
-
-5 0 obj
-<<
-  /Length 295
->>
-stream
-q
-1 0 0 -1 0 842 cm
-/c0 cs
-0 scn
-BT
-0 Tr
-/f0 20 Tf
-1 0 0 -1 0 100 Tm
-[(\000\001\000\002\000\003\000\004\000\005\000\003\000\004\000\005\000\004\000\006\000\007\000\b\000\005\000\t\000\b) 19.999939 (\000\n\000\t)] TJ
-ET
-Q
-q
-1 0 0 -1 0 842 cm
-/c1 cs
-1 0 0 scn
-30 30 m
-70 30 l
-70 70 l
-30 70 l
-h
-f
-Q
-endstream
-endobj
-
-6 0 obj
-<<
   /Type /Font
   /Subtype /Type0
   /BaseFont /UZGIPX+NotoSans-Regular
   /Encoding /Identity-H
-  /DescendantFonts [7 0 R]
-  /ToUnicode 9 0 R
+  /DescendantFonts [5 0 R]
+  /ToUnicode 7 0 R
 >>
 endobj
 
-7 0 obj
+5 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -95,14 +46,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 8 0 R
+  /FontDescriptor 6 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 556 2 2 618 3 3 258 4 4 479 5 5 260 6 6 605 7 7 935 8 8 564 9 9 361 10 10 529]
 >>
 endobj
 
-8 0 obj
+6 0 obj
 <<
   /Type /FontDescriptor
   /FontName /UZGIPX+NotoSans-Regular
@@ -112,13 +63,13 @@ endobj
   /Ascent 1069
   /Descent -293
   /CapHeight 714
-  /CIDSet 10 0 R
+  /CIDSet 8 0 R
   /StemV 95.4
-  /FontFile2 11 0 R
+  /FontFile2 9 0 R
 >>
 endobj
 
-9 0 obj
+7 0 obj
 <<
   /Length 746
   /Type /CMap
@@ -168,7 +119,7 @@ end
 endstream
 endobj
 
-10 0 obj
+8 0 obj
 <<
   /Length 4
   /Filter /ASCIIHexDecode
@@ -178,7 +129,7 @@ FFE0
 endstream
 endobj
 
-11 0 obj
+9 0 obj
 <<
   /Length 2237
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -219,15 +170,15 @@ E5A98CD19C8B25B84BE1BD659FCEFF71E7EF40E61A6AFE6BE0F681E5043A318A8E0ED3
 endstream
 endobj
 
+10 0 obj
+[/ICCBased 12 0 R]
+endobj
+
+11 0 obj
+[/ICCBased 13 0 R]
+endobj
+
 12 0 obj
-[/ICCBased 14 0 R]
-endobj
-
-13 0 obj
-[/ICCBased 15 0 R]
-endobj
-
-14 0 obj
 <<
   /Length 1196
   /N 1
@@ -255,7 +206,7 @@ EED4FDFAFEB901F360DAD0F823FC09CFEE19313984632CE7E478DFABB6D772CFEE77C9
 endstream
 endobj
 
-15 0 obj
+13 0 obj
 <<
   /Length 1296
   /N 3
@@ -285,6 +236,55 @@ C61617FF02C1B1D707
 endstream
 endobj
 
+14 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 10 0 R
+      /c1 11 0 R
+    >>
+    /Font <<
+      /f0 4 0 R
+    >>
+  >>
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 15 0 R
+>>
+endobj
+
+15 0 obj
+<<
+  /Length 295
+>>
+stream
+q
+1 0 0 -1 0 842 cm
+/c0 cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 100 Tm
+[(\000\001\000\002\000\003\000\004\000\005\000\003\000\004\000\005\000\004\000\006\000\007\000\b\000\005\000\t\000\b) 19.999939 (\000\n\000\t)] TJ
+ET
+Q
+q
+1 0 0 -1 0 842 cm
+/c1 cs
+1 0 0 scn
+30 30 m
+70 30 l
+70 70 l
+30 70 l
+h
+f
+Q
+endstream
+endobj
+
 16 0 obj
 <<
   /Length 3167
@@ -292,7 +292,7 @@ endobj
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"  xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"  xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"  xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#" ><pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>XMP Media Management schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/xap/1.0/mm/</pdfaSchema:namespaceURI><pdfaSchema:prefix>xmpMM</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>UUID based identifier for specific incarnation of a document</pdfaProperty:description><pdfaProperty:name>InstanceID</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Adobe PDF schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdf</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>Keywords associated with the document</pdfaProperty:description><pdfaProperty:name>Keywords</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Version of the PDF specification to which the document conforms</pdfaProperty:description><pdfaProperty:name>PDFVersion</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Name of the application that created the PDF document</pdfaProperty:description><pdfaProperty:name>Producer</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Whether the document has been trapped</pdfaProperty:description><pdfaProperty:name>Trapped</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas><pdfaid:part>1</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>CnqUX+cqzPYnn8l4TNQ9Qw==</xmpMM:InstanceID><xmpMM:DocumentID>CnqUX+cqzPYnn8l4TNQ9Qw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.4</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"  xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"  xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"  xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#" ><pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>XMP Media Management schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/xap/1.0/mm/</pdfaSchema:namespaceURI><pdfaSchema:prefix>xmpMM</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>UUID based identifier for specific incarnation of a document</pdfaProperty:description><pdfaProperty:name>InstanceID</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Adobe PDF schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdf</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>Keywords associated with the document</pdfaProperty:description><pdfaProperty:name>Keywords</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Version of the PDF specification to which the document conforms</pdfaProperty:description><pdfaProperty:name>PDFVersion</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Name of the application that created the PDF document</pdfaProperty:description><pdfaProperty:name>Producer</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Whether the document has been trapped</pdfaProperty:description><pdfaProperty:name>Trapped</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas><pdfaid:part>1</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>/vJiIjNEIXdjVfmZSAyYsw==</xmpMM:InstanceID><xmpMM:DocumentID>/vJiIjNEIXdjVfmZSAyYsw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.4</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
@@ -309,27 +309,27 @@ xref
 0 18
 0000000000 65535 f
 0000000016 00000 n
-0000000080 00000 n
-0000000271 00000 n
-0000000295 00000 n
-0000000550 00000 n
-0000000899 00000 n
-0000001060 00000 n
-0000001402 00000 n
-0000001650 00000 n
-0000002475 00000 n
-0000002558 00000 n
-0000004892 00000 n
-0000004928 00000 n
-0000004964 00000 n
-0000006279 00000 n
+0000000081 00000 n
+0000000272 00000 n
+0000000296 00000 n
+0000000457 00000 n
+0000000799 00000 n
+0000001045 00000 n
+0000001870 00000 n
+0000001952 00000 n
+0000004285 00000 n
+0000004321 00000 n
+0000004357 00000 n
+0000005672 00000 n
+0000007095 00000 n
+0000007352 00000 n
 0000007702 00000 n
 0000010959 00000 n
 trailer
 <<
   /Size 18
   /Root 17 0 R
-  /ID [(CnqUX+cqzPYnn8l4TNQ9Qw==) (CnqUX+cqzPYnn8l4TNQ9Qw==)]
+  /ID [(/vJiIjNEIXdjVfmZSAyYsw==) (/vJiIjNEIXdjVfmZSAyYsw==)]
 >>
 startxref
 11056
