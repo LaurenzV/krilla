@@ -940,7 +940,7 @@ mod tests {
     use crate::tests::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
     use crate::{Document, SvgSettings};
     use krilla_macros::snapshot;
-    use tiny_skia_path::{Rect, Transform};
+    use tiny_skia_path::{Rect, Size, Transform};
 
     pub trait SurfaceExt {
         fn fill_text_(&mut self, y: f32, content: &str);
@@ -1098,8 +1098,9 @@ mod tests {
 
         let id5 = surface.start_tagged(ContentTag::Other);
         let image = load_png_image("rgb8.png");
+        let image_size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
         surface.push_transform(&Transform::from_translate(100.0, 300.0));
-        surface.draw_image(image.clone(), image.size());
+        surface.draw_image(image.clone(), image_size);
         surface.pop();
         surface.end_tagged();
 

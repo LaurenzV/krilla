@@ -76,8 +76,6 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 /// Representation of a raw, decode image.
 struct SampledRepr {
     image_data: Vec<u8>,
-    icc: Option<ICCProfileWrapper>,
-    size: SizeWrapper,
     mask_data: Option<Vec<u8>>,
     bits_per_component: BitsPerComponent,
     image_color_space: ImageColorspace,
@@ -85,8 +83,6 @@ struct SampledRepr {
 
 struct JpegRepr {
     data: Vec<u8>,
-    icc: Option<ICCProfileWrapper>,
-    size: SizeWrapper,
     bits_per_component: BitsPerComponent,
     image_color_space: ImageColorspace,
     invert_cmyk: bool,
@@ -105,20 +101,6 @@ impl Repr {
         }
     }
 
-    fn size(&self) -> Size {
-        match self {
-            Repr::Sampled(s) => s.size.0,
-            Repr::Jpeg(j) => j.size.0,
-        }
-    }
-
-    fn icc(&self) -> Option<ICCProfileWrapper> {
-        match self {
-            Repr::Sampled(s) => s.icc.clone(),
-            Repr::Jpeg(j) => j.icc.clone(),
-        }
-    }
-
     fn color_space(&self) -> ImageColorspace {
         match self {
             Repr::Sampled(s) => s.image_color_space,
@@ -128,16 +110,10 @@ impl Repr {
 }
 
 struct ImageRepr {
-    inner: Repr,
+    inner: Deferred<Option<Repr>>,
+    size: (u32, u32),
+    icc: Option<Vec<u8>>,
     sip: u128
-}
-
-impl Deref for ImageRepr {
-    type Target = Repr;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
 }
 
 impl Debug for ImageRepr {
@@ -180,10 +156,15 @@ impl Image {
     /// Create a new bitmap image from a `.png` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_png(data: &[u8]) -> Option<Self> {
-        let hash = data.sip_hash();
+    pub fn from_png(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
+        let hash = data.as_ref().as_ref().sip_hash();
+        let size = imagesize::blob_size(data.as_ref().as_ref()).ok()?;
+        let icc = png_icc(data.as_ref().as_ref());
+
         Some(Self(Arc::new(ImageRepr {
-            inner: decode_png(data)?,
+            inner: Deferred::new(move || decode_png(data.as_ref().as_ref())),
+            size: (size.width as u32, size.height as u32),
+            icc,
             sip: hash,
         })))
     }
@@ -191,10 +172,15 @@ impl Image {
     /// Create a new bitmap image from a `.jpg` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_jpeg(data: &[u8]) -> Option<Self> {
-         let hash = data.sip_hash();
+    pub fn from_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
+        let hash = data.as_ref().as_ref().sip_hash();
+        let size = imagesize::blob_size(data.as_ref().as_ref()).ok()?;
+        let icc = jpeg_icc(data.as_ref().as_ref());
+
         Some(Self(Arc::new(ImageRepr {
-            inner: decode_jpeg(data)?,
+            inner: Deferred::new(move || decode_jpeg(data.as_ref().as_ref())),
+            size: (size.width as u32, size.height as u32),
+            icc,
             sip: hash,
         })))
     }
@@ -202,10 +188,14 @@ impl Image {
     /// Create a new bitmap image from a `.gif` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_gif(data: &[u8]) -> Option<Self> {
-         let hash = data.sip_hash();
+    pub fn from_gif(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
+        let hash = data.as_ref().as_ref().sip_hash();
+        let size = imagesize::blob_size(data.as_ref().as_ref()).ok()?;
+
         Some(Self(Arc::new(ImageRepr {
-            inner: decode_gif(data)?,
+            inner: Deferred::new(move || decode_gif(data.as_ref().as_ref())),
+            size: (size.width as u32, size.height as u32),
+            icc: None,
             sip: hash,
         })))
     }
@@ -213,115 +203,113 @@ impl Image {
     /// Create a new bitmap image from a `.webp` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_webp(data: &[u8]) -> Option<Self> {
-         let hash = data.sip_hash();
+    pub fn from_webp(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
+        let hash = data.as_ref().as_ref().sip_hash();
+        let size = imagesize::blob_size(data.as_ref().as_ref()).ok()?;
+        let icc = webp_icc(data.as_ref().as_ref());
+
         Some(Self(Arc::new(ImageRepr {
-            inner: decode_webp(data)?,
+            inner: Deferred::new(move || decode_webp(data.as_ref().as_ref())),
+            size: (size.width as u32, size.height as u32),
+            icc,
             sip: hash,
         })))
     }
 
-    /// Returns the dimensions of the image.
-    pub fn size(&self) -> Size {
-        self.0.size()
+    pub fn size(&self) -> (u32, u32) {
+        self.0.size
     }
 
     pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
-        let soft_mask_id = match self.0.deref().deref() {
-            Repr::Sampled(s) => s.mask_data.as_ref().map(|_| sc.new_ref()),
-            Repr::Jpeg(_) => None,
-        };
-
-        let icc_ref = self.0.icc().and_then(|ic| {
-            if sc
-                .serialize_settings()
-                .pdf_version
-                .supports_icc(ic.metadata())
-            {
-                let ref_ = match ic {
-                    ICCProfileWrapper::Luma(l) => sc.add_object(ICCBasedColorSpace(l)),
-                    ICCProfileWrapper::Rgb(r) => sc.add_object(ICCBasedColorSpace(r)),
-                    ICCProfileWrapper::Cmyk(c) => sc.add_object(ICCBasedColorSpace(c)),
-                };
-
-                Some(ref_)
-            } else {
-                // Don't embed ICC profiles from images if the current
-                // PDF version does not support it.
-                None
-            }
-        });
+        let soft_mask_id = sc.new_ref();
+        let icc_ref = sc.new_ref();
 
         let serialize_settings = sc.serialize_settings().clone();
 
         Deferred::new(move || {
             let mut chunk = Chunk::new();
 
-            let alpha_mask = match self.0.deref().deref() {
-                Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
-                    let soft_mask_id = soft_mask_id.unwrap();
-                    let mask_stream =
-                        FilterStream::new_from_binary_data(mask_data, &serialize_settings);
-                    let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
-                    mask_stream.write_filters(s_mask.deref_mut().deref_mut());
-                    s_mask.width(sampled.size.0.width() as i32);
-                    s_mask.height(sampled.size.0.height() as i32);
-                    s_mask.pair(
-                        Name(b"ColorSpace"),
-                        // Mask color space must be device gray -- see Table 145.
-                        DEVICE_GRAY.to_pdf_name(),
-                    );
-                    s_mask.bits_per_component(sampled.bits_per_component.as_u8() as i32);
-                    soft_mask_id
-                }),
-                Repr::Jpeg(_) => None,
-            };
-
-            let image_stream = match self.0.deref().deref() {
-                Repr::Sampled(s) => {
-                    FilterStream::new_from_binary_data(&s.image_data, &serialize_settings)
-                }
-                Repr::Jpeg(j) => FilterStream::new_from_jpeg_data(&j.data, &serialize_settings),
-            };
-
-            let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
-            image_stream.write_filters(image_x_object.deref_mut().deref_mut());
-            image_x_object.width(self.size().width() as i32);
-            image_x_object.height(self.size().height() as i32);
-
-            if let Some(icc_ref) = icc_ref {
-                image_x_object.pair(Name(b"ColorSpace"), icc_ref);
-            } else {
-                let name = match self.0.color_space() {
-                    ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
-                    ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
-                    ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
-                };
-
-                image_x_object.pair(Name(b"ColorSpace"), name);
-            }
-
-            // Photoshop CMYK images need to be inverted, see
-            // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
-            // I'm not sure if this applies to all JPEG CMYK images out there, but for now we just
-            // always do it. In libtexpdf, they only seem to do it if they can find the Adobe APP
-            // marker.
-            if let Repr::Jpeg(j) = &self.0.deref().deref() {
-                if j.invert_cmyk {
-                    image_x_object
-                        .decode([1.0, 0.0].repeat(j.image_color_space.num_components() as usize));
-                }
-            }
-
-            image_x_object.bits_per_component(self.0.bits_per_component().as_u8() as i32);
-            if let Some(soft_mask_id) = alpha_mask {
-                image_x_object.s_mask(soft_mask_id);
-            }
-            image_x_object.finish();
+            let repr = self.0.inner.wait().as_ref().unwrap();
+            //
+            // let alpha_mask = match repr {
+            //     Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
+            //         let soft_mask_id = soft_mask_id.unwrap();
+            //         let mask_stream =
+            //             FilterStream::new_from_binary_data(mask_data, &serialize_settings);
+            //         let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
+            //         mask_stream.write_filters(s_mask.deref_mut().deref_mut());
+            //         s_mask.width(sampled.size.0.width() as i32);
+            //         s_mask.height(sampled.size.0.height() as i32);
+            //         s_mask.pair(
+            //             Name(b"ColorSpace"),
+            //             // Mask color space must be device gray -- see Table 145.
+            //             DEVICE_GRAY.to_pdf_name(),
+            //         );
+            //         s_mask.bits_per_component(sampled.bits_per_component.as_u8() as i32);
+            //         soft_mask_id
+            //     }),
+            //     Repr::Jpeg(_) => None,
+            // };
+            //
+            // let image_stream = match self.0.deref().deref() {
+            //     Repr::Sampled(s) => {
+            //         FilterStream::new_from_binary_data(&s.image_data, &serialize_settings)
+            //     }
+            //     Repr::Jpeg(j) => FilterStream::new_from_jpeg_data(&j.data, &serialize_settings),
+            // };
+            //
+            // let mut image_x_object = chunk.image_xobject(root_ref, image_stream.encoded_data());
+            // image_stream.write_filters(image_x_object.deref_mut().deref_mut());
+            // image_x_object.width(self.size().width() as i32);
+            // image_x_object.height(self.size().height() as i32);
+            //
+            // if let Some(icc_ref) = icc_ref {
+            //     image_x_object.pair(Name(b"ColorSpace"), icc_ref);
+            // } else {
+            //     let name = match self.0.color_space() {
+            //         ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
+            //         ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
+            //         ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
+            //     };
+            //
+            //     image_x_object.pair(Name(b"ColorSpace"), name);
+            // }
+            //
+            // // Photoshop CMYK images need to be inverted, see
+            // // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
+            // // I'm not sure if this applies to all JPEG CMYK images out there, but for now we just
+            // // always do it. In libtexpdf, they only seem to do it if they can find the Adobe APP
+            // // marker.
+            // if let Repr::Jpeg(j) = &self.0.deref().deref() {
+            //     if j.invert_cmyk {
+            //         image_x_object
+            //             .decode([1.0, 0.0].repeat(j.image_color_space.num_components() as usize));
+            //     }
+            // }
+            //
+            // image_x_object.bits_per_component(self.0.bits_per_component().as_u8() as i32);
+            // if let Some(soft_mask_id) = alpha_mask {
+            //     image_x_object.s_mask(soft_mask_id);
+            // }
+            // image_x_object.finish();
 
             chunk
         })
     }
+}
+
+struct ImageMetadata {
+    size: (u32, u32),
+    icc_profile: Option<Vec<u8>>
+}
+
+fn png_icc(data: &[u8]) -> Option<Vec<u8>> {
+    let mut decoder = PngDecoder::new(data);
+    decoder.decode_headers().ok()?;
+    decoder
+        .get_info()?
+        .icc_profile
+        .clone()
 }
 
 fn decode_png(data: &[u8]) -> Option<Repr> {
@@ -331,10 +319,6 @@ fn decode_png(data: &[u8]) -> Option<Repr> {
     let color_space = decoder.get_colorspace()?;
     let image_color_space = color_space.try_into().ok()?;
 
-    let size = {
-        let info = decoder.get_info()?;
-        Size::from_wh(info.width as f32, info.height as f32)?
-    };
     let decoded = decoder.decode().ok()?;
 
     let (image_data, mask_data, bits_per_component) = match decoded {
@@ -343,29 +327,24 @@ fn decode_png(data: &[u8]) -> Option<Repr> {
         _ => return None,
     };
 
-    let icc = decoder
-        .get_info()?
-        .icc_profile
-        .as_ref()
-        .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
-
     Some(Repr::Sampled(SampledRepr {
         image_data,
-        icc,
         mask_data,
         bits_per_component,
         image_color_space,
-        size: SizeWrapper(size),
     }))
+}
+
+fn jpeg_icc(data: &[u8]) -> Option<Vec<u8>> {
+    let mut decoder = JpegDecoder::new(data);
+    decoder.decode_headers().ok()?;
+    decoder
+        .icc_profile()
 }
 
 fn decode_jpeg(data: &[u8]) -> Option<Repr> {
     let mut decoder = JpegDecoder::new(data);
     decoder.decode_headers().ok()?;
-    let size = {
-        let dimensions = decoder.dimensions()?;
-        Size::from_wh(dimensions.0 as f32, dimensions.1 as f32)?
-    };
 
     let input_color_space = decoder.get_input_colorspace()?;
 
@@ -379,37 +358,16 @@ fn decode_jpeg(data: &[u8]) -> Option<Repr> {
         ) {
         // Don't decode the image and save it with the existing DCT encoding.
         let image_color_space = input_color_space.try_into().ok()?;
-        let icc = decoder
-            .icc_profile()
-            .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
 
         Some(Repr::Jpeg(JpegRepr {
-            icc,
             // TODO: Avoid cloning here?
             data: data.to_vec(),
-            size: SizeWrapper(size),
             bits_per_component: BitsPerComponent::Eight,
             image_color_space,
             invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
         }))
     } else {
-        // Unknown color space, fall back to decoding the JPEG into RGB8 and saving
-        // it in the sampled representation.
-        let output_color_space = decoder.get_output_colorspace()?;
-        let image_color_space = output_color_space.try_into().ok()?;
-
-        let decoded = decoder.decode().ok()?;
-        let (image_data, _, bits_per_component) = handle_u8_image(decoded, output_color_space);
-
-        Some(Repr::Sampled(SampledRepr {
-            // Cannot embed ICC profile in this case, since we are converting to RGB.
-            icc: None,
-            image_data,
-            mask_data: None,
-            bits_per_component,
-            image_color_space,
-            size: SizeWrapper(size),
-        }))
+        None
     }
 }
 
@@ -419,30 +377,28 @@ fn decode_gif(data: &[u8]) -> Option<Repr> {
     let mut decoder = decoder.read_info(data).ok()?;
     let first_frame = decoder.read_next_frame().ok()??;
 
-    let size = Size::from_wh(first_frame.width as f32, first_frame.height as f32)?;
-
     let (image_data, mask_data, bits_per_component) =
         handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
 
     Some(Repr::Sampled(SampledRepr {
-        icc: None,
         image_data,
         mask_data,
         bits_per_component,
         image_color_space: ImageColorspace::Rgb,
-        size: SizeWrapper(size),
     }))
+}
+
+fn webp_icc(data: &[u8]) -> Option<Vec<u8>> {
+    let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
+    decoder
+        .icc_profile()
+        .ok()?
 }
 
 fn decode_webp(data: &[u8]) -> Option<Repr> {
     let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
     let mut first_frame = vec![0; decoder.output_buffer_size()?];
     decoder.read_image(&mut first_frame).ok()?;
-
-    let size = {
-        let (w, h) = decoder.dimensions();
-        Size::from_wh(w as f32, h as f32)?
-    };
 
     let color_space = if decoder.has_alpha() {
         ColorSpace::RGBA
@@ -451,20 +407,13 @@ fn decode_webp(data: &[u8]) -> Option<Repr> {
     };
     let image_color_space = color_space.try_into().ok()?;
 
-    let icc = decoder
-        .icc_profile()
-        .ok()?
-        .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
-
     let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
 
     Some(Repr::Sampled(SampledRepr {
-        icc,
         image_data,
         mask_data,
         bits_per_component,
         image_color_space,
-        size: SizeWrapper(size),
     }))
 }
 
@@ -648,7 +597,7 @@ mod tests {
     fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
         let image = load_fn(name);
         let size = image.size();
-        surface.draw_image(image, size);
+        surface.draw_image(image, Size::from_wh(size.0 as f32, size.1 as f32).unwrap());
     }
 
     #[visreg(all)]
@@ -745,6 +694,7 @@ mod tests {
     #[snapshot(document)]
     fn image_deduplication(document: &mut Document) {
         let size = load_png_image("luma8.png").size();
+        let size = Size::from_wh(size.0 as f32, size.1 as f32).unwrap();
         let mut page = document.start_page();
         let mut surface = page.surface();
         surface.draw_image(load_png_image("luma8.png"), size);

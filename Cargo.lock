@@ -837,6 +837,7 @@ dependencies = [
  "gif",
  "image 0.25.2",
  "image-webp",
+ "imagesize 0.13.0",
  "krilla-macros",
  "miniz_oxide 0.8.0",
  "once_cell",

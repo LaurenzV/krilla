@@ -3,7 +3,7 @@ use crate::path::FillRule;
 use crate::surface::Surface;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Rect, Size};
 use usvg::ImageKind;
 
 /// Render an image into a surface.
@@ -18,25 +18,23 @@ pub fn render(
         return Some(());
     }
 
+    let size = Size::from_wh(image.size().width(), image.size().height()).unwrap();
+
     match image.kind() {
         ImageKind::JPEG(d) => {
-            let image = Image::from_jpeg(d)?;
-            let size = image.size();
+            let image = Image::from_jpeg(d.clone())?;
             surface.draw_image(image, size);
         }
         ImageKind::PNG(d) => {
-            let image = Image::from_png(d)?;
-            let size = image.size();
+            let image = Image::from_png(d.clone())?;
             surface.draw_image(image, size);
         }
         ImageKind::GIF(d) => {
-            let image = Image::from_gif(d)?;
-            let size = image.size();
+            let image = Image::from_gif(d.clone())?;
             surface.draw_image(image, size);
         }
         ImageKind::WEBP(d) => {
-            let image = Image::from_webp(d)?;
-            let size = image.size();
+            let image = Image::from_webp(d.clone())?;
             surface.draw_image(image, size);
         }
         ImageKind::SVG(t) => {
