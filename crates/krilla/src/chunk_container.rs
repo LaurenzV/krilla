@@ -57,7 +57,7 @@ pub struct ChunkContainer {
     pub(crate) shading_functions: Vec<Chunk>,
     pub(crate) patterns: Vec<Chunk>,
     pub(crate) pages: Vec<Deferred<Chunk>>,
-    pub(crate) images: Vec<Deferred<Chunk>>,
+    pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -149,7 +149,7 @@ impl ChunkContainer {
             ($remapper:expr, $pdf:expr; $($field:expr),+) => {
                 $(
                     for chunk in $field {
-                        let chunk = chunk.wait();
+                        let chunk = chunk.wait().res()?;
                         chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
                     }
                 )+

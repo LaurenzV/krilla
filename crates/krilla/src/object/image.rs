@@ -10,6 +10,7 @@
 // TODO: CLean up and update docs
 
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
+use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
@@ -233,7 +234,11 @@ impl Image {
         self.0.color_space()
     }
 
-    pub(crate) fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Deferred<Chunk> {
+    pub(crate) fn serialize(
+        self,
+        sc: &mut SerializerContext,
+        root_ref: Ref,
+    ) -> Deferred<KrillaResult<Chunk>> {
         let soft_mask_id = sc.new_ref();
         let icc_ref = self.icc().and_then(|ic| {
             if sc
@@ -260,7 +265,12 @@ impl Image {
         Deferred::new(move || {
             let mut chunk = Chunk::new();
 
-            let repr = self.0.inner.wait().as_ref().unwrap();
+            let repr = self
+                .0
+                .inner
+                .wait()
+                .as_ref()
+                .ok_or(KrillaError::ImageError(self.clone()))?;
 
             let alpha_mask = match repr {
                 Repr::Sampled(sampled) => sampled.mask_data.as_ref().map(|mask_data| {
@@ -323,7 +333,7 @@ impl Image {
             }
             image_x_object.finish();
 
-            chunk
+            Ok(chunk)
         })
     }
 }
