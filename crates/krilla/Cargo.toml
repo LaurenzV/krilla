@@ -13,6 +13,8 @@ exclude = ["src/tests"]
 [features]
 default = ["simple-text", "raster-images", "svg"]
 "comemo" = ["dep:comemo"]
+# Allow for multi-threaded PDF creation.
+"rayon" = ["dep:rayon"]
 # Allow for rendering SVG images and SVG-based glyphs.
 "svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
 # Allow for rendering simple text without having to shape it yourself.
@@ -35,6 +37,7 @@ imagesize = { workspace = true }
 miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
+rayon = { workspace = true, optional = true }
 resvg = { workspace = true, optional = true }
 rustybuzz = { workspace = true, optional = true }
 siphasher = { workspace = true }
