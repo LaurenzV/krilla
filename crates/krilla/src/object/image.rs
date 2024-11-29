@@ -7,12 +7,14 @@
 //! - GIF
 //! - WEBP
 
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::object::color::DEVICE_GRAY;
 use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
-use crate::util::{Deferred, NameExt, Prehashed, SizeWrapper};
+use crate::util::{Deferred, NameExt, SipHashable, SizeWrapper};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -72,7 +74,6 @@ impl TryFrom<ColorSpace> for ImageColorspace {
 }
 
 /// Representation of a raw, decode image.
-#[derive(Debug, Hash, Eq, PartialEq)]
 struct SampledRepr {
     image_data: Vec<u8>,
     icc: Option<ICCProfileWrapper>,
@@ -82,8 +83,6 @@ struct SampledRepr {
     image_color_space: ImageColorspace,
 }
 
-/// Representation of an encoded jpg image.
-#[derive(Debug, Hash, Eq, PartialEq)]
 struct JpegRepr {
     data: Vec<u8>,
     icc: Option<ICCProfileWrapper>,
@@ -93,7 +92,6 @@ struct JpegRepr {
     invert_cmyk: bool,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
 enum Repr {
     Sampled(SampledRepr),
     Jpeg(JpegRepr),
@@ -129,11 +127,44 @@ impl Repr {
     }
 }
 
+struct ImageRepr {
+    inner: Repr,
+    sip: u128
+}
+
+impl Deref for ImageRepr {
+    type Target = Repr;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl Debug for ImageRepr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl Hash for ImageRepr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.sip.hash(state);
+    }
+}
+
+impl PartialEq for ImageRepr {
+    fn eq(&self, other: &Self) -> bool {
+        self.sip == other.sip
+    }
+}
+
+impl Eq for ImageRepr {}
+
 /// A bitmap image.
 ///
 /// This type is cheap to hash and clone, but expensive to create.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Image(Arc<Prehashed<Repr>>);
+pub struct Image(Arc<ImageRepr>);
 
 fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
     let wrapper = match color_space {
@@ -150,28 +181,44 @@ impl Image {
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_png(data: &[u8]) -> Option<Self> {
-        Some(Self(Arc::new(Prehashed::new(decode_png(data)?))))
+        let hash = data.sip_hash();
+        Some(Self(Arc::new(ImageRepr {
+            inner: decode_png(data)?,
+            sip: hash,
+        })))
     }
 
     /// Create a new bitmap image from a `.jpg` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_jpeg(data: &[u8]) -> Option<Self> {
-        Some(Self(Arc::new(Prehashed::new(decode_jpeg(data)?))))
+         let hash = data.sip_hash();
+        Some(Self(Arc::new(ImageRepr {
+            inner: decode_jpeg(data)?,
+            sip: hash,
+        })))
     }
 
     /// Create a new bitmap image from a `.gif` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_gif(data: &[u8]) -> Option<Self> {
-        Some(Self(Arc::new(Prehashed::new(decode_gif(data)?))))
+         let hash = data.sip_hash();
+        Some(Self(Arc::new(ImageRepr {
+            inner: decode_gif(data)?,
+            sip: hash,
+        })))
     }
 
     /// Create a new bitmap image from a `.webp` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_webp(data: &[u8]) -> Option<Self> {
-        Some(Self(Arc::new(Prehashed::new(decode_webp(data)?))))
+         let hash = data.sip_hash();
+        Some(Self(Arc::new(ImageRepr {
+            inner: decode_webp(data)?,
+            sip: hash,
+        })))
     }
 
     /// Returns the dimensions of the image.
