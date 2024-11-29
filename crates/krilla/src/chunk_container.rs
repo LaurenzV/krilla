@@ -24,7 +24,7 @@ impl ResExt for Chunk {
 
 impl ResExt for KrillaResult<Chunk> {
     fn res(&self) -> KrillaResult<&Chunk> {
-       self.as_ref().map_err(|e| e.clone())
+        self.as_ref().map_err(|e| e.clone())
     }
 }
 
