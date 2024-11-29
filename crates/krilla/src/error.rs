@@ -4,7 +4,6 @@
 //! invalid fonts are provided. This module provides the basic error types krilla uses.
 
 use crate::font::Font;
-use crate::image::Image;
 use crate::validation::ValidationError;
 
 /// A wrapper type for krilla errors.
@@ -24,5 +23,6 @@ pub enum KrillaError {
     /// [`SerializeSettings`]: crate::SerializeSettings
     ValidationError(Vec<ValidationError>),
     /// An image couldn't be processed properly.
-    ImageError(Image),
+    #[cfg(feature = "raster-images")]
+    ImageError(crate::image::Image),
 }

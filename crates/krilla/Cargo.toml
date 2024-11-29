@@ -22,7 +22,7 @@ default = ["simple-text", "raster-images", "svg"]
 # Add the convenience method for converting fontdb databases.
 "fontdb" = ["dep:fontdb"]
 # Allow for adding raster images to your document.
-"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp"]
+"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
 
 [dependencies]
 base64 = { workspace = true }
@@ -33,7 +33,7 @@ float-cmp = { workspace = true }
 fontdb = { workspace = true, optional = true }
 gif = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
-imagesize = { workspace = true }
+imagesize = { workspace = true, optional = true }
 miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
