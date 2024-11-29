@@ -149,7 +149,7 @@ impl ChunkContainer {
             &self.shading_functions, &self.patterns
         );
 
-        if !self.metadata.as_ref().is_some_and(|m| m.title.is_some()) {
+        if self.metadata.as_ref().is_none_or(|m| m.title.is_none()) {
             sc.register_validation_error(ValidationError::NoDocumentTitle);
         }
 

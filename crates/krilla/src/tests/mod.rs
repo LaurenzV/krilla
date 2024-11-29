@@ -191,19 +191,31 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
 }
 
 pub fn load_png_image(name: &str) -> Image {
-    Image::from_png(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+    Image::from_png(Arc::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+    ))
+    .unwrap()
 }
 
 pub fn load_jpg_image(name: &str) -> Image {
-    Image::from_jpeg(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+    Image::from_jpeg(Arc::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+    ))
+    .unwrap()
 }
 
 pub fn load_gif_image(name: &str) -> Image {
-    Image::from_gif(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+    Image::from_gif(Arc::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+    ))
+    .unwrap()
 }
 
 pub fn load_webp_image(name: &str) -> Image {
-    Image::from_webp(&std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()).unwrap()
+    Image::from_webp(Arc::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+    ))
+    .unwrap()
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {

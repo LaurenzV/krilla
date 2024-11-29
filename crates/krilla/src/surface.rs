@@ -865,7 +865,7 @@ mod tests {
     #[snapshot(stream)]
     fn stream_image(surface: &mut Surface) {
         let image = load_png_image("rgb8.png");
-        let size = image.size();
+        let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
         surface.draw_image(image, size);
     }
 
