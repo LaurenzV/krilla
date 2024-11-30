@@ -13,15 +13,25 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 pub(crate) trait Resource {
+    fn new(ref_: Ref) -> Self;
+    fn get_ref(&self) -> Ref;
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
     fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Self>;
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct ExtGState;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct ExtGState(Ref);
 
 impl Resource for ExtGState {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.ext_g_states()
     }
@@ -35,10 +45,18 @@ impl Resource for ExtGState {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct ColorSpace;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct ColorSpace(Ref);
 
 impl Resource for ColorSpace {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.color_spaces()
     }
@@ -52,10 +70,18 @@ impl Resource for ColorSpace {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct Shading;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Shading(Ref);
 
 impl Resource for Shading {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.shadings()
     }
@@ -69,10 +95,18 @@ impl Resource for Shading {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct XObject;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct XObject(Ref);
 
 impl Resource for XObject {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.x_objects()
     }
@@ -86,10 +120,18 @@ impl Resource for XObject {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct Pattern;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Pattern(Ref);
 
 impl Resource for Pattern {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.patterns()
     }
@@ -103,10 +145,18 @@ impl Resource for Pattern {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Hash, Clone)]
-pub(crate) struct Font;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Font(Ref);
 
 impl Resource for Font {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.fonts()
     }
@@ -143,11 +193,11 @@ impl ResourceDictionaryBuilder {
     }
 
     // TODO: Make type safe instead of taking Ref?
-    pub(crate) fn register_resource<T>(&mut self, ref_: Ref) -> String
+    pub(crate) fn register_resource<T>(&mut self, obj: T) -> String
     where
         T: Resource,
     {
-        T::get_mapper(self).remap_with_name(ref_)
+        T::get_mapper(self).remap_with_name(obj.get_ref())
     }
 
     pub fn finish(self) -> ResourceDictionary {
@@ -162,7 +212,7 @@ impl ResourceDictionaryBuilder {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Default)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct ResourceDictionary {
     pub color_spaces: ResourceList<ColorSpace>,
     pub ext_g_states: ResourceList<ExtGState>,
@@ -170,6 +220,19 @@ pub(crate) struct ResourceDictionary {
     pub x_objects: ResourceList<XObject>,
     pub shadings: ResourceList<Shading>,
     pub fonts: ResourceList<Font>,
+}
+
+impl Default for ResourceDictionary {
+    fn default() -> Self {
+        Self {
+            color_spaces: ResourceList::empty(),
+            ext_g_states: ResourceList::empty(),
+            patterns: ResourceList::empty(),
+            x_objects: ResourceList::empty(),
+            shadings: ResourceList::empty(),
+            fonts: ResourceList::empty(),
+        }
+    }
 }
 
 pub type ResourceNumber = u32;
@@ -220,6 +283,13 @@ impl<T> ResourceList<T>
 where
     T: Resource,
 {
+    pub fn empty() -> ResourceList<T> {
+        Self {
+            entries: vec![],
+            phantom: Default::default(),
+        }
+    }
+
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
     }

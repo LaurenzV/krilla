@@ -1,4 +1,5 @@
-use crate::object::{ChunkContainerFn, Object};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStream, Stream};
@@ -101,6 +102,10 @@ impl Object for TilingPattern {
 
         chunk
     }
+}
+
+impl Resourceable for TilingPattern {
+    type Resource = resource::Pattern;
 }
 
 #[cfg(test)]

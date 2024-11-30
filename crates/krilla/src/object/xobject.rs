@@ -1,5 +1,6 @@
 use crate::color::rgb;
-use crate::object::{ChunkContainerFn, Object};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::{FilterStream, Stream};
 use crate::util::{RectExt, RectWrapper};
@@ -90,6 +91,10 @@ impl Object for XObject {
 
         chunk
     }
+}
+
+impl Resourceable for XObject {
+    type Resource = resource::XObject;
 }
 
 #[cfg(test)]

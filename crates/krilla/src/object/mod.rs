@@ -1,4 +1,5 @@
 use crate::chunk_container::ChunkContainer;
+use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::util::SipHashable;
 use pdf_writer::{Chunk, Ref};
@@ -24,4 +25,8 @@ pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Ve
 pub(crate) trait Object: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
+}
+
+pub(crate) trait Resourceable: Object {
+    type Resource: Resource;
 }

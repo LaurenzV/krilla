@@ -1,8 +1,9 @@
 use crate::color::luma;
 use crate::object::color::Color;
-use crate::object::{ChunkContainerFn, Object};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
+use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
@@ -238,6 +239,10 @@ impl Object for ShadingFunction {
 
         chunk
     }
+}
+
+impl Resourceable for ShadingFunction {
+    type Resource = resource::Shading;
 }
 
 fn serialize_postscript_shading(

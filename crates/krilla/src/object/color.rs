@@ -38,7 +38,8 @@
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
 
-use crate::object::{ChunkContainerFn, Object};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
 use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
@@ -389,6 +390,10 @@ impl<const C: u8> Object for ICCBasedColorSpace<C> {
     }
 }
 
+impl<const C: u8> Resourceable for ICCBasedColorSpace<C> {
+    type Resource = resource::ColorSpace;
+}
+
 #[derive(Clone, Hash, Debug, Eq, PartialEq)]
 pub(crate) enum ICCColorSpace {
     Xyz,
@@ -503,6 +508,10 @@ impl Object for LinearRgbColorSpace {
     }
 }
 
+impl Resourceable for LinearRgbColorSpace {
+    type Resource = resource::ColorSpace;
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -551,18 +560,19 @@ mod tests {
     }
 }
 
+// TODO: Get rid of this?
 /// Stores either the name of one of the default color spaces (i.e. DeviceRGB), or
 /// a reference to a color space in the PDF.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub(crate) enum CSWrapper {
-    Ref(Ref),
+    ColorSpace(resource::ColorSpace),
     Name(Name<'static>),
 }
 
 impl pdf_writer::Primitive for CSWrapper {
     fn write(self, buf: &mut Buf) {
         match self {
-            CSWrapper::Ref(r) => r.write(buf),
+            CSWrapper::ColorSpace(r) => r.get_ref().write(buf),
             CSWrapper::Name(n) => n.write(buf),
         }
     }

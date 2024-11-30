@@ -215,8 +215,7 @@ impl Type3Font {
                     let x_object = XObject::new(stream, false, false, None);
                     if !x_object.is_empty() {
                         font_bbox.expand(&x_object.bbox());
-                        let x_name = rd_builder
-                            .register_resource::<resource::XObject>(sc.add_object(x_object));
+                        let x_name = rd_builder.register_resource(sc.add_resource(x_object));
                         content.x_object(x_name.to_pdf_name());
                     }
 
