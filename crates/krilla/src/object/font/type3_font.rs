@@ -6,7 +6,7 @@ use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializerContext;
-use crate::stream::{FilterStream, StreamBuilder};
+use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
@@ -222,10 +222,11 @@ impl Type3Font {
 
                     let stream = content.finish();
 
-                    let font_stream = FilterStream::new_from_content_stream(
+                    let font_stream = FilterStreamBuilder::new_from_content_stream(
                         stream.as_slice(),
                         &sc.serialize_settings(),
-                    );
+                    )
+                    .finish(&sc.serialize_settings());
 
                     let stream_ref = sc.new_ref();
                     let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());

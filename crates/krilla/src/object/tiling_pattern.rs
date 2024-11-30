@@ -2,7 +2,7 @@ use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
-use crate::stream::{FilterStream, Stream};
+use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::HashExt;
 use crate::util::TransformExt;
 use pdf_writer::types::{PaintType, TilingType};
@@ -79,8 +79,11 @@ impl Cacheable for TilingPattern {
             sc.register_validation_error(validation_error);
         }
 
-        let pattern_stream =
-            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings());
+        let pattern_stream = FilterStreamBuilder::new_from_content_stream(
+            &self.stream.content,
+            &sc.serialize_settings(),
+        )
+        .finish(&sc.serialize_settings());
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, pattern_stream.encoded_data());
         pattern_stream.write_filters(tiling_pattern.deref_mut().deref_mut());
 

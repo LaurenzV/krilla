@@ -6,7 +6,7 @@ use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
 use crate::serialize::SerializerContext;
-use crate::stream::{FilterStream, Stream};
+use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
@@ -156,7 +156,8 @@ impl InternalPage {
         let stream_chunk = Deferred::new(move || {
             let mut chunk = Chunk::new();
             let page_stream =
-                FilterStream::new_from_content_stream(&stream.content, &serialize_settings);
+                FilterStreamBuilder::new_from_content_stream(&stream.content, &serialize_settings)
+                    .finish(&serialize_settings.clone());
 
             let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
             page_stream.write_filters(stream.deref_mut());
