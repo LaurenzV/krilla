@@ -13,10 +13,8 @@ use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMY
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializerContext;
-use crate::stream::{FilterStream, FilterStreamBuilder};
+use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
-#[cfg(feature = "image_rs")]
-use image::{DynamicImage, GenericImageView, Rgba};
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -28,7 +26,7 @@ use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
-enum BitsPerComponent {
+pub enum BitsPerComponent {
     Eight,
     Sixteen,
 }
@@ -43,7 +41,7 @@ impl BitsPerComponent {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
-enum ImageColorspace {
+pub enum ImageColorspace {
     Rgb,
     Luma,
     Cmyk,
@@ -83,21 +81,13 @@ struct SampledRepr {
 }
 
 struct JpegRepr {
-    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    data: Arc<Vec<u8>>,
     bits_per_component: BitsPerComponent,
     invert_cmyk: bool,
 }
 
-struct DynamicRepr {
-    dynamic: Arc<DynamicImage>,
-    alpha_channel: Option<Vec<u8>>,
-}
-
 enum Repr {
     Sampled(SampledRepr),
-    // TODO: Support ICC profile for dynamic
-    #[cfg(feature = "image_rs")]
-    Dynamic(DynamicRepr),
     Jpeg(JpegRepr),
 }
 
@@ -106,11 +96,16 @@ impl Repr {
         match self {
             Repr::Sampled(s) => s.bits_per_component,
             Repr::Jpeg(j) => j.bits_per_component,
-            // We always convert dynamic images to 8-bit
-            #[cfg(feature = "image_rs")]
-            Repr::Dynamic(_) => BitsPerComponent::Eight,
         }
     }
+}
+
+pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
+    fn color_channel(&self) -> &[u8];
+    fn alpha_channel(&self) -> Option<&[u8]>;
+    fn bits_per_component(&self) -> BitsPerComponent;
+    fn size(&self) -> (u32, u32);
+    fn color_space(&self) -> ImageColorspace;
 }
 
 struct ImageMetadata {
@@ -179,12 +174,12 @@ impl Image {
     /// Create a new bitmap image from a `.png` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_png(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = png_metadata(data.as_ref().as_ref())?;
+    pub fn from_png(data: Arc<Vec<u8>>) -> Option<Image> {
+        let hash = data.sip_hash();
+        let metadata = png_metadata(&data)?;
 
         Some(Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || decode_png(data.as_ref().as_ref())),
+            inner: Deferred::new(move || decode_png(&data)),
             metadata,
             sip: hash,
         })))
@@ -193,9 +188,9 @@ impl Image {
     /// Create a new bitmap image from a `.jpg` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = jpeg_metadata(data.as_ref().as_ref())?;
+    pub fn from_jpeg(data: Arc<Vec<u8>>) -> Option<Image> {
+        let hash = data.sip_hash();
+        let metadata = jpeg_metadata(&data)?;
 
         Some(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || decode_jpeg(data)),
@@ -207,12 +202,12 @@ impl Image {
     /// Create a new bitmap image from a `.gif` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_gif(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = gif_metadata(data.as_ref().as_ref())?;
+    pub fn from_gif(data: Arc<Vec<u8>>) -> Option<Image> {
+        let hash = data.sip_hash();
+        let metadata = gif_metadata(&data)?;
 
         Some(Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || decode_gif(data.as_ref().as_ref())),
+            inner: Deferred::new(move || decode_gif(data)),
             metadata,
             sip: hash,
         })))
@@ -221,37 +216,34 @@ impl Image {
     /// Create a new bitmap image from a `.webp` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_webp(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = webp_metadata(data.as_ref().as_ref())?;
+    pub fn from_webp(data: Arc<Vec<u8>>) -> Option<Image> {
+        let hash = data.sip_hash();
+        let metadata = webp_metadata(&data)?;
 
         Some(Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || decode_webp(data.as_ref().as_ref())),
+            inner: Deferred::new(move || decode_webp(data)),
             metadata,
             sip: hash,
         })))
     }
 
-    /// Create a new image from a dynamic image.
-    #[cfg(feature = "image_rs")]
-    pub fn from_dynamic(dynamic: Arc<DynamicImage>) -> Option<Self> {
-        let hash = dynamic.as_bytes().sip_hash();
-        let metadata = dynamic_metadata(&dynamic)?;
+    /// Create a new image from a custom image.
+    pub fn from_custom<T: CustomImage>(image: T) -> Option<Image> {
+        // TODO: Add assertions
+        // TODO: Allow CMYK images?
+        let hash = image.sip_hash();
+        let metadata = ImageMetadata {
+            size: image.size(),
+            color_space: image.color_space(),
+            icc: None,
+        };
 
         Some(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || {
-                let alpha = dynamic_alpha(&dynamic);
-                let channel_count = dynamic.color().channel_count();
-                let dynamic = match (dynamic.as_ref(), channel_count) {
-                    (DynamicImage::ImageLuma8(_), _) => dynamic.clone(),
-                    (DynamicImage::ImageRgb8(_), _) => dynamic.clone(),
-                    (_, 1 | 2) => Arc::new(DynamicImage::ImageLuma8(dynamic.to_luma8())),
-                    _ => Arc::new(DynamicImage::ImageRgb8(dynamic.to_rgb8())),
-                };
-
-                Some(Repr::Dynamic(DynamicRepr {
-                    dynamic,
-                    alpha_channel: alpha,
+                Some(Repr::Sampled(SampledRepr {
+                    color_channel: deflate_encode(image.color_channel()),
+                    alpha_channel: image.alpha_channel().map(|c| deflate_encode(c)),
+                    bits_per_component: BitsPerComponent::Eight,
                 }))
             }),
             metadata,
@@ -267,15 +259,18 @@ impl Image {
             color_space: ImageColorspace::Rgb,
             icc: None,
         };
-        let (image_data, mask_data, bits_per_component) = handle_u8_image(data, ColorSpace::RGBA);
-        let repr = Repr::Sampled(SampledRepr {
-            color_channel: image_data,
-            alpha_channel: mask_data,
-            bits_per_component,
-        });
 
         Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || Some(repr)),
+            inner: Deferred::new(move || {
+                let (color_channel, alpha_channel, bits_per_component) =
+                    handle_u8_image(&data, ColorSpace::RGBA);
+
+                Some(Repr::Sampled(SampledRepr {
+                    color_channel,
+                    alpha_channel,
+                    bits_per_component,
+                }))
+            }),
             metadata,
             sip: hash,
         }))
@@ -332,90 +327,67 @@ impl Image {
                 .as_ref()
                 .ok_or(KrillaError::ImageError(self.clone()))?;
 
-            let mut write_soft_mask = |data: &[u8]| {
-                let mask_stream = FilterStreamBuilder::new_from_binary_data(data)
-                    .finish(&serialize_settings.clone());
-                let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
-                mask_stream.write_filters(s_mask.deref_mut().deref_mut());
-                s_mask.width(self.size().0 as i32);
-                s_mask.height(self.size().1 as i32);
-                s_mask.pair(
-                    Name(b"ColorSpace"),
-                    // Mask color space must be device gray -- see Table 145.
-                    DEVICE_GRAY.to_pdf_name(),
-                );
-                s_mask.bits_per_component(repr.bits_per_component().as_u8() as i32);
-                soft_mask_id
-            };
-
             let alpha_mask = match repr {
-                Repr::Sampled(sampled) => sampled
-                    .alpha_channel
-                    .as_ref()
-                    .map(|mask_data| write_soft_mask(mask_data)),
-                #[cfg(feature = "image_rs")]
-                Repr::Dynamic(d) => d.alpha_channel.as_ref().map(|ac| write_soft_mask(ac)),
+                Repr::Sampled(sampled) => sampled.alpha_channel.as_ref().map(|mask_data| {
+                    let mask_stream = FilterStreamBuilder::new_from_deflated(mask_data)
+                        .finish(&serialize_settings);
+                    let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
+                    mask_stream.write_filters(s_mask.deref_mut().deref_mut());
+                    s_mask.width(self.size().0 as i32);
+                    s_mask.height(self.size().1 as i32);
+                    s_mask.pair(
+                        Name(b"ColorSpace"),
+                        // Mask color space must be device gray -- see Table 145.
+                        DEVICE_GRAY.to_pdf_name(),
+                    );
+                    s_mask.bits_per_component(repr.bits_per_component().as_u8() as i32);
+                    soft_mask_id
+                }),
                 Repr::Jpeg(_) => None,
             };
 
-            let mut write_image = |filter_stream: FilterStream| {
-                let mut image_x_object =
-                    chunk.image_xobject(root_ref, filter_stream.encoded_data());
-                filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
-                image_x_object.width(self.size().0 as i32);
-                image_x_object.height(self.size().1 as i32);
-
-                if let Some(icc_ref) = icc_ref {
-                    image_x_object.pair(Name(b"ColorSpace"), icc_ref);
-                } else {
-                    let name = match self.color_space() {
-                        ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
-                        ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
-                        ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
-                    };
-
-                    image_x_object.pair(Name(b"ColorSpace"), name);
-                }
-
-                // Photoshop CMYK images need to be inverted, see
-                // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
-                // I'm not sure if this applies to all JPEG CMYK images out there, but for now we just
-                // always do it. In libtexpdf, they only seem to do it if they can find the Adobe APP
-                // marker.
-                if let Repr::Jpeg(j) = repr {
-                    if j.invert_cmyk {
-                        image_x_object.decode(
-                            [1.0, 0.0].repeat(self.color_space().num_components() as usize),
-                        );
-                    }
-                }
-
-                image_x_object.bits_per_component(repr.bits_per_component().as_u8() as i32);
-                if let Some(soft_mask_id) = alpha_mask {
-                    image_x_object.s_mask(soft_mask_id);
-                }
-                image_x_object.finish();
-            };
-
-            match repr {
-                Repr::Sampled(s) => {
-                    let filter_stream = FilterStreamBuilder::new_from_binary_data(&s.color_channel)
-                        .finish(&serialize_settings.clone());
-                    write_image(filter_stream);
-                }
+            let filter_stream = match repr {
+                Repr::Sampled(s) => FilterStreamBuilder::new_from_deflated(&s.color_channel)
+                    .finish(&serialize_settings),
                 Repr::Jpeg(j) => {
-                    let filter_stream =
-                        FilterStreamBuilder::new_from_jpeg_data(&j.data.as_ref().as_ref())
-                            .finish(&serialize_settings.clone());
-                    write_image(filter_stream);
-                }
-                #[cfg(feature = "image_rs")]
-                Repr::Dynamic(d) => {
-                    let fs = FilterStreamBuilder::new_from_binary_data(d.dynamic.as_bytes())
-                        .finish(&serialize_settings.clone());
-                    write_image(fs)
+                    FilterStreamBuilder::new_from_jpeg_data(&j.data).finish(&serialize_settings)
                 }
             };
+
+            let mut image_x_object = chunk.image_xobject(root_ref, filter_stream.encoded_data());
+            filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
+            image_x_object.width(self.size().0 as i32);
+            image_x_object.height(self.size().1 as i32);
+
+            if let Some(icc_ref) = icc_ref {
+                image_x_object.pair(Name(b"ColorSpace"), icc_ref);
+            } else {
+                let name = match self.color_space() {
+                    ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
+                    ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
+                    ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
+                };
+
+                image_x_object.pair(Name(b"ColorSpace"), name);
+            }
+
+            // Photoshop CMYK images need to be inverted, see
+            // https://github.com/sile-typesetter/libtexpdf/blob/1891bee5e0b73165e4a259f910d3ea3fe1df0b42/jpegimage.c#L25-L51
+            // I'm not sure if this applies to all JPEG CMYK images out there, but for now we just
+            // always do it. In libtexpdf, they only seem to do it if they can find the Adobe APP
+            // marker.
+            if let Repr::Jpeg(j) = repr {
+                if j.invert_cmyk {
+                    image_x_object
+                        .decode([1.0, 0.0].repeat(self.color_space().num_components() as usize));
+                }
+            }
+
+            image_x_object.bits_per_component(repr.bits_per_component().as_u8() as i32);
+            if let Some(soft_mask_id) = alpha_mask {
+                image_x_object.s_mask(soft_mask_id);
+            }
+            image_x_object.finish();
 
             Ok(chunk)
         })
@@ -453,15 +425,15 @@ fn decode_png(data: &[u8]) -> Option<Repr> {
 
     let decoded = decoder.decode().ok()?;
 
-    let (image_data, mask_data, bits_per_component) = match decoded {
-        DecodingResult::U8(u8) => handle_u8_image(u8, color_space),
-        DecodingResult::U16(u16) => handle_u16_image(u16, color_space),
+    let (color_channel, alpha_channel, bits_per_component) = match decoded {
+        DecodingResult::U8(u8) => handle_u8_image(&u8, color_space),
+        DecodingResult::U16(u16) => handle_u16_image(&u16, color_space),
         _ => return None,
     };
 
     Some(Repr::Sampled(SampledRepr {
-        color_channel: image_data,
-        alpha_channel: mask_data,
+        color_channel,
+        alpha_channel,
         bits_per_component,
     }))
 }
@@ -489,8 +461,8 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
     })
 }
 
-fn decode_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
-    let mut decoder = JpegDecoder::new(data.as_ref().as_ref());
+fn decode_jpeg(data: Arc<Vec<u8>>) -> Option<Repr> {
+    let mut decoder = JpegDecoder::new(data.as_ref());
     decoder.decode_headers().ok()?;
 
     let input_color_space = decoder.get_input_colorspace()?;
@@ -504,7 +476,7 @@ fn decode_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
             | ColorSpace::YCCK
     ) {
         Some(Repr::Jpeg(JpegRepr {
-            data: data.clone(),
+            data,
             bits_per_component: BitsPerComponent::Eight,
             invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
         }))
@@ -514,18 +486,18 @@ fn decode_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
     }
 }
 
-fn decode_gif(data: &[u8]) -> Option<Repr> {
+fn decode_gif(data: Arc<Vec<u8>>) -> Option<Repr> {
     let mut decoder = gif::DecodeOptions::new();
     decoder.set_color_output(gif::ColorOutput::RGBA);
-    let mut decoder = decoder.read_info(data).ok()?;
+    let mut decoder = decoder.read_info(data.as_slice()).ok()?;
     let first_frame = decoder.read_next_frame().ok()??;
 
-    let (image_data, mask_data, bits_per_component) =
-        handle_u8_image(first_frame.buffer.to_vec(), ColorSpace::RGBA);
+    let (color_channel, alpha_channel, bits_per_component) =
+        handle_u8_image(first_frame.buffer.as_ref(), ColorSpace::RGBA);
 
     Some(Repr::Sampled(SampledRepr {
-        color_channel: image_data,
-        alpha_channel: mask_data,
+        color_channel,
+        alpha_channel,
         bits_per_component,
     }))
 }
@@ -558,8 +530,8 @@ fn webp_metadata(data: &[u8]) -> Option<ImageMetadata> {
     })
 }
 
-fn decode_webp(data: &[u8]) -> Option<Repr> {
-    let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
+fn decode_webp(data: Arc<Vec<u8>>) -> Option<Repr> {
+    let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data.as_slice())).ok()?;
     let mut first_frame = vec![0; decoder.output_buffer_size()?];
     decoder.read_image(&mut first_frame).ok()?;
 
@@ -569,89 +541,69 @@ fn decode_webp(data: &[u8]) -> Option<Repr> {
         ColorSpace::RGB
     };
 
-    let (image_data, mask_data, bits_per_component) = handle_u8_image(first_frame, color_space);
+    let (color_channel, alpha_channel, bits_per_component) =
+        handle_u8_image(&first_frame, color_space);
 
     Some(Repr::Sampled(SampledRepr {
-        color_channel: image_data,
-        alpha_channel: mask_data,
+        color_channel,
+        alpha_channel,
         bits_per_component,
     }))
 }
 
-fn dynamic_metadata(dynamic: &DynamicImage) -> Option<ImageMetadata> {
-    let size = (dynamic.width(), dynamic.height());
-    let color_space = if dynamic.color().has_color() {
-        ImageColorspace::Rgb
-    } else {
-        ImageColorspace::Luma
-    };
-
-    Some(ImageMetadata {
-        size,
-        color_space,
-        icc: None,
-    })
-}
-
-fn dynamic_alpha(dynamic: &DynamicImage) -> Option<Vec<u8>> {
-    dynamic.color().has_alpha().then(|| {
-        dynamic
-            .pixels()
-            .map(|(_, _, Rgba([_, _, _, a]))| a)
-            .collect()
-    })
-}
-
-fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
+fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {
         Vec::with_capacity(data.len() / cs.num_components())
     } else {
         Vec::new()
     };
 
-    let encoded_image = match cs {
-        ColorSpace::RGB => data,
-        ColorSpace::RGBA => data
-            .iter()
-            .enumerate()
-            .flat_map(|(index, val)| {
-                if index % 4 == 3 {
-                    alphas.push(*val);
-                    None
-                } else {
-                    Some(*val)
-                }
-            })
-            .collect::<Vec<_>>(),
-        ColorSpace::Luma => data,
-        ColorSpace::LumaA => data
-            .iter()
-            .enumerate()
-            .flat_map(|(index, val)| {
-                if index % 2 == 1 {
-                    alphas.push(*val);
-                    None
-                } else {
-                    Some(*val)
-                }
-            })
-            .collect::<Vec<_>>(),
+    let color_channel = match cs {
+        ColorSpace::RGB => deflate_encode(data),
+        ColorSpace::RGBA => {
+            let data = data
+                .iter()
+                .enumerate()
+                .flat_map(|(index, val)| {
+                    if index % 4 == 3 {
+                        alphas.push(*val);
+                        None
+                    } else {
+                        Some(*val)
+                    }
+                })
+                .collect::<Vec<_>>();
+            deflate_encode(&data)
+        }
+        ColorSpace::Luma => deflate_encode(data),
+        ColorSpace::LumaA => {
+            let data = data
+                .iter()
+                .enumerate()
+                .flat_map(|(index, val)| {
+                    if index % 2 == 1 {
+                        alphas.push(*val);
+                        None
+                    } else {
+                        Some(*val)
+                    }
+                })
+                .collect::<Vec<_>>();
+            deflate_encode(&data)
+        }
         _ => unimplemented!(),
     };
 
-    let encoded_mask = if !alphas.is_empty() {
-        Some(alphas)
+    let alpha_channel = if !alphas.is_empty() {
+        Some(deflate_encode(&alphas))
     } else {
         None
     };
 
-    (encoded_image, encoded_mask, BitsPerComponent::Eight)
+    (color_channel, alpha_channel, BitsPerComponent::Eight)
 }
 
-fn handle_u16_image(
-    data: Vec<u16>,
-    cs: ColorSpace,
-) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
+fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {
         // * 2 because we are going from u16 to u8
         Vec::with_capacity(2 * data.len() / cs.num_components())
@@ -660,45 +612,58 @@ fn handle_u16_image(
     };
 
     let encoded_image = match cs {
-        ColorSpace::RGB => data
-            .iter()
-            .flat_map(|b| b.to_be_bytes())
-            .collect::<Vec<_>>(),
-        ColorSpace::RGBA => data
-            .iter()
-            .enumerate()
-            .flat_map(|(index, val)| {
-                if index % 4 == 3 {
-                    alphas.extend(val.to_be_bytes());
-                    None
-                } else {
-                    Some(*val)
-                }
-            })
-            .flat_map(|n| n.to_be_bytes())
-            .collect::<Vec<_>>(),
-        ColorSpace::Luma => data
-            .iter()
-            .flat_map(|b| b.to_be_bytes())
-            .collect::<Vec<_>>(),
-        ColorSpace::LumaA => data
-            .iter()
-            .enumerate()
-            .flat_map(|(index, val)| {
-                if index % 2 == 1 {
-                    alphas.extend(val.to_be_bytes());
-                    None
-                } else {
-                    Some(*val)
-                }
-            })
-            .flat_map(|n| n.to_be_bytes())
-            .collect::<Vec<_>>(),
+        ColorSpace::RGB => {
+            let data = data
+                .iter()
+                .flat_map(|b| b.to_be_bytes())
+                .collect::<Vec<_>>();
+            deflate_encode(&data)
+        }
+        ColorSpace::RGBA => {
+            let data = data
+                .iter()
+                .enumerate()
+                .flat_map(|(index, val)| {
+                    if index % 4 == 3 {
+                        alphas.extend(val.to_be_bytes());
+                        None
+                    } else {
+                        Some(*val)
+                    }
+                })
+                .flat_map(|n| n.to_be_bytes())
+                .collect::<Vec<_>>();
+            deflate_encode(&data)
+        }
+        ColorSpace::Luma => {
+            let data = data
+                .iter()
+                .flat_map(|b| b.to_be_bytes())
+                .collect::<Vec<_>>();
+            deflate_encode(&data)
+        }
+        ColorSpace::LumaA => {
+            let data = data
+                .iter()
+                .enumerate()
+                .flat_map(|(index, val)| {
+                    if index % 2 == 1 {
+                        alphas.extend(val.to_be_bytes());
+                        None
+                    } else {
+                        Some(*val)
+                    }
+                })
+                .flat_map(|n| n.to_be_bytes())
+                .collect::<Vec<_>>();
+            deflate_encode(&data)
+        }
+        // TODO: Remove?
         _ => unimplemented!(),
     };
 
     let encoded_mask = if !alphas.is_empty() {
-        Some(alphas)
+        Some(deflate_encode(&alphas))
     } else {
         None
     };
@@ -711,9 +676,7 @@ mod tests {
     use crate::image::Image;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
-    use crate::tests::{
-        load_dynamic_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image,
-    };
+    use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::Size;
@@ -789,19 +752,9 @@ mod tests {
         image_visreg_impl(surface, "luma8.png", load_png_image);
     }
 
-    #[visreg]
-    fn image_luma8_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "luma8.png", load_dynamic_image);
-    }
-
     #[visreg(all)]
     fn image_luma16_png(surface: &mut Surface) {
         image_visreg_impl(surface, "luma16.png", load_png_image);
-    }
-
-    #[visreg]
-    fn image_luma16_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "luma16.png", load_dynamic_image);
     }
 
     #[visreg(all)]
@@ -809,19 +762,9 @@ mod tests {
         image_visreg_impl(surface, "rgb8.png", load_png_image);
     }
 
-    #[visreg]
-    fn image_rgb8_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgb8.png", load_dynamic_image);
-    }
-
     #[visreg(all)]
     fn image_rgb16_png(surface: &mut Surface) {
         image_visreg_impl(surface, "rgb16.png", load_png_image);
-    }
-
-    #[visreg]
-    fn image_rgb16_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgb16.png", load_dynamic_image);
     }
 
     #[visreg(all)]
@@ -829,19 +772,9 @@ mod tests {
         image_visreg_impl(surface, "rgba8.png", load_png_image);
     }
 
-    #[visreg]
-    fn image_rgba8_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgba8.png", load_dynamic_image);
-    }
-
     #[visreg(all)]
     fn image_rgba16_png(surface: &mut Surface) {
         image_visreg_impl(surface, "rgba16.png", load_png_image);
-    }
-
-    #[visreg]
-    fn image_rgba16_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgba16.png", load_dynamic_image);
     }
 
     #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
@@ -849,19 +782,9 @@ mod tests {
         image_visreg_impl(surface, "luma8.jpg", load_jpg_image);
     }
 
-    #[visreg]
-    fn image_luma8_jpg_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "luma8.jpg", load_dynamic_image);
-    }
-
     #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
     fn image_rgb8_jpg(surface: &mut Surface) {
         image_visreg_impl(surface, "rgb8.jpg", load_jpg_image);
-    }
-
-    #[visreg]
-    fn image_rgb8_jpg_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgb8.jpg", load_dynamic_image);
     }
 
     #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
@@ -869,29 +792,14 @@ mod tests {
         image_visreg_impl(surface, "cmyk.jpg", load_jpg_image);
     }
 
-    #[visreg]
-    fn image_cmyk_jpg_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "cmyk.jpg", load_dynamic_image);
-    }
-
     #[visreg(all)]
     fn image_rgb8_gif(surface: &mut Surface) {
         image_visreg_impl(surface, "rgb8.gif", load_gif_image);
     }
 
-    #[visreg]
-    fn image_rgb8_gif_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgb8.gif", load_dynamic_image);
-    }
-
     #[visreg(all)]
     fn image_rgba8_gif(surface: &mut Surface) {
         image_visreg_impl(surface, "rgba8.gif", load_gif_image);
-    }
-
-    #[visreg]
-    fn image_rgba8_gif_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgba8.gif", load_dynamic_image);
     }
 
     #[visreg(all)]
@@ -900,18 +808,8 @@ mod tests {
     }
 
     #[visreg]
-    fn image_rgba8_webp_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgba8.webp", load_dynamic_image);
-    }
-
-    #[visreg]
     fn image_cmyk_icc_jpg(surface: &mut Surface) {
         image_visreg_impl(surface, "cmyk_icc.jpg", load_jpg_image);
-    }
-
-    #[visreg]
-    fn image_cmyk_icc_jpg_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "cmyk_icc.jpg", load_dynamic_image);
     }
 
     #[visreg]
@@ -920,18 +818,8 @@ mod tests {
     }
 
     #[visreg]
-    fn image_rgb8_icc_jpg_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgb8_icc.jpg", load_dynamic_image);
-    }
-
-    #[visreg]
     fn image_luma8_icc_png(surface: &mut Surface) {
         image_visreg_impl(surface, "luma8_icc.png", load_png_image);
-    }
-
-    #[visreg]
-    fn image_luma8_icc_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "luma8_icc.png", load_dynamic_image);
     }
 
     #[visreg]
@@ -940,18 +828,8 @@ mod tests {
     }
 
     #[visreg]
-    fn image_rgba8_icc_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgba8_icc.png", load_dynamic_image);
-    }
-
-    #[visreg]
     fn image_rgb8_icc_png(surface: &mut Surface) {
         image_visreg_impl(surface, "rgb8_icc.png", load_png_image);
-    }
-
-    #[visreg]
-    fn image_rgb8_icc_png_dynamic(surface: &mut Surface) {
-        image_visreg_impl(surface, "rgb8_icc.png", load_dynamic_image);
     }
 
     #[visreg]

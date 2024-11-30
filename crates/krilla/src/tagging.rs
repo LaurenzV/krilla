@@ -1100,7 +1100,7 @@ mod tests {
         let image = load_png_image("rgb8.png");
         let image_size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
         surface.push_transform(&Transform::from_translate(100.0, 300.0));
-        surface.draw_image(image.clone(), image_size);
+        surface.draw_image(image, image_size);
         surface.pop();
         surface.end_tagged();
 
