@@ -1,7 +1,8 @@
 //! Choosing between PDF versions.
 
+use std::sync::Arc;
+use once_cell::sync::Lazy;
 use crate::color::{ICCMetadata, ICCProfile};
-use crate::resource::{GREY_V2_ICC, GREY_V4_ICC, SRGB_V2_ICC, SRGB_V4_ICC};
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
@@ -74,3 +75,16 @@ impl PdfVersion {
         };
     }
 }
+
+/// The ICC v4 profile for the SRGB color space.
+pub(crate) static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("../icc/sRGB-v4.icc"))).unwrap());
+/// The ICC v2 profile for the SRGB color space.
+pub(crate) static SRGB_V2_ICC: Lazy<ICCProfile<3>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("../icc/sRGB-v2-magic.icc"))).unwrap());
+/// The ICC v4 profile for the sgray color space.
+pub(crate) static GREY_V4_ICC: Lazy<ICCProfile<1>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("../icc/sGrey-v4.icc"))).unwrap());
+/// The ICC v2 profile for the sgray color space.
+pub(crate) static GREY_V2_ICC: Lazy<ICCProfile<1>> =
+    Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("../icc/sGrey-v2-magic.icc"))).unwrap());
