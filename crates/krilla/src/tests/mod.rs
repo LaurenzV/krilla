@@ -222,12 +222,6 @@ pub fn load_webp_image(name: &str) -> Image {
     .unwrap()
 }
 
-pub fn load_dynamic_image(name: &str) -> Image {
-    let data = std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap();
-    let dynamic = image::load_from_memory(&data).unwrap();
-    Image::from_dynamic(Arc::new(dynamic)).unwrap()
-}
-
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("snapshots");
     let _ = std::fs::create_dir_all(&path);
