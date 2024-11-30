@@ -11,10 +11,12 @@ license = { workspace = true }
 exclude = ["src/tests"]
 
 [features]
-default = ["simple-text", "raster-images", "svg"]
+default = ["simple-text", "raster-images", "svg", "image_rs"]
 "comemo" = ["dep:comemo"]
 # Allow for multi-threaded PDF creation.
 "rayon" = ["dep:rayon"]
+# Integration with the `image` library.
+"image_rs" = ["dep:image"]
 # Allow for rendering SVG images and SVG-based glyphs.
 "svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
 # Allow for rendering simple text without having to shape it yourself.
@@ -32,6 +34,7 @@ flate2 = { workspace = true }
 float-cmp = { workspace = true }
 fontdb = { workspace = true, optional = true }
 gif = { workspace = true, optional = true }
+image = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
 imagesize = { workspace = true, optional = true }
 miniz_oxide = { workspace = true }
@@ -53,7 +56,7 @@ zune-jpeg = { workspace = true, optional = true }
 
 [dev-dependencies]
 difference = { workspace = true }
-image = { workspace = true }
+image = { workspace = true, features = ["png", "jpeg", "webp", "gif"] }
 krilla-macros = { workspace = true }
 oxipng = { workspace = true }
 paste = { workspace = true }

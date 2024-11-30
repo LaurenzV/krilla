@@ -23,7 +23,7 @@ flate2 = "1.0.30"
 float-cmp = "0.10.0"
 fontdb = "0.22.0"
 gif = "0.13.1"
-image = { version = "0.25.1", default-features = false, features = ["png"] }
+image = { version = "0.25.1", default-features = false }
 imagesize = "0.13.0"
 image-webp = "0.1.3"
 krilla = {path = "crates/krilla"}
