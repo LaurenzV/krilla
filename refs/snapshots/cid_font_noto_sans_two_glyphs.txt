@@ -89,11 +89,11 @@ endobj
 
 5 0 obj
 <<
-  /Length 2
-  /Filter /ASCIIHexDecode
+  /Length 18
+  /Filter [/ASCIIHexDecode /FlateDecode]
 >>
 stream
-E0
+789C7B000000E100E1
 endstream
 endobj
 

@@ -41,7 +41,7 @@
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
-use crate::stream::FilterStream;
+use crate::stream::FilterStreamBuilder;
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -352,14 +352,12 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
 
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
-        let icc_stream = FilterStream::new_from_binary_data(
-            self.0.deref().data.as_ref().as_ref(),
-            &sc.serialize_settings(),
-        );
+        let icc_stream =
+            FilterStreamBuilder::new_from_binary_data(self.0.deref().data.as_ref().as_ref())
+                .finish(&sc.serialize_settings());
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
-
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
 

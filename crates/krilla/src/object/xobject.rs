@@ -3,7 +3,7 @@ use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
 use crate::serialize::SerializerContext;
-use crate::stream::{FilterStream, Stream};
+use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -54,8 +54,11 @@ impl Cacheable for XObject {
             sc.register_validation_error(validation_error);
         }
 
-        let x_object_stream =
-            FilterStream::new_from_content_stream(&self.stream.content, &sc.serialize_settings());
+        let x_object_stream = FilterStreamBuilder::new_from_content_stream(
+            &self.stream.content,
+            &sc.serialize_settings(),
+        )
+        .finish(&sc.serialize_settings());
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
         x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
