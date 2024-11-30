@@ -120,6 +120,7 @@ impl<'a> StreamBuilder<'a> {
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum StreamFilter {
     Flate,
+    FlateMemoized,
     AsciiHex,
     Dct,
 }
@@ -129,6 +130,7 @@ impl StreamFilter {
         match self {
             Self::AsciiHex => Name(b"ASCIIHexDecode"),
             Self::Flate => Name(b"FlateDecode"),
+            Self::FlateMemoized => Name(b"FlateDecode"),
             Self::Dct => Name(b"DCTDecode"),
         }
     }
@@ -136,6 +138,7 @@ impl StreamFilter {
     pub(crate) fn is_binary(&self) -> bool {
         match self {
             StreamFilter::Flate => true,
+            StreamFilter::FlateMemoized => true,
             StreamFilter::AsciiHex => false,
             StreamFilter::Dct => true,
         }
@@ -146,6 +149,7 @@ impl StreamFilter {
     pub fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
             StreamFilter::Flate => deflate_encode(content),
+            StreamFilter::FlateMemoized => deflate_encode_memoized(content),
             StreamFilter::AsciiHex => hex_encode(content),
             // Note: We don't actually encode manually with DCT, because
             // this is only used for JPEG images which are already encoded,
@@ -204,8 +208,15 @@ impl<'a> FilterStreamBuilder<'a> {
         let mut filter_stream = Self::empty(content);
 
         if serialize_settings.compress_content_streams {
-            filter_stream.add_filter(StreamFilter::Flate);
+            filter_stream.add_filter(StreamFilter::FlateMemoized);
         }
+
+        filter_stream
+    }
+
+    pub fn new_from_deflated(content: &'a [u8]) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream.add_unapplied_filter(StreamFilter::Flate);
 
         filter_stream
     }
@@ -275,7 +286,12 @@ impl<'a> FilterStream<'a> {
     }
 }
 
-fn deflate_encode(data: &[u8]) -> Vec<u8> {
+#[cfg_attr(feature = "comemo", comemo::memoize)]
+fn deflate_encode_memoized(data: &[u8]) -> Vec<u8> {
+    deflate_encode(data)
+}
+
+pub(crate) fn deflate_encode(data: &[u8]) -> Vec<u8> {
     const COMPRESSION_LEVEL: u8 = 6;
     miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
 }
