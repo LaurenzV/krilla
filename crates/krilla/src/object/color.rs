@@ -40,12 +40,11 @@
 
 use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::resource;
-use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
-use pdf_writer::{Buf, Chunk, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};

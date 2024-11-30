@@ -4,7 +4,6 @@ use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::resource;
-use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;

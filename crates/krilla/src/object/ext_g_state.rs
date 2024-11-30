@@ -1,7 +1,6 @@
 use crate::object::mask::Mask;
 use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::resource;
-use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
 use pdf_writer::types::BlendMode;

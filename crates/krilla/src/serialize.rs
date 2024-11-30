@@ -17,7 +17,7 @@ use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
-use crate::util::{NameExt, SipHashable};
+use crate::util::SipHashable;
 use crate::validation::{ValidationError, Validator};
 use crate::version::PdfVersion;
 #[cfg(feature = "fontdb")]
