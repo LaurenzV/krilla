@@ -132,17 +132,17 @@ impl StreamFilter {
             Self::Dct => Name(b"DCTDecode"),
         }
     }
+
+    pub(crate) fn is_binary(&self) -> bool {
+        match self {
+            StreamFilter::Flate => true,
+            StreamFilter::AsciiHex => false,
+            StreamFilter::Dct => true,
+        }
+    }
 }
 
 impl StreamFilter {
-    pub fn can_apply(&self) -> bool {
-        match self {
-            StreamFilter::Flate => true,
-            StreamFilter::AsciiHex => true,
-            StreamFilter::Dct => false,
-        }
-    }
-
     pub fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
             StreamFilter::Flate => deflate_encode(content),
@@ -174,14 +174,22 @@ impl StreamFilters {
             StreamFilters::Multiple(cur) => cur.push(stream_filter),
         }
     }
+
+    pub fn is_binary(&self) -> bool {
+        match self {
+            StreamFilters::None => false,
+            StreamFilters::Single(s) => s.is_binary(),
+            StreamFilters::Multiple(m) => m.last().unwrap().is_binary(),
+        }
+    }
 }
 
-pub(crate) struct FilterStream<'a> {
+pub(crate) struct FilterStreamBuilder<'a> {
     content: Cow<'a, [u8]>,
     filters: StreamFilters,
 }
 
-impl<'a> FilterStream<'a> {
+impl<'a> FilterStreamBuilder<'a> {
     fn empty(content: &'a [u8]) -> Self {
         Self {
             content: Cow::Borrowed(content),
@@ -197,55 +205,53 @@ impl<'a> FilterStream<'a> {
 
         if serialize_settings.compress_content_streams {
             filter_stream.add_filter(StreamFilter::Flate);
-
-            if serialize_settings.ascii_compatible {
-                filter_stream.add_filter(StreamFilter::AsciiHex);
-            }
         }
 
         filter_stream
     }
 
-    pub fn new_from_binary_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+    pub fn new_from_binary_data(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_filter(StreamFilter::Flate);
 
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
-
         filter_stream
     }
 
-    pub fn new_from_jpeg_data(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
+    pub fn new_from_jpeg_data(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
-        filter_stream.add_filter(StreamFilter::Dct);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
-        }
+        // JPEG data already is DCT encoded.
+        filter_stream.add_unapplied_filter(StreamFilter::Dct);
 
         filter_stream
     }
 
-    pub fn new_plain(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
-        let mut filter_stream = Self::empty(content);
-
-        if serialize_settings.ascii_compatible {
-            filter_stream.add_filter(StreamFilter::AsciiHex);
+    pub fn finish(mut self, serialize_settings: &SerializeSettings) -> FilterStream<'a> {
+        if serialize_settings.ascii_compatible && self.filters.is_binary() {
+            self.add_filter(StreamFilter::AsciiHex);
         }
 
-        filter_stream
+        FilterStream {
+            content: self.content,
+            filters: self.filters,
+        }
     }
 
-    pub fn add_filter(&mut self, filter: StreamFilter) {
-        if filter.can_apply() {
-            self.content = Cow::Owned(filter.apply(&self.content));
-        }
-
+    fn add_filter(&mut self, filter: StreamFilter) {
+        self.content = Cow::Owned(filter.apply(&self.content));
         self.filters.add(filter);
     }
 
+    fn add_unapplied_filter(&mut self, filter: StreamFilter) {
+        self.filters.add(filter);
+    }
+}
+
+pub(crate) struct FilterStream<'a> {
+    content: Cow<'a, [u8]>,
+    filters: StreamFilters,
+}
+
+impl<'a> FilterStream<'a> {
     pub fn encoded_data(&self) -> &[u8] {
         &self.content
     }

@@ -2,7 +2,7 @@ use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
 use crate::serialize::SerializerContext;
-use crate::stream::FilterStream;
+use crate::stream::FilterStreamBuilder;
 use crate::util::{hash128, RectExt, SliceExt};
 use crate::validation::ValidationError;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
@@ -138,7 +138,7 @@ impl CIDFont {
                 data = cff.as_bytes();
             }
 
-            FilterStream::new_from_binary_data(data, &sc.serialize_settings())
+            FilterStreamBuilder::new_from_binary_data(data).finish(&sc.serialize_settings())
         };
 
         let base_font = base_font_name(&self.font, &self.glyph_remapper);
@@ -290,7 +290,8 @@ impl CIDFont {
             bytes
         };
 
-        let cid_stream = FilterStream::new_plain(&cid_stream_data, &sc.serialize_settings());
+        let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
+            .finish(&sc.serialize_settings());
         let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
         cid_stream.write_filters(cid_set.deref_mut());
         cid_set.finish();

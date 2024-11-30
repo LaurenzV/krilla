@@ -13,7 +13,7 @@ use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMY
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializerContext;
-use crate::stream::FilterStream;
+use crate::stream::{FilterStream, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
 #[cfg(feature = "image_rs")]
 use image::{DynamicImage, GenericImageView, Rgba};
@@ -90,7 +90,7 @@ struct JpegRepr {
 
 struct DynamicRepr {
     dynamic: Arc<DynamicImage>,
-    alpha_channel: Option<Vec<u8>>
+    alpha_channel: Option<Vec<u8>>,
 }
 
 enum Repr {
@@ -175,7 +175,6 @@ fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> Option<I
     Some(wrapper)
 }
 
-
 impl Image {
     /// Create a new bitmap image from a `.png` file.
     ///
@@ -247,7 +246,7 @@ impl Image {
                     (DynamicImage::ImageLuma8(_), _) => dynamic.clone(),
                     (DynamicImage::ImageRgb8(_), _) => dynamic.clone(),
                     (_, 1 | 2) => Arc::new(DynamicImage::ImageLuma8(dynamic.to_luma8())),
-                    _ => Arc::new(DynamicImage::ImageRgb8(dynamic.to_rgb8()))
+                    _ => Arc::new(DynamicImage::ImageRgb8(dynamic.to_rgb8())),
                 };
 
                 Some(Repr::Dynamic(DynamicRepr {
@@ -334,7 +333,8 @@ impl Image {
                 .ok_or(KrillaError::ImageError(self.clone()))?;
 
             let mut write_soft_mask = |data: &[u8]| {
-                let mask_stream = FilterStream::new_from_binary_data(data, &serialize_settings);
+                let mask_stream = FilterStreamBuilder::new_from_binary_data(data)
+                    .finish(&serialize_settings.clone());
                 let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
                 mask_stream.write_filters(s_mask.deref_mut().deref_mut());
                 s_mask.width(self.size().0 as i32);
@@ -399,23 +399,20 @@ impl Image {
 
             match repr {
                 Repr::Sampled(s) => {
-                    let filter_stream =
-                        FilterStream::new_from_binary_data(&s.color_channel, &serialize_settings);
+                    let filter_stream = FilterStreamBuilder::new_from_binary_data(&s.color_channel)
+                        .finish(&serialize_settings.clone());
                     write_image(filter_stream);
                 }
                 Repr::Jpeg(j) => {
-                    let filter_stream = FilterStream::new_from_jpeg_data(
-                        &j.data.as_ref().as_ref(),
-                        &serialize_settings,
-                    );
+                    let filter_stream =
+                        FilterStreamBuilder::new_from_jpeg_data(&j.data.as_ref().as_ref())
+                            .finish(&serialize_settings.clone());
                     write_image(filter_stream);
                 }
                 #[cfg(feature = "image_rs")]
                 Repr::Dynamic(d) => {
-                    let fs = FilterStream::new_from_binary_data(
-                        d.dynamic.as_bytes(),
-                        &serialize_settings,
-                    );
+                    let fs = FilterStreamBuilder::new_from_binary_data(d.dynamic.as_bytes())
+                        .finish(&serialize_settings.clone());
                     write_image(fs)
                 }
             };
