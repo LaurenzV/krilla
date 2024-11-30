@@ -40,20 +40,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: mutool
-          key: mupdf-binary-v1
+          key: mupdf-binary-v2
       - name: Download MuPDF
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
         run: |
-          curl -LO https://mupdf.com/downloads/archive/mupdf-1.24.8-source.tar.gz
-          tar -xvzf ./mupdf-1.24.8-source.tar.gz
+          curl -LO https://mupdf.com/downloads/archive/mupdf-1.25.1-source.tar.gz
+          tar -xvzf ./mupdf-1.25.1-source.tar.gz
       - name: Build MuPDF
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
         run: |
-          cd mupdf-1.24.8-source
+          cd mupdf-1.25.1-source
           make HAVE_X11=no HAVE_GLUT=no
       - name: Finish
         if: steps.cache-mupdf.outputs.cache-hit != 'true'
-        run: mv mupdf-1.24.8-source/build/release/mutool mutool
+        run: mv mupdf-1.25.1-source/build/release/mutool mutool
 
   gs:
     name: gs
