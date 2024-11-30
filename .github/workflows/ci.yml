@@ -1,6 +1,7 @@
 name: Continuous integration
 on: [push, pull_request]
 
+
 env:
   KRILLA_THRESHOLD: "200"
   VISREG: ""
