@@ -1,7 +1,7 @@
 //! A low-level abstraction over a single content stream.
 
 use crate::color::{
-    Color, ColorSpace, ICCBasedColorSpace, LinearRgbColorSpace, DEVICE_CMYK, DEVICE_GRAY,
+    Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY,
     DEVICE_RGB,
 };
 use crate::font::{Font, Glyph, GlyphUnits};

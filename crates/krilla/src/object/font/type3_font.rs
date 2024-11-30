@@ -10,7 +10,7 @@ use crate::stream::{FilterStream, StreamBuilder};
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
-use crate::{font, resource, SvgSettings};
+use crate::{font, SvgSettings};
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
