@@ -1,5 +1,5 @@
 q
-/DeviceGray cs
+/c0 cs
 0 scn
 BT
 /Span <<

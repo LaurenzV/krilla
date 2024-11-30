@@ -485,33 +485,6 @@ impl ICCMetadata {
     }
 }
 
-#[derive(Copy, Clone, Hash)]
-pub(crate) struct LinearRgbColorSpace;
-
-impl Object for LinearRgbColorSpace {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.color_spaces)
-    }
-
-    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        let mut chunk = Chunk::new();
-        chunk.color_space(root_ref).cal_rgb(
-            [0.9505, 1.0, 1.0888],
-            None,
-            Some([1.0, 1.0, 1.0]),
-            Some([
-                0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
-            ]),
-        );
-
-        chunk
-    }
-}
-
-impl Resourceable for LinearRgbColorSpace {
-    type Resource = resource::ColorSpace;
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -557,23 +530,5 @@ mod tests {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
         surface.fill_path(&path, cmyk_fill(1.0));
-    }
-}
-
-// TODO: Get rid of this?
-/// Stores either the name of one of the default color spaces (i.e. DeviceRGB), or
-/// a reference to a color space in the PDF.
-#[derive(Clone)]
-pub(crate) enum CSWrapper {
-    ColorSpace(resource::ColorSpace),
-    Name(Name<'static>),
-}
-
-impl pdf_writer::Primitive for CSWrapper {
-    fn write(self, buf: &mut Buf) {
-        match self {
-            CSWrapper::ColorSpace(r) => r.get_ref().write(buf),
-            CSWrapper::Name(n) => n.write(buf),
-        }
     }
 }

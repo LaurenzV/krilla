@@ -2,6 +2,10 @@
 %AAAA
 
 1 0 obj
+/DeviceRGB
+endobj
+
+2 0 obj
 <<
   /FunctionType 2
   /Range [0 1 0 1 0 1]
@@ -12,7 +16,7 @@
 >>
 endobj
 
-2 0 obj
+3 0 obj
 <<
   /FunctionType 2
   /Range [0 1 0 1 0 1]
@@ -23,7 +27,7 @@ endobj
 >>
 endobj
 
-3 0 obj
+4 0 obj
 <<
   /FunctionType 2
   /Range [0 1 0 1 0 1]
@@ -34,33 +38,33 @@ endobj
 >>
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /FunctionType 3
   /Domain [0 1]
   /Range [0 1 0 1 0 1]
-  /Functions [1 0 R 2 0 R 3 0 R]
+  /Functions [2 0 R 3 0 R 4 0 R]
   /Bounds [0.2 0.8]
   /Encode [0 1 0 1 0 1]
 >>
 endobj
 
-5 0 obj
+6 0 obj
 <<
   /ShadingType 2
-  /ColorSpace /DeviceRGB
+  /ColorSpace 1 0 R
   /AntiAlias false
-  /Function 4 0 R
+  /Function 5 0 R
   /Coords [50 0 150 0]
   /Extend [true true]
 >>
 endobj
 
-6 0 obj
+7 0 obj
 <<
   /Type /Pattern
   /PatternType 2
-  /Shading 5 0 R
+  /Shading 6 0 R
   /Matrix [1 0 0 1 0 0]
 >>
 endobj

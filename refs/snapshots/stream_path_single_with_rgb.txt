@@ -1,5 +1,5 @@
 q
-/DeviceRGB cs
+/c0 cs
 1 0 0 scn
 20 20 m
 180 20 l

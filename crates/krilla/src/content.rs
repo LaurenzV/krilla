@@ -1,9 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::{
-    Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY,
-    DEVICE_RGB,
-};
+use crate::color::{Color, ColorSpace, ICCBasedColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -658,32 +655,6 @@ impl ContentBuilder {
             transform.post_concat(self.cur_transform_with_root_transform())
         };
 
-        let color_to_string = |color: Color,
-                               content_builder: &mut ContentBuilder,
-                               sc: &mut SerializerContext| {
-            match color.color_space(sc) {
-                ColorSpace::LinearRgb => content_builder
-                    .rd_builder
-                    .register_resource::<resource::ColorSpace>(sc.add_linearrgb()),
-                ColorSpace::Srgb => content_builder
-                    .rd_builder
-                    .register_resource(sc.add_resource(ICCBasedColorSpace(
-                        sc.serialize_settings().pdf_version.rgb_icc(),
-                    ))),
-                ColorSpace::Luma => content_builder
-                    .rd_builder
-                    .register_resource(sc.add_resource(ICCBasedColorSpace(
-                        sc.serialize_settings().pdf_version.grey_icc(),
-                    ))),
-                ColorSpace::Cmyk(p) => content_builder
-                    .rd_builder
-                    .register_resource(sc.add_resource(p)),
-                ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
-                ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
-                ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
-            }
-        };
-
         let mut write_gradient =
             |gradient_props: GradientProperties,
              sc: &mut SerializerContext,
@@ -692,8 +663,11 @@ impl ContentBuilder {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder, sc);
-                    set_solid_fn(&mut content_builder.content, color_space, color);
+                    let color_space = color.color_space(sc);
+                    let color_space_resource = content_builder
+                        .rd_builder
+                        .register_resource(sc.add_cs(color_space));
+                    set_solid_fn(&mut content_builder.content, color_space_resource, color);
                 } else {
                     let shading_mask =
                         Mask::new_from_shading(gradient_props.clone(), transform, bounds, sc);
@@ -723,8 +697,9 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::Color(c) => {
-                let color_space = color_to_string(*c, self, sc);
-                set_solid_fn(&mut self.content, color_space, *c);
+                let cs = c.color_space(sc);
+                let color_space_resource = self.rd_builder.register_resource(sc.add_cs(cs));
+                set_solid_fn(&mut self.content, color_space_resource, *c);
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);

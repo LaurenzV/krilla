@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [9 0 R]
+  /Kids [11 0 R]
 >>
 endobj
 
@@ -51,8 +51,8 @@ endobj
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
     /XObject <<
-      /x0 7 0 R
-      /x1 8 0 R
+      /x0 9 0 R
+      /x1 10 0 R
     >>
   >>
   /Name /TwitterColorEmojiSVGinOT
@@ -117,19 +117,31 @@ endstream
 endobj
 
 7 0 obj
+/DeviceGray
+endobj
+
+8 0 obj
+/DeviceRGB
+endobj
+
+9 0 obj
 <<
-  /Length 1163
+  /Length 1127
   /Type /XObject
   /Subtype /Form
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 8 0 R
+      /c1 7 0 R
+    >>
   >>
   /BBox [-0.00000000000020210994 -402.84998 2048 1645.15]
 >>
 stream
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 1 0.8 0.3019608 scn
 36 18 m
 36 27.941126 27.941126 36 18 36 c
@@ -141,7 +153,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 0.4 0.27058825 0 scn
 18 21 m
 14.377 21 11.973 20.578 9 20 c
@@ -155,7 +167,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceGray cs
+/c1 cs
 1 scn
 9 22 m
 9 22 12 23 18 23 c
@@ -167,7 +179,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 0.4 0.27058825 0 scn
 14.5 13.5 m
 14.5 15.432997 13.380712 17 12 17 c
@@ -179,7 +191,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 0.4 0.27058825 0 scn
 26.5 13.5 m
 26.5 15.432997 25.380713 17 24 17 c
@@ -192,20 +204,24 @@ Q
 endstream
 endobj
 
-8 0 obj
+10 0 obj
 <<
-  /Length 1033
+  /Length 997
   /Type /XObject
   /Subtype /Form
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 8 0 R
+      /c1 7 0 R
+    >>
   >>
   /BBox [0 -402.84998 2048 1645.15]
 >>
 stream
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 1 0.8 0.3019608 scn
 36 18 m
 36 27.941 27.941 36 18 36 c
@@ -216,7 +232,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 0.4 0.27058825 0 scn
 14 12.5 m
 14 15.537566 12.880712 18 11.5 18 c
@@ -228,7 +244,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 0.4 0.27058825 0 scn
 27 12.5 m
 27 15.537566 25.880713 18 24.5 18 c
@@ -240,7 +256,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceRGB cs
+/c0 cs
 0.4 0.27058825 0 scn
 18 22 m
 14.377 22 11.973 21.578 9 21 c
@@ -254,7 +270,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/DeviceGray cs
+/c1 cs
 1 scn
 9 23 m
 9 23 12 24 18 24 c
@@ -267,29 +283,32 @@ Q
 endstream
 endobj
 
-9 0 obj
+11 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 7 0 R
+    >>
     /Font <<
       /f0 5 0 R
     >>
   >>
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
-  /Contents 10 0 R
+  /Contents 12 0 R
 >>
 endobj
 
-10 0 obj
+12 0 obj
 <<
-  /Length 96
+  /Length 88
 >>
 stream
 q
 1 0 0 -1 0 200 cm
-/DeviceGray cs
+/c0 cs
 0 scn
 BT
 0 Tr
@@ -301,7 +320,7 @@ Q
 endstream
 endobj
 
-11 0 obj
+13 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -309,25 +328,27 @@ endobj
 endobj
 
 xref
-0 12
+0 14
 0000000000 65535 f
 0000000016 00000 n
-0000000080 00000 n
-0000000149 00000 n
-0000000218 00000 n
-0000000519 00000 n
-0000001051 00000 n
-0000001763 00000 n
-0000003136 00000 n
-0000004357 00000 n
-0000004553 00000 n
-0000004703 00000 n
+0000000081 00000 n
+0000000150 00000 n
+0000000219 00000 n
+0000000520 00000 n
+0000001053 00000 n
+0000001765 00000 n
+0000001793 00000 n
+0000001820 00000 n
+0000003215 00000 n
+0000004458 00000 n
+0000004697 00000 n
+0000004839 00000 n
 trailer
 <<
-  /Size 12
-  /Root 11 0 R
-  /ID [(E2nN74WpU9qA6OyYt9LPUw==) (E2nN74WpU9qA6OyYt9LPUw==)]
+  /Size 14
+  /Root 13 0 R
+  /ID [(lirDZpmkPUDItoZ/p/3TQw==) (lirDZpmkPUDItoZ/p/3TQw==)]
 >>
 startxref
-4758
+4894
 %%EOF

@@ -5,29 +5,36 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [2 0 R]
+  /Kids [3 0 R]
 >>
 endobj
 
 2 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 3 0 R
->>
+/DeviceGray
 endobj
 
 3 0 obj
 <<
-  /Length 64
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 2 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+  /Length 56
 >>
 stream
 q
-/DeviceGray cs
+/c0 cs
 0 scn
 20 20 m
 180 20 l
@@ -39,7 +46,7 @@ Q
 endstream
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R

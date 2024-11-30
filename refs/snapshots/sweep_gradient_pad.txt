@@ -2,6 +2,10 @@
 %AAAA
 
 1 0 obj
+/DeviceRGB
+endobj
+
+2 0 obj
 <<
   /Length 616
   /FunctionType 4
@@ -13,22 +17,22 @@ stream
 endstream
 endobj
 
-2 0 obj
+3 0 obj
 <<
   /ShadingType 1
-  /ColorSpace /DeviceRGB
+  /ColorSpace 1 0 R
   /Matrix [1 0 0 1 0 0]
   /AntiAlias false
-  /Function 1 0 R
+  /Function 2 0 R
   /Domain [-50 150 -50 150]
 >>
 endobj
 
-3 0 obj
+4 0 obj
 <<
   /Type /Pattern
   /PatternType 2
-  /Shading 2 0 R
+  /Shading 3 0 R
   /Matrix [1 0 0 1 100 100]
 >>
 endobj

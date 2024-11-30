@@ -2,24 +2,28 @@
 %AAAA
 
 1 0 obj
+/DeviceRGB
+endobj
+
+2 0 obj
 <<
   /Type /ExtGState
   /ca 0.4
   /CA 0.6
   /BM /Difference
-  /SMask 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-  /Type /Mask
-  /S /Luminosity
-  /G 3 0 R
+  /SMask 3 0 R
 >>
 endobj
 
 3 0 obj
+<<
+  /Type /Mask
+  /S /Luminosity
+  /G 4 0 R
+>>
+endobj
+
+4 0 obj
 <<
   /Length 0
   /Type /XObject
@@ -31,7 +35,7 @@ endobj
   /Group <<
     /Type /Group
     /S /Transparency
-    /CS /DeviceRGB
+    /CS 1 0 R
   >>
 >>
 stream

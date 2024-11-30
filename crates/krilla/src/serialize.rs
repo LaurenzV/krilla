@@ -1,18 +1,18 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, LinearRgbColorSpace, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::color::{CSWrapper, DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::Type3FontMapper;
 use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::{Object, Resourceable};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
@@ -353,15 +353,44 @@ impl SerializerContext {
         self.cur_ref.bump()
     }
 
-    pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
+    pub fn add_cs(&mut self, cs: ColorSpace) -> resource::ColorSpace {
+        macro_rules! cs {
+            ($name:ident, $color_name:expr) => {
+                #[derive(Copy, Clone, Hash)]
+                struct $name;
+
+                impl Object for $name {
+                    fn chunk_container(&self) -> ChunkContainerFn {
+                        Box::new(|cc| &mut cc.color_spaces)
+                    }
+
+                    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+                        let mut chunk = Chunk::new();
+                        chunk
+                            .indirect(root_ref)
+                            .primitive(Name($color_name.as_bytes()));
+                        chunk
+                    }
+                }
+
+                impl Resourceable for $name {
+                    type Resource = resource::ColorSpace;
+                }
+            };
+        }
+
+        cs!(DeviceRgb, DEVICE_RGB);
+        cs!(DeviceGray, DEVICE_GRAY);
+        cs!(DeviceCmyk, DEVICE_CMYK);
+
         match cs {
-            ColorSpace::Srgb => CSWrapper::ColorSpace(self.add_srgb()),
-            ColorSpace::LinearRgb => CSWrapper::ColorSpace(self.add_linearrgb()),
-            ColorSpace::Luma => CSWrapper::ColorSpace(self.add_luma()),
-            ColorSpace::Cmyk(cs) => CSWrapper::ColorSpace(self.add_resource(cs)),
-            ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
-            ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
-            ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
+            ColorSpace::Srgb => self.add_srgb(),
+            ColorSpace::LinearRgb => self.add_linearrgb(),
+            ColorSpace::Luma => self.add_luma(),
+            ColorSpace::Cmyk(cs) => self.add_resource(cs),
+            ColorSpace::DeviceGray => self.add_resource(DeviceGray),
+            ColorSpace::DeviceRgb => self.add_resource(DeviceRgb),
+            ColorSpace::DeviceCmyk => self.add_resource(DeviceCmyk),
         }
     }
 
@@ -481,6 +510,33 @@ impl SerializerContext {
     }
 
     pub(crate) fn add_linearrgb(&mut self) -> resource::ColorSpace {
+        #[derive(Copy, Clone, Hash)]
+        struct LinearRgbColorSpace;
+
+        impl Object for LinearRgbColorSpace {
+            fn chunk_container(&self) -> ChunkContainerFn {
+                Box::new(|cc| &mut cc.color_spaces)
+            }
+
+            fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+                let mut chunk = Chunk::new();
+                chunk.color_space(root_ref).cal_rgb(
+                    [0.9505, 1.0, 1.0888],
+                    None,
+                    Some([1.0, 1.0, 1.0]),
+                    Some([
+                        0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
+                    ]),
+                );
+
+                chunk
+            }
+        }
+
+        impl Resourceable for LinearRgbColorSpace {
+            type Resource = resource::ColorSpace;
+        }
+
         self.add_resource(LinearRgbColorSpace)
     }
 
