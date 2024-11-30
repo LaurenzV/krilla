@@ -425,11 +425,15 @@ impl SerializerContext {
                 // For now, we make the simplifying assumption that a font is either mapped
                 // to a series of Type3 fonts or to a single CID font, but not a mix of both.
                 let font_ref = font.font_ref();
-                let use_type3 = font_ref.svg().is_ok()
-                    || font_ref.colr().is_ok()
-                    || font_ref.sbix().is_ok()
-                    || font_ref.cbdt().is_ok()
-                    || font_ref.ebdt().is_ok();
+                let use_type3 = if !font.allow_color() {
+                    false
+                } else {
+                    font_ref.svg().is_ok()
+                        || font_ref.colr().is_ok()
+                        || font_ref.sbix().is_ok()
+                        || font_ref.cbdt().is_ok()
+                        || font_ref.ebdt().is_ok()
+                };
 
                 if use_type3 {
                     Rc::new(RefCell::new(FontContainer::Type3(Type3FontMapper::new(
@@ -487,7 +491,7 @@ impl SerializerContext {
             // cheaper, and then check whether we already have a corresponding font object in the cache.
             // If not, we still need to construct it.
             if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-                if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index) {
+                if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, true) {
                     let font_info = Arc::new(font_info);
                     let font = self
                         .font_cache

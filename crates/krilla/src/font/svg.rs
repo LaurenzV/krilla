@@ -80,13 +80,19 @@ mod tests {
     #[visreg(document, all)]
     fn twitter_color_emoji(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
-        all_glyphs_to_pdf(font_data, None, false, document);
+        all_glyphs_to_pdf(font_data, None, false, true, document);
+    }
+
+    #[visreg(document)]
+    fn twitter_color_emoji_no_color(document: &mut Document) {
+        let font_data = TWITTER_COLOR_EMOJI.clone();
+        all_glyphs_to_pdf(font_data, None, false, false, document);
     }
 
     #[visreg]
     fn svg_extra(surface: &mut Surface) {
         let font_data = SVG_EXTRA.clone();
-        let font = Font::new(font_data, 0).unwrap();
+        let font = Font::new(font_data, 0, true).unwrap();
 
         surface.fill_text(
             Point::from_xy(0., 30.0),

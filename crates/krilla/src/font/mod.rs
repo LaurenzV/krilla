@@ -51,14 +51,24 @@ pub use skrifa::GlyphId;
 pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
-    /// Create a new font from some data. The `index` indicates the index that should be
+    /// Create a new font from some data.
+    ///
+    /// The `index` indicates the index that should be
     /// associated with this font for TrueType collections, otherwise this value should be
     /// set to 0. The location indicates the variation axes that should be associated with
     /// the font.
     ///
+    /// The `allow_color` property allows you to specify whether krilla should render the font
+    /// as a color font. When setting this property to false, krilla will always only use the
+    /// `glyf`/`CFF` tables of the font. If you don't know what this means, just set it to `true`.
+    ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
-    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>, index: u32) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref().as_ref(), index)?;
+    pub fn new(
+        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        index: u32,
+        allow_color: bool,
+    ) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref().as_ref(), index, allow_color)?;
 
         Font::new_with_info(data, Arc::new(font_info))
     }
@@ -106,6 +116,10 @@ impl Font {
 
     pub(crate) fn ascent(&self) -> f32 {
         self.0.font_info.ascent.get()
+    }
+
+    pub(crate) fn allow_color(&self) -> bool {
+        self.0.font_info.allow_color
     }
 
     pub(crate) fn weight(&self) -> f32 {
@@ -182,6 +196,7 @@ pub(crate) struct FontInfo {
     global_bbox: RectWrapper,
     postscript_name: Option<String>,
     ascent: FiniteF32,
+    allow_color: bool,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
     is_monospaced: bool,
@@ -208,7 +223,7 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().ok()?.checksum_adjustment();
 
@@ -252,6 +267,7 @@ impl FontInfo {
             index,
             checksum,
             location,
+            allow_color,
             units_per_em,
             postscript_name,
             ascent,
