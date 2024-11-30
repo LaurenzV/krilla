@@ -19,6 +19,7 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
+use crate::resource;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
@@ -362,7 +363,7 @@ impl ContentBuilder {
     ) {
         let font_name = self
             .rd_builder
-            .register_resource(font_identifier.clone(), sc);
+            .register_resource::<resource::Font>(sc.add_font_identifier(font_identifier));
         self.content.set_font(font_name.to_pdf_name(), size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
@@ -532,7 +533,9 @@ impl ContentBuilder {
                 sb.expand_bbox(bbox);
             },
             move |sb, sc| {
-                let x_object_name = sb.rd_builder.register_resource(x_object, sc);
+                let x_object_name = sb
+                    .rd_builder
+                    .register_resource::<resource::XObject>(sc.add_object(x_object));
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
@@ -575,7 +578,9 @@ impl ContentBuilder {
                 sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
             },
             move |sb, sc| {
-                let image_name = sb.rd_builder.register_resource(image, sc);
+                let image_name = sb
+                    .rd_builder
+                    .register_resource::<resource::XObject>(sc.add_image(image));
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
@@ -587,7 +592,9 @@ impl ContentBuilder {
         self.apply_isolated_op(
             |_, _| {},
             move |sb, sc| {
-                let sh = sb.rd_builder.register_resource(shading.clone(), sc);
+                let sh = sb
+                    .rd_builder
+                    .register_resource::<resource::Shading>(sc.add_object(shading.clone()));
                 sb.content.shading(sh.to_pdf_name());
             },
             sc,
@@ -628,7 +635,9 @@ impl ContentBuilder {
         let state = self.graphics_states.cur().ext_g_state().clone();
 
         if !state.empty() {
-            let ext = self.rd_builder.register_resource(state, sc);
+            let ext = self
+                .rd_builder
+                .register_resource::<resource::ExtGState>(sc.add_object(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
 
@@ -656,16 +665,20 @@ impl ContentBuilder {
                 match color.color_space(sc) {
                     ColorSpace::LinearRgb => content_builder
                         .rd_builder
-                        .register_resource(LinearRgbColorSpace, sc),
-                    ColorSpace::Srgb => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.rgb_icc()),
-                        sc,
-                    ),
-                    ColorSpace::Luma => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.grey_icc()),
-                        sc,
-                    ),
-                    ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
+                        .register_resource::<resource::ColorSpace>(sc.add_linearrgb()),
+                    ColorSpace::Srgb => content_builder
+                        .rd_builder
+                        .register_resource::<resource::ColorSpace>(sc.add_object(
+                            ICCBasedColorSpace(sc.serialize_settings().pdf_version.rgb_icc()),
+                        )),
+                    ColorSpace::Luma => content_builder
+                        .rd_builder
+                        .register_resource::<resource::ColorSpace>(sc.add_object(
+                            ICCBasedColorSpace(sc.serialize_settings().pdf_version.grey_icc()),
+                        )),
+                    ColorSpace::Cmyk(p) => content_builder
+                        .rd_builder
+                        .register_resource::<resource::ColorSpace>(sc.add_object(p)),
                     ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
                     ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
                     ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
@@ -694,12 +707,14 @@ impl ContentBuilder {
                     );
                     let color_space = content_builder
                         .rd_builder
-                        .register_resource(shading_pattern, sc);
+                        .register_resource::<resource::Pattern>(sc.add_object(shading_pattern));
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask, sc);
 
-                        let ext = content_builder.rd_builder.register_resource(state, sc);
+                        let ext = content_builder
+                            .rd_builder
+                            .register_resource::<resource::ExtGState>(sc.add_object(state));
                         content_builder.content.set_parameters(ext.to_pdf_name());
                     }
 
@@ -737,7 +752,9 @@ impl ContentBuilder {
                     sc,
                 );
 
-                let color_space = self.rd_builder.register_resource(tiling_pattern, sc);
+                let color_space = self
+                    .rd_builder
+                    .register_resource::<resource::Pattern>(sc.add_object(tiling_pattern));
                 set_pattern_fn(&mut self.content, color_space);
             }
         }

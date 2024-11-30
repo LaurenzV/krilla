@@ -3,7 +3,6 @@ use crate::object::color::Color;
 use crate::object::{ChunkContainerFn, Object};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
@@ -218,8 +217,6 @@ impl ShadingFunction {
         }))
     }
 }
-
-impl RegisterableResource<crate::resource::ShadingFunction> for ShadingFunction {}
 
 impl Object for ShadingFunction {
     fn chunk_container(&self) -> ChunkContainerFn {

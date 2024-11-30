@@ -39,7 +39,7 @@
 //! it will fall back to device CMYK.
 
 use crate::object::{ChunkContainerFn, Object};
-use crate::resource::{RegisterableResource, Resource};
+use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::Prehashed;
@@ -480,10 +480,6 @@ impl ICCMetadata {
     }
 }
 
-impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<4> {}
-impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<3> {}
-impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<1> {}
-
 #[derive(Copy, Clone, Hash)]
 pub(crate) struct LinearRgbColorSpace;
 
@@ -507,14 +503,6 @@ impl Object for LinearRgbColorSpace {
     }
 }
 
-impl From<LinearRgbColorSpace> for Resource {
-    fn from(_: LinearRgbColorSpace) -> Self {
-        Resource::LinearRgb
-    }
-}
-
-impl RegisterableResource<crate::resource::ColorSpace> for LinearRgbColorSpace {}
-
 #[cfg(test)]
 mod tests {
 
@@ -522,19 +510,18 @@ mod tests {
 
     use crate::page::Page;
     use crate::path::Fill;
-    use crate::resource::Resource;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Luma);
+        sc.add_luma();
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Srgb);
+        sc.add_srgb();
     }
 
     #[snapshot(single_page, settings_18)]

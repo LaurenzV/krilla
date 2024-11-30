@@ -1,6 +1,5 @@
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::{ChunkContainerFn, Object};
-use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::util::{HashExt, TransformExt};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -35,8 +34,6 @@ impl ShadingPattern {
         }))
     }
 }
-
-impl RegisterableResource<crate::resource::Pattern> for ShadingPattern {}
 
 impl Object for ShadingPattern {
     fn chunk_container(&self) -> ChunkContainerFn {

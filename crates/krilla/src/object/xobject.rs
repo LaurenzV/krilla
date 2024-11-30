@@ -1,6 +1,5 @@
 use crate::color::rgb;
 use crate::object::{ChunkContainerFn, Object};
-use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::stream::{FilterStream, Stream};
 use crate::util::{RectExt, RectWrapper};
@@ -40,8 +39,6 @@ impl XObject {
         self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox.0)
     }
 }
-
-impl RegisterableResource<crate::resource::XObject> for XObject {}
 
 impl Object for XObject {
     fn chunk_container(&self) -> ChunkContainerFn {

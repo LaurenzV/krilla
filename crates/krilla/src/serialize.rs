@@ -9,12 +9,11 @@ use crate::metadata::Metadata;
 use crate::object::color::{CSWrapper, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::Type3FontMapper;
-use crate::object::font::FontContainer;
+use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::Object;
 use crate::page::PageLabel;
-use crate::resource::Resource;
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::{NameExt, SipHashable};
 use crate::validation::{ValidationError, Validator};
@@ -353,10 +352,10 @@ impl SerializerContext {
 
     pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
-            ColorSpace::LinearRgb => CSWrapper::Ref(self.add_resource(Resource::LinearRgb)),
-            ColorSpace::Luma => CSWrapper::Ref(self.add_resource(Resource::Luma)),
-            ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::Cmyk(cs))),
+            ColorSpace::Srgb => CSWrapper::Ref(self.add_srgb()),
+            ColorSpace::LinearRgb => CSWrapper::Ref(self.add_linearrgb()),
+            ColorSpace::Luma => CSWrapper::Ref(self.add_luma()),
+            ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_object(cs)),
             ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
             ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
             ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
@@ -448,34 +447,31 @@ impl SerializerContext {
             .clone()
     }
 
-    pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
-        match resource.into() {
-            Resource::XObject(x) => self.add_object(x),
-            #[cfg(feature = "raster-images")]
-            Resource::Image(i) => self.add_image(i),
-            Resource::ShadingPattern(sp) => self.add_object(sp),
-            Resource::TilingPattern(tp) => self.add_object(tp),
-            Resource::ExtGState(e) => self.add_object(e),
-            Resource::Srgb => self.add_object(ICCBasedColorSpace(
-                self.serialize_settings.pdf_version.rgb_icc(),
-            )),
-            Resource::LinearRgb => self.add_object(LinearRgbColorSpace),
-            Resource::Luma => self.add_object(ICCBasedColorSpace(
-                self.serialize_settings.pdf_version.grey_icc(),
-            )),
-            Resource::Cmyk(cs) => self.add_object(cs),
-            Resource::ShadingFunction(s) => self.add_object(s),
-            Resource::FontIdentifier(f) => {
-                let hash = f.sip_hash();
-                if let Some(_ref) = self.cached_mappings.get(&hash) {
-                    *_ref
-                } else {
-                    let root_ref = self.new_ref();
-                    self.cached_mappings.insert(hash, root_ref);
-                    root_ref
-                }
-            }
+    pub(crate) fn add_srgb(&mut self) -> Ref {
+        self.add_object(ICCBasedColorSpace(
+            self.serialize_settings.pdf_version.rgb_icc(),
+        ))
+    }
+
+    pub(crate) fn add_luma(&mut self) -> Ref {
+        self.add_object(ICCBasedColorSpace(
+            self.serialize_settings.pdf_version.grey_icc(),
+        ))
+    }
+
+    pub(crate) fn add_font_identifier(&mut self, f: FontIdentifier) -> Ref {
+        let hash = f.sip_hash();
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            *_ref
+        } else {
+            let root_ref = self.new_ref();
+            self.cached_mappings.insert(hash, root_ref);
+            root_ref
         }
+    }
+
+    pub(crate) fn add_linearrgb(&mut self) -> Ref {
+        self.add_object(LinearRgbColorSpace)
     }
 
     #[cfg(feature = "fontdb")]
@@ -574,13 +570,13 @@ impl SerializerContext {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
-                        let ref_ = self.add_resource(t3_font.identifier());
+                        let ref_ = self.add_font_identifier(t3_font.identifier());
                         let chunk = t3_font.serialize(&mut self, ref_);
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.add_resource(cid_font.identifier());
+                    let ref_ = self.add_font_identifier(cid_font.identifier());
                     let chunk = cid_font.serialize(&mut self, ref_)?;
                     self.chunk_container.fonts.push(chunk);
                 }
