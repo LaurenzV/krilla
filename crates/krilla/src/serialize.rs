@@ -53,7 +53,8 @@ impl Default for SvgSettings {
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
 pub struct SerializeSettings {
-    /// Whether content streams should be compressed.
+    /// Whether content streams should be compressed. Leads to significantly smaller file sizes,
+    /// but also longer running times. It is highly recommended that you set this to true.
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
