@@ -75,7 +75,7 @@ pub fn render(
 
     let demultiplied = pixmap
         .pixels()
-        .into_iter()
+        .iter()
         .flat_map(|p| {
             let c = p.demultiply();
             [c.red(), c.green(), c.blue(), c.alpha()]
