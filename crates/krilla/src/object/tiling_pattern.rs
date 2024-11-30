@@ -1,4 +1,4 @@
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::StreamBuilder;
@@ -67,7 +67,7 @@ impl TilingPattern {
     }
 }
 
-impl Object for TilingPattern {
+impl Cacheable for TilingPattern {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.patterns)
     }
@@ -136,7 +136,7 @@ mod tests {
             sc,
         );
 
-        sc.add_object(tiling_pattern);
+        sc.register_cacheable(tiling_pattern);
     }
 
     #[visreg(all)]

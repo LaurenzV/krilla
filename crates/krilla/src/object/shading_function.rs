@@ -1,6 +1,6 @@
 use crate::color::luma;
 use crate::object::color::Color;
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource;
@@ -220,7 +220,7 @@ impl ShadingFunction {
     }
 }
 
-impl Object for ShadingFunction {
+impl Cacheable for ShadingFunction {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.shading_functions)
     }

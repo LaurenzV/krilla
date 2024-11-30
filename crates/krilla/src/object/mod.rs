@@ -22,11 +22,11 @@ pub(crate) mod xobject;
 
 pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>>;
 
-pub(crate) trait Object: SipHashable {
+pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
 }
 
-pub(crate) trait Resourceable: Object {
+pub(crate) trait Resourceable: Cacheable {
     type Resource: Resource;
 }
