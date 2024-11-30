@@ -2,7 +2,7 @@
 
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;

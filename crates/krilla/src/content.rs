@@ -530,7 +530,9 @@ impl ContentBuilder {
                 sb.expand_bbox(bbox);
             },
             move |sb, sc| {
-                let x_object_name = sb.rd_builder.register_resource(sc.register_resourceable(x_object));
+                let x_object_name = sb
+                    .rd_builder
+                    .register_resource(sc.register_resourceable(x_object));
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
@@ -575,7 +577,7 @@ impl ContentBuilder {
             move |sb, sc| {
                 let image_name = sb
                     .rd_builder
-                    .register_resource(resource::XObject::new(sc.add_image(image)));
+                    .register_resource(resource::XObject::new(sc.register_image(image)));
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
@@ -680,14 +682,18 @@ impl ContentBuilder {
                     );
                     let color_space = content_builder
                         .rd_builder
-                        .register_resource::<resource::Pattern>(sc.register_resourceable(shading_pattern));
+                        .register_resource::<resource::Pattern>(
+                            sc.register_resourceable(shading_pattern),
+                        );
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask, sc);
 
                         let ext = content_builder
                             .rd_builder
-                            .register_resource::<resource::ExtGState>(sc.register_resourceable(state));
+                            .register_resource::<resource::ExtGState>(
+                                sc.register_resourceable(state),
+                            );
                         content_builder.content.set_parameters(ext.to_pdf_name());
                     }
 
@@ -726,9 +732,9 @@ impl ContentBuilder {
                     sc,
                 );
 
-                let color_space = self
-                    .rd_builder
-                    .register_resource::<resource::Pattern>(sc.register_resourceable(tiling_pattern));
+                let color_space = self.rd_builder.register_resource::<resource::Pattern>(
+                    sc.register_resourceable(tiling_pattern),
+                );
                 set_pattern_fn(&mut self.content, color_space);
             }
         }

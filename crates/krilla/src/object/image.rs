@@ -631,63 +631,63 @@ mod tests {
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
-        sc.add_image(load_png_image("luma8.png"));
+        sc.register_image(load_png_image("luma8.png"));
     }
 
     #[snapshot]
     fn image_luma16_png(sc: &mut SerializerContext) {
-        sc.add_image(load_png_image("luma16.png"));
+        sc.register_image(load_png_image("luma16.png"));
     }
 
     #[snapshot]
     fn image_rgb8_png(sc: &mut SerializerContext) {
-        sc.add_image(load_png_image("rgb8.png"));
+        sc.register_image(load_png_image("rgb8.png"));
     }
 
     #[snapshot]
     fn image_rgb16_png(sc: &mut SerializerContext) {
-        sc.add_image(load_png_image("rgb16.png"));
+        sc.register_image(load_png_image("rgb16.png"));
     }
 
     #[snapshot]
     fn image_rgba8_png(sc: &mut SerializerContext) {
-        sc.add_image(load_png_image("rgba8.png"));
+        sc.register_image(load_png_image("rgba8.png"));
     }
 
     #[snapshot]
     fn image_rgba16_png(sc: &mut SerializerContext) {
-        sc.add_image(load_png_image("rgba16.png"));
+        sc.register_image(load_png_image("rgba16.png"));
     }
 
     #[snapshot]
     fn image_luma8_jpg(sc: &mut SerializerContext) {
-        sc.add_image(load_jpg_image("luma8.jpg"));
+        sc.register_image(load_jpg_image("luma8.jpg"));
     }
 
     #[snapshot]
     fn image_rgb8_jpg(sc: &mut SerializerContext) {
-        sc.add_image(load_jpg_image("rgb8.jpg"));
+        sc.register_image(load_jpg_image("rgb8.jpg"));
     }
 
     // Currently gets converted into RGB.
     #[snapshot]
     fn image_cmyk_jpg(sc: &mut SerializerContext) {
-        sc.add_image(load_jpg_image("cmyk.jpg"));
+        sc.register_image(load_jpg_image("cmyk.jpg"));
     }
 
     // Currently gets converted into RGBA.
     #[snapshot]
     fn image_rgb8_gif(sc: &mut SerializerContext) {
-        sc.add_image(load_gif_image("rgb8.gif"));
+        sc.register_image(load_gif_image("rgb8.gif"));
     }
 
     #[snapshot]
     fn image_rgba8_gif(sc: &mut SerializerContext) {
-        sc.add_image(load_gif_image("rgba8.gif"));
+        sc.register_image(load_gif_image("rgba8.gif"));
     }
     #[snapshot]
     fn image_rgba8_webp(sc: &mut SerializerContext) {
-        sc.add_image(load_webp_image("rgba8.webp"));
+        sc.register_image(load_webp_image("rgba8.webp"));
     }
 
     fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
