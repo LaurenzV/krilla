@@ -1,5 +1,5 @@
 use crate::object::mask::Mask;
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
@@ -64,7 +64,7 @@ impl ExtGState {
     /// Create a new graphics state with a mask.
     #[must_use]
     pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
-        let mask_ref = sc.add_object(mask);
+        let mask_ref = sc.register_cacheable(mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
     }
@@ -99,7 +99,7 @@ impl ExtGState {
     }
 }
 
-impl Object for ExtGState {
+impl Cacheable for ExtGState {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.ext_g_states)
     }
@@ -163,7 +163,7 @@ mod tests {
     #[snapshot]
     pub fn ext_g_state_empty(sc: &mut SerializerContext) {
         let ext_state = ExtGState::new();
-        sc.add_object(ext_state);
+        sc.register_cacheable(ext_state);
     }
 
     #[snapshot]
@@ -172,7 +172,7 @@ mod tests {
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
             .blend_mode(BlendMode::Normal);
-        sc.add_object(ext_state);
+        sc.register_cacheable(ext_state);
     }
 
     #[snapshot]
@@ -183,6 +183,6 @@ mod tests {
             .stroking_alpha(NormalizedF32::new(0.6).unwrap())
             .blend_mode(BlendMode::Difference)
             .mask(mask, sc);
-        sc.add_object(ext_state);
+        sc.register_cacheable(ext_state);
     }
 }

@@ -12,7 +12,7 @@ use crate::object::font::type3_font::Type3FontMapper;
 use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
@@ -359,7 +359,7 @@ impl SerializerContext {
                 #[derive(Copy, Clone, Hash)]
                 struct $name;
 
-                impl Object for $name {
+                impl Cacheable for $name {
                     fn chunk_container(&self) -> ChunkContainerFn {
                         Box::new(|cc| &mut cc.color_spaces)
                     }
@@ -387,16 +387,16 @@ impl SerializerContext {
             ColorSpace::Srgb => self.add_srgb(),
             ColorSpace::LinearRgb => self.add_linearrgb(),
             ColorSpace::Luma => self.add_luma(),
-            ColorSpace::Cmyk(cs) => self.add_resource(cs),
-            ColorSpace::DeviceGray => self.add_resource(DeviceGray),
-            ColorSpace::DeviceRgb => self.add_resource(DeviceRgb),
-            ColorSpace::DeviceCmyk => self.add_resource(DeviceCmyk),
+            ColorSpace::Cmyk(cs) => self.register_resourceable(cs),
+            ColorSpace::DeviceGray => self.register_resourceable(DeviceGray),
+            ColorSpace::DeviceRgb => self.register_resourceable(DeviceRgb),
+            ColorSpace::DeviceCmyk => self.register_resourceable(DeviceCmyk),
         }
     }
 
-    pub fn add_object<T>(&mut self, object: T) -> Ref
+    pub fn register_cacheable<T>(&mut self, object: T) -> Ref
     where
-        T: Object,
+        T: Cacheable,
     {
         let hash = object.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
@@ -405,17 +405,17 @@ impl SerializerContext {
             let root_ref = self.new_ref();
             let mut chunk_container_fn = object.chunk_container();
             let chunk = object.serialize(self, root_ref);
-            self.cached_mappings.insert(hash, root_ref);
             chunk_container_fn(&mut self.chunk_container).push(chunk);
+            self.cached_mappings.insert(hash, root_ref);
             root_ref
         }
     }
 
-    pub fn add_resource<T>(&mut self, object: T) -> T::Resource
+    pub fn register_resourceable<T>(&mut self, object: T) -> T::Resource
     where
         T: Resourceable,
     {
-        Resource::new(self.add_object(object))
+        Resource::new(self.register_cacheable(object))
     }
 
     #[cfg(feature = "raster-images")]
@@ -487,13 +487,13 @@ impl SerializerContext {
     }
 
     pub(crate) fn add_srgb(&mut self) -> resource::ColorSpace {
-        self.add_resource(ICCBasedColorSpace(
+        self.register_resourceable(ICCBasedColorSpace(
             self.serialize_settings.pdf_version.rgb_icc(),
         ))
     }
 
     pub(crate) fn add_luma(&mut self) -> resource::ColorSpace {
-        self.add_resource(ICCBasedColorSpace(
+        self.register_resourceable(ICCBasedColorSpace(
             self.serialize_settings.pdf_version.grey_icc(),
         ))
     }
@@ -513,7 +513,7 @@ impl SerializerContext {
         #[derive(Copy, Clone, Hash)]
         struct LinearRgbColorSpace;
 
-        impl Object for LinearRgbColorSpace {
+        impl Cacheable for LinearRgbColorSpace {
             fn chunk_container(&self) -> ChunkContainerFn {
                 Box::new(|cc| &mut cc.color_spaces)
             }
@@ -537,7 +537,7 @@ impl SerializerContext {
             type Resource = resource::ColorSpace;
         }
 
-        self.add_resource(LinearRgbColorSpace)
+        self.register_resourceable(LinearRgbColorSpace)
     }
 
     #[cfg(feature = "fontdb")]
@@ -575,7 +575,7 @@ impl SerializerContext {
         let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
         let icc_profile = self.serialize_settings.pdf_version.rgb_icc();
 
-        oi.dest_output_profile(self.add_object(icc_profile.clone()))
+        oi.dest_output_profile(self.register_cacheable(icc_profile.clone()))
             .subtype(subtype)
             .output_condition_identifier(TextStr("Custom"))
             .output_condition(TextStr("sRGB"))

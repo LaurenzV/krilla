@@ -268,9 +268,9 @@ impl Image {
                 .supports_icc(ic.metadata())
             {
                 let ref_ = match ic {
-                    ICCProfileWrapper::Luma(l) => sc.add_object(ICCBasedColorSpace(l)),
-                    ICCProfileWrapper::Rgb(r) => sc.add_object(ICCBasedColorSpace(r)),
-                    ICCProfileWrapper::Cmyk(c) => sc.add_object(ICCBasedColorSpace(c)),
+                    ICCProfileWrapper::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
+                    ICCProfileWrapper::Rgb(r) => sc.register_cacheable(ICCBasedColorSpace(r)),
+                    ICCProfileWrapper::Cmyk(c) => sc.register_cacheable(ICCBasedColorSpace(c)),
                 };
 
                 Some(ref_)

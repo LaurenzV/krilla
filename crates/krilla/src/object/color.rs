@@ -38,7 +38,7 @@
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
 
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
@@ -306,7 +306,7 @@ impl ICCProfileWrapper {
     }
 }
 
-impl Object for ICCProfileWrapper {
+impl Cacheable for ICCProfileWrapper {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.icc_profiles)
     }
@@ -345,7 +345,7 @@ impl<const C: u8> ICCProfile<C> {
     }
 }
 
-impl<const C: u8> Object for ICCProfile<C> {
+impl<const C: u8> Cacheable for ICCProfile<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.icc_profiles)
     }
@@ -370,13 +370,13 @@ impl<const C: u8> Object for ICCProfile<C> {
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile<C>);
 
-impl<const C: u8> Object for ICCBasedColorSpace<C> {
+impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.color_spaces)
     }
 
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        let icc_ref = sc.add_object(self.0.clone());
+        let icc_ref = sc.register_cacheable(self.0.clone());
 
         let mut chunk = Chunk::new();
 

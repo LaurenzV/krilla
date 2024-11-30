@@ -1,5 +1,5 @@
 use crate::color::rgb;
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
 use crate::serialize::SerializerContext;
@@ -42,7 +42,7 @@ impl XObject {
     }
 }
 
-impl Object for XObject {
+impl Cacheable for XObject {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.x_objects)
     }
@@ -117,6 +117,6 @@ mod tests {
         surface.finish();
         let stream = sb.finish();
         let x_object = XObject::new(stream, true, true, None);
-        sc.add_object(x_object);
+        sc.register_cacheable(x_object);
     }
 }

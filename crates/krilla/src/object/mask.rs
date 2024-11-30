@@ -2,7 +2,7 @@
 
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
@@ -95,7 +95,7 @@ impl MaskType {
     }
 }
 
-impl Object for Mask {
+impl Cacheable for Mask {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.masks)
     }
@@ -103,7 +103,7 @@ impl Object for Mask {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let x_object = sc.add_object(XObject::new(
+        let x_object = sc.register_cacheable(XObject::new(
             self.stream,
             false,
             true,
@@ -153,7 +153,7 @@ mod tests {
         surface.fill_path(&path, red_fill(0.5));
         surface.finish();
         let mask = Mask::new(stream_builder.finish(), mask_type);
-        sc.add_object(mask);
+        sc.register_cacheable(mask);
     }
 
     fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
