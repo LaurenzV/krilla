@@ -221,6 +221,28 @@ impl Image {
         })))
     }
 
+    // Used for SVG filters
+    pub(crate) fn from_rgba8(data: Vec<u8>, width: u32, height: u32) -> Self {
+        let hash = data.sip_hash();
+        let metadata = ImageMetadata {
+            size: (width, height),
+            color_space: ImageColorspace::Rgb,
+            icc: None,
+        };
+        let (image_data, mask_data, bits_per_component) = handle_u8_image(data, ColorSpace::RGBA);
+        let repr = Repr::Sampled(SampledRepr {
+            image_data,
+            mask_data,
+            bits_per_component,
+        });
+
+        Self(Arc::new(ImageRepr {
+            inner: Deferred::new(move || Some(repr)),
+            metadata,
+            sip: hash,
+        }))
+    }
+
     /// Return the size of the image.
     pub fn size(&self) -> (u32, u32) {
         self.0.size()
