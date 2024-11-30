@@ -14,13 +14,7 @@ pub fn render(
 ) -> Option<()> {
     let layer_bbox = group.layer_bounding_box().transform(group.transform())?;
 
-    let raster_scale = if let Some(filter_scale) = process_context.svg_settings.filter_scale {
-        filter_scale
-    } else {
-        // By default, I think having a scale of 4 in terms of user space units should be enough.
-        // Meaning for example if you have a A4 PDF with dimensions 595x841 and an SVG with a
-        // filter across the whole page, you end up with an image of 2380x3364.
-        const DEFAULT_SCALE: f32 = 4.0;
+    let raster_scale = {
         // Find out what dimensions the SVG will actually have in user space units inside of the
         // PDF.
         // Note that this is not a 100% accurate, because the `cur_transform` method of surface will
@@ -36,7 +30,7 @@ pub fn render(
                 (actual_bbox.width() / layer_bbox.width()),
                 (actual_bbox.height() / layer_bbox.height()),
             );
-            x_scale.max(y_scale) * DEFAULT_SCALE
+            x_scale.max(y_scale) * process_context.svg_settings.filter_scale
         };
 
         let max_scale = {

@@ -634,7 +634,7 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
         tree.size(),
         SvgSettings {
             embed_text: true,
-            filter_scale: Some(1.5),
+            filter_scale: 2.0,
         },
     );
     surface.finish();
