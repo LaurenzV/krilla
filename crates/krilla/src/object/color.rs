@@ -38,13 +38,13 @@
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
 
-use crate::object::{ChunkContainerFn, Object};
-use crate::resource::{RegisterableResource, Resource};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
-use pdf_writer::{Buf, Chunk, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -389,6 +389,10 @@ impl<const C: u8> Object for ICCBasedColorSpace<C> {
     }
 }
 
+impl<const C: u8> Resourceable for ICCBasedColorSpace<C> {
+    type Resource = resource::ColorSpace;
+}
+
 #[derive(Clone, Hash, Debug, Eq, PartialEq)]
 pub(crate) enum ICCColorSpace {
     Xyz,
@@ -480,41 +484,6 @@ impl ICCMetadata {
     }
 }
 
-impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<4> {}
-impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<3> {}
-impl RegisterableResource<crate::resource::ColorSpace> for ICCBasedColorSpace<1> {}
-
-#[derive(Copy, Clone, Hash)]
-pub(crate) struct LinearRgbColorSpace;
-
-impl Object for LinearRgbColorSpace {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.color_spaces)
-    }
-
-    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
-        let mut chunk = Chunk::new();
-        chunk.color_space(root_ref).cal_rgb(
-            [0.9505, 1.0, 1.0888],
-            None,
-            Some([1.0, 1.0, 1.0]),
-            Some([
-                0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
-            ]),
-        );
-
-        chunk
-    }
-}
-
-impl From<LinearRgbColorSpace> for Resource {
-    fn from(_: LinearRgbColorSpace) -> Self {
-        Resource::LinearRgb
-    }
-}
-
-impl RegisterableResource<crate::resource::ColorSpace> for LinearRgbColorSpace {}
-
 #[cfg(test)]
 mod tests {
 
@@ -522,19 +491,18 @@ mod tests {
 
     use crate::page::Page;
     use crate::path::Fill;
-    use crate::resource::Resource;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Luma);
+        sc.add_luma();
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_resource(Resource::Srgb);
+        sc.add_srgb();
     }
 
     #[snapshot(single_page, settings_18)]
@@ -561,22 +529,5 @@ mod tests {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
         surface.fill_path(&path, cmyk_fill(1.0));
-    }
-}
-
-/// Stores either the name of one of the default color spaces (i.e. DeviceRGB), or
-/// a reference to a color space in the PDF.
-#[derive(Copy, Clone)]
-pub(crate) enum CSWrapper {
-    Ref(Ref),
-    Name(Name<'static>),
-}
-
-impl pdf_writer::Primitive for CSWrapper {
-    fn write(self, buf: &mut Buf) {
-        match self {
-            CSWrapper::Ref(r) => r.write(buf),
-            CSWrapper::Name(n) => n.write(buf),
-        }
     }
 }

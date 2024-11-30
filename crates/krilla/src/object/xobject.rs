@@ -1,6 +1,7 @@
 use crate::color::rgb;
-use crate::object::{ChunkContainerFn, Object};
-use crate::resource::RegisterableResource;
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
+use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::stream::{FilterStream, Stream};
 use crate::util::{RectExt, RectWrapper};
@@ -41,8 +42,6 @@ impl XObject {
     }
 }
 
-impl RegisterableResource<crate::resource::XObject> for XObject {}
-
 impl Object for XObject {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.x_objects)
@@ -82,7 +81,7 @@ impl Object for XObject {
 
             if self.transparency_group_color_space {
                 let cs = rgb::Color::rgb_color_space(sc.serialize_settings().no_device_cs);
-                transparency.pair(Name(b"CS"), sc.add_cs(cs));
+                transparency.pair(Name(b"CS"), sc.add_cs(cs).get_ref());
             }
 
             transparency.finish();
@@ -93,6 +92,10 @@ impl Object for XObject {
 
         chunk
     }
+}
+
+impl Resourceable for XObject {
+    type Resource = resource::XObject;
 }
 
 #[cfg(test)]

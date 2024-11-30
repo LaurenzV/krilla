@@ -1,16 +1,10 @@
 //! Dealing with PDF resources.
 
-use crate::color::{ICCBasedColorSpace, ICCProfile};
-use crate::object::font::FontIdentifier;
-#[cfg(feature = "raster-images")]
-use crate::object::image::Image;
-use crate::object::shading_pattern::ShadingPattern;
-use crate::object::tiling_pattern::TilingPattern;
-use crate::serialize::SerializerContext;
+use crate::color::ICCProfile;
 use crate::util::NameExt;
 use once_cell::sync::Lazy;
 use pdf_writer::types::ProcSet;
-use pdf_writer::writers::{FormXObject, Page, Pages, Resources, Type3Font};
+use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -18,23 +12,27 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-pub(crate) trait RegisterableResource<T>: Into<Resource>
-where
-    T: ResourceTrait,
-{
-}
-
-pub(crate) trait ResourceTrait {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a>;
+pub(crate) trait Resource {
+    fn new(ref_: Ref) -> Self;
+    fn get_ref(&self) -> Ref;
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
     fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Self>;
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
-pub(crate) struct ExtGState;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct ExtGState(Ref);
 
-impl ResourceTrait for ExtGState {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+impl Resource for ExtGState {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.ext_g_states()
     }
 
@@ -47,11 +45,19 @@ impl ResourceTrait for ExtGState {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
-pub(crate) struct ColorSpace;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct ColorSpace(Ref);
 
-impl ResourceTrait for ColorSpace {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+impl Resource for ColorSpace {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.color_spaces()
     }
 
@@ -64,11 +70,19 @@ impl ResourceTrait for ColorSpace {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
-pub(crate) struct ShadingFunction;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Shading(Ref);
 
-impl ResourceTrait for ShadingFunction {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+impl Resource for Shading {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.shadings()
     }
 
@@ -76,16 +90,24 @@ impl ResourceTrait for ShadingFunction {
         "s"
     }
 
-    fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<ShadingFunction> {
+    fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Shading> {
         &mut b.shadings
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
-pub(crate) struct XObject;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct XObject(Ref);
 
-impl ResourceTrait for XObject {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+impl Resource for XObject {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.x_objects()
     }
 
@@ -98,11 +120,19 @@ impl ResourceTrait for XObject {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
-pub(crate) struct Pattern;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Pattern(Ref);
 
-impl ResourceTrait for Pattern {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+impl Resource for Pattern {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.patterns()
     }
 
@@ -115,11 +145,19 @@ impl ResourceTrait for Pattern {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
-pub(crate) struct Font;
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Font(Ref);
 
-impl ResourceTrait for Font {
-    fn get_dict<'a>(resources: &'a mut Resources) -> Dict<'a> {
+impl Resource for Font {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
         resources.fonts()
     }
 
@@ -132,90 +170,13 @@ impl ResourceTrait for Font {
     }
 }
 
-#[derive(Hash, Eq, PartialEq)]
-pub(crate) enum Resource {
-    XObject(crate::object::xobject::XObject),
-    #[cfg(feature = "raster-images")]
-    Image(Image),
-    ShadingPattern(ShadingPattern),
-    TilingPattern(TilingPattern),
-    ExtGState(crate::object::ext_g_state::ExtGState),
-    LinearRgb,
-    Srgb,
-    Luma,
-    Cmyk(ICCBasedColorSpace<4>),
-    ShadingFunction(crate::object::shading_function::ShadingFunction),
-    FontIdentifier(FontIdentifier),
-}
-
-impl From<crate::object::xobject::XObject> for Resource {
-    fn from(value: crate::object::xobject::XObject) -> Self {
-        Self::XObject(value)
-    }
-}
-
-#[cfg(feature = "raster-images")]
-impl From<Image> for Resource {
-    fn from(value: Image) -> Self {
-        Self::Image(value)
-    }
-}
-
-impl From<ICCBasedColorSpace<3>> for Resource {
-    fn from(_: ICCBasedColorSpace<3>) -> Self {
-        Self::Srgb
-    }
-}
-
-impl From<ICCBasedColorSpace<1>> for Resource {
-    fn from(_: ICCBasedColorSpace<1>) -> Self {
-        Self::Luma
-    }
-}
-
-impl From<ICCBasedColorSpace<4>> for Resource {
-    fn from(cs: ICCBasedColorSpace<4>) -> Self {
-        Self::Cmyk(cs)
-    }
-}
-
-impl From<ShadingPattern> for Resource {
-    fn from(value: ShadingPattern) -> Self {
-        Self::ShadingPattern(value)
-    }
-}
-
-impl From<TilingPattern> for Resource {
-    fn from(value: TilingPattern) -> Self {
-        Self::TilingPattern(value)
-    }
-}
-
-impl From<crate::object::shading_function::ShadingFunction> for Resource {
-    fn from(value: crate::object::shading_function::ShadingFunction) -> Self {
-        Self::ShadingFunction(value)
-    }
-}
-
-impl From<crate::object::ext_g_state::ExtGState> for Resource {
-    fn from(value: crate::object::ext_g_state::ExtGState) -> Self {
-        Self::ExtGState(value)
-    }
-}
-
-impl From<FontIdentifier> for Resource {
-    fn from(value: FontIdentifier) -> Self {
-        Self::FontIdentifier(value)
-    }
-}
-
 #[derive(Debug)]
 pub(crate) struct ResourceDictionaryBuilder {
     pub color_spaces: ResourceMapper<ColorSpace>,
     pub ext_g_states: ResourceMapper<ExtGState>,
     pub patterns: ResourceMapper<Pattern>,
     pub x_objects: ResourceMapper<XObject>,
-    pub shadings: ResourceMapper<ShadingFunction>,
+    pub shadings: ResourceMapper<Shading>,
     pub fonts: ResourceMapper<Font>,
 }
 
@@ -231,18 +192,12 @@ impl ResourceDictionaryBuilder {
         }
     }
 
-    pub(crate) fn register_resource<T, V>(
-        &mut self,
-        resource: T,
-        sc: &mut SerializerContext,
-    ) -> String
+    // TODO: Make type safe instead of taking Ref?
+    pub(crate) fn register_resource<T>(&mut self, obj: T) -> String
     where
-        T: RegisterableResource<V>,
-        V: ResourceTrait,
+        T: Resource,
     {
-        let ref_ = sc.add_resource(resource);
-
-        V::get_mapper(self).remap_with_name(ref_)
+        T::get_mapper(self).remap_with_name(obj.get_ref())
     }
 
     pub fn finish(self) -> ResourceDictionary {
@@ -257,15 +212,30 @@ impl ResourceDictionaryBuilder {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Default, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct ResourceDictionary {
     pub color_spaces: ResourceList<ColorSpace>,
     pub ext_g_states: ResourceList<ExtGState>,
     pub patterns: ResourceList<Pattern>,
     pub x_objects: ResourceList<XObject>,
-    pub shadings: ResourceList<ShadingFunction>,
+    pub shadings: ResourceList<Shading>,
     pub fonts: ResourceList<Font>,
 }
+
+impl Default for ResourceDictionary {
+    fn default() -> Self {
+        Self {
+            color_spaces: ResourceList::empty(),
+            ext_g_states: ResourceList::empty(),
+            patterns: ResourceList::empty(),
+            x_objects: ResourceList::empty(),
+            shadings: ResourceList::empty(),
+            fonts: ResourceList::empty(),
+        }
+    }
+}
+
+pub type ResourceNumber = u32;
 
 impl ResourceDictionary {
     pub fn to_pdf_resources<T>(&self, parent: &mut T)
@@ -283,14 +253,14 @@ impl ResourceDictionary {
         write_resource_type::<ExtGState>(resources, &self.ext_g_states);
         write_resource_type::<Pattern>(resources, &self.patterns);
         write_resource_type::<XObject>(resources, &self.x_objects);
-        write_resource_type::<ShadingFunction>(resources, &self.shadings);
+        write_resource_type::<Shading>(resources, &self.shadings);
         write_resource_type::<Font>(resources, &self.fonts);
     }
 }
 
-fn write_resource_type<T>(resources: &mut Resources, resource_list: &ResourceList<T>)
+fn write_resource_type<T>(resources: &mut writers::Resources, resource_list: &ResourceList<T>)
 where
-    T: ResourceTrait,
+    T: Resource,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
@@ -311,8 +281,15 @@ pub(crate) struct ResourceList<V> {
 
 impl<T> ResourceList<T>
 where
-    T: ResourceTrait,
+    T: Resource,
 {
+    pub fn empty() -> ResourceList<T> {
+        Self {
+            entries: vec![],
+            phantom: Default::default(),
+        }
+    }
+
     pub fn len(&self) -> u32 {
         self.entries.len() as u32
     }
@@ -338,7 +315,7 @@ pub(crate) struct ResourceMapper<T: ?Sized> {
 
 impl<T> ResourceMapper<T>
 where
-    T: ResourceTrait,
+    T: Resource,
 {
     pub fn new() -> Self {
         Self {
@@ -375,8 +352,7 @@ where
     }
 }
 
-pub type ResourceNumber = u32;
-
+// TODO: Move
 /// The ICC v4 profile for the SRGB color space.
 pub(crate) static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sRGB-v4.icc"))).unwrap());
@@ -390,38 +366,36 @@ pub(crate) static GREY_V4_ICC: Lazy<ICCProfile<1>> =
 pub(crate) static GREY_V2_ICC: Lazy<ICCProfile<1>> =
     Lazy::new(|| ICCProfile::new(Arc::new(include_bytes!("icc/sGrey-v2-magic.icc"))).unwrap());
 
-/// A trait for getting the resource dictionary of an object.
 pub trait ResourcesExt {
-    /// Return the resources dictionary of the object.
-    fn resources(&mut self) -> Resources<'_>;
+    fn resources(&mut self) -> writers::Resources<'_>;
 }
 
-impl ResourcesExt for FormXObject<'_> {
-    fn resources(&mut self) -> Resources<'_> {
+impl ResourcesExt for writers::FormXObject<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
         self.resources()
     }
 }
 
-impl ResourcesExt for pdf_writer::writers::TilingPattern<'_> {
-    fn resources(&mut self) -> Resources<'_> {
+impl ResourcesExt for writers::TilingPattern<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
         self.resources()
     }
 }
 
-impl ResourcesExt for Type3Font<'_> {
-    fn resources(&mut self) -> Resources<'_> {
+impl ResourcesExt for writers::Type3Font<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
         self.resources()
     }
 }
 
-impl ResourcesExt for Pages<'_> {
-    fn resources(&mut self) -> Resources<'_> {
+impl ResourcesExt for writers::Pages<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
         self.resources()
     }
 }
 
-impl ResourcesExt for Page<'_> {
-    fn resources(&mut self) -> Resources<'_> {
+impl ResourcesExt for writers::Page<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
         self.resources()
     }
 }

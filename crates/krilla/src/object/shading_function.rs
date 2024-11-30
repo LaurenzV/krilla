@@ -1,9 +1,10 @@
 use crate::color::luma;
 use crate::object::color::Color;
-use crate::object::{ChunkContainerFn, Object};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::resource::RegisterableResource;
+use crate::resource;
+use crate::resource::Resource;
 use crate::serialize::SerializerContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
@@ -219,8 +220,6 @@ impl ShadingFunction {
     }
 }
 
-impl RegisterableResource<crate::resource::ShadingFunction> for ShadingFunction {}
-
 impl Object for ShadingFunction {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.shading_functions)
@@ -241,6 +240,10 @@ impl Object for ShadingFunction {
 
         chunk
     }
+}
+
+impl Resourceable for ShadingFunction {
+    type Resource = resource::Shading;
 }
 
 fn serialize_postscript_shading(
@@ -267,7 +270,9 @@ fn serialize_postscript_shading(
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
 
-    shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
+    shading
+        .insert(Name(b"ColorSpace"))
+        .primitive(sc.add_cs(cs).get_ref());
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
     shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
@@ -302,7 +307,9 @@ fn serialize_axial_radial_shading(
     } else {
         shading.shading_type(FunctionShadingType::Axial);
     }
-    shading.insert(Name(b"ColorSpace")).primitive(sc.add_cs(cs));
+    shading
+        .insert(Name(b"ColorSpace"))
+        .primitive(sc.add_cs(cs).get_ref());
 
     shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);

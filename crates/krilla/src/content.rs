@@ -1,9 +1,6 @@
 //! A low-level abstraction over a single content stream.
 
-use crate::color::{
-    Color, ColorSpace, ICCBasedColorSpace, LinearRgbColorSpace, DEVICE_CMYK, DEVICE_GRAY,
-    DEVICE_RGB,
-};
+use crate::color::Color;
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -19,7 +16,8 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource::ResourceDictionaryBuilder;
+use crate::resource;
+use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
@@ -362,7 +360,7 @@ impl ContentBuilder {
     ) {
         let font_name = self
             .rd_builder
-            .register_resource(font_identifier.clone(), sc);
+            .register_resource(sc.add_font_identifier(font_identifier));
         self.content.set_font(font_name.to_pdf_name(), size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
@@ -532,7 +530,7 @@ impl ContentBuilder {
                 sb.expand_bbox(bbox);
             },
             move |sb, sc| {
-                let x_object_name = sb.rd_builder.register_resource(x_object, sc);
+                let x_object_name = sb.rd_builder.register_resource(sc.add_resource(x_object));
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
@@ -575,7 +573,9 @@ impl ContentBuilder {
                 sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
             },
             move |sb, sc| {
-                let image_name = sb.rd_builder.register_resource(image, sc);
+                let image_name = sb
+                    .rd_builder
+                    .register_resource(resource::XObject::new(sc.add_image(image)));
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
@@ -587,7 +587,9 @@ impl ContentBuilder {
         self.apply_isolated_op(
             |_, _| {},
             move |sb, sc| {
-                let sh = sb.rd_builder.register_resource(shading.clone(), sc);
+                let sh = sb
+                    .rd_builder
+                    .register_resource(sc.add_resource(shading.clone()));
                 sb.content.shading(sh.to_pdf_name());
             },
             sc,
@@ -628,7 +630,9 @@ impl ContentBuilder {
         let state = self.graphics_states.cur().ext_g_state().clone();
 
         if !state.empty() {
-            let ext = self.rd_builder.register_resource(state, sc);
+            let ext = self
+                .rd_builder
+                .register_resource::<resource::ExtGState>(sc.add_resource(state));
             self.content.set_parameters(ext.to_pdf_name());
         }
 
@@ -651,27 +655,6 @@ impl ContentBuilder {
             transform.post_concat(self.cur_transform_with_root_transform())
         };
 
-        let color_to_string =
-            |color: Color, content_builder: &mut ContentBuilder, sc: &mut SerializerContext| {
-                match color.color_space(sc) {
-                    ColorSpace::LinearRgb => content_builder
-                        .rd_builder
-                        .register_resource(LinearRgbColorSpace, sc),
-                    ColorSpace::Srgb => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.rgb_icc()),
-                        sc,
-                    ),
-                    ColorSpace::Luma => content_builder.rd_builder.register_resource(
-                        ICCBasedColorSpace(sc.serialize_settings().pdf_version.grey_icc()),
-                        sc,
-                    ),
-                    ColorSpace::Cmyk(p) => content_builder.rd_builder.register_resource(p, sc),
-                    ColorSpace::DeviceRgb => DEVICE_RGB.to_string(),
-                    ColorSpace::DeviceGray => DEVICE_GRAY.to_string(),
-                    ColorSpace::DeviceCmyk => DEVICE_CMYK.to_string(),
-                }
-            };
-
         let mut write_gradient =
             |gradient_props: GradientProperties,
              sc: &mut SerializerContext,
@@ -680,8 +663,11 @@ impl ContentBuilder {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color_to_string(color, content_builder, sc);
-                    set_solid_fn(&mut content_builder.content, color_space, color);
+                    let color_space = color.color_space(sc);
+                    let color_space_resource = content_builder
+                        .rd_builder
+                        .register_resource(sc.add_cs(color_space));
+                    set_solid_fn(&mut content_builder.content, color_space_resource, color);
                 } else {
                     let shading_mask =
                         Mask::new_from_shading(gradient_props.clone(), transform, bounds, sc);
@@ -694,12 +680,14 @@ impl ContentBuilder {
                     );
                     let color_space = content_builder
                         .rd_builder
-                        .register_resource(shading_pattern, sc);
+                        .register_resource::<resource::Pattern>(sc.add_resource(shading_pattern));
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask, sc);
 
-                        let ext = content_builder.rd_builder.register_resource(state, sc);
+                        let ext = content_builder
+                            .rd_builder
+                            .register_resource::<resource::ExtGState>(sc.add_resource(state));
                         content_builder.content.set_parameters(ext.to_pdf_name());
                     }
 
@@ -709,8 +697,9 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::Color(c) => {
-                let color_space = color_to_string(*c, self, sc);
-                set_solid_fn(&mut self.content, color_space, *c);
+                let cs = c.color_space(sc);
+                let color_space_resource = self.rd_builder.register_resource(sc.add_cs(cs));
+                set_solid_fn(&mut self.content, color_space_resource, *c);
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
@@ -737,7 +726,9 @@ impl ContentBuilder {
                     sc,
                 );
 
-                let color_space = self.rd_builder.register_resource(tiling_pattern, sc);
+                let color_space = self
+                    .rd_builder
+                    .register_resource::<resource::Pattern>(sc.add_resource(tiling_pattern));
                 set_pattern_fn(&mut self.content, color_space);
             }
         }

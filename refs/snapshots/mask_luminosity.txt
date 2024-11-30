@@ -2,42 +2,49 @@
 %AAAA
 
 1 0 obj
+/DeviceRGB
+endobj
+
+2 0 obj
 <<
   /Type /ExtGState
   /ca 0.5
 >>
 endobj
 
-2 0 obj
+3 0 obj
 <<
   /Type /Mask
   /S /Luminosity
-  /G 3 0 R
+  /G 4 0 R
 >>
 endobj
 
-3 0 obj
+4 0 obj
 <<
-  /Length 74
+  /Length 67
   /Type /XObject
   /Subtype /Form
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 1 0 R
+    >>
     /ExtGState <<
-      /g0 1 0 R
+      /g0 2 0 R
     >>
   >>
   /BBox [20 20 180 180]
   /Group <<
     /Type /Group
     /S /Transparency
-    /CS /DeviceRGB
+    /CS 1 0 R
   >>
 >>
 stream
 q
 /g0 gs
-/DeviceRGB cs
+/c0 cs
 1 0 0 scn
 20 20 m
 180 20 l

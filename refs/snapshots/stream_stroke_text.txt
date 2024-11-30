@@ -1,7 +1,7 @@
 q
-/DeviceGray CS
+/c0 CS
 0 SCN
-/DeviceGray cs
+/c0 cs
 0 scn
 BT
 1 Tr

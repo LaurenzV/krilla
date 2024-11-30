@@ -1,6 +1,6 @@
 q
 /g0 gs
-/DeviceRGB cs
+/c0 cs
 0 1 0 scn
 0 0 m
 100 0 l
@@ -11,7 +11,7 @@ f
 Q
 q
 /g1 gs
-/DeviceRGB cs
+/c0 cs
 0 1 0 scn
 0 0 m
 100 0 l
@@ -22,7 +22,7 @@ f
 Q
 q
 /g0 gs
-/DeviceRGB cs
+/c0 cs
 0 1 0 scn
 0 0 m
 100 0 l

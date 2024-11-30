@@ -1,22 +1,23 @@
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, LinearRgbColorSpace, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::color::{CSWrapper, DEVICE_GRAY, DEVICE_RGB};
+use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::Type3FontMapper;
-use crate::object::font::FontContainer;
+use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::Object;
+use crate::object::{ChunkContainerFn, Object, Resourceable};
 use crate::page::PageLabel;
+use crate::resource;
 use crate::resource::Resource;
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
-use crate::util::{NameExt, SipHashable};
+use crate::util::SipHashable;
 use crate::validation::{ValidationError, Validator};
 use crate::version::PdfVersion;
 #[cfg(feature = "fontdb")]
@@ -54,7 +55,8 @@ impl Default for SvgSettings {
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
 pub struct SerializeSettings {
-    /// Whether content streams should be compressed.
+    /// Whether content streams should be compressed. Leads to significantly smaller file sizes,
+    /// but also longer running times. It is highly recommended that you set this to true.
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
@@ -351,15 +353,44 @@ impl SerializerContext {
         self.cur_ref.bump()
     }
 
-    pub fn add_cs(&mut self, cs: ColorSpace) -> CSWrapper {
+    pub fn add_cs(&mut self, cs: ColorSpace) -> resource::ColorSpace {
+        macro_rules! cs {
+            ($name:ident, $color_name:expr) => {
+                #[derive(Copy, Clone, Hash)]
+                struct $name;
+
+                impl Object for $name {
+                    fn chunk_container(&self) -> ChunkContainerFn {
+                        Box::new(|cc| &mut cc.color_spaces)
+                    }
+
+                    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+                        let mut chunk = Chunk::new();
+                        chunk
+                            .indirect(root_ref)
+                            .primitive(Name($color_name.as_bytes()));
+                        chunk
+                    }
+                }
+
+                impl Resourceable for $name {
+                    type Resource = resource::ColorSpace;
+                }
+            };
+        }
+
+        cs!(DeviceRgb, DEVICE_RGB);
+        cs!(DeviceGray, DEVICE_GRAY);
+        cs!(DeviceCmyk, DEVICE_CMYK);
+
         match cs {
-            ColorSpace::Srgb => CSWrapper::Ref(self.add_resource(Resource::Srgb)),
-            ColorSpace::LinearRgb => CSWrapper::Ref(self.add_resource(Resource::LinearRgb)),
-            ColorSpace::Luma => CSWrapper::Ref(self.add_resource(Resource::Luma)),
-            ColorSpace::Cmyk(cs) => CSWrapper::Ref(self.add_resource(Resource::Cmyk(cs))),
-            ColorSpace::DeviceGray => CSWrapper::Name(DEVICE_GRAY.to_pdf_name()),
-            ColorSpace::DeviceRgb => CSWrapper::Name(DEVICE_RGB.to_pdf_name()),
-            ColorSpace::DeviceCmyk => CSWrapper::Name(DEVICE_CMYK.to_pdf_name()),
+            ColorSpace::Srgb => self.add_srgb(),
+            ColorSpace::LinearRgb => self.add_linearrgb(),
+            ColorSpace::Luma => self.add_luma(),
+            ColorSpace::Cmyk(cs) => self.add_resource(cs),
+            ColorSpace::DeviceGray => self.add_resource(DeviceGray),
+            ColorSpace::DeviceRgb => self.add_resource(DeviceRgb),
+            ColorSpace::DeviceCmyk => self.add_resource(DeviceCmyk),
         }
     }
 
@@ -378,6 +409,13 @@ impl SerializerContext {
             chunk_container_fn(&mut self.chunk_container).push(chunk);
             root_ref
         }
+    }
+
+    pub fn add_resource<T>(&mut self, object: T) -> T::Resource
+    where
+        T: Resourceable,
+    {
+        Resource::new(self.add_object(object))
     }
 
     #[cfg(feature = "raster-images")]
@@ -448,34 +486,58 @@ impl SerializerContext {
             .clone()
     }
 
-    pub(crate) fn add_resource(&mut self, resource: impl Into<Resource>) -> Ref {
-        match resource.into() {
-            Resource::XObject(x) => self.add_object(x),
-            #[cfg(feature = "raster-images")]
-            Resource::Image(i) => self.add_image(i),
-            Resource::ShadingPattern(sp) => self.add_object(sp),
-            Resource::TilingPattern(tp) => self.add_object(tp),
-            Resource::ExtGState(e) => self.add_object(e),
-            Resource::Srgb => self.add_object(ICCBasedColorSpace(
-                self.serialize_settings.pdf_version.rgb_icc(),
-            )),
-            Resource::LinearRgb => self.add_object(LinearRgbColorSpace),
-            Resource::Luma => self.add_object(ICCBasedColorSpace(
-                self.serialize_settings.pdf_version.grey_icc(),
-            )),
-            Resource::Cmyk(cs) => self.add_object(cs),
-            Resource::ShadingFunction(s) => self.add_object(s),
-            Resource::FontIdentifier(f) => {
-                let hash = f.sip_hash();
-                if let Some(_ref) = self.cached_mappings.get(&hash) {
-                    *_ref
-                } else {
-                    let root_ref = self.new_ref();
-                    self.cached_mappings.insert(hash, root_ref);
-                    root_ref
-                }
+    pub(crate) fn add_srgb(&mut self) -> resource::ColorSpace {
+        self.add_resource(ICCBasedColorSpace(
+            self.serialize_settings.pdf_version.rgb_icc(),
+        ))
+    }
+
+    pub(crate) fn add_luma(&mut self) -> resource::ColorSpace {
+        self.add_resource(ICCBasedColorSpace(
+            self.serialize_settings.pdf_version.grey_icc(),
+        ))
+    }
+
+    pub(crate) fn add_font_identifier(&mut self, f: FontIdentifier) -> resource::Font {
+        let hash = f.sip_hash();
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            resource::Font::new(*_ref)
+        } else {
+            let root_ref = self.new_ref();
+            self.cached_mappings.insert(hash, root_ref);
+            resource::Font::new(root_ref)
+        }
+    }
+
+    pub(crate) fn add_linearrgb(&mut self) -> resource::ColorSpace {
+        #[derive(Copy, Clone, Hash)]
+        struct LinearRgbColorSpace;
+
+        impl Object for LinearRgbColorSpace {
+            fn chunk_container(&self) -> ChunkContainerFn {
+                Box::new(|cc| &mut cc.color_spaces)
+            }
+
+            fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+                let mut chunk = Chunk::new();
+                chunk.color_space(root_ref).cal_rgb(
+                    [0.9505, 1.0, 1.0888],
+                    None,
+                    Some([1.0, 1.0, 1.0]),
+                    Some([
+                        0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
+                    ]),
+                );
+
+                chunk
             }
         }
+
+        impl Resourceable for LinearRgbColorSpace {
+            type Resource = resource::ColorSpace;
+        }
+
+        self.add_resource(LinearRgbColorSpace)
     }
 
     #[cfg(feature = "fontdb")]
@@ -574,14 +636,14 @@ impl SerializerContext {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
-                        let ref_ = self.add_resource(t3_font.identifier());
-                        let chunk = t3_font.serialize(&mut self, ref_);
+                        let f = self.add_font_identifier(t3_font.identifier());
+                        let chunk = t3_font.serialize(&mut self, f.get_ref());
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let ref_ = self.add_resource(cid_font.identifier());
-                    let chunk = cid_font.serialize(&mut self, ref_)?;
+                    let f = self.add_font_identifier(cid_font.identifier());
+                    let chunk = cid_font.serialize(&mut self, f.get_ref())?;
                     self.chunk_container.fonts.push(chunk);
                 }
             }

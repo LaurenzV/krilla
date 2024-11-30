@@ -3,7 +3,6 @@ use crate::font::Font;
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::{CoveredGlyph, Type3FontMapper, Type3ID};
 use crate::path::{Fill, Stroke};
-use crate::resource::RegisterableResource;
 
 pub(crate) mod cid_font;
 pub(crate) mod type3_font;
@@ -42,8 +41,6 @@ pub(crate) enum FontIdentifier {
     Cid(CIDIdentifer),
     Type3(Type3Identifier),
 }
-
-impl RegisterableResource<crate::resource::Font> for FontIdentifier {}
 
 /// The owned version of `PaintMode`.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]

@@ -12,7 +12,6 @@
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
-use crate::resource::RegisterableResource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;
 use crate::util::{Deferred, NameExt, SipHashable};
@@ -515,8 +514,6 @@ fn decode_webp(data: &[u8]) -> Option<Repr> {
         bits_per_component,
     }))
 }
-
-impl RegisterableResource<crate::resource::XObject> for Image {}
 
 fn handle_u8_image(data: Vec<u8>, cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {

@@ -1,6 +1,6 @@
 use crate::object::mask::Mask;
-use crate::object::{ChunkContainerFn, Object};
-use crate::resource::RegisterableResource;
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::validation::ValidationError;
 use pdf_writer::types::BlendMode;
@@ -99,8 +99,6 @@ impl ExtGState {
     }
 }
 
-impl RegisterableResource<crate::resource::ExtGState> for ExtGState {}
-
 impl Object for ExtGState {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.ext_g_states)
@@ -144,6 +142,10 @@ impl Object for ExtGState {
 
         chunk
     }
+}
+
+impl Resourceable for ExtGState {
+    type Resource = resource::ExtGState;
 }
 
 #[cfg(test)]

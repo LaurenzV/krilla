@@ -2,7 +2,8 @@
 
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
-use crate::object::{ChunkContainerFn, Object};
+use crate::object::{ChunkContainerFn, Object, Resourceable};
+use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
@@ -102,7 +103,7 @@ impl Object for Mask {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let x_ref = sc.add_object(XObject::new(
+        let x_object = sc.add_object(XObject::new(
             self.stream,
             false,
             true,
@@ -112,12 +113,16 @@ impl Object for Mask {
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
         dict.pair(Name(b"S"), self.mask_type.to_name());
-        dict.pair(Name(b"G"), x_ref);
+        dict.pair(Name(b"G"), x_object);
 
         dict.finish();
 
         chunk
     }
+}
+
+impl Resourceable for Mask {
+    type Resource = resource::XObject;
 }
 
 #[cfg(test)]
