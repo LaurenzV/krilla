@@ -34,6 +34,10 @@ use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 #[rustfmt::skip]
 mod svg;
 
+// TODO: The reason we store all tests here instead of creating a root `tests` folder is that
+// we want to avoid duplicating all of the asset paths for both, crate-internal unit tests and
+// external integration tests. Would be nice to figure out a better solution to this.
+
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
 
