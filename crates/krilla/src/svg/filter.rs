@@ -1,7 +1,6 @@
 use crate::object::image::Image;
 use crate::surface::Surface;
 use crate::svg::ProcessContext;
-use std::sync::Arc;
 use tiny_skia_path::{Size, Transform};
 
 /// Render a filter into a surface by rasterizing it with `resvg` and drawing
@@ -15,13 +14,7 @@ pub fn render(
 ) -> Option<()> {
     let layer_bbox = group.layer_bounding_box().transform(group.transform())?;
 
-    let raster_scale = if let Some(filter_scale) = process_context.svg_settings.filter_scale {
-        filter_scale
-    } else {
-        // By default, I think having a scale of 4 in terms of user space units should be enough.
-        // Meaning for example if you have a A4 PDF with dimensions 595x841 and an SVG with a
-        // filter across the whole page, you end up with an image of 2380x3364.
-        const DEFAULT_SCALE: f32 = 4.0;
+    let raster_scale = {
         // Find out what dimensions the SVG will actually have in user space units inside of the
         // PDF.
         // Note that this is not a 100% accurate, because the `cur_transform` method of surface will
@@ -37,7 +30,7 @@ pub fn render(
                 (actual_bbox.width() / layer_bbox.width()),
                 (actual_bbox.height() / layer_bbox.height()),
             );
-            x_scale.max(y_scale) * DEFAULT_SCALE
+            x_scale.max(y_scale) * process_context.svg_settings.filter_scale
         };
 
         let max_scale = {
@@ -59,11 +52,10 @@ pub fn render(
         layer_bbox.width() * raster_scale,
         layer_bbox.height() * raster_scale,
     )?;
+    let width = pixmap_size.width().round() as u32;
+    let height = pixmap_size.height().round() as u32;
 
-    let mut pixmap = tiny_skia::Pixmap::new(
-        pixmap_size.width().round() as u32,
-        pixmap_size.height().round() as u32,
-    )?;
+    let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
 
     let initial_transform = Transform::from_scale(raster_scale, raster_scale)
         .pre_concat(Transform::from_translate(-layer_bbox.x(), -layer_bbox.y()))
@@ -81,9 +73,16 @@ pub fn render(
         &mut pixmap.as_mut(),
     );
 
-    // TODO: Don't re-encode?
-    let encoded_image = pixmap.encode_png().ok()?;
-    let image = Image::from_png(Arc::new(encoded_image))?;
+    let demultiplied = pixmap
+        .pixels()
+        .iter()
+        .flat_map(|p| {
+            let c = p.demultiply();
+            [c.red(), c.green(), c.blue(), c.alpha()]
+        })
+        .collect::<Vec<_>>();
+
+    let image = Image::from_rgba8(demultiplied, width, height);
     let size = Size::from_wh(layer_bbox.width(), layer_bbox.height())?;
 
     surface.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
