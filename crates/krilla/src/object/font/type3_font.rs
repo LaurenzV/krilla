@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn type3_more_than_256_glyphs() {
         let mut sc = SerializerContext::new(SerializeSettings::settings_1());
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -586,7 +586,7 @@ mod tests {
 
     #[snapshot(single_page, settings_1)]
     fn type3_color_glyphs(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 
         surface.fill_text(
@@ -603,7 +603,7 @@ mod tests {
 
     #[snapshot(single_page, settings_17)]
     fn type3_pdf_14(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 
         surface.fill_text(

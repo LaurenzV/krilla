@@ -78,7 +78,7 @@ fn main() {
             // Get the krilla font.
             let krilla_font = font_cache
                 .entry(id)
-                .or_insert_with(|| Font::new(font_data, font.index).unwrap());
+                .or_insert_with(|| Font::new(font_data, font.index, true).unwrap());
             let font_size = run.font_size();
 
             // This is part is somewhat convoluted, the reason being that each glyph might

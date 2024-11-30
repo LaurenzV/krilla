@@ -439,12 +439,13 @@ pub fn all_glyphs_to_pdf(
     font_data: Arc<Vec<u8>>,
     glyphs: Option<Vec<(GlyphId, String)>>,
     color_cycling: bool,
+    allow_color: bool,
     d: &mut Document,
 ) {
     use crate::font::KrillaGlyph;
     use crate::geom::Transform;
 
-    let font = Font::new(font_data, 0).unwrap();
+    let font = Font::new(font_data, 0, allow_color).unwrap();
     let font_ref = font.font_ref();
 
     let glyphs = glyphs.unwrap_or_else(|| {

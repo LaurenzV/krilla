@@ -451,7 +451,7 @@ mod tests {
     #[visreg(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
     fn noto_color_emoji_cbdt(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
-        all_glyphs_to_pdf(font_data, None, false, document);
+        all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 
     #[cfg(target_os = "macos")]
@@ -461,6 +461,6 @@ mod tests {
 
         let font_data =
             Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
-        all_glyphs_to_pdf(font_data, None, false, document);
+        all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 }
