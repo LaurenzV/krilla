@@ -1,5 +1,5 @@
 use crate::color::rgb;
-use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
 use crate::serialize::SerializerContext;

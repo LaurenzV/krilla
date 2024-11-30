@@ -12,7 +12,7 @@ use crate::object::font::type3_font::Type3FontMapper;
 use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
@@ -394,21 +394,31 @@ impl SerializerContext {
         }
     }
 
-    pub fn register_cacheable<T>(&mut self, object: T) -> Ref
-    where
-        T: Cacheable,
-    {
-        let hash = object.sip_hash();
+    fn register_cached<T: SipHashable>(
+        &mut self,
+        item: T,
+        mut func: impl FnMut(&mut Self, T, Ref),
+    ) -> Ref {
+        let hash = item.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
         } else {
             let root_ref = self.new_ref();
-            let mut chunk_container_fn = object.chunk_container();
-            let chunk = object.serialize(self, root_ref);
-            chunk_container_fn(&mut self.chunk_container).push(chunk);
+            func(self, item, root_ref);
             self.cached_mappings.insert(hash, root_ref);
             root_ref
         }
+    }
+
+    pub fn register_cacheable<T>(&mut self, object: T) -> Ref
+    where
+        T: Cacheable,
+    {
+        self.register_cached(object, |sc, object, root_ref| {
+            let mut chunk_container_fn = object.chunk_container();
+            let chunk = object.serialize(sc, root_ref);
+            chunk_container_fn(&mut sc.chunk_container).push(chunk);
+        })
     }
 
     pub fn register_resourceable<T>(&mut self, object: T) -> T::Resource
@@ -419,18 +429,11 @@ impl SerializerContext {
     }
 
     #[cfg(feature = "raster-images")]
-    pub fn add_image(&mut self, image: Image) -> Ref {
-        // TODO: Deduplicate
-        let hash = image.sip_hash();
-        if let Some(_ref) = self.cached_mappings.get(&hash) {
-            *_ref
-        } else {
-            let root_ref = self.new_ref();
-            let chunk = image.serialize(self, root_ref);
-            self.cached_mappings.insert(hash, root_ref);
-            self.chunk_container.images.push(chunk);
-            root_ref
-        }
+    pub fn register_image(&mut self, image: Image) -> Ref {
+        self.register_cached(image, |sc, object, root_ref| {
+            let chunk = object.serialize(sc, root_ref);
+            sc.chunk_container.images.push(chunk);
+        })
     }
 
     pub fn add_xyz_dest(&mut self, dest: XyzDestination) -> Ref {

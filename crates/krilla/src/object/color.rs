@@ -38,7 +38,7 @@
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
 
-use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::stream::FilterStream;

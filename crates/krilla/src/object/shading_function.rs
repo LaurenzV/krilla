@@ -1,6 +1,6 @@
 use crate::color::luma;
 use crate::object::color::Color;
-use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource;

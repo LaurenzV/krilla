@@ -1,5 +1,5 @@
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
-use crate::object::{ChunkContainerFn, Cacheable, Resourceable};
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
 use crate::util::{HashExt, TransformExt};

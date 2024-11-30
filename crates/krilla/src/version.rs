@@ -1,9 +1,9 @@
 //! Choosing between PDF versions.
 
-use std::sync::Arc;
-use once_cell::sync::Lazy;
 use crate::color::{ICCMetadata, ICCProfile};
+use once_cell::sync::Lazy;
 use pdf_writer::Pdf;
+use std::sync::Arc;
 use xmp_writer::XmpWriter;
 
 /// The version of a PDF document.
