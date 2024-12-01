@@ -176,7 +176,7 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        let dest_ref = sc.add_xyz_dest(self.destination.clone());
+        let dest_ref = sc.add_xyz_destination(self.destination.clone());
         outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();

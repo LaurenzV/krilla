@@ -27,7 +27,7 @@ use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -237,7 +237,8 @@ impl SerializerContext {
             }
 
             let id = self.global_objects.struct_parents.len();
-            self.global_objects.struct_parents
+            self.global_objects
+                .struct_parents
                 .push(StructParentElement::Page(page_index, num_mcids));
             Some(i32::try_from(id).unwrap())
         } else {
@@ -252,10 +253,12 @@ impl SerializerContext {
     ) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
             let id = self.global_objects.struct_parents.len();
-            self.global_objects.struct_parents.push(StructParentElement::Annotation(
-                page_index,
-                annotation_index,
-            ));
+            self.global_objects
+                .struct_parents
+                .push(StructParentElement::Annotation(
+                    page_index,
+                    annotation_index,
+                ));
             Some(i32::try_from(id).unwrap())
         } else {
             None
@@ -278,13 +281,9 @@ impl SerializerContext {
         self.chunk_container.metadata = Some(metadata);
     }
 
-    pub fn add_named_destination(&mut self, nd: NamedDestination, location: XyzDestination) {
-        let dest_ref = self.add_xyz_dest(location);
+    pub fn add_named_destination(&mut self, nd: NamedDestination) {
+        let dest_ref = self.add_xyz_destination((*nd.xyz_dest).clone());
         self.global_objects.named_destinations.insert(nd, dest_ref);
-    }
-
-    pub fn add_used_named_destination(&mut self, nd: NamedDestination) {
-        self.global_objects.used_named_destinations.insert(nd);
     }
 
     pub fn set_tag_tree(&mut self, root: TagTree) {
@@ -412,10 +411,10 @@ impl SerializerContext {
         })
     }
 
-    pub fn add_xyz_dest(&mut self, dest: XyzDestination) -> Ref {
-        let root_ref = self.new_ref();
-        self.global_objects.xyz_dests.push((root_ref, dest));
-        root_ref
+    pub fn add_xyz_destination(&mut self, dest: XyzDestination) -> Ref {
+        self.register_cached(dest, |sc, object, root_ref| {
+            sc.global_objects.xyz_dests.push((root_ref, object));
+        })
     }
 
     pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
@@ -426,7 +425,8 @@ impl SerializerContext {
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
-        self.global_objects.font_map
+        self.global_objects
+            .font_map
             .entry(font.clone())
             .or_insert_with(|| {
                 self.font_cache
@@ -590,7 +590,9 @@ impl SerializerContext {
         });
 
         if let Some(container) = PageLabelContainer::new(
-            &self.global_objects.pages
+            &self
+                .global_objects
+                .pages
                 .iter()
                 .map(|(_, p)| p.page_settings.page_label().clone())
                 .collect::<Vec<_>>(),
@@ -786,7 +788,10 @@ impl<T> MaybeTaken<T> {
     }
 }
 
-impl<T> MaybeTaken<T> where T: Default {
+impl<T> MaybeTaken<T>
+where
+    T: Default,
+{
     pub fn take(&mut self) -> T {
         assert!(!*self.1.borrow());
         let mut taken = self.1.borrow_mut();
@@ -813,9 +818,10 @@ impl<T> DerefMut for MaybeTaken<T> {
 
 #[derive(Default)]
 pub(crate) struct GlobalObjects {
+    /// All named destinations that have been registered, including a Ref to their destination.
     pub named_destinations: MaybeTaken<HashMap<NamedDestination, Ref>>,
+    /// A map from fonts to font container.
     font_map: MaybeTaken<HashMap<Font, Rc<RefCell<FontContainer>>>>,
-    pub used_named_destinations: MaybeTaken<BTreeSet<NamedDestination>>,
     xyz_dests: MaybeTaken<Vec<(Ref, XyzDestination)>>,
     pages: MaybeTaken<Vec<(Ref, InternalPage)>>,
     struct_parents: MaybeTaken<Vec<StructParentElement>>,
@@ -827,7 +833,6 @@ impl GlobalObjects {
     pub fn assert_all_taken(&self) {
         assert!(self.named_destinations.is_taken());
         assert!(self.font_map.is_taken());
-        assert!(self.used_named_destinations.is_taken());
         assert!(self.xyz_dests.is_taken());
         assert!(self.pages.is_taken());
         assert!(self.struct_parents.is_taken());

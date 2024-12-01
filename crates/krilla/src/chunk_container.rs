@@ -1,4 +1,4 @@
-use crate::error::{KrillaError, KrillaResult};
+use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::serialize::SerializerContext;
 use crate::util::{hash_base64, Deferred};
@@ -211,7 +211,6 @@ impl ChunkContainer {
         xmp.rendition_class(RenditionClass::Proof);
         sc.serialize_settings().pdf_version.write_xmp(&mut xmp);
 
-        let used_destinations = sc.global_objects.used_named_destinations.take();
         let named_destinations = sc.global_objects.named_destinations.take();
 
         // We only write a catalog if a page tree exists. Every valid PDF must have one
@@ -283,22 +282,16 @@ impl ChunkContainer {
                 catalog.outlines(ol.0);
             }
 
-            if !used_destinations.is_empty() {
+            if !named_destinations.is_empty() {
                 // Cannot use pdf-writer API here because it requires Ref's, while
                 // we write our destinations directly into the array.
                 let mut names = catalog.names();
                 let mut name_tree = names.destinations();
                 let mut name_entries = name_tree.names();
 
-                for name in &used_destinations {
-                    let dest =
-                        named_destinations
-                            .get(name)
-                            .ok_or(KrillaError::UserError(format!(
-                                "named destination {} was used, but not registered in document",
-                                name.inner()
-                            )))?;
-                    name_entries.insert(Str(name.inner().as_bytes()), *remapper.get(dest).unwrap());
+                for (name, dest_ref) in named_destinations {
+                    name_entries
+                        .insert(Str(name.name.as_bytes()), *remapper.get(&dest_ref).unwrap());
                 }
             }
 
