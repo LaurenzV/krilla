@@ -25,9 +25,12 @@ use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
+/// The number of buits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum BitsPerComponent {
+    /// Eight bits per component.
     Eight,
+    /// Sixteen bits per component.
     Sixteen,
 }
 
@@ -40,10 +43,14 @@ impl BitsPerComponent {
     }
 }
 
+/// The color space of the image.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum ImageColorspace {
+    /// The RGB color space.
     Rgb,
+    /// The luma color space.
     Luma,
+    /// The CMYK color space.
     Cmyk,
 }
 
@@ -100,12 +107,24 @@ impl Repr {
     }
 }
 
+/// A trait for custom images, which you can use if the
+/// current methods provided by krilla (JPEG/PNG/WEBP/GIF) images
+/// are not suitable for your own purpose.
+///
+/// Note that a struct implementing this trait should be cheap to
+/// hash and clone, otherwise performance might be bad!
 pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
+    /// Return the raw bytes of the color channel.
     fn color_channel(&self) -> &[u8];
+    /// Return the raw bytes of the alpha channel, if available.
     fn alpha_channel(&self) -> Option<&[u8]>;
+    /// Return the bits per component of the image.
     fn bits_per_component(&self) -> BitsPerComponent;
+    /// Return the dimensions of the image.
     fn size(&self) -> (u32, u32);
+    /// Return the ICC profile of the image, is available.
     fn icc_profile(&self) -> Option<&[u8]>;
+    /// Return the color space of the image.
     fn color_space(&self) -> ImageColorspace;
 }
 
