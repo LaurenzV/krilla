@@ -19,7 +19,7 @@ impl Parse for AttributeInput {
 }
 
 enum SnapshotMode {
-    SerializerContext,
+    SerializeContext,
     SinglePage,
     Stream,
     Document,
@@ -31,7 +31,7 @@ const SKIP_SNAPSHOT: Option<&str> = option_env!("SKIP_SNAPSHOT");
 pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mut serialize_settings = format_ident!("settings_1");
-    let mut mode = SnapshotMode::SerializerContext;
+    let mut mode = SnapshotMode::SerializeContext;
 
     for attr in attrs.identifiers {
         let st = attr.to_string();
@@ -59,18 +59,18 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     fn_name = Ident::new(&format!("{}_snapshot", fn_name), fn_name.span());
 
     let common = quote! {
-        use crate::serialize::{SerializeSettings, SerializerContext};
+        use crate::serialize::{SerializeSettings, SerializeContext};
         use crate::tests::check_snapshot;
         use crate::document::{Document, PageSettings};
         use crate::geom::Size;
     };
 
     let fn_content = match mode {
-        SnapshotMode::SerializerContext => {
+        SnapshotMode::SerializeContext => {
             quote! {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
-                let mut sc = SerializerContext::new(settings);
+                let mut sc = SerializeContext::new(settings);
                 #impl_ident(&mut sc);
                 check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
             }
@@ -79,7 +79,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             quote! {
                 #common
                 let settings = SerializeSettings::#serialize_settings();
-                let mut sc = SerializerContext::new(settings);
+                let mut sc = SerializeContext::new(settings);
                 let mut stream_builder = crate::stream::StreamBuilder::new(&mut sc);
                 let mut surface = stream_builder.surface();
                 #impl_ident(&mut surface);

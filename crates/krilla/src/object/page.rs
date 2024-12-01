@@ -5,7 +5,7 @@ use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
@@ -28,7 +28,7 @@ use tiny_skia_path::{Rect, Transform};
 ///
 /// [`Document::start_page`]: crate::Document::start_page
 pub struct Page<'a> {
-    sc: &'a mut SerializerContext,
+    sc: &'a mut SerializeContext,
     page_settings: PageSettings,
     page_index: usize,
     page_stream: Stream,
@@ -38,7 +38,7 @@ pub struct Page<'a> {
 
 impl<'a> Page<'a> {
     pub(crate) fn new(
-        sc: &'a mut SerializerContext,
+        sc: &'a mut SerializeContext,
         page_index: usize,
         page_settings: PageSettings,
     ) -> Self {
@@ -139,7 +139,7 @@ pub(crate) struct InternalPage {
 impl InternalPage {
     pub(crate) fn new(
         mut stream: Stream,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         annotations: Vec<Annotation>,
         struct_parent: Option<i32>,
         page_settings: PageSettings,
@@ -180,7 +180,7 @@ impl InternalPage {
 
     pub(crate) fn serialize(
         self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> KrillaResult<Deferred<Chunk>> {
         let mut chunk = Chunk::new();
@@ -309,7 +309,7 @@ impl<'a> PageLabelContainer<'a> {
         }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -351,7 +351,7 @@ mod tests {
 
     use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
 
     use crate::path::Fill;
@@ -362,7 +362,7 @@ mod tests {
     use tiny_skia_path::{PathBuilder, Rect};
 
     #[snapshot]
-    fn page_simple(sc: &mut SerializerContext) {
+    fn page_simple(sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -379,7 +379,7 @@ mod tests {
     }
 
     #[snapshot(settings_2)]
-    fn page_with_resources(sc: &mut SerializerContext) {
+    fn page_with_resources(sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -396,7 +396,7 @@ mod tests {
     }
 
     #[snapshot]
-    fn page_label(sc: &mut SerializerContext) {
+    fn page_label(sc: &mut SerializeContext) {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),
             Some("P".to_string()),

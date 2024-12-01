@@ -12,7 +12,7 @@
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -328,7 +328,7 @@ impl Image {
 
     pub(crate) fn serialize(
         self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> Deferred<KrillaResult<Chunk>> {
         let soft_mask_id = sc.new_ref();
@@ -710,7 +710,7 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
 #[cfg(test)]
 mod tests {
     use crate::image::Image;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::surface::Surface;
     use crate::tests::{
         load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image,
@@ -721,33 +721,33 @@ mod tests {
     use tiny_skia_path::Size;
 
     #[snapshot]
-    fn image_luma8_png(sc: &mut SerializerContext) {
+    fn image_luma8_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("luma8.png"));
     }
 
     #[snapshot]
-    fn image_custom_luma8_png(sc: &mut SerializerContext) {
+    fn image_custom_luma8_png(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image("luma8.png"));
     }
 
     #[snapshot]
-    fn image_luma16_png(sc: &mut SerializerContext) {
+    fn image_luma16_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("luma16.png"));
     }
 
     #[snapshot]
-    fn image_rgb8_png(sc: &mut SerializerContext) {
+    fn image_rgb8_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgb8.png"));
     }
 
     #[snapshot]
-    fn image_custom_rgb8_png(sc: &mut SerializerContext) {
+    fn image_custom_rgb8_png(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image("rgb8.png"));
     }
 
     // ICC profile should be ignored.
     #[snapshot]
-    fn image_custom_rgb8_png_invalid_icc(sc: &mut SerializerContext) {
+    fn image_custom_rgb8_png_invalid_icc(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image_with_icc(
             "rgb8.png",
             std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
@@ -755,52 +755,52 @@ mod tests {
     }
 
     #[snapshot]
-    fn image_rgb16_png(sc: &mut SerializerContext) {
+    fn image_rgb16_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgb16.png"));
     }
 
     #[snapshot]
-    fn image_rgba8_png(sc: &mut SerializerContext) {
+    fn image_rgba8_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgba8.png"));
     }
 
     #[snapshot]
-    fn image_custom_rgba8_png(sc: &mut SerializerContext) {
+    fn image_custom_rgba8_png(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image("rgba8.png"));
     }
 
     #[snapshot]
-    fn image_rgba16_png(sc: &mut SerializerContext) {
+    fn image_rgba16_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgba16.png"));
     }
 
     #[snapshot]
-    fn image_luma8_jpg(sc: &mut SerializerContext) {
+    fn image_luma8_jpg(sc: &mut SerializeContext) {
         sc.register_image(load_jpg_image("luma8.jpg"));
     }
 
     #[snapshot]
-    fn image_rgb8_jpg(sc: &mut SerializerContext) {
+    fn image_rgb8_jpg(sc: &mut SerializeContext) {
         sc.register_image(load_jpg_image("rgb8.jpg"));
     }
 
     #[snapshot]
-    fn image_cmyk_jpg(sc: &mut SerializerContext) {
+    fn image_cmyk_jpg(sc: &mut SerializeContext) {
         sc.register_image(load_jpg_image("cmyk.jpg"));
     }
 
     // Currently gets converted into RGBA.
     #[snapshot]
-    fn image_rgb8_gif(sc: &mut SerializerContext) {
+    fn image_rgb8_gif(sc: &mut SerializeContext) {
         sc.register_image(load_gif_image("rgb8.gif"));
     }
 
     #[snapshot]
-    fn image_rgba8_gif(sc: &mut SerializerContext) {
+    fn image_rgba8_gif(sc: &mut SerializeContext) {
         sc.register_image(load_gif_image("rgba8.gif"));
     }
     #[snapshot]
-    fn image_rgba8_webp(sc: &mut SerializerContext) {
+    fn image_rgba8_webp(sc: &mut SerializeContext) {
         sc.register_image(load_webp_image("rgba8.webp"));
     }
 

@@ -5,7 +5,7 @@ use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
@@ -144,7 +144,7 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
@@ -535,7 +535,7 @@ mod tests {
     use crate::object::font::{FontContainer, OwnedPaintMode};
     use crate::page::Page;
     use crate::path::Fill;
-    use crate::serialize::{SerializeSettings, SerializerContext};
+    use crate::serialize::{SerializeContext, SerializeSettings};
     use crate::surface::TextDirection;
     use crate::tests::TWITTER_COLOR_EMOJI;
     use krilla_macros::snapshot;
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn type3_more_than_256_glyphs() {
-        let mut sc = SerializerContext::new(SerializeSettings::settings_1());
+        let mut sc = SerializeContext::new(SerializeSettings::settings_1());
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();

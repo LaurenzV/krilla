@@ -6,7 +6,7 @@
 //! and a specific location on that page.
 
 use crate::error::{KrillaError, KrillaResult};
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use pdf_writer::{Chunk, Obj, Ref, Str};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -22,7 +22,7 @@ pub enum Destination {
 }
 
 impl Destination {
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, buffer: Obj) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, buffer: Obj) -> KrillaResult<()> {
         match self {
             Destination::Xyz(xyz) => {
                 let ref_ = sc.add_xyz_destination(xyz.clone());
@@ -62,7 +62,7 @@ impl NamedDestination {
 
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         destination: Obj,
     ) -> KrillaResult<()> {
         sc.add_named_destination(self.clone());
@@ -116,7 +116,7 @@ impl XyzDestination {
 
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();

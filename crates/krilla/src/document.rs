@@ -19,13 +19,13 @@ use crate::metadata::Metadata;
 use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
-use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::tagging::TagTree;
 use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {
-    pub(crate) serializer_context: SerializerContext,
+    pub(crate) serializer_context: SerializeContext,
 }
 
 impl Default for Document {
@@ -38,14 +38,14 @@ impl Document {
     /// Create a new document with default settings.
     pub fn new() -> Self {
         Self {
-            serializer_context: SerializerContext::new(SerializeSettings::default()),
+            serializer_context: SerializeContext::new(SerializeSettings::default()),
         }
     }
 
     /// Create a new document with specific serialization settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
         Self {
-            serializer_context: SerializerContext::new(serialize_settings),
+            serializer_context: SerializeContext::new(serialize_settings),
         }
     }
 

@@ -8,7 +8,7 @@
 
 use crate::destination::Destination;
 use crate::error::KrillaResult;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use pdf_writer::types::ActionType;
 use pdf_writer::{Name, Str};
 
@@ -23,7 +23,7 @@ pub enum Action {
 impl Action {
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         mut action: pdf_writer::writers::Action,
     ) -> KrillaResult<()> {
         match self {

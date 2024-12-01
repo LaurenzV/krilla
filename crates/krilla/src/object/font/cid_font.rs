@@ -1,7 +1,7 @@
 use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::{hash128, RectExt, SliceExt};
 use crate::validation::ValidationError;
@@ -109,7 +109,7 @@ impl CIDFont {
 
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
@@ -349,7 +349,7 @@ mod tests {
 
     use crate::object::font::FontContainer;
     use crate::path::Fill;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
     use krilla_macros::{snapshot, visreg};
@@ -357,7 +357,7 @@ mod tests {
     use tiny_skia_path::Point;
 
     #[snapshot]
-    fn cid_font_noto_sans_two_glyphs(sc: &mut SerializerContext) {
+    fn cid_font_noto_sans_two_glyphs(sc: &mut SerializeContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();
@@ -419,7 +419,7 @@ mod tests {
     }
 
     #[snapshot]
-    fn cid_font_latin_modern_four_glyphs(sc: &mut SerializerContext) {
+    fn cid_font_latin_modern_four_glyphs(sc: &mut SerializeContext) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
         let container = sc.create_or_get_font_container(font.clone());
         let mut font_container = container.borrow_mut();

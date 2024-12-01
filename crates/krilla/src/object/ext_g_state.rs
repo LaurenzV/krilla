@@ -1,7 +1,7 @@
 use crate::object::mask::Mask;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::validation::ValidationError;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -63,7 +63,7 @@ impl ExtGState {
 
     /// Create a new graphics state with a mask.
     #[must_use]
-    pub fn mask(mut self, mask: Mask, sc: &mut SerializerContext) -> Self {
+    pub fn mask(mut self, mask: Mask, sc: &mut SerializeContext) -> Self {
         let mask_ref = sc.register_cacheable(mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
@@ -104,7 +104,7 @@ impl Cacheable for ExtGState {
         Box::new(|cc| &mut cc.ext_g_states)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
@@ -152,7 +152,7 @@ impl Resourceable for ExtGState {
 mod tests {
     use crate::object::ext_g_state::ExtGState;
     use crate::object::mask::Mask;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::stream::Stream;
 
     use crate::mask::MaskType;
@@ -161,13 +161,13 @@ mod tests {
     use usvg::NormalizedF32;
 
     #[snapshot]
-    pub fn ext_g_state_empty(sc: &mut SerializerContext) {
+    pub fn ext_g_state_empty(sc: &mut SerializeContext) {
         let ext_state = ExtGState::new();
         sc.register_cacheable(ext_state);
     }
 
     #[snapshot]
-    pub fn ext_g_state_default_values(sc: &mut SerializerContext) {
+    pub fn ext_g_state_default_values(sc: &mut SerializeContext) {
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::ONE)
             .stroking_alpha(NormalizedF32::ONE)
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[snapshot]
-    pub fn ext_g_state_all_set(sc: &mut SerializerContext) {
+    pub fn ext_g_state_all_set(sc: &mut SerializeContext) {
         let mask = Mask::new(Stream::empty(), MaskType::Luminosity);
         let ext_state = ExtGState::new()
             .non_stroking_alpha(NormalizedF32::new(0.4).unwrap())

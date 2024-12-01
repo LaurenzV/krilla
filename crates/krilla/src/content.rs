@@ -18,7 +18,7 @@ use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -68,7 +68,7 @@ impl ContentBuilder {
         }
     }
 
-    pub fn finish(self, sc: &mut SerializerContext) -> Stream {
+    pub fn finish(self, sc: &mut SerializeContext) -> Stream {
         let buf = self.content.finish();
         sc.register_limits(buf.limits());
 
@@ -96,7 +96,7 @@ impl ContentBuilder {
 
     pub fn start_marked_content_with_properties(
         &mut self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         mcid: Option<i32>,
         tag: ContentTag,
     ) {
@@ -159,7 +159,7 @@ impl ContentBuilder {
         }
     }
 
-    pub fn fill_path(&mut self, path: &Path, fill: Fill, sc: &mut SerializerContext) {
+    pub fn fill_path(&mut self, path: &Path, fill: Fill, sc: &mut SerializeContext) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -191,7 +191,7 @@ impl ContentBuilder {
         );
     }
 
-    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke, sc: &mut SerializerContext) {
+    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke, sc: &mut SerializeContext) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
@@ -244,7 +244,7 @@ impl ContentBuilder {
     pub fn fill_glyphs(
         &mut self,
         start: Point,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         fill: Fill,
         glyphs: &[impl Glyph],
         font: Font,
@@ -286,7 +286,7 @@ impl ContentBuilder {
     pub fn stroke_glyphs(
         &mut self,
         start: Point,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         stroke: Stroke,
         glyphs: &[impl Glyph],
         font: Font,
@@ -348,7 +348,7 @@ impl ContentBuilder {
     #[inline(always)]
     fn encode_consecutive_glyph_run(
         &mut self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         cur_x: &mut f32,
         cur_y: f32,
         font_identifier: FontIdentifier,
@@ -431,9 +431,9 @@ impl ContentBuilder {
         &mut self,
         x: f32,
         ys: f32,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         fill_render_mode: TextRenderingMode,
-        action: impl FnOnce(&mut ContentBuilder, &mut SerializerContext),
+        action: impl FnOnce(&mut ContentBuilder, &mut SerializeContext),
         glyphs: &[impl Glyph],
         font: Font,
         paint_mode: PaintMode,
@@ -519,7 +519,7 @@ impl ContentBuilder {
 
     pub(crate) fn draw_xobject(
         &mut self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         x_object: XObject,
         state: &ExtGState,
     ) {
@@ -539,7 +539,7 @@ impl ContentBuilder {
         );
     }
 
-    pub fn draw_masked(&mut self, sc: &mut SerializerContext, mask: Mask, stream: Stream) {
+    pub fn draw_masked(&mut self, sc: &mut SerializeContext, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask, sc);
         let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(sc, x_object, &state);
@@ -547,7 +547,7 @@ impl ContentBuilder {
 
     pub fn draw_opacified(
         &mut self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         opacity: NormalizedF32,
         stream: Stream,
     ) {
@@ -558,14 +558,14 @@ impl ContentBuilder {
         self.draw_xobject(sc, x_object, &state);
     }
 
-    pub fn draw_isolated(&mut self, sc: &mut SerializerContext, stream: Stream) {
+    pub fn draw_isolated(&mut self, sc: &mut SerializeContext, stream: Stream) {
         let state = ExtGState::new();
         let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(sc, x_object, &state);
     }
 
     #[cfg(feature = "raster-images")]
-    pub fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializerContext) {
+    pub fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializeContext) {
         self.apply_isolated_op(
             |sb, _| {
                 // Scale the image from 1x1 to the actual dimensions.
@@ -585,7 +585,7 @@ impl ContentBuilder {
         );
     }
 
-    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction, sc: &mut SerializerContext) {
+    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction, sc: &mut SerializeContext) {
         self.apply_isolated_op(
             |_, _| {},
             move |sb, sc| {
@@ -614,9 +614,9 @@ impl ContentBuilder {
 
     fn apply_isolated_op(
         &mut self,
-        prep: impl FnOnce(&mut Self, &mut SerializerContext),
-        op: impl FnOnce(&mut Self, &mut SerializerContext),
-        sc: &mut SerializerContext,
+        prep: impl FnOnce(&mut Self, &mut SerializeContext),
+        op: impl FnOnce(&mut Self, &mut SerializeContext),
+        sc: &mut SerializeContext,
     ) {
         self.save_graphics_state();
         self.content_save_state();
@@ -649,7 +649,7 @@ impl ContentBuilder {
         bounds: Rect,
         paint: &Paint,
         opacity: NormalizedF32,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, String, Color),
     ) {
@@ -659,7 +659,7 @@ impl ContentBuilder {
 
         let mut write_gradient =
             |gradient_props: GradientProperties,
-             sc: &mut SerializerContext,
+             sc: &mut SerializeContext,
              transform: Transform,
              content_builder: &mut ContentBuilder| {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
@@ -744,7 +744,7 @@ impl ContentBuilder {
         &mut self,
         bounds: Rect,
         fill: &Fill,
-        serializer_context: &mut SerializerContext,
+        serializer_context: &mut SerializeContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_fill_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);
@@ -770,7 +770,7 @@ impl ContentBuilder {
         &mut self,
         bounds: Rect,
         stroke: Stroke,
-        serializer_context: &mut SerializerContext,
+        serializer_context: &mut SerializeContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
             content.set_stroke_color_space(pdf_writer::types::ColorSpaceOperand::Pattern);

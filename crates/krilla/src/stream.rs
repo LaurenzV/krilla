@@ -25,7 +25,7 @@
 //! [`Mask`]: crate::mask::Mask
 use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
 use crate::validation::ValidationError;
@@ -45,7 +45,7 @@ pub struct Stream {
     pub(crate) content: Vec<u8>,
     pub(crate) bbox: RectWrapper,
     // Important: Each object that uses a stream must ensure to pass on the validation
-    // errors to the `SerializerContext` at some point. Currently, only `Mask`,
+    // errors to the `SerializeContext` at some point. Currently, only `Mask`,
     // `TilingPattern`, `InternalPage` and `XObject` require that.
     pub(crate) validation_errors: Vec<ValidationError>,
     pub(crate) resource_dictionary: ResourceDictionary,
@@ -82,12 +82,12 @@ impl Stream {
 
 /// A builder to create streams.
 pub struct StreamBuilder<'a> {
-    sc: &'a mut SerializerContext,
+    sc: &'a mut SerializeContext,
     stream: Stream,
 }
 
 impl<'a> StreamBuilder<'a> {
-    pub(crate) fn new(sc: &'a mut SerializerContext) -> Self {
+    pub(crate) fn new(sc: &'a mut SerializeContext) -> Self {
         Self {
             sc,
             stream: Stream::empty(),

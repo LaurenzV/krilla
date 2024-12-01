@@ -2,7 +2,7 @@ use crate::color::rgb;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
@@ -47,7 +47,7 @@ impl Cacheable for XObject {
         Box::new(|cc| &mut cc.x_objects)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         for validation_error in self.stream.validation_errors {
@@ -106,13 +106,13 @@ mod tests {
 
     use crate::object::xobject::XObject;
     use crate::path::Fill;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
     use crate::tests::rect_to_path;
     use krilla_macros::snapshot;
 
     #[snapshot]
-    fn x_object_with_transparency(sc: &mut SerializerContext) {
+    fn x_object_with_transparency(sc: &mut SerializeContext) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let mut sb = StreamBuilder::new(sc);
         let mut surface = sb.surface();

@@ -156,7 +156,7 @@ pub(crate) struct PageInfo {
     /// The refs of the annotations that are used by that page.
     ///
     /// Note that this will be empty be default when adding a new `PageInfo` to
-    /// `page_infos` in `SerializerContext`, and only once we actually serialize
+    /// `page_infos` in `SerializeContext`, and only once we actually serialize
     /// the page will the annotations be populated.
     pub annotations: Vec<Ref>,
 }
@@ -176,7 +176,7 @@ enum StructParentElement {
 /// - The mappings from OTF fonts to CID/Type 3 fonts.
 /// - Annotations used in the document.
 ///   etc.
-pub(crate) struct SerializerContext {
+pub(crate) struct SerializeContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
     page_tree_ref: Option<Ref>,
     pub(crate) global_objects: GlobalObjects,
@@ -196,13 +196,13 @@ pub(crate) struct SerializerContext {
     serialize_settings: Arc<SerializeSettings>,
     /// The limits created as part of the serialization process. In principle, we could
     /// just keep track of this in `ChunkContainer`, where all used chunks are stored.
-    /// The only reason why `SerializerContext` needs to know about them is that we also
+    /// The only reason why `SerializeContext` needs to know about them is that we also
     /// need to merge limits from postscript functions, which are not directly accessible
     /// from the chunk they are written to.
     limits: Limits,
 }
 
-impl SerializerContext {
+impl SerializeContext {
     pub fn new(mut serialize_settings: SerializeSettings) -> Self {
         // Override flags as required by the validator
         serialize_settings.no_device_cs |= serialize_settings.validator.requires_no_device_cs();
@@ -339,7 +339,7 @@ impl SerializerContext {
                         Box::new(|cc| &mut cc.color_spaces)
                     }
 
-                    fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+                    fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
                         let mut chunk = Chunk::new();
                         chunk
                             .indirect(root_ref)
@@ -497,7 +497,7 @@ impl SerializerContext {
                 Box::new(|cc| &mut cc.color_spaces)
             }
 
-            fn serialize(self, _: &mut SerializerContext, root_ref: Ref) -> Chunk {
+            fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
                 let mut chunk = Chunk::new();
                 chunk.color_space(root_ref).cal_rgb(
                     [0.9505, 1.0, 1.0888],
@@ -822,7 +822,7 @@ impl SerializerContext {
 /// This struct is essentially a thin wrapper around `std::mem::replace`. When finishing the
 /// document, we need to take ownership of many of the items in `GlobalObjects` in order to
 /// prevent having to clone them. However, the problem is that we cannot easily take ownership
-/// of them, because they are part of the SerializerContext. Because of this, what we
+/// of them, because they are part of the SerializeContext. Because of this, what we
 /// do is that we `std::mem::replace` the elements step by step and then serialize them.
 /// The `MaybeTaken` struct helps us to ensure that once we have taken a value, we do not
 /// accidentally attempt to write/read it again.
@@ -847,7 +847,7 @@ where
         assert!(!*self.1.borrow());
         let mut taken = self.1.borrow_mut();
         *taken = true;
-        std::mem::replace(&mut self.0, T::default())
+        std::mem::take(&mut self.0)
     }
 }
 

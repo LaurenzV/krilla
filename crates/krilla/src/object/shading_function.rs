@@ -5,7 +5,7 @@ use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource;
 use crate::resource::Resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
 use bumpalo::Bump;
@@ -225,7 +225,7 @@ impl Cacheable for ShadingFunction {
         Box::new(|cc| &mut cc.shading_functions)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -247,7 +247,7 @@ impl Resourceable for ShadingFunction {
 }
 
 fn serialize_postscript_shading(
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     chunk: &mut Chunk,
     root_ref: Ref,
     post_script_gradient: &PostScriptGradient,
@@ -284,7 +284,7 @@ fn serialize_postscript_shading(
 }
 
 fn serialize_axial_radial_shading(
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     chunk: &mut Chunk,
     root_ref: Ref,
     radial_axial_gradient: &RadialAxialGradient,
@@ -321,7 +321,7 @@ fn serialize_axial_radial_shading(
 fn select_axial_radial_function(
     properties: &RadialAxialGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     use_opacities: bool,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
@@ -376,7 +376,7 @@ fn select_axial_radial_function(
 fn select_postscript_function(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     bump: &Bump,
     use_opacities: bool,
 ) -> Ref {
@@ -394,7 +394,7 @@ fn select_postscript_function(
 // Not working yet
 // fn serialize_radial_postscript(
 //     properties: &GradientProperties,
-//     sc: &mut SerializerContext,
+//     sc: &mut SerializeContext,
 //     bbox: &Rect,
 // ) -> Ref {
 // let root_ref = sc.new_ref();
@@ -424,7 +424,7 @@ fn select_postscript_function(
 fn serialize_sweep_postscript(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     bump: &Bump,
     use_opacities: bool,
 ) -> Ref {
@@ -479,7 +479,7 @@ fn serialize_sweep_postscript(
 fn serialize_linear_postscript(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     use_opacities: bool,
 ) -> Ref {
     use pdf_writer::types::PostScriptOp::*;
@@ -733,7 +733,7 @@ fn encode_stops_impl<'a>(
 fn serialize_stitching(
     stops: &[Stop],
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     use_opacities: bool,
 ) -> Ref {
     let root_ref = sc.new_ref();
@@ -778,7 +778,7 @@ fn serialize_exponential(
     first_comps: Vec<f32>,
     second_comps: Vec<f32>,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
     debug_assert_eq!(first_comps.len(), second_comps.len());

@@ -1,6 +1,6 @@
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
@@ -67,7 +67,7 @@ impl ChunkContainer {
         Self::default()
     }
 
-    pub fn finish(mut self, sc: &mut SerializerContext) -> KrillaResult<Pdf> {
+    pub fn finish(mut self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 

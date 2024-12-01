@@ -10,7 +10,7 @@ use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::page::page_root_transform;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::RectExt;
 use crate::validation::ValidationError;
 use pdf_writer::types::AnnotationFlags;
@@ -51,7 +51,7 @@ impl From<LinkAnnotation> for Annotation {
 impl Annotation {
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
         page_height: f32,
     ) -> KrillaResult<Chunk> {
@@ -91,7 +91,7 @@ pub enum AnnotationType {
 impl AnnotationType {
     fn serialize_type(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
     ) -> KrillaResult<()> {
@@ -125,7 +125,7 @@ impl LinkAnnotation {
 
     fn serialize_type(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
     ) -> KrillaResult<()> {

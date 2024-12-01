@@ -40,7 +40,7 @@
 
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
@@ -77,7 +77,7 @@ impl Color {
         }
     }
 
-    pub(crate) fn color_space(&self, sc: &mut SerializerContext) -> ColorSpace {
+    pub(crate) fn color_space(&self, sc: &mut SerializeContext) -> ColorSpace {
         match self {
             Color::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
             Color::Luma(_) => luma::Color::color_space(sc.serialize_settings().no_device_cs),
@@ -298,7 +298,7 @@ impl Cacheable for ICCProfileWrapper {
         Box::new(|cc| &mut cc.icc_profiles)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         match self {
             ICCProfileWrapper::Luma(l) => l.serialize(sc, root_ref),
             ICCProfileWrapper::Rgb(r) => r.serialize(sc, root_ref),
@@ -340,7 +340,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         Box::new(|cc| &mut cc.icc_profiles)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
             .finish(&sc.serialize_settings());
@@ -362,7 +362,7 @@ impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
         Box::new(|cc| &mut cc.color_spaces)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.register_cacheable(self.0.clone());
 
         let mut chunk = Chunk::new();
@@ -474,7 +474,7 @@ impl ICCMetadata {
 #[cfg(test)]
 mod tests {
 
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
 
     use crate::page::Page;
     use crate::path::Fill;
@@ -483,12 +483,12 @@ mod tests {
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
-    fn color_space_sgray(sc: &mut SerializerContext) {
+    fn color_space_sgray(sc: &mut SerializeContext) {
         sc.add_luma();
     }
 
     #[snapshot]
-    fn color_space_srgb(sc: &mut SerializerContext) {
+    fn color_space_srgb(sc: &mut SerializeContext) {
         sc.add_srgb();
     }
 
