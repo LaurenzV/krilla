@@ -555,7 +555,7 @@ mod tests {
     fn type3_more_than_256_glyphs() {
         let mut sc = SerializeContext::new(SerializeSettings::settings_1());
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
-        let container = sc.create_or_get_font_container(font.clone());
+        let container = sc.register_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
         match &mut *font_container {

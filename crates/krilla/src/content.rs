@@ -450,7 +450,7 @@ impl ContentBuilder {
                 action(sb, sc);
                 sb.content.begin_text();
 
-                let font_container = sc.create_or_get_font_container(font.clone());
+                let font_container = sc.register_font_container(font.clone());
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.

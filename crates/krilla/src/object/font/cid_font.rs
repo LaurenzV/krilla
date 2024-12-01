@@ -359,7 +359,7 @@ mod tests {
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializeContext) {
         let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        let container = sc.create_or_get_font_container(font.clone());
+        let container = sc.register_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
         match &mut *font_container {
@@ -421,7 +421,7 @@ mod tests {
     #[snapshot]
     fn cid_font_latin_modern_four_glyphs(sc: &mut SerializeContext) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
-        let container = sc.create_or_get_font_container(font.clone());
+        let container = sc.register_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
         match &mut *font_container {
