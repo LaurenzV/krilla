@@ -132,7 +132,10 @@ impl FontContainer {
     }
 
     #[inline]
-    pub(crate) fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
+    pub(crate) fn get_from_identifier(
+        &self,
+        font_identifier: FontIdentifier,
+    ) -> Option<&dyn PdfFont> {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_from_id(font_identifier) {

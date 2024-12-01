@@ -171,16 +171,16 @@ impl Resource for Font {
 
 #[derive(Debug)]
 pub(crate) struct ResourceDictionaryBuilder {
-    pub color_spaces: ResourceMapper<ColorSpace>,
-    pub ext_g_states: ResourceMapper<ExtGState>,
-    pub patterns: ResourceMapper<Pattern>,
-    pub x_objects: ResourceMapper<XObject>,
-    pub shadings: ResourceMapper<Shading>,
-    pub fonts: ResourceMapper<Font>,
+    pub(crate) color_spaces: ResourceMapper<ColorSpace>,
+    pub(crate) ext_g_states: ResourceMapper<ExtGState>,
+    pub(crate) patterns: ResourceMapper<Pattern>,
+    pub(crate) x_objects: ResourceMapper<XObject>,
+    pub(crate) shadings: ResourceMapper<Shading>,
+    pub(crate) fonts: ResourceMapper<Font>,
 }
 
 impl ResourceDictionaryBuilder {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             color_spaces: ResourceMapper::new(),
             ext_g_states: ResourceMapper::new(),
@@ -191,7 +191,6 @@ impl ResourceDictionaryBuilder {
         }
     }
 
-    // TODO: Make type safe instead of taking Ref?
     pub(crate) fn register_resource<T>(&mut self, obj: T) -> String
     where
         T: Resource,
@@ -199,7 +198,7 @@ impl ResourceDictionaryBuilder {
         T::get_mapper(self).remap_with_name(obj.get_ref())
     }
 
-    pub fn finish(self) -> ResourceDictionary {
+    pub(crate) fn finish(self) -> ResourceDictionary {
         ResourceDictionary {
             color_spaces: self.color_spaces.into_resource_list(),
             ext_g_states: self.ext_g_states.into_resource_list(),
@@ -213,12 +212,12 @@ impl ResourceDictionaryBuilder {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct ResourceDictionary {
-    pub color_spaces: ResourceList<ColorSpace>,
-    pub ext_g_states: ResourceList<ExtGState>,
-    pub patterns: ResourceList<Pattern>,
-    pub x_objects: ResourceList<XObject>,
-    pub shadings: ResourceList<Shading>,
-    pub fonts: ResourceList<Font>,
+    pub(crate) color_spaces: ResourceList<ColorSpace>,
+    pub(crate) ext_g_states: ResourceList<ExtGState>,
+    pub(crate) patterns: ResourceList<Pattern>,
+    pub(crate) x_objects: ResourceList<XObject>,
+    pub(crate) shadings: ResourceList<Shading>,
+    pub(crate) fonts: ResourceList<Font>,
 }
 
 impl Default for ResourceDictionary {
@@ -234,7 +233,7 @@ impl Default for ResourceDictionary {
     }
 }
 
-pub type ResourceNumber = u32;
+pub(crate) type ResourceNumber = u32;
 
 impl ResourceDictionary {
     pub fn to_pdf_resources<T>(&self, parent: &mut T)
@@ -282,14 +281,14 @@ impl<T> ResourceList<T>
 where
     T: Resource,
 {
-    pub fn empty() -> ResourceList<T> {
+    pub(crate) fn empty() -> ResourceList<T> {
         Self {
             entries: vec![],
             phantom: Default::default(),
         }
     }
 
-    pub fn len(&self) -> u32 {
+    pub(crate) fn len(&self) -> u32 {
         self.entries.len() as u32
     }
 
@@ -297,7 +296,7 @@ where
         format!("{}{}", T::get_prefix(), num)
     }
 
-    pub fn get_entries(&self) -> impl Iterator<Item = (String, Ref)> + '_ {
+    pub(crate) fn get_entries(&self) -> impl Iterator<Item = (String, Ref)> + '_ {
         self.entries
             .iter()
             .enumerate()
@@ -316,7 +315,7 @@ impl<T> ResourceMapper<T>
 where
     T: Resource,
 {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             forward: Vec::new(),
             backward: HashMap::new(),
@@ -324,7 +323,7 @@ where
         }
     }
 
-    pub fn remap(&mut self, ref_: Ref) -> ResourceNumber {
+    pub(crate) fn remap(&mut self, ref_: Ref) -> ResourceNumber {
         let forward = &mut self.forward;
         let backward = &mut self.backward;
 
@@ -335,7 +334,7 @@ where
         })
     }
 
-    pub fn remap_with_name(&mut self, ref_: Ref) -> String {
+    pub(crate) fn remap_with_name(&mut self, ref_: Ref) -> String {
         Self::name_from_number(self.remap(ref_))
     }
 
@@ -343,7 +342,7 @@ where
         format!("{}{}", T::get_prefix(), num)
     }
 
-    pub fn into_resource_list(self) -> ResourceList<T> {
+    pub(crate) fn into_resource_list(self) -> ResourceList<T> {
         ResourceList {
             entries: self.forward,
             phantom: Default::default(),
@@ -351,7 +350,7 @@ where
     }
 }
 
-pub trait ResourcesExt {
+pub(crate) trait ResourcesExt {
     fn resources(&mut self) -> writers::Resources<'_>;
 }
 

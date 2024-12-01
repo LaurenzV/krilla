@@ -337,7 +337,7 @@ impl Validator {
     }
 
     /// Check whether the validator is compatible with a specific pdf version.
-    pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
+    pub(crate) fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
         match self {
             Validator::None => true,
             Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
@@ -348,7 +348,7 @@ impl Validator {
     }
 
     /// Get the recommended PDF version of a validator.
-    pub fn recommended_version(&self) -> PdfVersion {
+    pub(crate) fn recommended_version(&self) -> PdfVersion {
         match self {
             Validator::None => PdfVersion::Pdf17,
             Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,

@@ -148,7 +148,7 @@ impl StreamFilter {
 }
 
 impl StreamFilter {
-    pub fn apply(&self, content: &[u8]) -> Vec<u8> {
+    pub(crate) fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
             StreamFilter::Flate => deflate_encode(content),
             StreamFilter::FlateMemoized => deflate_encode_memoized(content),
@@ -171,7 +171,7 @@ pub(crate) enum StreamFilters {
 }
 
 impl StreamFilters {
-    pub fn add(&mut self, stream_filter: StreamFilter) {
+    pub(crate) fn add(&mut self, stream_filter: StreamFilter) {
         match self {
             StreamFilters::None => *self = StreamFilters::Single(stream_filter),
             StreamFilters::Single(cur) => {
@@ -181,7 +181,7 @@ impl StreamFilters {
         }
     }
 
-    pub fn is_binary(&self) -> bool {
+    pub(crate) fn is_binary(&self) -> bool {
         match self {
             StreamFilters::None => false,
             StreamFilters::Single(s) => s.is_binary(),
@@ -203,7 +203,7 @@ impl<'a> FilterStreamBuilder<'a> {
         }
     }
 
-    pub fn new_from_content_stream(
+    pub(crate) fn new_from_content_stream(
         content: &'a [u8],
         serialize_settings: &SerializeSettings,
     ) -> Self {
@@ -216,21 +216,21 @@ impl<'a> FilterStreamBuilder<'a> {
         filter_stream
     }
 
-    pub fn new_from_deflated(content: &'a [u8]) -> Self {
+    pub(crate) fn new_from_deflated(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_unapplied_filter(StreamFilter::Flate);
 
         filter_stream
     }
 
-    pub fn new_from_binary_data(content: &'a [u8]) -> Self {
+    pub(crate) fn new_from_binary_data(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_filter(StreamFilter::Flate);
 
         filter_stream
     }
 
-    pub fn new_from_jpeg_data(content: &'a [u8]) -> Self {
+    pub(crate) fn new_from_jpeg_data(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         // JPEG data already is DCT encoded.
         filter_stream.add_unapplied_filter(StreamFilter::Dct);
@@ -238,7 +238,7 @@ impl<'a> FilterStreamBuilder<'a> {
         filter_stream
     }
 
-    pub fn finish(mut self, serialize_settings: &SerializeSettings) -> FilterStream<'a> {
+    pub(crate) fn finish(mut self, serialize_settings: &SerializeSettings) -> FilterStream<'a> {
         if serialize_settings.ascii_compatible && self.filters.is_binary() {
             self.add_filter(StreamFilter::AsciiHex);
         }
@@ -265,11 +265,11 @@ pub(crate) struct FilterStream<'a> {
 }
 
 impl FilterStream<'_> {
-    pub fn encoded_data(&self) -> &[u8] {
+    pub(crate) fn encoded_data(&self) -> &[u8] {
         &self.content
     }
 
-    pub fn write_filters<'b, T>(&self, mut dict: T)
+    pub(crate) fn write_filters<'b, T>(&self, mut dict: T)
     where
         T: DerefMut<Target = Dict<'b>>,
     {

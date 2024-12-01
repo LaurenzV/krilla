@@ -7,7 +7,11 @@ use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::ProcessContext;
 
 /// Render a path into a surface.
-pub(crate) fn render(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {
+pub(crate) fn render(
+    path: &usvg::Path,
+    surface: &mut Surface,
+    process_context: &mut ProcessContext,
+) {
     if !path.is_visible() {
         return;
     }
@@ -25,7 +29,11 @@ pub(crate) fn render(path: &usvg::Path, surface: &mut Surface, process_context: 
 }
 
 /// Render a filled path into a surface.
-pub(crate) fn fill_path(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {
+pub(crate) fn fill_path(
+    path: &usvg::Path,
+    surface: &mut Surface,
+    process_context: &mut ProcessContext,
+) {
     if let Some(fill) = path.fill() {
         let fill = convert_fill(
             fill,
@@ -38,7 +46,11 @@ pub(crate) fn fill_path(path: &usvg::Path, surface: &mut Surface, process_contex
 }
 
 /// Render a stroked path into a surface.
-pub(crate) fn stroke_path(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {
+pub(crate) fn stroke_path(
+    path: &usvg::Path,
+    surface: &mut Surface,
+    process_context: &mut ProcessContext,
+) {
     if let Some(stroke) = path.stroke() {
         let stroke = convert_stroke(
             stroke,

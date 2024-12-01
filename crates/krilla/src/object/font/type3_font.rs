@@ -1,6 +1,5 @@
 //! Type 3 fonts.
 
-
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
@@ -473,7 +472,10 @@ impl Type3FontMapper {
         self.fonts.get(pos)
     }
 
-    pub(crate) fn font_mut_from_id(&mut self, identifier: FontIdentifier) -> Option<&mut Type3Font> {
+    pub(crate) fn font_mut_from_id(
+        &mut self,
+        identifier: FontIdentifier,
+    ) -> Option<&mut Type3Font> {
         let pos = self
             .fonts
             .iter()

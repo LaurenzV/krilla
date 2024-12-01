@@ -134,17 +134,17 @@ impl PageSettings {
     }
 
     /// The current media box.
-    pub fn media_box(&self) -> Option<Rect> {
+    pub(crate) fn media_box(&self) -> Option<Rect> {
         self.media_box
     }
 
     /// The current surface size.
-    pub fn surface_size(&self) -> Size {
+    pub(crate) fn surface_size(&self) -> Size {
         self.surface_size
     }
 
     /// The current page label.
-    pub fn page_label(&self) -> &PageLabel {
+    pub(crate) fn page_label(&self) -> &PageLabel {
         &self.page_label
     }
 }

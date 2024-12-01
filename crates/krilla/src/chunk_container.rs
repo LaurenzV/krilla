@@ -41,7 +41,7 @@ impl WaitExt for Chunk {
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
-pub struct ChunkContainer {
+pub(crate) struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
@@ -67,11 +67,12 @@ pub struct ChunkContainer {
 }
 
 impl ChunkContainer {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
-    pub fn finish(mut self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
+    // TODO: Split up into multiple methods?
+    pub(crate) fn finish(mut self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 

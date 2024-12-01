@@ -49,7 +49,7 @@ pub(crate) struct ContentBuilder {
 }
 
 impl ContentBuilder {
-    pub fn new(root_transform: Transform) -> Self {
+    pub(crate) fn new(root_transform: Transform) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             validation_errors: HashSet::new(),
@@ -61,7 +61,7 @@ impl ContentBuilder {
         }
     }
 
-    pub fn content_save_state(&mut self) {
+    pub(crate) fn content_save_state(&mut self) {
         self.content.save_state();
 
         if self.content.state_nesting_depth() > 28 {
@@ -70,7 +70,7 @@ impl ContentBuilder {
         }
     }
 
-    pub fn finish(self, sc: &mut SerializeContext) -> Stream {
+    pub(crate) fn finish(self, sc: &mut SerializeContext) -> Stream {
         let buf = self.content.finish();
         sc.register_limits(buf.limits());
 
@@ -91,12 +91,12 @@ impl ContentBuilder {
         self.active_marked_content = true;
     }
 
-    pub fn start_marked_content(&mut self, name: Name) {
+    pub(crate) fn start_marked_content(&mut self, name: Name) {
         self.start_marked_content_prelude();
         self.content.begin_marked_content(name);
     }
 
-    pub fn start_marked_content_with_properties(
+    pub(crate) fn start_marked_content_with_properties(
         &mut self,
         sc: &mut SerializeContext,
         mcid: Option<i32>,
@@ -125,7 +125,7 @@ impl ContentBuilder {
         self.active_marked_content = false;
     }
 
-    pub fn concat_transform(&mut self, transform: &Transform) {
+    pub(crate) fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
     }
 
@@ -137,22 +137,22 @@ impl ContentBuilder {
         self.graphics_states.cur().transform()
     }
 
-    pub fn save_graphics_state(&mut self) {
+    pub(crate) fn save_graphics_state(&mut self) {
         self.graphics_states.save_state();
     }
 
-    pub fn restore_graphics_state(&mut self) {
+    pub(crate) fn restore_graphics_state(&mut self) {
         self.graphics_states.restore_state();
     }
 
-    pub fn set_blend_mode(&mut self, blend_mode: pdf_writer::types::BlendMode) {
+    pub(crate) fn set_blend_mode(&mut self, blend_mode: pdf_writer::types::BlendMode) {
         if blend_mode != pdf_writer::types::BlendMode::Normal {
             let state = ExtGState::new().blend_mode(blend_mode);
             self.graphics_states.combine(&state);
         }
     }
 
-    pub fn expand_bbox(&mut self, new_bbox: Rect) {
+    pub(crate) fn expand_bbox(&mut self, new_bbox: Rect) {
         let new_bbox = self.graphics_states.transform_bbox(new_bbox);
         if let Some(bbox) = &mut self.bbox {
             bbox.expand(&new_bbox);
@@ -161,7 +161,7 @@ impl ContentBuilder {
         }
     }
 
-    pub fn fill_path(&mut self, path: &Path, fill: Fill, sc: &mut SerializeContext) {
+    pub(crate) fn fill_path(&mut self, path: &Path, fill: Fill, sc: &mut SerializeContext) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -193,7 +193,7 @@ impl ContentBuilder {
         );
     }
 
-    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke, sc: &mut SerializeContext) {
+    pub(crate) fn stroke_path(&mut self, path: &Path, stroke: Stroke, sc: &mut SerializeContext) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
@@ -221,7 +221,7 @@ impl ContentBuilder {
         );
     }
 
-    pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
+    pub(crate) fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.content_save_state();
         self.content_draw_path(
             path.clone()
@@ -238,12 +238,12 @@ impl ContentBuilder {
         self.content.end_path();
     }
 
-    pub fn pop_clip_path(&mut self) {
+    pub(crate) fn pop_clip_path(&mut self) {
         self.content.restore_state();
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn fill_glyphs(
+    pub(crate) fn fill_glyphs(
         &mut self,
         start: Point,
         sc: &mut SerializeContext,
@@ -285,7 +285,7 @@ impl ContentBuilder {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn stroke_glyphs(
+    pub(crate) fn stroke_glyphs(
         &mut self,
         start: Point,
         sc: &mut SerializeContext,
@@ -541,13 +541,13 @@ impl ContentBuilder {
         );
     }
 
-    pub fn draw_masked(&mut self, sc: &mut SerializeContext, mask: Mask, stream: Stream) {
+    pub(crate) fn draw_masked(&mut self, sc: &mut SerializeContext, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask, sc);
         let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(sc, x_object, &state);
     }
 
-    pub fn draw_opacified(
+    pub(crate) fn draw_opacified(
         &mut self,
         sc: &mut SerializeContext,
         opacity: NormalizedF32,
@@ -560,14 +560,14 @@ impl ContentBuilder {
         self.draw_xobject(sc, x_object, &state);
     }
 
-    pub fn draw_isolated(&mut self, sc: &mut SerializeContext, stream: Stream) {
+    pub(crate) fn draw_isolated(&mut self, sc: &mut SerializeContext, stream: Stream) {
         let state = ExtGState::new();
         let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(sc, x_object, &state);
     }
 
     #[cfg(feature = "raster-images")]
-    pub fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializeContext) {
+    pub(crate) fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializeContext) {
         self.apply_isolated_op(
             |sb, _| {
                 // Scale the image from 1x1 to the actual dimensions.
@@ -1003,14 +1003,14 @@ impl<T> TextSpan<'_, T>
 where
     T: Glyph,
 {
-    pub fn glyphs(&self) -> &[T] {
+    pub(crate) fn glyphs(&self) -> &[T] {
         match self {
             TextSpan::Unspanned(glyphs) => glyphs,
             TextSpan::Spanned(glyphs, _) => glyphs,
         }
     }
 
-    pub fn actual_text(&self) -> Option<&str> {
+    pub(crate) fn actual_text(&self) -> Option<&str> {
         match self {
             TextSpan::Unspanned(_) => None,
             TextSpan::Spanned(_, text) => Some(text),
@@ -1049,7 +1049,7 @@ impl<'a, T> TextSpanner<'a, T>
 where
     T: Glyph,
 {
-    pub fn new(
+    pub(crate) fn new(
         slice: &'a [T],
         text: &'a str,
         paint_mode: PaintMode<'a>,

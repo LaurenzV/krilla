@@ -278,11 +278,11 @@ impl From<PageTagIdentifier> for Identifier {
 }
 
 impl PageTagIdentifier {
-    pub fn new(page_index: usize, mcid: i32) -> Self {
+    pub(crate) fn new(page_index: usize, mcid: i32) -> Self {
         Self { page_index, mcid }
     }
 
-    pub fn bump(&mut self) -> PageTagIdentifier {
+    pub(crate) fn bump(&mut self) -> PageTagIdentifier {
         let old = *self;
 
         self.mcid = self.mcid.checked_add(1).unwrap();

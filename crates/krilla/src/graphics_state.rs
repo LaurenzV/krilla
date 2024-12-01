@@ -12,7 +12,7 @@ use crate::util::HashExt;
 /// when adding an image/path instead of having to
 /// use `save_state`/`restore_state` excessively.
 #[derive(Debug, PartialEq, Clone)]
-pub struct GraphicsState {
+pub(crate) struct GraphicsState {
     ext_g_state: ExtGState,
     ctm: Transform,
 }
@@ -35,19 +35,19 @@ impl Default for GraphicsState {
 }
 
 impl GraphicsState {
-    pub fn combine(&mut self, other: &ExtGState) {
+    pub(crate) fn combine(&mut self, other: &ExtGState) {
         self.ext_g_state.combine(other);
     }
 
-    pub fn concat_transform(&mut self, transform: Transform) {
+    pub(crate) fn concat_transform(&mut self, transform: Transform) {
         self.ctm = self.ctm.pre_concat(transform);
     }
 
-    pub fn transform(&self) -> Transform {
+    pub(crate) fn transform(&self) -> Transform {
         self.ctm
     }
 
-    pub fn ext_g_state(&self) -> &ExtGState {
+    pub(crate) fn ext_g_state(&self) -> &ExtGState {
         &self.ext_g_state
     }
 }
@@ -60,38 +60,38 @@ pub struct GraphicsStates {
 }
 
 impl GraphicsStates {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         GraphicsStates {
             graphics_states: vec![GraphicsState::default()],
         }
     }
 
-    pub fn cur(&self) -> &GraphicsState {
+    pub(crate) fn cur(&self) -> &GraphicsState {
         self.graphics_states.last().unwrap()
     }
 
-    pub fn cur_mut(&mut self) -> &mut GraphicsState {
+    pub(crate) fn cur_mut(&mut self) -> &mut GraphicsState {
         self.graphics_states.last_mut().unwrap()
     }
 
-    pub fn save_state(&mut self) {
+    pub(crate) fn save_state(&mut self) {
         let state = self.cur();
         self.graphics_states.push(state.clone())
     }
 
-    pub fn restore_state(&mut self) {
+    pub(crate) fn restore_state(&mut self) {
         self.graphics_states.pop();
     }
 
-    pub fn combine(&mut self, other: &ExtGState) {
+    pub(crate) fn combine(&mut self, other: &ExtGState) {
         self.cur_mut().combine(other);
     }
 
-    pub fn transform(&mut self, transform: Transform) {
+    pub(crate) fn transform(&mut self, transform: Transform) {
         self.cur_mut().concat_transform(transform);
     }
 
-    pub fn transform_bbox(&self, bbox: Rect) -> Rect {
+    pub(crate) fn transform_bbox(&self, bbox: Rect) -> Rect {
         // Important: This does not take the root transform of the
         // corresponding ContentBuilder into account, because we
         // want it to be in krilla coordinates, not in PDF
