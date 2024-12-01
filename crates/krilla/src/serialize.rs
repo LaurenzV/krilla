@@ -28,6 +28,7 @@ use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
 use tiny_skia_path::Size;
@@ -177,34 +178,12 @@ enum StructParentElement {
 ///   etc.
 pub(crate) struct SerializerContext {
     font_cache: HashMap<Arc<FontInfo>, Font>,
-    pub(crate) named_destinations: HashMap<NamedDestination, Ref>,
-    pub(crate) used_named_destinations: BTreeSet<NamedDestination>,
-    font_map: HashMap<Font, Rc<RefCell<FontContainer>>>,
-    xyz_dests: Vec<(Ref, XyzDestination)>,
     page_tree_ref: Option<Ref>,
-    /// Keep track of some necessary information for each page we have written so far.
-    /// This is necessary because in the end, we might for example need to get the Ref
-    /// of specific pages. Another use case is that we need access to the height of a page
-    /// to convert from krilla coordinates to PDF coordinates.
+    pub(crate) global_objects: GlobalObjects,
     page_infos: Vec<PageInfo>,
-    /// All the pages we have written so far. Unlike other objects, pages cannot be written
-    /// as soon as they are finished, but we need defer writing to until we call `finish()`.
-    /// The (one?) reason for this is that as part of serializing pages, we also serialize its
-    /// annotations. However, annotations can also reference future pages which have not been
-    /// written yet, and thus do not have a Ref. Because of this, this can only be done in the
-    /// very end.
-    pages: Vec<(Ref, InternalPage)>,
-    /// This array keeps track of the values we need to write for the struct parent tree. Each
-    /// element can either be from an annotation (identified by page index and annotation index) or
-    /// from a page (identified by page index and the number of mcids on that page).
-    struct_parents: Vec<StructParentElement>,
-    /// The outline of the document, optionally set by the user.
-    outline: Option<Outline>,
     /// Keep track of object hashes and their corresponding reference. This is used for
     /// caching, so that for example same images will not be embedded twice in the document.
     cached_mappings: HashMap<u128, Ref>,
-    /// The tag tree of the document, optionally set by the user.
-    tag_tree: Option<TagTree>,
     /// The current ref in use. All serializers should use the `new_ref` method (which indirectly
     /// is based on this field) to generate a new Ref, instead of creating one manually with
     /// `Ref::new`.
@@ -240,18 +219,11 @@ impl SerializerContext {
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
-            named_destinations: HashMap::new(),
-            used_named_destinations: BTreeSet::new(),
-            xyz_dests: Vec::new(),
+            global_objects: GlobalObjects::default(),
             cur_ref: Ref::new(1),
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
-            struct_parents: vec![],
-            outline: None,
             page_infos: vec![],
-            pages: vec![],
-            tag_tree: None,
-            font_map: HashMap::new(),
             validation_errors: vec![],
             serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
@@ -264,8 +236,8 @@ impl SerializerContext {
                 return None;
             }
 
-            let id = self.struct_parents.len();
-            self.struct_parents
+            let id = self.global_objects.struct_parents.len();
+            self.global_objects.struct_parents
                 .push(StructParentElement::Page(page_index, num_mcids));
             Some(i32::try_from(id).unwrap())
         } else {
@@ -279,8 +251,8 @@ impl SerializerContext {
         annotation_index: usize,
     ) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
-            let id = self.struct_parents.len();
-            self.struct_parents.push(StructParentElement::Annotation(
+            let id = self.global_objects.struct_parents.len();
+            self.global_objects.struct_parents.push(StructParentElement::Annotation(
                 page_index,
                 annotation_index,
             ));
@@ -299,7 +271,7 @@ impl SerializerContext {
     }
 
     pub fn set_outline(&mut self, outline: Outline) {
-        self.outline = Some(outline);
+        self.global_objects.outline = MaybeTaken::new(Some(outline));
     }
 
     pub fn set_metadata(&mut self, metadata: Metadata) {
@@ -308,13 +280,17 @@ impl SerializerContext {
 
     pub fn add_named_destination(&mut self, nd: NamedDestination, location: XyzDestination) {
         let dest_ref = self.add_xyz_dest(location);
-        self.named_destinations.insert(nd, dest_ref);
+        self.global_objects.named_destinations.insert(nd, dest_ref);
+    }
+
+    pub fn add_used_named_destination(&mut self, nd: NamedDestination) {
+        self.global_objects.used_named_destinations.insert(nd);
     }
 
     pub fn set_tag_tree(&mut self, root: TagTree) {
         // Only set the tag tree if the user actually enabled tagging.
         if self.serialize_settings.enable_tagging {
-            self.tag_tree = Some(root)
+            self.global_objects.tag_tree = MaybeTaken::new(Some(root))
         }
     }
 
@@ -346,7 +322,7 @@ impl SerializerContext {
             // Will be populated when the page is serialized.
             annotations: vec![],
         });
-        self.pages.push((ref_, page));
+        self.global_objects.pages.push((ref_, page));
     }
 
     pub fn new_ref(&mut self) -> Ref {
@@ -438,7 +414,7 @@ impl SerializerContext {
 
     pub fn add_xyz_dest(&mut self, dest: XyzDestination) -> Ref {
         let root_ref = self.new_ref();
-        self.xyz_dests.push((root_ref, dest));
+        self.global_objects.xyz_dests.push((root_ref, dest));
         root_ref
     }
 
@@ -450,7 +426,7 @@ impl SerializerContext {
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
-        self.font_map
+        self.global_objects.font_map
             .entry(font.clone())
             .or_insert_with(|| {
                 self.font_cache
@@ -614,8 +590,7 @@ impl SerializerContext {
         });
 
         if let Some(container) = PageLabelContainer::new(
-            &self
-                .pages
+            &self.global_objects.pages
                 .iter()
                 .map(|(_, p)| p.page_settings.page_label().clone())
                 .collect::<Vec<_>>(),
@@ -625,7 +600,7 @@ impl SerializerContext {
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
 
-        let outline = std::mem::take(&mut self.outline);
+        let outline = self.global_objects.outline.take();
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
             let chunk = outline.serialize(&mut self, outline_ref)?;
@@ -634,7 +609,7 @@ impl SerializerContext {
             self.register_validation_error(ValidationError::MissingDocumentOutline);
         }
 
-        let fonts = std::mem::take(&mut self.font_map);
+        let fonts = self.global_objects.font_map.take();
         for font_container in fonts.values() {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
@@ -652,7 +627,7 @@ impl SerializerContext {
             }
         }
 
-        let pages = std::mem::take(&mut self.pages);
+        let pages = self.global_objects.pages.take();
         for (ref_, page) in pages {
             let chunk = page.serialize(&mut self, ref_)?;
             self.chunk_container.pages.push(chunk);
@@ -667,7 +642,7 @@ impl SerializerContext {
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
 
-        let xyz_dests = std::mem::take(&mut self.xyz_dests);
+        let xyz_dests = self.global_objects.xyz_dests.take();
         for (ref_, dest) in &xyz_dests {
             let chunk = dest.serialize(&mut self, *ref_)?;
             self.chunk_container.destinations.push(chunk);
@@ -676,8 +651,8 @@ impl SerializerContext {
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
-        let tag_tree = std::mem::take(&mut self.tag_tree);
-        let struct_parents = std::mem::take(&mut self.struct_parents);
+        let tag_tree = self.global_objects.tag_tree.take();
+        let struct_parents = self.global_objects.struct_parents.take();
         if let Some(root) = &tag_tree {
             let mut parent_tree_map = HashMap::new();
             let mut id_tree_map = BTreeMap::new();
@@ -792,10 +767,71 @@ impl SerializerContext {
             return Err(KrillaError::ValidationError(self.validation_errors));
         }
 
-        // Just a sanity check.
-        assert!(self.font_map.is_empty());
-        assert!(self.pages.is_empty());
+        self.global_objects.assert_all_taken();
 
         Ok(serialized)
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct MaybeTaken<T>(T, RefCell<bool>);
+
+impl<T> MaybeTaken<T> {
+    pub fn new(item: T) -> Self {
+        Self(item, RefCell::new(false))
+    }
+
+    pub fn is_taken(&self) -> bool {
+        *self.1.borrow()
+    }
+}
+
+impl<T> MaybeTaken<T> where T: Default {
+    pub fn take(&mut self) -> T {
+        assert!(!*self.1.borrow());
+        let mut taken = self.1.borrow_mut();
+        *taken = true;
+        std::mem::replace(&mut self.0, T::default())
+    }
+}
+
+impl<T> Deref for MaybeTaken<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        assert!(!*self.1.borrow());
+        &self.0
+    }
+}
+
+impl<T> DerefMut for MaybeTaken<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        assert!(!*self.1.borrow());
+        &mut self.0
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct GlobalObjects {
+    pub named_destinations: MaybeTaken<HashMap<NamedDestination, Ref>>,
+    font_map: MaybeTaken<HashMap<Font, Rc<RefCell<FontContainer>>>>,
+    pub used_named_destinations: MaybeTaken<BTreeSet<NamedDestination>>,
+    xyz_dests: MaybeTaken<Vec<(Ref, XyzDestination)>>,
+    pages: MaybeTaken<Vec<(Ref, InternalPage)>>,
+    struct_parents: MaybeTaken<Vec<StructParentElement>>,
+    outline: MaybeTaken<Option<Outline>>,
+    tag_tree: MaybeTaken<Option<TagTree>>,
+}
+
+impl GlobalObjects {
+    pub fn assert_all_taken(&self) {
+        assert!(self.named_destinations.is_taken());
+        assert!(self.font_map.is_taken());
+        assert!(self.used_named_destinations.is_taken());
+        assert!(self.xyz_dests.is_taken());
+        assert!(self.pages.is_taken());
+        assert!(self.struct_parents.is_taken());
+        assert!(self.outline.is_taken());
+        assert!(self.tag_tree.is_taken());
     }
 }

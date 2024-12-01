@@ -211,6 +211,9 @@ impl ChunkContainer {
         xmp.rendition_class(RenditionClass::Proof);
         sc.serialize_settings().pdf_version.write_xmp(&mut xmp);
 
+        let used_destinations = sc.global_objects.used_named_destinations.take();
+        let named_destinations = sc.global_objects.named_destinations.take();
+
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
@@ -280,15 +283,13 @@ impl ChunkContainer {
                 catalog.outlines(ol.0);
             }
 
-            if !sc.used_named_destinations.is_empty() {
+            if !used_destinations.is_empty() {
                 // Cannot use pdf-writer API here because it requires Ref's, while
                 // we write our destinations directly into the array.
                 let mut names = catalog.names();
                 let mut name_tree = names.destinations();
                 let mut name_entries = name_tree.names();
 
-                let used_destinations = std::mem::take(&mut sc.used_named_destinations);
-                let named_destinations = std::mem::take(&mut sc.named_destinations);
                 for name in &used_destinations {
                     let dest =
                         named_destinations

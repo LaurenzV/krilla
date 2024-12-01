@@ -67,7 +67,7 @@ impl NamedDestination {
         sc: &mut SerializerContext,
         destination: Obj,
     ) -> KrillaResult<()> {
-        sc.used_named_destinations.insert(self.clone());
+        sc.add_used_named_destination(self.clone());
         destination.primitive(Str(self.name.as_bytes()));
         Ok(())
     }
