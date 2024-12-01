@@ -110,7 +110,7 @@ struct TestImage {
     original_dynamic: Arc<DynamicImage>,
     alpha_channel: OnceLock<Option<Arc<Vec<u8>>>>,
     actual_dynamic: OnceLock<Arc<DynamicImage>>,
-    icc: Option<Vec<u8>>
+    icc: Option<Vec<u8>>,
 }
 
 impl TestImage {
@@ -131,31 +131,37 @@ impl Hash for TestImage {
     }
 }
 
-
 impl CustomImage for TestImage {
     fn color_channel(&self) -> &[u8] {
-        self.actual_dynamic.get_or_init(|| {
-            let dynamic = self.original_dynamic.clone();
-            let channel_count = dynamic.color().channel_count();
+        self.actual_dynamic
+            .get_or_init(|| {
+                let dynamic = self.original_dynamic.clone();
+                let channel_count = dynamic.color().channel_count();
 
-            match (dynamic.as_ref(), channel_count) {
-                (DynamicImage::ImageLuma8(_), _) => dynamic.clone(),
-                (DynamicImage::ImageRgb8(_), _) => dynamic.clone(),
-                (_, 1 | 2) => Arc::new(DynamicImage::ImageLuma8(dynamic.to_luma8())),
-                _ => Arc::new(DynamicImage::ImageRgb8(dynamic.to_rgb8())),
-            }
-        }).as_bytes()
+                match (dynamic.as_ref(), channel_count) {
+                    (DynamicImage::ImageLuma8(_), _) => dynamic.clone(),
+                    (DynamicImage::ImageRgb8(_), _) => dynamic.clone(),
+                    (_, 1 | 2) => Arc::new(DynamicImage::ImageLuma8(dynamic.to_luma8())),
+                    _ => Arc::new(DynamicImage::ImageRgb8(dynamic.to_rgb8())),
+                }
+            })
+            .as_bytes()
     }
 
     fn alpha_channel(&self) -> Option<&[u8]> {
-        self.alpha_channel.get_or_init(||
-            self.original_dynamic.color().has_alpha()
-                .then(|| Arc::new(self.original_dynamic
-                    .pixels()
-                    .map(|(_, _, Rgba([_, _, _, a]))| a)
-                    .collect())
-                )
-        ).as_ref().map(|v| &***v)
+        self.alpha_channel
+            .get_or_init(|| {
+                self.original_dynamic.color().has_alpha().then(|| {
+                    Arc::new(
+                        self.original_dynamic
+                            .pixels()
+                            .map(|(_, _, Rgba([_, _, _, a]))| a)
+                            .collect(),
+                    )
+                })
+            })
+            .as_ref()
+            .map(|v| &***v)
     }
 
     fn bits_per_component(&self) -> BitsPerComponent {
@@ -173,7 +179,7 @@ impl CustomImage for TestImage {
     fn color_space(&self) -> ImageColorspace {
         if self.original_dynamic.color().has_color() {
             ImageColorspace::Rgb
-        }   else {
+        } else {
             ImageColorspace::Luma
         }
     }
@@ -298,13 +304,19 @@ pub fn load_webp_image(name: &str) -> Image {
 }
 
 pub fn load_custom_image(name: &str) -> Image {
-    Image::from_custom(TestImage::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(), None))
-        .unwrap()
+    Image::from_custom(TestImage::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+        None,
+    ))
+    .unwrap()
 }
 
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {
-    Image::from_custom(TestImage::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(), Some(icc)))
-        .unwrap()
+    Image::from_custom(TestImage::new(
+        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+        Some(icc),
+    ))
+    .unwrap()
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {

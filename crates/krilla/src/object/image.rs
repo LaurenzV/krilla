@@ -260,7 +260,7 @@ impl Image {
 
                 Some(Repr::Sampled(SampledRepr {
                     color_channel: deflate_encode(color_channel),
-                    alpha_channel: image.alpha_channel().map(|a| deflate_encode(a)),
+                    alpha_channel: image.alpha_channel().map(deflate_encode),
                     bits_per_component: image.bits_per_component(),
                 }))
             }),
@@ -693,7 +693,10 @@ mod tests {
     use crate::image::Image;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
-    use crate::tests::{load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image, load_png_image, load_webp_image};
+    use crate::tests::{
+        load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image,
+        load_png_image, load_webp_image,
+    };
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::Size;
@@ -726,7 +729,10 @@ mod tests {
     // ICC profile should be ignored.
     #[snapshot]
     fn image_custom_rgb8_png_invalid_icc(sc: &mut SerializerContext) {
-        sc.register_image(load_custom_image_with_icc("rgb8.png", std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap()));
+        sc.register_image(load_custom_image_with_icc(
+            "rgb8.png",
+            std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
+        ));
     }
 
     #[snapshot]

@@ -262,7 +262,7 @@ pub(crate) struct FilterStream<'a> {
     filters: StreamFilters,
 }
 
-impl<'a> FilterStream<'a> {
+impl FilterStream<'_> {
     pub fn encoded_data(&self) -> &[u8] {
         &self.content
     }
