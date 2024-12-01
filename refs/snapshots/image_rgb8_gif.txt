@@ -3,23 +3,6 @@
 
 1 0 obj
 <<
-  /Length 123
-  /Type /XObject
-  /Subtype /Image
-  /Filter [/ASCIIHexDecode /FlateDecode]
-  /Width 200
-  /Height 200
-  /ColorSpace /DeviceGray
-  /BitsPerComponent 8
->>
-stream
-789CEDC03101000000C2A0FEA9E7650B28000000000000000000000000000000000000
-0000000000000000000000000000000000000000E0060AB0ACD6
-endstream
-endobj
-
-2 0 obj
-<<
   /Length 1988
   /Type /XObject
   /Subtype /Image
@@ -28,7 +11,6 @@ endobj
   /Height 200
   /ColorSpace /DeviceRGB
   /BitsPerComponent 8
-  /SMask 1 0 R
 >>
 stream
 789CEDD2696B170400C7F15F1145417440041D50540441104504121112518420445154
