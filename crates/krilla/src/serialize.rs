@@ -413,7 +413,7 @@ impl SerializerContext {
 
     pub fn add_xyz_destination(&mut self, dest: XyzDestination) -> Ref {
         self.register_cached(dest, |sc, object, root_ref| {
-            sc.global_objects.xyz_dests.push((root_ref, object));
+            sc.global_objects.xyz_destinations.push((root_ref, object));
         })
     }
 
@@ -578,17 +578,53 @@ impl SerializerContext {
 
     pub fn finish(mut self) -> KrillaResult<Pdf> {
         // We need to be careful here that we serialize the objects in the right order,
-        // as in some cases we use `std::mem::take` to remove an object, which means that
+        // as in some cases we use MaybeTake::take to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
 
-        // Write output intent, if required by the validator.
+        // Serialize all objects that can only be written in the end.
+        self.write_destination_proviles();
+        self.serialize_page_label_tree();
+        self.serialize_outline()?;
+        self.serialize_fonts()?;
+        self.serialize_pages()?;
+        self.serialize_page_tree();
+        self.serialize_xyz_destinations()?;
+        // It is important that we serialize the tags AFTER we have serialized the pages,
+        // because page serialization will update the annotation refs of the page infos,
+        // and when serializing the parent tree map we need to know the refs of the annotations
+        self.serialize_tag_tree()?;
+
+        // Create the final PDF.
+        let pdf = {
+            let chunk_container = std::mem::take(&mut self.chunk_container);
+            chunk_container.finish(&mut self)?
+        };
+        self.register_limits(pdf.limits());
+
+        self.check_limits();
+
+        if !self.validation_errors.is_empty() {
+            return Err(KrillaError::ValidationError(self.validation_errors));
+        }
+
+        // Just a sanity check that we've actually processed all items.
+        self.global_objects.assert_all_taken();
+
+        Ok(pdf)
+    }
+
+    // All methods are supposed to only be called once in `finish`!
+
+    fn write_destination_proviles(&mut self) {
         let validator = self.serialize_settings.validator;
         self.chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
             let root_ref = self.new_ref();
             let chunk = self.get_output_intents(subtype, root_ref);
             (root_ref, chunk)
         });
+    }
 
+    fn serialize_page_label_tree(&mut self) {
         if let Some(container) = PageLabelContainer::new(
             &self
                 .global_objects
@@ -598,43 +634,57 @@ impl SerializerContext {
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();
-            let chunk = container.serialize(&mut self, page_label_tree_ref);
+            let chunk = container.serialize(self, page_label_tree_ref);
             self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
         }
+    }
 
+    fn serialize_outline(&mut self) -> KrillaResult<()> {
         let outline = self.global_objects.outline.take();
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
-            let chunk = outline.serialize(&mut self, outline_ref)?;
+            let chunk = outline.serialize(self, outline_ref)?;
             self.chunk_container.outline = Some((outline_ref, chunk));
         } else {
             self.register_validation_error(ValidationError::MissingDocumentOutline);
         }
 
+        Ok(())
+    }
+
+    fn serialize_fonts(&mut self) -> KrillaResult<()> {
         let fonts = self.global_objects.font_map.take();
         for font_container in fonts.values() {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
                         let f = self.add_font_identifier(t3_font.identifier());
-                        let chunk = t3_font.serialize(&mut self, f.get_ref());
+                        let chunk = t3_font.serialize(self, f.get_ref());
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
                     let f = self.add_font_identifier(cid_font.identifier());
-                    let chunk = cid_font.serialize(&mut self, f.get_ref())?;
+                    let chunk = cid_font.serialize(self, f.get_ref())?;
                     self.chunk_container.fonts.push(chunk);
                 }
             }
         }
 
+        Ok(())
+    }
+
+    fn serialize_pages(&mut self) -> KrillaResult<()> {
         let pages = self.global_objects.pages.take();
         for (ref_, page) in pages {
-            let chunk = page.serialize(&mut self, ref_)?;
+            let chunk = page.serialize(self, ref_)?;
             self.chunk_container.pages.push(chunk);
         }
 
+        Ok(())
+    }
+
+    fn serialize_page_tree(&mut self) {
         if let Some(page_tree_ref) = self.page_tree_ref {
             let mut page_tree_chunk = Chunk::new();
             page_tree_chunk
@@ -643,16 +693,19 @@ impl SerializerContext {
                 .kids(self.page_infos.iter().map(|i| i.ref_));
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
+    }
 
-        let xyz_dests = self.global_objects.xyz_dests.take();
-        for (ref_, dest) in &xyz_dests {
-            let chunk = dest.serialize(&mut self, *ref_)?;
+    fn serialize_xyz_destinations(&mut self) -> KrillaResult<()> {
+        let xyz_destinations = self.global_objects.xyz_destinations.take();
+        for (ref_, dest) in &xyz_destinations {
+            let chunk = dest.serialize(self, *ref_)?;
             self.chunk_container.destinations.push(chunk);
         }
 
-        // It is important that we serialize the tags AFTER we have serialized the pages,
-        // because page serialization will update the annotation refs of the page infos,
-        // and when serializing the parent tree map we need to know the refs of the annotations
+        Ok(())
+    }
+
+    fn serialize_tag_tree(&mut self) -> KrillaResult<()> {
         let tag_tree = self.global_objects.tag_tree.take();
         let struct_parents = self.global_objects.struct_parents.take();
         if let Some(root) = &tag_tree {
@@ -660,7 +713,7 @@ impl SerializerContext {
             let mut id_tree_map = BTreeMap::new();
             let struct_tree_root_ref = self.new_ref();
             let (document_ref, struct_elems) = root.serialize(
-                &mut self,
+                self,
                 &mut parent_tree_map,
                 &mut id_tree_map,
                 struct_tree_root_ref,
@@ -727,7 +780,6 @@ impl SerializerContext {
             }
 
             tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
-
             tree.finish();
 
             for sub_chunk in sub_chunks {
@@ -737,13 +789,13 @@ impl SerializerContext {
             self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
         }
 
+        Ok(())
+    }
+
+    fn check_limits(&mut self) {
         if self.cur_ref > Ref::new(8388607) {
             self.register_validation_error(ValidationError::TooManyIndirectObjects)
         }
-
-        let chunk_container = std::mem::take(&mut self.chunk_container);
-        let serialized = chunk_container.finish(&mut self)?;
-        self.limits.merge(serialized.limits());
 
         if self.limits.str_len() > STR_LEN {
             self.register_validation_error(ValidationError::TooLongString);
@@ -764,17 +816,16 @@ impl SerializerContext {
         if self.limits.dict_entries() > DICT_LEN {
             self.register_validation_error(ValidationError::TooLongDictionary);
         }
-
-        if !self.validation_errors.is_empty() {
-            return Err(KrillaError::ValidationError(self.validation_errors));
-        }
-
-        self.global_objects.assert_all_taken();
-
-        Ok(serialized)
     }
 }
 
+/// This struct is essentially a thin wrapper around `std::mem::replace`. When finishing the
+/// document, we need to take ownership of many of the items in `GlobalObjects` in order to
+/// prevent having to clone them. However, the problem is that we cannot easily take ownership
+/// of them, because they are part of the SerializerContext. Because of this, what we
+/// do is that we `std::mem::replace` the elements step by step and then serialize them.
+/// The `MaybeTaken` struct helps us to ensure that once we have taken a value, we do not
+/// accidentally attempt to write/read it again.
 #[derive(Default)]
 pub(crate) struct MaybeTaken<T>(T, RefCell<bool>);
 
@@ -819,13 +870,24 @@ impl<T> DerefMut for MaybeTaken<T> {
 #[derive(Default)]
 pub(crate) struct GlobalObjects {
     /// All named destinations that have been registered, including a Ref to their destination.
+    // Needs to be public because writing of named destinations happens in `ChunkContainer`.
     pub named_destinations: MaybeTaken<HashMap<NamedDestination, Ref>>,
     /// A map from fonts to font container.
     font_map: MaybeTaken<HashMap<Font, Rc<RefCell<FontContainer>>>>,
-    xyz_dests: MaybeTaken<Vec<(Ref, XyzDestination)>>,
+    /// All XYZ destinations used in the document. The reason we need to store them
+    /// separately is that we can only serialize them in the very end, once all pages
+    /// have been written, so that we know the Ref of the page they belong to.
+    xyz_destinations: MaybeTaken<Vec<(Ref, XyzDestination)>>,
+    /// All pages and their corresponding chunks. Similarly to destinations, they need
+    /// to be written in the very end, because pages might contain annotations which in turn
+    /// depend on future pages (not written yet), so pages must also only be written in the
+    /// very end.
     pages: MaybeTaken<Vec<(Ref, InternalPage)>>,
+    /// Stores the struct parent elements.
     struct_parents: MaybeTaken<Vec<StructParentElement>>,
+    /// Stores the document outline.
     outline: MaybeTaken<Option<Outline>>,
+    /// Stores the tag tree.
     tag_tree: MaybeTaken<Option<TagTree>>,
 }
 
@@ -833,7 +895,7 @@ impl GlobalObjects {
     pub fn assert_all_taken(&self) {
         assert!(self.named_destinations.is_taken());
         assert!(self.font_map.is_taken());
-        assert!(self.xyz_dests.is_taken());
+        assert!(self.xyz_destinations.is_taken());
         assert!(self.pages.is_taken());
         assert!(self.struct_parents.is_taken());
         assert!(self.outline.is_taken());
