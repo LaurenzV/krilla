@@ -233,6 +233,7 @@ impl Image {
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T) -> Option<Image> {
+        // TODO: Add tests
         let hash = image.sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
@@ -610,7 +611,7 @@ fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, Bi
         _ => unimplemented!(),
     };
 
-    let alpha_channel = if !alphas.is_empty() {
+    let alpha_channel = if !alphas.is_empty() && alphas.iter().any(|v| *v != 255) {
         Some(deflate_encode(&alphas))
     } else {
         None
