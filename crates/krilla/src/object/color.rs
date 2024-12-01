@@ -41,12 +41,12 @@
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializerContext;
-use crate::stream::FilterStreamBuilder;
+use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
+use std::fmt::Debug;
+use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
@@ -270,23 +270,10 @@ pub(crate) enum ColorSpace {
     Cmyk(ICCBasedColorSpace<4>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Hash, Debug)]
 struct Repr {
-    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    data: Vec<u8>,
     metadata: ICCMetadata,
-}
-
-impl Debug for Repr {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "ICC Profile")
-    }
-}
-
-impl Hash for Repr {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.data.as_ref().as_ref().hash(state);
-        self.metadata.hash(state);
-    }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -330,14 +317,14 @@ impl<const C: u8> ICCProfile<C> {
     /// Returns `None` if the metadata of the profile couldn't be read or if the
     /// number of channels of the underlying data does not correspond to the one
     /// indicated in the constant parameter.
-    pub fn new(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Self> {
-        let metadata = ICCMetadata::from_data(data.as_ref().as_ref())?;
+    pub fn new(data: &[u8]) -> Option<Self> {
+        let metadata = ICCMetadata::from_data(data)?;
 
         if metadata.color_space.num_components() != C {
             return None;
         }
 
-        Some(Self(Arc::new(Prehashed::new(Repr { data, metadata }))))
+        Some(Self(Arc::new(Prehashed::new(Repr { data: deflate_encode(data), metadata }))))
     }
 
     pub(crate) fn metadata(&self) -> &ICCMetadata {
@@ -353,7 +340,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let icc_stream =
-            FilterStreamBuilder::new_from_binary_data(self.0.deref().data.as_ref().as_ref())
+            FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
                 .finish(&sc.serialize_settings());
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
