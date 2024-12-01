@@ -18,7 +18,7 @@ use crate::path::{Fill, FillRule};
 use crate::surface::Surface;
 
 /// Draw a COLR-based glyph on a surface.
-pub fn draw_glyph(
+pub(crate) fn draw_glyph(
     font: Font,
     glyph: GlyphId,
     paint_mode: PaintMode,

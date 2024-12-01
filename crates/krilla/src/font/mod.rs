@@ -80,11 +80,11 @@ impl Font {
         font_info: Arc<FontInfo>,
     ) -> Option<Self> {
         let font_ref_yoke =
-            Yoke::<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
+            Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.clone(),
                 |data| {
                     let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
-                    FontRefWrapper {
+                    FontRefYoke {
                         font_ref: font_ref.clone(),
                         glyph_metrics: font_ref
                             .glyph_metrics(Size::unscaled(), LocationRef::default()),
@@ -104,7 +104,7 @@ impl Font {
     }
 
     /// Return the index of the font.
-    pub fn index(&self) -> u32 {
+    pub(crate) fn index(&self) -> u32 {
         self.font_info().index
     }
 
@@ -210,7 +210,7 @@ pub(crate) struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_data: Arc<dyn AsRef<[u8]> + Send + Sync>,
-    font_ref_yoke: Yoke<FontRefWrapper<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
+    font_ref_yoke: Yoke<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
 }
 
 impl Hash for Repr {
@@ -287,7 +287,7 @@ impl FontInfo {
 /// A yoke so that we can attach a `FontRef` object to the corresponding `Font`,
 /// without running into lifetime issues.
 #[derive(Yokeable, Clone)]
-struct FontRefWrapper<'a> {
+struct FontRefYoke<'a> {
     pub font_ref: FontRef<'a>,
     pub glyph_metrics: GlyphMetrics<'a>,
 }
@@ -380,8 +380,9 @@ pub enum GlyphUnits {
     UserSpace,
 }
 
-/// A glyph type that implements `Glyph`. You can use it if you don't
-/// have your own type of glyph that you want to use.
+/// A glyph type that implements `Glyph`.
+///
+/// You can use it if you don't  have your own type of glyph that you want to use.
 #[derive(Debug, Clone)]
 pub struct KrillaGlyph {
     /// The glyph ID of the glyph.
@@ -426,7 +427,7 @@ impl Glyph for KrillaGlyph {
 }
 
 impl KrillaGlyph {
-    /// Create a new glyph.
+    /// Create a new Krilla glyph.
     pub fn new(
         glyph_id: GlyphId,
         x_advance: f32,

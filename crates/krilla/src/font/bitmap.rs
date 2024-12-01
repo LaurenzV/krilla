@@ -11,7 +11,7 @@ use crate::object::image::Image;
 use crate::surface::Surface;
 
 /// Draw a bitmap-based glyph on a surface.
-pub fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
     let metrics = font
         .font_ref()
         .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
@@ -73,6 +73,7 @@ mod utils {
 
     // Based on https://github.com/googlefonts/fontations/blob/cbdf8b485e955e3acee40df1344e33908805ed31/skrifa/src/bitmap.rs
     #![allow(warnings)]
+    // TODO: Remove this once equivalent functionality is in skrifa.
 
     //! Bitmap strikes and glyphs.
     use skrifa::{

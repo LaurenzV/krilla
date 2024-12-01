@@ -14,7 +14,7 @@ use crate::surface::Surface;
 use crate::svg;
 
 /// Draw an SVG-based glyph on a surface.
-pub fn draw_glyph(
+pub(crate) fn draw_glyph(
     font: Font,
     glyph: GlyphId,
     surface: &mut Surface,
