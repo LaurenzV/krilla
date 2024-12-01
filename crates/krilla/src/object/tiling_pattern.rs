@@ -37,7 +37,7 @@ impl Hash for TilingPattern {
 }
 
 impl TilingPattern {
-    pub fn new(
+    pub(crate) fn new(
         stream: Stream,
         transform: Transform,
         base_opacity: NormalizedF32,

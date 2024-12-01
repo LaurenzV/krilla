@@ -254,11 +254,11 @@ impl InternalPage {
 #[derive(Debug, Hash, Eq, PartialEq, Default, Clone)]
 pub struct PageLabel {
     /// The numbering style of the page label.
-    pub style: Option<NumberingStyle>,
+    pub(crate) style: Option<NumberingStyle>,
     /// The prefix of the page label.
-    pub prefix: Option<String>,
+    pub(crate) prefix: Option<String>,
     /// The numeric value of the page label.
-    pub offset: Option<NonZeroU32>,
+    pub(crate) offset: Option<NonZeroU32>,
 }
 
 impl PageLabel {

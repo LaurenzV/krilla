@@ -286,7 +286,7 @@ pub(crate) enum GenericICCProfile {
 }
 
 impl GenericICCProfile {
-    pub fn metadata(&self) -> &ICCMetadata {
+    pub(crate) fn metadata(&self) -> &ICCMetadata {
         match self {
             GenericICCProfile::Luma(l) => l.metadata(),
             GenericICCProfile::Rgb(r) => r.metadata(),
@@ -404,7 +404,7 @@ pub(crate) enum ICCColorSpace {
 }
 
 impl ICCColorSpace {
-    pub fn num_components(&self) -> u8 {
+    pub(crate) fn num_components(&self) -> u8 {
         match self {
             ICCColorSpace::Xyz => 3,
             ICCColorSpace::Lab => 3,
@@ -458,7 +458,7 @@ pub(crate) struct ICCMetadata {
 }
 
 impl ICCMetadata {
-    pub fn from_data(data: &[u8]) -> Option<Self> {
+    pub(crate) fn from_data(data: &[u8]) -> Option<Self> {
         let major = *data.get(8)?;
         let minor = *data.get(9)? >> 4;
         let color_space = {

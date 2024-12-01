@@ -28,7 +28,7 @@ impl Hash for Repr {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingPattern(Arc<Repr>);
+pub(crate) struct ShadingPattern(Arc<Repr>);
 
 impl ShadingPattern {
     pub fn new(gradient_properties: GradientProperties, shading_transform: Transform) -> Self {

@@ -20,24 +20,24 @@ use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub enum GradientType {
+pub(crate) enum GradientType {
     Sweep,
     Linear,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) struct Stop {
-    pub offset: NormalizedF32,
-    pub color: Color,
-    pub opacity: NormalizedF32,
+    pub(crate) offset: NormalizedF32,
+    pub(crate) color: Color,
+    pub(crate) opacity: NormalizedF32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct RadialAxialGradient {
-    pub coords: Vec<f32>,
-    pub shading_type: FunctionShadingType,
-    pub stops: Vec<Stop>,
-    pub anti_alias: bool,
+    pub(crate) coords: Vec<f32>,
+    pub(crate) shading_type: FunctionShadingType,
+    pub(crate) stops: Vec<Stop>,
+    pub(crate) anti_alias: bool,
 }
 
 impl Eq for RadialAxialGradient {}
@@ -56,13 +56,13 @@ impl Hash for RadialAxialGradient {
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct PostScriptGradient {
-    pub min: f32,
-    pub max: f32,
-    pub stops: Vec<Stop>,
-    pub domain: RectWrapper,
-    pub spread_method: SpreadMethod,
-    pub gradient_type: GradientType,
-    pub anti_alias: bool,
+    pub(crate) min: f32,
+    pub(crate) max: f32,
+    pub(crate) stops: Vec<Stop>,
+    pub(crate) domain: RectWrapper,
+    pub(crate) spread_method: SpreadMethod,
+    pub(crate) gradient_type: GradientType,
+    pub(crate) anti_alias: bool,
 }
 
 impl Eq for PostScriptGradient {}
@@ -87,7 +87,7 @@ pub(crate) enum GradientProperties {
 
 impl GradientProperties {
     // Check if the gradient could be encoded as a solid fill instead.
-    pub fn single_stop_color(&self) -> Option<(Color, NormalizedF32)> {
+    pub(crate) fn single_stop_color(&self) -> Option<(Color, NormalizedF32)> {
         match self {
             GradientProperties::RadialAxialGradient(rag) => {
                 if rag.stops.len() == 1 {
@@ -208,15 +208,15 @@ impl GradientPropertiesExt for RadialGradient {
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    pub properties: GradientProperties,
-    pub use_opacities: bool,
+    pub(crate) properties: GradientProperties,
+    pub(crate) use_opacities: bool,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct ShadingFunction(Arc<Repr>);
 
 impl ShadingFunction {
-    pub fn new(properties: GradientProperties, use_opacities: bool) -> Self {
+    pub(crate) fn new(properties: GradientProperties, use_opacities: bool) -> Self {
         Self(Arc::new(Repr {
             properties,
             use_opacities,

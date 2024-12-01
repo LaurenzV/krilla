@@ -22,7 +22,7 @@ pub(crate) struct XObject {
 }
 
 impl XObject {
-    pub fn new(
+    pub(crate) fn new(
         stream: Stream,
         isolated: bool,
         transparency_group_color_space: bool,
@@ -36,11 +36,11 @@ impl XObject {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.stream.is_empty()
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub(crate) fn bbox(&self) -> Rect {
         self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox.0)
     }
 }
