@@ -228,8 +228,10 @@ impl Image {
     }
 
     /// Create a new image from a custom image.
+    ///
+    /// Panics if the dimensions of the image and the length of the
+    /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T) -> Option<Image> {
-        // TODO: Add assertions
         // TODO: Allow CMYK images?
         let hash = image.sip_hash();
         let metadata = ImageMetadata {
@@ -240,10 +242,24 @@ impl Image {
 
         Some(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || {
+                let bytes_per_component = (image.bits_per_component().as_u8() / 8) as u32;
+                let color_channel_len = bytes_per_component
+                    * image.color_space().num_components() as u32
+                    * metadata.size.0
+                    * metadata.size.1;
+                let color_channel = image.color_channel();
+                assert_eq!(color_channel.len(), color_channel_len as usize);
+
+                let alpha_channel_len = bytes_per_component * metadata.size.0 * metadata.size.1;
+                let alpha_channel = image.alpha_channel();
+                if let Some(alpha_channel) = alpha_channel {
+                    assert_eq!(alpha_channel.len(), alpha_channel_len as usize);
+                }
+
                 Some(Repr::Sampled(SampledRepr {
-                    color_channel: deflate_encode(image.color_channel()),
-                    alpha_channel: image.alpha_channel().map(|c| deflate_encode(c)),
-                    bits_per_component: BitsPerComponent::Eight,
+                    color_channel: deflate_encode(color_channel),
+                    alpha_channel: image.alpha_channel().map(|a| deflate_encode(a)),
+                    bits_per_component: image.bits_per_component(),
                 }))
             }),
             metadata,
