@@ -360,7 +360,7 @@ impl ContentBuilder {
     ) {
         let font_name = self
             .rd_builder
-            .register_resource(sc.add_font_identifier(font_identifier));
+            .register_resource(sc.register_font_identifier(font_identifier));
         self.content.set_font(font_name.to_pdf_name(), size);
         self.content.set_text_matrix(
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
@@ -668,7 +668,7 @@ impl ContentBuilder {
                     let color_space = color.color_space(sc);
                     let color_space_resource = content_builder
                         .rd_builder
-                        .register_resource(sc.add_cs(color_space));
+                        .register_resource(sc.register_colorspace(color_space));
                     set_solid_fn(&mut content_builder.content, color_space_resource, color);
                 } else {
                     let shading_mask =
@@ -704,7 +704,9 @@ impl ContentBuilder {
         match &paint.0 {
             InnerPaint::Color(c) => {
                 let cs = c.color_space(sc);
-                let color_space_resource = self.rd_builder.register_resource(sc.add_cs(cs));
+                let color_space_resource = self
+                    .rd_builder
+                    .register_resource(sc.register_colorspace(cs));
                 set_solid_fn(&mut self.content, color_space_resource, *c);
             }
             InnerPaint::LinearGradient(lg) => {

@@ -272,7 +272,7 @@ fn serialize_postscript_shading(
 
     shading
         .insert(Name(b"ColorSpace"))
-        .primitive(sc.add_cs(cs).get_ref());
+        .primitive(sc.register_colorspace(cs).get_ref());
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
     shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
@@ -309,7 +309,7 @@ fn serialize_axial_radial_shading(
     }
     shading
         .insert(Name(b"ColorSpace"))
-        .primitive(sc.add_cs(cs).get_ref());
+        .primitive(sc.register_colorspace(cs).get_ref());
 
     shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);

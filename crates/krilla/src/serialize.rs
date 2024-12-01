@@ -22,7 +22,7 @@ use crate::validation::{ValidationError, Validator};
 use crate::version::PdfVersion;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
-use pdf_writer::types::{OutputIntentSubtype, StructRole};
+use pdf_writer::types::StructRole;
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
@@ -230,7 +230,54 @@ impl SerializeContext {
         }
     }
 
-    pub fn get_page_struct_parent(&mut self, page_index: usize, num_mcids: i32) -> Option<i32> {
+    pub fn page_infos(&self) -> &[PageInfo] {
+        &self.page_infos
+    }
+
+    pub fn page_infos_mut(&mut self) -> &mut [PageInfo] {
+        &mut self.page_infos
+    }
+
+    pub fn set_outline(&mut self, outline: Outline) {
+        self.global_objects.outline = MaybeTaken::new(Some(outline));
+    }
+
+    pub fn set_metadata(&mut self, metadata: Metadata) {
+        self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub fn set_tag_tree(&mut self, root: TagTree) {
+        // Only set the tag tree if the user actually enabled tagging.
+        if self.serialize_settings.enable_tagging {
+            self.global_objects.tag_tree = MaybeTaken::new(Some(root))
+        }
+    }
+
+    pub(crate) fn serialize_settings(&self) -> Arc<SerializeSettings> {
+        self.serialize_settings.clone()
+    }
+
+    pub fn page_tree_ref(&mut self) -> Ref {
+        *self
+            .page_tree_ref
+            .get_or_insert_with(|| self.cur_ref.bump())
+    }
+
+    pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
+        if self.serialize_settings.validator.prohibits(&error) {
+            self.validation_errors.push(error);
+        }
+    }
+
+    pub(crate) fn register_limits(&mut self, limits: &Limits) {
+        self.limits.merge(limits);
+    }
+
+    pub fn register_page_struct_parent(
+        &mut self,
+        page_index: usize,
+        num_mcids: i32,
+    ) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
             if num_mcids == 0 {
                 return None;
@@ -246,7 +293,7 @@ impl SerializeContext {
         }
     }
 
-    pub fn get_annotation_parent(
+    pub fn register_annotation_parent(
         &mut self,
         page_index: usize,
         annotation_index: usize,
@@ -265,55 +312,12 @@ impl SerializeContext {
         }
     }
 
-    pub fn page_infos(&self) -> &[PageInfo] {
-        &self.page_infos
-    }
-
-    pub fn page_infos_mut(&mut self) -> &mut [PageInfo] {
-        &mut self.page_infos
-    }
-
-    pub fn set_outline(&mut self, outline: Outline) {
-        self.global_objects.outline = MaybeTaken::new(Some(outline));
-    }
-
-    pub fn set_metadata(&mut self, metadata: Metadata) {
-        self.chunk_container.metadata = Some(metadata);
-    }
-
-    pub fn add_named_destination(&mut self, nd: NamedDestination) {
-        let dest_ref = self.add_xyz_destination((*nd.xyz_dest).clone());
+    pub fn register_named_destination(&mut self, nd: NamedDestination) {
+        let dest_ref = self.register_xyz_destination((*nd.xyz_dest).clone());
         self.global_objects.named_destinations.insert(nd, dest_ref);
     }
 
-    pub fn set_tag_tree(&mut self, root: TagTree) {
-        // Only set the tag tree if the user actually enabled tagging.
-        if self.serialize_settings.enable_tagging {
-            self.global_objects.tag_tree = MaybeTaken::new(Some(root))
-        }
-    }
-
-    pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
-        if self.serialize_settings.validator.prohibits(&error) {
-            self.validation_errors.push(error);
-        }
-    }
-
-    pub(crate) fn serialize_settings(&self) -> Arc<SerializeSettings> {
-        self.serialize_settings.clone()
-    }
-
-    pub(crate) fn register_limits(&mut self, limits: &Limits) {
-        self.limits.merge(limits);
-    }
-
-    pub fn page_tree_ref(&mut self) -> Ref {
-        *self
-            .page_tree_ref
-            .get_or_insert_with(|| self.cur_ref.bump())
-    }
-
-    pub fn add_page(&mut self, page: InternalPage) {
+    pub fn register_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo {
             ref_,
@@ -326,47 +330,6 @@ impl SerializeContext {
 
     pub fn new_ref(&mut self) -> Ref {
         self.cur_ref.bump()
-    }
-
-    pub fn add_cs(&mut self, cs: ColorSpace) -> resource::ColorSpace {
-        macro_rules! cs {
-            ($name:ident, $color_name:expr) => {
-                #[derive(Copy, Clone, Hash)]
-                struct $name;
-
-                impl Cacheable for $name {
-                    fn chunk_container(&self) -> ChunkContainerFn {
-                        Box::new(|cc| &mut cc.color_spaces)
-                    }
-
-                    fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
-                        let mut chunk = Chunk::new();
-                        chunk
-                            .indirect(root_ref)
-                            .primitive(Name($color_name.as_bytes()));
-                        chunk
-                    }
-                }
-
-                impl Resourceable for $name {
-                    type Resource = resource::ColorSpace;
-                }
-            };
-        }
-
-        cs!(DeviceRgb, DEVICE_RGB);
-        cs!(DeviceGray, DEVICE_GRAY);
-        cs!(DeviceCmyk, DEVICE_CMYK);
-
-        match cs {
-            ColorSpace::Srgb => self.add_srgb(),
-            ColorSpace::LinearRgb => self.add_linearrgb(),
-            ColorSpace::Luma => self.add_luma(),
-            ColorSpace::Cmyk(cs) => self.register_resourceable(cs),
-            ColorSpace::DeviceGray => self.register_resourceable(DeviceGray),
-            ColorSpace::DeviceRgb => self.register_resourceable(DeviceRgb),
-            ColorSpace::DeviceCmyk => self.register_resourceable(DeviceCmyk),
-        }
     }
 
     fn register_cached<T: SipHashable>(
@@ -411,17 +374,100 @@ impl SerializeContext {
         })
     }
 
-    pub fn add_xyz_destination(&mut self, dest: XyzDestination) -> Ref {
+    pub fn register_xyz_destination(&mut self, dest: XyzDestination) -> Ref {
         self.register_cached(dest, |sc, object, root_ref| {
             sc.global_objects.xyz_destinations.push((root_ref, object));
         })
     }
 
-    pub fn add_page_label(&mut self, page_label: PageLabel) -> Ref {
+    pub fn register_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
         let chunk = page_label.serialize(ref_);
         self.chunk_container.page_labels.push(chunk);
         ref_
+    }
+
+    pub(crate) fn register_font_identifier(&mut self, f: FontIdentifier) -> resource::Font {
+        let hash = f.sip_hash();
+        if let Some(_ref) = self.cached_mappings.get(&hash) {
+            resource::Font::new(*_ref)
+        } else {
+            let root_ref = self.new_ref();
+            self.cached_mappings.insert(hash, root_ref);
+            resource::Font::new(root_ref)
+        }
+    }
+
+    pub fn register_colorspace(&mut self, cs: ColorSpace) -> resource::ColorSpace {
+        macro_rules! cs {
+            ($name:ident, $color_name:expr) => {
+                #[derive(Copy, Clone, Hash)]
+                struct $name;
+
+                impl Cacheable for $name {
+                    fn chunk_container(&self) -> ChunkContainerFn {
+                        Box::new(|cc| &mut cc.color_spaces)
+                    }
+
+                    fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
+                        let mut chunk = Chunk::new();
+                        chunk
+                            .indirect(root_ref)
+                            .primitive(Name($color_name.as_bytes()));
+                        chunk
+                    }
+                }
+
+                impl Resourceable for $name {
+                    type Resource = resource::ColorSpace;
+                }
+            };
+        }
+
+        cs!(DeviceRgb, DEVICE_RGB);
+        cs!(DeviceGray, DEVICE_GRAY);
+        cs!(DeviceCmyk, DEVICE_CMYK);
+
+        #[derive(Copy, Clone, Hash)]
+        struct LinearRgbColorSpace;
+
+        impl Cacheable for LinearRgbColorSpace {
+            fn chunk_container(&self) -> ChunkContainerFn {
+                Box::new(|cc| &mut cc.color_spaces)
+            }
+
+            fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
+                let mut chunk = Chunk::new();
+                chunk.color_space(root_ref).cal_rgb(
+                    [0.9505, 1.0, 1.0888],
+                    None,
+                    Some([1.0, 1.0, 1.0]),
+                    Some([
+                        0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
+                    ]),
+                );
+
+                chunk
+            }
+        }
+
+        impl Resourceable for LinearRgbColorSpace {
+            type Resource = resource::ColorSpace;
+        }
+
+        match cs {
+            ColorSpace::Srgb => self.register_resourceable(ICCBasedColorSpace(
+                self.serialize_settings.pdf_version.rgb_icc(),
+            )),
+            ColorSpace::LinearRgb => self.register_resourceable(LinearRgbColorSpace),
+            ColorSpace::Luma => self.register_resourceable(ICCBasedColorSpace(
+                self.serialize_settings.pdf_version.grey_icc(),
+            )),
+            ColorSpace::Cmyk(cs) => self.register_resourceable(cs),
+            ColorSpace::DeviceGray => self.register_resourceable(DeviceGray),
+            ColorSpace::DeviceRgb => self.register_resourceable(DeviceRgb),
+            ColorSpace::DeviceCmyk => self.register_resourceable(DeviceCmyk),
+        }
     }
 
     pub fn create_or_get_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
@@ -465,60 +511,6 @@ impl SerializeContext {
             .clone()
     }
 
-    pub(crate) fn add_srgb(&mut self) -> resource::ColorSpace {
-        self.register_resourceable(ICCBasedColorSpace(
-            self.serialize_settings.pdf_version.rgb_icc(),
-        ))
-    }
-
-    pub(crate) fn add_luma(&mut self) -> resource::ColorSpace {
-        self.register_resourceable(ICCBasedColorSpace(
-            self.serialize_settings.pdf_version.grey_icc(),
-        ))
-    }
-
-    pub(crate) fn add_font_identifier(&mut self, f: FontIdentifier) -> resource::Font {
-        let hash = f.sip_hash();
-        if let Some(_ref) = self.cached_mappings.get(&hash) {
-            resource::Font::new(*_ref)
-        } else {
-            let root_ref = self.new_ref();
-            self.cached_mappings.insert(hash, root_ref);
-            resource::Font::new(root_ref)
-        }
-    }
-
-    pub(crate) fn add_linearrgb(&mut self) -> resource::ColorSpace {
-        #[derive(Copy, Clone, Hash)]
-        struct LinearRgbColorSpace;
-
-        impl Cacheable for LinearRgbColorSpace {
-            fn chunk_container(&self) -> ChunkContainerFn {
-                Box::new(|cc| &mut cc.color_spaces)
-            }
-
-            fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
-                let mut chunk = Chunk::new();
-                chunk.color_space(root_ref).cal_rgb(
-                    [0.9505, 1.0, 1.0888],
-                    None,
-                    Some([1.0, 1.0, 1.0]),
-                    Some([
-                        0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
-                    ]),
-                );
-
-                chunk
-            }
-        }
-
-        impl Resourceable for LinearRgbColorSpace {
-            type Resource = resource::ColorSpace;
-        }
-
-        self.register_resourceable(LinearRgbColorSpace)
-    }
-
     #[cfg(feature = "fontdb")]
     pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
         let mut map = HashMap::new();
@@ -547,42 +539,13 @@ impl SerializeContext {
         map
     }
 
-    fn get_output_intents(&mut self, subtype: OutputIntentSubtype, root_ref: Ref) -> Chunk {
-        let mut chunk = Chunk::new();
-
-        let oi_ref = self.new_ref();
-        let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-        let icc_profile = self.serialize_settings.pdf_version.rgb_icc();
-
-        oi.dest_output_profile(self.register_cacheable(icc_profile.clone()))
-            .subtype(subtype)
-            .output_condition_identifier(TextStr("Custom"))
-            .output_condition(TextStr("sRGB"))
-            .registry_name(TextStr(""))
-            .info(TextStr(
-                format!(
-                    "sRGB v{}.{}",
-                    icc_profile.metadata().major,
-                    icc_profile.metadata().minor
-                )
-                .as_str(),
-            ));
-        oi.finish();
-
-        let mut array = chunk.indirect(root_ref).array();
-        array.item(oi_ref);
-        array.finish();
-
-        chunk
-    }
-
     pub fn finish(mut self) -> KrillaResult<Pdf> {
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use MaybeTake::take to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
 
         // Serialize all objects that can only be written in the end.
-        self.write_destination_proviles();
+        self.write_destination_profiles();
         self.serialize_page_label_tree();
         self.serialize_outline()?;
         self.serialize_fonts()?;
@@ -612,14 +575,39 @@ impl SerializeContext {
 
         Ok(pdf)
     }
+}
 
-    // All methods are supposed to only be called once in `finish`!
-
-    fn write_destination_proviles(&mut self) {
+/// All methods are supposed to only be called once in `SerializeContext::finish`!
+impl SerializeContext {
+    fn write_destination_profiles(&mut self) {
         let validator = self.serialize_settings.validator;
         self.chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
             let root_ref = self.new_ref();
-            let chunk = self.get_output_intents(subtype, root_ref);
+            let mut chunk = Chunk::new();
+
+            let oi_ref = self.new_ref();
+            let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+            let icc_profile = self.serialize_settings.pdf_version.rgb_icc();
+
+            oi.dest_output_profile(self.register_cacheable(icc_profile.clone()))
+                .subtype(subtype)
+                .output_condition_identifier(TextStr("Custom"))
+                .output_condition(TextStr("sRGB"))
+                .registry_name(TextStr(""))
+                .info(TextStr(
+                    format!(
+                        "sRGB v{}.{}",
+                        icc_profile.metadata().major,
+                        icc_profile.metadata().minor
+                    )
+                    .as_str(),
+                ));
+            oi.finish();
+
+            let mut array = chunk.indirect(root_ref).array();
+            array.item(oi_ref);
+            array.finish();
+
             (root_ref, chunk)
         });
     }
@@ -658,13 +646,13 @@ impl SerializeContext {
             match &*font_container.borrow() {
                 FontContainer::Type3(font_mapper) => {
                     for t3_font in font_mapper.fonts() {
-                        let f = self.add_font_identifier(t3_font.identifier());
+                        let f = self.register_font_identifier(t3_font.identifier());
                         let chunk = t3_font.serialize(self, f.get_ref());
                         self.chunk_container.fonts.push(chunk);
                     }
                 }
                 FontContainer::CIDFont(cid_font) => {
-                    let f = self.add_font_identifier(cid_font.identifier());
+                    let f = self.register_font_identifier(cid_font.identifier());
                     let chunk = cid_font.serialize(self, f.get_ref())?;
                     self.chunk_container.fonts.push(chunk);
                 }

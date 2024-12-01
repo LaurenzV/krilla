@@ -289,7 +289,11 @@ impl ChunkContainer {
                 let mut name_tree = names.destinations();
                 let mut name_entries = name_tree.names();
 
-                for (name, dest_ref) in named_destinations {
+                // Sort to prevent inconsistent order.
+                let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
+                sorted.sort_by(|a, b| a.1.cmp(&b.1));
+
+                for (name, dest_ref) in sorted {
                     name_entries
                         .insert(Str(name.name.as_bytes()), *remapper.get(&dest_ref).unwrap());
                 }

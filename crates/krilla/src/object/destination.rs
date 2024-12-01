@@ -25,7 +25,7 @@ impl Destination {
     pub(crate) fn serialize(&self, sc: &mut SerializeContext, buffer: Obj) -> KrillaResult<()> {
         match self {
             Destination::Xyz(xyz) => {
-                let ref_ = sc.add_xyz_destination(xyz.clone());
+                let ref_ = sc.register_xyz_destination(xyz.clone());
                 buffer.primitive(ref_);
                 Ok(())
             }
@@ -65,7 +65,7 @@ impl NamedDestination {
         sc: &mut SerializeContext,
         destination: Obj,
     ) -> KrillaResult<()> {
-        sc.add_named_destination(self.clone());
+        sc.register_named_destination(self.clone());
         destination.primitive(Str(self.name.as_bytes()));
         Ok(())
     }

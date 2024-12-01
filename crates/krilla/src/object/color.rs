@@ -481,15 +481,16 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
+    use crate::color::ColorSpace;
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializeContext) {
-        sc.add_luma();
+        sc.register_colorspace(ColorSpace::Luma);
     }
 
     #[snapshot]
     fn color_space_srgb(sc: &mut SerializeContext) {
-        sc.add_srgb();
+        sc.register_colorspace(ColorSpace::Srgb);
     }
 
     #[snapshot(single_page, settings_18)]
