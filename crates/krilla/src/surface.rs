@@ -5,20 +5,6 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph};
-#[cfg(feature = "raster-images")]
-use crate::object::image::Image;
-use crate::object::mask::Mask;
-use crate::object::shading_function::ShadingFunction;
-use crate::path::{Fill, FillRule, Stroke};
-use crate::serialize::SerializeContext;
-use crate::stream::{Stream, StreamBuilder};
-#[cfg(feature = "svg")]
-use crate::svg;
-use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
-use crate::util::RectExt;
-use crate::SvgSettings;
 #[cfg(feature = "fontdb")]
 use fontdb::{Database, ID};
 #[cfg(feature = "simple-text")]
@@ -32,7 +18,22 @@ use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
+use crate::content::{unit_normalize, ContentBuilder};
+use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph};
 use crate::object::font::PaintMode;
+#[cfg(feature = "raster-images")]
+use crate::object::image::Image;
+use crate::object::mask::Mask;
+use crate::object::shading_function::ShadingFunction;
+use crate::path::{Fill, FillRule, Stroke};
+use crate::serialize::SerializeContext;
+use crate::stream::{Stream, StreamBuilder};
+#[cfg(feature = "svg")]
+use crate::svg;
+use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
+use crate::util::RectExt;
+use crate::SvgSettings;
+
 pub use pdf_writer::types::BlendMode;
 
 pub(crate) enum PushInstruction {

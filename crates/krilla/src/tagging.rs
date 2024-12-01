@@ -118,17 +118,19 @@
 
 // TODO: Other notes: broken links should use quadpoint (14.8.4.4.2)
 
-use crate::error::{KrillaError, KrillaResult};
-use crate::serialize::SerializeContext;
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
+use std::cmp::PartialEq;
+use std::collections::{BTreeMap, HashMap};
+
 use pdf_writer::types::{
     ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
 };
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
-use std::cmp::PartialEq;
-use std::collections::{BTreeMap, HashMap};
+
+use crate::error::{KrillaError, KrillaResult};
+use crate::serialize::SerializeContext;
+use crate::validation::ValidationError;
+use crate::version::PdfVersion;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]

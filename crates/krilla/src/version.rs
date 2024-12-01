@@ -1,9 +1,10 @@
 //! Choosing between PDF versions.
 
-use crate::color::{ICCMetadata, ICCProfile};
 use once_cell::sync::Lazy;
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
+
+use crate::color::{ICCMetadata, ICCProfile};
 
 /// The version of a PDF document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

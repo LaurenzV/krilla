@@ -1,3 +1,5 @@
+//! CID fonts.
+
 use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;

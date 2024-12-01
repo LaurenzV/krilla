@@ -23,6 +23,12 @@
 //! [`Surface::stream_builder`]: crate::surface::Surface::stream_builder
 //! [`Pattern`]: crate::paint::Pattern
 //! [`Mask`]: crate::mask::Mask
+
+use pdf_writer::{Array, Dict, Name};
+use std::borrow::Cow;
+use std::ops::DerefMut;
+use tiny_skia_path::{Rect, Transform};
+
 use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
@@ -30,10 +36,6 @@ use crate::surface::Surface;
 use crate::util::RectWrapper;
 use crate::validation::ValidationError;
 use crate::SerializeSettings;
-use pdf_writer::{Array, Dict, Name};
-use std::borrow::Cow;
-use std::ops::DerefMut;
-use tiny_skia_path::{Rect, Transform};
 
 /// A stream.
 ///

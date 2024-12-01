@@ -1,3 +1,9 @@
+//! Text conversion
+
+use skrifa::GlyphId;
+use tiny_skia_path::{Point, Transform};
+use usvg::{NormalizedF32, PaintOrder};
+
 use crate::font::KrillaGlyph;
 use crate::font::{Font, GlyphUnits};
 use crate::object::color::rgb;
@@ -5,9 +11,6 @@ use crate::path::{Fill, Stroke};
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
-use skrifa::GlyphId;
-use tiny_skia_path::{Point, Transform};
-use usvg::{NormalizedF32, PaintOrder};
 
 /// Render a text into a surface.
 pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {

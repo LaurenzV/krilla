@@ -1,3 +1,5 @@
+//! Serializing PDF documents.
+
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::{Deref, DerefMut};
@@ -309,7 +311,11 @@ impl SerializeContext {
     }
 
     #[cfg(feature = "fontdb")]
-    pub(crate) fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+    pub(crate) fn convert_fontdb(
+        &mut self,
+        db: &mut Database,
+        ids: Option<Vec<ID>>,
+    ) -> HashMap<ID, Font> {
         let mut map = HashMap::new();
 
         let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());

@@ -1,8 +1,11 @@
+//! Various PDF objects.
+
+use pdf_writer::{Chunk, Ref};
+
 use crate::chunk_container::ChunkContainer;
 use crate::resource::Resource;
 use crate::serialize::SerializeContext;
 use crate::util::SipHashable;
-use pdf_writer::{Chunk, Ref};
 
 pub mod action;
 pub mod annotation;

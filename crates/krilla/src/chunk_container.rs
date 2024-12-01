@@ -1,12 +1,16 @@
+//! Collecting chunks during PDF creation.
+
+use std::collections::HashMap;
+
+use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
+use xmp_writer::{RenditionClass, XmpWriter};
+
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
-use std::collections::HashMap;
-use xmp_writer::{RenditionClass, XmpWriter};
 
 trait ResExt {
     fn res(&self) -> KrillaResult<&Chunk>;

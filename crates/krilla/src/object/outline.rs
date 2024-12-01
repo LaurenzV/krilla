@@ -18,11 +18,12 @@
 //! [`Document`]: crate::Document
 //! [`Document::set_outline`]: crate::Document::set_outline
 
+use pdf_writer::writers::OutlineItem;
+use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
+
 use crate::error::KrillaResult;
 use crate::object::destination::XyzDestination;
 use crate::serialize::SerializeContext;
-use pdf_writer::writers::OutlineItem;
-use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 /// An outline.
 ///

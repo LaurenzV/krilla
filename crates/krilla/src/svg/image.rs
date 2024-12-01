@@ -1,10 +1,13 @@
+//! Image conversion
+
+use tiny_skia_path::{Rect, Size};
+use usvg::ImageKind;
+
 use crate::image::Image;
 use crate::path::FillRule;
 use crate::surface::Surface;
 use crate::svg::{group, ProcessContext};
 use crate::util::RectExt;
-use tiny_skia_path::{Rect, Size};
-use usvg::ImageKind;
 
 /// Render an image into a surface.
 ///

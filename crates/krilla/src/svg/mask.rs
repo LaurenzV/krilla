@@ -1,3 +1,5 @@
+//! Mask conversion
+
 use crate::object::mask::Mask;
 use crate::path::FillRule;
 use crate::surface::Surface;

@@ -6,6 +6,10 @@
 //! that are supported are "link annotations", which allow you associate a certain region of
 //! the page with a link.
 
+use pdf_writer::types::AnnotationFlags;
+use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
+use tiny_skia_path::Rect;
+
 use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
@@ -13,9 +17,6 @@ use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::RectExt;
 use crate::validation::ValidationError;
-use pdf_writer::types::AnnotationFlags;
-use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
-use tiny_skia_path::Rect;
 
 /// An annotation.
 pub struct Annotation {

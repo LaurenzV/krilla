@@ -1,12 +1,13 @@
 //! Drawing SVG files to a surface.
 
-use crate::font::Font;
-use crate::serialize::SvgSettings;
-use crate::surface::Surface;
 use fontdb::Database;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use usvg::{fontdb, Group, ImageKind, Node};
+
+use crate::font::Font;
+use crate::serialize::SvgSettings;
+use crate::surface::Surface;
 
 mod clip_path;
 mod filter;

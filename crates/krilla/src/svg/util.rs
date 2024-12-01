@@ -1,3 +1,8 @@
+//! Utilities for SVG conversion.
+
+use pdf_writer::types::BlendMode;
+use tiny_skia_path::{NormalizedF32, Transform};
+
 use crate::color::luma;
 use crate::mask::MaskType;
 use crate::object::color::rgb;
@@ -5,8 +10,6 @@ use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod,
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use crate::stream::StreamBuilder;
 use crate::svg::{group, ProcessContext};
-use pdf_writer::types::BlendMode;
-use tiny_skia_path::{NormalizedF32, Transform};
 
 /// Convert a usvg `Transform` into a krilla `Transform`.
 pub fn convert_transform(transform: &Transform) -> Transform {

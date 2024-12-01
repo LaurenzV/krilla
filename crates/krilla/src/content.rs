@@ -1,5 +1,19 @@
 //! A low-level abstraction over a single content stream.
 
+use std::cell::{RefCell, RefMut};
+use std::collections::HashSet;
+use std::ops::Range;
+use std::rc::Rc;
+use std::sync::Arc;
+
+use float_cmp::approx_eq;
+use pdf_writer::types::TextRenderingMode;
+use pdf_writer::{Content, Finish, Name, Str, TextStr};
+use skrifa::GlyphId;
+#[cfg(feature = "raster-images")]
+use tiny_skia_path::Size;
+use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
+
 use crate::color::Color;
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
@@ -23,18 +37,6 @@ use crate::stream::Stream;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
-use float_cmp::approx_eq;
-use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Name, Str, TextStr};
-use skrifa::GlyphId;
-use std::cell::{RefCell, RefMut};
-use std::collections::HashSet;
-use std::ops::Range;
-use std::rc::Rc;
-use std::sync::Arc;
-#[cfg(feature = "raster-images")]
-use tiny_skia_path::Size;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,

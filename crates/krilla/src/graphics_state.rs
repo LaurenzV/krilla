@@ -1,7 +1,11 @@
+//! PDF graphics state.
+
+use std::hash::Hash;
+
+use tiny_skia_path::{Rect, Transform};
+
 use crate::object::ext_g_state::ExtGState;
 use crate::util::HashExt;
-use std::hash::Hash;
-use tiny_skia_path::{Rect, Transform};
 
 /// A simulation of the PDF graphics state, so that we
 /// can write our transforms/graphics state all at once
@@ -12,7 +16,6 @@ pub struct GraphicsState {
     ext_g_state: ExtGState,
     ctm: Transform,
 }
-
 impl Eq for GraphicsState {}
 
 impl Hash for GraphicsState {

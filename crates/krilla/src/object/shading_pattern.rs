@@ -1,12 +1,16 @@
+//! Shading patterns.
+
+use std::hash::Hash;
+use std::sync::Arc;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use tiny_skia_path::Transform;
+
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializeContext;
 use crate::util::{HashExt, TransformExt};
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::hash::Hash;
-use std::sync::Arc;
-use tiny_skia_path::Transform;
 
 #[derive(Debug, PartialEq)]
 struct Repr {

@@ -1,3 +1,13 @@
+//! Shading functions.
+
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
+
+use bumpalo::Bump;
+use pdf_writer::types::{FunctionShadingType, PostScriptOp};
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
+
 use crate::color::luma;
 use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
@@ -8,12 +18,6 @@ use crate::resource::Resource;
 use crate::serialize::SerializeContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
-use bumpalo::Bump;
-use pdf_writer::types::{FunctionShadingType, PostScriptOp};
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum GradientType {

@@ -38,17 +38,19 @@
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
 
+use std::fmt::Debug;
+use std::hash::Hash;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::Prehashed;
 use crate::validation::ValidationError;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::Debug;
-use std::hash::Hash;
-use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
 
 /// The PDF name for the device RGB color space.
 pub(crate) const DEVICE_RGB: &str = "DeviceRGB";
@@ -476,12 +478,12 @@ mod tests {
 
     use crate::serialize::SerializeContext;
 
+    use crate::color::ColorSpace;
     use crate::page::Page;
     use crate::path::Fill;
     use crate::surface::Surface;
     use crate::tests::{cmyk_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
-    use crate::color::ColorSpace;
 
     #[snapshot]
     fn color_space_sgray(sc: &mut SerializeContext) {

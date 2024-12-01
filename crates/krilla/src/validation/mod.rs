@@ -19,13 +19,15 @@
 //!   You can find them under **Requirements** for each [`Validator`].
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
-use crate::font::Font;
-use crate::version::PdfVersion;
+
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
+
+use crate::font::Font;
+use crate::version::PdfVersion;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

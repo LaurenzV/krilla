@@ -5,12 +5,14 @@
 //! from a link. To achieve this, you can use destinations, which are associated with a page
 //! and a specific location on that page.
 
-use crate::error::{KrillaError, KrillaResult};
-use crate::serialize::SerializeContext;
-use pdf_writer::{Chunk, Obj, Ref, Str};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+
+use pdf_writer::{Chunk, Obj, Ref, Str};
 use tiny_skia_path::{Point, Transform};
+
+use crate::error::{KrillaError, KrillaResult};
+use crate::serialize::SerializeContext;
 
 /// The type of destination.
 #[derive(Hash)]

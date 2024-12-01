@@ -1,5 +1,13 @@
 //! Working with pages of a PDF document.
 
+use std::num::NonZeroU32;
+use std::ops::DerefMut;
+
+use pdf_writer::types::{NumberingStyle, TabOrder};
+use pdf_writer::writers::NumberTree;
+use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use tiny_skia_path::{Rect, Transform};
+
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
@@ -11,12 +19,6 @@ use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
 use crate::version::PdfVersion;
-use pdf_writer::types::{NumberingStyle, TabOrder};
-use pdf_writer::writers::NumberTree;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use std::num::NonZeroU32;
-use std::ops::DerefMut;
-use tiny_skia_path::{Rect, Transform};
 
 /// A single page.
 ///

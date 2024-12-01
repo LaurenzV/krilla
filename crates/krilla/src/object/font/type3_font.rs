@@ -1,3 +1,5 @@
+//! Type 3 fonts.
+
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::font::outline::glyph_path;
 use crate::font::Font;

@@ -1,12 +1,5 @@
 //! Drawing COLR-based glyphs to a surface.
 
-use crate::font::outline::OutlineBuilder;
-use crate::font::Font;
-use crate::object::color::rgb;
-use crate::object::font::PaintMode;
-use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
-use crate::path::{Fill, FillRule};
-use crate::surface::Surface;
 use pdf_writer::types::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
@@ -15,6 +8,14 @@ use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
+
+use crate::font::outline::OutlineBuilder;
+use crate::font::Font;
+use crate::object::color::rgb;
+use crate::object::font::PaintMode;
+use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
+use crate::path::{Fill, FillRule};
+use crate::surface::Surface;
 
 /// Draw a COLR-based glyph on a surface.
 pub fn draw_glyph(

@@ -10,19 +10,26 @@
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index and variation coordinates.
 
-use crate::serialize::SvgSettings;
-use crate::surface::Surface;
-use crate::util::{Prehashed, RectWrapper};
-use skrifa::prelude::{LocationRef, Size};
-use skrifa::raw::types::NameId;
-use skrifa::raw::TableProvider;
-use skrifa::{FontRef, MetadataProvider};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
 use std::sync::Arc;
+
+use skrifa::prelude::{LocationRef, Size};
+use skrifa::raw::types::NameId;
+use skrifa::raw::TableProvider;
+use skrifa::{FontRef, MetadataProvider};
 use tiny_skia_path::{FiniteF32, Rect, Transform};
 use yoke::{Yoke, Yokeable};
+
+use crate::object::font::PaintMode;
+use crate::serialize::SvgSettings;
+use crate::surface::Surface;
+use crate::util::{Prehashed, RectWrapper};
+use skrifa::instance::Location;
+use skrifa::metrics::GlyphMetrics;
+
+pub use skrifa::GlyphId;
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;
@@ -30,11 +37,6 @@ pub(crate) mod colr;
 pub(crate) mod outline;
 #[cfg(feature = "svg")]
 pub(crate) mod svg;
-
-use crate::object::font::PaintMode;
-use skrifa::instance::Location;
-use skrifa::metrics::GlyphMetrics;
-pub use skrifa::GlyphId;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information

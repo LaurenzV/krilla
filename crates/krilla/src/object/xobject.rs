@@ -1,3 +1,9 @@
+//! XObjects.
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::ops::DerefMut;
+use tiny_skia_path::Rect;
+
 use crate::color::rgb;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
@@ -6,9 +12,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::ops::DerefMut;
-use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {

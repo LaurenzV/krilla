@@ -8,6 +8,16 @@
 //! - WEBP
 
 // TODO: CLean up and update docs
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
+use std::ops::DerefMut;
+use std::sync::Arc;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use zune_jpeg::zune_core::result::DecodingResult;
+use zune_jpeg::JpegDecoder;
+use zune_png::zune_core::colorspace::ColorSpace;
+use zune_png::PngDecoder;
 
 use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
 use crate::error::{KrillaError, KrillaResult};
@@ -15,15 +25,6 @@ use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::ops::DerefMut;
-use std::sync::Arc;
-use zune_jpeg::zune_core::result::DecodingResult;
-use zune_jpeg::JpegDecoder;
-use zune_png::zune_core::colorspace::ColorSpace;
-use zune_png::PngDecoder;
 
 /// The number of buits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]

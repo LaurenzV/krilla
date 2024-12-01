@@ -1,12 +1,16 @@
+//! External graphics states.
+
+use std::sync::Arc;
+
+use pdf_writer::types::BlendMode;
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use tiny_skia_path::NormalizedF32;
+
 use crate::object::mask::Mask;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::serialize::SerializeContext;
 use crate::validation::ValidationError;
-use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::sync::Arc;
-use tiny_skia_path::NormalizedF32;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

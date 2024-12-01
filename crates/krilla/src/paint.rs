@@ -1,11 +1,13 @@
 //! Paints that can be used for filling and stroking text or paths.
 
+use std::hash::Hash;
+use std::sync::Arc;
+
+use tiny_skia_path::{NormalizedF32, Transform};
+
 use crate::color::{cmyk, luma, rgb, Color};
 use crate::stream::Stream;
 use crate::util::HashExt;
-use std::hash::Hash;
-use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {

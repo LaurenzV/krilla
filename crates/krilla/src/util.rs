@@ -1,6 +1,5 @@
 //! Internal utilities.
 
-use crate::path::{LineCap, LineJoin, Stroke};
 use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
@@ -10,9 +9,12 @@ use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+
 #[cfg(feature = "svg")]
 use tiny_skia_path::PathBuilder;
 use tiny_skia_path::{FiniteF32, Path, Rect, Size, Transform};
+
+use crate::path::{LineCap, LineJoin, Stroke};
 
 pub trait NameExt {
     fn to_pdf_name(&self) -> Name;

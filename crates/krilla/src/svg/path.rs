@@ -1,7 +1,10 @@
+//! Path conversion
+
+use usvg::PaintOrder;
+
 use crate::surface::Surface;
 use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::ProcessContext;
-use usvg::PaintOrder;
 
 /// Render a path into a surface.
 pub fn render(path: &usvg::Path, surface: &mut Surface, process_context: &mut ProcessContext) {

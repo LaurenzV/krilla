@@ -1,3 +1,5 @@
+//! PDF fonts.
+
 use crate::content::PdfFont;
 use crate::font::Font;
 use crate::object::font::cid_font::CIDFont;
