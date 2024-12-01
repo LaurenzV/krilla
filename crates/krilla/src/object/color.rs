@@ -324,7 +324,10 @@ impl<const C: u8> ICCProfile<C> {
             return None;
         }
 
-        Some(Self(Arc::new(Prehashed::new(Repr { data: deflate_encode(data), metadata }))))
+        Some(Self(Arc::new(Prehashed::new(Repr {
+            data: deflate_encode(data),
+            metadata,
+        }))))
     }
 
     pub(crate) fn metadata(&self) -> &ICCMetadata {
@@ -339,9 +342,8 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
 
     fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
-        let icc_stream =
-            FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
-                .finish(&sc.serialize_settings());
+        let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
+            .finish(&sc.serialize_settings());
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
