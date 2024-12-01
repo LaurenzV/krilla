@@ -19,7 +19,7 @@ use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
-use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
+use crate::color::{ICCBasedColorSpace, ICCProfile, GenericICCProfile, DEVICE_CMYK, DEVICE_RGB};
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
@@ -132,7 +132,7 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
 struct ImageMetadata {
     size: (u32, u32),
     color_space: ImageColorspace,
-    icc: Option<ICCProfileWrapper>,
+    icc: Option<GenericICCProfile>,
 }
 
 struct ImageRepr {
@@ -146,7 +146,7 @@ impl ImageRepr {
         self.metadata.size
     }
 
-    fn icc(&self) -> Option<ICCProfileWrapper> {
+    fn icc(&self) -> Option<GenericICCProfile> {
         self.metadata.icc.clone()
     }
 
@@ -181,11 +181,11 @@ impl Eq for ImageRepr {}
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<ImageRepr>);
 
-fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
+fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<GenericICCProfile> {
     let wrapper = match color_space {
-        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(data)?),
-        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(data)?),
-        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(data)?),
+        ImageColorspace::Rgb => GenericICCProfile::Rgb(ICCProfile::new(data)?),
+        ImageColorspace::Luma => GenericICCProfile::Luma(ICCProfile::new(data)?),
+        ImageColorspace::Cmyk => GenericICCProfile::Cmyk(ICCProfile::new(data)?),
     };
 
     Some(wrapper)
@@ -319,7 +319,7 @@ impl Image {
         self.0.size()
     }
 
-    fn icc(&self) -> Option<ICCProfileWrapper> {
+    fn icc(&self) -> Option<GenericICCProfile> {
         self.0.icc()
     }
 
@@ -340,9 +340,9 @@ impl Image {
                 .supports_icc(ic.metadata())
             {
                 let ref_ = match ic {
-                    ICCProfileWrapper::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
-                    ICCProfileWrapper::Rgb(r) => sc.register_cacheable(ICCBasedColorSpace(r)),
-                    ICCProfileWrapper::Cmyk(c) => sc.register_cacheable(ICCBasedColorSpace(c)),
+                    GenericICCProfile::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
+                    GenericICCProfile::Rgb(r) => sc.register_cacheable(ICCBasedColorSpace(r)),
+                    GenericICCProfile::Cmyk(c) => sc.register_cacheable(ICCBasedColorSpace(c)),
                 };
 
                 Some(ref_)

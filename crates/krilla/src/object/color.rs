@@ -279,32 +279,32 @@ struct Repr {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) enum ICCProfileWrapper {
+pub(crate) enum GenericICCProfile {
     Luma(ICCProfile<1>),
     Rgb(ICCProfile<3>),
     Cmyk(ICCProfile<4>),
 }
 
-impl ICCProfileWrapper {
+impl GenericICCProfile {
     pub fn metadata(&self) -> &ICCMetadata {
         match self {
-            ICCProfileWrapper::Luma(l) => l.metadata(),
-            ICCProfileWrapper::Rgb(r) => r.metadata(),
-            ICCProfileWrapper::Cmyk(c) => c.metadata(),
+            GenericICCProfile::Luma(l) => l.metadata(),
+            GenericICCProfile::Rgb(r) => r.metadata(),
+            GenericICCProfile::Cmyk(c) => c.metadata(),
         }
     }
 }
 
-impl Cacheable for ICCProfileWrapper {
+impl Cacheable for GenericICCProfile {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.icc_profiles)
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         match self {
-            ICCProfileWrapper::Luma(l) => l.serialize(sc, root_ref),
-            ICCProfileWrapper::Rgb(r) => r.serialize(sc, root_ref),
-            ICCProfileWrapper::Cmyk(c) => c.serialize(sc, root_ref),
+            GenericICCProfile::Luma(l) => l.serialize(sc, root_ref),
+            GenericICCProfile::Rgb(r) => r.serialize(sc, root_ref),
+            GenericICCProfile::Cmyk(c) => c.serialize(sc, root_ref),
         }
     }
 }
