@@ -105,6 +105,7 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
     fn alpha_channel(&self) -> Option<&[u8]>;
     fn bits_per_component(&self) -> BitsPerComponent;
     fn size(&self) -> (u32, u32);
+    fn icc_profile(&self) -> Option<&[u8]>;
     fn color_space(&self) -> ImageColorspace;
 }
 
@@ -160,11 +161,11 @@ impl Eq for ImageRepr {}
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<ImageRepr>);
 
-fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
+fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
     let wrapper = match color_space {
-        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(&data)?),
-        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(&data)?),
-        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(&data)?),
+        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(data)?),
+        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(data)?),
+        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(data)?),
     };
 
     Some(wrapper)
@@ -232,12 +233,11 @@ impl Image {
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T) -> Option<Image> {
-        // TODO: Allow CMYK images?
         let hash = image.sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
             color_space: image.color_space(),
-            icc: None,
+            icc: image.icc_profile().and_then(|d| get_icc_profile_type(d, image.color_space())),
         };
 
         Some(Self(Arc::new(ImageRepr {
@@ -424,7 +424,7 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
         .get_info()?
         .icc_profile
         .as_ref()
-        .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
+        .and_then(|d| get_icc_profile_type(d, image_color_space));
 
     Some(ImageMetadata {
         size,
@@ -468,7 +468,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
 
     let icc = decoder
         .icc_profile()
-        .and_then(|d| get_icc_profile_type(d.clone(), image_color_space));
+        .and_then(|d| get_icc_profile_type(&d, image_color_space));
 
     Some(ImageMetadata {
         size,
@@ -537,7 +537,7 @@ fn webp_metadata(data: &[u8]) -> Option<ImageMetadata> {
     let icc = decoder
         .icc_profile()
         .ok()?
-        .and_then(|d| get_icc_profile_type(d.clone(), color_space));
+        .and_then(|d| get_icc_profile_type(&d, color_space));
 
     Some(ImageMetadata {
         size,
