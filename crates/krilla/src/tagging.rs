@@ -118,17 +118,19 @@
 
 // TODO: Other notes: broken links should use quadpoint (14.8.4.4.2)
 
-use crate::error::{KrillaError, KrillaResult};
-use crate::serialize::SerializerContext;
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
+use std::cmp::PartialEq;
+use std::collections::{BTreeMap, HashMap};
+
 use pdf_writer::types::{
     ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
 };
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
-use std::cmp::PartialEq;
-use std::collections::{BTreeMap, HashMap};
+
+use crate::error::{KrillaError, KrillaResult};
+use crate::serialize::SerializeContext;
+use crate::validation::ValidationError;
+use crate::version::PdfVersion;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -205,11 +207,7 @@ impl ContentTag<'_> {
         }
     }
 
-    pub(crate) fn write_properties(
-        &self,
-        sc: &mut SerializerContext,
-        mut properties: PropertyList,
-    ) {
+    pub(crate) fn write_properties(&self, sc: &mut SerializeContext, mut properties: PropertyList) {
         match self {
             ContentTag::Artifact(at) => {
                 let mut artifact = properties.artifact();
@@ -280,11 +278,11 @@ impl From<PageTagIdentifier> for Identifier {
 }
 
 impl PageTagIdentifier {
-    pub fn new(page_index: usize, mcid: i32) -> Self {
+    pub(crate) fn new(page_index: usize, mcid: i32) -> Self {
         Self { page_index, mcid }
     }
 
-    pub fn bump(&mut self) -> PageTagIdentifier {
+    pub(crate) fn bump(&mut self) -> PageTagIdentifier {
         let old = *self;
 
         self.mcid = self.mcid.checked_add(1).unwrap();
@@ -624,7 +622,7 @@ pub enum Node {
 impl Node {
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree: &mut BTreeMap<String, Ref>,
         parent: Ref,
@@ -690,7 +688,7 @@ impl TagGroup {
 
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree: &mut BTreeMap<String, Ref>,
         parent: Ref,
@@ -777,7 +775,7 @@ impl TagTree {
 
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree_map: &mut BTreeMap<String, Ref>,
         struct_tree_ref: Ref,
@@ -831,7 +829,7 @@ impl TagTree {
 }
 
 fn serialize_children(
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     root_ref: Ref,
     children_refs: Vec<Reference>,
     parent_tree_map: &mut HashMap<IdentifierType, Ref>,

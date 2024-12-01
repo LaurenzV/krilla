@@ -1,12 +1,16 @@
-use crate::error::{KrillaError, KrillaResult};
+//! Collecting chunks during PDF creation.
+
+use std::collections::HashMap;
+
+use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
+use xmp_writer::{RenditionClass, XmpWriter};
+
+use crate::error::KrillaResult;
 use crate::metadata::Metadata;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
-use std::collections::HashMap;
-use xmp_writer::{RenditionClass, XmpWriter};
 
 trait ResExt {
     fn res(&self) -> KrillaResult<&Chunk>;
@@ -37,7 +41,7 @@ impl WaitExt for Chunk {
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
-pub struct ChunkContainer {
+pub(crate) struct ChunkContainer {
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
@@ -63,11 +67,12 @@ pub struct ChunkContainer {
 }
 
 impl ChunkContainer {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
-    pub fn finish(mut self, sc: &mut SerializerContext) -> KrillaResult<Pdf> {
+    // TODO: Split up into multiple methods?
+    pub(crate) fn finish(mut self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -211,6 +216,8 @@ impl ChunkContainer {
         xmp.rendition_class(RenditionClass::Proof);
         sc.serialize_settings().pdf_version.write_xmp(&mut xmp);
 
+        let named_destinations = sc.global_objects.named_destinations.take();
+
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
@@ -280,24 +287,20 @@ impl ChunkContainer {
                 catalog.outlines(ol.0);
             }
 
-            if !sc.used_named_destinations.is_empty() {
+            if !named_destinations.is_empty() {
                 // Cannot use pdf-writer API here because it requires Ref's, while
                 // we write our destinations directly into the array.
                 let mut names = catalog.names();
                 let mut name_tree = names.destinations();
                 let mut name_entries = name_tree.names();
 
-                let used_destinations = std::mem::take(&mut sc.used_named_destinations);
-                let named_destinations = std::mem::take(&mut sc.named_destinations);
-                for name in &used_destinations {
-                    let dest =
-                        named_destinations
-                            .get(name)
-                            .ok_or(KrillaError::UserError(format!(
-                                "named destination {} was used, but not registered in document",
-                                name.inner()
-                            )))?;
-                    name_entries.insert(Str(name.inner().as_bytes()), *remapper.get(dest).unwrap());
+                // Sort to prevent inconsistent order.
+                let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
+                sorted.sort_by(|a, b| a.1.cmp(&b.1));
+
+                for (name, dest_ref) in sorted {
+                    name_entries
+                        .insert(Str(name.name.as_bytes()), *remapper.get(&dest_ref).unwrap());
                 }
             }
 

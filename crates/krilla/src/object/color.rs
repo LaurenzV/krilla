@@ -38,17 +38,19 @@
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
 
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
-use crate::resource;
-use crate::serialize::SerializerContext;
-use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::Prehashed;
-use crate::validation::ValidationError;
-use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+
+use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
+use crate::resource;
+use crate::serialize::SerializeContext;
+use crate::stream::{deflate_encode, FilterStreamBuilder};
+use crate::util::Prehashed;
+use crate::validation::ValidationError;
 
 /// The PDF name for the device RGB color space.
 pub(crate) const DEVICE_RGB: &str = "DeviceRGB";
@@ -77,7 +79,7 @@ impl Color {
         }
     }
 
-    pub(crate) fn color_space(&self, sc: &mut SerializerContext) -> ColorSpace {
+    pub(crate) fn color_space(&self, sc: &mut SerializeContext) -> ColorSpace {
         match self {
             Color::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
             Color::Luma(_) => luma::Color::color_space(sc.serialize_settings().no_device_cs),
@@ -277,32 +279,32 @@ struct Repr {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub(crate) enum ICCProfileWrapper {
+pub(crate) enum GenericICCProfile {
     Luma(ICCProfile<1>),
     Rgb(ICCProfile<3>),
     Cmyk(ICCProfile<4>),
 }
 
-impl ICCProfileWrapper {
-    pub fn metadata(&self) -> &ICCMetadata {
+impl GenericICCProfile {
+    pub(crate) fn metadata(&self) -> &ICCMetadata {
         match self {
-            ICCProfileWrapper::Luma(l) => l.metadata(),
-            ICCProfileWrapper::Rgb(r) => r.metadata(),
-            ICCProfileWrapper::Cmyk(c) => c.metadata(),
+            GenericICCProfile::Luma(l) => l.metadata(),
+            GenericICCProfile::Rgb(r) => r.metadata(),
+            GenericICCProfile::Cmyk(c) => c.metadata(),
         }
     }
 }
 
-impl Cacheable for ICCProfileWrapper {
+impl Cacheable for GenericICCProfile {
     fn chunk_container(&self) -> ChunkContainerFn {
         Box::new(|cc| &mut cc.icc_profiles)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         match self {
-            ICCProfileWrapper::Luma(l) => l.serialize(sc, root_ref),
-            ICCProfileWrapper::Rgb(r) => r.serialize(sc, root_ref),
-            ICCProfileWrapper::Cmyk(c) => c.serialize(sc, root_ref),
+            GenericICCProfile::Luma(l) => l.serialize(sc, root_ref),
+            GenericICCProfile::Rgb(r) => r.serialize(sc, root_ref),
+            GenericICCProfile::Cmyk(c) => c.serialize(sc, root_ref),
         }
     }
 }
@@ -340,7 +342,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         Box::new(|cc| &mut cc.icc_profiles)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
             .finish(&sc.serialize_settings());
@@ -362,7 +364,7 @@ impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
         Box::new(|cc| &mut cc.color_spaces)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let icc_ref = sc.register_cacheable(self.0.clone());
 
         let mut chunk = Chunk::new();
@@ -402,7 +404,7 @@ pub(crate) enum ICCColorSpace {
 }
 
 impl ICCColorSpace {
-    pub fn num_components(&self) -> u8 {
+    pub(crate) fn num_components(&self) -> u8 {
         match self {
             ICCColorSpace::Xyz => 3,
             ICCColorSpace::Lab => 3,
@@ -456,7 +458,7 @@ pub(crate) struct ICCMetadata {
 }
 
 impl ICCMetadata {
-    pub fn from_data(data: &[u8]) -> Option<Self> {
+    pub(crate) fn from_data(data: &[u8]) -> Option<Self> {
         let major = *data.get(8)?;
         let minor = *data.get(9)? >> 4;
         let color_space = {
@@ -474,8 +476,9 @@ impl ICCMetadata {
 #[cfg(test)]
 mod tests {
 
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
 
+    use crate::color::ColorSpace;
     use crate::page::Page;
     use crate::path::Fill;
     use crate::surface::Surface;
@@ -483,13 +486,13 @@ mod tests {
     use krilla_macros::{snapshot, visreg};
 
     #[snapshot]
-    fn color_space_sgray(sc: &mut SerializerContext) {
-        sc.add_luma();
+    fn color_space_sgray(sc: &mut SerializeContext) {
+        sc.register_colorspace(ColorSpace::Luma);
     }
 
     #[snapshot]
-    fn color_space_srgb(sc: &mut SerializerContext) {
-        sc.add_srgb();
+    fn color_space_srgb(sc: &mut SerializeContext) {
+        sc.register_colorspace(ColorSpace::Srgb);
     }
 
     #[snapshot(single_page, settings_18)]

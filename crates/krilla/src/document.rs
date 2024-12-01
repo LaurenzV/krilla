@@ -14,19 +14,19 @@
 //!
 //! [`Page`]: crate::page::Page
 
-use crate::destination::{NamedDestination, XyzDestination};
+use tiny_skia_path::{Rect, Size};
+
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::object::outline::Outline;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
-use crate::serialize::{SerializeSettings, SerializerContext};
+use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::tagging::TagTree;
-use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {
-    pub(crate) serializer_context: SerializerContext,
+    pub(crate) serializer_context: SerializeContext,
 }
 
 impl Default for Document {
@@ -39,14 +39,14 @@ impl Document {
     /// Create a new document with default settings.
     pub fn new() -> Self {
         Self {
-            serializer_context: SerializerContext::new(SerializeSettings::default()),
+            serializer_context: SerializeContext::new(SerializeSettings::default()),
         }
     }
 
     /// Create a new document with specific serialization settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
         Self {
-            serializer_context: SerializerContext::new(serialize_settings),
+            serializer_context: SerializeContext::new(serialize_settings),
         }
     }
 
@@ -79,11 +79,6 @@ impl Document {
     /// Set the tag tree of the document.
     pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
         self.serializer_context.set_tag_tree(tag_tree);
-    }
-
-    /// Add a new named destination.
-    pub fn add_named_destination(&mut self, nd: NamedDestination, location: XyzDestination) {
-        self.serializer_context.add_named_destination(nd, location);
     }
 
     /// Attempt to write the document to a PDF.
@@ -139,17 +134,17 @@ impl PageSettings {
     }
 
     /// The current media box.
-    pub fn media_box(&self) -> Option<Rect> {
+    pub(crate) fn media_box(&self) -> Option<Rect> {
         self.media_box
     }
 
     /// The current surface size.
-    pub fn surface_size(&self) -> Size {
+    pub(crate) fn surface_size(&self) -> Size {
         self.surface_size
     }
 
     /// The current page label.
-    pub fn page_label(&self) -> &PageLabel {
+    pub(crate) fn page_label(&self) -> &PageLabel {
         &self.page_label
     }
 }

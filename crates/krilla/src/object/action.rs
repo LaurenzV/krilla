@@ -6,11 +6,12 @@
 //! the only available action is the link action, which allows you to specify a link that
 //! should be opened, when activating the action.
 
-use crate::destination::Destination;
-use crate::error::KrillaResult;
-use crate::serialize::SerializerContext;
 use pdf_writer::types::ActionType;
 use pdf_writer::{Name, Str};
+
+use crate::destination::Destination;
+use crate::error::KrillaResult;
+use crate::serialize::SerializeContext;
 
 /// A type of action.
 pub enum Action {
@@ -23,7 +24,7 @@ pub enum Action {
 impl Action {
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         mut action: pdf_writer::writers::Action,
     ) -> KrillaResult<()> {
         match self {

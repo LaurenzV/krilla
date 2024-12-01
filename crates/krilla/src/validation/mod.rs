@@ -19,13 +19,15 @@
 //!   You can find them under **Requirements** for each [`Validator`].
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
-use crate::font::Font;
-use crate::version::PdfVersion;
+
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
+
+use crate::font::Font;
+use crate::version::PdfVersion;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -335,7 +337,7 @@ impl Validator {
     }
 
     /// Check whether the validator is compatible with a specific pdf version.
-    pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
+    pub(crate) fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
         match self {
             Validator::None => true,
             Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
@@ -346,7 +348,7 @@ impl Validator {
     }
 
     /// Get the recommended PDF version of a validator.
-    pub fn recommended_version(&self) -> PdfVersion {
+    pub(crate) fn recommended_version(&self) -> PdfVersion {
         match self {
             Validator::None => PdfVersion::Pdf17,
             Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,

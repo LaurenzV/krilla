@@ -1,15 +1,19 @@
+//! Tiling patterns.
+
+use std::hash::{Hash, Hasher};
+use std::ops::DerefMut;
+
+use pdf_writer::types::{PaintType, TilingType};
+use pdf_writer::{Chunk, Finish, Ref};
+use tiny_skia_path::{NormalizedF32, Transform};
+
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::HashExt;
 use crate::util::TransformExt;
-use pdf_writer::types::{PaintType, TilingType};
-use pdf_writer::{Chunk, Finish, Ref};
-use std::hash::{Hash, Hasher};
-use std::ops::DerefMut;
-use tiny_skia_path::{NormalizedF32, Transform};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {
@@ -33,13 +37,13 @@ impl Hash for TilingPattern {
 }
 
 impl TilingPattern {
-    pub fn new(
+    pub(crate) fn new(
         stream: Stream,
         transform: Transform,
         base_opacity: NormalizedF32,
         width: f32,
         height: f32,
-        serializer_context: &mut SerializerContext,
+        serializer_context: &mut SerializeContext,
     ) -> Self {
         // stroke/fill opacity doesn't work consistently across different viewers for patterns,
         // so instead we simulate it ourselves.
@@ -72,7 +76,7 @@ impl Cacheable for TilingPattern {
         Box::new(|cc| &mut cc.patterns)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         for validation_error in self.stream.validation_errors {
@@ -116,7 +120,7 @@ mod tests {
 
     use crate::paint::Pattern;
     use crate::path::Fill;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
     use crate::surface::Surface;
     use crate::tests::{basic_pattern_stream, rect_to_path};
@@ -126,7 +130,7 @@ mod tests {
     use tiny_skia_path::{NormalizedF32, Transform};
 
     #[snapshot]
-    fn tiling_pattern_basic(sc: &mut SerializerContext) {
+    fn tiling_pattern_basic(sc: &mut SerializeContext) {
         let stream_builder = StreamBuilder::new(sc);
         let pattern_stream = basic_pattern_stream(stream_builder);
 

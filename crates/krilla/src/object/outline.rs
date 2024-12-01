@@ -18,11 +18,12 @@
 //! [`Document`]: crate::Document
 //! [`Document::set_outline`]: crate::Document::set_outline
 
-use crate::error::KrillaResult;
-use crate::object::destination::XyzDestination;
-use crate::serialize::SerializerContext;
 use pdf_writer::writers::OutlineItem;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
+
+use crate::error::KrillaResult;
+use crate::object::destination::XyzDestination;
+use crate::serialize::SerializeContext;
 
 /// An outline.
 ///
@@ -83,7 +84,7 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root: Ref) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root: Ref) -> KrillaResult<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];
@@ -142,7 +143,7 @@ impl OutlineNode {
 
     pub(crate) fn serialize(
         &self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         parent: Ref,
         root: Ref,
         next: Option<Ref>,
@@ -176,7 +177,7 @@ impl OutlineNode {
             outline_entry.title(TextStr(&self.text));
         }
 
-        let dest_ref = sc.add_xyz_dest(self.destination.clone());
+        let dest_ref = sc.register_xyz_destination(self.destination.clone());
         outline_entry.pair(Name(b"Dest"), dest_ref);
 
         outline_entry.finish();
@@ -193,7 +194,7 @@ fn serialize_children(
     children: &[OutlineNode],
     root: Ref,
     sub_chunks: &mut Vec<Chunk>,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     outlineable: &mut impl Outlineable,
     negate_count: bool,
 ) -> KrillaResult<()> {

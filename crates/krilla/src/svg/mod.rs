@@ -1,12 +1,13 @@
 //! Drawing SVG files to a surface.
 
-use crate::font::Font;
-use crate::serialize::SvgSettings;
-use crate::surface::Surface;
 use fontdb::Database;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use usvg::{fontdb, Group, ImageKind, Node};
+
+use crate::font::Font;
+use crate::serialize::SvgSettings;
+use crate::surface::Surface;
 
 mod clip_path;
 mod filter;
@@ -27,7 +28,7 @@ struct ProcessContext {
 
 impl ProcessContext {
     /// Create a new `ProcessContext`.
-    pub fn new(fonts: HashMap<fontdb::ID, Font>, svg_settings: SvgSettings) -> Self {
+    fn new(fonts: HashMap<fontdb::ID, Font>, svg_settings: SvgSettings) -> Self {
         Self {
             fonts,
             svg_settings,
@@ -39,14 +40,14 @@ impl ProcessContext {
 ///
 /// Returns `None` if the conversion was not successful (for example if a fontdb ID is
 /// referenced that doesn't exist in the database).
-pub fn render_tree(tree: &usvg::Tree, svg_settings: SvgSettings, surface: &mut Surface) {
+pub(crate) fn render_tree(tree: &usvg::Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
     let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root(), surface);
     group::render(tree.root(), surface, &mut fc);
 }
 
 /// Render a usvg `Node` into a surface.
-pub fn render_node(
+pub(crate) fn render_node(
     node: &Node,
     mut tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,

@@ -1,3 +1,13 @@
+//! Shading functions.
+
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
+
+use bumpalo::Bump;
+use pdf_writer::types::{FunctionShadingType, PostScriptOp};
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
+
 use crate::color::luma;
 use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
@@ -5,35 +15,29 @@ use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource;
 use crate::resource::Resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
-use bumpalo::Bump;
-use pdf_writer::types::{FunctionShadingType, PostScriptOp};
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
-use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub enum GradientType {
+pub(crate) enum GradientType {
     Sweep,
     Linear,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) struct Stop {
-    pub offset: NormalizedF32,
-    pub color: Color,
-    pub opacity: NormalizedF32,
+    pub(crate) offset: NormalizedF32,
+    pub(crate) color: Color,
+    pub(crate) opacity: NormalizedF32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct RadialAxialGradient {
-    pub coords: Vec<f32>,
-    pub shading_type: FunctionShadingType,
-    pub stops: Vec<Stop>,
-    pub anti_alias: bool,
+    pub(crate) coords: Vec<f32>,
+    pub(crate) shading_type: FunctionShadingType,
+    pub(crate) stops: Vec<Stop>,
+    pub(crate) anti_alias: bool,
 }
 
 impl Eq for RadialAxialGradient {}
@@ -52,13 +56,13 @@ impl Hash for RadialAxialGradient {
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct PostScriptGradient {
-    pub min: f32,
-    pub max: f32,
-    pub stops: Vec<Stop>,
-    pub domain: RectWrapper,
-    pub spread_method: SpreadMethod,
-    pub gradient_type: GradientType,
-    pub anti_alias: bool,
+    pub(crate) min: f32,
+    pub(crate) max: f32,
+    pub(crate) stops: Vec<Stop>,
+    pub(crate) domain: RectWrapper,
+    pub(crate) spread_method: SpreadMethod,
+    pub(crate) gradient_type: GradientType,
+    pub(crate) anti_alias: bool,
 }
 
 impl Eq for PostScriptGradient {}
@@ -83,7 +87,7 @@ pub(crate) enum GradientProperties {
 
 impl GradientProperties {
     // Check if the gradient could be encoded as a solid fill instead.
-    pub fn single_stop_color(&self) -> Option<(Color, NormalizedF32)> {
+    pub(crate) fn single_stop_color(&self) -> Option<(Color, NormalizedF32)> {
         match self {
             GradientProperties::RadialAxialGradient(rag) => {
                 if rag.stops.len() == 1 {
@@ -204,15 +208,15 @@ impl GradientPropertiesExt for RadialGradient {
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
-    pub properties: GradientProperties,
-    pub use_opacities: bool,
+    pub(crate) properties: GradientProperties,
+    pub(crate) use_opacities: bool,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub(crate) struct ShadingFunction(Arc<Repr>);
 
 impl ShadingFunction {
-    pub fn new(properties: GradientProperties, use_opacities: bool) -> Self {
+    pub(crate) fn new(properties: GradientProperties, use_opacities: bool) -> Self {
         Self(Arc::new(Repr {
             properties,
             use_opacities,
@@ -225,7 +229,7 @@ impl Cacheable for ShadingFunction {
         Box::new(|cc| &mut cc.shading_functions)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -247,7 +251,7 @@ impl Resourceable for ShadingFunction {
 }
 
 fn serialize_postscript_shading(
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     chunk: &mut Chunk,
     root_ref: Ref,
     post_script_gradient: &PostScriptGradient,
@@ -272,7 +276,7 @@ fn serialize_postscript_shading(
 
     shading
         .insert(Name(b"ColorSpace"))
-        .primitive(sc.add_cs(cs).get_ref());
+        .primitive(sc.register_colorspace(cs).get_ref());
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
     shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
@@ -284,7 +288,7 @@ fn serialize_postscript_shading(
 }
 
 fn serialize_axial_radial_shading(
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     chunk: &mut Chunk,
     root_ref: Ref,
     radial_axial_gradient: &RadialAxialGradient,
@@ -309,7 +313,7 @@ fn serialize_axial_radial_shading(
     }
     shading
         .insert(Name(b"ColorSpace"))
-        .primitive(sc.add_cs(cs).get_ref());
+        .primitive(sc.register_colorspace(cs).get_ref());
 
     shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);
@@ -321,7 +325,7 @@ fn serialize_axial_radial_shading(
 fn select_axial_radial_function(
     properties: &RadialAxialGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     use_opacities: bool,
 ) -> Ref {
     debug_assert!(properties.stops.len() > 1);
@@ -376,7 +380,7 @@ fn select_axial_radial_function(
 fn select_postscript_function(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     bump: &Bump,
     use_opacities: bool,
 ) -> Ref {
@@ -394,7 +398,7 @@ fn select_postscript_function(
 // Not working yet
 // fn serialize_radial_postscript(
 //     properties: &GradientProperties,
-//     sc: &mut SerializerContext,
+//     sc: &mut SerializeContext,
 //     bbox: &Rect,
 // ) -> Ref {
 // let root_ref = sc.new_ref();
@@ -424,7 +428,7 @@ fn select_postscript_function(
 fn serialize_sweep_postscript(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     bump: &Bump,
     use_opacities: bool,
 ) -> Ref {
@@ -479,7 +483,7 @@ fn serialize_sweep_postscript(
 fn serialize_linear_postscript(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     use_opacities: bool,
 ) -> Ref {
     use pdf_writer::types::PostScriptOp::*;
@@ -733,7 +737,7 @@ fn encode_stops_impl<'a>(
 fn serialize_stitching(
     stops: &[Stop],
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
     use_opacities: bool,
 ) -> Ref {
     let root_ref = sc.new_ref();
@@ -778,7 +782,7 @@ fn serialize_exponential(
     first_comps: Vec<f32>,
     second_comps: Vec<f32>,
     chunk: &mut Chunk,
-    sc: &mut SerializerContext,
+    sc: &mut SerializeContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
     debug_assert_eq!(first_comps.len(), second_comps.len());

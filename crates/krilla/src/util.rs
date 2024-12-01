@@ -1,6 +1,5 @@
 //! Internal utilities.
 
-use crate::path::{LineCap, LineJoin, Stroke};
 use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
@@ -10,11 +9,14 @@ use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+
 #[cfg(feature = "svg")]
 use tiny_skia_path::PathBuilder;
-use tiny_skia_path::{FiniteF32, Path, Rect, Size, Transform};
+use tiny_skia_path::{FiniteF32, Path, Rect, Transform};
 
-pub trait NameExt {
+use crate::path::{LineCap, LineJoin, Stroke};
+
+pub(crate) trait NameExt {
     fn to_pdf_name(&self) -> Name;
 }
 
@@ -30,7 +32,7 @@ impl NameExt for &str {
     }
 }
 
-pub trait TransformExt {
+pub(crate) trait TransformExt {
     fn to_pdf_transform(&self) -> [f32; 6];
 }
 
@@ -40,7 +42,7 @@ impl TransformExt for tiny_skia_path::Transform {
     }
 }
 
-pub trait LineCapExt {
+pub(crate) trait LineCapExt {
     fn to_pdf_line_cap(&self) -> LineCapStyle;
 }
 
@@ -54,7 +56,7 @@ impl LineCapExt for LineCap {
     }
 }
 
-pub trait LineJoinExt {
+pub(crate) trait LineJoinExt {
     fn to_pdf_line_join(&self) -> LineJoinStyle;
 }
 
@@ -68,7 +70,7 @@ impl LineJoinExt for LineJoin {
     }
 }
 
-pub trait RectExt {
+pub(crate) trait RectExt {
     fn expand(&mut self, other: &Rect);
     fn to_pdf_rect(&self) -> pdf_writer::Rect;
     #[cfg(feature = "svg")]
@@ -105,7 +107,7 @@ impl RectExt for Rect {
     }
 }
 
-pub fn calculate_stroke_bbox(stroke: &Stroke, path: &Path) -> Option<Rect> {
+pub(crate) fn calculate_stroke_bbox(stroke: &Stroke, path: &Path) -> Option<Rect> {
     let stroke = stroke.clone().into_tiny_skia();
 
     if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
@@ -115,7 +117,7 @@ pub fn calculate_stroke_bbox(stroke: &Stroke, path: &Path) -> Option<Rect> {
     None
 }
 
-pub struct Prehashed<T: ?Sized> {
+pub(crate) struct Prehashed<T: ?Sized> {
     hash: u128,
     value: T,
 }
@@ -169,7 +171,7 @@ impl<T: Hash + ?Sized + 'static> Hash for Prehashed<T> {
 }
 
 /// Extra methods for [`[T]`](slice).
-pub trait SliceExt<T> {
+pub(crate) trait SliceExt<T> {
     /// Split a slice into consecutive runs with the same key and yield for
     /// each such run the key and the slice of elements with that key.
     fn group_by_key<K, F>(&self, f: F) -> GroupByKey<'_, T, F>
@@ -185,7 +187,7 @@ impl<T> SliceExt<T> for [T] {
 }
 
 /// This struct is created by [`SliceExt::group_by_key`].
-pub struct GroupByKey<'a, T, F> {
+pub(crate) struct GroupByKey<'a, T, F> {
     slice: &'a [T],
     f: F,
 }
@@ -209,7 +211,7 @@ where
 
 // TODO: Remove with new tiny-skia release
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub struct RectWrapper(pub Rect);
+pub(crate) struct RectWrapper(pub Rect);
 
 impl Deref for RectWrapper {
     type Target = Rect;
@@ -230,27 +232,7 @@ impl Hash for RectWrapper {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub struct SizeWrapper(pub Size);
-
-impl Deref for SizeWrapper {
-    type Target = Size;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Eq for SizeWrapper {}
-
-impl Hash for SizeWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        FiniteF32::new(self.0.width()).unwrap().hash(state);
-        FiniteF32::new(self.0.height()).unwrap().hash(state);
-    }
-}
-
-pub trait HashExt {
+pub(crate) trait HashExt {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H);
 }
 
@@ -265,7 +247,7 @@ impl HashExt for Transform {
     }
 }
 
-pub trait SipHashable {
+pub(crate) trait SipHashable {
     fn sip_hash(&self) -> u128;
 }
 

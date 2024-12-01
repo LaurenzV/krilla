@@ -1,13 +1,16 @@
+//! Filter conversion
+
+use tiny_skia_path::{Size, Transform};
+
 use crate::object::image::Image;
 use crate::surface::Surface;
 use crate::svg::ProcessContext;
-use tiny_skia_path::{Size, Transform};
 
 /// Render a filter into a surface by rasterizing it with `resvg` and drawing
 /// the image.
 ///
 /// Returns `None` if converting the filter was unsuccessful.
-pub fn render(
+pub(crate) fn render(
     group: &usvg::Group,
     surface: &mut Surface,
     process_context: &ProcessContext,

@@ -1,14 +1,17 @@
+//! XObjects.
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use std::ops::DerefMut;
+use tiny_skia_path::Rect;
+
 use crate::color::rgb;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{RectExt, RectWrapper};
 use crate::validation::ValidationError;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::ops::DerefMut;
-use tiny_skia_path::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {
@@ -19,7 +22,7 @@ pub(crate) struct XObject {
 }
 
 impl XObject {
-    pub fn new(
+    pub(crate) fn new(
         stream: Stream,
         isolated: bool,
         transparency_group_color_space: bool,
@@ -33,11 +36,11 @@ impl XObject {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.stream.is_empty()
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub(crate) fn bbox(&self) -> Rect {
         self.custom_bbox.map(|c| c.0).unwrap_or(self.stream.bbox.0)
     }
 }
@@ -47,7 +50,7 @@ impl Cacheable for XObject {
         Box::new(|cc| &mut cc.x_objects)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         for validation_error in self.stream.validation_errors {
@@ -84,7 +87,7 @@ impl Cacheable for XObject {
 
             if self.transparency_group_color_space {
                 let cs = rgb::Color::rgb_color_space(sc.serialize_settings().no_device_cs);
-                transparency.pair(Name(b"CS"), sc.add_cs(cs).get_ref());
+                transparency.pair(Name(b"CS"), sc.register_colorspace(cs).get_ref());
             }
 
             transparency.finish();
@@ -106,13 +109,13 @@ mod tests {
 
     use crate::object::xobject::XObject;
     use crate::path::Fill;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
     use crate::tests::rect_to_path;
     use krilla_macros::snapshot;
 
     #[snapshot]
-    fn x_object_with_transparency(sc: &mut SerializerContext) {
+    fn x_object_with_transparency(sc: &mut SerializeContext) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let mut sb = StreamBuilder::new(sc);
         let mut surface = sb.surface();

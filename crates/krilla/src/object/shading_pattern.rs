@@ -1,12 +1,16 @@
+//! Shading patterns.
+
+use std::hash::Hash;
+use std::sync::Arc;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use tiny_skia_path::Transform;
+
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::{HashExt, TransformExt};
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use std::hash::Hash;
-use std::sync::Arc;
-use tiny_skia_path::Transform;
 
 #[derive(Debug, PartialEq)]
 struct Repr {
@@ -24,7 +28,7 @@ impl Hash for Repr {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct ShadingPattern(Arc<Repr>);
+pub(crate) struct ShadingPattern(Arc<Repr>);
 
 impl ShadingPattern {
     pub fn new(gradient_properties: GradientProperties, shading_transform: Transform) -> Self {
@@ -41,7 +45,7 @@ impl Cacheable for ShadingPattern {
         Box::new(|cc| &mut cc.patterns)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let shading_ref = sc.register_cacheable(self.0.shading_function.clone());
@@ -66,7 +70,7 @@ mod tests {
     use crate::page::Page;
     use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use crate::path::Fill;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::surface::Surface;
     use crate::tests::{
         rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1,
@@ -75,7 +79,7 @@ mod tests {
     use tiny_skia_path::{NormalizedF32, Rect};
 
     #[snapshot]
-    fn linear_gradient_pad(sc: &mut SerializerContext) {
+    fn linear_gradient_pad(sc: &mut SerializeContext) {
         let gradient = LinearGradient {
             x1: 50.0,
             y1: 0.0,
@@ -94,7 +98,7 @@ mod tests {
     }
 
     #[snapshot]
-    fn linear_gradient_repeat(sc: &mut SerializerContext) {
+    fn linear_gradient_repeat(sc: &mut SerializeContext) {
         let gradient = LinearGradient {
             x1: 50.0,
             y1: 0.0,
@@ -161,7 +165,7 @@ mod tests {
     }
 
     #[snapshot]
-    fn sweep_gradient_pad(sc: &mut SerializerContext) {
+    fn sweep_gradient_pad(sc: &mut SerializeContext) {
         let gradient = SweepGradient {
             cx: 100.0,
             cy: 100.0,
@@ -180,7 +184,7 @@ mod tests {
     }
 
     #[snapshot]
-    fn sweep_gradient_repeat(sc: &mut SerializerContext) {
+    fn sweep_gradient_repeat(sc: &mut SerializeContext) {
         let gradient = SweepGradient {
             cx: 100.0,
             cy: 100.0,
@@ -247,7 +251,7 @@ mod tests {
     }
 
     #[snapshot]
-    fn radial_gradient_pad(sc: &mut SerializerContext) {
+    fn radial_gradient_pad(sc: &mut SerializeContext) {
         let gradient = RadialGradient {
             cx: 100.0,
             cy: 100.0,

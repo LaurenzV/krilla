@@ -8,22 +8,23 @@
 //! - WEBP
 
 // TODO: CLean up and update docs
-
-use crate::color::{ICCBasedColorSpace, ICCProfile, ICCProfileWrapper, DEVICE_CMYK, DEVICE_RGB};
-use crate::error::{KrillaError, KrillaResult};
-use crate::object::color::DEVICE_GRAY;
-use crate::serialize::SerializerContext;
-use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::{Deferred, NameExt, SipHashable};
-use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use std::sync::Arc;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
+
+use crate::color::{GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB};
+use crate::error::{KrillaError, KrillaResult};
+use crate::object::color::DEVICE_GRAY;
+use crate::serialize::SerializeContext;
+use crate::stream::{deflate_encode, FilterStreamBuilder};
+use crate::util::{Deferred, NameExt, SipHashable};
 
 /// The number of buits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
@@ -131,7 +132,7 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
 struct ImageMetadata {
     size: (u32, u32),
     color_space: ImageColorspace,
-    icc: Option<ICCProfileWrapper>,
+    icc: Option<GenericICCProfile>,
 }
 
 struct ImageRepr {
@@ -145,7 +146,7 @@ impl ImageRepr {
         self.metadata.size
     }
 
-    fn icc(&self) -> Option<ICCProfileWrapper> {
+    fn icc(&self) -> Option<GenericICCProfile> {
         self.metadata.icc.clone()
     }
 
@@ -180,11 +181,11 @@ impl Eq for ImageRepr {}
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<ImageRepr>);
 
-fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
+fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<GenericICCProfile> {
     let wrapper = match color_space {
-        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(data)?),
-        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(data)?),
-        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(data)?),
+        ImageColorspace::Rgb => GenericICCProfile::Rgb(ICCProfile::new(data)?),
+        ImageColorspace::Luma => GenericICCProfile::Luma(ICCProfile::new(data)?),
+        ImageColorspace::Cmyk => GenericICCProfile::Cmyk(ICCProfile::new(data)?),
     };
 
     Some(wrapper)
@@ -318,7 +319,7 @@ impl Image {
         self.0.size()
     }
 
-    fn icc(&self) -> Option<ICCProfileWrapper> {
+    fn icc(&self) -> Option<GenericICCProfile> {
         self.0.icc()
     }
 
@@ -328,7 +329,7 @@ impl Image {
 
     pub(crate) fn serialize(
         self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> Deferred<KrillaResult<Chunk>> {
         let soft_mask_id = sc.new_ref();
@@ -339,9 +340,9 @@ impl Image {
                 .supports_icc(ic.metadata())
             {
                 let ref_ = match ic {
-                    ICCProfileWrapper::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
-                    ICCProfileWrapper::Rgb(r) => sc.register_cacheable(ICCBasedColorSpace(r)),
-                    ICCProfileWrapper::Cmyk(c) => sc.register_cacheable(ICCBasedColorSpace(c)),
+                    GenericICCProfile::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
+                    GenericICCProfile::Rgb(r) => sc.register_cacheable(ICCBasedColorSpace(r)),
+                    GenericICCProfile::Cmyk(c) => sc.register_cacheable(ICCBasedColorSpace(c)),
                 };
 
                 Some(ref_)
@@ -710,7 +711,7 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
 #[cfg(test)]
 mod tests {
     use crate::image::Image;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::surface::Surface;
     use crate::tests::{
         load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image,
@@ -721,33 +722,33 @@ mod tests {
     use tiny_skia_path::Size;
 
     #[snapshot]
-    fn image_luma8_png(sc: &mut SerializerContext) {
+    fn image_luma8_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("luma8.png"));
     }
 
     #[snapshot]
-    fn image_custom_luma8_png(sc: &mut SerializerContext) {
+    fn image_custom_luma8_png(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image("luma8.png"));
     }
 
     #[snapshot]
-    fn image_luma16_png(sc: &mut SerializerContext) {
+    fn image_luma16_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("luma16.png"));
     }
 
     #[snapshot]
-    fn image_rgb8_png(sc: &mut SerializerContext) {
+    fn image_rgb8_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgb8.png"));
     }
 
     #[snapshot]
-    fn image_custom_rgb8_png(sc: &mut SerializerContext) {
+    fn image_custom_rgb8_png(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image("rgb8.png"));
     }
 
     // ICC profile should be ignored.
     #[snapshot]
-    fn image_custom_rgb8_png_invalid_icc(sc: &mut SerializerContext) {
+    fn image_custom_rgb8_png_invalid_icc(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image_with_icc(
             "rgb8.png",
             std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
@@ -755,52 +756,52 @@ mod tests {
     }
 
     #[snapshot]
-    fn image_rgb16_png(sc: &mut SerializerContext) {
+    fn image_rgb16_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgb16.png"));
     }
 
     #[snapshot]
-    fn image_rgba8_png(sc: &mut SerializerContext) {
+    fn image_rgba8_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgba8.png"));
     }
 
     #[snapshot]
-    fn image_custom_rgba8_png(sc: &mut SerializerContext) {
+    fn image_custom_rgba8_png(sc: &mut SerializeContext) {
         sc.register_image(load_custom_image("rgba8.png"));
     }
 
     #[snapshot]
-    fn image_rgba16_png(sc: &mut SerializerContext) {
+    fn image_rgba16_png(sc: &mut SerializeContext) {
         sc.register_image(load_png_image("rgba16.png"));
     }
 
     #[snapshot]
-    fn image_luma8_jpg(sc: &mut SerializerContext) {
+    fn image_luma8_jpg(sc: &mut SerializeContext) {
         sc.register_image(load_jpg_image("luma8.jpg"));
     }
 
     #[snapshot]
-    fn image_rgb8_jpg(sc: &mut SerializerContext) {
+    fn image_rgb8_jpg(sc: &mut SerializeContext) {
         sc.register_image(load_jpg_image("rgb8.jpg"));
     }
 
     #[snapshot]
-    fn image_cmyk_jpg(sc: &mut SerializerContext) {
+    fn image_cmyk_jpg(sc: &mut SerializeContext) {
         sc.register_image(load_jpg_image("cmyk.jpg"));
     }
 
     // Currently gets converted into RGBA.
     #[snapshot]
-    fn image_rgb8_gif(sc: &mut SerializerContext) {
+    fn image_rgb8_gif(sc: &mut SerializeContext) {
         sc.register_image(load_gif_image("rgb8.gif"));
     }
 
     #[snapshot]
-    fn image_rgba8_gif(sc: &mut SerializerContext) {
+    fn image_rgba8_gif(sc: &mut SerializeContext) {
         sc.register_image(load_gif_image("rgba8.gif"));
     }
     #[snapshot]
-    fn image_rgba8_webp(sc: &mut SerializerContext) {
+    fn image_rgba8_webp(sc: &mut SerializeContext) {
         sc.register_image(load_webp_image("rgba8.webp"));
     }
 

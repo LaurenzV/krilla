@@ -1,16 +1,16 @@
 //! Alpha and luminosity masks.
 
+use pdf_writer::{Chunk, Finish, Name, Ref};
+use tiny_skia_path::{Rect, Transform};
+
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
-use pdf_writer::{Chunk, Finish, Name, Ref};
-use tiny_skia_path::{Rect, Transform};
-
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]
 pub struct Mask {
@@ -41,7 +41,7 @@ impl Mask {
         gradient_properties: GradientProperties,
         shading_transform: Transform,
         bbox: Rect,
-        serializer_context: &mut SerializerContext,
+        serializer_context: &mut SerializeContext,
     ) -> Option<Self> {
         match &gradient_properties {
             GradientProperties::RadialAxialGradient(rag) => {
@@ -100,7 +100,7 @@ impl Cacheable for Mask {
         Box::new(|cc| &mut cc.masks)
     }
 
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
         let x_object = sc.register_cacheable(XObject::new(
@@ -129,7 +129,7 @@ impl Resourceable for Mask {
 mod tests {
 
     use crate::object::mask::Mask;
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::surface::Surface;
 
     use crate::color::rgb;
@@ -142,7 +142,7 @@ mod tests {
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
 
-    fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializerContext) {
+    fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -172,7 +172,7 @@ mod tests {
     }
 
     #[snapshot]
-    pub fn mask_luminosity(sc: &mut SerializerContext) {
+    pub fn mask_luminosity(sc: &mut SerializeContext) {
         mask_snapshot_impl(MaskType::Luminosity, sc);
     }
 

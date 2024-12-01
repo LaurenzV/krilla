@@ -47,7 +47,7 @@ with an even number of characters and without whitespaces. 🟢
 - krilla checks the that the maximum/minimum float number has not been exceeded. 🟢 
 - krilla does not round close real numbers to 0. 🟠 
 - krilla does not write at most 5 decimal places for real numbers. 🟠
-- krilla always uses the `new_str` and `new_text_str` methods of the SerializerContext to create them, 
+- krilla always uses the `new_str` and `new_text_str` methods of the SerializeContext to create them, 
   which returns a validation error in case it's too long. 🔵
 - krilla trims the names of fonts, and all other names cannot be longer than 127. 🔵
 - krilla does check the maximum length of arrays. 🟢

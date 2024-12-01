@@ -1,3 +1,8 @@
+//! Utilities for SVG conversion.
+
+use pdf_writer::types::BlendMode;
+use tiny_skia_path::{NormalizedF32, Transform};
+
 use crate::color::luma;
 use crate::mask::MaskType;
 use crate::object::color::rgb;
@@ -5,11 +10,9 @@ use crate::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod,
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use crate::stream::StreamBuilder;
 use crate::svg::{group, ProcessContext};
-use pdf_writer::types::BlendMode;
-use tiny_skia_path::{NormalizedF32, Transform};
 
 /// Convert a usvg `Transform` into a krilla `Transform`.
-pub fn convert_transform(transform: &Transform) -> Transform {
+pub(crate) fn convert_transform(transform: &Transform) -> Transform {
     Transform {
         sx: transform.sx,
         kx: transform.kx,
@@ -21,7 +24,7 @@ pub fn convert_transform(transform: &Transform) -> Transform {
 }
 
 /// Convert a usvg `SpreadMethod` into a krilla `SpreadMethod`.
-pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod {
+pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod {
     match spread_method {
         usvg::SpreadMethod::Pad => SpreadMethod::Pad,
         usvg::SpreadMethod::Reflect => SpreadMethod::Reflect,
@@ -30,7 +33,7 @@ pub fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod
 }
 
 /// Convert a usvg `Stop` into a krilla `Stop`.
-pub fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
+pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
     Stop {
         offset: stop.offset(),
         color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
@@ -39,7 +42,7 @@ pub fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
 }
 
 /// Convert a usvg `Paint` into a krilla `Paint`.
-pub fn convert_paint(
+pub(crate) fn convert_paint(
     paint: &usvg::Paint,
     mut stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
@@ -112,7 +115,7 @@ pub fn convert_paint(
 }
 
 /// Convert a usvg `LineCap` into a krilla `LineCap`.
-pub fn convert_line_cap(line_cap: &usvg::LineCap) -> LineCap {
+pub(crate) fn convert_line_cap(line_cap: &usvg::LineCap) -> LineCap {
     match line_cap {
         usvg::LineCap::Butt => LineCap::Butt,
         usvg::LineCap::Round => LineCap::Round,
@@ -121,7 +124,7 @@ pub fn convert_line_cap(line_cap: &usvg::LineCap) -> LineCap {
 }
 
 /// Convert a usvg `LineJoin` into a krilla `LineJoin`.
-pub fn convert_line_join(line_join: &usvg::LineJoin) -> LineJoin {
+pub(crate) fn convert_line_join(line_join: &usvg::LineJoin) -> LineJoin {
     match line_join {
         usvg::LineJoin::Miter => LineJoin::Miter,
         usvg::LineJoin::MiterClip => LineJoin::Miter,
@@ -131,7 +134,7 @@ pub fn convert_line_join(line_join: &usvg::LineJoin) -> LineJoin {
 }
 
 /// Convert a usvg `FillRule` into a krilla `FillRule`.
-pub fn convert_fill_rule(fill_rule: &usvg::FillRule) -> FillRule {
+pub(crate) fn convert_fill_rule(fill_rule: &usvg::FillRule) -> FillRule {
     match fill_rule {
         usvg::FillRule::NonZero => FillRule::NonZero,
         usvg::FillRule::EvenOdd => FillRule::EvenOdd,
@@ -139,7 +142,7 @@ pub fn convert_fill_rule(fill_rule: &usvg::FillRule) -> FillRule {
 }
 
 /// Convert a usvg `Fill` into a krilla `Fill`.
-pub fn convert_fill(
+pub(crate) fn convert_fill(
     fill: &usvg::Fill,
     stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
@@ -158,7 +161,7 @@ pub fn convert_fill(
 }
 
 /// Convert a usvg `Stroke` into a krilla `Stroke`.
-pub fn convert_stroke(
+pub(crate) fn convert_stroke(
     stroke: &usvg::Stroke,
     stream_builder: StreamBuilder,
     process_context: &mut ProcessContext,
@@ -186,7 +189,7 @@ pub fn convert_stroke(
 }
 
 /// Convert a usvg `BlendMode` into a krilla `BlendMode`.
-pub fn convert_blend_mode(blend_mode: &usvg::BlendMode) -> BlendMode {
+pub(crate) fn convert_blend_mode(blend_mode: &usvg::BlendMode) -> BlendMode {
     match blend_mode {
         usvg::BlendMode::Normal => BlendMode::Normal,
         usvg::BlendMode::Multiply => BlendMode::Multiply,
@@ -208,7 +211,7 @@ pub fn convert_blend_mode(blend_mode: &usvg::BlendMode) -> BlendMode {
 }
 
 /// Convert a usvg `MaskType` into a krilla `MaskType`.
-pub fn convert_mask_type(mask_type: &usvg::MaskType) -> MaskType {
+pub(crate) fn convert_mask_type(mask_type: &usvg::MaskType) -> MaskType {
     match mask_type {
         usvg::MaskType::Luminance => MaskType::Luminosity,
         usvg::MaskType::Alpha => MaskType::Alpha,

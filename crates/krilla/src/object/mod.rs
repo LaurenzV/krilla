@@ -1,8 +1,11 @@
+//! Various PDF objects.
+
+use pdf_writer::{Chunk, Ref};
+
 use crate::chunk_container::ChunkContainer;
 use crate::resource::Resource;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::util::SipHashable;
-use pdf_writer::{Chunk, Ref};
 
 pub mod action;
 pub mod annotation;
@@ -24,7 +27,7 @@ pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Ve
 
 pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
-    fn serialize(self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk;
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
 }
 
 pub(crate) trait Resourceable: Cacheable {

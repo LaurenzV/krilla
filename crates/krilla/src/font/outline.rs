@@ -1,13 +1,14 @@
 //! Drawing outline-based glyphs to a surface.
 
-use crate::font::Font;
-use crate::object::font::PaintMode;
-use crate::surface::Surface;
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{Path, PathBuilder, Transform};
 
-pub fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
+use crate::font::Font;
+use crate::object::font::PaintMode;
+use crate::surface::Surface;
+
+pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
@@ -24,7 +25,7 @@ pub fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
 }
 
 /// Draw an outline-based glyph on a surface.
-pub fn draw_glyph(
+pub(crate) fn draw_glyph(
     font: Font,
     glyph: GlyphId,
     paint_mode: PaintMode,
@@ -44,14 +45,14 @@ pub fn draw_glyph(
 }
 
 /// A wrapper struct for implementing the `OutlinePen` trait.
-pub struct OutlineBuilder(PathBuilder);
+pub(crate) struct OutlineBuilder(PathBuilder);
 
 impl OutlineBuilder {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self(PathBuilder::new())
     }
 
-    pub fn finish(self) -> Option<Path> {
+    pub(crate) fn finish(self) -> Option<Path> {
         self.0.finish()
     }
 }

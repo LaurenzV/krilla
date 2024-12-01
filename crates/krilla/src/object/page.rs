@@ -1,22 +1,24 @@
 //! Working with pages of a PDF document.
 
+use std::num::NonZeroU32;
+use std::ops::DerefMut;
+
+use pdf_writer::types::{NumberingStyle, TabOrder};
+use pdf_writer::writers::NumberTree;
+use pdf_writer::{Chunk, Finish, Ref, TextStr};
+use tiny_skia_path::{Rect, Transform};
+
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
 use crate::object::annotation::Annotation;
 use crate::resource::ResourceDictionary;
-use crate::serialize::SerializerContext;
+use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
 use crate::version::PdfVersion;
-use pdf_writer::types::{NumberingStyle, TabOrder};
-use pdf_writer::writers::NumberTree;
-use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use std::num::NonZeroU32;
-use std::ops::DerefMut;
-use tiny_skia_path::{Rect, Transform};
 
 /// A single page.
 ///
@@ -28,7 +30,7 @@ use tiny_skia_path::{Rect, Transform};
 ///
 /// [`Document::start_page`]: crate::Document::start_page
 pub struct Page<'a> {
-    sc: &'a mut SerializerContext,
+    sc: &'a mut SerializeContext,
     page_settings: PageSettings,
     page_index: usize,
     page_stream: Stream,
@@ -38,7 +40,7 @@ pub struct Page<'a> {
 
 impl<'a> Page<'a> {
     pub(crate) fn new(
-        sc: &'a mut SerializerContext,
+        sc: &'a mut SerializeContext,
         page_index: usize,
         page_settings: PageSettings,
     ) -> Self {
@@ -64,7 +66,9 @@ impl<'a> Page<'a> {
     /// Add a tagged annotation to the page.
     pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
         let annot_index = self.annotations.len();
-        let struct_parent = self.sc.get_annotation_parent(self.page_index, annot_index);
+        let struct_parent = self
+            .sc
+            .register_annotation_parent(self.page_index, annot_index);
         annotation.struct_parent = struct_parent;
         self.add_annotation(annotation);
 
@@ -110,7 +114,7 @@ impl Drop for Page<'_> {
 
         let struct_parent = self
             .sc
-            .get_page_struct_parent(self.page_index, self.num_mcids);
+            .register_page_struct_parent(self.page_index, self.num_mcids);
 
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
         let page = InternalPage::new(
@@ -121,7 +125,7 @@ impl Drop for Page<'_> {
             page_settings,
             self.page_index,
         );
-        self.sc.add_page(page);
+        self.sc.register_page(page);
     }
 }
 
@@ -139,7 +143,7 @@ pub(crate) struct InternalPage {
 impl InternalPage {
     pub(crate) fn new(
         mut stream: Stream,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         annotations: Vec<Annotation>,
         struct_parent: Option<i32>,
         page_settings: PageSettings,
@@ -180,7 +184,7 @@ impl InternalPage {
 
     pub(crate) fn serialize(
         self,
-        sc: &mut SerializerContext,
+        sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> KrillaResult<Deferred<Chunk>> {
         let mut chunk = Chunk::new();
@@ -250,11 +254,11 @@ impl InternalPage {
 #[derive(Debug, Hash, Eq, PartialEq, Default, Clone)]
 pub struct PageLabel {
     /// The numbering style of the page label.
-    pub style: Option<NumberingStyle>,
+    pub(crate) style: Option<NumberingStyle>,
     /// The prefix of the page label.
-    pub prefix: Option<String>,
+    pub(crate) prefix: Option<String>,
     /// The numeric value of the page label.
-    pub offset: Option<NonZeroU32>,
+    pub(crate) offset: Option<NonZeroU32>,
 }
 
 impl PageLabel {
@@ -309,7 +313,7 @@ impl<'a> PageLabelContainer<'a> {
         }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializerContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -335,7 +339,7 @@ impl<'a> PageLabelContainer<'a> {
         let mut nums = num_tree.nums();
 
         for (page_num, label) in filtered_entries {
-            let label_ref = sc.add_page_label(label);
+            let label_ref = sc.register_page_label(label);
             nums.insert(page_num as i32, label_ref);
         }
 
@@ -351,7 +355,7 @@ mod tests {
 
     use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
-    use crate::serialize::SerializerContext;
+    use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
 
     use crate::path::Fill;
@@ -362,7 +366,7 @@ mod tests {
     use tiny_skia_path::{PathBuilder, Rect};
 
     #[snapshot]
-    fn page_simple(sc: &mut SerializerContext) {
+    fn page_simple(sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -375,11 +379,11 @@ mod tests {
         surface.fill_path(&path, Fill::default());
         surface.finish();
         let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
-        sc.add_page(page);
+        sc.register_page(page);
     }
 
     #[snapshot(settings_2)]
-    fn page_with_resources(sc: &mut SerializerContext) {
+    fn page_with_resources(sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
 
@@ -392,18 +396,18 @@ mod tests {
         surface.fill_path(&path, Fill::default());
         surface.finish();
         let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
-        sc.add_page(page);
+        sc.register_page(page);
     }
 
     #[snapshot]
-    fn page_label(sc: &mut SerializerContext) {
+    fn page_label(sc: &mut SerializeContext) {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),
             Some("P".to_string()),
             NonZeroU32::new(2).unwrap(),
         );
 
-        sc.add_page_label(page_label);
+        sc.register_page_label(page_label);
     }
 
     #[snapshot(document)]

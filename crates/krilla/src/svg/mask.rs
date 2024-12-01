@@ -1,3 +1,5 @@
+//! Mask conversion
+
 use crate::object::mask::Mask;
 use crate::path::FillRule;
 use crate::surface::Surface;
@@ -7,7 +9,7 @@ use crate::util::RectExt;
 
 /// Render a usvg `Mask` into a surface.
 #[must_use]
-pub fn render(
+pub(crate) fn render(
     mask: &usvg::Mask,
     surface: &mut Surface,
     process_context: &mut ProcessContext,
