@@ -3,7 +3,7 @@ use crate::annotation::{Annotation, LinkAnnotation, Target};
 use crate::color::{cmyk, luma, rgb, ICCProfile};
 use crate::document::{Document, PageSettings};
 use crate::font::{Font, GlyphUnits};
-use crate::image::Image;
+use crate::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use crate::mask::{Mask, MaskType};
 use crate::paint::{Stop, Stops};
 use crate::path::{Fill, Stroke};
@@ -14,7 +14,7 @@ use crate::validation::Validator;
 use crate::version::PdfVersion;
 use crate::{SerializeSettings, SvgSettings};
 use difference::{Changeset, Difference};
-use image::{load_from_memory, Rgba, RgbaImage};
+use image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
@@ -26,8 +26,9 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use std::cmp::max;
 use std::env;
+use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, LazyLock, OnceLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 #[allow(dead_code)]
@@ -103,6 +104,80 @@ lazy_font!(NOTO_COLOR_EMOJI_CBDT, FONT_PATH.join("NotoColorEmoji.CBDT.subset.ttf
 lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 #[rustfmt::skip]
 lazy_font!(SVG_EXTRA, FONT_PATH.join("SVG_extra.ttf"));
+
+#[derive(Clone)]
+struct TestImage {
+    original_dynamic: Arc<DynamicImage>,
+    alpha_channel: OnceLock<Option<Arc<Vec<u8>>>>,
+    actual_dynamic: OnceLock<Arc<DynamicImage>>,
+    icc: Option<Vec<u8>>
+}
+
+impl TestImage {
+    pub fn new(data: Vec<u8>, icc: Option<Vec<u8>>) -> Self {
+        let image = image::load_from_memory(&data).unwrap();
+        Self {
+            original_dynamic: Arc::new(image),
+            alpha_channel: OnceLock::new(),
+            actual_dynamic: OnceLock::new(),
+            icc,
+        }
+    }
+}
+
+impl Hash for TestImage {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.original_dynamic.as_bytes().hash(state);
+    }
+}
+
+
+impl CustomImage for TestImage {
+    fn color_channel(&self) -> &[u8] {
+        self.actual_dynamic.get_or_init(|| {
+            let dynamic = self.original_dynamic.clone();
+            let channel_count = dynamic.color().channel_count();
+
+            match (dynamic.as_ref(), channel_count) {
+                (DynamicImage::ImageLuma8(_), _) => dynamic.clone(),
+                (DynamicImage::ImageRgb8(_), _) => dynamic.clone(),
+                (_, 1 | 2) => Arc::new(DynamicImage::ImageLuma8(dynamic.to_luma8())),
+                _ => Arc::new(DynamicImage::ImageRgb8(dynamic.to_rgb8())),
+            }
+        }).as_bytes()
+    }
+
+    fn alpha_channel(&self) -> Option<&[u8]> {
+        self.alpha_channel.get_or_init(||
+            self.original_dynamic.color().has_alpha()
+                .then(|| Arc::new(self.original_dynamic
+                    .pixels()
+                    .map(|(_, _, Rgba([_, _, _, a]))| a)
+                    .collect())
+                )
+        ).as_ref().map(|v| &***v)
+    }
+
+    fn bits_per_component(&self) -> BitsPerComponent {
+        BitsPerComponent::Eight
+    }
+
+    fn size(&self) -> (u32, u32) {
+        self.original_dynamic.dimensions()
+    }
+
+    fn icc_profile(&self) -> Option<&[u8]> {
+        self.icc.as_deref()
+    }
+
+    fn color_space(&self) -> ImageColorspace {
+        if self.original_dynamic.color().has_color() {
+            ImageColorspace::Rgb
+        }   else {
+            ImageColorspace::Luma
+        }
+    }
+}
 
 pub fn green_fill(opacity: f32) -> Fill {
     Fill {
@@ -220,6 +295,16 @@ pub fn load_webp_image(name: &str) -> Image {
         std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
     ))
     .unwrap()
+}
+
+pub fn load_custom_image(name: &str) -> Image {
+    Image::from_custom(TestImage::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(), None))
+        .unwrap()
+}
+
+pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {
+    Image::from_custom(TestImage::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(), Some(icc)))
+        .unwrap()
 }
 
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
