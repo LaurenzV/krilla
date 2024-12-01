@@ -233,7 +233,6 @@ impl Image {
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T) -> Option<Image> {
-        // TODO: Add tests
         let hash = image.sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
@@ -525,8 +524,6 @@ fn gif_metadata(data: &[u8]) -> Option<ImageMetadata> {
 
     Some(ImageMetadata {
         size: (size.width as u32, size.height as u32),
-        // We always set this as the output color space when decoding a GIF.
-        // TODO: VAlidate this.
         color_space: ImageColorspace::Rgb,
         icc: None,
     })
@@ -610,6 +607,7 @@ fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, Bi
                 .collect::<Vec<_>>();
             deflate_encode(&data)
         }
+        // PNG/WEBP/GIF only support those three, so should be enough?
         _ => unimplemented!(),
     };
 
@@ -677,7 +675,7 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
                 .collect::<Vec<_>>();
             deflate_encode(&data)
         }
-        // TODO: Remove?
+        // PNG/WEBP/GIF only support those three, so should be enough?
         _ => unimplemented!(),
     };
 
@@ -695,7 +693,7 @@ mod tests {
     use crate::image::Image;
     use crate::serialize::SerializerContext;
     use crate::surface::Surface;
-    use crate::tests::{load_gif_image, load_jpg_image, load_png_image, load_webp_image};
+    use crate::tests::{load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image, load_png_image, load_webp_image};
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::Size;
@@ -703,6 +701,11 @@ mod tests {
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializerContext) {
         sc.register_image(load_png_image("luma8.png"));
+    }
+
+    #[snapshot]
+    fn image_custom_luma8_png(sc: &mut SerializerContext) {
+        sc.register_image(load_custom_image("luma8.png"));
     }
 
     #[snapshot]
@@ -716,6 +719,17 @@ mod tests {
     }
 
     #[snapshot]
+    fn image_custom_rgb8_png(sc: &mut SerializerContext) {
+        sc.register_image(load_custom_image("rgb8.png"));
+    }
+
+    // ICC profile should be ignored.
+    #[snapshot]
+    fn image_custom_rgb8_png_invalid_icc(sc: &mut SerializerContext) {
+        sc.register_image(load_custom_image_with_icc("rgb8.png", std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap()));
+    }
+
+    #[snapshot]
     fn image_rgb16_png(sc: &mut SerializerContext) {
         sc.register_image(load_png_image("rgb16.png"));
     }
@@ -723,6 +737,11 @@ mod tests {
     #[snapshot]
     fn image_rgba8_png(sc: &mut SerializerContext) {
         sc.register_image(load_png_image("rgba8.png"));
+    }
+
+    #[snapshot]
+    fn image_custom_rgba8_png(sc: &mut SerializerContext) {
+        sc.register_image(load_custom_image("rgba8.png"));
     }
 
     #[snapshot]
@@ -771,6 +790,11 @@ mod tests {
         image_visreg_impl(surface, "luma8.png", load_png_image);
     }
 
+    #[visreg]
+    fn image_luma8_custom_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "luma8.png", load_custom_image);
+    }
+
     #[visreg(all)]
     fn image_luma16_png(surface: &mut Surface) {
         image_visreg_impl(surface, "luma16.png", load_png_image);
@@ -779,6 +803,11 @@ mod tests {
     #[visreg(all)]
     fn image_rgb8_png(surface: &mut Surface) {
         image_visreg_impl(surface, "rgb8.png", load_png_image);
+    }
+
+    #[visreg]
+    fn image_rgb8_custom_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgb8.png", load_custom_image);
     }
 
     #[visreg(all)]
@@ -794,6 +823,11 @@ mod tests {
     #[visreg(all)]
     fn image_rgba16_png(surface: &mut Surface) {
         image_visreg_impl(surface, "rgba16.png", load_png_image);
+    }
+
+    #[visreg]
+    fn image_rgba16_custom_png(surface: &mut Surface) {
+        image_visreg_impl(surface, "rgba16.png", load_custom_image);
     }
 
     #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
