@@ -10,7 +10,7 @@ use crate::svg::ProcessContext;
 /// the image.
 ///
 /// Returns `None` if converting the filter was unsuccessful.
-pub fn render(
+pub(crate) fn render(
     group: &usvg::Group,
     surface: &mut Surface,
     process_context: &ProcessContext,

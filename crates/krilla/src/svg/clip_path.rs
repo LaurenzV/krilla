@@ -10,7 +10,7 @@ use crate::svg::util::{convert_fill_rule, convert_transform};
 use crate::svg::{group, ProcessContext};
 
 /// Render a clip path into a surface.
-pub fn render(
+pub(crate) fn render(
     group: &usvg::Group,
     clip_path: &usvg::ClipPath,
     surface: &mut Surface,

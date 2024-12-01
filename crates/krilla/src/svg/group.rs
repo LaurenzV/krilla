@@ -6,7 +6,7 @@ use crate::surface::Surface;
 use crate::svg::util::{convert_blend_mode, convert_transform};
 use crate::svg::{clip_path, filter, image, mask, path, text, ProcessContext};
 
-pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
+pub(crate) fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut ProcessContext) {
     if !group.filters().is_empty() {
         filter::render(group, surface, process_context);
         return;
@@ -43,7 +43,7 @@ pub fn render(group: &usvg::Group, surface: &mut Surface, process_context: &mut 
     }
 }
 
-pub fn render_node(node: &Node, surface: &mut Surface, process_context: &mut ProcessContext) {
+pub(crate) fn render_node(node: &Node, surface: &mut Surface, process_context: &mut ProcessContext) {
     match node {
         Node::Group(g) => render(g, surface, process_context),
         Node::Path(p) => path::render(p, surface, process_context),

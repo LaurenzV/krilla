@@ -12,7 +12,7 @@ use crate::util::RectExt;
 /// Render an image into a surface.
 ///
 /// Returns `None` if the image could not be rendered.
-pub fn render(
+pub(crate) fn render(
     image: &usvg::Image,
     surface: &mut Surface,
     process_context: &mut ProcessContext,

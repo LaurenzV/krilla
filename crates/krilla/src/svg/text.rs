@@ -13,7 +13,7 @@ use crate::svg::util::{convert_fill, convert_stroke};
 use crate::svg::{path, ProcessContext};
 
 /// Render a text into a surface.
-pub fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {
+pub(crate) fn render(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {
     for span in text.layouted() {
         if !span.visible {
             continue;
