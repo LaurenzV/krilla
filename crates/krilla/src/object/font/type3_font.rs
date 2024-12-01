@@ -1,5 +1,16 @@
 //! Type 3 fonts.
 
+
+use std::collections::{BTreeMap, HashSet};
+use std::hash::{Hash, Hasher};
+use std::ops::DerefMut;
+
+use pdf_writer::types::{FontFlags, UnicodeCmap};
+use pdf_writer::writers::WMode;
+use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
+use skrifa::GlyphId;
+use tiny_skia_path::{Rect, Transform};
+
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::font::outline::glyph_path;
 use crate::font::Font;
@@ -13,25 +24,17 @@ use crate::util::{NameExt, RectExt, TransformExt};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
-use pdf_writer::types::{FontFlags, UnicodeCmap};
-use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
-use skrifa::GlyphId;
-use std::collections::{BTreeMap, HashSet};
-use std::hash::{Hash, Hasher};
-use std::ops::DerefMut;
-use tiny_skia_path::{Rect, Transform};
 
-pub type Gid = u8;
+pub(crate) type Gid = u8;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct CoveredGlyph<'a> {
-    pub glyph_id: GlyphId,
-    pub paint_mode: PaintMode<'a>,
+    pub(crate) glyph_id: GlyphId,
+    pub(crate) paint_mode: PaintMode<'a>,
 }
 
 impl CoveredGlyph<'_> {
-    pub fn to_owned(self) -> OwnedCoveredGlyph {
+    pub(crate) fn to_owned(self) -> OwnedCoveredGlyph {
         OwnedCoveredGlyph {
             glyph_id: self.glyph_id,
             paint_mode: self.paint_mode.to_owned(),
@@ -40,7 +43,7 @@ impl CoveredGlyph<'_> {
 }
 
 impl<'a> CoveredGlyph<'a> {
-    pub fn new(glyph_id: GlyphId, paint_mode: PaintMode<'a>) -> CoveredGlyph<'a> {
+    pub(crate) fn new(glyph_id: GlyphId, paint_mode: PaintMode<'a>) -> CoveredGlyph<'a> {
         Self {
             glyph_id,
             paint_mode,
@@ -74,7 +77,7 @@ pub(crate) struct Type3Font {
 }
 
 impl Type3Font {
-    pub fn new(font: Font, index: usize) -> Self {
+    pub(crate) fn new(font: Font, index: usize) -> Self {
         Self {
             font,
             glyphs: Vec::new(),
@@ -86,25 +89,25 @@ impl Type3Font {
     }
 
     // Unlike CID fonts, the units per em of type 3 fonts does not have to be 1000.
-    pub fn unit_per_em(&self) -> f32 {
+    pub(crate) fn unit_per_em(&self) -> f32 {
         self.font.units_per_em()
     }
 
-    pub fn is_full(&self) -> bool {
+    pub(crate) fn is_full(&self) -> bool {
         self.count() == 256
     }
 
-    pub fn count(&self) -> u16 {
+    pub(crate) fn count(&self) -> u16 {
         u16::try_from(self.glyphs.len()).unwrap()
     }
 
     #[inline]
-    pub fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
+    pub(crate) fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
         self.glyph_set.contains(glyph)
     }
 
     #[inline]
-    pub fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
+    pub(crate) fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
             .position(|g| g == glyph)
@@ -112,7 +115,7 @@ impl Type3Font {
     }
 
     #[inline]
-    pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
+    pub(crate) fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
         if let Some(pos) = self.get_gid(&glyph) {
             pos
         } else {
@@ -127,22 +130,22 @@ impl Type3Font {
     }
 
     #[inline]
-    pub fn get_codepoints(&self, gid: Gid) -> Option<&str> {
+    pub(crate) fn get_codepoints(&self, gid: Gid) -> Option<&str> {
         self.cmap_entries.get(&gid).map(|s| s.as_str())
     }
 
     #[inline]
-    pub fn set_codepoints(&mut self, gid: Gid, text: String) {
+    pub(crate) fn set_codepoints(&mut self, gid: Gid, text: String) {
         self.cmap_entries.insert(gid, text);
     }
 
     #[inline]
-    pub fn font(&self) -> Font {
+    pub(crate) fn font(&self) -> Font {
         self.font.clone()
     }
 
     #[inline]
-    pub fn identifier(&self) -> FontIdentifier {
+    pub(crate) fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
@@ -431,7 +434,7 @@ impl Type3Font {
     }
 }
 
-pub type Type3ID = usize;
+pub(crate) type Type3ID = usize;
 
 // A font can have multiple Type3 fonts, if more than 256 glyphs are used.
 // We use this struct to keep track of them.
@@ -442,7 +445,7 @@ pub(crate) struct Type3FontMapper {
 }
 
 impl Type3FontMapper {
-    pub fn new(font: Font) -> Type3FontMapper {
+    pub(crate) fn new(font: Font) -> Type3FontMapper {
         Self {
             font,
             fonts: Vec::new(),
@@ -453,7 +456,7 @@ impl Type3FontMapper {
 impl Type3FontMapper {
     /// Given a requested glyph coverage, find the corresponding font identifier of the
     /// font that contains it.
-    pub fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
+    pub(crate) fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
             .position(|f| f.covers(glyph))
@@ -462,7 +465,7 @@ impl Type3FontMapper {
 
     /// Given a font identifier, return the corresponding Type3 font if it is part of
     /// that type 3 font mapper.
-    pub fn font_from_id(&self, identifier: FontIdentifier) -> Option<&Type3Font> {
+    pub(crate) fn font_from_id(&self, identifier: FontIdentifier) -> Option<&Type3Font> {
         let pos = self
             .fonts
             .iter()
@@ -470,7 +473,7 @@ impl Type3FontMapper {
         self.fonts.get(pos)
     }
 
-    pub fn font_mut_from_id(&mut self, identifier: FontIdentifier) -> Option<&mut Type3Font> {
+    pub(crate) fn font_mut_from_id(&mut self, identifier: FontIdentifier) -> Option<&mut Type3Font> {
         let pos = self
             .fonts
             .iter()
@@ -478,11 +481,11 @@ impl Type3FontMapper {
         self.fonts.get_mut(pos)
     }
 
-    pub fn fonts(&self) -> &[Type3Font] {
+    pub(crate) fn fonts(&self) -> &[Type3Font] {
         &self.fonts
     }
 
-    pub fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> (FontIdentifier, Gid) {
+    pub(crate) fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> (FontIdentifier, Gid) {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
         if let Some(id) = self.id_from_glyph(&glyph) {

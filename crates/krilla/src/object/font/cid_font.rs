@@ -1,5 +1,17 @@
 //! CID fonts.
 
+use std::collections::BTreeMap;
+use std::hash::Hash;
+use std::ops::DerefMut;
+
+use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
+use pdf_writer::writers::WMode;
+use pdf_writer::{Chunk, Finish, Name, Ref, Str};
+use skrifa::raw::tables::cff::Cff;
+use skrifa::raw::{TableProvider, TopLevelTable};
+use skrifa::GlyphId;
+use subsetter::GlyphRemapper;
+
 use super::{CIDIdentifer, FontIdentifier};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
@@ -7,16 +19,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::{hash128, RectExt, SliceExt};
 use crate::validation::ValidationError;
-use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
-use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Finish, Name, Ref, Str};
-use skrifa::raw::tables::cff::Cff;
-use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::GlyphId;
-use std::collections::BTreeMap;
-use std::hash::Hash;
-use std::ops::DerefMut;
-use subsetter::GlyphRemapper;
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
@@ -27,7 +29,7 @@ pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo {
     supplement: 0,
 };
 
-pub type Cid = u16;
+pub(crate) type Cid = u16;
 
 /// A CID-keyed font.
 #[derive(Debug, Clone)]
@@ -49,7 +51,7 @@ pub(crate) struct CIDFont {
 
 impl CIDFont {
     /// Create a new CID-keyed font.
-    pub fn new(font: Font) -> CIDFont {
+    pub(crate) fn new(font: Font) -> CIDFont {
         // Always include the .notdef glyph. Will also always be included by the subsetter in
         // the glyph remapper.
         let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
@@ -62,25 +64,25 @@ impl CIDFont {
         }
     }
 
-    pub fn font(&self) -> Font {
+    pub(crate) fn font(&self) -> Font {
         self.font.clone()
     }
 
     // Note that this refers to the units per em in PDF (which is always 1000), and not the
     // units per em of the underlying font.
-    pub fn units_per_em(&self) -> f32 {
+    pub(crate) fn units_per_em(&self) -> f32 {
         1000.0
     }
 
     #[inline]
-    pub fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
+    pub(crate) fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
         self.glyph_remapper
             .get(u16::try_from(glyph_id.to_u32()).unwrap())
     }
 
     /// Add a new glyph (if it has not already been added) and return its CID.
     #[inline]
-    pub fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
+    pub(crate) fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
         let new_id = self
             .glyph_remapper
             .remap(u16::try_from(glyph_id.to_u32()).unwrap());
@@ -95,17 +97,17 @@ impl CIDFont {
     }
 
     #[inline]
-    pub fn get_codepoints(&self, cid: Cid) -> Option<&str> {
+    pub(crate) fn get_codepoints(&self, cid: Cid) -> Option<&str> {
         self.cmap_entries.get(&cid).map(|s| s.as_str())
     }
 
     #[inline]
-    pub fn set_codepoints(&mut self, cid: Cid, text: String) {
+    pub(crate) fn set_codepoints(&mut self, cid: Cid, text: String) {
         self.cmap_entries.insert(cid, text);
     }
 
     #[inline]
-    pub fn identifier(&self) -> FontIdentifier {
+    pub(crate) fn identifier(&self) -> FontIdentifier {
         FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
     }
 

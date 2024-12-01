@@ -10,7 +10,7 @@ pub(crate) mod cid_font;
 pub(crate) mod type3_font;
 
 impl PaintMode<'_> {
-    pub fn to_owned(self) -> OwnedPaintMode {
+    pub(crate) fn to_owned(self) -> OwnedPaintMode {
         match self {
             PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
             PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),
@@ -64,7 +64,7 @@ impl From<Stroke> for OwnedPaintMode {
 }
 
 impl OwnedPaintMode {
-    pub fn as_ref(&self) -> PaintMode {
+    pub(crate) fn as_ref(&self) -> PaintMode {
         match self {
             OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
             OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
@@ -81,7 +81,7 @@ pub(crate) enum PDFGlyph {
 
 impl PDFGlyph {
     /// Encode the glyph into a content stream.
-    pub fn encode_into(&self, slice: &mut Vec<u8>) {
+    pub(crate) fn encode_into(&self, slice: &mut Vec<u8>) {
         match self {
             PDFGlyph::Type3(cg) => slice.push(*cg),
             PDFGlyph::Cid(cid) => {
@@ -101,7 +101,7 @@ pub(crate) enum FontContainer {
 
 impl FontContainer {
     #[inline]
-    pub fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
+    pub(crate) fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
         match self {
             FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
             FontContainer::CIDFont(cid) => cid.get_cid(glyph.glyph_id).map(|_| cid.identifier()),
@@ -109,7 +109,7 @@ impl FontContainer {
     }
 
     #[inline]
-    pub fn get_from_identifier_mut(
+    pub(crate) fn get_from_identifier_mut(
         &mut self,
         font_identifier: FontIdentifier,
     ) -> Option<&mut dyn PdfFont> {
@@ -132,7 +132,7 @@ impl FontContainer {
     }
 
     #[inline]
-    pub fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
+    pub(crate) fn get_from_identifier(&self, font_identifier: FontIdentifier) -> Option<&dyn PdfFont> {
         match self {
             FontContainer::Type3(t3) => {
                 if let Some(t3_font) = t3.font_from_id(font_identifier) {
@@ -152,7 +152,7 @@ impl FontContainer {
     }
 
     #[inline]
-    pub fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
+    pub(crate) fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
         match self {
             FontContainer::Type3(t3) => {
                 let (identifier, gid) = t3.add_glyph(glyph.to_owned());
