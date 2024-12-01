@@ -162,9 +162,9 @@ pub struct Image(Arc<ImageRepr>);
 
 fn get_icc_profile_type(data: Vec<u8>, color_space: ImageColorspace) -> Option<ICCProfileWrapper> {
     let wrapper = match color_space {
-        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(Arc::new(data))?),
-        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(Arc::new(data))?),
-        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(Arc::new(data))?),
+        ImageColorspace::Rgb => ICCProfileWrapper::Rgb(ICCProfile::new(&data)?),
+        ImageColorspace::Luma => ICCProfileWrapper::Luma(ICCProfile::new(&data)?),
+        ImageColorspace::Cmyk => ICCProfileWrapper::Cmyk(ICCProfile::new(&data)?),
     };
 
     Some(wrapper)

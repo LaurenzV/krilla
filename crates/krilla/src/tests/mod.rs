@@ -690,9 +690,7 @@ impl SerializeSettings {
         Self {
             no_device_cs: true,
             cmyk_profile: Some(
-                ICCProfile::new(Arc::new(
-                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-                ))
+                ICCProfile::new(&std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap())
                 .unwrap(),
             ),
             ..Self::settings_1()
@@ -710,9 +708,7 @@ impl SerializeSettings {
         Self {
             validator: Validator::A2_B,
             cmyk_profile: Some(
-                ICCProfile::new(Arc::new(
-                    std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-                ))
+                ICCProfile::new(&std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap())
                 .unwrap(),
             ),
             ..Self::settings_1()
