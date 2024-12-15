@@ -178,8 +178,7 @@ impl GradientPropertiesExt for SweepGradient {
         let min = self.start_angle;
         let max = self.end_angle;
 
-        let transform = self
-            .transform;
+        let transform = self.transform;
 
         (
             GradientProperties::PostScriptGradient(PostScriptGradient {
@@ -502,7 +501,7 @@ fn trim_stops(stops: &[Stop]) -> Vec<Stop> {
 
     let get_index = |i: f32| i.round() as usize;
 
-    let mut new_stops =  vec![];
+    let mut new_stops = vec![];
 
     while get_index(cur_index) < stops.len() {
         new_stops.push(stops[get_index(cur_index)]);

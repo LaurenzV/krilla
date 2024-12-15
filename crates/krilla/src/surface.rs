@@ -652,9 +652,9 @@ mod tests {
     use crate::surface::Surface;
     use crate::surface::{Stroke, TextDirection};
     use crate::tests::{
-        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill,
-        load_png_image, rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB,
-        NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
+        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
+        rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR,
+        NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use crate::SvgSettings;
     use krilla_macros::{snapshot, visreg};

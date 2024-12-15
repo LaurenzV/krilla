@@ -3,7 +3,7 @@
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
-use pdf_writer::types::{TabOrder};
+use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use tiny_skia_path::{Rect, Transform};
@@ -265,7 +265,11 @@ pub struct PageLabel {
 
 impl PageLabel {
     /// Create a new page label.
-    pub fn new(style: Option<NumberingStyle>, prefix: Option<String>, offset: Option<NonZeroUsize>) -> Self {
+    pub fn new(
+        style: Option<NumberingStyle>,
+        prefix: Option<String>,
+        offset: Option<NonZeroUsize>,
+    ) -> Self {
         Self {
             style,
             prefix,
