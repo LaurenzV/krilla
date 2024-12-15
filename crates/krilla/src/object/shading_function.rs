@@ -58,6 +58,10 @@ impl Hash for RadialAxialGradient {
 pub(crate) struct PostScriptGradient {
     pub(crate) min: f32,
     pub(crate) max: f32,
+    // Only used for sweep gradient
+    pub(crate) cx: f32,
+    // Only used for sweep gradient
+    pub(crate) cy: f32,
     pub(crate) stops: Vec<Stop>,
     pub(crate) domain: RectWrapper,
     pub(crate) spread_method: SpreadMethod,
@@ -155,6 +159,8 @@ impl GradientPropertiesExt for LinearGradient {
                 GradientProperties::PostScriptGradient(PostScriptGradient {
                     min,
                     max,
+                    cx: 0.0,
+                    cy: 0.0,
                     stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
                     domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
                     spread_method: self.spread_method,
@@ -173,13 +179,14 @@ impl GradientPropertiesExt for SweepGradient {
         let max = self.end_angle;
 
         let transform = self
-            .transform
-            .post_concat(Transform::from_translate(self.cx, self.cy));
+            .transform;
 
         (
             GradientProperties::PostScriptGradient(PostScriptGradient {
                 min,
                 max,
+                cx: self.cx,
+                cy: self.cy,
                 stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
                 domain: RectWrapper(get_expanded_bbox(bbox, transform)),
                 spread_method: self.spread_method,
@@ -442,8 +449,14 @@ fn serialize_sweep_postscript(
     let mut code = vec![];
     code.extend([
         // Stack: x y
+        // Shift by cy, so gradient actually starts from the center
+        Real(properties.cy),
+        Sub,
         Exch,
         // y x
+        // Shift by cx, so gradient actually starts from the center
+        Real(properties.cx),
+        Sub,
         // Make sure x is never 0.
         Dup,
         Dup,
