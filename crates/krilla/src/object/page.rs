@@ -1,9 +1,9 @@
 //! Working with pages of a PDF document.
 
-use std::num::NonZeroU32;
+use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
-use pdf_writer::types::{NumberingStyle, TabOrder};
+use pdf_writer::types::{TabOrder};
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use tiny_skia_path::{Rect, Transform};
@@ -19,6 +19,8 @@ use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
 use crate::version::PdfVersion;
+
+pub use pdf_writer::types::NumberingStyle;
 
 /// A single page.
 ///
@@ -258,16 +260,16 @@ pub struct PageLabel {
     /// The prefix of the page label.
     pub(crate) prefix: Option<String>,
     /// The numeric value of the page label.
-    pub(crate) offset: Option<NonZeroU32>,
+    pub(crate) offset: Option<NonZeroUsize>,
 }
 
 impl PageLabel {
     /// Create a new page label.
-    pub fn new(style: Option<NumberingStyle>, prefix: Option<String>, offset: NonZeroU32) -> Self {
+    pub fn new(style: Option<NumberingStyle>, prefix: Option<String>, offset: Option<NonZeroUsize>) -> Self {
         Self {
             style,
             prefix,
-            offset: Some(offset),
+            offset,
         }
     }
 
@@ -362,7 +364,7 @@ mod tests {
     use crate::tests::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
     use pdf_writer::types::NumberingStyle;
-    use std::num::NonZeroU32;
+    use std::num::NonZeroUsize;
     use tiny_skia_path::{PathBuilder, Rect};
 
     #[snapshot]
@@ -404,7 +406,7 @@ mod tests {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),
             Some("P".to_string()),
-            NonZeroU32::new(2).unwrap(),
+            NonZeroUsize::new(2),
         );
 
         sc.register_page_label(page_label);
@@ -418,7 +420,7 @@ mod tests {
         let settings = PageSettings::new(250.0, 200.0).with_page_label(PageLabel::new(
             Some(NumberingStyle::LowerRoman),
             None,
-            NonZeroU32::new(2).unwrap(),
+            NonZeroUsize::new(2),
         ));
 
         d.start_page_with(settings);
