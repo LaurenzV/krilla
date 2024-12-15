@@ -543,38 +543,10 @@ impl SerializeContext {
         cs!(DeviceGray, DEVICE_GRAY);
         cs!(DeviceCmyk, DEVICE_CMYK);
 
-        #[derive(Copy, Clone, Hash)]
-        struct LinearRgbColorSpace;
-
-        impl Cacheable for LinearRgbColorSpace {
-            fn chunk_container(&self) -> ChunkContainerFn {
-                Box::new(|cc| &mut cc.color_spaces)
-            }
-
-            fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
-                let mut chunk = Chunk::new();
-                chunk.color_space(root_ref).cal_rgb(
-                    [0.9505, 1.0, 1.0888],
-                    None,
-                    Some([1.0, 1.0, 1.0]),
-                    Some([
-                        0.4124, 0.2126, 0.0193, 0.3576, 0.715, 0.1192, 0.1805, 0.0722, 0.9505,
-                    ]),
-                );
-
-                chunk
-            }
-        }
-
-        impl Resourceable for LinearRgbColorSpace {
-            type Resource = resource::ColorSpace;
-        }
-
         match cs {
             ColorSpace::Srgb => self.register_resourceable(ICCBasedColorSpace(
                 self.serialize_settings.pdf_version.rgb_icc(),
             )),
-            ColorSpace::LinearRgb => self.register_resourceable(LinearRgbColorSpace),
             ColorSpace::Luma => self.register_resourceable(ICCBasedColorSpace(
                 self.serialize_settings.pdf_version.grey_icc(),
             )),
