@@ -106,12 +106,13 @@ pub enum ValidationError {
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[allow(non_camel_case_types)]
 pub enum Validator {
     /// A dummy validator, that does not perform any actual validation.
     ///
     /// **Requirements**: -
+    #[default]
     None,
     /// The validator for the PDF/A1-A standard.
     ///
@@ -337,7 +338,7 @@ impl Validator {
     }
 
     /// Check whether the validator is compatible with a specific pdf version.
-    pub(crate) fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
+    pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
         match self {
             Validator::None => true,
             Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
@@ -348,7 +349,7 @@ impl Validator {
     }
 
     /// Get the recommended PDF version of a validator.
-    pub(crate) fn recommended_version(&self) -> PdfVersion {
+    pub fn recommended_version(&self) -> PdfVersion {
         match self {
             Validator::None => PdfVersion::Pdf17,
             Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,

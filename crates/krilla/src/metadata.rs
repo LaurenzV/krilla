@@ -34,19 +34,25 @@ impl Metadata {
 
     /// The title of the document.
     pub fn title(mut self, title: String) -> Self {
-        self.title = Some(title);
+        if !title.is_empty() {
+            self.title = Some(title);
+        }
         self
     }
 
     /// The subject of the document.
     pub fn subject(mut self, subject: String) -> Self {
-        self.subject = Some(subject);
+        if !subject.is_empty() {
+            self.subject = Some(subject);
+        }
         self
     }
 
     /// The keywords that describe the document.
     pub fn keywords(mut self, keywords: Vec<String>) -> Self {
-        self.keywords = Some(keywords);
+        if !keywords.is_empty() {
+            self.keywords = Some(keywords);
+        }
         self
     }
 
@@ -60,19 +66,25 @@ impl Metadata {
 
     /// The creator tool of the document.
     pub fn creator(mut self, creator: String) -> Self {
-        self.creator = Some(creator);
+        if !creator.is_empty() {
+            self.creator = Some(creator);
+        }
         self
     }
 
     /// The producer tool of the document.
     pub fn producer(mut self, producer: String) -> Self {
-        self.producer = Some(producer);
+        if !producer.is_empty() {
+            self.producer = Some(producer);
+        }
         self
     }
 
     /// The authors of the document.
     pub fn authors(mut self, authors: Vec<String>) -> Self {
-        self.authors = Some(authors);
+       if !authors.is_empty() {
+           self.authors = Some(authors);
+       }
         self
     }
 
