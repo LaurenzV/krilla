@@ -200,7 +200,7 @@ pub mod rgb {
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-    pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8, pub(crate) bool);
+    pub struct Color(pub(crate) u8, pub(crate) u8, pub(crate) u8);
 
     impl Default for Color {
         fn default() -> Self {
@@ -211,12 +211,12 @@ pub mod rgb {
     impl Color {
         /// Create a new RGB color.
         pub fn new(red: u8, green: u8, blue: u8) -> Self {
-            Color(red, green, blue, false)
+            Color(red, green, blue)
         }
 
         /// Create a new linear RGB color.
         pub fn new_linear(red: u8, green: u8, blue: u8) -> Self {
-            Color(red, green, blue, true)
+            Color(red, green, blue)
         }
 
         /// Create a black RGB color.
@@ -238,11 +238,7 @@ pub mod rgb {
         }
 
         pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpace {
-            if self.3 {
-                ColorSpace::LinearRgb
-            } else {
-                Color::rgb_color_space(no_device_cs)
-            }
+            Color::rgb_color_space(no_device_cs)
         }
 
         pub(crate) fn rgb_color_space(no_device_cs: bool) -> ColorSpace {
@@ -267,7 +263,6 @@ pub(crate) enum ColorSpace {
     DeviceGray,
     DeviceCmyk,
     Srgb,
-    LinearRgb,
     Luma,
     Cmyk(ICCBasedColorSpace<4>),
 }
