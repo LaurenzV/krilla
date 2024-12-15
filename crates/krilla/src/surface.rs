@@ -355,6 +355,11 @@ impl<'a> Surface<'a> {
         );
     }
 
+    /// Return the current transformation matrix.
+    pub fn ctm(&self) -> Transform {
+        Self::cur_builder(&self.root_builder, &self.sub_builders).cur_transform()
+    }
+
     /// Concatenate a new transform to the current transformation matrix.
     pub fn push_transform(&mut self, transform: &Transform) {
         self.push_instructions.push(PushInstruction::Transform);
