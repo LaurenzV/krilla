@@ -493,6 +493,25 @@ fn serialize_sweep_postscript(
     root_ref
 }
 
+const MAX_POSTSCRIPT_STOPS: usize = 97;
+
+fn trim_stops(stops: &[Stop]) -> Vec<Stop> {
+    let len = stops.len();
+    let factor = len as f32 / MAX_POSTSCRIPT_STOPS as f32;
+    let mut cur_index: f32 = 0.0;
+
+    let get_index = |i: f32| i.round() as usize;
+
+    let mut new_stops =  vec![];
+
+    while get_index(cur_index) < stops.len() {
+        new_stops.push(stops[get_index(cur_index)]);
+        cur_index += factor;
+    }
+
+    new_stops
+}
+
 fn serialize_linear_postscript(
     properties: &PostScriptGradient,
     chunk: &mut Chunk,
@@ -642,6 +661,15 @@ fn encode_postscript_stops<'a>(
 ) {
     // Our algorithm requires the stops to be padded.
     let mut stops = stops.to_vec();
+
+    // Most viewers have a nesting depth on how many `elseif` can be nested (100 for mupdf,
+    // 128 for Chrome and 256 for Acrobat), so we trim the stops if they are too large.
+    // this is of course a bit unfortunate, but it should be pretty rare to have that many
+    // stops, and if we do, the stops are most likely going to be very similar, so it's
+    // safe to just sample from in-between.
+    if stops.len() > MAX_POSTSCRIPT_STOPS {
+        stops = trim_stops(&stops);
+    }
 
     if let Some(first) = stops.first() {
         let mut first = *first;
