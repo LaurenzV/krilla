@@ -716,7 +716,7 @@ impl SerializeContext {
                             let rci = PageTagIdentifier::new(index, mcid);
                             refs.item(parent_tree_map.get(&rci.into()).ok_or(
                                 KrillaError::UserError(
-                                    "a identifier doesn't appear in the tag tree".to_string(),
+                                    "an identifier doesn't appear in the tag tree".to_string(),
                                 ),
                             )?);
                         }
