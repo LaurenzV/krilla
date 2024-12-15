@@ -32,10 +32,10 @@ impl PdfVersion {
     /// Get a string representation of the PDF version.
     pub fn as_str(&self) -> &str {
         match self {
-            PdfVersion::Pdf14 => "1.4",
-            PdfVersion::Pdf15 => "1.5",
-            PdfVersion::Pdf16 => "1.6",
-            PdfVersion::Pdf17 => "1.7",
+            PdfVersion::Pdf14 => "PDF 1.4",
+            PdfVersion::Pdf15 => "PDF 1.5",
+            PdfVersion::Pdf16 => "PDF 1.6",
+            PdfVersion::Pdf17 => "PDF 1.7",
         }
     }
 
