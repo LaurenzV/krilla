@@ -14,7 +14,7 @@ use skrifa::GlyphId;
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 
-use crate::color::Color;
+use crate::color::{Color, ColorSpace};
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -32,7 +32,7 @@ use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
-use crate::serialize::SerializeContext;
+use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
@@ -46,6 +46,14 @@ pub(crate) struct ContentBuilder {
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
     pub(crate) active_marked_content: bool,
+}
+
+/// Stores either a device-specific color space,
+/// or the name of a different colorspace (e.g. ICCBased) stored in
+/// the current resource dictionary
+enum ContentColorSpace {
+    Device,
+    Named(String),
 }
 
 impl ContentBuilder {
@@ -653,7 +661,7 @@ impl ContentBuilder {
         opacity: NormalizedF32,
         sc: &mut SerializeContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
-        mut set_solid_fn: impl FnMut(&mut Content, String, Color),
+        mut set_solid_fn: impl FnMut(&mut Content, ContentColorSpace, Color),
     ) {
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.cur_transform_with_root_transform())
@@ -667,10 +675,8 @@ impl ContentBuilder {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
-                    let color_space = color.color_space(sc);
-                    let color_space_resource = content_builder
-                        .rd_builder
-                        .register_resource(sc.register_colorspace(color_space));
+                    let cs = color.color_space(sc);
+                    let color_space_resource = Self::cs_to_content_cs(content_builder, sc, cs);
                     set_solid_fn(&mut content_builder.content, color_space_resource, color);
                 } else {
                     let shading_mask =
@@ -706,9 +712,7 @@ impl ContentBuilder {
         match &paint.0 {
             InnerPaint::Color(c) => {
                 let cs = c.color_space(sc);
-                let color_space_resource = self
-                    .rd_builder
-                    .register_resource(sc.register_colorspace(cs));
+                let color_space_resource = Self::cs_to_content_cs(self, sc, cs);
                 set_solid_fn(&mut self.content, color_space_resource, *c);
             }
             InnerPaint::LinearGradient(lg) => {
@@ -744,6 +748,21 @@ impl ContentBuilder {
         }
     }
 
+    fn cs_to_content_cs(
+        content_builder: &mut ContentBuilder,
+        sc: &mut SerializeContext,
+        cs: ColorSpace,
+    ) -> ContentColorSpace {
+        match sc.register_colorspace(cs) {
+            MaybeDeviceColorSpace::ColorSpace(s) => {
+                ContentColorSpace::Named(content_builder.rd_builder.register_resource(s))
+            }
+            MaybeDeviceColorSpace::DeviceGray => ContentColorSpace::Device,
+            MaybeDeviceColorSpace::DeviceRgb => ContentColorSpace::Device,
+            MaybeDeviceColorSpace::DeviceCMYK => ContentColorSpace::Device,
+        }
+    }
+
     fn content_set_fill_properties(
         &mut self,
         bounds: Rect,
@@ -755,9 +774,26 @@ impl ContentBuilder {
             content.set_fill_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
-            content.set_fill_color_space(color_space.to_pdf_name());
-            content.set_fill_color(color.to_pdf_color());
+        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
+            match color_space {
+                ContentColorSpace::Device => match color {
+                    Color::Rgb(r) => {
+                        let comps = r.to_pdf_color();
+                        content.set_fill_rgb(comps[0], comps[1], comps[2]);
+                    }
+                    Color::Luma(l) => {
+                        content.set_fill_gray(l.to_pdf_color());
+                    }
+                    Color::Cmyk(c) => {
+                        let comps = c.to_pdf_color();
+                        content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                    }
+                },
+                ContentColorSpace::Named(n) => {
+                    content.set_fill_color_space(n.to_pdf_name());
+                    content.set_fill_color(color.to_pdf_color());
+                }
+            }
         }
 
         self.content_set_fill_stroke_properties(
@@ -781,9 +817,26 @@ impl ContentBuilder {
             content.set_stroke_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: String, color: Color) {
-            content.set_stroke_color_space(color_space.to_pdf_name());
-            content.set_stroke_color(color.to_pdf_color());
+        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
+            match color_space {
+                ContentColorSpace::Device => match color {
+                    Color::Rgb(r) => {
+                        let comps = r.to_pdf_color();
+                        content.set_stroke_rgb(comps[0], comps[1], comps[2]);
+                    }
+                    Color::Luma(l) => {
+                        content.set_stroke_gray(l.to_pdf_color());
+                    }
+                    Color::Cmyk(c) => {
+                        let comps = c.to_pdf_color();
+                        content.set_stroke_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                    }
+                },
+                ContentColorSpace::Named(n) => {
+                    content.set_stroke_color_space(n.to_pdf_name());
+                    content.set_stroke_color(color.to_pdf_color());
+                }
+            }
         }
 
         self.content_set_fill_stroke_properties(
