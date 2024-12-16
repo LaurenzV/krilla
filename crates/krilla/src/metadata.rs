@@ -82,9 +82,9 @@ impl Metadata {
 
     /// The authors of the document.
     pub fn authors(mut self, authors: Vec<String>) -> Self {
-       if !authors.is_empty() {
-           self.authors = Some(authors);
-       }
+        if !authors.is_empty() {
+            self.authors = Some(authors);
+        }
         self
     }
 
