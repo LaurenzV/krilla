@@ -5,58 +5,50 @@
 <<
   /Type /Pages
   /Count 2
-  /Kids [6 0 R 9 0 R]
+  /Kids [5 0 R 8 0 R]
 >>
 endobj
 
 2 0 obj
-/DeviceRGB
+[8 0 R /XYZ 100 100 0]
 endobj
 
 3 0 obj
-[9 0 R /XYZ 100 100 0]
+[5 0 R /XYZ 0 200 0]
 endobj
 
 4 0 obj
-[6 0 R /XYZ 0 200 0]
-endobj
-
-5 0 obj
 <<
   /Type /Annot
   /Subtype /Link
   /Rect [50 100 150 200]
   /Border [0 0 0]
-  /Dest 3 0 R
+  /Dest 2 0 R
   /F 4
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 6 0 R
+  /Annots [4 0 R]
 >>
 endobj
 
 6 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 2 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 7 0 R
-  /Annots [5 0 R]
->>
-endobj
-
-7 0 obj
-<<
-  /Length 76
+  /Length 68
 >>
 stream
 q
 1 0 0 -1 0 200 cm
-/c0 cs
-1 0 0 scn
+1 0 0 rg
 50 0 m
 150 0 l
 150 100 l
@@ -67,42 +59,38 @@ Q
 endstream
 endobj
 
-8 0 obj
+7 0 obj
 <<
   /Type /Annot
   /Subtype /Link
   /Rect [50 0 150 100]
   /Border [0 0 0]
-  /Dest 4 0 R
+  /Dest 3 0 R
   /F 4
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 9 0 R
+  /Annots [7 0 R]
 >>
 endobj
 
 9 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 2 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 10 0 R
-  /Annots [8 0 R]
->>
-endobj
-
-10 0 obj
-<<
-  /Length 80
+  /Length 72
 >>
 stream
 q
 1 0 0 -1 0 200 cm
-/c0 cs
-0 1 0 scn
+0 1 0 rg
 50 100 m
 150 100 l
 150 200 l
@@ -113,7 +101,7 @@ Q
 endstream
 endobj
 
-11 0 obj
+10 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -121,25 +109,24 @@ endobj
 endobj
 
 xref
-0 12
+0 11
 0000000000 65535 f
 0000000016 00000 n
 0000000086 00000 n
-0000000113 00000 n
-0000000152 00000 n
-0000000189 00000 n
-0000000307 00000 n
-0000000526 00000 n
-0000000655 00000 n
-0000000771 00000 n
-0000000991 00000 n
-0000001125 00000 n
+0000000125 00000 n
+0000000162 00000 n
+0000000280 00000 n
+0000000457 00000 n
+0000000578 00000 n
+0000000694 00000 n
+0000000871 00000 n
+0000000996 00000 n
 trailer
 <<
-  /Size 12
-  /Root 11 0 R
-  /ID [(XSvihdva3/v+uC7BBmroCQ==) (XSvihdva3/v+uC7BBmroCQ==)]
+  /Size 11
+  /Root 10 0 R
+  /ID [(IP2uaccuxPJkhP/COOIppg==) (IP2uaccuxPJkhP/COOIppg==)]
 >>
 startxref
-1180
+1051
 %%EOF

@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [8 0 R]
+  /Kids [6 0 R]
 >>
 endobj
 
@@ -26,7 +26,7 @@ endobj
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
     /XObject <<
-      /x0 7 0 R
+      /x0 5 0 R
     >>
   >>
   /Name /TwitterColorEmojiSVGinOT
@@ -88,32 +88,19 @@ endstream
 endobj
 
 5 0 obj
-/DeviceGray
-endobj
-
-6 0 obj
-/DeviceRGB
-endobj
-
-7 0 obj
 <<
-  /Length 1127
+  /Length 1086
   /Type /XObject
   /Subtype /Form
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 6 0 R
-      /c1 5 0 R
-    >>
   >>
   /BBox [-0.00000000000020210994 -402.84998 2048 1645.15]
 >>
 stream
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/c0 cs
-1 0.8 0.3019608 scn
+1 0.8 0.3019608 rg
 36 18 m
 36 27.941126 27.941126 36 18 36 c
 8.058874 36 0.0000000000000035527137 27.941126 0 18 c
@@ -124,8 +111,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/c0 cs
-0.4 0.27058825 0 scn
+0.4 0.27058825 0 rg
 18 21 m
 14.377 21 11.973 20.578 9 20 c
 8.321 19.869 7 20 7 22 c
@@ -138,8 +124,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/c1 cs
-1 scn
+1 g
 9 22 m
 9 22 12 23 18 23 c
 24 23 27 22 27 22 c
@@ -150,8 +135,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/c0 cs
-0.4 0.27058825 0 scn
+0.4 0.27058825 0 rg
 14.5 13.5 m
 14.5 15.432997 13.380712 17 12 17 c
 10.619288 17 9.5 15.432997 9.5 13.5 c
@@ -162,8 +146,7 @@ f
 Q
 q
 56.88889 0 0 -56.88889 0 1645.15 cm
-/c0 cs
-0.4 0.27058825 0 scn
+0.4 0.27058825 0 rg
 26.5 13.5 m
 26.5 15.432997 25.380713 17 24 17 c
 22.619287 17 21.5 15.432997 21.5 13.5 c
@@ -175,33 +158,29 @@ Q
 endstream
 endobj
 
-8 0 obj
+6 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 5 0 R
-    >>
     /Font <<
       /f0 3 0 R
     >>
   >>
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
-  /Contents 9 0 R
+  /Contents 7 0 R
 >>
 endobj
 
-9 0 obj
+7 0 obj
 <<
-  /Length 84
+  /Length 75
 >>
 stream
 q
 1 0 0 -1 0 200 cm
-/c0 cs
-0 scn
+0 g
 BT
 0 Tr
 /f0 25 Tf
@@ -212,7 +191,7 @@ Q
 endstream
 endobj
 
-10 0 obj
+8 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -220,24 +199,22 @@ endobj
 endobj
 
 xref
-0 11
+0 9
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
 0000000149 00000 n
 0000000618 00000 n
 0000001314 00000 n
-0000001342 00000 n
-0000001369 00000 n
-0000002764 00000 n
-0000003001 00000 n
-0000003138 00000 n
+0000002610 00000 n
+0000002805 00000 n
+0000002933 00000 n
 trailer
 <<
-  /Size 11
-  /Root 10 0 R
-  /ID [(jSY3WyMRyrB/sG2S2wLiNw==) (jSY3WyMRyrB/sG2S2wLiNw==)]
+  /Size 9
+  /Root 8 0 R
+  /ID [(yyLkqURd4S/NMlfqzyInuQ==) (yyLkqURd4S/NMlfqzyInuQ==)]
 >>
 startxref
-3193
+2987
 %%EOF

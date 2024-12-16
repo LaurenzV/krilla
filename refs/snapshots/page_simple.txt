@@ -5,37 +5,29 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [3 0 R]
+  /Kids [2 0 R]
 >>
 endobj
 
 2 0 obj
-/DeviceGray
-endobj
-
-3 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 2 0 R
-    >>
   >>
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
-  /Contents 4 0 R
+  /Contents 3 0 R
 >>
 endobj
 
-4 0 obj
+3 0 obj
 <<
-  /Length 56
+  /Length 47
 >>
 stream
 q
-/c0 cs
-0 scn
+0 g
 20 20 m
 180 20 l
 180 180 l
@@ -46,7 +38,7 @@ Q
 endstream
 endobj
 
-5 0 obj
+4 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R

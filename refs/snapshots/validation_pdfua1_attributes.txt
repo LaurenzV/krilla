@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [9 0 R]
+  /Kids [8 0 R]
 >>
 endobj
 
@@ -54,7 +54,7 @@ endobj
     /Scope /Row
   >>]
   /K [1]
-  /Pg 9 0 R
+  /Pg 8 0 R
 >>
 endobj
 
@@ -68,33 +68,26 @@ endobj
     /ListNumbering /Circle
   >>]
   /K [0]
-  /Pg 9 0 R
+  /Pg 8 0 R
 >>
 endobj
 
 8 0 obj
-/DeviceRGB
-endobj
-
-9 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 8 0 R
-    >>
   >>
   /MediaBox [0 0 595 842]
   /StructParents 0
   /Parent 1 0 R
-  /Contents 10 0 R
+  /Contents 9 0 R
 >>
 endobj
 
-10 0 obj
+9 0 obj
 <<
-  /Length 217
+  /Length 201
 >>
 stream
 /Span <<
@@ -103,8 +96,7 @@ stream
 >> BDC
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-1 0 0 scn
+1 0 0 rg
 0 0 m
 100 0 l
 100 100 l
@@ -118,8 +110,7 @@ EMC
 >> BDC
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-1 0 0 scn
+1 0 0 rg
 0 0 m
 100 0 l
 100 100 l
@@ -131,28 +122,28 @@ EMC
 endstream
 endobj
 
-11 0 obj
+10 0 obj
 <<
   /Title (a nice title)
 >>
 endobj
 
-12 0 obj
+11 0 obj
 <<
   /Length 961
   /Type /Metadata
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">a nice title</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>1</pdfuaid:part><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>WgFNIX7nQEcqb57jCsRysw==</xmpMM:InstanceID><xmpMM:DocumentID>WgFNIX7nQEcqb57jCsRysw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">a nice title</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>1</pdfuaid:part><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>7t1JAG/css3tUUA6/AmdMA==</xmpMM:InstanceID><xmpMM:DocumentID>7t1JAG/css3tUUA6/AmdMA==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
-13 0 obj
+12 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
-  /Metadata 12 0 R
+  /Metadata 11 0 R
   /Lang (en)
   /StructTreeRoot 3 0 R
   /MarkInfo <<
@@ -167,7 +158,7 @@ endobj
 endobj
 
 xref
-0 14
+0 13
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
@@ -177,18 +168,17 @@ xref
 0000000432 00000 n
 0000000560 00000 n
 0000000697 00000 n
-0000000724 00000 n
-0000000945 00000 n
-0000001217 00000 n
-0000001264 00000 n
-0000002314 00000 n
+0000000875 00000 n
+0000001130 00000 n
+0000001177 00000 n
+0000002227 00000 n
 trailer
 <<
-  /Size 14
-  /Root 13 0 R
-  /Info 11 0 R
-  /ID [(WgFNIX7nQEcqb57jCsRysw==) (WgFNIX7nQEcqb57jCsRysw==)]
+  /Size 13
+  /Root 12 0 R
+  /Info 10 0 R
+  /ID [(7t1JAG/css3tUUA6/AmdMA==) (7t1JAG/css3tUUA6/AmdMA==)]
 >>
 startxref
-2555
+2468
 %%EOF

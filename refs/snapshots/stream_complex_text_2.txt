@@ -1,6 +1,5 @@
 q
-/c0 cs
-0 scn
+0 g
 BT
 /Span <<
   /ActualText <FEFF092F09410952>

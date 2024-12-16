@@ -2,19 +2,12 @@
 %AAAA
 
 1 0 obj
-/DeviceRGB
-endobj
-
-2 0 obj
 <<
-  /Length 122
+  /Length 106
   /Type /Pattern
   /PatternType 1
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 1 0 R
-    >>
   >>
   /TilingType 1
   /PaintType 1
@@ -25,8 +18,7 @@ endobj
 >>
 stream
 q
-/c0 cs
-1 0 0 scn
+1 0 0 rg
 0 0 m
 10 0 l
 10 10 l
@@ -36,8 +28,7 @@ f
 Q
 q
 1 0 0 1 10 10 cm
-/c0 cs
-0 1 0 scn
+0 1 0 rg
 0 0 m
 10 0 l
 10 10 l
