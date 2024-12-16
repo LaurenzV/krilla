@@ -126,7 +126,18 @@ impl CIDFont {
 
         let glyph_remapper = &self.glyph_remapper;
 
+        let is_glyf = self.font.font_ref().glyf().is_ok();
         let is_cff = self.font.font_ref().cff().is_ok();
+
+        if !is_glyf && !is_cff {
+            let is_cff2 = self.font.font_ref().cff2().is_ok();
+
+            return if is_cff2 {
+                Err(KrillaError::FontError(self.font.clone(), "CFF2 fonts are not supported".to_string()))
+            } else {
+                Err(KrillaError::FontError(self.font.clone(), "font is missing `glyf` or `CFF` table".to_string()))
+            }
+        }
 
         let subsetted = subset_font(self.font.clone(), glyph_remapper)?;
 
