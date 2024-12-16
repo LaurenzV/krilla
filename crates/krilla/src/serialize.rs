@@ -15,20 +15,19 @@ use skrifa::raw::TableProvider;
 use tiny_skia_path::Size;
 
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK};
+use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::color::{DEVICE_GRAY, DEVICE_RGB};
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::Type3FontMapper;
 use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
+use crate::object::{Cacheable, Resourceable};
 use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
@@ -163,6 +162,13 @@ enum StructParentElement {
     /// The index of the page where the annotation is present, as well as the index of the
     /// annotation within that one page.
     Annotation(usize, usize),
+}
+
+pub(crate) enum MaybeDeviceColorSpace {
+    DeviceRgb,
+    DeviceGray,
+    DeviceCMYK,
+    ColorSpace(resource::ColorSpace),
 }
 
 /// The serializer context is more or less the core piece of krilla. It is passed around
@@ -513,47 +519,20 @@ impl SerializeContext {
         }
     }
 
-    pub(crate) fn register_colorspace(&mut self, cs: ColorSpace) -> resource::ColorSpace {
-        macro_rules! cs {
-            ($name:ident, $color_name:expr) => {
-                #[derive(Copy, Clone, Hash)]
-                struct $name;
-
-                impl Cacheable for $name {
-                    fn chunk_container(&self) -> ChunkContainerFn {
-                        Box::new(|cc| &mut cc.color_spaces)
-                    }
-
-                    fn serialize(self, _: &mut SerializeContext, root_ref: Ref) -> Chunk {
-                        let mut chunk = Chunk::new();
-                        chunk
-                            .indirect(root_ref)
-                            .primitive(Name($color_name.as_bytes()));
-                        chunk
-                    }
-                }
-
-                impl Resourceable for $name {
-                    type Resource = resource::ColorSpace;
-                }
-            };
-        }
-
-        cs!(DeviceRgb, DEVICE_RGB);
-        cs!(DeviceGray, DEVICE_GRAY);
-        cs!(DeviceCmyk, DEVICE_CMYK);
-
+    pub(crate) fn register_colorspace(&mut self, cs: ColorSpace) -> MaybeDeviceColorSpace {
         match cs {
-            ColorSpace::Srgb => self.register_resourceable(ICCBasedColorSpace(
-                self.serialize_settings.pdf_version.rgb_icc(),
+            ColorSpace::Srgb => MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(
+                ICCBasedColorSpace(self.serialize_settings.pdf_version.rgb_icc()),
             )),
-            ColorSpace::Luma => self.register_resourceable(ICCBasedColorSpace(
-                self.serialize_settings.pdf_version.grey_icc(),
+            ColorSpace::Luma => MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(
+                ICCBasedColorSpace(self.serialize_settings.pdf_version.grey_icc()),
             )),
-            ColorSpace::Cmyk(cs) => self.register_resourceable(cs),
-            ColorSpace::DeviceGray => self.register_resourceable(DeviceGray),
-            ColorSpace::DeviceRgb => self.register_resourceable(DeviceRgb),
-            ColorSpace::DeviceCmyk => self.register_resourceable(DeviceCmyk),
+            ColorSpace::Cmyk(cs) => {
+                MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(cs))
+            }
+            ColorSpace::DeviceGray => MaybeDeviceColorSpace::DeviceGray,
+            ColorSpace::DeviceRgb => MaybeDeviceColorSpace::DeviceRgb,
+            ColorSpace::DeviceCmyk => MaybeDeviceColorSpace::DeviceCMYK,
         }
     }
 }

@@ -1,22 +1,23 @@
 //! Shading functions.
 
 use std::hash::{Hash, Hasher};
+use std::ops::DerefMut;
 use std::sync::Arc;
 
 use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
 use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
-use crate::color::luma;
+use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource;
 use crate::resource::Resource;
-use crate::serialize::SerializeContext;
-use crate::util::{RectExt, RectWrapper};
+use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
+use crate::util::{NameExt, RectExt, RectWrapper};
 use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -271,18 +272,14 @@ fn serialize_postscript_shading(
     let cs = if use_opacities {
         luma::Color::color_space(sc.serialize_settings().no_device_cs)
     } else {
-        // Note: This means for example if the user provides a linear RGB stop as the first
-        // and sRGB as the remaining ones, the whole gradient will
-        // use linear RGB.
         post_script_gradient.stops[0].color.color_space(sc)
     };
 
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
 
-    shading
-        .insert(Name(b"ColorSpace"))
-        .primitive(sc.register_colorspace(cs).get_ref());
+    set_colorspace(sc, cs, shading.deref_mut());
+
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
     shading.matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
@@ -291,6 +288,17 @@ fn serialize_postscript_shading(
 
     shading.domain([domain.left(), domain.right(), domain.top(), domain.bottom()]);
     shading.finish();
+}
+
+fn set_colorspace(sc: &mut SerializeContext, cs: ColorSpace, target: &mut Dict) {
+    let pdf_cs = target.insert(Name(b"ColorSpace"));
+
+    match sc.register_colorspace(cs) {
+        MaybeDeviceColorSpace::DeviceGray => pdf_cs.primitive(DEVICE_GRAY.to_pdf_name()),
+        MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
+        MaybeDeviceColorSpace::DeviceCMYK => pdf_cs.primitive(DEVICE_CMYK.to_pdf_name()),
+        MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
+    }
 }
 
 fn serialize_axial_radial_shading(
@@ -317,9 +325,8 @@ fn serialize_axial_radial_shading(
     } else {
         shading.shading_type(FunctionShadingType::Axial);
     }
-    shading
-        .insert(Name(b"ColorSpace"))
-        .primitive(sc.register_colorspace(cs).get_ref());
+
+    set_colorspace(sc, cs, shading.deref_mut());
 
     shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);

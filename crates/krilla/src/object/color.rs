@@ -73,9 +73,9 @@ pub(crate) enum Color {
 impl Color {
     pub(crate) fn to_pdf_color(self) -> Vec<f32> {
         match self {
-            Color::Rgb(rgb) => rgb.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::Luma(l) => l.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            Color::Cmyk(cmyk) => cmyk.to_pdf_color().into_iter().collect::<Vec<_>>(),
+            Color::Rgb(rgb) => rgb.to_pdf_color().to_vec(),
+            Color::Luma(l) => vec![l.to_pdf_color()],
+            Color::Cmyk(cmyk) => cmyk.to_pdf_color().to_vec(),
         }
     }
 
@@ -118,8 +118,8 @@ pub mod luma {
             Self::new(255)
         }
 
-        pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
-            [self.0 as f32 / 255.0]
+        pub(crate) fn to_pdf_color(self) -> f32 {
+            self.0 as f32 / 255.0
         }
 
         pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
@@ -160,7 +160,7 @@ pub mod cmyk {
             Color(cyan, magenta, yellow, black)
         }
 
-        pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
+        pub(crate) fn to_pdf_color(self) -> [f32; 4] {
             [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
@@ -229,8 +229,8 @@ pub mod rgb {
             Self::new(255, 255, 255)
         }
 
-        pub(crate) fn to_pdf_color(self) -> impl IntoIterator<Item = f32> {
-            vec![
+        pub(crate) fn to_pdf_color(self) -> [f32; 3] {
+            [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
                 self.2 as f32 / 255.0,

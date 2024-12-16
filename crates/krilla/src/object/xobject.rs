@@ -4,13 +4,13 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
-use crate::color::rgb;
+use crate::color::{rgb, DEVICE_RGB};
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
-use crate::serialize::SerializeContext;
+use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{RectExt, RectWrapper};
+use crate::util::{NameExt, RectExt, RectWrapper};
 use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
@@ -87,7 +87,14 @@ impl Cacheable for XObject {
 
             if self.transparency_group_color_space {
                 let cs = rgb::Color::rgb_color_space(sc.serialize_settings().no_device_cs);
-                transparency.pair(Name(b"CS"), sc.register_colorspace(cs).get_ref());
+                let pdf_cs = transparency.insert(Name(b"CS"));
+
+                match sc.register_colorspace(cs) {
+                    MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
+                    // Can only be SRGB
+                    MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
+                    _ => unreachable!(),
+                }
             }
 
             transparency.finish();
