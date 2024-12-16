@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [9 0 R]
+  /Kids [8 0 R]
 >>
 endobj
 
@@ -146,36 +146,28 @@ endstream
 endobj
 
 8 0 obj
-/DeviceGray
-endobj
-
-9 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 8 0 R
-    >>
     /Font <<
       /f0 2 0 R
     >>
   >>
   /MediaBox [0 0 595 842]
   /Parent 1 0 R
-  /Contents 10 0 R
+  /Contents 9 0 R
 >>
 endobj
 
-10 0 obj
+9 0 obj
 <<
-  /Length 180
+  /Length 171
 >>
 stream
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-0 scn
+0 g
 BT
 0 Tr
 /f0 20 Tf
@@ -186,7 +178,7 @@ Q
 endstream
 endobj
 
-11 0 obj
+10 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -194,7 +186,7 @@ endobj
 endobj
 
 xref
-0 12
+0 11
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
@@ -204,15 +196,14 @@ xref
 0000001563 00000 n
 0000001675 00000 n
 0000003641 00000 n
-0000003669 00000 n
-0000003907 00000 n
-0000004142 00000 n
+0000003836 00000 n
+0000004061 00000 n
 trailer
 <<
-  /Size 12
-  /Root 11 0 R
-  /ID [(eLttg0c6JFzIxB4GVLVRDQ==) (eLttg0c6JFzIxB4GVLVRDQ==)]
+  /Size 11
+  /Root 10 0 R
+  /ID [(oaEVYOgJXTDkA74ag5ZT1Q==) (oaEVYOgJXTDkA74ag5ZT1Q==)]
 >>
 startxref
-4197
+4116
 %%EOF

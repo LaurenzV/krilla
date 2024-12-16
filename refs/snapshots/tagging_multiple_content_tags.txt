@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [13 0 R]
+  /Kids [11 0 R]
 >>
 endobj
 
@@ -35,7 +35,7 @@ endobj
   /S /Document
   /P 2 0 R
   /K [0 1 2 3]
-  /Pg 13 0 R
+  /Pg 11 0 R
 >>
 endobj
 
@@ -203,24 +203,12 @@ endstream
 endobj
 
 11 0 obj
-/DeviceGray
-endobj
-
-12 0 obj
-/DeviceRGB
-endobj
-
-13 0 obj
 <<
   /Type /Page
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 11 0 R
-      /c1 12 0 R
-    >>
     /XObject <<
-      /x0 15 0 R
+      /x0 13 0 R
     >>
     /Font <<
       /f0 5 0 R
@@ -229,13 +217,13 @@ endobj
   /MediaBox [0 0 595 842]
   /StructParents 0
   /Parent 1 0 R
-  /Contents 14 0 R
+  /Contents 12 0 R
 >>
 endobj
 
-14 0 obj
+12 0 obj
 <<
-  /Length 1240
+  /Length 1179
 >>
 stream
 /Span <<
@@ -244,8 +232,7 @@ stream
 >> BDC
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-0 scn
+0 g
 BT
 0 Tr
 /f0 20 Tf
@@ -261,8 +248,7 @@ EMC
 >> BDC
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-0 scn
+0 g
 BT
 0 Tr
 /f0 20 Tf
@@ -276,8 +262,7 @@ EMC
 >> BDC
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-0 scn
+0 g
 50 50 m
 100 50 l
 100 100 l
@@ -299,8 +284,7 @@ W
 n
 q
 1 0 0 -1 100 742 cm
-/c1 cs
-1 0 0 scn
+1 0 0 rg
 20 20 m
 20 180 l
 180 180 l
@@ -309,8 +293,7 @@ f
 Q
 q
 1 0 0 -1 100 742 cm
-/c1 cs
-0 0.5019608 0 scn
+0 0.5019608 0 rg
 20 20 m
 180 20 l
 180 180 l
@@ -320,8 +303,7 @@ f
 Q
 q
 1 0 0 -1 100 742 cm
-/c0 CS
-0 SCN
+0 G
 4 M
 1 1 m
 199 1 l
@@ -343,8 +325,7 @@ EMC
 /Artifact BMC
 q
 1 0 0 -1 0 842 cm
-/c0 cs
-0 scn
+0 g
 BT
 0 Tr
 /f0 20 Tf
@@ -356,7 +337,7 @@ EMC
 endstream
 endobj
 
-15 0 obj
+13 0 obj
 <<
   /Length 1988
   /Type /XObject
@@ -400,7 +381,7 @@ E28A2BAEB8E28AAB47C3952449922449922449922449922449922449F7ABBBAEAAAB14
 endstream
 endobj
 
-16 0 obj
+14 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -413,7 +394,7 @@ endobj
 endobj
 
 xref
-0 17
+0 15
 0000000000 65535 f
 0000000016 00000 n
 0000000081 00000 n
@@ -426,17 +407,15 @@ xref
 0000002129 00000 n
 0000002245 00000 n
 0000005455 00000 n
-0000005484 00000 n
-0000005512 00000 n
-0000005828 00000 n
-0000007124 00000 n
-0000009318 00000 n
+0000005711 00000 n
+0000006946 00000 n
+0000009140 00000 n
 trailer
 <<
-  /Size 17
-  /Root 16 0 R
-  /ID [(U1H8Y319/zr/rTTYMoRF5g==) (U1H8Y319/zr/rTTYMoRF5g==)]
+  /Size 15
+  /Root 14 0 R
+  /ID [(JM9MhirduN7wan7EXQUJOw==) (JM9MhirduN7wan7EXQUJOw==)]
 >>
 startxref
-9454
+9276
 %%EOF

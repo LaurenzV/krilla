@@ -1,8 +1,6 @@
 q
-/c0 CS
-0 SCN
-/c0 cs
-0 scn
+0 G
+0 g
 BT
 1 Tr
 /f0 16 Tf

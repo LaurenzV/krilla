@@ -2,36 +2,24 @@
 %AAAA
 
 1 0 obj
-/DeviceGray
-endobj
-
-2 0 obj
-/DeviceRGB
-endobj
-
-3 0 obj
 <<
-  /Length 56
+  /Length 47
   /Type /XObject
   /Subtype /Form
   /Resources <<
     /ProcSet [/PDF /Text /ImageC /ImageB]
-    /ColorSpace <<
-      /c0 1 0 R
-    >>
   >>
   /BBox [20 20 180 180]
   /Group <<
     /Type /Group
     /S /Transparency
     /I true
-    /CS 2 0 R
+    /CS /DeviceRGB
   >>
 >>
 stream
 q
-/c0 cs
-0 scn
+0 g
 20 20 m
 180 20 l
 180 180 l
