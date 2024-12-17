@@ -170,7 +170,13 @@ impl ChunkContainer {
             &self.shading_functions, &self.patterns, &self.pages, &self.images
         );
 
-        if self.metadata.as_ref().is_none_or(|m| m.title.is_none()) {
+        // TODO: Replace with `is_none_or` once MSRV allows to.
+        let missing_title = match self.metadata.as_ref() {
+            None => true,
+            Some(m) => m.title.is_none()
+        };
+
+        if missing_title {
             sc.register_validation_error(ValidationError::NoDocumentTitle);
         }
 
