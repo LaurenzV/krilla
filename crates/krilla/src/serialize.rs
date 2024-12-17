@@ -247,7 +247,16 @@ impl SerializeContext {
     }
 
     pub(crate) fn set_outline(&mut self, outline: Outline) {
-        self.global_objects.outline = MaybeTaken::new(Some(outline));
+        // Only set it if it's not empty or if the current validator requires an
+        // outline.
+        if !outline.is_empty()
+            || self
+                .serialize_settings
+                .validator
+                .prohibits(&ValidationError::MissingDocumentOutline)
+        {
+            self.global_objects.outline = MaybeTaken::new(Some(outline));
+        }
     }
 
     pub(crate) fn set_metadata(&mut self, metadata: Metadata) {

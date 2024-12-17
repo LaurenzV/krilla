@@ -33,6 +33,12 @@ pub struct Outline {
     children: Vec<OutlineNode>,
 }
 
+impl Outline {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.children.is_empty()
+    }
+}
+
 impl Default for Outline {
     fn default() -> Self {
         Self::new()
