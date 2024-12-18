@@ -1174,7 +1174,9 @@ where
             // to have a valid codepoint mapping. So in this case, we still add the codepoints
             // to each glyph in the cluster, this will result in worse copy-pasting in viewers
             // that don't support `ActualText`.
-            if !incompatible_codepoint && (previous_range != Some(range.clone()) || forbid_invalid_codepoints) {
+            if !incompatible_codepoint
+                && (previous_range != Some(range.clone()) || forbid_invalid_codepoints)
+            {
                 pdf_font.set_codepoints(pdf_glyph, text.to_string());
             }
 
