@@ -464,7 +464,15 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(glyphs, text, paint_mode, font_container.clone());
+                let spanned = TextSpanner::new(
+                    glyphs,
+                    text,
+                    sc.serialize_settings()
+                        .validator
+                        .requires_codepoint_mappings(),
+                    paint_mode,
+                    font_container.clone(),
+                );
 
                 for fragment in spanned {
                     if let Some(text) = fragment.actual_text() {
@@ -1094,6 +1102,7 @@ where
 {
     slice: &'a [T],
     paint_mode: PaintMode<'a>,
+    forbid_invalid_codepoints: bool,
     font_container: Rc<RefCell<FontContainer>>,
     text: &'a str,
 }
@@ -1105,12 +1114,14 @@ where
     pub(crate) fn new(
         slice: &'a [T],
         text: &'a str,
+        forbid_invalid_codepoints: bool,
         paint_mode: PaintMode<'a>,
         font_container: Rc<RefCell<FontContainer>>,
     ) -> Self {
         Self {
             slice,
             paint_mode,
+            forbid_invalid_codepoints,
             text,
             font_container,
         }
@@ -1128,6 +1139,8 @@ where
         fn func<U>(
             g: &U,
             paint_mode: PaintMode,
+            previous_range: Option<Range<usize>>,
+            forbid_invalid_codepoints: bool,
             mut font_container: RefMut<FontContainer>,
             text: &str,
         ) -> (Range<usize>, bool)
@@ -1145,11 +1158,26 @@ where
             let codepoints = pdf_font.get_codepoints(pdf_glyph);
             // Check if the glyph has already been assigned codepoints that don't match the
             // one we are seeing right now.
-            let incompatible_codepoint = codepoints.is_some() && codepoints != Some(text);
+            let incompatible_codepoint = codepoints.is_some_and(|text| codepoints != Some(text));
 
-            // Only set the codepoint if there isn't a previous one.
+            // Only set the codepoint if there isn't a previous, different mapping.
+            //
+            // If we could set it, we only want to insert a codepoint if we are not already
+            // building a spanned run (which is the case if the previous range is the same).
+            // If we are building a spanned run, it means that the glyphs are part of the same
+            // cluster, in which case only the first glyph should be assigned the codepoint,
+            // while all other glyphs in the same cluster should not be assigned anything.
+            // Otherwise, when copying text from the PDF, we will get the same codepoint multiple
+            // times in viewers that don't support `ActualText`.
+            //
+            // However, in case we are for example exporting to PDF/UA, every glyph is required
+            // to have a valid codepoint mapping. So in this case, we still add the codepoints
+            // to each glyph in the cluster, this will result in worse copy-pasting in viewers
+            // that don't support `ActualText`.
             if !incompatible_codepoint {
-                pdf_font.set_codepoints(pdf_glyph, text.to_string());
+                if previous_range != Some(range.clone()) || forbid_invalid_codepoints {
+                    pdf_font.set_codepoints(pdf_glyph, text.to_string());
+                }
             }
 
             (range, incompatible_codepoint)
@@ -1165,6 +1193,8 @@ where
         let (first_range, first_incompatible) = func(
             iter.next()?,
             self.paint_mode,
+            None,
+            self.forbid_invalid_codepoints,
             self.font_container.borrow_mut(),
             self.text,
         );
@@ -1175,6 +1205,8 @@ where
             let (next_range, next_incompatible) = func(
                 next,
                 self.paint_mode,
+                Some(last_range.clone()),
+                self.forbid_invalid_codepoints,
                 self.font_container.borrow_mut(),
                 self.text,
             );
@@ -1183,33 +1215,24 @@ where
                 // In this case, we just started and we are looking at the first two glyphs.
                 // This decides whether the current run will be spanned, or not.
                 None => {
-                    // The first glyph is incompatible, so we definitely need actual text.
-                    if first_incompatible {
+                    // The two glyphs are in the same range, so we definitely want this run
+                    // to be spanned, and also want to include both glyphs in that run.
+                    if last_range == next_range {
                         use_span = Some(true);
+                    } else {
+                        // Else, whether we use a span depends on whether the first glyph
+                        // is incompatible.
+                        use_span = Some(first_incompatible);
 
-                        // If the range of the next one is the same, it means they are
-                        // part of the same cluster, meaning that we need to include it
-                        // in the actual text. If not, we abort and only wrap the first
-                        // glyph in actual text.
-                        if last_range != next_range {
+                        // If either the first glyph or the second glyph are incompatible, they
+                        // need to be in separate runs, since they are not part of the same cluster.
+                        if first_incompatible || next_incompatible {
                             break;
                         }
-                    }
 
-                    // If the next is incompatible but not part of the current cluster,
-                    // then it will need a dedicated spanned range, and
-                    // we can't include it in the current text span. So we abort and
-                    // create a spanned element with just the first glyph.
-                    if next_incompatible && last_range != next_range {
-                        break;
+                        // If none are incompatible, then `use_span` is false, and we can also
+                        // include the next glyph in that unspanned run.
                     }
-
-                    // If they have the same range, they are part of the same cluster,
-                    // and thus we started a spanned range with actual text.
-                    //
-                    // Otherwise, they are part of a different cluster, and we
-                    // start a spanned range with no actual text (common case).
-                    use_span = Some(last_range == next_range);
                 }
                 // We are currently building a spanned range, and all glyphs
                 // are part of the same cluster.
@@ -1251,6 +1274,7 @@ where
             true => TextSpan::Spanned(head, &self.text[first_range]),
             false => TextSpan::Unspanned(head),
         };
+
         Some(fragment)
     }
 }

@@ -647,6 +647,7 @@ fn naive_shape(
 mod tests {
     use crate::font::Font;
     use crate::mask::MaskType;
+    use crate::page::Page;
     use crate::paint::{LinearGradient, Paint, SpreadMethod};
     use crate::path::Fill;
     use crate::surface::Surface;
@@ -811,8 +812,9 @@ mod tests {
         );
     }
 
-    #[snapshot(stream)]
-    fn stream_complex_text(surface: &mut Surface) {
+    #[snapshot(single_page)]
+    fn complex_text(page: &mut Page) {
+        let mut surface = page.surface();
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
@@ -825,27 +827,29 @@ mod tests {
         );
     }
 
-    #[snapshot(stream)]
-    fn stream_complex_text_2(surface: &mut Surface) {
+    #[snapshot(single_page)]
+    fn complex_text_2(page: &mut Page) {
+        let mut surface = page.surface();
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
             16.0,
             &[],
-            "यु॒धा नर॑ ऋ॒ष्वा ",
+            "यु॒धा नर॑ ऋ॒ष्वा",
             false,
             TextDirection::Auto,
         );
     }
 
-    #[snapshot(stream)]
-    fn stream_complex_text_3(surface: &mut Surface) {
+    #[snapshot(single_page)]
+    fn complex_text_3(page: &mut Page) {
+        let mut surface = page.surface();
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
-            16.0,
+            12.0,
             &[],
             "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
             false,
@@ -853,13 +857,14 @@ mod tests {
         );
     }
 
-    #[snapshot(stream)]
-    fn stream_complex_text_4(surface: &mut Surface) {
+    #[snapshot(single_page)]
+    fn complex_text_4(page: &mut Page) {
+        let mut surface = page.surface();
         surface.fill_text(
             Point::from_xy(0.0, 50.0),
             Fill::default(),
             Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
-            16.0,
+            10.0,
             &[],
             "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
             false,

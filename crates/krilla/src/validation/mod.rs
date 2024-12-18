@@ -255,7 +255,9 @@ impl Validator {
                 ValidationError::ContainsPostScript => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => false,
-                ValidationError::InvalidCodepointMapping(_, _) => false,
+                ValidationError::InvalidCodepointMapping(_, _) => {
+                    self.requires_codepoint_mappings()
+                }
                 ValidationError::UnicodePrivateArea(_, _) => false,
                 ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
                 ValidationError::NoDocumentTitle => false,
@@ -276,11 +278,10 @@ impl Validator {
                 ValidationError::ContainsPostScript => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
-                // Only applies for PDF/A2-U and PDF/A2-A
-                ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A2_B,
-                // Only applies to PDF/A2-A
+                ValidationError::InvalidCodepointMapping(_, _) => {
+                    self.requires_codepoint_mappings()
+                }
                 ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A2_A,
-                // Only applies to PDF/A2-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
@@ -300,11 +301,10 @@ impl Validator {
                 ValidationError::ContainsPostScript => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph => true,
-                // Only applies for PDF/A3-U and PDF/A3-A
-                ValidationError::InvalidCodepointMapping(_, _) => *self != Validator::A3_B,
-                // Only applies to PDF/A3-A
+                ValidationError::InvalidCodepointMapping(_, _) => {
+                    self.requires_codepoint_mappings()
+                }
                 ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A3_A,
-                // Only applies to PDF/A3-A
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
@@ -324,7 +324,9 @@ impl Validator {
                 ValidationError::ContainsPostScript => false,
                 ValidationError::MissingCMYKProfile => false,
                 ValidationError::ContainsNotDefGlyph => true,
-                ValidationError::InvalidCodepointMapping(_, _) => true,
+                ValidationError::InvalidCodepointMapping(_, _) => {
+                    self.requires_codepoint_mappings()
+                }
                 ValidationError::UnicodePrivateArea(_, _) => false,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
@@ -421,6 +423,16 @@ impl Validator {
             Validator::UA1 => {
                 xmp.pdfua_part(1);
             }
+        }
+    }
+
+    pub(crate) fn requires_codepoint_mappings(&self) -> bool {
+        match self {
+            Validator::None => false,
+            Validator::A1_A | Validator::A1_B => false,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => *self != Validator::A2_B,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => *self != Validator::A3_B,
+            Validator::UA1 => true,
         }
     }
 

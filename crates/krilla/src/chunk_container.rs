@@ -173,7 +173,7 @@ impl ChunkContainer {
         // TODO: Replace with `is_none_or` once MSRV allows to.
         let missing_title = match self.metadata.as_ref() {
             None => true,
-            Some(m) => m.title.is_none()
+            Some(m) => m.title.is_none(),
         };
 
         if missing_title {
