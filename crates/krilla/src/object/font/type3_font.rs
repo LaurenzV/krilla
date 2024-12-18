@@ -135,7 +135,9 @@ impl Type3Font {
 
     #[inline]
     pub(crate) fn set_codepoints(&mut self, gid: Gid, text: String) {
-        self.cmap_entries.insert(gid, text);
+        if !text.is_empty() {
+            self.cmap_entries.insert(gid, text);
+        }
     }
 
     #[inline]
