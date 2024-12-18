@@ -256,7 +256,6 @@ impl CIDFont {
             // For the .notdef glyph, it's fine if no mapping exists, since it is included
             // even if it was not referenced in the text.
             for g in 1..self.glyph_remapper.num_gids() {
-                println!("{:?}", self.cmap_entries.get(&g));
                 match self.cmap_entries.get(&g) {
                     None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                         self.font.clone(),
