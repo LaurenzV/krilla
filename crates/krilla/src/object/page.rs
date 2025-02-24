@@ -427,6 +427,31 @@ mod tests {
     }
 
     #[snapshot]
+    fn page_with_crop_bleeding_trim_art_boxes(sc: &mut SerializeContext) {
+        let mut stream_builder = StreamBuilder::new(sc);
+        let mut surface = stream_builder.surface();
+
+        // Create a path that will help visualize the different boxes
+        let mut builder = PathBuilder::new();
+        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
+        let path = builder.finish().unwrap();
+
+        // Create page settings with different boxes
+        let page_settings = PageSettings::new(200.0, 200.0)
+            .with_media_box(Some(Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap()))
+            .with_crop_box(Some(Rect::from_xywh(10.0, 10.0, 180.0, 180.0).unwrap()))
+            .with_bleed_box(Some(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap()))
+            .with_trim_box(Some(Rect::from_xywh(30.0, 30.0, 140.0, 140.0).unwrap()))
+            .with_art_box(Some(Rect::from_xywh(40.0, 40.0, 120.0, 120.0).unwrap()));
+
+        surface.fill_path(&path, Fill::default());
+        surface.finish();
+
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
+        sc.register_page(page);
+    }
+
+    #[snapshot]
     fn page_label(sc: &mut SerializeContext) {
         let page_label = PageLabel::new(
             Some(NumberingStyle::Arabic),

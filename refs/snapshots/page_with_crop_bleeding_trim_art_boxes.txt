@@ -1,0 +1,51 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 200 200]
+  /CropBox [10 10 190 190]
+  /BleedBox [20 20 180 180]
+  /TrimBox [30 30 170 170]
+  /ArtBox [40 40 160 160]
+  /Parent 1 0 R
+  /Contents 3 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 47
+>>
+stream
+q
+0 g
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q
+endstream
+endobj
+
+4 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
