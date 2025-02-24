@@ -210,15 +210,15 @@ impl InternalPage {
         let mut page = chunk.page(root_ref);
         self.stream_resources.to_pdf_resources(&mut page);
 
-        let media_box = self
-            .page_settings
-            .media_box()
-            .unwrap_or(self.bbox)
-            .transform(page_root_transform(
+        let transform_rect = |rect: Rect| {
+            rect.transform(page_root_transform(
                 self.page_settings.surface_size().height(),
             ))
-            .unwrap();
+            .unwrap()
+        };
 
+        // media box is mandatory, so we need to fall back to the default bbox
+        let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
         page.media_box(media_box.to_pdf_rect());
 
         if let Some(struct_parent) = self.struct_parent {
