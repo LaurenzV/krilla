@@ -221,6 +221,27 @@ impl InternalPage {
         let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
         page.media_box(media_box.to_pdf_rect());
 
+        // the remaining type of box are not mandatory, so we only set them if they are present
+        if let Some(crop_box) = self.page_settings.crop_box() {
+            let crop_box = transform_rect(crop_box);
+            page.crop_box(crop_box.to_pdf_rect());
+        }
+
+        if let Some(bleed_box) = self.page_settings.bleed_box() {
+            let bleed_box = transform_rect(bleed_box);
+            page.bleed_box(bleed_box.to_pdf_rect());
+        }
+
+        if let Some(trim_box) = self.page_settings.trim_box() {
+            let trim_box = transform_rect(trim_box);
+            page.trim_box(trim_box.to_pdf_rect());
+        }
+
+        if let Some(art_box) = self.page_settings.art_box() {
+            let art_box = transform_rect(art_box);
+            page.art_box(art_box.to_pdf_rect());
+        }
+
         if let Some(struct_parent) = self.struct_parent {
             page.struct_parents(struct_parent);
 
