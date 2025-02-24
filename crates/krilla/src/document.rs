@@ -193,7 +193,7 @@ impl PageSettings {
     ///
     /// The trim box defines the intended dimensions of the finished page after trimming.
     /// It may be smaller than the media box and bleed box to accommodate bleed for printing.
-    /// 
+    ///
     /// If `None`, no /TrimBox attribute will be written to the page.
     pub fn with_trim_box(mut self, trim_box: Option<Rect>) -> PageSettings {
         self.trim_box = trim_box;
