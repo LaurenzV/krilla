@@ -101,6 +101,14 @@ pub struct PageSettings {
     page_label: PageLabel,
     /// The size of the surface.
     surface_size: Size,
+    /// The crop box of the page
+    crop_box: Option<Rect>,
+    /// The bleed box of the page
+    bleed_box: Option<Rect>,
+    /// The trim box of the page
+    trim_box: Option<Rect>,
+    /// The actual content boundaries
+    art_box: Option<Rect>,
 }
 
 impl PageSettings {
@@ -147,6 +155,71 @@ impl PageSettings {
     pub(crate) fn page_label(&self) -> &PageLabel {
         &self.page_label
     }
+
+    /// Change the crop box.
+    ///
+    /// The crop box defines the region to which the page contents are to be clipped
+    /// when displayed or printed. Default is the media box.
+    ///
+    /// If `None`, no /CropBox attribute will be written to the page.
+    pub fn with_crop_box(mut self, crop_box: Option<Rect>) -> PageSettings {
+        self.crop_box = crop_box;
+        self
+    }
+
+    /// The current crop box.
+    pub(crate) fn crop_box(&self) -> Option<Rect> {
+        self.crop_box
+    }
+
+    /// Change the bleed box.
+    ///
+    /// The bleed box defines the region to which the page contents needs to be clipped
+    /// when output in a production environment. It includes any extra bleed area needed
+    /// for printing.
+    ///
+    /// If `None`, no /BleedBox attribute will be written to the page.
+    pub fn with_bleed_box(mut self, bleed_box: Option<Rect>) -> PageSettings {
+        self.bleed_box = bleed_box;
+        self
+    }
+
+    /// The current bleed box.
+    pub(crate) fn bleed_box(&self) -> Option<Rect> {
+        self.bleed_box
+    }
+
+    /// Change the trim box.
+    ///
+    /// The trim box defines the intended dimensions of the finished page after trimming.
+    /// It may be smaller than the media box and bleed box to accommodate bleed for printing.
+    ///
+    /// If `None`, no /TrimBox attribute will be written to the page.
+    pub fn with_trim_box(mut self, trim_box: Option<Rect>) -> PageSettings {
+        self.trim_box = trim_box;
+        self
+    }
+
+    /// The current trim box.
+    pub(crate) fn trim_box(&self) -> Option<Rect> {
+        self.trim_box
+    }
+
+    /// Change the art box.
+    ///
+    /// The art box defines the extent of the page's meaningful content (including
+    /// potential white space) as intended by the page's creator.
+    ///
+    /// If `None`, no /ArtBox attribute will be written to the page.
+    pub fn with_art_box(mut self, art_box: Option<Rect>) -> PageSettings {
+        self.art_box = art_box;
+        self
+    }
+
+    /// The current art box.
+    pub(crate) fn art_box(&self) -> Option<Rect> {
+        self.art_box
+    }
 }
 
 impl Default for PageSettings {
@@ -159,6 +232,10 @@ impl Default for PageSettings {
             media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
             surface_size: Size::from_wh(width, height).unwrap(),
             page_label: PageLabel::default(),
+            crop_box: None,
+            bleed_box: None,
+            trim_box: None,
+            art_box: None,
         }
     }
 }

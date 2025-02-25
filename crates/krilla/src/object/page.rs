@@ -210,16 +210,37 @@ impl InternalPage {
         let mut page = chunk.page(root_ref);
         self.stream_resources.to_pdf_resources(&mut page);
 
-        let media_box = self
-            .page_settings
-            .media_box()
-            .unwrap_or(self.bbox)
-            .transform(page_root_transform(
+        let transform_rect = |rect: Rect| {
+            rect.transform(page_root_transform(
                 self.page_settings.surface_size().height(),
             ))
-            .unwrap();
+            .unwrap()
+        };
 
+        // media box is mandatory, so we need to fall back to the default bbox
+        let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
         page.media_box(media_box.to_pdf_rect());
+
+        // the remaining type of box are not mandatory, so we only set them if they are present
+        if let Some(crop_box) = self.page_settings.crop_box() {
+            let crop_box = transform_rect(crop_box);
+            page.crop_box(crop_box.to_pdf_rect());
+        }
+
+        if let Some(bleed_box) = self.page_settings.bleed_box() {
+            let bleed_box = transform_rect(bleed_box);
+            page.bleed_box(bleed_box.to_pdf_rect());
+        }
+
+        if let Some(trim_box) = self.page_settings.trim_box() {
+            let trim_box = transform_rect(trim_box);
+            page.trim_box(trim_box.to_pdf_rect());
+        }
+
+        if let Some(art_box) = self.page_settings.art_box() {
+            let art_box = transform_rect(art_box);
+            page.art_box(art_box.to_pdf_rect());
+        }
 
         if let Some(struct_parent) = self.struct_parent {
             page.struct_parents(struct_parent);
@@ -401,6 +422,31 @@ mod tests {
 
         surface.fill_path(&path, Fill::default());
         surface.finish();
+        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
+        sc.register_page(page);
+    }
+
+    #[snapshot]
+    fn page_with_crop_bleeding_trim_art_boxes(sc: &mut SerializeContext) {
+        let mut stream_builder = StreamBuilder::new(sc);
+        let mut surface = stream_builder.surface();
+
+        // Create a path that will help visualize the different boxes
+        let mut builder = PathBuilder::new();
+        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
+        let path = builder.finish().unwrap();
+
+        // Create page settings with different boxes
+        let page_settings = PageSettings::new(200.0, 200.0)
+            .with_media_box(Some(Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap()))
+            .with_crop_box(Some(Rect::from_xywh(10.0, 10.0, 180.0, 180.0).unwrap()))
+            .with_bleed_box(Some(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap()))
+            .with_trim_box(Some(Rect::from_xywh(30.0, 30.0, 140.0, 140.0).unwrap()))
+            .with_art_box(Some(Rect::from_xywh(40.0, 40.0, 120.0, 120.0).unwrap()));
+
+        surface.fill_path(&path, Fill::default());
+        surface.finish();
+
         let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
         sc.register_page(page);
     }
