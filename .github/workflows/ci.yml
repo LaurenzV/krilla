@@ -138,8 +138,8 @@ jobs:
 
       - name: Get pdfbox
         run: |
-          curl -LO https://dlcdn.apache.org/pdfbox/3.0.3/pdfbox-app-3.0.3.jar
-          mv pdfbox-app-3.0.3.jar pdfbox.jar
+          curl -LO https://dlcdn.apache.org/pdfbox/3.0.4/pdfbox-app-3.0.4.jar
+          mv pdfbox-app-3.0.4.jar pdfbox.jar
           ls .
 
       - name: Clone sitro
@@ -170,7 +170,7 @@ jobs:
 
       - name: Upload artifacts
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: ./assets/diffs
 
