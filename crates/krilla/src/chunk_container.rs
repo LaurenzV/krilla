@@ -42,9 +42,9 @@ impl WaitExt for Chunk {
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
 pub(crate) struct ChunkContainer {
-    pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
+    pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
     pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
 
