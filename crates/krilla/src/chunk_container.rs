@@ -118,6 +118,15 @@ impl ChunkContainer {
             };
         }
 
+        remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
+            &mut self.page_label_tree, &mut self.destination_profiles,
+        &mut self.struct_tree_root);
+        remap_fields!(remapper, remapped_ref; &self.struct_elements, &self.page_labels,
+            &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
+            &self.ext_g_states, &self.masks, &self.x_objects, &self.shading_functions,
+            &self.patterns, &self.pages, &self.images
+        );
+
         // Chunk length is not an exact number because the length might change as we renumber,
         // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
         // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
@@ -130,15 +139,6 @@ impl ChunkContainer {
         {
             pdf.set_binary_marker(b"AAAA")
         }
-
-        remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
-            &mut self.page_label_tree, &mut self.destination_profiles,
-        &mut self.struct_tree_root);
-        remap_fields!(remapper, remapped_ref; &self.struct_elements, &self.page_labels,
-            &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
-            &self.ext_g_states, &self.masks, &self.x_objects, &self.shading_functions,
-            &self.patterns, &self.pages, &self.images
-        );
 
         macro_rules! write_field {
             ($remapper:expr, $pdf:expr; $($field:expr),+) => {
