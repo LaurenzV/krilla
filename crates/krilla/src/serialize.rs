@@ -792,44 +792,44 @@ impl SerializeContext {
 /// do is that we `std::mem::replace` the elements step by step and then serialize them.
 /// The `MaybeTaken` struct helps us to ensure that once we have taken a value, we do not
 /// accidentally attempt to write/read it again.
-#[derive(Default)]
-pub(crate) struct MaybeTaken<T>(T, RefCell<bool>);
+pub(crate) struct MaybeTaken<T>(Option<T>);
 
 impl<T> MaybeTaken<T> {
     pub(crate) fn new(item: T) -> Self {
-        Self(item, RefCell::new(false))
+        Self(Some(item))
     }
 
     pub(crate) fn is_taken(&self) -> bool {
-        *self.1.borrow()
+        self.0.is_none()
     }
 }
 
-impl<T> MaybeTaken<T>
-where
-    T: Default,
-{
+impl<T> MaybeTaken<T> {
+    #[track_caller]
     pub(crate) fn take(&mut self) -> T {
-        assert!(!*self.1.borrow());
-        let mut taken = self.1.borrow_mut();
-        *taken = true;
-        std::mem::take(&mut self.0)
+        self.0.take().expect("value was already taken before")
+    }
+}
+
+impl<T: Default> Default for MaybeTaken<T> {
+    fn default() -> Self {
+        Self::new(T::default())
     }
 }
 
 impl<T> Deref for MaybeTaken<T> {
     type Target = T;
 
+    #[track_caller]
     fn deref(&self) -> &Self::Target {
-        assert!(!*self.1.borrow());
-        &self.0
+        self.0.as_ref().expect("value was taken")
     }
 }
 
 impl<T> DerefMut for MaybeTaken<T> {
+    #[track_caller]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        assert!(!*self.1.borrow());
-        &mut self.0
+        self.0.as_mut().expect("value was taken")
     }
 }
 
