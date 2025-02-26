@@ -12,32 +12,6 @@ use crate::util::{hash_base64, Deferred};
 use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 
-trait ResExt {
-    fn res(&self) -> KrillaResult<&Chunk>;
-}
-
-trait WaitExt {
-    fn wait(&self) -> &Chunk;
-}
-
-impl ResExt for Chunk {
-    fn res(&self) -> KrillaResult<&Chunk> {
-        Ok(self)
-    }
-}
-
-impl ResExt for KrillaResult<Chunk> {
-    fn res(&self) -> KrillaResult<&Chunk> {
-        self.as_ref().map_err(|e| e.clone())
-    }
-}
-
-impl WaitExt for Chunk {
-    fn wait(&self) -> &Chunk {
-        self
-    }
-}
-
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
@@ -76,60 +50,30 @@ impl ChunkContainer {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
-        // Two utility macros, that basically traverses the fields in the order that we
-        // will write them to the PDF and assigns new references as we go.
-        // This gives us the advantage that the PDF will be numbered with
-        // monotonically increasing numbers, which, while it is not a strict requirement
-        // for a valid PDF, makes it a lot cleaner and might make implementing features
-        // like object streams easier down the road.
+        // Allows us to estimate the capacity we will need for the new PDF.
+        let mut chunks_byte_len = 0;
+
+        // This traverses the chunks in the order that we will write them to the PDF and assigns new
+        // references as we go. This gives us the advantage that the PDF will be numbered with
+        // monotonically increasing numbers, which, while it is not a strict requirement for a valid
+        // PDF, makes it a lot cleaner and might make implementing features like object streams
+        // easier down the road.
         //
         // It also allows us to estimate the capacity we will need for the new PDF.
-        let mut chunks_len = 0;
-        macro_rules! remap_field {
-            ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
-                $(
-                    if let Some((_, chunk)) = $field {
-                        chunks_len += chunk.len();
-                        for object_ref in chunk.refs() {
-                            debug_assert!(!remapper.contains_key(&object_ref));
-
-                            $remapper.insert(object_ref, $remapped_ref.bump());
-                        }
-                    }
-                )+
-            };
-        }
-
-        macro_rules! remap_fields {
-            ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
-                $(
-                    for chunk in $field {
-                        let chunk = chunk.wait().res()?;
-                        chunks_len += chunk.len();
-                        for ref_ in chunk.refs() {
-                            debug_assert!(!remapper.contains_key(&ref_));
-
-                            $remapper.insert(ref_, $remapped_ref.bump());
-                        }
-                    }
-                )+
-            };
-        }
-
-        remap_field!(remapper, remapped_ref; &self.page_tree, &self.outline,
-            &self.page_label_tree, &self.destination_profiles,
-        &self.struct_tree_root);
-        remap_fields!(remapper, remapped_ref; &self.struct_elements, &self.page_labels,
-            &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
-            &self.ext_g_states, &self.masks, &self.x_objects, &self.shading_functions,
-            &self.patterns, &self.pages, &self.images
-        );
+        self.visit(&mut |chunk| {
+            for object_ref in chunk.refs() {
+                let existing = remapper.insert(object_ref, remapped_ref.bump());
+                debug_assert!(existing.is_none());
+            }
+            chunks_byte_len += chunk.len();
+        })?;
 
         // Chunk length is not an exact number because the length might change as we renumber,
         // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
         // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
         // case, and thus give us better performance.
-        let mut pdf = Pdf::with_capacity((chunks_len as f32 * 1.1 + 200.0) as usize);
+        let capacity = (chunks_byte_len as f32 * 1.1 + 200.0) as usize;
+        let mut pdf = Pdf::with_capacity(capacity);
         sc.serialize_settings().pdf_version.set_version(&mut pdf);
 
         if sc.serialize_settings().ascii_compatible
@@ -138,35 +82,10 @@ impl ChunkContainer {
             pdf.set_binary_marker(b"AAAA")
         }
 
-        macro_rules! write_field {
-            ($remapper:expr, $pdf:expr; $($field:expr),+) => {
-                $(
-                    if let Some((_, chunk)) = $field {
-                        chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
-                    }
-                )+
-            };
-        }
-
-        macro_rules! write_fields {
-            ($remapper:expr, $pdf:expr; $($field:expr),+) => {
-                $(
-                    for chunk in $field {
-                        let chunk = chunk.wait().res()?;
-                        chunk.renumber_into($pdf, |old| *$remapper.get(&old).unwrap());
-                    }
-                )+
-            };
-        }
-
-        write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
-            &self.page_label_tree, &self.destination_profiles,
-        &self.struct_tree_root);
-        write_fields!(remapper, &mut pdf; &self.struct_elements, &self.page_labels,
-            &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
-            &self.ext_g_states, &self.masks, &self.x_objects,
-            &self.shading_functions, &self.patterns, &self.pages, &self.images
-        );
+        // Write the chunks in all the fields.
+        self.visit(&mut |chunk| {
+            chunk.renumber_into(&mut pdf, |old| remapper[&old]);
+        })?;
 
         // TODO: Replace with `is_none_or` once MSRV allows to.
         let missing_title = match self.metadata.as_ref() {
@@ -311,5 +230,72 @@ impl ChunkContainer {
         }
 
         Ok(pdf)
+    }
+}
+
+/// Visits all chunks in a type.
+trait Visit {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()>;
+}
+
+impl Visit for ChunkContainer {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.page_tree.visit(f)?;
+        self.outline.visit(f)?;
+        self.page_label_tree.visit(f)?;
+        self.destination_profiles.visit(f)?;
+        self.struct_tree_root.visit(f)?;
+        self.struct_elements.visit(f)?;
+        self.page_labels.visit(f)?;
+        self.annotations.visit(f)?;
+        self.fonts.visit(f)?;
+        self.color_spaces.visit(f)?;
+        self.icc_profiles.visit(f)?;
+        self.destinations.visit(f)?;
+        self.ext_g_states.visit(f)?;
+        self.masks.visit(f)?;
+        self.x_objects.visit(f)?;
+        self.shading_functions.visit(f)?;
+        self.patterns.visit(f)?;
+        self.pages.visit(f)?;
+        self.images.visit(f)?;
+        Ok(())
+    }
+}
+
+impl Visit for Chunk {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        f(self);
+        Ok(())
+    }
+}
+
+impl Visit for Option<(Ref, Chunk)> {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        if let Some((_, chunk)) = self {
+            chunk.visit(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: Visit + Send + Sync + 'static> Visit for Deferred<T> {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.wait().visit(f)
+    }
+}
+
+impl<T: Visit> Visit for KrillaResult<T> {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.as_ref().map_err(|e| e.clone())?.visit(f)
+    }
+}
+
+impl<T: Visit> Visit for Vec<T> {
+    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        for field in self {
+            field.visit(f)?;
+        }
+        Ok(())
     }
 }
