@@ -72,7 +72,7 @@ impl ChunkContainer {
     }
 
     // TODO: Split up into multiple methods?
-    pub(crate) fn finish(mut self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
+    pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -88,15 +88,13 @@ impl ChunkContainer {
         macro_rules! remap_field {
             ($remapper:expr, $remapped_ref:expr; $($field:expr),+) => {
                 $(
-                    if let Some((original_ref, chunk)) = $field {
+                    if let Some((_, chunk)) = $field {
                         chunks_len += chunk.len();
                         for object_ref in chunk.refs() {
                             debug_assert!(!remapper.contains_key(&object_ref));
 
                             $remapper.insert(object_ref, $remapped_ref.bump());
                         }
-
-                        *original_ref = *remapper.get(&original_ref).unwrap();
                     }
                 )+
             };
@@ -118,9 +116,9 @@ impl ChunkContainer {
             };
         }
 
-        remap_field!(remapper, remapped_ref; &mut self.page_tree, &mut self.outline,
-            &mut self.page_label_tree, &mut self.destination_profiles,
-        &mut self.struct_tree_root);
+        remap_field!(remapper, remapped_ref; &self.page_tree, &self.outline,
+            &self.page_label_tree, &self.destination_profiles,
+        &self.struct_tree_root);
         remap_fields!(remapper, remapped_ref; &self.struct_elements, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
             &self.ext_g_states, &self.masks, &self.x_objects, &self.shading_functions,
@@ -163,7 +161,7 @@ impl ChunkContainer {
 
         write_field!(remapper, &mut pdf; &self.page_tree, &self.outline,
             &self.page_label_tree, &self.destination_profiles,
-        &mut self.struct_tree_root);
+        &self.struct_tree_root);
         write_fields!(remapper, &mut pdf; &self.struct_elements, &self.page_labels,
             &self.annotations, &self.fonts, &self.color_spaces, &self.icc_profiles, &self.destinations,
             &self.ext_g_states, &self.masks, &self.x_objects,
@@ -249,7 +247,7 @@ impl ChunkContainer {
             let mut catalog = pdf.catalog(catalog_ref);
 
             if let Some(pt) = &self.page_tree {
-                catalog.pages(pt.0);
+                catalog.pages(remapper[&pt.0]);
             }
 
             if let Some(meta_ref) = meta_ref {
@@ -257,11 +255,11 @@ impl ChunkContainer {
             }
 
             if let Some(pl) = &self.page_label_tree {
-                catalog.pair(Name(b"PageLabels"), pl.0);
+                catalog.pair(Name(b"PageLabels"), remapper[&pl.0]);
             }
 
             if let Some(oi) = &self.destination_profiles {
-                catalog.pair(Name(b"OutputIntents"), oi.0);
+                catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
             }
 
             if let Some(lang) = self.metadata.and_then(|m| m.language).as_ref() {
@@ -271,7 +269,7 @@ impl ChunkContainer {
             }
 
             if let Some(st) = &self.struct_tree_root {
-                catalog.pair(Name(b"StructTreeRoot"), st.0);
+                catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
                 if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16 {
@@ -290,7 +288,7 @@ impl ChunkContainer {
             }
 
             if let Some(ol) = &self.outline {
-                catalog.outlines(ol.0);
+                catalog.outlines(remapper[&ol.0]);
             }
 
             if !named_destinations.is_empty() {
@@ -305,8 +303,7 @@ impl ChunkContainer {
                 sorted.sort_by(|a, b| a.1.cmp(&b.1));
 
                 for (name, dest_ref) in sorted {
-                    name_entries
-                        .insert(Str(name.name.as_bytes()), *remapper.get(&dest_ref).unwrap());
+                    name_entries.insert(Str(name.name.as_bytes()), remapper[&dest_ref]);
                 }
             }
 
