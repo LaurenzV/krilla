@@ -79,10 +79,10 @@
 //!      nest calls to `start_tagged`, and you have to ensure that you always call a corresponding
 //!      `end_tagged`. Otherwise, krilla will panic.
 //!
-//!     It is very important that each identifier you create has exactly one parent in the tag
-//!     tree. This means that you cannot create an identifier and not use it at all (0 parents),
-//!     or use the same identifier in two different parts of the tree (1+ parents). Otherwise,
-//!     export will fail.
+//!      It is very important that each identifier you create has exactly one parent in the tag
+//!      tree. This means that you cannot create an identifier and not use it at all (0 parents),
+//!      or use the same identifier in two different parts of the tree (1+ parents). Otherwise,
+//!      export will fail.
 //!
 //! 5) Once you have built your tag tree, simply call `set_tag_tree` on [`Document`]. That's it!
 //!
