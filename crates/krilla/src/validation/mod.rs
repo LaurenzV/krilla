@@ -103,6 +103,8 @@ pub enum ValidationError {
     MissingAnnotationAltText,
     /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
     Transparency,
+    /// The PDF contains an image with `interpolate` set to `true`.
+    ImageInterpolation,
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -266,6 +268,7 @@ impl Validator {
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency => true,
+                ValidationError::ImageInterpolation => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -289,6 +292,7 @@ impl Validator {
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency => false,
+                ValidationError::ImageInterpolation => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -312,6 +316,7 @@ impl Validator {
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency => false,
+                ValidationError::ImageInterpolation => true,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -335,6 +340,7 @@ impl Validator {
                 ValidationError::MissingDocumentOutline => true,
                 ValidationError::MissingAnnotationAltText => true,
                 ValidationError::Transparency => false,
+                ValidationError::ImageInterpolation => false,
             },
         }
     }
