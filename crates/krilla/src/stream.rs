@@ -230,6 +230,10 @@ impl<'a> FilterStreamBuilder<'a> {
         filter_stream
     }
 
+    pub(crate) fn new_from_uncompressed(content: &'a [u8]) -> Self {
+        Self::empty(content)
+    }
+
     pub(crate) fn new_from_jpeg_data(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         // JPEG data already is DCT encoded.

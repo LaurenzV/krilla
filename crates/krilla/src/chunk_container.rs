@@ -36,6 +36,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) patterns: Vec<Chunk>,
     pub(crate) pages: Vec<Deferred<Chunk>>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
+    pub(crate) embedded_files: Vec<Chunk>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -259,6 +260,7 @@ impl Visit for ChunkContainer {
         self.patterns.visit(f)?;
         self.pages.visit(f)?;
         self.images.visit(f)?;
+        self.embedded_files.visit(f)?;
         Ok(())
     }
 }

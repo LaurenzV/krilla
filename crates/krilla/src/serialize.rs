@@ -262,6 +262,10 @@ impl SerializeContext {
     pub(crate) fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
     }
+    
+    pub(crate) fn metadata(&self) -> Option<&Metadata> {
+        self.chunk_container.metadata.as_ref()
+    }
 
     pub(crate) fn set_tag_tree(&mut self, root: TagTree) {
         // Only set the tag tree if the user actually enabled tagging.

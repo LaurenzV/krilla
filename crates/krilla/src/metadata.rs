@@ -311,7 +311,7 @@ impl DateTime {
 }
 
 /// Converts a datetime to a pdf-writer date.
-fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
+pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
     let mut pdf_date = pdf_writer::Date::new(date_time.year);
 
     if let Some(month) = date_time.month {
