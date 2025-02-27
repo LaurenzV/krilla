@@ -22,6 +22,7 @@ pub(crate) mod shading_function;
 pub(crate) mod shading_pattern;
 pub(crate) mod tiling_pattern;
 pub(crate) mod xobject;
+pub mod embed;
 
 pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>>;
 
