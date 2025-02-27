@@ -731,15 +731,18 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use crate::image::Image;
+    use crate::page::Page;
     use crate::serialize::SerializeContext;
     use crate::surface::Surface;
-    use crate::tests::{load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH};
+    use crate::tests::{
+        load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image,
+        load_png_image, load_webp_image, ASSETS_PATH,
+    };
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
+    use std::sync::Arc;
     use tiny_skia_path::Size;
-    use crate::page::Page;
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializeContext) {
@@ -959,7 +962,8 @@ mod tests {
         let image = Image::from_png(
             Arc::new(std::fs::read(ASSETS_PATH.join("images").join("rgba8.png")).unwrap()),
             true,
-        ).unwrap();
+        )
+        .unwrap();
         let size = image.size();
         let size = Size::from_wh(size.0 as f32, size.1 as f32).unwrap();
         let mut surface = page.surface();
