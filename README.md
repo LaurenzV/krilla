@@ -107,6 +107,9 @@ images for all of them.
 testing adherence to the SVG specification, they indirectly also test various interactions of krilla-specific
 features.
 
+Note: If you want to run the tests locally, make sure to read `CONTRIBUTING.md` for instructions on how
+to set up everything, as running the visual-based tests unfortunately requires a very specific setup.
+
 ### Summary
 While `krilla` does have a very extensive test suite, there is still a lot that is untested, and krilla also
 has just been released and hasn't been used on a wide scale yet, so there might still be issues. 
