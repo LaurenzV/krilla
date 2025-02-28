@@ -1,38 +1,40 @@
 //! Embedding attachments to a PDF file.
 
-use std::sync::Arc;
-use std::ops::DerefMut;
-use pdf_writer::{Chunk, Finish, Ref};
-use pdf_writer::types::AssociationKind;
 use crate::metadata::pdf_date;
 use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
+use crate::validation::Validator;
+use crate::version::PdfVersion;
+use pdf_writer::types::AssociationKind;
+use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
+use std::ops::DerefMut;
+use std::sync::Arc;
 
 /// An error while embedding the file.
 pub enum EmbedError {
     /// The document doesn't contain a date, which is required for embedded files
     /// in some export modes.
-    MissingDate
+    MissingDate,
 }
 
 /// An embedded file.
 #[derive(Debug, Clone, Hash)]
 pub struct EmbeddedFile {
     /// The name of the embedded file.
-    pub name: String,
+    pub path: String,
     /// The mime type of the embedded file.
     pub mime_type: String,
     /// A description of the embedded file.
-    pub description: String,
+    pub description: Option<String>,
     /// The association kind of the embedded file.
     pub association_kind: AssociationKind,
     /// The raw data of the embedded file.
     pub data: Arc<Vec<u8>>,
     /// Whether the embedded file should be compressed (recommended to turn off if the
     /// original file already has compression).
-    pub compress: bool
+    pub compress: bool,
 }
 
 impl Cacheable for EmbeddedFile {
@@ -46,30 +48,134 @@ impl Cacheable for EmbeddedFile {
 
         let file_stream = if self.compress {
             FilterStreamBuilder::new_from_binary_data(&self.data)
-        }   else {
+        } else {
             FilterStreamBuilder::new_from_uncompressed(&self.data)
-        }.finish(&sc.serialize_settings());
-        
+        }
+        .finish(&sc.serialize_settings());
+
         let mut embedded_file_stream = chunk.embedded_file(stream_ref, &file_stream.encoded_data());
         file_stream.write_filters(embedded_file_stream.deref_mut().deref_mut());
-        
+
         embedded_file_stream.subtype(self.mime_type.to_pdf_name());
         let mut params = embedded_file_stream.params();
         params.size(self.data.len() as i32);
 
-        if let Some(date_time) = sc.metadata()
+        if let Some(date_time) = sc
+            .metadata()
             .and_then(|m| m.modification_date.or_else(|| m.creation_date))
         {
             let date = pdf_date(date_time);
             params.modification_date(date);
-        }   else {
-            todo!();
+        } else {
         }
-        
+
         params.finish();
         embedded_file_stream.finish();
-        
-        chunk   
+
+        let mut file_spec = chunk.file_spec(root_ref);
+        file_spec.path(Str(self.path.as_bytes()));
+
+        if sc.serialize_settings().pdf_version >= PdfVersion::Pdf17 {
+            file_spec.unic_file(TextStr(&self.path));
+        }
+
+        let mut ef = file_spec.insert(Name(b"EF")).dict();
+        ef.pair(Name(b"F"), stream_ref);
+
+        if sc.serialize_settings().pdf_version >= PdfVersion::Pdf17 {
+            ef.pair(Name(b"UF"), stream_ref);
+        }
+
+        ef.finish();
+
+        if matches!(
+            sc.serialize_settings().validator,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U
+        ) {
+            // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
+            file_spec.association_kind(self.association_kind);
+        }
+
+        if let Some(description) = self.description {
+            file_spec.description(TextStr(&description));
+        }
+
+        file_spec.finish();
+
+        chunk
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::embed::EmbeddedFile;
+    use crate::tests::ASSETS_PATH;
+    use crate::Document;
+    use krilla_macros::snapshot;
+    use pdf_writer::types::AssociationKind;
+    use std::sync::Arc;
+
+    fn file_1() -> EmbeddedFile {
+        let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
+        EmbeddedFile {
+            path: "emojis.txt".to_string(),
+            mime_type: "text/txt".to_string(),
+            description: Some("The description of the file.".to_string()),
+            association_kind: AssociationKind::Supplement,
+            data: Arc::new(data),
+            compress: false,
+        }
+    }
+
+    fn file_2() -> EmbeddedFile {
+        let data =
+            std::fs::read(ASSETS_PATH.join("svgs/resvg_structure_svg_nested_svg_with_rect.svg"))
+                .unwrap();
+        EmbeddedFile {
+            path: "image.svg".to_string(),
+            mime_type: "image/svg+xml".to_string(),
+            description: Some("A nice SVG image!".to_string()),
+            association_kind: AssociationKind::Supplement,
+            data: Arc::new(data),
+            compress: false,
+        }
+    }
+
+    fn file_3() -> EmbeddedFile {
+        let data = std::fs::read(ASSETS_PATH.join("images/rgb8.png")).unwrap();
+
+        EmbeddedFile {
+            path: "rgb8.png".to_string(),
+            mime_type: "image/png".to_string(),
+            description: Some("A nice picture.".to_string()),
+            association_kind: AssociationKind::Unspecified,
+            data: Arc::new(data),
+            compress: false,
+        }
+    }
+
+    #[snapshot(document)]
+    fn embedded_file(d: &mut Document) {
+        let file = file_1();
+        d.embed_file(file);
+    }
+
+    #[snapshot(document)]
+    fn embedded_file_with_compression(d: &mut Document) {
+        let mut file = file_1();
+        file.compress = true;
+
+        d.embed_file(file);
+    }
+
+    #[snapshot(document)]
+    fn multiple_embedded_files(d: &mut Document) {
+        let f1 = file_1();
+        let f2 = file_2();
+        let f3 = file_3();
+
+        d.embed_file(f1);
+        d.embed_file(f2);
+        d.embed_file(f3);
+    }
+}

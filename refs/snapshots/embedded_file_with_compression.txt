@@ -1,0 +1,94 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 3 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+4 0 obj
+<<
+  /Length 302
+  /Type /EmbeddedFile
+  /Filter [/ASCIIHexDecode /FlateDecode]
+  /Subtype /text#2Ftxt
+  /Params <<
+    /Size 209
+  >>
+>>
+stream
+789C1DCEDB0AC2300C80E157579C22B8EE509CD4A984E1EAB4635722787A9ABE807904
+7F7AF1D134094954DC4CC52D90618E15962AF55BA5EF54EC8DF8C34BDF85386FD1A080
+41A9122AEA639CAADF935F2EF1788D6DC727BA2CA5AC57D9220F58AB188B5AC54FBC0C
+F1D4FC8998C586034C8F3D5866BE2AE32EBA264D320F9581733D1DC3261EEE291B38BC
+7CA914E73FF6DF903B
+endstream
+endobj
+
+5 0 obj
+<<
+  /Type /Filespec
+  /F (emojis.txt)
+  /UF (emojis.txt)
+  /EF <<
+    /F 4 0 R
+    /UF 4 0 R
+  >>
+  /Desc (The description of the file.)
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Names <<
+    /EmbeddedFiles <<
+      /Names [(emojis.txt) 5 0 R]
+    >>
+  >>
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000239 00000 n
+0000000291 00000 n
+0000000765 00000 n
+0000000922 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(+LRtRjy4bLGbRjTswyYKwQ==) (+LRtRjy4bLGbRjTswyYKwQ==)]
+>>
+startxref
+1056
+%%EOF

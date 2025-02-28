@@ -11,6 +11,7 @@ pub mod action;
 pub mod annotation;
 pub mod color;
 pub mod destination;
+pub mod embed;
 pub(crate) mod ext_g_state;
 pub(crate) mod font;
 #[cfg(feature = "raster-images")]
@@ -22,7 +23,6 @@ pub(crate) mod shading_function;
 pub(crate) mod shading_pattern;
 pub(crate) mod tiling_pattern;
 pub(crate) mod xobject;
-pub mod embed;
 
 pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>>;
 

@@ -14,8 +14,7 @@
 //!
 //! [`Page`]: crate::page::Page
 
-use tiny_skia_path::{Rect, Size};
-
+use crate::embed::EmbeddedFile;
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::object::outline::Outline;
@@ -23,6 +22,7 @@ use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::tagging::TagTree;
+use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {
@@ -79,6 +79,11 @@ impl Document {
     /// Set the tag tree of the document.
     pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
         self.serializer_context.set_tag_tree(tag_tree);
+    }
+
+    /// Embed a new file in the PDF document.
+    pub fn embed_file(&mut self, file: EmbeddedFile) {
+        self.serializer_context.embed_file(file);
     }
 
     /// Attempt to write the document to a PDF.
