@@ -375,7 +375,6 @@ mod tests {
     use crate::serialize::SerializeContext;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
-    use crate::Data;
     use krilla_macros::{snapshot, visreg};
     use skrifa::GlyphId;
     use tiny_skia_path::Point;
@@ -466,7 +465,7 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
-        let font_data: Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
+        let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
             .unwrap()
             .into();
         let font_1 = Font::new(font_data.clone(), 0, true).unwrap();
