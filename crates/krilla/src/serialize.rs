@@ -264,10 +264,19 @@ impl SerializeContext {
         self.chunk_container.metadata = Some(metadata);
     }
 
-    pub(crate) fn embed_file(&mut self, file: EmbeddedFile) {
+    pub(crate) fn embed_file(&mut self, file: EmbeddedFile) -> Option<()> {
         let name = file.path.clone();
         let ref_ = self.register_cacheable(file);
-        self.global_objects.embedded_files.insert(ref_, name);
+        if self
+            .global_objects
+            .embedded_files
+            .insert(name, ref_)
+            .is_some()
+        {
+            None
+        } else {
+            Some(())
+        }
     }
 
     pub(crate) fn metadata(&self) -> Option<&Metadata> {
@@ -868,7 +877,7 @@ pub(crate) struct GlobalObjects {
     tag_tree: MaybeTaken<Option<TagTree>>,
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
-    pub(crate) embedded_files: MaybeTaken<BTreeMap<Ref, String>>,
+    pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
 }
 
 impl GlobalObjects {

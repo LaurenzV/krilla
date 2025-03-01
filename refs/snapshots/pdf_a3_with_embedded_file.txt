@@ -1,0 +1,155 @@
+%PDF-1.7
+%����
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [5 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /OutputIntent
+  /DestOutputProfile 4 0 R
+  /S /GTS_PDFA1
+  /OutputConditionIdentifier (Custom)
+  /OutputCondition (sRGB)
+  /RegistryName ()
+  /Info (sRGB v4.2)
+>>
+endobj
+
+3 0 obj
+[2 0 R]
+endobj
+
+4 0 obj
+<<
+  /Length 649
+  /N 3
+  /Range [0 1 0 1 0 1]
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C7D90BD4BC35014C54FAC5A95AA831D1C1482162705D1C549A1957612A11FD2D629
+79E98790C4981729CEDAC1497110477511C4B98E76F00F100407511037D70A3A6889F7
+3542AAA0F772B93F0EF7C2E100D293CE0CDE290386E9D8C94454CEE6F272F0190184D1
+8B018C2A8C5B4BA9781A545CA970E6D83A7ED4DB1D24B16FA7CA8AA96DBD5CADE4E7A5
+DAF67835137F5F3EC7FFD5A71538A3FD49136196ED00924C3C56712CC18BC461565634
+E22CF1A44D068977845EF2F848B0EAF185603B9D8C11D789E5521BAB6D6CE89BECDB83
+701F2A989914ED1E9A1170249140F48F9BEED64D8C7A1A1079FDCE81176767BCAFD002
+D0F5E8BAAF1340701F681EB8EEC789EB364F81C00350DFF0FFD78F81B906E97BBEA61E
+0297BBC0F0BDAF45E86EB00AD4AE2DC5565A5280A6A3B80634CE80FE1C307443D1AE7E
+01E3E25FB1
+endstream
+endobj
+
+5 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 6 0 R
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+7 0 obj
+<<
+  /Length 209
+  /Type /EmbeddedFile
+  /Subtype /text#2Ftxt
+  /Params <<
+    /Size 209
+    /ModDate (D:2001)
+  >>
+>>
+stream
+😀😃😄😁😆😅👺🤡💩👻💀🦩🌚🌕🌎🌍🌏🪐💫⭐️🌟✨⚡️☄️💥🔥🌪🌈🍒🍑🥭🍍🥥🥝🍅🍆🍤🍙🍚🍼🫖☕️🍵🧃🥤🧋⛳️🪁🏹🎣
+endstream
+endobj
+
+8 0 obj
+<<
+  /Type /Filespec
+  /F (emojis.txt)
+  /UF (emojis.txt)
+  /EF <<
+    /F 7 0 R
+    /UF 7 0 R
+  >>
+  /AFRelationship /Supplement
+  /Desc (The description of the file.)
+>>
+endobj
+
+9 0 obj
+<<
+  /ModDate (D:2001)
+>>
+endobj
+
+10 0 obj
+<<
+  /Length 3311
+  /Type /Metadata
+  /Subtype /XML
+>>
+stream
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmp="http://ns.adobe.com/xap/1.0/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"  xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"  xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"  xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><xmp:ModifyDate>2001</xmp:ModifyDate><pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>XMP Media Management schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/xap/1.0/mm/</pdfaSchema:namespaceURI><pdfaSchema:prefix>xmpMM</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>UUID based identifier for specific incarnation of a document</pdfaProperty:description><pdfaProperty:name>InstanceID</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Adobe PDF schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdf</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>Keywords associated with the document</pdfaProperty:description><pdfaProperty:name>Keywords</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Version of the PDF specification to which the document conforms</pdfaProperty:description><pdfaProperty:name>PDFVersion</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Name of the application that created the PDF document</pdfaProperty:description><pdfaProperty:name>Producer</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Whether the document has been trapped</pdfaProperty:description><pdfaProperty:name>Trapped</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas><pdfaid:part>3</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>/ilMOLy6loGbYm6c0+5kGA==</xmpMM:InstanceID><xmpMM:DocumentID>/ilMOLy6loGbYm6c0+5kGA==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+endstream
+endobj
+
+11 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Metadata 10 0 R
+  /OutputIntents 3 0 R
+  /Lang (en)
+  /Names <<
+    /EmbeddedFiles <<
+      /Names [(emojis.txt) 8 0 R]
+    >>
+  >>
+  /AF [8 0 R]
+>>
+endobj
+
+xref
+0 12
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000270 00000 n
+0000000294 00000 n
+0000001068 00000 n
+0000001227 00000 n
+0000001279 00000 n
+0000001641 00000 n
+0000001828 00000 n
+0000001870 00000 n
+0000005271 00000 n
+trailer
+<<
+  /Size 12
+  /Root 11 0 R
+  /Info 9 0 R
+  /ID [(/ilMOLy6loGbYm6c0+5kGA==) (/ilMOLy6loGbYm6c0+5kGA==)]
+>>
+startxref
+5475
+%%EOF

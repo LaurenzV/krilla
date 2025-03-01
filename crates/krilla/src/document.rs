@@ -82,8 +82,11 @@ impl Document {
     }
 
     /// Embed a new file in the PDF document.
-    pub fn embed_file(&mut self, file: EmbeddedFile) {
-        self.serializer_context.embed_file(file);
+    ///
+    /// Returns `None` if the file couldn't be embedded because a file
+    /// with the same name has already been embedded.
+    pub fn embed_file(&mut self, file: EmbeddedFile) -> Option<()> {
+        self.serializer_context.embed_file(file)
     }
 
     /// Attempt to write the document to a PDF.

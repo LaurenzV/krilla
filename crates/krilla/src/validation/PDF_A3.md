@@ -13,7 +13,7 @@ See `README.md` for the meaning of each subclause.
 
 ## 6.8 Embedded files
 
-krilla does not support adding embedded files. 🔵
+krilla ensures all required fields are written when embedding files. 🟢
 
 ## Level U
 

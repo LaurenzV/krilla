@@ -40,7 +40,7 @@ with an even number of characters and without whitespaces. 🟢
 
 6.1.10: krilla doesn't support `LZWDecode`. 🔵
 
-6.1.11: krilla doesn't support embedded files. 🔵
+6.1.11: krilla forbids embedded files for this export mode. 🟢
 
 6.1.12:
 - `pdf-writer` uses i32 for integers. 🟢

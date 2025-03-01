@@ -5,7 +5,7 @@ use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
-use crate::validation::Validator;
+use crate::validation::{ValidationError, Validator};
 use crate::version::PdfVersion;
 use crate::Data;
 
@@ -15,10 +15,17 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use std::ops::DerefMut;
 
 /// An error while embedding the file.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EmbedError {
+    /// The selected standard does not support embedding files.
+    Existence,
     /// The document doesn't contain a date, which is required for embedded files
     /// in some export modes.
     MissingDate,
+    /// The embedded file is missing a human-readable description.
+    MissingDescription,
+    /// The mime type of the embedded file is missing.
+    MissingMimeType,
 }
 
 /// An embedded file.
@@ -45,6 +52,8 @@ impl Cacheable for EmbeddedFile {
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+        sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::Existence));
+
         let mut chunk = Chunk::new();
         let stream_ref = sc.new_ref();
 
@@ -60,6 +69,10 @@ impl Cacheable for EmbeddedFile {
 
         if let Some(mime_type) = &self.mime_type {
             embedded_file_stream.subtype(mime_type.to_pdf_name());
+        } else {
+            sc.register_validation_error(ValidationError::EmbeddedFile(
+                EmbedError::MissingMimeType,
+            ));
         }
 
         let mut params = embedded_file_stream.params();
@@ -72,6 +85,7 @@ impl Cacheable for EmbeddedFile {
             let date = pdf_date(date_time);
             params.modification_date(date);
         } else {
+            sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::MissingDate));
         }
 
         params.finish();
@@ -103,6 +117,10 @@ impl Cacheable for EmbeddedFile {
 
         if let Some(description) = self.description {
             file_spec.description(TextStr(&description));
+        } else {
+            sc.register_validation_error(ValidationError::EmbeddedFile(
+                EmbedError::MissingDescription,
+            ));
         }
 
         file_spec.finish();
@@ -113,9 +131,12 @@ impl Cacheable for EmbeddedFile {
 
 #[cfg(test)]
 mod tests {
-    use crate::embed::EmbeddedFile;
+    use crate::embed::{EmbedError, EmbeddedFile};
+    use crate::error::KrillaError;
+    use crate::metadata::{DateTime, Metadata};
     use crate::tests::ASSETS_PATH;
-    use crate::Document;
+    use crate::validation::ValidationError;
+    use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use pdf_writer::types::AssociationKind;
 
@@ -181,5 +202,62 @@ mod tests {
         d.embed_file(f1);
         d.embed_file(f2);
         d.embed_file(f3);
+    }
+
+    #[snapshot(document, settings_23)]
+    fn pdf_a3_with_embedded_file(d: &mut Document) {
+        let metadata = Metadata::new()
+            .modification_date(DateTime::new(2001))
+            .language("en".to_string());
+        d.set_metadata(metadata);
+        let f1 = file_1();
+        d.embed_file(f1);
+    }
+
+    #[test]
+    fn duplicate_embedded_file() {
+        let mut d = Document::new();
+        let f1 = file_1();
+        let mut f2 = file_2();
+        f2.path = f1.path.clone();
+
+        assert!(d.embed_file(f1).is_some());
+        assert!(d.embed_file(f2).is_none());
+    }
+
+    #[test]
+    fn pdf_a3_missing_fields() {
+        let mut d = Document::new_with(SerializeSettings::settings_23());
+        let mut f1 = file_1();
+        f1.description = None;
+        d.embed_file(f1);
+
+        assert_eq!(
+            d.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::EmbeddedFile(EmbedError::MissingDate),
+                ValidationError::EmbeddedFile(EmbedError::MissingDescription)
+            ]))
+        )
+    }
+
+    #[test]
+    fn pdf_a2_embedded_file() {
+        let mut d = Document::new_with(SerializeSettings::settings_13());
+        let metadata = Metadata::new().language("en".to_string());
+        d.set_metadata(metadata);
+
+        let mut f1 = file_1();
+        f1.description = None;
+        d.embed_file(f1);
+
+        assert_eq!(
+            d.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::EmbeddedFile(EmbedError::Existence),
+                ValidationError::EmbeddedFile(EmbedError::MissingDate),
+                ValidationError::EmbeddedFile(EmbedError::MissingDescription)
+            ]))
+        )
     }
 }
