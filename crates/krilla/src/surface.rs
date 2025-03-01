@@ -568,7 +568,7 @@ fn naive_shape(
     direction: TextDirection,
 ) -> Vec<KrillaGlyph> {
     let data = font.font_data();
-    let rb_font = rustybuzz::Face::from_slice(data.as_ref().as_ref(), font.index()).unwrap();
+    let rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
 
     let mut buffer = UnicodeBuffer::new();
     buffer.push_str(text);

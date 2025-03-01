@@ -362,7 +362,7 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 #[cfg_attr(feature = "comemo", comemo::memoize)]
 fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u8>> {
     let font_data = font.font_data();
-    subsetter::subset(font_data.as_ref().as_ref(), font.index(), glyph_remapper)
+    subsetter::subset(font_data.as_ref(), font.index(), glyph_remapper)
         .map_err(|e| KrillaError::FontError(font.clone(), format!("failed to subset font: {}", e)))
 }
 
@@ -465,10 +465,9 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
-        use std::sync::Arc;
-
-        let font_data =
-            Arc::new(std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc").unwrap());
+        let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
+            .unwrap()
+            .into();
         let font_1 = Font::new(font_data.clone(), 0, true).unwrap();
         let font_2 = Font::new(font_data.clone(), 3, true).unwrap();
         let font_3 = Font::new(font_data, 6, true).unwrap();
