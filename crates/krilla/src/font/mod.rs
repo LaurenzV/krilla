@@ -30,6 +30,7 @@ use skrifa::instance::Location;
 use skrifa::metrics::GlyphMetrics;
 
 pub use skrifa::GlyphId;
+use crate::Data;
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;
@@ -66,7 +67,7 @@ impl Font {
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(
-        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        data: Data,
         index: u32,
         allow_color: bool,
     ) -> Option<Self> {
@@ -76,11 +77,11 @@ impl Font {
     }
 
     pub(crate) fn new_with_info(
-        data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+        data: Data,
         font_info: Arc<FontInfo>,
     ) -> Option<Self> {
         let font_ref_yoke =
-            Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
+            Yoke::<FontRefYoke<'static>, Data>::attach_to_cart(
                 data.clone(),
                 |data| {
                     let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
@@ -165,7 +166,7 @@ impl Font {
         &self.0.font_ref_yoke.get().glyph_metrics
     }
 
-    pub(crate) fn font_data(&self) -> Arc<dyn AsRef<[u8]> + Send + Sync> {
+    pub(crate) fn font_data(&self) -> Data {
         self.0.font_data.clone()
     }
 
@@ -209,8 +210,8 @@ pub(crate) struct FontInfo {
 
 struct Repr {
     font_info: Arc<FontInfo>,
-    font_data: Arc<dyn AsRef<[u8]> + Send + Sync>,
-    font_ref_yoke: Yoke<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
+    font_data: Data,
+    font_ref_yoke: Yoke<FontRefYoke<'static>, Data>,
 }
 
 impl Hash for Repr {

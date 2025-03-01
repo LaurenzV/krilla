@@ -20,6 +20,7 @@ use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
 use crate::color::{GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB};
+use crate::Data;
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
@@ -90,7 +91,7 @@ struct SampledRepr {
 }
 
 struct JpegRepr {
-    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    data: Data,
     bits_per_component: BitsPerComponent,
     invert_cmyk: bool,
 }
@@ -197,7 +198,7 @@ impl Image {
     /// Create a new bitmap image from a `.png` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_png(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
+    pub fn from_png(data: Data, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = png_metadata(data.as_ref().as_ref())?;
 
@@ -212,7 +213,7 @@ impl Image {
     /// Create a new bitmap image from a `.jpg` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
+    pub fn from_jpeg(data: Data, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = jpeg_metadata(data.as_ref().as_ref())?;
 
@@ -227,7 +228,7 @@ impl Image {
     /// Create a new bitmap image from a `.gif` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_gif(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
+    pub fn from_gif(data: Data, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = gif_metadata(data.as_ref().as_ref())?;
 
@@ -242,7 +243,7 @@ impl Image {
     /// Create a new bitmap image from a `.webp` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_webp(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
+    pub fn from_webp(data: Data, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = webp_metadata(data.as_ref().as_ref())?;
 
@@ -519,7 +520,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
     })
 }
 
-fn decode_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
+fn decode_jpeg(data: Data) -> Option<Repr> {
     let mut decoder = JpegDecoder::new(data.as_ref().as_ref());
     decoder.decode_headers().ok()?;
 
@@ -544,7 +545,7 @@ fn decode_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
     }
 }
 
-fn decode_gif(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
+fn decode_gif(data: Data) -> Option<Repr> {
     let mut decoder = gif::DecodeOptions::new();
     decoder.set_color_output(gif::ColorOutput::RGBA);
     let mut decoder = decoder.read_info(data.as_ref().as_ref()).ok()?;
@@ -586,7 +587,7 @@ fn webp_metadata(data: &[u8]) -> Option<ImageMetadata> {
     })
 }
 
-fn decode_webp(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Repr> {
+fn decode_webp(data: Data) -> Option<Repr> {
     let mut decoder =
         image_webp::WebPDecoder::new(std::io::Cursor::new(data.as_ref().as_ref())).ok()?;
     let mut first_frame = vec![0; decoder.output_buffer_size()?];
