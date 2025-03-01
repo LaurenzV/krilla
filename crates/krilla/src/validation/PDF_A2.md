@@ -88,7 +88,7 @@ in case CMYK is used but no profile was provided, export fails.
 
 6.2.8.1: 
 - krilla does not use the `Alternates`/`Intent` keys for images. 🔵
-- krilla does check whether the `Interpolate` is used. 🟢
+- krilla does check whether the `Interpolate` key is used. 🟢
 
 6.2.8.2: krilla does not support thumbnails. 🔵
 
