@@ -69,18 +69,22 @@ impl Font {
     pub fn new(data: Data, index: u32, allow_color: bool) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref().as_ref(), index, allow_color)?;
 
-        Font::new_with_info(data, Arc::new(font_info))
+        Font::new_with_info(data.clone(), Arc::new(font_info))
     }
 
     pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
         let font_ref_yoke =
-            Yoke::<FontRefYoke<'static>, Data>::attach_to_cart(data.clone(), |data| {
-                let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
-                FontRefYoke {
-                    font_ref: font_ref.clone(),
-                    glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), LocationRef::default()),
-                }
-            });
+            Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
+                data.0.clone(),
+                |data| {
+                    let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
+                    FontRefYoke {
+                        font_ref: font_ref.clone(),
+                        glyph_metrics: font_ref
+                            .glyph_metrics(Size::unscaled(), LocationRef::default()),
+                    }
+                },
+            );
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_data: data,
@@ -200,7 +204,7 @@ pub(crate) struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_data: Data,
-    font_ref_yoke: Yoke<FontRefYoke<'static>, Data>,
+    font_ref_yoke: Yoke<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
 }
 
 impl Hash for Repr {

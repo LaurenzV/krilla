@@ -1,7 +1,5 @@
 //! Drawing bitmap-based glyphs to a surface.
 
-use std::sync::Arc;
-
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{Size, Transform};
 
@@ -23,7 +21,7 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
 
     match bitmap_glyph.data {
         BitmapData::Png(data) => {
-            let image = Image::from_png(Arc::new(data.to_vec()), false)?;
+            let image = Image::from_png(data.to_vec().into(), false)?;
             let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
 
             // Adapted from vello.
@@ -447,6 +445,7 @@ mod utils {
 mod tests {
     use crate::document::Document;
     use crate::tests::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
+    use crate::Data;
     use krilla_macros::visreg;
 
     // We don't run on pdf.js because it leads to a high pixel difference in CI
@@ -460,10 +459,9 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[visreg(document, all)]
     fn apple_color_emoji(document: &mut Document) {
-        use std::sync::Arc;
-
-        let font_data =
-            Arc::new(std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap());
+        let font_data: Data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc")
+            .unwrap()
+            .into();
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 }

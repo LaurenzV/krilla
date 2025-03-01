@@ -742,7 +742,6 @@ mod tests {
     };
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
-    use std::sync::Arc;
     use tiny_skia_path::Size;
 
     #[snapshot]
@@ -961,7 +960,9 @@ mod tests {
     #[snapshot(single_page)]
     fn image_interpolate(page: &mut Page) {
         let image = Image::from_png(
-            Arc::new(std::fs::read(ASSETS_PATH.join("images").join("rgba8.png")).unwrap()),
+            std::fs::read(ASSETS_PATH.join("images").join("rgba8.png"))
+                .unwrap()
+                .into(),
             true,
         )
         .unwrap();

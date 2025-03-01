@@ -33,6 +33,7 @@ use crate::stream::StreamBuilder;
 use crate::surface::Surface;
 use crate::validation::Validator;
 use crate::version::PdfVersion;
+use crate::Data;
 use crate::{SerializeSettings, SvgSettings};
 
 #[allow(dead_code)]
@@ -83,8 +84,8 @@ static FONT_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("asse
 
 macro_rules! lazy_font {
     ($name:ident, $path:expr) => {
-        pub static $name: LazyLock<Arc<Vec<u8>>> =
-            LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()));
+        pub static $name: LazyLock<Data> =
+            LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()).into());
     };
 }
 
@@ -273,7 +274,9 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
 
 pub fn load_png_image(name: &str) -> Image {
     Image::from_png(
-        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        std::fs::read(ASSETS_PATH.join("images").join(name))
+            .unwrap()
+            .into(),
         false,
     )
     .unwrap()
@@ -281,7 +284,9 @@ pub fn load_png_image(name: &str) -> Image {
 
 pub fn load_jpg_image(name: &str) -> Image {
     Image::from_jpeg(
-        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        std::fs::read(ASSETS_PATH.join("images").join(name))
+            .unwrap()
+            .into(),
         false,
     )
     .unwrap()
@@ -289,7 +294,9 @@ pub fn load_jpg_image(name: &str) -> Image {
 
 pub fn load_gif_image(name: &str) -> Image {
     Image::from_gif(
-        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        std::fs::read(ASSETS_PATH.join("images").join(name))
+            .unwrap()
+            .into(),
         false,
     )
     .unwrap()
@@ -297,7 +304,9 @@ pub fn load_gif_image(name: &str) -> Image {
 
 pub fn load_webp_image(name: &str) -> Image {
     Image::from_webp(
-        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        std::fs::read(ASSETS_PATH.join("images").join(name))
+            .unwrap()
+            .into(),
         false,
     )
     .unwrap()
@@ -543,7 +552,7 @@ fn is_pix_diff(pixel1: &Rgba<u8>, pixel2: &Rgba<u8>) -> bool {
 }
 
 pub fn all_glyphs_to_pdf(
-    font_data: Arc<Vec<u8>>,
+    font_data: Data,
     glyphs: Option<Vec<(GlyphId, String)>>,
     color_cycling: bool,
     allow_color: bool,

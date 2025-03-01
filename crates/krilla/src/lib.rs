@@ -40,7 +40,7 @@ let mut font = {
     let path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
     let data = std::fs::read(&path).unwrap();
-    Font::new(Arc::new(data), 0, true).unwrap()
+    Font::new(data.into(), 0, true).unwrap()
 };
 
 // Add a new page with dimensions 200x200.
@@ -123,7 +123,10 @@ pub mod geom;
 pub mod metadata;
 
 pub use object::*;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+use yoke::Yokeable;
+
 pub mod paint;
 pub mod path;
 pub mod stream;
@@ -136,8 +139,40 @@ pub(crate) mod content;
 #[cfg(test)]
 pub(crate) mod tests;
 
-/// Type alias for `Arc<dyn AsRef<[u8]> + Send + Sync>`.
-pub type Data = Arc<dyn AsRef<[u8]> + Send + Sync>;
+/// A type that holds some bytes.
+#[derive(Clone)]
+pub struct Data(Arc<dyn AsRef<[u8]> + Send + Sync>);
+
+impl Data {
+    /// Return a reference to the underlying bytes.
+    pub fn as_ref(&self) -> &[u8] {
+        self.0.as_ref().as_ref()
+    }
+}
+
+impl Hash for Data {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ref().as_ref().hash(state);
+    }
+}
+
+impl From<Arc<dyn AsRef<[u8]> + Send + Sync>> for Data {
+    fn from(value: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Vec<u8>> for Data {
+    fn from(value: Vec<u8>) -> Self {
+        Self(Arc::new(value))
+    }
+}
+
+impl From<Arc<Vec<u8>>> for Data {
+    fn from(value: Arc<Vec<u8>>) -> Self {
+        Self(value)
+    }
+}
 
 pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};
