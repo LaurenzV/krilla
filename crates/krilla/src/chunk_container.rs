@@ -238,21 +238,19 @@ impl ChunkContainer {
                     let mut embedded_name_entries = embedded_files_name_tree.names();
 
                     for (name, _ref) in &embedded_files {
-                        embedded_name_entries.insert(Str(name.as_bytes()), remapper[&_ref]);
+                        embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
                     }
                 }
             }
 
-            if !embedded_files.is_empty() {
-                if matches!(
+            if !embedded_files.is_empty() && matches!(
                     sc.serialize_settings().validator,
                     Validator::A3_A | Validator::A3_B | Validator::A3_U
                 ) {
-                    // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
-                    let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
-                    for (_, _ref) in &embedded_files {
-                        associated_files.item(remapper[&_ref]).finish();
-                    }
+                // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
+                let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
+                for _ref in embedded_files.values() {
+                    associated_files.item(remapper[_ref]).finish();
                 }
             }
 

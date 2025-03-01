@@ -64,7 +64,7 @@ impl Cacheable for EmbeddedFile {
         }
         .finish(&sc.serialize_settings());
 
-        let mut embedded_file_stream = chunk.embedded_file(stream_ref, &file_stream.encoded_data());
+        let mut embedded_file_stream = chunk.embedded_file(stream_ref, file_stream.encoded_data());
         file_stream.write_filters(embedded_file_stream.deref_mut().deref_mut());
 
         if let Some(mime_type) = &self.mime_type {
@@ -80,7 +80,7 @@ impl Cacheable for EmbeddedFile {
 
         if let Some(date_time) = sc
             .metadata()
-            .and_then(|m| m.modification_date.or_else(|| m.creation_date))
+            .and_then(|m| m.modification_date.or(m.creation_date))
         {
             let date = pdf_date(date_time);
             params.modification_date(date);
