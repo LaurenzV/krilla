@@ -339,28 +339,28 @@ fn write_render_to_store(name: &str, content: &[u8]) {
     std::fs::write(&path, content).unwrap();
 }
 
-pub fn check_snapshot(name: &str, content: &[u8], storable: bool) {
+pub fn check_snapshot(name: &str, actual: &[u8], storable: bool) {
     let path = SNAPSHOT_PATH.join(format!("{}.txt", name));
 
     if STORE.is_some() && storable {
-        write_snapshot_to_store(name, content);
+        write_snapshot_to_store(name, actual);
     }
 
     if !path.exists() {
-        std::fs::write(&path, content).unwrap();
+        std::fs::write(&path, actual).unwrap();
         panic!("new snapshot created");
     }
 
-    let actual = std::fs::read(&path).unwrap();
+    let expected = std::fs::read(&path).unwrap();
 
-    if REPLACE.is_some() && actual != content {
-        std::fs::write(&path, content).unwrap();
+    if REPLACE.is_some() && expected != actual {
+        std::fs::write(&path, actual).unwrap();
         panic!("test was replaced");
     }
 
     let changeset = Changeset::new(
-        &String::from_utf8_lossy(content),
-        &String::from_utf8_lossy(&actual),
+        &String::from_utf8_lossy(actual),
+        &String::from_utf8_lossy(&expected),
         "\n",
     );
 
