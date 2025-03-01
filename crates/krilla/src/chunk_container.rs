@@ -243,10 +243,12 @@ impl ChunkContainer {
                 }
             }
 
-            if !embedded_files.is_empty() && matches!(
+            if !embedded_files.is_empty()
+                && matches!(
                     sc.serialize_settings().validator,
                     Validator::A3_A | Validator::A3_B | Validator::A3_U
-                ) {
+                )
+            {
                 // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
                 let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
                 for _ref in embedded_files.values() {
