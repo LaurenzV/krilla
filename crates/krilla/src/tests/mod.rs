@@ -272,46 +272,56 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
 }
 
 pub fn load_png_image(name: &str) -> Image {
-    Image::from_png(Arc::new(
-        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
-    ))
+    Image::from_png(
+        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        false,
+    )
     .unwrap()
 }
 
 pub fn load_jpg_image(name: &str) -> Image {
-    Image::from_jpeg(Arc::new(
-        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
-    ))
+    Image::from_jpeg(
+        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        false,
+    )
     .unwrap()
 }
 
 pub fn load_gif_image(name: &str) -> Image {
-    Image::from_gif(Arc::new(
-        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
-    ))
+    Image::from_gif(
+        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        false,
+    )
     .unwrap()
 }
 
 pub fn load_webp_image(name: &str) -> Image {
-    Image::from_webp(Arc::new(
-        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
-    ))
+    Image::from_webp(
+        Arc::new(std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap()),
+        false,
+    )
     .unwrap()
 }
 
 pub fn load_custom_image(name: &str) -> Image {
-    Image::from_custom(TestImage::new(
-        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
-        None,
-    ))
+    Image::from_custom(
+        TestImage::new(
+            std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+            None,
+        ),
+        false,
+    )
     .unwrap()
 }
 
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {
-    Image::from_custom(TestImage::new(
-        std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
-        Some(icc),
-    ))
+    Image::from_custom(
+        TestImage::new(
+            std::fs::read(ASSETS_PATH.join("images").join(name)).unwrap(),
+            Some(icc),
+        ),
+        false,
+    )
     .unwrap()
 }
 

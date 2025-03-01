@@ -25,6 +25,7 @@ use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
+use crate::validation::ValidationError;
 
 /// The number of buits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
@@ -139,6 +140,7 @@ struct ImageRepr {
     inner: Deferred<Option<Repr>>,
     metadata: ImageMetadata,
     sip: u128,
+    interpolate: bool,
 }
 
 impl ImageRepr {
@@ -195,7 +197,7 @@ impl Image {
     /// Create a new bitmap image from a `.png` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_png(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Image> {
+    pub fn from_png(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = png_metadata(data.as_ref().as_ref())?;
 
@@ -203,13 +205,14 @@ impl Image {
             inner: Deferred::new(move || decode_png(data.as_ref().as_ref())),
             metadata,
             sip: hash,
+            interpolate,
         })))
     }
 
     /// Create a new bitmap image from a `.jpg` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Image> {
+    pub fn from_jpeg(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = jpeg_metadata(data.as_ref().as_ref())?;
 
@@ -217,13 +220,14 @@ impl Image {
             inner: Deferred::new(move || decode_jpeg(data)),
             metadata,
             sip: hash,
+            interpolate,
         })))
     }
 
     /// Create a new bitmap image from a `.gif` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_gif(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Image> {
+    pub fn from_gif(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = gif_metadata(data.as_ref().as_ref())?;
 
@@ -231,13 +235,14 @@ impl Image {
             inner: Deferred::new(move || decode_gif(data)),
             metadata,
             sip: hash,
+            interpolate,
         })))
     }
 
     /// Create a new bitmap image from a `.webp` file.
     ///
     /// Returns `None` if krilla was unable to parse the file.
-    pub fn from_webp(data: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Option<Image> {
+    pub fn from_webp(data: Arc<dyn AsRef<[u8]> + Send + Sync>, interpolate: bool) -> Option<Image> {
         let hash = data.as_ref().as_ref().sip_hash();
         let metadata = webp_metadata(data.as_ref().as_ref())?;
 
@@ -245,6 +250,7 @@ impl Image {
             inner: Deferred::new(move || decode_webp(data)),
             metadata,
             sip: hash,
+            interpolate,
         })))
     }
 
@@ -252,7 +258,7 @@ impl Image {
     ///
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
-    pub fn from_custom<T: CustomImage>(image: T) -> Option<Image> {
+    pub fn from_custom<T: CustomImage>(image: T, interpolate: bool) -> Option<Image> {
         let hash = image.sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
@@ -286,6 +292,7 @@ impl Image {
             }),
             metadata,
             sip: hash,
+            interpolate,
         })))
     }
 
@@ -311,6 +318,7 @@ impl Image {
             }),
             metadata,
             sip: hash,
+            interpolate: false,
         }))
     }
 
@@ -353,6 +361,10 @@ impl Image {
             }
         });
 
+        if self.0.interpolate {
+            sc.register_validation_error(ValidationError::ImageInterpolation);
+        }
+
         let serialize_settings = sc.serialize_settings().clone();
 
         Deferred::new(move || {
@@ -378,6 +390,11 @@ impl Image {
                         // Mask color space must be device gray -- see Table 145.
                         DEVICE_GRAY.to_pdf_name(),
                     );
+
+                    if self.0.interpolate {
+                        s_mask.interpolate(true);
+                    }
+
                     s_mask.bits_per_component(repr.bits_per_component().as_u8() as i32);
                     soft_mask_id
                 }),
@@ -406,6 +423,10 @@ impl Image {
                 };
 
                 image_x_object.pair(Name(b"ColorSpace"), name);
+            }
+
+            if self.0.interpolate {
+                image_x_object.interpolate(true);
             }
 
             // Photoshop CMYK images need to be inverted, see
@@ -711,14 +732,16 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
 #[cfg(test)]
 mod tests {
     use crate::image::Image;
+    use crate::page::Page;
     use crate::serialize::SerializeContext;
     use crate::surface::Surface;
     use crate::tests::{
         load_custom_image, load_custom_image_with_icc, load_gif_image, load_jpg_image,
-        load_png_image, load_webp_image,
+        load_png_image, load_webp_image, ASSETS_PATH,
     };
     use crate::Document;
     use krilla_macros::{snapshot, visreg};
+    use std::sync::Arc;
     use tiny_skia_path::Size;
 
     #[snapshot]
@@ -932,5 +955,18 @@ mod tests {
         let mut page = document.start_page();
         let mut surface = page.surface();
         surface.draw_image(load_png_image("luma8.png"), size);
+    }
+
+    #[snapshot(single_page)]
+    fn image_interpolate(page: &mut Page) {
+        let image = Image::from_png(
+            Arc::new(std::fs::read(ASSETS_PATH.join("images").join("rgba8.png")).unwrap()),
+            true,
+        )
+        .unwrap();
+        let size = image.size();
+        let size = Size::from_wh(size.0 as f32, size.1 as f32).unwrap();
+        let mut surface = page.surface();
+        surface.draw_image(image, size);
     }
 }
