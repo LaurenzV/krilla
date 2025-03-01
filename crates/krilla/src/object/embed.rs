@@ -7,10 +7,12 @@ use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
 use crate::validation::Validator;
 use crate::version::PdfVersion;
+use crate::Data;
+
 use pdf_writer::types::AssociationKind;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
+
 use std::ops::DerefMut;
-use std::sync::Arc;
 
 /// An error while embedding the file.
 pub enum EmbedError {
@@ -25,13 +27,13 @@ pub struct EmbeddedFile {
     /// The name of the embedded file.
     pub path: String,
     /// The mime type of the embedded file.
-    pub mime_type: String,
+    pub mime_type: Option<String>,
     /// A description of the embedded file.
     pub description: Option<String>,
     /// The association kind of the embedded file.
     pub association_kind: AssociationKind,
     /// The raw data of the embedded file.
-    pub data: Arc<Vec<u8>>,
+    pub data: Data,
     /// Whether the embedded file should be compressed (recommended to turn off if the
     /// original file already has compression).
     pub compress: bool,
@@ -47,18 +49,21 @@ impl Cacheable for EmbeddedFile {
         let stream_ref = sc.new_ref();
 
         let file_stream = if self.compress {
-            FilterStreamBuilder::new_from_binary_data(&self.data)
+            FilterStreamBuilder::new_from_binary_data(self.data.as_ref())
         } else {
-            FilterStreamBuilder::new_from_uncompressed(&self.data)
+            FilterStreamBuilder::new_from_uncompressed(self.data.as_ref())
         }
         .finish(&sc.serialize_settings());
 
         let mut embedded_file_stream = chunk.embedded_file(stream_ref, &file_stream.encoded_data());
         file_stream.write_filters(embedded_file_stream.deref_mut().deref_mut());
 
-        embedded_file_stream.subtype(self.mime_type.to_pdf_name());
+        if let Some(mime_type) = &self.mime_type {
+            embedded_file_stream.subtype(mime_type.to_pdf_name());
+        }
+
         let mut params = embedded_file_stream.params();
-        params.size(self.data.len() as i32);
+        params.size(self.data.as_ref().len() as i32);
 
         if let Some(date_time) = sc
             .metadata()
@@ -113,16 +118,15 @@ mod tests {
     use crate::Document;
     use krilla_macros::snapshot;
     use pdf_writer::types::AssociationKind;
-    use std::sync::Arc;
 
     fn file_1() -> EmbeddedFile {
         let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
         EmbeddedFile {
             path: "emojis.txt".to_string(),
-            mime_type: "text/txt".to_string(),
+            mime_type: Some("text/txt".to_string()),
             description: Some("The description of the file.".to_string()),
             association_kind: AssociationKind::Supplement,
-            data: Arc::new(data),
+            data: data.into(),
             compress: false,
         }
     }
@@ -133,10 +137,10 @@ mod tests {
                 .unwrap();
         EmbeddedFile {
             path: "image.svg".to_string(),
-            mime_type: "image/svg+xml".to_string(),
+            mime_type: Some("image/svg+xml".to_string()),
             description: Some("A nice SVG image!".to_string()),
             association_kind: AssociationKind::Supplement,
-            data: Arc::new(data),
+            data: data.into(),
             compress: false,
         }
     }
@@ -146,10 +150,10 @@ mod tests {
 
         EmbeddedFile {
             path: "rgb8.png".to_string(),
-            mime_type: "image/png".to_string(),
+            mime_type: Some("image/png".to_string()),
             description: Some("A nice picture.".to_string()),
             association_kind: AssociationKind::Unspecified,
-            data: Arc::new(data),
+            data: data.into(),
             compress: false,
         }
     }

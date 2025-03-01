@@ -123,6 +123,7 @@ pub mod geom;
 pub mod metadata;
 
 pub use object::*;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
@@ -169,6 +170,12 @@ impl From<Vec<u8>> for Data {
 impl From<Arc<Vec<u8>>> for Data {
     fn from(value: Arc<Vec<u8>>) -> Self {
         Self(value)
+    }
+}
+
+impl Debug for Data {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Data {{..}}")
     }
 }
 
