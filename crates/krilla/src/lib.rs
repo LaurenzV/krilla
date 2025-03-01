@@ -125,7 +125,6 @@ pub mod metadata;
 pub use object::*;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use yoke::Yokeable;
 
 pub mod paint;
 pub mod path;
@@ -143,16 +142,15 @@ pub(crate) mod tests;
 #[derive(Clone)]
 pub struct Data(Arc<dyn AsRef<[u8]> + Send + Sync>);
 
-impl Data {
-    /// Return a reference to the underlying bytes.
-    pub fn as_ref(&self) -> &[u8] {
+impl AsRef<[u8]> for Data {
+    fn as_ref(&self) -> &[u8] {
         self.0.as_ref().as_ref()
     }
 }
 
 impl Hash for Data {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_ref().as_ref().hash(state);
+        self.as_ref().hash(state);
     }
 }
 

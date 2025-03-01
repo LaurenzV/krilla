@@ -199,11 +199,11 @@ impl Image {
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_png(data: Data, interpolate: bool) -> Option<Image> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = png_metadata(data.as_ref().as_ref())?;
+        let hash = data.as_ref().sip_hash();
+        let metadata = png_metadata(data.as_ref())?;
 
         Some(Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || decode_png(data.as_ref().as_ref())),
+            inner: Deferred::new(move || decode_png(data.as_ref())),
             metadata,
             sip: hash,
             interpolate,
@@ -214,8 +214,8 @@ impl Image {
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_jpeg(data: Data, interpolate: bool) -> Option<Image> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = jpeg_metadata(data.as_ref().as_ref())?;
+        let hash = data.as_ref().sip_hash();
+        let metadata = jpeg_metadata(data.as_ref())?;
 
         Some(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || decode_jpeg(data)),
@@ -229,8 +229,8 @@ impl Image {
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_gif(data: Data, interpolate: bool) -> Option<Image> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = gif_metadata(data.as_ref().as_ref())?;
+        let hash = data.as_ref().sip_hash();
+        let metadata = gif_metadata(data.as_ref())?;
 
         Some(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || decode_gif(data)),
@@ -244,8 +244,8 @@ impl Image {
     ///
     /// Returns `None` if krilla was unable to parse the file.
     pub fn from_webp(data: Data, interpolate: bool) -> Option<Image> {
-        let hash = data.as_ref().as_ref().sip_hash();
-        let metadata = webp_metadata(data.as_ref().as_ref())?;
+        let hash = data.as_ref().sip_hash();
+        let metadata = webp_metadata(data.as_ref())?;
 
         Some(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || decode_webp(data)),
@@ -405,7 +405,7 @@ impl Image {
             let filter_stream = match repr {
                 Repr::Sampled(s) => FilterStreamBuilder::new_from_deflated(&s.color_channel)
                     .finish(&serialize_settings),
-                Repr::Jpeg(j) => FilterStreamBuilder::new_from_jpeg_data(j.data.as_ref().as_ref())
+                Repr::Jpeg(j) => FilterStreamBuilder::new_from_jpeg_data(j.data.as_ref())
                     .finish(&serialize_settings),
             };
 
@@ -521,7 +521,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
 }
 
 fn decode_jpeg(data: Data) -> Option<Repr> {
-    let mut decoder = JpegDecoder::new(data.as_ref().as_ref());
+    let mut decoder = JpegDecoder::new(data.as_ref());
     decoder.decode_headers().ok()?;
 
     let input_color_space = decoder.get_input_colorspace()?;
@@ -548,7 +548,7 @@ fn decode_jpeg(data: Data) -> Option<Repr> {
 fn decode_gif(data: Data) -> Option<Repr> {
     let mut decoder = gif::DecodeOptions::new();
     decoder.set_color_output(gif::ColorOutput::RGBA);
-    let mut decoder = decoder.read_info(data.as_ref().as_ref()).ok()?;
+    let mut decoder = decoder.read_info(data.as_ref()).ok()?;
     let first_frame = decoder.read_next_frame().ok()??;
 
     let (color_channel, alpha_channel, bits_per_component) =
@@ -588,8 +588,7 @@ fn webp_metadata(data: &[u8]) -> Option<ImageMetadata> {
 }
 
 fn decode_webp(data: Data) -> Option<Repr> {
-    let mut decoder =
-        image_webp::WebPDecoder::new(std::io::Cursor::new(data.as_ref().as_ref())).ok()?;
+    let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data.as_ref())).ok()?;
     let mut first_frame = vec![0; decoder.output_buffer_size()?];
     decoder.read_image(&mut first_frame).ok()?;
 

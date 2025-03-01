@@ -362,7 +362,7 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 #[cfg_attr(feature = "comemo", comemo::memoize)]
 fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u8>> {
     let font_data = font.font_data();
-    subsetter::subset(font_data.as_ref().as_ref(), font.index(), glyph_remapper)
+    subsetter::subset(font_data.as_ref(), font.index(), glyph_remapper)
         .map_err(|e| KrillaError::FontError(font.clone(), format!("failed to subset font: {}", e)))
 }
 
