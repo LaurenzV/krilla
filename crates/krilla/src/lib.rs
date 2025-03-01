@@ -122,8 +122,8 @@ pub mod font;
 pub mod geom;
 pub mod metadata;
 
-use std::sync::Arc;
 pub use object::*;
+use std::sync::Arc;
 pub mod paint;
 pub mod path;
 pub mod stream;

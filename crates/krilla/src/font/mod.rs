@@ -29,8 +29,8 @@ use crate::util::{Prehashed, RectWrapper};
 use skrifa::instance::Location;
 use skrifa::metrics::GlyphMetrics;
 
-pub use skrifa::GlyphId;
 use crate::Data;
+pub use skrifa::GlyphId;
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;
@@ -66,32 +66,21 @@ impl Font {
     /// `glyf`/`CFF` tables of the font. If you don't know what this means, just set it to `true`.
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
-    pub fn new(
-        data: Data,
-        index: u32,
-        allow_color: bool,
-    ) -> Option<Self> {
+    pub fn new(data: Data, index: u32, allow_color: bool) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref().as_ref(), index, allow_color)?;
 
         Font::new_with_info(data, Arc::new(font_info))
     }
 
-    pub(crate) fn new_with_info(
-        data: Data,
-        font_info: Arc<FontInfo>,
-    ) -> Option<Self> {
+    pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
         let font_ref_yoke =
-            Yoke::<FontRefYoke<'static>, Data>::attach_to_cart(
-                data.clone(),
-                |data| {
-                    let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
-                    FontRefYoke {
-                        font_ref: font_ref.clone(),
-                        glyph_metrics: font_ref
-                            .glyph_metrics(Size::unscaled(), LocationRef::default()),
-                    }
-                },
-            );
+            Yoke::<FontRefYoke<'static>, Data>::attach_to_cart(data.clone(), |data| {
+                let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
+                FontRefYoke {
+                    font_ref: font_ref.clone(),
+                    glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), LocationRef::default()),
+                }
+            });
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_data: data,

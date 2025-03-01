@@ -20,13 +20,13 @@ use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
 use crate::color::{GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB};
-use crate::Data;
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
 use crate::validation::ValidationError;
+use crate::Data;
 
 /// The number of buits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
