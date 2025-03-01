@@ -121,7 +121,9 @@ pub mod error;
 pub mod font;
 pub mod geom;
 pub mod metadata;
+
 pub use object::*;
+use std::sync::Arc;
 pub mod paint;
 pub mod path;
 pub mod stream;
@@ -133,6 +135,9 @@ pub mod version;
 pub(crate) mod content;
 #[cfg(test)]
 pub(crate) mod tests;
+
+/// Type alias for `Arc<dyn AsRef<[u8]> + Send + Sync>`.
+pub type Data = Arc<dyn AsRef<[u8]> + Send + Sync>;
 
 pub use document::*;
 pub use serialize::{SerializeSettings, SvgSettings};
