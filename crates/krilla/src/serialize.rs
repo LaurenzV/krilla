@@ -17,6 +17,7 @@ use tiny_skia_path::Size;
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::destination::{NamedDestination, XyzDestination};
+use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]
@@ -261,6 +262,25 @@ impl SerializeContext {
 
     pub(crate) fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    pub(crate) fn embed_file(&mut self, file: EmbeddedFile) -> Option<()> {
+        let name = file.path.clone();
+        let ref_ = self.register_cacheable(file);
+        if self
+            .global_objects
+            .embedded_files
+            .insert(name, ref_)
+            .is_some()
+        {
+            None
+        } else {
+            Some(())
+        }
+    }
+
+    pub(crate) fn metadata(&self) -> Option<&Metadata> {
+        self.chunk_container.metadata.as_ref()
     }
 
     pub(crate) fn set_tag_tree(&mut self, root: TagTree) {
@@ -836,7 +856,7 @@ impl<T> DerefMut for MaybeTaken<T> {
 #[derive(Default)]
 pub(crate) struct GlobalObjects {
     /// All named destinations that have been registered, including a Ref to their destination.
-    // Needs to be pub(crate)lic because writing of named destinations happens in `ChunkContainer`.
+    // Needs to be pub(crate) because writing of named destinations happens in `ChunkContainer`.
     pub(crate) named_destinations: MaybeTaken<HashMap<NamedDestination, Ref>>,
     /// A map from fonts to font container.
     font_map: MaybeTaken<HashMap<Font, Rc<RefCell<FontContainer>>>>,
@@ -855,6 +875,9 @@ pub(crate) struct GlobalObjects {
     outline: MaybeTaken<Option<Outline>>,
     /// Stores the tag tree.
     tag_tree: MaybeTaken<Option<TagTree>>,
+    /// Stores the association of the names of embedded files to their refs,
+    /// for the catalog dictionary.
+    pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
 }
 
 impl GlobalObjects {
@@ -866,5 +889,6 @@ impl GlobalObjects {
         assert!(self.struct_parents.is_taken());
         assert!(self.outline.is_taken());
         assert!(self.tag_tree.is_taken());
+        assert!(self.embedded_files.is_taken());
     }
 }

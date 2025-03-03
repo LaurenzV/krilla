@@ -9,7 +9,7 @@ use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
-use crate::validation::ValidationError;
+use crate::validation::{ValidationError, Validator};
 use crate::version::PdfVersion;
 
 /// Collects all chunks that we create while building
@@ -36,6 +36,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) patterns: Vec<Chunk>,
     pub(crate) pages: Vec<Deferred<Chunk>>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
+    pub(crate) embedded_files: Vec<Chunk>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -140,6 +141,7 @@ impl ChunkContainer {
         sc.serialize_settings().pdf_version.write_xmp(&mut xmp);
 
         let named_destinations = sc.global_objects.named_destinations.take();
+        let embedded_files = sc.global_objects.embedded_files.take();
 
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
@@ -210,19 +212,47 @@ impl ChunkContainer {
                 catalog.outlines(remapper[&ol.0]);
             }
 
-            if !named_destinations.is_empty() {
+            if !named_destinations.is_empty() || !embedded_files.is_empty() {
                 // Cannot use pdf-writer API here because it requires Ref's, while
                 // we write our destinations directly into the array.
                 let mut names = catalog.names();
-                let mut name_tree = names.destinations();
-                let mut name_entries = name_tree.names();
 
-                // Sort to prevent inconsistent order.
-                let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
-                sorted.sort_by(|a, b| a.1.cmp(&b.1));
+                if !named_destinations.is_empty() {
+                    let mut dest_name_tree = names.destinations();
+                    let mut dest_name_entries = dest_name_tree.names();
 
-                for (name, dest_ref) in sorted {
-                    name_entries.insert(Str(name.name.as_bytes()), remapper[&dest_ref]);
+                    // Sort to prevent inconsistent order.
+                    let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
+                    sorted.sort_by(|a, b| a.1.cmp(&b.1));
+
+                    for (name, dest_ref) in sorted {
+                        dest_name_entries.insert(Str(name.name.as_bytes()), remapper[&dest_ref]);
+                    }
+
+                    dest_name_entries.finish();
+                    dest_name_tree.finish();
+                }
+
+                if !embedded_files.is_empty() {
+                    let mut embedded_files_name_tree = names.embedded_files();
+                    let mut embedded_name_entries = embedded_files_name_tree.names();
+
+                    for (name, _ref) in &embedded_files {
+                        embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
+                    }
+                }
+            }
+
+            if !embedded_files.is_empty()
+                && matches!(
+                    sc.serialize_settings().validator,
+                    Validator::A3_A | Validator::A3_B | Validator::A3_U
+                )
+            {
+                // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
+                let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
+                for _ref in embedded_files.values() {
+                    associated_files.item(remapper[_ref]).finish();
                 }
             }
 
@@ -259,6 +289,7 @@ impl Visit for ChunkContainer {
         self.patterns.visit(f)?;
         self.pages.visit(f)?;
         self.images.visit(f)?;
+        self.embedded_files.visit(f)?;
         Ok(())
     }
 }

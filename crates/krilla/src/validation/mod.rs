@@ -20,14 +20,14 @@
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
 
+use crate::embed::EmbedError;
+use crate::font::Font;
+use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
-
-use crate::font::Font;
-use crate::version::PdfVersion;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -105,6 +105,8 @@ pub enum ValidationError {
     Transparency,
     /// The PDF contains an image with `interpolate` set to `true`.
     ImageInterpolation,
+    /// The PDF contains an embedded file.
+    EmbeddedFile(EmbedError),
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -269,6 +271,9 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency => true,
                 ValidationError::ImageInterpolation => true,
+                // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
+                // which we always insert. So we just forbid it overall.
+                ValidationError::EmbeddedFile(_) => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -293,6 +298,9 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency => false,
                 ValidationError::ImageInterpolation => true,
+                // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
+                // so we just forbid it completely.
+                ValidationError::EmbeddedFile(_) => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -317,6 +325,12 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency => false,
                 ValidationError::ImageInterpolation => true,
+                ValidationError::EmbeddedFile(er) => match er {
+                    EmbedError::Existence => false,
+                    EmbedError::MissingDate => true,
+                    EmbedError::MissingDescription => true,
+                    EmbedError::MissingMimeType => true,
+                },
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -341,6 +355,12 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => true,
                 ValidationError::Transparency => false,
                 ValidationError::ImageInterpolation => false,
+                ValidationError::EmbeddedFile(er) => match er {
+                    EmbedError::Existence => false,
+                    EmbedError::MissingDate => false,
+                    EmbedError::MissingDescription => true,
+                    EmbedError::MissingMimeType => false,
+                },
             },
         }
     }

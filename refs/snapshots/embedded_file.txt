@@ -1,0 +1,89 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 3 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+4 0 obj
+<<
+  /Length 209
+  /Type /EmbeddedFile
+  /Subtype /text#2Ftxt
+  /Params <<
+    /Size 209
+  >>
+>>
+stream
+😀😃😄😁😆😅👺🤡💩👻💀🦩🌚🌕🌎🌍🌏🪐💫⭐️🌟✨⚡️☄️💥🔥🌪🌈🍒🍑🥭🍍🥥🥝🍅🍆🍤🍙🍚🍼🫖☕️🍵🧃🥤🧋⛳️🪁🏹🎣
+endstream
+endobj
+
+5 0 obj
+<<
+  /Type /Filespec
+  /F (emojis.txt)
+  /UF (emojis.txt)
+  /EF <<
+    /F 4 0 R
+    /UF 4 0 R
+  >>
+  /Desc (The description of the file.)
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Names <<
+    /EmbeddedFiles <<
+      /Names [(emojis.txt) 5 0 R]
+    >>
+  >>
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000239 00000 n
+0000000291 00000 n
+0000000631 00000 n
+0000000788 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(9/zB4SR/jZosfKZx+20x3A==) (9/zB4SR/jZosfKZx+20x3A==)]
+>>
+startxref
+922
+%%EOF

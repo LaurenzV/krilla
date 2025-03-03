@@ -934,4 +934,11 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_23() -> Self {
+        Self {
+            validator: Validator::A3_B,
+            ..Self::settings_1()
+        }
+    }
 }

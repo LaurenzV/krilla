@@ -197,7 +197,7 @@ always required. 🟢
 
 # 6.8 Embedding files
 
-krilla does not support embedding files. 🔵
+krilla prohibits embedding files in this export mode. 🟢
 
 # 6.9 Optional content
 
