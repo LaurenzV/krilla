@@ -107,6 +107,8 @@ pub enum ValidationError {
     ImageInterpolation,
     /// The PDF contains an embedded file.
     EmbeddedFile(EmbedError),
+    /// The PDF contains no tagging.
+    MissingTagging,
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -274,6 +276,7 @@ impl Validator {
                 // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
                 // which we always insert. So we just forbid it overall.
                 ValidationError::EmbeddedFile(_) => true,
+                ValidationError::MissingTagging => *self == Validator::A1_A,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -301,6 +304,7 @@ impl Validator {
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
                 // so we just forbid it completely.
                 ValidationError::EmbeddedFile(_) => true,
+                ValidationError::MissingTagging => *self == Validator::A2_A,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -331,6 +335,7 @@ impl Validator {
                     EmbedError::MissingDescription => true,
                     EmbedError::MissingMimeType => true,
                 },
+                ValidationError::MissingTagging => *self == Validator::A3_A,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -361,6 +366,7 @@ impl Validator {
                     EmbedError::MissingDescription => true,
                     EmbedError::MissingMimeType => false,
                 },
+                ValidationError::MissingTagging => true,
             },
         }
     }
@@ -1089,6 +1095,19 @@ mod tests {
             Err(KrillaError::ValidationError(vec![
                 ValidationError::TooLargeFloat,
                 ValidationError::TooLongArray,
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa3a_no_tag_tree() {
+        let mut document = Document::new_with(SerializeSettings::settings_24());
+        document.set_metadata(Metadata::new().language("en".to_string()));
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::MissingTagging
             ]))
         )
     }
