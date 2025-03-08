@@ -765,6 +765,8 @@ impl SerializeContext {
             }
 
             self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
+        } else {
+            self.register_validation_error(ValidationError::MissingTagging);
         }
 
         Ok(())
