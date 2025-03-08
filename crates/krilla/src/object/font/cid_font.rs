@@ -212,8 +212,8 @@ impl CIDFont {
 
         if !sc.serialize_settings().pdf_version.discourages_cid_set() {
             let cid_stream_data = {
-                // It's always guaranteed that CIDs start from 0 and are consecutive, so this encoding
-                // is very straight-forward.
+                // It's always guaranteed by the subsetter that CIDs start from 0 and are
+                // consecutive, so this encoding is very straight-forward.
                 let mut bytes = vec![];
                 bytes.extend([0xFFu8].repeat((self.glyph_remapper.num_gids() / 8) as usize));
                 let padding = self.glyph_remapper.num_gids() % 8;
