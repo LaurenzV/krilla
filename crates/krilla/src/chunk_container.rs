@@ -197,8 +197,8 @@ impl ChunkContainer {
                 catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
-                if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16 {
-                    // We always set suspects to false because it's required by PDF/UA
+                if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16 && sc.serialize_settings().pdf_version < PdfVersion::Pdf20 {
+                    // We always set suspects to false because it's required by PDF/UA.
                     mark_info.suspects(false);
                 }
                 mark_info.finish();
