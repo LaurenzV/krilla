@@ -19,7 +19,7 @@ use std::ops::DerefMut;
 pub enum EmbedError {
     /// The selected standard does not support embedding files.
     Existence,
-    /// The document doesn't contain a date, which is required for embedded files
+    /// The document doesn't contain a modification date, which is required for embedded files
     /// in some export modes.
     MissingDate,
     /// The embedded file is missing a human-readable description.

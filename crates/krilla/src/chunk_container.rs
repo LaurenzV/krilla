@@ -9,7 +9,7 @@ use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
-use crate::validation::{ValidationError, Validator};
+use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 
 /// Collects all chunks that we create while building
@@ -244,12 +244,11 @@ impl ChunkContainer {
             }
 
             if !embedded_files.is_empty()
-                && matches!(
-                    sc.serialize_settings().validator,
-                    Validator::A3_A | Validator::A3_B | Validator::A3_U
-                )
+                && sc
+                    .serialize_settings()
+                    .validator
+                    .allows_associated_files(sc.serialize_settings().pdf_version)
             {
-                // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
                 let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
                 for _ref in embedded_files.values() {
                     associated_files.item(remapper[_ref]).finish();

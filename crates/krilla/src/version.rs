@@ -18,7 +18,7 @@ pub enum PdfVersion {
     /// PDF 1.7.
     Pdf17,
     /// PDF 2.0.
-    Pdf20
+    Pdf20,
 }
 
 impl PdfVersion {
@@ -69,7 +69,7 @@ impl PdfVersion {
             PdfVersion::Pdf15 => metadata.major <= 4,
             PdfVersion::Pdf16 => metadata.major <= 4 && metadata.minor <= 1,
             PdfVersion::Pdf17 => metadata.major <= 4 && metadata.minor <= 2,
-            PdfVersion::Pdf20 => metadata.major <= 4 && metadata.minor <= 2
+            PdfVersion::Pdf20 => metadata.major <= 4 && metadata.minor <= 2,
         }
     }
 
