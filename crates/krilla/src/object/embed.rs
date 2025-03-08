@@ -107,11 +107,7 @@ impl Cacheable for EmbeddedFile {
 
         ef.finish();
 
-        if matches!(
-            sc.serialize_settings().validator,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U
-        ) {
-            // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
+        if sc.serialize_settings().validator.allows_associated_files() {
             file_spec.association_kind(self.association_kind);
         }
 
