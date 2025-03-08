@@ -82,6 +82,11 @@ impl PdfVersion {
             PdfVersion::Pdf20 => pdf.set_version(2, 0),
         };
     }
+
+    pub(crate) fn discourages_proc_sets(&self) -> bool {
+        // Procedure sets should not be written for PDF 2.0
+        *self >= PdfVersion::Pdf20
+    }
 }
 
 /// The ICC v4 profile for the SRGB color space.

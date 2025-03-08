@@ -10,6 +10,7 @@ use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
 
 use crate::util::NameExt;
+use crate::version::PdfVersion;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;
@@ -236,17 +237,19 @@ impl Default for ResourceDictionary {
 pub(crate) type ResourceNumber = u32;
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(&self, parent: &mut T)
+    pub fn to_pdf_resources<T>(&self, parent: &mut T, version: PdfVersion)
     where
         T: ResourcesExt,
     {
         let resources = &mut parent.resources();
-        resources.proc_sets([
-            ProcSet::Pdf,
-            ProcSet::Text,
-            ProcSet::ImageColor,
-            ProcSet::ImageGrayscale,
-        ]);
+        if !version.discourages_proc_sets() {
+            resources.proc_sets([
+                ProcSet::Pdf,
+                ProcSet::Text,
+                ProcSet::ImageColor,
+                ProcSet::ImageGrayscale,
+            ]);
+        }
         write_resource_type::<ColorSpace>(resources, &self.color_spaces);
         write_resource_type::<ExtGState>(resources, &self.ext_g_states);
         write_resource_type::<Pattern>(resources, &self.patterns);

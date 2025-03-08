@@ -17,7 +17,7 @@ use tiny_skia_path::Size;
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::destination::{NamedDestination, XyzDestination};
-use crate::embed::{EmbedError, EmbeddedFile};
+use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, FontInfo};
 #[cfg(feature = "raster-images")]

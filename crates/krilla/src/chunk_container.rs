@@ -244,10 +244,7 @@ impl ChunkContainer {
             }
 
             if !embedded_files.is_empty()
-                && sc
-                    .serialize_settings()
-                    .validator
-                    .allows_associated_files(sc.serialize_settings().pdf_version)
+                && sc.serialize_settings().validator.allows_associated_files()
             {
                 let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
                 for _ref in embedded_files.values() {

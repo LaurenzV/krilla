@@ -208,7 +208,8 @@ impl InternalPage {
         }
 
         let mut page = chunk.page(root_ref);
-        self.stream_resources.to_pdf_resources(&mut page);
+        self.stream_resources
+            .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version);
 
         let transform_rect = |rect: Rect| {
             rect.transform(page_root_transform(
