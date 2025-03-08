@@ -134,12 +134,12 @@ mod tests {
     use crate::embed::{EmbedError, EmbeddedFile};
     use crate::error::KrillaError;
     use crate::metadata::{DateTime, Metadata};
+    use crate::tagging::TagTree;
     use crate::tests::ASSETS_PATH;
     use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use pdf_writer::types::AssociationKind;
-    use crate::tagging::TagTree;
 
     fn file_1() -> EmbeddedFile {
         let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
