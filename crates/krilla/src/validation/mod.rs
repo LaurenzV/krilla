@@ -855,6 +855,7 @@ mod tests {
         let mut document = Document::new_with(SerializeSettings::settings_13());
         let metadata = Metadata::new().language("en".to_string());
         document.set_metadata(metadata);
+        document.set_tag_tree(TagTree::new());
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, true).unwrap();
         invalid_codepoint_impl(&mut document, font.clone(), "A\u{E022}B");

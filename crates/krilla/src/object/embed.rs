@@ -139,6 +139,7 @@ mod tests {
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use pdf_writer::types::AssociationKind;
+    use crate::tagging::TagTree;
 
     fn file_1() -> EmbeddedFile {
         let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
@@ -246,6 +247,7 @@ mod tests {
         let mut d = Document::new_with(SerializeSettings::settings_13());
         let metadata = Metadata::new().language("en".to_string());
         d.set_metadata(metadata);
+        d.set_tag_tree(TagTree::new());
 
         let mut f1 = file_1();
         f1.description = None;
