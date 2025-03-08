@@ -5,7 +5,7 @@ use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
-use crate::validation::{ValidationError, Validator};
+use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 use crate::Data;
 

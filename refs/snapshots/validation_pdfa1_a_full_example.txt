@@ -62,7 +62,7 @@ endobj
   /BaseFont /UZGIPX+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [8 0 R]
-  /ToUnicode 10 0 R
+  /ToUnicode 11 0 R
 >>
 endobj
 
@@ -76,7 +76,7 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 9 0 R
+  /FontDescriptor 10 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 556 2 2 618 3 3 258 4 4 479 5 5 260 6 6 605 7 7 935 8 8 564 9 9 361 10 10 529]
@@ -84,6 +84,16 @@ endobj
 endobj
 
 9 0 obj
+<<
+  /Length 20
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789CFBFF000002E001E0
+endstream
+endobj
+
+10 0 obj
 <<
   /Type /FontDescriptor
   /FontName /UZGIPX+NotoSans-Regular
@@ -93,13 +103,13 @@ endobj
   /Ascent 1069
   /Descent -293
   /CapHeight 714
-  /CIDSet 11 0 R
   /StemV 95.4
+  /CIDSet 9 0 R
   /FontFile2 12 0 R
 >>
 endobj
 
-10 0 obj
+11 0 obj
 <<
   /Length 746
   /Type /CMap
@@ -146,16 +156,6 @@ end
 end
 %%EndResource
 %%EOF
-endstream
-endobj
-
-11 0 obj
-<<
-  /Length 20
-  /Filter [/ASCIIHexDecode /FlateDecode]
->>
-stream
-789CFBFF000002E001E0
 endstream
 endobj
 
@@ -333,7 +333,7 @@ endobj
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"  xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"  xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"  xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>XMP Media Management schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/xap/1.0/mm/</pdfaSchema:namespaceURI><pdfaSchema:prefix>xmpMM</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>UUID based identifier for specific incarnation of a document</pdfaProperty:description><pdfaProperty:name>InstanceID</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Adobe PDF schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdf</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>Keywords associated with the document</pdfaProperty:description><pdfaProperty:name>Keywords</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Version of the PDF specification to which the document conforms</pdfaProperty:description><pdfaProperty:name>PDFVersion</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Name of the application that created the PDF document</pdfaProperty:description><pdfaProperty:name>Producer</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Whether the document has been trapped</pdfaProperty:description><pdfaProperty:name>Trapped</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas><pdfaid:part>1</pdfaid:part><pdfaid:conformance>A</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>NVomJ1ngJm3p2hlK/xjB7Q==</xmpMM:InstanceID><xmpMM:DocumentID>NVomJ1ngJm3p2hlK/xjB7Q==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.4</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"  xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"  xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"  xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#" ><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>XMP Media Management schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/xap/1.0/mm/</pdfaSchema:namespaceURI><pdfaSchema:prefix>xmpMM</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>UUID based identifier for specific incarnation of a document</pdfaProperty:description><pdfaProperty:name>InstanceID</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Adobe PDF schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdf</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>Keywords associated with the document</pdfaProperty:description><pdfaProperty:name>Keywords</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Version of the PDF specification to which the document conforms</pdfaProperty:description><pdfaProperty:name>PDFVersion</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Name of the application that created the PDF document</pdfaProperty:description><pdfaProperty:name>Producer</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Whether the document has been trapped</pdfaProperty:description><pdfaProperty:name>Trapped</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas><pdfaid:part>1</pdfaid:part><pdfaid:conformance>A</pdfaid:conformance><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>UFnL9rM1HUNqF3MOWZPI/w==</xmpMM:InstanceID><xmpMM:DocumentID>UFnL9rM1HUNqF3MOWZPI/w==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.4</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
@@ -362,9 +362,9 @@ xref
 0000000515 00000 n
 0000000605 00000 n
 0000000767 00000 n
-0000001109 00000 n
-0000001357 00000 n
-0000002183 00000 n
+0000001110 00000 n
+0000001224 00000 n
+0000001472 00000 n
 0000002298 00000 n
 0000004632 00000 n
 0000004668 00000 n
@@ -378,7 +378,7 @@ trailer
 <<
   /Size 21
   /Root 20 0 R
-  /ID [(NVomJ1ngJm3p2hlK/xjB7Q==) (NVomJ1ngJm3p2hlK/xjB7Q==)]
+  /ID [(UFnL9rM1HUNqF3MOWZPI/w==) (UFnL9rM1HUNqF3MOWZPI/w==)]
 >>
 startxref
 11662

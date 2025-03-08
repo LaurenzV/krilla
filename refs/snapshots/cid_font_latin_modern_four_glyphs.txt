@@ -8,7 +8,7 @@
   /BaseFont /PXNIEG+LMRoman10-Regular-Identity-H
   /Encoding /Identity-H
   /DescendantFonts [2 0 R]
-  /ToUnicode 4 0 R
+  /ToUnicode 5 0 R
 >>
 endobj
 
@@ -22,13 +22,23 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 3 0 R
+  /FontDescriptor 4 0 R
   /DW 0
   /W [0 0 280 1 1 785 2 2 653 3 3 778 4 4 625]
 >>
 endobj
 
 3 0 obj
+<<
+  /Length 18
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789CFB010000F900F9
+endstream
+endobj
+
+4 0 obj
 <<
   /Type /FontDescriptor
   /FontName /PXNIEG+LMRoman10-Regular
@@ -38,13 +48,13 @@ endobj
   /Ascent 1127
   /Descent -290
   /CapHeight 683
-  /CIDSet 5 0 R
   /StemV 95.4
+  /CIDSet 3 0 R
   /FontFile3 6 0 R
 >>
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Length 661
   /Type /CMap
@@ -85,16 +95,6 @@ end
 end
 %%EndResource
 %%EOF
-endstream
-endobj
-
-5 0 obj
-<<
-  /Length 18
-  /Filter [/ASCIIHexDecode /FlateDecode]
->>
-stream
-789CFB010000F900F9
 endstream
 endobj
 

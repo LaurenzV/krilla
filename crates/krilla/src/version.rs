@@ -87,6 +87,11 @@ impl PdfVersion {
         // Procedure sets should not be written for PDF 2.0
         *self >= PdfVersion::Pdf20
     }
+
+    pub(crate) fn discourages_cid_set(&self) -> bool {
+        // CID sets should not be written for PDF 2.0
+        *self >= PdfVersion::Pdf20
+    }
 }
 
 /// The ICC v4 profile for the SRGB color space.
