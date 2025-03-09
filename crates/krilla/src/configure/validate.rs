@@ -244,6 +244,21 @@ pub enum Validator {
     ///
     /// [`Tag`]: crate::tagging::Tag
     UA1,
+    /// The validator for the PDF/A4 standard.
+    ///
+    /// **Requirements**:
+    /// - While not required, it's recommended to enable tagging.
+    A4,
+    /// The validator for the PDF/A4f standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A4
+    A4F,
+    /// The validator for the PDF/A4e standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A4
+    A4E
 }
 
 impl Validator {
@@ -275,7 +290,15 @@ impl Validator {
                 ValidationError::ImageInterpolation => true,
                 // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
                 // which we always insert. So we just forbid it overall.
-                ValidationError::EmbeddedFile(_) => true,
+                ValidationError::EmbeddedFile(e) => match e {
+                    EmbedError::Existence => true,
+                    // Since existence is forbidden in the first place,
+                    // we can just set the others to `false` to prevent unnecessary
+                    // validation errors.
+                    EmbedError::MissingDate => false,
+                    EmbedError::MissingDescription => false,
+                    EmbedError::MissingMimeType => false,
+                },
                 ValidationError::MissingTagging => *self == Validator::A1_A,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
@@ -303,7 +326,15 @@ impl Validator {
                 ValidationError::ImageInterpolation => true,
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
                 // so we just forbid it completely.
-                ValidationError::EmbeddedFile(_) => true,
+                ValidationError::EmbeddedFile(e) => match e {
+                    EmbedError::Existence => true,
+                    // Since existence is forbidden in the first place,
+                    // we can just set the others to `false` to prevent unnecessary
+                    // validation errors.
+                    EmbedError::MissingDate => false,
+                    EmbedError::MissingDescription => false,
+                    EmbedError::MissingMimeType => false,
+                },
                 ValidationError::MissingTagging => *self == Validator::A2_A,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
@@ -337,6 +368,41 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A3_A,
             },
+            Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
+                ValidationError::TooLongString => false,
+                ValidationError::TooLongName => false,
+                ValidationError::TooLongArray => false,
+                ValidationError::TooLongDictionary => false,
+                ValidationError::TooLargeFloat => false,
+                ValidationError::TooManyIndirectObjects => false,
+                ValidationError::TooHighQNestingLevel => false,
+                ValidationError::ContainsPostScript => false,
+                ValidationError::MissingCMYKProfile => true,
+                ValidationError::ContainsNotDefGlyph => true,
+                ValidationError::InvalidCodepointMapping(_, _) => true,
+                // Not strictly forbidden if we surround with actual text, but
+                // easier to just forbid it.
+                ValidationError::UnicodePrivateArea(_, _) => true,
+                ValidationError::NoDocumentLanguage => false,
+                ValidationError::NoDocumentTitle => false,
+                ValidationError::MissingAltText => false,
+                ValidationError::MissingHeadingTitle => false,
+                ValidationError::MissingDocumentOutline => false,
+                ValidationError::MissingAnnotationAltText => false,
+                ValidationError::Transparency => false,
+                ValidationError::ImageInterpolation => true,
+                ValidationError::EmbeddedFile(e) => match e {
+                    EmbedError::Existence => matches!(self, Validator::A4),
+                    // Since existence is forbidden in the first place for A4,
+                    // we can just set the others to `false` to prevent
+                    // unnecessary validation errors.
+                    EmbedError::MissingDate => false,
+                    EmbedError::MissingDescription => matches!(self, Validator::A4E | Validator::A4F),
+                    EmbedError::MissingMimeType => false,
+                },
+                // Only recommended, not required.
+                ValidationError::MissingTagging => false,
+            }
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
                 ValidationError::TooLargeFloat => false,
@@ -378,6 +444,8 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
+            // It can be any 2.x version, but we're not there yet.
+            Validator::A4 | Validator::A4F | Validator::A4E => pdf_version == PdfVersion::Pdf20,
             Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
         }
     }
@@ -389,6 +457,7 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => PdfVersion::Pdf17,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => PdfVersion::Pdf17,
+            Validator::A4 | Validator::A4F | Validator::A4E => PdfVersion::Pdf20,
             Validator::UA1 => PdfVersion::Pdf17,
         }
     }
@@ -404,6 +473,9 @@ impl Validator {
                 | Validator::A3_A
                 | Validator::A3_B
                 | Validator::A3_U
+                | Validator::A4
+                | Validator::A4F
+                | Validator::A4E
         )
     }
 
@@ -452,6 +524,17 @@ impl Validator {
                 xmp.pdfa_part(3);
                 xmp.pdfa_conformance("U");
             }
+            Validator::A4 => {
+                xmp.pdfa_part(4);
+            }
+            Validator::A4F => {
+                xmp.pdfa_part(4);
+                xmp.pdfa_conformance("F");
+            }
+            Validator::A4E => {
+                xmp.pdfa_part(4);
+                xmp.pdfa_conformance("E");
+            }
             Validator::UA1 => {
                 xmp.pdfua_part(1);
             }
@@ -464,6 +547,7 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => *self != Validator::A2_B,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => *self != Validator::A3_B,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
             Validator::UA1 => true,
         }
     }
@@ -474,6 +558,7 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
+            Validator::A4 | Validator::A4F | Validator::A4E => false,
             Validator::UA1 => true,
         }
     }
@@ -484,6 +569,7 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
             Validator::UA1 => false,
         }
     }
@@ -497,6 +583,7 @@ impl Validator {
             Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A => true,
             Validator::A3_B | Validator::A3_U => false,
+            Validator::A4 | Validator::A4F | Validator::A4E => false,
             Validator::UA1 => true,
         }
     }
@@ -507,6 +594,7 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
             Validator::UA1 => true,
         }
     }
@@ -517,6 +605,7 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
             Validator::UA1 => false,
         }
     }
@@ -527,17 +616,26 @@ impl Validator {
             Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
+            Validator::A4 | Validator::A4F | Validator::A4E => Some(OutputIntentSubtype::PDFA),
             Validator::UA1 => None,
+        }
+    }
+
+    pub(crate) fn allows_creation_date(&self) -> bool {
+        match self {
+            Validator::None |Validator::A1_A | Validator::A1_B | Validator::A2_A | Validator::A2_B | Validator::A2_U | Validator::A3_A | Validator::A3_B | Validator::A3_U | Validator::UA1 => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => false
         }
     }
 
     pub(crate) fn allows_associated_files(&self) -> bool {
         match self {
             // PDF 2.0 _does_ support associated files. However, in this case the document has to
-            // provide a modification date, since its a required field. Therefore, it's easier to
+            // provide a modification date, since it's a required field. Therefore, it's easier to
             // just use the associated files feature, apart from PDF/A3.
             Validator::None => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
             Validator::A1_A
             | Validator::A1_B
             | Validator::A2_A
@@ -559,6 +657,9 @@ impl Validator {
             Validator::A3_A => "PDF/A3-A",
             Validator::A3_B => "PDF/A3-B",
             Validator::A3_U => "PDF/A3-U",
+            Validator::A4 => "PDF/A4",
+            Validator::A4F => "PDF/A4f",
+            Validator::A4E => "PDF/A4e",
             Validator::UA1 => "PDF/UA1",
         }
     }

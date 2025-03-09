@@ -6,7 +6,7 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use crate::configure::PdfVersion;
+use crate::configure::{Configuration, PdfVersion};
 use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
@@ -181,7 +181,7 @@ impl Metadata {
         &self,
         ref_: &mut Ref,
         pdf: &mut Pdf,
-        version: PdfVersion,
+        config: Configuration,
     ) {
         if self.has_document_info() {
             let ref_ = ref_.bump();
@@ -189,7 +189,7 @@ impl Metadata {
 
             // ALl of those are deprecated in PDF 2.0 and will only be written
             // to the XMP metadata.
-            if version < PdfVersion::Pdf20 {
+            if config.version() < PdfVersion::Pdf20 {
                 if let Some(title) = &self.title {
                     document_info.title(TextStr(title));
                 }
@@ -221,8 +221,10 @@ impl Metadata {
                 document_info.modified_date(pdf_date(date_time));
             }
 
-            if let Some(date_time) = self.creation_date {
-                document_info.creation_date(pdf_date(date_time));
+            if config.validator().allows_creation_date() {
+                if let Some(date_time) = self.creation_date {
+                    document_info.creation_date(pdf_date(date_time));
+                }
             }
         }
     }
