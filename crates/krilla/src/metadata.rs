@@ -183,6 +183,10 @@ impl Metadata {
         pdf: &mut Pdf,
         config: Configuration,
     ) {
+        if !config.validator().allows_info_dict() {
+            return;
+        }
+
         if self.has_document_info() {
             let ref_ = ref_.bump();
             let mut document_info = pdf.document_info(ref_);
@@ -221,10 +225,8 @@ impl Metadata {
                 document_info.modified_date(pdf_date(date_time));
             }
 
-            if config.validator().allows_creation_date() {
-                if let Some(date_time) = self.creation_date {
-                    document_info.creation_date(pdf_date(date_time));
-                }
+            if let Some(date_time) = self.creation_date {
+                document_info.creation_date(pdf_date(date_time));
             }
         }
     }

@@ -626,7 +626,7 @@ impl Validator {
         }
     }
 
-    pub(crate) fn allows_creation_date(&self) -> bool {
+    pub(crate) fn allows_info_dict(&self) -> bool {
         match self {
             Validator::None
             | Validator::A1_A
