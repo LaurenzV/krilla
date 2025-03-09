@@ -108,6 +108,21 @@ pub struct SerializeSettings {
     pub pdf_version: PdfVersion,
 }
 
+impl Default for SerializeSettings {
+    fn default() -> Self {
+        Self {
+            ascii_compatible: false,
+            compress_content_streams: true,
+            no_device_cs: false,
+            xmp_metadata: true,
+            cmyk_profile: None,
+            validator: Validator::None,
+            enable_tagging: true,
+            pdf_version: PdfVersion::Pdf17,
+        }
+    }
+}
+
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
 pub struct SvgSettings {
@@ -124,21 +139,6 @@ impl Default for SvgSettings {
         Self {
             embed_text: true,
             filter_scale: 4.0,
-        }
-    }
-}
-
-impl Default for SerializeSettings {
-    fn default() -> Self {
-        Self {
-            ascii_compatible: false,
-            compress_content_streams: true,
-            no_device_cs: false,
-            xmp_metadata: true,
-            cmyk_profile: None,
-            validator: Validator::None,
-            enable_tagging: true,
-            pdf_version: PdfVersion::Pdf17,
         }
     }
 }
