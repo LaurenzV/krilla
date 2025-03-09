@@ -18,7 +18,7 @@
 //!   requirements are fulfilled.
 //!   You can find them under **Requirements** for each [`Validator`].
 //!
-//! [`Configuration`]: crate:configure::Configuration
+//! [`Configuration`]: crate::configure::Configuration
 
 use crate::configure::PdfVersion;
 use crate::embed::EmbedError;
