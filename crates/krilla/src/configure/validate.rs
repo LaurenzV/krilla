@@ -4,7 +4,7 @@
 //! can be used to a specific subset. Currently, krilla only supports some PDF/A conformance levels,
 //! although more are planned for the future.
 //!
-//! You can use a [`Validator`] by setting the `validator` attribute of the [`SerializeSettings`]
+//! You can use a [`Validator`] by creating a corresponding [`Configuration`]
 //! you create the document with. There are three important aspects that play into this:
 //! - krilla will internally write the file in a way that conforms to the given standard, i.e.
 //!   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
@@ -18,11 +18,11 @@
 //!   requirements are fulfilled.
 //!   You can find them under **Requirements** for each [`Validator`].
 //!
-//! [`SerializeSettings`]: crate::SerializeSettings
+//! [`Configuration`]: crate:configure::Configuration
 
+use crate::configure::PdfVersion;
 use crate::embed::EmbedError;
 use crate::font::Font;
-use crate::version::PdfVersion;
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::Finish;
 use skrifa::GlyphId;
@@ -568,6 +568,7 @@ impl Validator {
 mod tests {
     use crate::action::LinkAction;
     use crate::annotation::{Annotation, LinkAnnotation, Target};
+    use crate::configure::ValidationError;
     use crate::error::KrillaError;
     use crate::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
     use crate::metadata::Metadata;
@@ -580,7 +581,6 @@ mod tests {
     use crate::tests::{
         cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, youtube_link, NOTO_SANS,
     };
-    use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use pdf_writer::types::{ListNumbering, TableHeaderScope};
@@ -1085,11 +1085,6 @@ mod tests {
                 ValidationError::Transparency
             ]))
         )
-    }
-
-    #[snapshot(document, settings_21)]
-    fn validation_version_mismatch(document: &mut Document) {
-        validation_pdf_full_example(document);
     }
 
     #[snapshot(document, settings_22)]

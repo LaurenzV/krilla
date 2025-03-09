@@ -10,14 +10,13 @@ use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 use tiny_skia_path::{Point, Rect};
 
+use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::object::action::Action;
 use crate::object::destination::Destination;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::RectExt;
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
 
 /// An annotation.
 pub struct Annotation {
@@ -150,7 +149,7 @@ impl LinkAnnotation {
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
 
-        if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16 {
+        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16 {
             self.quad_points.as_ref().map(|p| {
                 annotation.quad_points(p.iter().flat_map(|p| {
                     let mut p = *p;

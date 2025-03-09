@@ -10,6 +10,7 @@ use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
 use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
 
 use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::configure::ValidationError;
 use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
@@ -18,7 +19,6 @@ use crate::resource;
 use crate::resource::Resource;
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::util::{NameExt, RectExt, RectWrapper};
-use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {

@@ -18,8 +18,8 @@ use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
-use crate::version::PdfVersion;
 
+use crate::configure::PdfVersion;
 pub use pdf_writer::types::NumberingStyle;
 
 /// A single page.
@@ -209,7 +209,7 @@ impl InternalPage {
 
         let mut page = chunk.page(root_ref);
         self.stream_resources
-            .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version);
+            .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version());
 
         let transform_rect = |rect: Rect| {
             rect.transform(page_root_transform(
@@ -248,7 +248,7 @@ impl InternalPage {
 
             // Only required for PDF/UA, but might as well always set it.
             if !self.annotations.is_empty()
-                && sc.serialize_settings().pdf_version >= PdfVersion::Pdf15
+                && sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
             {
                 page.tab_order(TabOrder::StructureOrder);
             }

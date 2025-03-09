@@ -128,10 +128,9 @@ use pdf_writer::types::{
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
+use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -222,7 +221,7 @@ impl ContentTag<'_> {
                     ArtifactType::Other => unreachable!(),
                 };
 
-                if sc.serialize_settings().pdf_version >= PdfVersion::Pdf17 {
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
                     if *at == ArtifactType::Header {
                         artifact.attached([ArtifactAttachment::Top]);
                         artifact.subtype(ArtifactSubtype::Header);
@@ -240,7 +239,7 @@ impl ContentTag<'_> {
                 properties.pair(Name(b"Lang"), TextStr(lang));
 
                 if let Some(alt) = alt {
-                    if sc.serialize_settings().pdf_version >= PdfVersion::Pdf15 {
+                    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                         properties.pair(Name(b"Alt"), TextStr(alt));
                     }
                 }
@@ -250,7 +249,7 @@ impl ContentTag<'_> {
                 }
 
                 if let Some(actual) = actual {
-                    if sc.serialize_settings().pdf_version >= PdfVersion::Pdf15 {
+                    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                         properties.actual_text(TextStr(actual));
                     }
                 }
@@ -710,7 +709,7 @@ impl TagGroup {
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
         self.tag
-            .write_kind(&mut struct_elem, sc.serialize_settings().pdf_version);
+            .write_kind(&mut struct_elem, sc.serialize_settings().pdf_version());
         struct_elem.parent(parent);
 
         if let Some(alt) = self.tag.alt() {
@@ -730,7 +729,7 @@ impl TagGroup {
                 struct_elem.attributes().push().list().list_numbering(ln);
             }
             Tag::TH(ths) => {
-                if sc.serialize_settings().pdf_version >= PdfVersion::Pdf15 {
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                     struct_elem.attributes().push().table().scope(ths);
                 }
             }

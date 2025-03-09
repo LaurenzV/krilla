@@ -5,13 +5,13 @@ use std::ops::DerefMut;
 use tiny_skia_path::Rect;
 
 use crate::color::{rgb, DEVICE_RGB};
+use crate::configure::ValidationError;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource;
 use crate::resource::Resource;
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{NameExt, RectExt, RectWrapper};
-use crate::validation::ValidationError;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {
@@ -67,7 +67,7 @@ impl Cacheable for XObject {
 
         self.stream
             .resource_dictionary
-            .to_pdf_resources(&mut x_object, sc.serialize_settings().pdf_version);
+            .to_pdf_resources(&mut x_object, sc.serialize_settings().pdf_version());
         x_object.bbox(
             self.custom_bbox
                 .map(|c| c.0)

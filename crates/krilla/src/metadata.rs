@@ -6,7 +6,7 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use crate::version::PdfVersion;
+use crate::configure::PdfVersion;
 use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 

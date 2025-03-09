@@ -13,12 +13,12 @@ use skrifa::GlyphId;
 use subsetter::GlyphRemapper;
 
 use super::{CIDIdentifer, FontIdentifier};
+use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::Font;
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::{hash128, RectExt, SliceExt};
-use crate::validation::ValidationError;
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
@@ -210,7 +210,7 @@ impl CIDFont {
         width_writer.finish();
         cid.finish();
 
-        if !sc.serialize_settings().pdf_version.deprecates_cid_set() {
+        if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
             let cid_stream_data = {
                 // It's always guaranteed by the subsetter that CIDs start from 0 and are
                 // consecutive, so this encoding is very straight-forward.
@@ -263,7 +263,7 @@ impl CIDFont {
             .cap_height(cap_height)
             .stem_v(stem_v);
 
-        if !sc.serialize_settings().pdf_version.deprecates_cid_set() {
+        if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
             font_descriptor.cid_set(cid_set_ref);
         }
 

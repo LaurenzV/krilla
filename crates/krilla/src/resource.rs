@@ -5,12 +5,11 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
+use crate::configure::PdfVersion;
+use crate::util::NameExt;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
-
-use crate::util::NameExt;
-use crate::version::PdfVersion;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;
