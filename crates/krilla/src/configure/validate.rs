@@ -24,7 +24,7 @@ use crate::configure::PdfVersion;
 use crate::embed::EmbedError;
 use crate::font::Font;
 use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::Finish;
+use pdf_writer::{Chunk, Finish};
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
@@ -258,7 +258,7 @@ pub enum Validator {
     ///
     /// **Requirements**:
     /// - All requirements of PDF/A4
-    A4E
+    A4E,
 }
 
 impl Validator {
@@ -397,12 +397,14 @@ impl Validator {
                     // we can just set the others to `false` to prevent
                     // unnecessary validation errors.
                     EmbedError::MissingDate => false,
-                    EmbedError::MissingDescription => matches!(self, Validator::A4E | Validator::A4F),
+                    EmbedError::MissingDescription => {
+                        matches!(self, Validator::A4E | Validator::A4F)
+                    }
                     EmbedError::MissingMimeType => false,
                 },
                 // Only recommended, not required.
                 ValidationError::MissingTagging => false,
-            }
+            },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
                 ValidationError::TooLargeFloat => false,
@@ -626,8 +628,37 @@ impl Validator {
 
     pub(crate) fn allows_creation_date(&self) -> bool {
         match self {
-            Validator::None |Validator::A1_A | Validator::A1_B | Validator::A2_A | Validator::A2_B | Validator::A2_U | Validator::A3_A | Validator::A3_B | Validator::A3_U | Validator::UA1 => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => false
+            Validator::None
+            | Validator::A1_A
+            | Validator::A1_B
+            | Validator::A2_A
+            | Validator::A2_B
+            | Validator::A2_U
+            | Validator::A3_A
+            | Validator::A3_B
+            | Validator::A3_U
+            | Validator::UA1 => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => false,
+        }
+    }
+
+    pub(crate) fn write_embedded_files(&self, files: &[Chunk]) -> bool {
+        match self {
+            Validator::None
+            | Validator::A1_A
+            | Validator::A1_B
+            | Validator::A2_A
+            | Validator::A2_B
+            | Validator::A2_U
+            | Validator::A3_A
+            | Validator::A3_B
+            | Validator::A3_U
+            | Validator::A4
+            | Validator::A4E
+            | Validator::UA1 => !files.is_empty(),
+            // For this one we always need to write an `EmbeddedFiles` entry,
+            // even if empty.
+            Validator::A4F => true
         }
     }
 
