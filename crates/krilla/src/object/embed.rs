@@ -200,15 +200,25 @@ mod tests {
         d.embed_file(f2);
         d.embed_file(f3);
     }
-
-    #[snapshot(document, settings_23)]
-    fn pdf_a3_with_embedded_file(d: &mut Document) {
+    
+    fn embedded_file_impl(d: &mut Document) {
         let metadata = Metadata::new()
             .modification_date(DateTime::new(2001))
             .language("en".to_string());
         d.set_metadata(metadata);
         let f1 = file_1();
         d.embed_file(f1);
+    }
+
+    #[snapshot(document, settings_23)]
+    fn pdf_a3_with_embedded_file(d: &mut Document) {
+        embedded_file_impl(d)
+    }
+
+    #[snapshot(document, settings_25)]
+    fn pdf_20_with_embedded_file(d: &mut Document) {
+        // Technically PDF 2.0 supports associated files, but we only use them for PDF/A-3.
+        embedded_file_impl(d)
     }
 
     #[test]
