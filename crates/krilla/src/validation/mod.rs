@@ -652,6 +652,7 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
             )
             .into(),
@@ -950,6 +951,7 @@ mod tests {
         let annotation = page.add_tagged_annotation(Annotation::new_link(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
             ),
             Some("A link to youtube".to_string()),
@@ -998,6 +1000,7 @@ mod tests {
         let annot = page.add_tagged_annotation(Annotation::new_link(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
             ),
             None,

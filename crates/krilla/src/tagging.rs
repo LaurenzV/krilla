@@ -110,13 +110,14 @@
 //! - Tag groups should follow the best-practice of what kind of children they contain. See
 //!   [Tag] for more information.
 //! - You should provide "Alt" descriptions for formulas and images.
+//! - In case you have a link annotation that applies to text that wraps into one or multiple
+//!   new lines, you should use the `quad_points` functionality to indicate the exact covered
+//!   areas of the link.
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
 //! [`Page`]: crate::page::Page
 //! [`Surface`]: crate::surface::Surface
 //! [`Document`]: crate::Document
-
-// TODO: Other notes: broken links should use quadpoint (14.8.4.4.2)
 
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
@@ -1008,6 +1009,7 @@ mod tests {
         let link_id = page.add_tagged_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                None,
                 Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
             )
             .into(),
@@ -1243,6 +1245,7 @@ mod tests {
         let link_id = page.add_tagged_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                None,
                 Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
             )
             .into(),

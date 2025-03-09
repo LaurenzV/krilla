@@ -699,6 +699,7 @@ pub fn stops_with_3_solid_1() -> Stops {
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
     LinkAnnotation::new(
         Rect::from_xywh(x, y, w, h).unwrap(),
+        None,
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )
     .into()
