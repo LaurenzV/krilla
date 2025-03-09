@@ -658,7 +658,7 @@ impl Validator {
             | Validator::UA1 => !files.is_empty(),
             // For this one we always need to write an `EmbeddedFiles` entry,
             // even if empty.
-            Validator::A4F => true
+            Validator::A4F => true,
         }
     }
 
