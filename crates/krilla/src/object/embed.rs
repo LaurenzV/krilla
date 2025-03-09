@@ -266,8 +266,6 @@ mod tests {
             d.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::EmbeddedFile(EmbedError::Existence),
-                ValidationError::EmbeddedFile(EmbedError::MissingDate),
-                ValidationError::EmbeddedFile(EmbedError::MissingDescription)
             ]))
         )
     }

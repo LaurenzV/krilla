@@ -526,13 +526,16 @@ impl Validator {
             }
             Validator::A4 => {
                 xmp.pdfa_part(4);
+                xmp.pdfa_rev(2020);
             }
             Validator::A4F => {
                 xmp.pdfa_part(4);
+                xmp.pdfa_rev(2020);
                 xmp.pdfa_conformance("F");
             }
             Validator::A4E => {
                 xmp.pdfa_part(4);
+                xmp.pdfa_rev(2020);
                 xmp.pdfa_conformance("E");
             }
             Validator::UA1 => {
@@ -1023,6 +1026,21 @@ mod tests {
 
     #[snapshot(document, settings_11)]
     fn validation_pdfa3_u_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_26)]
+    fn validation_pdfa4_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_27)]
+    fn validation_pdfa4f_full_example(document: &mut Document) {
+        validation_pdf_full_example(document);
+    }
+
+    #[snapshot(document, settings_28)]
+    fn validation_pdfa4e_full_example(document: &mut Document) {
         validation_pdf_full_example(document);
     }
 

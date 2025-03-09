@@ -2092,8 +2092,8 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xmp-writer"
-version = "0.3.0"
-source = "git+https://github.com/LaurenzV/xmp-writer?rev=1c2b8ae9#1c2b8ae9c217ceeec39b86cf5e215b67fe8870db"
+version = "0.3.1"
+source = "git+https://github.com/LaurenzV/xmp-writer?rev=a1cbb887#a1cbb887a84376fea4d7590d41c194a332840549"
 
 [[package]]
 name = "yazi"

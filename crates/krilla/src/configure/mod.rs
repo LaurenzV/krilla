@@ -7,7 +7,7 @@ pub use validate::{ValidationError, Validator};
 pub use version::PdfVersion;
 
 /// A configuration of validator and PDF version.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Configuration {
     validator: Validator,
     version: PdfVersion,

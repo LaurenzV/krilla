@@ -102,7 +102,7 @@ impl ChunkContainer {
             metadata.serialize_document_info(
                 &mut remapped_ref,
                 &mut pdf,
-                sc.serialize_settings().pdf_version(),
+                sc.serialize_settings().configuration,
             );
         }
 
