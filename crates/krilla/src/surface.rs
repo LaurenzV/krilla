@@ -811,7 +811,7 @@ mod tests {
             TextDirection::Auto,
         );
     }
-    
+
     fn simple_text_impl(page: &mut Page) {
         let mut surface = page.surface();
         surface.fill_text(
@@ -837,8 +837,6 @@ mod tests {
         // still written properly for PDF 2.0.
         simple_text_impl(page);
     }
-    
-    
 
     #[snapshot(single_page)]
     fn complex_text(page: &mut Page) {

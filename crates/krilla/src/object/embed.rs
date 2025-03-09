@@ -200,7 +200,7 @@ mod tests {
         d.embed_file(f2);
         d.embed_file(f3);
     }
-    
+
     fn embedded_file_impl(d: &mut Document) {
         let metadata = Metadata::new()
             .modification_date(DateTime::new(2001))
