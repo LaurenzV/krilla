@@ -1,12 +1,11 @@
 //! Embedding attachments to a PDF file.
 
+use crate::configure::{PdfVersion, ValidationError};
 use crate::metadata::pdf_date;
 use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
 use crate::Data;
 
 use pdf_writer::types::AssociationKind;
@@ -94,20 +93,24 @@ impl Cacheable for EmbeddedFile {
         let mut file_spec = chunk.file_spec(root_ref);
         file_spec.path(Str(self.path.as_bytes()));
 
-        if sc.serialize_settings().pdf_version >= PdfVersion::Pdf17 {
+        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
             file_spec.unic_file(TextStr(&self.path));
         }
 
         let mut ef = file_spec.insert(Name(b"EF")).dict();
         ef.pair(Name(b"F"), stream_ref);
 
-        if sc.serialize_settings().pdf_version >= PdfVersion::Pdf17 {
+        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
             ef.pair(Name(b"UF"), stream_ref);
         }
 
         ef.finish();
 
-        if sc.serialize_settings().validator.allows_associated_files() {
+        if sc
+            .serialize_settings()
+            .validator()
+            .allows_associated_files()
+        {
             file_spec.association_kind(self.association_kind);
         }
 
@@ -127,12 +130,12 @@ impl Cacheable for EmbeddedFile {
 
 #[cfg(test)]
 mod tests {
+    use crate::configure::ValidationError;
     use crate::embed::{EmbedError, EmbeddedFile};
     use crate::error::KrillaError;
     use crate::metadata::{DateTime, Metadata};
     use crate::tagging::TagTree;
     use crate::tests::ASSETS_PATH;
-    use crate::validation::ValidationError;
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use pdf_writer::types::AssociationKind;

@@ -16,6 +16,7 @@ use tiny_skia_path::Size;
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile};
+use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
@@ -34,8 +35,6 @@ use crate::resource;
 use crate::resource::Resource;
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::SipHashable;
-use crate::validation::{ValidationError, Validator};
-use crate::version::PdfVersion;
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -72,12 +71,12 @@ pub struct SerializeSettings {
     /// This is usually not required, but it is for example required when exporting
     /// to PDF/A and using a CMYK color, since they have to be device-independent.
     pub cmyk_profile: Option<ICCProfile<4>>,
-    /// A validator that allows for exporting to a specific substandard of PDF.
+    /// A validator and PDF version used for export.
     ///
     /// In case validation fails, export will fail, and a list of validation errors that
     /// occurred will be returned instead of the PDF.
     ///
-    /// **Important**: Make sure to carefully read the documentation of the [`validation`] module
+    /// **Important**: Make sure to carefully read the documentation of the [`validate`] module
     /// before using this feature! Just setting a validator might not be enough to ensure that
     /// your output conforms to the given standard, as some requirements are semantic in nature
     /// and cannot possibly be verified by krilla!
@@ -86,8 +85,8 @@ pub struct SerializeSettings {
     /// you can be certain that the resulting document will conform to the standard (unless there
     /// is a bug).
     ///
-    /// [`validation`]: crate::validation
-    pub validator: Validator,
+    /// [`validate`]: crate::configure::validate
+    pub configuration: Configuration,
     /// Whether to enable the creation of tagged documents. See the module documentation
     /// of [`tagging`] for more information about tagged PDF documents.
     ///
@@ -104,8 +103,30 @@ pub struct SerializeSettings {
     ///
     /// [`tagging`]: crate::tagging
     pub enable_tagging: bool,
-    /// The PDF version that should be used for export.
-    pub pdf_version: PdfVersion,
+}
+
+impl SerializeSettings {
+    pub(crate) fn pdf_version(&self) -> PdfVersion {
+        self.configuration.version()
+    }
+
+    pub(crate) fn validator(&self) -> Validator {
+        self.configuration.validator()
+    }
+}
+
+impl Default for SerializeSettings {
+    fn default() -> Self {
+        Self {
+            ascii_compatible: false,
+            compress_content_streams: true,
+            no_device_cs: false,
+            xmp_metadata: true,
+            cmyk_profile: None,
+            configuration: Configuration::new(),
+            enable_tagging: true,
+        }
+    }
 }
 
 /// Settings that should be applied when converting a SVG.
@@ -124,21 +145,6 @@ impl Default for SvgSettings {
         Self {
             embed_text: true,
             filter_scale: 4.0,
-        }
-    }
-}
-
-impl Default for SerializeSettings {
-    fn default() -> Self {
-        Self {
-            ascii_compatible: false,
-            compress_content_streams: true,
-            no_device_cs: false,
-            xmp_metadata: true,
-            cmyk_profile: None,
-            validator: Validator::None,
-            enable_tagging: true,
-            pdf_version: PdfVersion::Pdf17,
         }
     }
 }
@@ -214,16 +220,9 @@ pub(crate) struct SerializeContext {
 impl SerializeContext {
     pub(crate) fn new(mut serialize_settings: SerializeSettings) -> Self {
         // Override flags as required by the validator
-        serialize_settings.no_device_cs |= serialize_settings.validator.requires_no_device_cs();
-        serialize_settings.enable_tagging |= serialize_settings.validator.requires_tagging();
-        serialize_settings.xmp_metadata |= serialize_settings.validator.xmp_metadata();
-
-        if !serialize_settings
-            .validator
-            .compatible_with_version(serialize_settings.pdf_version)
-        {
-            serialize_settings.pdf_version = serialize_settings.validator.recommended_version();
-        }
+        serialize_settings.no_device_cs |= serialize_settings.validator().requires_no_device_cs();
+        serialize_settings.enable_tagging |= serialize_settings.validator().requires_tagging();
+        serialize_settings.xmp_metadata |= serialize_settings.validator().xmp_metadata();
 
         Self {
             cached_mappings: HashMap::new(),
@@ -253,7 +252,7 @@ impl SerializeContext {
         if !outline.is_empty()
             || self
                 .serialize_settings
-                .validator
+                .validator()
                 .prohibits(&ValidationError::MissingDocumentOutline)
         {
             self.global_objects.outline = MaybeTaken::new(Some(outline));
@@ -418,7 +417,7 @@ impl SerializeContext {
 /// Various registration methods.
 impl SerializeContext {
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
-        if self.serialize_settings.validator.prohibits(&error) {
+        if self.serialize_settings.validator().prohibits(&error) {
             self.validation_errors.push(error);
         }
     }
@@ -551,10 +550,10 @@ impl SerializeContext {
     pub(crate) fn register_colorspace(&mut self, cs: ColorSpace) -> MaybeDeviceColorSpace {
         match cs {
             ColorSpace::Srgb => MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(
-                ICCBasedColorSpace(self.serialize_settings.pdf_version.rgb_icc()),
+                ICCBasedColorSpace(self.serialize_settings.pdf_version().rgb_icc()),
             )),
             ColorSpace::Luma => MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(
-                ICCBasedColorSpace(self.serialize_settings.pdf_version.grey_icc()),
+                ICCBasedColorSpace(self.serialize_settings.pdf_version().grey_icc()),
             )),
             ColorSpace::Cmyk(cs) => {
                 MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(cs))
@@ -570,14 +569,14 @@ impl SerializeContext {
 /// All methods are supposed to only be called once in `SerializeContext::finish`!
 impl SerializeContext {
     fn serialize_destination_profiles(&mut self) {
-        let validator = self.serialize_settings.validator;
+        let validator = self.serialize_settings.validator();
         self.chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
             let root_ref = self.new_ref();
             let mut chunk = Chunk::new();
 
             let oi_ref = self.new_ref();
             let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-            let icc_profile = self.serialize_settings.pdf_version.rgb_icc();
+            let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
 
             oi.dest_output_profile(self.register_cacheable(icc_profile.clone()))
                 .subtype(subtype)

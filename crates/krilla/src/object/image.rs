@@ -20,12 +20,12 @@ use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
 use crate::color::{GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB};
+use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
-use crate::validation::ValidationError;
 use crate::Data;
 
 /// The number of buits per color component.
@@ -345,7 +345,7 @@ impl Image {
         let icc_ref = self.icc().and_then(|ic| {
             if sc
                 .serialize_settings()
-                .pdf_version
+                .pdf_version()
                 .supports_icc(ic.metadata())
             {
                 let ref_ = match ic {

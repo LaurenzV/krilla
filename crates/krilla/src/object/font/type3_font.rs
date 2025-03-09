@@ -11,6 +11,7 @@ use skrifa::GlyphId;
 use tiny_skia_path::{Rect, Transform};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use crate::configure::{PdfVersion, ValidationError};
 use crate::font::outline::glyph_path;
 use crate::font::Font;
 use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
@@ -20,8 +21,6 @@ use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::util::{NameExt, RectExt, TransformExt};
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
 use crate::{font, SvgSettings};
 
 pub(crate) type Gid = u8;
@@ -244,7 +243,7 @@ impl Type3Font {
 
         let resource_dictionary = rd_builder.finish();
 
-        let descriptor_ref = if sc.serialize_settings().pdf_version >= PdfVersion::Pdf15 {
+        let descriptor_ref = if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
         } else {
             None
@@ -345,7 +344,8 @@ impl Type3Font {
         }
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(&mut type3_font, sc.serialize_settings().pdf_version);
+        resource_dictionary
+            .to_pdf_resources(&mut type3_font, sc.serialize_settings().pdf_version());
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
         type3_font.name(Name(base_font.as_bytes()));

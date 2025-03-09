@@ -3,8 +3,8 @@
 //! There are a lot of things that can go wrong when writing a PDF, like for example when
 //! invalid fonts are provided. This module provides the basic error types krilla uses.
 
+use crate::configure::ValidationError;
 use crate::font::Font;
-use crate::validation::ValidationError;
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;

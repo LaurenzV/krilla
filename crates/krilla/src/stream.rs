@@ -29,12 +29,12 @@ use std::borrow::Cow;
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
+use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
-use crate::validation::ValidationError;
 use crate::SerializeSettings;
 
 /// A stream.

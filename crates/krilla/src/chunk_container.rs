@@ -5,12 +5,11 @@ use std::collections::HashMap;
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
 use xmp_writer::{RenditionClass, XmpWriter};
 
+use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
-use crate::validation::ValidationError;
-use crate::version::PdfVersion;
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
@@ -75,10 +74,10 @@ impl ChunkContainer {
         // case, and thus give us better performance.
         let capacity = (chunks_byte_len as f32 * 1.1 + 200.0) as usize;
         let mut pdf = Pdf::with_capacity(capacity);
-        sc.serialize_settings().pdf_version.set_version(&mut pdf);
+        sc.serialize_settings().pdf_version().set_version(&mut pdf);
 
         if sc.serialize_settings().ascii_compatible
-            && !sc.serialize_settings().validator.requires_binary_header()
+            && !sc.serialize_settings().validator().requires_binary_header()
         {
             pdf.set_binary_marker(b"AAAA")
         }
@@ -103,7 +102,7 @@ impl ChunkContainer {
             metadata.serialize_document_info(
                 &mut remapped_ref,
                 &mut pdf,
-                sc.serialize_settings().pdf_version,
+                sc.serialize_settings().pdf_version(),
             );
         }
 
@@ -112,16 +111,16 @@ impl ChunkContainer {
             metadata.serialize_xmp_metadata(&mut xmp);
         }
 
-        sc.serialize_settings().validator.write_xmp(&mut xmp);
+        sc.serialize_settings().validator().write_xmp(&mut xmp);
 
         let instance_id = hash_base64(pdf.as_bytes());
 
         let document_id = if let Some(metadata) = &self.metadata {
             if let Some(document_id) = &metadata.document_id {
-                hash_base64(&(sc.serialize_settings().pdf_version.as_str(), document_id))
+                hash_base64(&(sc.serialize_settings().pdf_version().as_str(), document_id))
             } else if metadata.title.is_some() && metadata.authors.is_some() {
                 hash_base64(&(
-                    sc.serialize_settings().pdf_version.as_str(),
+                    sc.serialize_settings().pdf_version().as_str(),
                     &metadata.title,
                     &metadata.authors,
                 ))
@@ -142,7 +141,7 @@ impl ChunkContainer {
         ));
 
         xmp.rendition_class(RenditionClass::Proof);
-        sc.serialize_settings().pdf_version.write_xmp(&mut xmp);
+        sc.serialize_settings().pdf_version().write_xmp(&mut xmp);
 
         let named_destinations = sc.global_objects.named_destinations.take();
         let embedded_files = sc.global_objects.embedded_files.take();
@@ -197,8 +196,8 @@ impl ChunkContainer {
                 catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
-                if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16
-                    && sc.serialize_settings().pdf_version < PdfVersion::Pdf20
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16
+                    && sc.serialize_settings().pdf_version() < PdfVersion::Pdf20
                 {
                     // We always set suspects to false because it's required by PDF/UA.
                     mark_info.suspects(false);
@@ -208,7 +207,7 @@ impl ChunkContainer {
 
             if sc
                 .serialize_settings()
-                .validator
+                .validator()
                 .requires_display_doc_title()
             {
                 catalog.viewer_preferences().display_doc_title(true);
@@ -250,7 +249,10 @@ impl ChunkContainer {
             }
 
             if !embedded_files.is_empty()
-                && sc.serialize_settings().validator.allows_associated_files()
+                && sc
+                    .serialize_settings()
+                    .validator()
+                    .allows_associated_files()
             {
                 let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
                 for _ref in embedded_files.values() {

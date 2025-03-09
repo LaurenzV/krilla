@@ -15,6 +15,7 @@ use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
 
 use crate::color::{Color, ColorSpace};
+use crate::configure::ValidationError;
 use crate::font::{Font, Glyph, GlyphUnits};
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
@@ -36,7 +37,6 @@ use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::validation::ValidationError;
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -468,7 +468,7 @@ impl ContentBuilder {
                     glyphs,
                     text,
                     sc.serialize_settings()
-                        .validator
+                        .validator()
                         .requires_codepoint_mappings(),
                     paint_mode,
                     font_container.clone(),
