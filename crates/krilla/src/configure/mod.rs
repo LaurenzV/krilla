@@ -13,6 +13,12 @@ pub struct Configuration {
     version: PdfVersion,
 }
 
+impl Default for Configuration {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Configuration {
     /// Create a new configuration from a validator and a PDF version.
     ///
