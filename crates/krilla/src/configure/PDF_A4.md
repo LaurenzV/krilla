@@ -23,7 +23,6 @@ See `README.md` for the meaning of each color.
 - The trailer is written as defined. 🟢
 - krilla does not support encryption. 🟢
 - krilla does not write the `Info` attribute into the trailer. 🟢
-- krilla only writes the `ModDate` in this export mode. 🟢
 
 ### 6.1.4 Cross reference table
 - The cross-reference table is always written as defined. 🟢
@@ -202,7 +201,7 @@ See `README.md` for the meaning of each color.
 - krilla always writes the `AFRelationship`, `Desc`, `UF` and `F` strings in this case. 🟢
 - krilla always writes the corresponding file identification. 🟢
 
-# A4/E
+# A4-E
 - krilla does not support any of the 3D features. 🟢
 - krilla deals similarly with embedded files similarly to A4-F. 🟢
 - krilla always writes the corresponding file identification. 🟢
