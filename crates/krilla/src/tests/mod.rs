@@ -948,4 +948,11 @@ impl SerializeSettings {
             ..Self::settings_1()
         }
     }
+
+    pub(crate) fn settings_25() -> Self {
+        Self {
+            pdf_version: PdfVersion::Pdf20,
+            ..Self::settings_1()
+        }
+    }
 }
