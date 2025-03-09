@@ -8,7 +8,7 @@
 
 use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
-use tiny_skia_path::Rect;
+use tiny_skia_path::{Point, Rect};
 
 use crate::error::KrillaResult;
 use crate::object::action::Action;
@@ -17,6 +17,7 @@ use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::RectExt;
 use crate::validation::ValidationError;
+use crate::version::PdfVersion;
 
 /// An annotation.
 pub struct Annotation {
@@ -112,16 +113,22 @@ pub enum Target {
 
 /// A link annotation.
 pub struct LinkAnnotation {
-    /// The bounding box of the link annotation that it should cover on the page.
     pub(crate) rect: Rect,
-    /// The target of the link annotation.
+    pub(crate) quad_points: Option<Vec<Point>>,
     pub(crate) target: Target,
 }
 
 impl LinkAnnotation {
     /// Create a new link annotation.
-    pub fn new(rect: Rect, target: Target) -> Self {
-        Self { rect, target }
+    /// 
+    /// `rect`: The bounding box of the link annotation that it should cover on the page.
+    /// `target`: The target of the link annotation.
+    /// `quad_points`: An array of 4xn points, where each 4 points define the quadrilateral
+    /// where the link annotation should be activated. This is useful if you for example have
+    /// a link annotation that is broken to one or multiple lines. Note that the points
+    /// have to be within the bounds defined by `rect`!
+    pub fn new(rect: Rect, quad_points: Option<Vec<Point>>, target: Target) -> Self {
+        Self { rect, quad_points, target }
     }
 
     fn serialize_type(
@@ -138,6 +145,16 @@ impl LinkAnnotation {
             .unwrap();
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
+
+        if sc.serialize_settings().pdf_version >= PdfVersion::Pdf16 {
+            self.quad_points.as_ref().map(|p| {
+                annotation.quad_points(p.iter().flat_map(|p| {
+                    let mut p = *p;
+                    page_root_transform(page_height).map_point(&mut p);
+                    [p.x, p.y]
+                }))
+            });
+        }
 
         match &self.target {
             Target::Destination(destination) => {
@@ -170,6 +187,7 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
             )
             .into(),
@@ -183,6 +201,7 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Destination(XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into()),
             )
             .into(),
@@ -197,6 +216,7 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Destination(XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into()),
             )
             .into(),
@@ -211,6 +231,7 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),
+                None,
                 Target::Destination(XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into()),
             )
             .into(),

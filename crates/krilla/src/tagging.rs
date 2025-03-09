@@ -1008,6 +1008,7 @@ mod tests {
         let link_id = page.add_tagged_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                None,
                 Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
             )
             .into(),
@@ -1243,6 +1244,7 @@ mod tests {
         let link_id = page.add_tagged_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
+                None,
                 Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
             )
             .into(),
