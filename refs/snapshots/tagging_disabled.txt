@@ -16,7 +16,7 @@ endobj
   /BaseFont /EGEBGV+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [3 0 R]
-  /ToUnicode 5 0 R
+  /ToUnicode 6 0 R
 >>
 endobj
 
@@ -30,7 +30,7 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 4 0 R
+  /FontDescriptor 5 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 561 2 2 260 3 3 615 4 4 413 5 5 615 6 6 618]
@@ -38,6 +38,16 @@ endobj
 endobj
 
 4 0 obj
+<<
+  /Length 18
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789CFB070000FF00FF
+endstream
+endobj
+
+5 0 obj
 <<
   /Type /FontDescriptor
   /FontName /EGEBGV+NotoSans-Regular
@@ -47,13 +57,13 @@ endobj
   /Ascent 1069
   /Descent -293
   /CapHeight 714
-  /CIDSet 6 0 R
   /StemV 95.4
+  /CIDSet 4 0 R
   /FontFile2 7 0 R
 >>
 endobj
 
-5 0 obj
+6 0 obj
 <<
   /Length 689
   /Type /CMap
@@ -96,16 +106,6 @@ end
 end
 %%EndResource
 %%EOF
-endstream
-endobj
-
-6 0 obj
-<<
-  /Length 18
-  /Filter [/ASCIIHexDecode /FlateDecode]
->>
-stream
-789CFB070000FF00FF
 endstream
 endobj
 
@@ -192,8 +192,8 @@ xref
 0000000080 00000 n
 0000000241 00000 n
 0000000549 00000 n
-0000000795 00000 n
-0000001563 00000 n
+0000000661 00000 n
+0000000907 00000 n
 0000001675 00000 n
 0000003641 00000 n
 0000003836 00000 n
@@ -202,7 +202,7 @@ trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(oaEVYOgJXTDkA74ag5ZT1Q==) (oaEVYOgJXTDkA74ag5ZT1Q==)]
+  /ID [(JcNF/r0YnFYarHPDMrm5yw==) (JcNF/r0YnFYarHPDMrm5yw==)]
 >>
 startxref
 4116

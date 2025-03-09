@@ -303,4 +303,9 @@ mod tests {
     fn pdf_version_14(document: &mut Document) {
         metadata_impl(document);
     }
+
+    #[snapshot(document, settings_25)]
+    fn pdf_version_20(document: &mut Document) {
+        metadata_impl(document);
+    }
 }

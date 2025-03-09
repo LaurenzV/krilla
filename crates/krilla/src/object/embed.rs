@@ -5,7 +5,7 @@ use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
-use crate::validation::{ValidationError, Validator};
+use crate::validation::ValidationError;
 use crate::version::PdfVersion;
 use crate::Data;
 
@@ -19,7 +19,7 @@ use std::ops::DerefMut;
 pub enum EmbedError {
     /// The selected standard does not support embedding files.
     Existence,
-    /// The document doesn't contain a date, which is required for embedded files
+    /// The document doesn't contain a modification date, which is required for embedded files
     /// in some export modes.
     MissingDate,
     /// The embedded file is missing a human-readable description.
@@ -107,11 +107,7 @@ impl Cacheable for EmbeddedFile {
 
         ef.finish();
 
-        if matches!(
-            sc.serialize_settings().validator,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U
-        ) {
-            // PDF 2.0, but ISO 19005-3 (PDF/A-3) Annex E allows it for PDF/A-3.
+        if sc.serialize_settings().validator.allows_associated_files() {
             file_spec.association_kind(self.association_kind);
         }
 
@@ -205,14 +201,24 @@ mod tests {
         d.embed_file(f3);
     }
 
-    #[snapshot(document, settings_23)]
-    fn pdf_a3_with_embedded_file(d: &mut Document) {
+    fn embedded_file_impl(d: &mut Document) {
         let metadata = Metadata::new()
             .modification_date(DateTime::new(2001))
             .language("en".to_string());
         d.set_metadata(metadata);
         let f1 = file_1();
         d.embed_file(f1);
+    }
+
+    #[snapshot(document, settings_23)]
+    fn pdf_a3_with_embedded_file(d: &mut Document) {
+        embedded_file_impl(d)
+    }
+
+    #[snapshot(document, settings_25)]
+    fn pdf_20_with_embedded_file(d: &mut Document) {
+        // Technically PDF 2.0 supports associated files, but we only use them for PDF/A-3.
+        embedded_file_impl(d)
     }
 
     #[test]

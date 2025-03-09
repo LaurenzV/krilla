@@ -16,7 +16,7 @@ endobj
   /BaseFont /MBBWKX+NotoSansDevanagari-Regular
   /Encoding /Identity-H
   /DescendantFonts [3 0 R]
-  /ToUnicode 5 0 R
+  /ToUnicode 6 0 R
 >>
 endobj
 
@@ -30,7 +30,7 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 4 0 R
+  /FontDescriptor 5 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 580 2 2 531 3 3 260 4 4 768 6 6 701 7 7 742 8 8 259 9 9 504 10 10 678 11 11 568 12 12 259 13 13 581 15 15 268]
@@ -38,6 +38,16 @@ endobj
 endobj
 
 4 0 obj
+<<
+  /Length 20
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789CFBFF1F0002FF01FF
+endstream
+endobj
+
+5 0 obj
 <<
   /Type /FontDescriptor
   /FontName /MBBWKX+NotoSansDevanagari-Regular
@@ -47,13 +57,13 @@ endobj
   /Ascent 896
   /Descent -408
   /CapHeight 622
-  /CIDSet 6 0 R
   /StemV 95.4
+  /CIDSet 4 0 R
   /FontFile2 7 0 R
 >>
 endobj
 
-5 0 obj
+6 0 obj
 <<
   /Length 776
   /Type /CMap
@@ -101,16 +111,6 @@ end
 end
 %%EndResource
 %%EOF
-endstream
-endobj
-
-6 0 obj
-<<
-  /Length 20
-  /Filter [/ASCIIHexDecode /FlateDecode]
->>
-stream
-789CFBFF1F0002FF01FF
 endstream
 endobj
 
@@ -271,8 +271,8 @@ xref
 0000000080 00000 n
 0000000251 00000 n
 0000000635 00000 n
-0000000889 00000 n
-0000001744 00000 n
+0000000749 00000 n
+0000001003 00000 n
 0000001858 00000 n
 0000005706 00000 n
 0000005901 00000 n
@@ -281,7 +281,7 @@ trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(lBh5bVN9KR+vR8gbMM9kfA==) (lBh5bVN9KR+vR8gbMM9kfA==)]
+  /ID [(y/40GcaPo+cxU424ygocLg==) (y/40GcaPo+cxU424ygocLg==)]
 >>
 startxref
 6792

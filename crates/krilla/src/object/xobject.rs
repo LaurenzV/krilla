@@ -67,7 +67,7 @@ impl Cacheable for XObject {
 
         self.stream
             .resource_dictionary
-            .to_pdf_resources(&mut x_object);
+            .to_pdf_resources(&mut x_object, sc.serialize_settings().pdf_version);
         x_object.bbox(
             self.custom_bbox
                 .map(|c| c.0)

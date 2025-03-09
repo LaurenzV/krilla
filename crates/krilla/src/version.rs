@@ -17,6 +17,8 @@ pub enum PdfVersion {
     Pdf16,
     /// PDF 1.7.
     Pdf17,
+    /// PDF 2.0.
+    Pdf20,
 }
 
 impl PdfVersion {
@@ -26,6 +28,7 @@ impl PdfVersion {
             PdfVersion::Pdf15 => xmp.pdf_version("1.5"),
             PdfVersion::Pdf16 => xmp.pdf_version("1.6"),
             PdfVersion::Pdf17 => xmp.pdf_version("1.7"),
+            PdfVersion::Pdf20 => xmp.pdf_version("2.0"),
         };
     }
 
@@ -36,6 +39,7 @@ impl PdfVersion {
             PdfVersion::Pdf15 => "PDF 1.5",
             PdfVersion::Pdf16 => "PDF 1.6",
             PdfVersion::Pdf17 => "PDF 1.7",
+            PdfVersion::Pdf20 => "PDF 2.0",
         }
     }
 
@@ -45,6 +49,7 @@ impl PdfVersion {
             PdfVersion::Pdf15 => SRGB_V2_ICC.clone(),
             PdfVersion::Pdf16 => SRGB_V2_ICC.clone(),
             PdfVersion::Pdf17 => SRGB_V4_ICC.clone(),
+            PdfVersion::Pdf20 => SRGB_V4_ICC.clone(),
         }
     }
 
@@ -54,6 +59,7 @@ impl PdfVersion {
             PdfVersion::Pdf15 => GREY_V2_ICC.clone(),
             PdfVersion::Pdf16 => GREY_V2_ICC.clone(),
             PdfVersion::Pdf17 => GREY_V4_ICC.clone(),
+            PdfVersion::Pdf20 => GREY_V4_ICC.clone(),
         }
     }
 
@@ -63,6 +69,7 @@ impl PdfVersion {
             PdfVersion::Pdf15 => metadata.major <= 4,
             PdfVersion::Pdf16 => metadata.major <= 4 && metadata.minor <= 1,
             PdfVersion::Pdf17 => metadata.major <= 4 && metadata.minor <= 2,
+            PdfVersion::Pdf20 => metadata.major <= 4 && metadata.minor <= 2,
         }
     }
 
@@ -72,7 +79,16 @@ impl PdfVersion {
             PdfVersion::Pdf15 => pdf.set_version(1, 5),
             PdfVersion::Pdf16 => pdf.set_version(1, 6),
             PdfVersion::Pdf17 => pdf.set_version(1, 7),
+            PdfVersion::Pdf20 => pdf.set_version(2, 0),
         };
+    }
+
+    pub(crate) fn deprecates_proc_sets(&self) -> bool {
+        *self >= PdfVersion::Pdf20
+    }
+
+    pub(crate) fn deprecates_cid_set(&self) -> bool {
+        *self >= PdfVersion::Pdf20
     }
 }
 

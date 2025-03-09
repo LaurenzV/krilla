@@ -531,6 +531,22 @@ impl Validator {
         }
     }
 
+    pub(crate) fn allows_associated_files(&self) -> bool {
+        match self {
+            // PDF 2.0 _does_ support associated files. However, in this case the document has to
+            // provide a modification date, since its a required field. Therefore, it's easier to
+            // just use the associated files feature, apart from PDF/A3.
+            Validator::None => false,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A1_A
+            | Validator::A1_B
+            | Validator::A2_A
+            | Validator::A2_B
+            | Validator::A2_U
+            | Validator::UA1 => false,
+        }
+    }
+
     /// The string representation of the validator.
     pub fn as_str(&self) -> &str {
         match self {

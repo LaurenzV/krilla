@@ -812,6 +812,32 @@ mod tests {
         );
     }
 
+    fn simple_text_impl(page: &mut Page) {
+        let mut surface = page.surface();
+        surface.fill_text(
+            Point::from_xy(0.0, 50.0),
+            Fill::default(),
+            Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+            16.0,
+            &[],
+            "A line of text.",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[snapshot(single_page)]
+    fn simple_text(page: &mut Page) {
+        simple_text_impl(page);
+    }
+
+    #[snapshot(single_page, settings_25)]
+    fn simple_text_pdf20(page: &mut Page) {
+        // The main purpose of this test is to ensure that the fonts without CIDSet are
+        // still written properly for PDF 2.0.
+        simple_text_impl(page);
+    }
+
     #[snapshot(single_page)]
     fn complex_text(page: &mut Page) {
         let mut surface = page.surface();

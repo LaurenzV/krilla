@@ -8,7 +8,7 @@
   /BaseFont /FSVELJ+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [2 0 R]
-  /ToUnicode 4 0 R
+  /ToUnicode 5 0 R
 >>
 endobj
 
@@ -22,7 +22,7 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 3 0 R
+  /FontDescriptor 4 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 639 2 2 650]
@@ -30,6 +30,16 @@ endobj
 endobj
 
 3 0 obj
+<<
+  /Length 18
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C7B000000E100E1
+endstream
+endobj
+
+4 0 obj
 <<
   /Type /FontDescriptor
   /FontName /FSVELJ+NotoSans-Regular
@@ -39,13 +49,13 @@ endobj
   /Ascent 1069
   /Descent -293
   /CapHeight 714
-  /CIDSet 5 0 R
   /StemV 95.4
+  /CIDSet 3 0 R
   /FontFile2 6 0 R
 >>
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Length 633
   /Type /CMap
@@ -84,16 +94,6 @@ end
 end
 %%EndResource
 %%EOF
-endstream
-endobj
-
-5 0 obj
-<<
-  /Length 18
-  /Filter [/ASCIIHexDecode /FlateDecode]
->>
-stream
-789C7B000000E100E1
 endstream
 endobj
 

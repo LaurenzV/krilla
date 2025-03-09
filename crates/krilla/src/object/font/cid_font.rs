@@ -210,6 +210,28 @@ impl CIDFont {
         width_writer.finish();
         cid.finish();
 
+        if !sc.serialize_settings().pdf_version.deprecates_cid_set() {
+            let cid_stream_data = {
+                // It's always guaranteed by the subsetter that CIDs start from 0 and are
+                // consecutive, so this encoding is very straight-forward.
+                let mut bytes = vec![];
+                bytes.extend([0xFFu8].repeat((self.glyph_remapper.num_gids() / 8) as usize));
+                let padding = self.glyph_remapper.num_gids() % 8;
+                if padding != 0 {
+                    bytes.push(!(0xFF >> padding))
+                }
+
+                bytes
+            };
+
+            let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
+                .finish(&sc.serialize_settings());
+            let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
+            cid_stream.write_filters(cid_set.deref_mut());
+            cid_set.finish();
+            cid_stream.finish();
+        }
+
         let mut flags = FontFlags::empty();
         flags.set(
             FontFlags::SERIF,
@@ -239,8 +261,11 @@ impl CIDFont {
             .ascent(ascender)
             .descent(descender)
             .cap_height(cap_height)
-            .cid_set(cid_set_ref)
             .stem_v(stem_v);
+
+        if !sc.serialize_settings().pdf_version.deprecates_cid_set() {
+            font_descriptor.cid_set(cid_set_ref);
+        }
 
         if is_cff {
             font_descriptor.font_file3(data_ref);
@@ -299,26 +324,6 @@ impl CIDFont {
         let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
-
-        let cid_stream_data = {
-            // It's always guaranteed that CIDs start from 0 and are consecutive, so this encoding
-            // is very straight-forward.
-            let mut bytes = vec![];
-            bytes.extend([0xFFu8].repeat((self.glyph_remapper.num_gids() / 8) as usize));
-            let padding = self.glyph_remapper.num_gids() % 8;
-            if padding != 0 {
-                bytes.push(!(0xFF >> padding))
-            }
-
-            bytes
-        };
-
-        let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
-            .finish(&sc.serialize_settings());
-        let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
-        cid_stream.write_filters(cid_set.deref_mut());
-        cid_set.finish();
-        cid_stream.finish();
 
         let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
         font_stream.write_filters(stream.deref_mut());
