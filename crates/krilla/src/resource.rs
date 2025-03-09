@@ -242,7 +242,7 @@ impl ResourceDictionary {
         T: ResourcesExt,
     {
         let resources = &mut parent.resources();
-        if !version.discourages_proc_sets() {
+        if !version.deprecates_proc_sets() {
             resources.proc_sets([
                 ProcSet::Pdf,
                 ProcSet::Text,

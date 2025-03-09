@@ -83,13 +83,11 @@ impl PdfVersion {
         };
     }
 
-    pub(crate) fn discourages_proc_sets(&self) -> bool {
-        // Procedure sets should not be written for PDF 2.0
+    pub(crate) fn deprecates_proc_sets(&self) -> bool {
         *self >= PdfVersion::Pdf20
     }
 
-    pub(crate) fn discourages_cid_set(&self) -> bool {
-        // CID sets should not be written for PDF 2.0
+    pub(crate) fn deprecates_cid_set(&self) -> bool {
         *self >= PdfVersion::Pdf20
     }
 }

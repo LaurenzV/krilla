@@ -210,7 +210,7 @@ impl CIDFont {
         width_writer.finish();
         cid.finish();
 
-        if !sc.serialize_settings().pdf_version.discourages_cid_set() {
+        if !sc.serialize_settings().pdf_version.deprecates_cid_set() {
             let cid_stream_data = {
                 // It's always guaranteed by the subsetter that CIDs start from 0 and are
                 // consecutive, so this encoding is very straight-forward.
@@ -263,7 +263,7 @@ impl CIDFont {
             .cap_height(cap_height)
             .stem_v(stem_v);
 
-        if !sc.serialize_settings().pdf_version.discourages_cid_set() {
+        if !sc.serialize_settings().pdf_version.deprecates_cid_set() {
             font_descriptor.cid_set(cid_set_ref);
         }
 
