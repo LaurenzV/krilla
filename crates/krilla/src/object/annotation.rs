@@ -120,7 +120,7 @@ pub struct LinkAnnotation {
 
 impl LinkAnnotation {
     /// Create a new link annotation.
-    /// 
+    ///
     /// `rect`: The bounding box of the link annotation that it should cover on the page.
     /// `target`: The target of the link annotation.
     /// `quad_points`: An array of 4xn points, where each 4 points define the quadrilateral
@@ -128,7 +128,11 @@ impl LinkAnnotation {
     /// a link annotation that is broken to one or multiple lines. Note that the points
     /// have to be within the bounds defined by `rect`!
     pub fn new(rect: Rect, quad_points: Option<Vec<Point>>, target: Target) -> Self {
-        Self { rect, quad_points, target }
+        Self {
+            rect,
+            quad_points,
+            target,
+        }
     }
 
     fn serialize_type(
@@ -188,6 +192,34 @@ mod tests {
             LinkAnnotation::new(
                 Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
                 None,
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            )
+            .into(),
+        );
+    }
+
+    #[snapshot(single_page)]
+    fn annotation_with_quad_points(page: &mut Page) {
+        let mut surface = page.surface();
+        let path1 = rect_to_path(0.0, 0.0, 50.0, 50.0);
+        let path2 = rect_to_path(50.0, 50.0, 100.0, 100.0);
+        surface.fill_path(&path1, green_fill(1.0));
+        surface.fill_path(&path2, green_fill(1.0));
+        surface.finish();
+
+        page.add_annotation(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
+                Some(vec![
+                    Point::from_xy(0.0, 0.0),
+                    Point::from_xy(50.0, 0.0),
+                    Point::from_xy(50.0, 50.0),
+                    Point::from_xy(0.0, 50.0),
+                    Point::from_xy(50.0, 50.0),
+                    Point::from_xy(100.0, 50.0),
+                    Point::from_xy(100.0, 100.0),
+                    Point::from_xy(50.0, 100.0),
+                ]),
                 Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
             )
             .into(),
