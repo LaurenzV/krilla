@@ -46,7 +46,7 @@ syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
 tiny-skia-path = "0.11.4"
 usvg = "0.44.0"
-xmp-writer = { git = "https://github.com/LaurenzV/xmp-writer", rev = "1c2b8ae9" }
+xmp-writer = { git = "https://github.com/LaurenzV/xmp-writer", rev = "a1cbb887" }
 yoke = { version = "0.7.4", features = ["derive"] }
 zune-png = "0.4.10"
 zune-jpeg = "0.4.13"

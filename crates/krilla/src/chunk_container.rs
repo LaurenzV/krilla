@@ -102,7 +102,7 @@ impl ChunkContainer {
             metadata.serialize_document_info(
                 &mut remapped_ref,
                 &mut pdf,
-                sc.serialize_settings().pdf_version(),
+                sc.serialize_settings().configuration,
             );
         }
 
@@ -217,7 +217,12 @@ impl ChunkContainer {
                 catalog.outlines(remapper[&ol.0]);
             }
 
-            if !named_destinations.is_empty() || !embedded_files.is_empty() {
+            let write_embedded_files = sc
+                .serialize_settings()
+                .validator()
+                .write_embedded_files(&self.embedded_files);
+
+            if !named_destinations.is_empty() || write_embedded_files {
                 // Cannot use pdf-writer API here because it requires Ref's, while
                 // we write our destinations directly into the array.
                 let mut names = catalog.names();
@@ -238,7 +243,7 @@ impl ChunkContainer {
                     dest_name_tree.finish();
                 }
 
-                if !embedded_files.is_empty() {
+                if write_embedded_files {
                     let mut embedded_files_name_tree = names.embedded_files();
                     let mut embedded_name_entries = embedded_files_name_tree.names();
 

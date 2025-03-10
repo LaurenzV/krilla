@@ -218,6 +218,11 @@ mod tests {
         embedded_file_impl(d)
     }
 
+    #[snapshot(document, settings_27)]
+    fn pdf_a4f_with_embedded_file(d: &mut Document) {
+        embedded_file_impl(d)
+    }
+
     #[snapshot(document, settings_25)]
     fn pdf_20_with_embedded_file(d: &mut Document) {
         // Technically PDF 2.0 supports associated files, but we only use them for PDF/A-3.
@@ -266,8 +271,6 @@ mod tests {
             d.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::EmbeddedFile(EmbedError::Existence),
-                ValidationError::EmbeddedFile(EmbedError::MissingDate),
-                ValidationError::EmbeddedFile(EmbedError::MissingDescription)
             ]))
         )
     }

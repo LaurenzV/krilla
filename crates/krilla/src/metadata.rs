@@ -6,7 +6,7 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use crate::configure::PdfVersion;
+use crate::configure::{Configuration, PdfVersion};
 use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
@@ -181,15 +181,19 @@ impl Metadata {
         &self,
         ref_: &mut Ref,
         pdf: &mut Pdf,
-        version: PdfVersion,
+        config: Configuration,
     ) {
+        if !config.validator().allows_info_dict() {
+            return;
+        }
+
         if self.has_document_info() {
             let ref_ = ref_.bump();
             let mut document_info = pdf.document_info(ref_);
 
             // ALl of those are deprecated in PDF 2.0 and will only be written
             // to the XMP metadata.
-            if version < PdfVersion::Pdf20 {
+            if config.version() < PdfVersion::Pdf20 {
                 if let Some(title) = &self.title {
                     document_info.title(TextStr(title));
                 }
