@@ -110,33 +110,34 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 mod chunk_container;
 mod graphics_state;
 mod object;
+mod prelude;
 mod resource;
 mod serialize;
 #[cfg(feature = "svg")]
 mod svg;
 mod util;
 
+pub(crate) mod content;
+#[cfg(test)]
+pub(crate) mod tests;
+
+pub mod configure;
 pub mod document;
 pub mod error;
 pub mod font;
 pub mod geom;
 pub mod metadata;
-
-pub use object::*;
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
-
-pub mod configure;
 pub mod paint;
 pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod tagging;
 
-pub(crate) mod content;
-#[cfg(test)]
-pub(crate) mod tests;
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
+
+pub use prelude::*;
 
 /// A type that holds some bytes.
 #[derive(Clone)]
@@ -177,6 +178,3 @@ impl Debug for Data {
         write!(f, "Data {{..}}")
     }
 }
-
-pub use document::*;
-pub use serialize::{SerializeSettings, SvgSettings};
