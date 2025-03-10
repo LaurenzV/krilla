@@ -159,7 +159,8 @@ See `README.md` for the meaning of each color.
 - krilla does not use the `bytes` and `encoding` attributes. 🟢
 - krilla uses the outlined namespaces and prefixes. 🟢
 - krilla does not currently have an associated file containing the embedded file specification. However,
-  it seems like there is an issue with the spec because I can't find that table entry in the PDF 2.0 spec? 🔴
+  it seems like there is an issue with the spec because I can't find that table entry in the PDF 2.0 spec? 
+  And no validator I tried seems to complain about this.🔴
 
 ### 6.7.3 Version identification
 - krilla always writes the required version identification parts. 🟢
