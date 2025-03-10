@@ -26,6 +26,7 @@
 
 use pdf_writer::{Array, Dict, Name};
 use std::borrow::Cow;
+use std::fmt::Write;
 use std::ops::DerefMut;
 use tiny_skia_path::{Rect, Transform};
 
@@ -303,15 +304,15 @@ pub(crate) fn deflate_encode(data: &[u8]) -> Vec<u8> {
 }
 
 fn hex_encode(data: &[u8]) -> Vec<u8> {
-    data.iter()
-        .enumerate()
-        .map(|(index, byte)| {
-            let mut formatted = format!("{:02X}", byte);
-            if index % 35 == 34 {
-                formatted.push('\n');
-            }
-            formatted
-        })
-        .collect::<String>()
-        .into_bytes()
+    const COLUMNS: usize = 35;
+    let len = data.len();
+    let capacity = 2 * len + len / COLUMNS;
+    let mut output = String::with_capacity(capacity);
+    for (index, byte) in data.iter().enumerate() {
+        write!(output, "{:02X}", byte).unwrap();
+        if index % COLUMNS == COLUMNS - 1 {
+            output.push('\n');
+        }
+    }
+    output.into_bytes()
 }
