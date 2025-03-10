@@ -5,13 +5,11 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-#[cfg(feature = "fontdb")]
-use fontdb::{Database, ID};
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
 #[cfg(feature = "simple-text")]
 use skrifa::GlyphId;
-#[cfg(feature = "fontdb")]
+#[cfg(feature = "svg")]
 use std::collections::HashMap;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
@@ -245,9 +243,8 @@ impl<'a> Surface<'a> {
     /// - It will only use the single font you provided to draw the text, no font fallback will
     ///   be performed.
     ///
-    /// If you need more advanced control over how your text looks, but you don't want to
-    /// implement your own text processing solution, so you can use the `fill_glyphs` method,
-    /// you can use the `cosmic-text` integration to do so.
+    /// If you need more advanced control over how your text looks,
+    /// you can use the `fill_glyphs` method.
     #[cfg(feature = "simple-text")]
     #[allow(clippy::too_many_arguments)]
     pub fn fill_text(
@@ -276,10 +273,6 @@ impl<'a> Surface<'a> {
     }
 
     /// Draw a sequence of glyphs with a stroke.
-    ///
-    /// This is a very low-level method, which gives you full control over how to place
-    /// the glyphs that make up the text. This means that you must have your own text processing
-    /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
     #[allow(clippy::too_many_arguments)]
     pub fn stroke_glyphs(
         &mut self,
@@ -325,9 +318,8 @@ impl<'a> Surface<'a> {
     /// - It will only use the single font you provided to draw the text, no font fallback will
     ///   be performed.
     ///
-    /// If you need more advanced control over how your text looks, but you don't want to
-    /// implement your own text processing solution, so you can use the `stroke_glyphs` method,
-    /// you can use a text-layouting library like `cosmic-text` or `parley` to do so.
+    /// If you need more advanced control over how your text looks,
+    /// you can use the `stroke_glyphs` method.
     #[cfg(feature = "simple-text")]
     #[allow(clippy::too_many_arguments)]
     pub fn stroke_text(
@@ -489,10 +481,13 @@ impl<'a> Surface<'a> {
             .draw_shading(shading, self.sc);
     }
 
-    /// Convert a `fontdb` into `krilla` `Font` objects. This is a convenience method,
-    /// which makes it easier to integrate `cosmic-text` with this library.
-    #[cfg(feature = "fontdb")]
-    pub fn convert_fontdb(&mut self, db: &mut Database, ids: Option<Vec<ID>>) -> HashMap<ID, Font> {
+    /// Convert a `fontdb` into `krilla` `Font` objects.
+    #[cfg(feature = "svg")]
+    pub(crate) fn convert_fontdb(
+        &mut self,
+        db: &mut fontdb::Database,
+        ids: Option<Vec<fontdb::ID>>,
+    ) -> HashMap<fontdb::ID, Font> {
         self.sc.convert_fontdb(db, ids)
     }
 

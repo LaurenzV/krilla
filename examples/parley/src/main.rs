@@ -1,10 +1,4 @@
 //! This example shows how to use parley to create advanced layouted text.
-//!
-//! Similarly to the `cosmic-text` example, it might be a bit hard to grasph if you
-//! are not familiar with text shaping/layouting, but using this code as a template
-//! should hopefully help you get started. It should be noted that this example also
-//! only supports basic glyphs with certain properties (like colors, font weight, etc.)
-//! but not other parley features like underline, strike-through, etc.
 
 use krilla::color::rgb;
 use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
