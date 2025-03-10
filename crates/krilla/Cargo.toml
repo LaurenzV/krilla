@@ -16,11 +16,9 @@ default = ["simple-text", "raster-images", "svg"]
 # Allow for multi-threaded PDF creation.
 "rayon" = ["dep:rayon"]
 # Allow for rendering SVG images and SVG-based glyphs.
-"svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "fontdb", "raster-images"]
+"svg" = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "dep:fontdb", "raster-images"]
 # Allow for rendering simple text without having to shape it yourself.
 "simple-text" = ["dep:rustybuzz"]
-# Add the convenience method for converting fontdb databases.
-"fontdb" = ["dep:fontdb"]
 # Allow for adding raster images to your document.
 "raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
 

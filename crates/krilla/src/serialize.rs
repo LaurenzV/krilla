@@ -6,8 +6,6 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
 
-#[cfg(feature = "fontdb")]
-use fontdb::{Database, ID};
 use pdf_writer::types::StructRole;
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
@@ -344,12 +342,12 @@ impl SerializeContext {
             .clone()
     }
 
-    #[cfg(feature = "fontdb")]
+    #[cfg(feature = "svg")]
     pub(crate) fn convert_fontdb(
         &mut self,
-        db: &mut Database,
-        ids: Option<Vec<ID>>,
-    ) -> HashMap<ID, Font> {
+        db: &mut fontdb::Database,
+        ids: Option<Vec<fontdb::ID>>,
+    ) -> HashMap<fontdb::ID, Font> {
         let mut map = HashMap::new();
 
         let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
