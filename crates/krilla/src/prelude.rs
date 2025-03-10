@@ -1,4 +1,6 @@
-pub use crate::object::{color::rgb::Color, image::Image, page::Page};
+#[cfg(feature = "raster-images")]
+pub use crate::object::image::Image;
+pub use crate::object::{color::rgb::Color, page::Page};
 
 pub use crate::{
     configure::*,
