@@ -8,5 +8,5 @@ readme.workspace = true
 license.workspace = true
 
 [dependencies]
-cosmic-text = { git = "https://github.com/LaurenzV/cosmic-text", rev = "39c15e56" }
+cosmic-text = { git = "https://github.com/LaurenzV/cosmic-text", rev = "31a3581d" }
 krilla = { workspace = true }

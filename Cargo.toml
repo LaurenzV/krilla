@@ -21,11 +21,11 @@ comemo = "0.4.0"
 difference = "2.0.0"
 flate2 = "1.0.30"
 float-cmp = "0.10.0"
-fontdb = "0.22.0"
+fontdb = "0.23.0"
 gif = "0.13.1"
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.13.0"
-image-webp = "0.1.3"
+image-webp = "0.2.1"
 krilla = {path = "crates/krilla"}
 krilla-macros = {path = "crates/krilla-macros"}
 miniz_oxide = "0.8.0"
@@ -36,17 +36,17 @@ pdf-writer = { git= "https://github.com/LaurenzV/pdf-writer", rev = "f95a19c" }
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 rayon = "1.10.0"
-resvg = "0.44.0"
-rustybuzz = "0.18.0"
+resvg = "0.45.0"
+rustybuzz = "0.20.1"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "664be71b" }
-skrifa = "0.22.0"
+skrifa = "0.28.1"
 subsetter = {git = "https://github.com/typst/subsetter", rev = "172416a" }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
 tiny-skia-path = "0.11.4"
-usvg = "0.44.0"
+usvg = "0.45.0"
 xmp-writer = { git = "https://github.com/LaurenzV/xmp-writer", rev = "a1cbb887" }
-yoke = { version = "0.7.4", features = ["derive"] }
+yoke = { version = "0.8.0", features = ["derive"] }
 zune-png = "0.4.10"
 zune-jpeg = "0.4.13"
