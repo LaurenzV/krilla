@@ -144,6 +144,13 @@ jobs:
           cd verapdf-arlington-1.29.9
           java -jar verapdf-izpack-installer-1.29.9.jar ../.github/arlington.xml
           
+      - name: Download verapdf model
+        run: |
+          curl -LO https://software.verapdf.org/dev/1.29/verapdf-greenfield-1.29.16-installer.zip
+          unzip verapdf-greenfield-1.29.16-installer.zip
+          cd verapdf-greenfield-1.29.16
+          java -jar verapdf-izpack-installer-1.29.16.jar ../.github/verapdf.xml
+          
       - name: Get pdfbox
         run: |
           curl -LO https://dlcdn.apache.org/pdfbox/3.0.4/pdfbox-app-3.0.4.jar
@@ -182,7 +189,14 @@ jobs:
           path: ./assets/diffs
           
       - name: Run Arlington PDF tests
-        run: /tmp/arlington/arlington-pdf-model-checker store --format text -r -v --loglevel 0 -e ISO_19005_3
+        # We are excluding one file because of https://github.com/pdf-association/arlington-pdf-model/issues/132     
+        run: find ./store -name "*.pdf" 
+          | grep -v "validation_pdfa4f_full_example.pdf" 
+          | xargs /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
+        
+      - name: Run veraPDF tests  
+        run: find store -name "validation*.pdf" 
+          | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
 
   checks:
     name: Check clippy, formatting, and documentation
