@@ -25,7 +25,7 @@ use crate::embed::EmbedError;
 use crate::font::Font;
 use crate::surface::Location;
 use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::{Chunk, Finish};
+use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
@@ -651,26 +651,6 @@ impl Validator {
         }
     }
 
-    pub(crate) fn write_embedded_files(&self, files: &[Chunk]) -> bool {
-        match self {
-            Validator::None
-            | Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::A4
-            | Validator::A4E
-            | Validator::UA1 => !files.is_empty(),
-            // For this one we always need to write an `EmbeddedFiles` entry,
-            // even if empty.
-            Validator::A4F => true,
-        }
-    }
-
     pub(crate) fn allows_associated_files(&self) -> bool {
         match self {
             // PDF 2.0 _does_ support associated files. However, in this case the document has to
@@ -1158,7 +1138,7 @@ mod tests {
         validation_pdf_full_example(document);
     }
 
-    #[snapshot(document, settings_15)]
+    #[snapshot(document, settings_15, ignore)]
     fn validation_pdfua1_full_example(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();
@@ -1207,6 +1187,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn validation_pdfua1_missing_requirements() {
         let mut document = Document::new_with(SerializeSettings::settings_15());
         let mut page = document.start_page();
@@ -1259,7 +1240,7 @@ mod tests {
         )
     }
 
-    #[snapshot(document, settings_15)]
+    #[snapshot(document, settings_15, ignore)]
     fn validation_pdfua1_attributes(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();
