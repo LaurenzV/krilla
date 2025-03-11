@@ -176,6 +176,7 @@ pub enum Validator {
     /// - All requirements of PDF/A2-B
     A3_U,
     /// The validator for the PDF/UA-1 standard.
+    /// NOTE: THIS EXPORT MODE IS EXPERIMENTAL AND SHOULDN'T BE USED IN PRODUCTION YET!
     ///
     /// **Requirements**:
     ///
