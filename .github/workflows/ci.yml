@@ -149,7 +149,7 @@ jobs:
           curl -LO https://software.verapdf.org/dev/1.29/verapdf-greenfield-1.29.16-installer.zip
           unzip verapdf-greenfield-1.29.16-installer.zip
           cd verapdf-greenfield-1.29.16
-          java -jar verapdf-izpack-installer-1.29.16 ../.github/verapdf.xml
+          java -jar verapdf-izpack-installer-1.29.16.jar ../.github/verapdf.xml
           
       - name: Get pdfbox
         run: |
