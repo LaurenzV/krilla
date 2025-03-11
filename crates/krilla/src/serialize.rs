@@ -720,7 +720,7 @@ impl SerializeContext {
             tree.insert(Name(b"K")).array().item(document_ref);
 
             let mut sub_chunks = vec![];
-            
+
             if !struct_parents.is_empty() {
                 let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
                 let mut tree_nums = parent_tree.nums();
@@ -748,10 +748,9 @@ impl SerializeContext {
                             tree_nums.insert(index as i32, list_ref);
                         }
                         StructParentElement::Annotation(page_index, annot_index) => {
-                            let it = IdentifierType::AnnotationIdentifier(AnnotationIdentifier::new(
-                                page_index,
-                                annot_index,
-                            ));
+                            let it = IdentifierType::AnnotationIdentifier(
+                                AnnotationIdentifier::new(page_index, annot_index),
+                            );
                             let ref_ = parent_tree_map.get(&it).unwrap();
                             tree_nums.insert(index as i32, *ref_);
                         }

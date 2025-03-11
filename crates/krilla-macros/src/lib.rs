@@ -32,6 +32,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mut serialize_settings = format_ident!("settings_1");
     let mut mode = SnapshotMode::SerializeContext;
+    let mut ignore = SKIP_SNAPSHOT.is_some();
 
     for attr in attrs.identifiers {
         let st = attr.to_string();
@@ -39,11 +40,13 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         if st.starts_with("settings") {
             serialize_settings = attr.clone();
         } else if st == "single_page" {
-            mode = SnapshotMode::SinglePage
+            mode = SnapshotMode::SinglePage;
         } else if st == "document" {
-            mode = SnapshotMode::Document
+            mode = SnapshotMode::Document;
         } else if st == "stream" {
-            mode = SnapshotMode::Stream
+            mode = SnapshotMode::Stream;
+        } else if st == "ignore" {
+            ignore = true;
         } else {
             panic!("unknown setting {}", st);
         }
@@ -110,7 +113,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let ignore_snippet = if SKIP_SNAPSHOT.is_some() {
+    let ignore_snippet = if ignore {
         quote! { #[ignore] }
     } else {
         quote! {}

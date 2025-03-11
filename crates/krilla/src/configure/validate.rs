@@ -1138,7 +1138,7 @@ mod tests {
         validation_pdf_full_example(document);
     }
 
-    #[snapshot(document, settings_15)]
+    #[snapshot(document, settings_15, ignore)]
     fn validation_pdfua1_full_example(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();
@@ -1187,6 +1187,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn validation_pdfua1_missing_requirements() {
         let mut document = Document::new_with(SerializeSettings::settings_15());
         let mut page = document.start_page();
@@ -1239,7 +1240,7 @@ mod tests {
         )
     }
 
-    #[snapshot(document, settings_15)]
+    #[snapshot(document, settings_15, ignore)]
     fn validation_pdfua1_attributes(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();

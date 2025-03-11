@@ -216,7 +216,6 @@ impl ChunkContainer {
             if let Some(ol) = &self.outline {
                 catalog.outlines(remapper[&ol.0]);
             }
-            
 
             if !named_destinations.is_empty() || !self.embedded_files.is_empty() {
                 // Cannot use pdf-writer API here because it requires Ref's, while
