@@ -105,7 +105,7 @@ impl ExtGState {
 
 impl Cacheable for ExtGState {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.ext_g_states)
+        |cc| &mut cc.ext_g_states
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
