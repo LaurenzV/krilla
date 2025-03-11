@@ -137,7 +137,7 @@ jobs:
           rm -r pdfium-linux-x64.tgz
           rm -r pdfium-linux-x64
           
-      - name: Download arlington
+      - name: Download Arlington model
         run: |
           curl -LO https://software.verapdf.org/dev/arlington/1.29/verapdf-arlington-1.29.9-installer.zip
           unzip verapdf-arlington-1.29.9-installer.zip
