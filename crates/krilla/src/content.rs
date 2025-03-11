@@ -1045,14 +1045,14 @@ impl PdfFont for CIDFont {
 
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
         match pdf_glyph {
-            PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
             PDFGlyph::Cid(cid) => self.get_codepoints(cid),
         }
     }
 
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
         match pdf_glyph {
-            PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
+            PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
             PDFGlyph::Cid(cid) => self.set_codepoints(cid, text, location),
         }
     }
