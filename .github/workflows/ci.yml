@@ -5,6 +5,7 @@ on: [push, pull_request]
 env:
   KRILLA_THRESHOLD: "200"
   VISREG: ""
+  STORE: ""
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
 
@@ -135,12 +136,18 @@ jobs:
           sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
           rm -r pdfium-linux-x64.tgz
           rm -r pdfium-linux-x64
-
+          
+      - name: Download Arlington model
+        run: |
+          curl -LO https://software.verapdf.org/dev/arlington/1.29/verapdf-arlington-1.29.9-installer.zip
+          unzip verapdf-arlington-1.29.9-installer.zip
+          cd verapdf-arlington-1.29.9
+          java -jar verapdf-izpack-installer-1.29.9.jar ../.github/arlington.xml
+          
       - name: Get pdfbox
         run: |
           curl -LO https://dlcdn.apache.org/pdfbox/3.0.4/pdfbox-app-3.0.4.jar
           mv pdfbox-app-3.0.4.jar pdfbox.jar
-          ls .
 
       - name: Clone sitro
         run: |
@@ -173,6 +180,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ./assets/diffs
+          
+      - name: Run Arlington PDF tests
+        run: /tmp/arlington/arlington-pdf-model-checker store --format text -r -v --loglevel 0 -e ISO_19005_3
 
   checks:
     name: Check clippy, formatting, and documentation
