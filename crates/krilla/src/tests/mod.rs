@@ -24,7 +24,7 @@ use crate::annotation::{Annotation, LinkAnnotation, Target};
 use crate::color::{cmyk, luma, rgb, ICCProfile};
 use crate::configure::{Configuration, PdfVersion, Validator};
 use crate::document::{Document, PageSettings};
-use crate::font::{Font, GlyphUnits};
+use crate::font::{Font, GlyphUnits, KrillaGlyph};
 use crate::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use crate::mask::{Mask, MaskType};
 use crate::paint::{Stop, Stops};
@@ -187,6 +187,17 @@ impl CustomImage for TestImage {
             ImageColorspace::Luma
         }
     }
+}
+
+pub fn dummy_text_with_spans() -> (String, Vec<KrillaGlyph>) {
+    let text = "Hi.".to_string();
+    let glyphs = vec![
+        KrillaGlyph::dummy(GlyphId::new(10), 0..1, Some(3)),
+        KrillaGlyph::dummy(GlyphId::new(0), 1..2, Some(4)),
+        KrillaGlyph::dummy(GlyphId::new(20), 2..3, Some(5)),
+    ];
+
+    (text, glyphs)
 }
 
 pub fn green_fill(opacity: f32) -> Fill {
@@ -633,7 +644,7 @@ pub fn all_glyphs_to_pdf(
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
-            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0.0, 0..text.len())],
+            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0.0, 0..text.len(), None)],
             font.clone(),
             &text,
             size as f32,

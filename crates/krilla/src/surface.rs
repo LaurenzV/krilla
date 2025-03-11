@@ -647,6 +647,7 @@ fn naive_shape(
             (pos.y_offset as f32 / font.units_per_em()) * size,
             (pos.y_advance as f32 / font.units_per_em()) * size,
             start..end,
+            None,
         ));
     }
 

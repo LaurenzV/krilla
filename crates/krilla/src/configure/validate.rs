@@ -723,7 +723,8 @@ mod tests {
     use crate::surface::TextDirection;
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{
-        cmyk_fill, rect_to_path, red_fill, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+        cmyk_fill, dummy_text_with_spans, rect_to_path, red_fill, stops_with_2_solid_1,
+        youtube_link, NOTO_SANS,
     };
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
@@ -908,6 +909,40 @@ mod tests {
         )
     }
 
+    #[test]
+    fn validation_pdfa2u_text_with_location() {
+        let mut document = Document::new_with(SerializeSettings::settings_9());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0, true).unwrap();
+        let (text, glyphs) = dummy_text_with_spans();
+
+        surface.set_location(2);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), red_fill(0.1));
+
+        surface.fill_glyphs(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            &glyphs,
+            font.clone(),
+            &text,
+            20.0,
+            GlyphUnits::UserSpace,
+            false,
+        );
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::ContainsNotDefGlyph(font, Some(4), "i".to_string())
+            ]))
+        )
+    }
+
     fn validation_pdf_full_example(document: &mut Document) {
         let mut page = document.start_page();
         let mut surface = page.surface();
@@ -978,8 +1013,8 @@ mod tests {
         let mut surface = page.surface();
 
         let glyphs = vec![
-            KrillaGlyph::new(GlyphId::new(3), 2048.0, 0.0, 0.0, 0.0, 0..1),
-            KrillaGlyph::new(GlyphId::new(2), 2048.0, 0.0, 0.0, 0.0, 1..4),
+            KrillaGlyph::new(GlyphId::new(3), 2048.0, 0.0, 0.0, 0.0, 0..1, None),
+            KrillaGlyph::new(GlyphId::new(2), 2048.0, 0.0, 0.0, 0.0, 1..4, None),
         ];
 
         surface.fill_glyphs(
