@@ -414,6 +414,8 @@ impl SerializeContext {
         self.check_limits();
 
         if !self.validation_errors.is_empty() {
+            // Deduplicate errors with no span.
+            self.validation_errors.dedup();
             return Err(KrillaError::ValidationError(self.validation_errors));
         }
 
