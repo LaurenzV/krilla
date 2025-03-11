@@ -148,7 +148,6 @@ jobs:
         run: |
           curl -LO https://dlcdn.apache.org/pdfbox/3.0.4/pdfbox-app-3.0.4.jar
           mv pdfbox-app-3.0.4.jar pdfbox.jar
-          ls .
 
       - name: Clone sitro
         run: |
@@ -183,7 +182,10 @@ jobs:
           path: ./assets/diffs
           
       - name: Run Arlington PDF tests
-        run: /tmp/arlington/arlington-pdf-model-checker snapshots --format text -r -v --loglevel 0 -e ISO_19005_3
+        run: |
+          ls
+          /tmp/arlington
+          /tmp/arlington/arlington-pdf-model-checker snapshots --format text -r -v --loglevel 0 -e ISO_19005_3
 
   checks:
     name: Check clippy, formatting, and documentation
