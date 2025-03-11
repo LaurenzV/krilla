@@ -1,7 +1,8 @@
 //! XObjects.
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
 use std::ops::DerefMut;
+
+use pdf_writer::{Chunk, Finish, Name, Ref};
 use tiny_skia_path::Rect;
 
 use crate::color::{rgb, DEVICE_RGB};

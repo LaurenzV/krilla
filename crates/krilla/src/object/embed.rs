@@ -2,6 +2,7 @@
 
 use std::ops::DerefMut;
 
+pub use pdf_writer::types::AssociationKind;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
@@ -9,10 +10,9 @@ use crate::metadata::pdf_date;
 use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
+use crate::surface::Location;
 use crate::util::NameExt;
 use crate::Data;
-
-pub use pdf_writer::types::AssociationKind;
 
 /// An error while embedding the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -44,6 +44,8 @@ pub struct EmbeddedFile {
     /// Whether the embedded file should be compressed (recommended to turn off if the
     /// original file already has compression).
     pub compress: bool,
+    /// The location of the embedded file.
+    pub location: Option<Location>,
 }
 
 impl Cacheable for EmbeddedFile {
@@ -52,7 +54,10 @@ impl Cacheable for EmbeddedFile {
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
-        sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::Existence));
+        sc.register_validation_error(ValidationError::EmbeddedFile(
+            EmbedError::Existence,
+            self.location,
+        ));
 
         let mut chunk = Chunk::new();
         let stream_ref = sc.new_ref();
@@ -72,6 +77,7 @@ impl Cacheable for EmbeddedFile {
         } else {
             sc.register_validation_error(ValidationError::EmbeddedFile(
                 EmbedError::MissingMimeType,
+                self.location,
             ));
         }
 
@@ -85,7 +91,10 @@ impl Cacheable for EmbeddedFile {
             let date = pdf_date(date_time);
             params.modification_date(date);
         } else {
-            sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::MissingDate));
+            sc.register_validation_error(ValidationError::EmbeddedFile(
+                EmbedError::MissingDate,
+                self.location,
+            ));
         }
 
         params.finish();
@@ -120,6 +129,7 @@ impl Cacheable for EmbeddedFile {
         } else {
             sc.register_validation_error(ValidationError::EmbeddedFile(
                 EmbedError::MissingDescription,
+                self.location,
             ));
         }
 
@@ -151,6 +161,7 @@ mod tests {
             association_kind: AssociationKind::Supplement,
             data: data.into(),
             compress: false,
+            location: None,
         }
     }
 
@@ -165,6 +176,7 @@ mod tests {
             association_kind: AssociationKind::Supplement,
             data: data.into(),
             compress: false,
+            location: None,
         }
     }
 
@@ -178,6 +190,7 @@ mod tests {
             association_kind: AssociationKind::Unspecified,
             data: data.into(),
             compress: false,
+            location: None,
         }
     }
 
@@ -252,8 +265,8 @@ mod tests {
         assert_eq!(
             d.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::EmbeddedFile(EmbedError::MissingDate),
-                ValidationError::EmbeddedFile(EmbedError::MissingDescription)
+                ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
+                ValidationError::EmbeddedFile(EmbedError::MissingDescription, None)
             ]))
         )
     }
@@ -272,7 +285,7 @@ mod tests {
         assert_eq!(
             d.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::EmbeddedFile(EmbedError::Existence),
+                ValidationError::EmbeddedFile(EmbedError::Existence, None),
             ]))
         )
     }
