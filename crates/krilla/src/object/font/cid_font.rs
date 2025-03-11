@@ -147,12 +147,17 @@ impl CIDFont {
         }
 
         let subsetted = subset_font(self.font.clone(), glyph_remapper)?;
+        let num_glyphs;
 
         let font_stream = {
             let mut data = subsetted.as_slice();
 
             // If we have a CFF font, only embed the standalone CFF program.
             let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
+                KrillaError::FontError(self.font.clone(), "failed to read font subset".to_string())
+            })?;
+            
+            num_glyphs = subsetted_ref.maxp().map(|m| m.num_glyphs()).map_err(|_| {
                 KrillaError::FontError(self.font.clone(), "failed to read font subset".to_string())
             })?;
 
@@ -209,13 +214,15 @@ impl CIDFont {
         width_writer.finish();
         cid.finish();
 
+        // The only reason we write this in the first place is that PDF/A1-b requires
+        // a CIDSet.
         if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
             let cid_stream_data = {
                 // It's always guaranteed by the subsetter that CIDs start from 0 and are
                 // consecutive, so this encoding is very straight-forward.
                 let mut bytes = vec![];
-                bytes.extend([0xFFu8].repeat((self.glyph_remapper.num_gids() / 8) as usize));
-                let padding = self.glyph_remapper.num_gids() % 8;
+                bytes.extend([0xFFu8].repeat((num_glyphs / 8) as usize));
+                let padding = num_glyphs % 8;
                 if padding != 0 {
                     bytes.push(!(0xFF >> padding))
                 }
