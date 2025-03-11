@@ -394,6 +394,7 @@ impl ContentBuilder {
                 || pdf_font.font().postscript_name() == Some("LastResort")
             {
                 sc.register_validation_error(ValidationError::ContainsNotDefGlyph(
+                    pdf_font.font(),
                     sc.location,
                     text[glyph.text_range()].to_string(),
                 ));

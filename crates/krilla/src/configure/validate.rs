@@ -78,7 +78,7 @@ pub enum ValidationError {
     /// in the input text, or if it was explicitly mapped that way.
     ///
     /// The second argument contains the text range of the glyph.
-    ContainsNotDefGlyph(Option<Location>, String),
+    ContainsNotDefGlyph(Font, Option<Location>, String),
     /// A glyph was mapped either to the codepoint 0x0, 0xFEFF or 0xFFFE, or no codepoint at all,
     /// which is forbidden by some standards.
     ///
@@ -284,7 +284,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph(_, _) => false,
+                ValidationError::ContainsNotDefGlyph(_, _, _) => false,
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
@@ -320,7 +320,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph(_, _) => true,
+                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
@@ -356,7 +356,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph(_, _) => true,
+                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
@@ -387,7 +387,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => false,
                 ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph(_, _) => true,
+                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => true,
                 // Not strictly forbidden if we surround with actual text, but
                 // easier to just forbid it.
@@ -424,7 +424,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => false,
                 ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => false,
-                ValidationError::ContainsNotDefGlyph(_, _) => true,
+                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
@@ -890,7 +890,7 @@ mod tests {
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
             Fill::default(),
-            font,
+            font.clone(),
             20.0,
             &[],
             "你",
@@ -903,7 +903,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::ContainsNotDefGlyph(None, "你".to_string())
+                ValidationError::ContainsNotDefGlyph(font, None, "你".to_string())
             ]))
         )
     }
