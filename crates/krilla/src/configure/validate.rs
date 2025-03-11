@@ -25,7 +25,7 @@ use crate::embed::EmbedError;
 use crate::font::Font;
 use crate::surface::Location;
 use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::{Chunk, Finish};
+use pdf_writer::Finish;
 use skrifa::GlyphId;
 use std::fmt::Debug;
 use xmp_writer::XmpWriter;
@@ -648,26 +648,6 @@ impl Validator {
             | Validator::A3_U
             | Validator::UA1 => true,
             Validator::A4 | Validator::A4F | Validator::A4E => false,
-        }
-    }
-
-    pub(crate) fn write_embedded_files(&self, files: &[Chunk]) -> bool {
-        match self {
-            Validator::None
-            | Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::A4
-            | Validator::A4E
-            | Validator::UA1 => !files.is_empty(),
-            // For this one we always need to write an `EmbeddedFiles` entry,
-            // even if empty.
-            Validator::A4F => true,
         }
     }
 
