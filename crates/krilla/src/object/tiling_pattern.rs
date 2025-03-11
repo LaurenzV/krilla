@@ -117,6 +117,8 @@ impl Resourceable for TilingPattern {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::{snapshot, visreg};
+    use tiny_skia_path::{NormalizedF32, Transform};
 
     use crate::paint::Pattern;
     use crate::path::Fill;
@@ -125,9 +127,6 @@ mod tests {
     use crate::surface::Surface;
     use crate::tests::{basic_pattern_stream, rect_to_path};
     use crate::tiling_pattern::TilingPattern;
-
-    use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::{NormalizedF32, Transform};
 
     #[snapshot]
     fn tiling_pattern_basic(sc: &mut SerializeContext) {

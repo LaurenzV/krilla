@@ -15,8 +15,7 @@ use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::resource;
-use crate::resource::Resource;
+use crate::resource::{self, Resource};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::util::{NameExt, RectExt, RectWrapper};
 

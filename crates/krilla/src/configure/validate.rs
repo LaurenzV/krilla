@@ -20,15 +20,17 @@
 //!
 //! [`Configuration`]: crate::configure::Configuration
 
+use std::fmt::Debug;
+
+use pdf_writer::types::OutputIntentSubtype;
+use pdf_writer::Finish;
+use skrifa::GlyphId;
+use xmp_writer::XmpWriter;
+
 use crate::configure::PdfVersion;
 use crate::embed::EmbedError;
 use crate::font::Font;
 use crate::surface::Location;
-use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::Finish;
-use skrifa::GlyphId;
-use std::fmt::Debug;
-use xmp_writer::XmpWriter;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -710,6 +712,10 @@ impl Validator {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+    use pdf_writer::types::{ListNumbering, TableHeaderScope};
+    use tiny_skia_path::{Point, Rect, Size};
+
     use crate::action::LinkAction;
     use crate::annotation::{Annotation, LinkAnnotation, Target};
     use crate::configure::ValidationError;
@@ -727,9 +733,6 @@ mod tests {
         red_fill, stops_with_2_solid_1, youtube_link, NOTO_SANS,
     };
     use crate::{Document, SerializeSettings};
-    use krilla_macros::snapshot;
-    use pdf_writer::types::{ListNumbering, TableHeaderScope};
-    use tiny_skia_path::{Point, Rect, Size};
 
     fn pdfa_document() -> Document {
         Document::new_with(SerializeSettings::settings_7())

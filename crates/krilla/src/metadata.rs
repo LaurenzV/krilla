@@ -6,9 +6,10 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use crate::configure::{Configuration, PdfVersion};
 use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
+
+use crate::configure::{Configuration, PdfVersion};
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]

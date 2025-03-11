@@ -1,5 +1,9 @@
 //! Embedding attachments to a PDF file.
 
+use std::ops::DerefMut;
+
+use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
+
 use crate::configure::{PdfVersion, ValidationError};
 use crate::metadata::pdf_date;
 use crate::object::{Cacheable, ChunkContainerFn};
@@ -7,10 +11,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
 use crate::Data;
-
-use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
-
-use std::ops::DerefMut;
 
 pub use pdf_writer::types::AssociationKind;
 
@@ -131,6 +131,9 @@ impl Cacheable for EmbeddedFile {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+    use pdf_writer::types::AssociationKind;
+
     use crate::configure::ValidationError;
     use crate::embed::{EmbedError, EmbeddedFile};
     use crate::error::KrillaError;
@@ -138,8 +141,6 @@ mod tests {
     use crate::tagging::TagTree;
     use crate::tests::ASSETS_PATH;
     use crate::{Document, SerializeSettings};
-    use krilla_macros::snapshot;
-    use pdf_writer::types::AssociationKind;
 
     fn file_1() -> EmbeddedFile {
         let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();

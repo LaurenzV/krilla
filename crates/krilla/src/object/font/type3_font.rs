@@ -13,7 +13,7 @@ use tiny_skia_path::{Rect, Transform};
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::font::outline::glyph_path;
-use crate::font::Font;
+use crate::font::{self, Font};
 use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
@@ -22,7 +22,7 @@ use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
 use crate::util::{NameExt, RectExt, TransformExt};
-use crate::{font, SvgSettings};
+use crate::SvgSettings;
 
 pub(crate) type Gid = u8;
 
@@ -552,8 +552,11 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::Font;
+    use krilla_macros::snapshot;
+    use skrifa::GlyphId;
+    use tiny_skia_path::Point;
 
+    use crate::font::Font;
     use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::object::font::{FontContainer, OwnedPaintMode};
     use crate::page::Page;
@@ -561,9 +564,6 @@ mod tests {
     use crate::serialize::{SerializeContext, SerializeSettings};
     use crate::surface::TextDirection;
     use crate::tests::TWITTER_COLOR_EMOJI;
-    use krilla_macros::snapshot;
-    use skrifa::GlyphId;
-    use tiny_skia_path::Point;
 
     impl OwnedCoveredGlyph {
         pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {

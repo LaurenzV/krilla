@@ -6,11 +6,12 @@
 //! the only available action is the link action, which allows you to specify a link that
 //! should be opened, when activating the action.
 
+use pdf_writer::types::ActionType;
+use pdf_writer::{Name, Str};
+
 use crate::destination::Destination;
 use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
-use pdf_writer::types::ActionType;
-use pdf_writer::{Name, Str};
 
 /// A type of action.
 pub enum Action {

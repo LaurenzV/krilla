@@ -241,13 +241,13 @@ fn serialize_children(
 
 #[cfg(test)]
 mod tests {
-    use crate::document::{Document, PageSettings};
-    use crate::object::outline::{Outline, OutlineNode};
-
-    use crate::destination::XyzDestination;
-    use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
     use krilla_macros::snapshot;
     use tiny_skia_path::Point;
+
+    use crate::destination::XyzDestination;
+    use crate::document::{Document, PageSettings};
+    use crate::object::outline::{Outline, OutlineNode};
+    use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
 
     #[snapshot(document)]
     fn outline_simple(d: &mut Document) {

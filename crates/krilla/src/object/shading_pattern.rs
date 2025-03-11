@@ -65,6 +65,9 @@ impl Resourceable for ShadingPattern {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::{snapshot, visreg};
+    use tiny_skia_path::{NormalizedF32, Rect};
+
     use crate::object::shading_function::GradientPropertiesExt;
     use crate::object::shading_pattern::ShadingPattern;
     use crate::page::Page;
@@ -75,8 +78,6 @@ mod tests {
     use crate::tests::{
         rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1,
     };
-    use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::{NormalizedF32, Rect};
 
     #[snapshot]
     fn linear_gradient_pad(sc: &mut SerializeContext) {

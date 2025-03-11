@@ -72,12 +72,13 @@ pub(crate) fn draw_glyph(
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::visreg;
+    use tiny_skia_path::Point;
+
     use crate::document::Document;
     use crate::font::Font;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
-    use krilla_macros::visreg;
-    use tiny_skia_path::Point;
 
     #[visreg(document, all)]
     fn twitter_color_emoji(document: &mut Document) {

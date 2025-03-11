@@ -11,6 +11,7 @@ use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
+
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]
 pub struct Mask {
@@ -127,20 +128,18 @@ impl Resourceable for Mask {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::object::mask::Mask;
-    use crate::serialize::SerializeContext;
-    use crate::surface::Surface;
-
-    use crate::color::rgb;
-    use crate::mask::MaskType;
-
-    use crate::path::Fill;
-    use crate::stream::StreamBuilder;
-    use crate::tests::{basic_mask, rect_to_path, red_fill};
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
     use usvg::NormalizedF32;
+
+    use crate::color::rgb;
+    use crate::mask::MaskType;
+    use crate::object::mask::Mask;
+    use crate::path::Fill;
+    use crate::serialize::SerializeContext;
+    use crate::stream::StreamBuilder;
+    use crate::surface::Surface;
+    use crate::tests::{basic_mask, rect_to_path, red_fill};
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);

@@ -1,5 +1,7 @@
 //! This example shows how to use parley to create advanced layouted text.
 
+use std::collections::HashMap;
+
 use krilla::color::rgb;
 use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::geom::{NormalizedF32, Point};
@@ -8,7 +10,6 @@ use krilla::{Document, PageSettings};
 use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
-use std::collections::HashMap;
 
 fn main() {
     // The text that we want to insert into the PDF.

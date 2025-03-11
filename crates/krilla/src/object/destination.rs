@@ -150,12 +150,13 @@ impl XyzDestination {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+    use tiny_skia_path::{Point, Rect};
+
     use crate::annotation::{LinkAnnotation, Target};
     use crate::destination::{NamedDestination, XyzDestination};
     use crate::tests::{blue_fill, green_fill, rect_to_path, red_fill};
     use crate::Document;
-    use krilla_macros::snapshot;
-    use tiny_skia_path::{Point, Rect};
 
     #[snapshot(document)]
     fn named_destination_basic(d: &mut Document) {

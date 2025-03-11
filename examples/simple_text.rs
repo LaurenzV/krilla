@@ -6,15 +6,16 @@
 //! the font must contain all necessary glyphs, otherwise the `.notdef` glyph will be emitted
 //! instead of font fallback.
 
+use std::sync::Arc;
+
 use krilla::color::rgb;
 use krilla::font::Font;
+use krilla::geom::NormalizedF32;
 use krilla::geom::Point;
 use krilla::paint::{LinearGradient, SpreadMethod, Stop};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::{Document, PageSettings};
-use std::sync::Arc;
-use krilla::geom::NormalizedF32;
 
 fn main() {
     // The usual page setup.
