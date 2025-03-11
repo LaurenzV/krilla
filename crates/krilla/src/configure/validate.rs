@@ -189,8 +189,10 @@ pub enum Validator {
     /// - All "best practice" notes in [`Tag`] need to be complied with.
     ///
     /// Text:
-    /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributs
+    /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributes
     ///   whenever possible.
+    /// - Usually, you can provide an empty string as `Lang` to indicate that a language is unknown.
+    ///   You should not do that in PDF-UA.
     /// - Stretchable characters (such as brackets, which often consist of several glyphs)
     ///   should be marked accordingly with `ActualText`.
     ///
