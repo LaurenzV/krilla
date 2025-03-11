@@ -3,11 +3,10 @@
 use std::hash::{Hash, Hasher};
 
 use tiny_skia_path::NormalizedF32;
+pub use tiny_skia_path::{Path, PathBuilder};
 
 use crate::color::luma;
 use crate::paint::Paint;
-
-pub use tiny_skia_path::{Path, PathBuilder};
 
 /// A line cap.
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Default, Hash)]
