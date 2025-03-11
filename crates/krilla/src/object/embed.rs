@@ -2,6 +2,7 @@
 
 use std::ops::DerefMut;
 
+pub use pdf_writer::types::AssociationKind;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
@@ -11,8 +12,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::util::NameExt;
 use crate::Data;
-
-pub use pdf_writer::types::AssociationKind;
 
 /// An error while embedding the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

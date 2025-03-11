@@ -1,8 +1,9 @@
 //! Drawing SVG files to a surface.
 
-use fontdb::Database;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+
+use fontdb::Database;
 use usvg::{fontdb, Group, ImageKind, Node};
 
 use crate::font::Font;
