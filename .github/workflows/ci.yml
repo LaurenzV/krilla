@@ -182,10 +182,7 @@ jobs:
           path: ./assets/diffs
           
       - name: Run Arlington PDF tests
-        run: |
-          ls
-          ls /tmp/arlington
-          /tmp/arlington/arlington-pdf-model-checker store --format text -r -v --loglevel 0 -e ISO_19005_3
+        run: /tmp/arlington/arlington-pdf-model-checker store --format text -r -v --loglevel 0 -e ISO_19005_3
 
   checks:
     name: Check clippy, formatting, and documentation
