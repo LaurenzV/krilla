@@ -215,12 +215,12 @@ mod tests {
     }
 
     #[snapshot(document, settings_23)]
-    fn pdf_a3_with_embedded_file(d: &mut Document) {
+    fn validation_pdf_a3_with_embedded_file(d: &mut Document) {
         embedded_file_impl(d)
     }
 
     #[snapshot(document, settings_27)]
-    fn pdf_a4f_with_embedded_file(d: &mut Document) {
+    fn validation_pdf_a4f_with_embedded_file(d: &mut Document) {
         embedded_file_impl(d)
     }
 
