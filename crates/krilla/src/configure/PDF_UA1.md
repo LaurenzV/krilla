@@ -40,6 +40,7 @@ See `README.md` for the meaning of each color.
 - krilla checks that every character is mapped to a codepoint. 🟢
 - The fact that the user should make use of the natural language attributes is documented. 🟣
 - The fact that stretchable characters should be marked with `ActualText` is documented. 🟣
+- krilla does not provide a way to set the language of text strings. 🔴
 
 # 7.3 Graphics
 - The fact that figures should be tagged (as a figure or an artifact) is documented. 🟣
