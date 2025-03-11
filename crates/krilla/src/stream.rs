@@ -24,10 +24,11 @@
 //! [`Pattern`]: crate::paint::Pattern
 //! [`Mask`]: crate::mask::Mask
 
-use pdf_writer::{Array, Dict, Name};
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::ops::DerefMut;
+
+use pdf_writer::{Array, Dict, Name};
 use tiny_skia_path::{Rect, Transform};
 
 use crate::configure::ValidationError;

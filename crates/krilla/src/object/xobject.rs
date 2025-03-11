@@ -113,13 +113,13 @@ impl Resourceable for XObject {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
 
     use crate::object::xobject::XObject;
     use crate::path::Fill;
     use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
     use crate::tests::rect_to_path;
-    use krilla_macros::snapshot;
 
     #[snapshot]
     fn x_object_with_transparency(sc: &mut SerializeContext) {

@@ -443,9 +443,10 @@ mod utils {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::visreg;
+
     use crate::document::Document;
     use crate::tests::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
-    use krilla_macros::visreg;
 
     // We don't run on pdf.js because it leads to a high pixel difference in CI
     // for some reason.

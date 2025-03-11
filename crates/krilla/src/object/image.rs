@@ -743,6 +743,9 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::{snapshot, visreg};
+    use tiny_skia_path::Size;
+
     use crate::image::Image;
     use crate::page::Page;
     use crate::serialize::SerializeContext;
@@ -752,8 +755,6 @@ mod tests {
         load_png_image, load_webp_image, ASSETS_PATH,
     };
     use crate::Document;
-    use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::Size;
 
     #[snapshot]
     fn image_luma8_png(sc: &mut SerializeContext) {

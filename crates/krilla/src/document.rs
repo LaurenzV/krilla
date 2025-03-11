@@ -14,6 +14,8 @@
 //!
 //! [`Page`]: crate::page::Page
 
+use tiny_skia_path::{Rect, Size};
+
 use crate::embed::EmbeddedFile;
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
@@ -22,7 +24,6 @@ use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::tagging::TagTree;
-use tiny_skia_path::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {
@@ -250,9 +251,10 @@ impl Default for PageSettings {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+
     use crate::metadata::{DateTime, Metadata};
     use crate::Document;
-    use krilla_macros::snapshot;
 
     #[snapshot(document)]
     fn empty_document(_: &mut Document) {}

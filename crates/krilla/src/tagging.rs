@@ -928,6 +928,9 @@ fn serialize_children(
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+    use tiny_skia_path::{Rect, Size, Transform};
+
     use crate::action::{Action, LinkAction};
     use crate::annotation::{LinkAnnotation, Target};
     use crate::error::KrillaError;
@@ -937,8 +940,6 @@ mod tests {
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
     use crate::{Document, SvgSettings};
-    use krilla_macros::snapshot;
-    use tiny_skia_path::{Rect, Size, Transform};
 
     pub trait SurfaceExt {
         fn fill_text_(&mut self, y: f32, content: &str);

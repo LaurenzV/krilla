@@ -5,12 +5,13 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
+#[cfg(feature = "svg")]
+use std::collections::HashMap;
+
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
 #[cfg(feature = "simple-text")]
 use skrifa::GlyphId;
-#[cfg(feature = "svg")]
-use std::collections::HashMap;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{NormalizedF32, Rect};
@@ -656,6 +657,10 @@ fn naive_shape(
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::{snapshot, visreg};
+    use pdf_writer::types::BlendMode;
+    use tiny_skia_path::{Point, Size, Transform};
+
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::page::Page;
@@ -669,9 +674,6 @@ mod tests {
         NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
     };
     use crate::SvgSettings;
-    use krilla_macros::{snapshot, visreg};
-    use pdf_writer::types::BlendMode;
-    use tiny_skia_path::{Point, Size, Transform};
 
     #[visreg]
     fn text_direction_ltr(surface: &mut Surface) {

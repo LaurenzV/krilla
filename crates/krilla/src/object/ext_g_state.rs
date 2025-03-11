@@ -154,15 +154,15 @@ impl Resourceable for ExtGState {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+    use pdf_writer::types::BlendMode;
+    use usvg::NormalizedF32;
+
+    use crate::mask::MaskType;
     use crate::object::ext_g_state::ExtGState;
     use crate::object::mask::Mask;
     use crate::serialize::SerializeContext;
     use crate::stream::Stream;
-
-    use crate::mask::MaskType;
-    use krilla_macros::snapshot;
-    use pdf_writer::types::BlendMode;
-    use usvg::NormalizedF32;
 
     #[snapshot]
     pub fn ext_g_state_empty(sc: &mut SerializeContext) {

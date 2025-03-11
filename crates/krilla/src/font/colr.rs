@@ -461,6 +461,9 @@ impl ColorPainter for ColrBuilder {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::visreg;
+    use skrifa::GlyphId;
+    use tiny_skia_path::Point;
 
     use crate::document::Document;
     use crate::font::Font;
@@ -469,9 +472,6 @@ mod tests {
     use crate::tests::{
         all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
     };
-    use krilla_macros::visreg;
-    use skrifa::GlyphId;
-    use tiny_skia_path::Point;
 
     #[visreg(document)]
     fn colr_test_glyphs(document: &mut Document) {

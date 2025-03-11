@@ -386,16 +386,16 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u
 
 #[cfg(test)]
 mod tests {
-    use crate::font::Font;
+    use krilla_macros::{snapshot, visreg};
+    use skrifa::GlyphId;
+    use tiny_skia_path::Point;
 
+    use crate::font::Font;
     use crate::object::font::FontContainer;
     use crate::path::Fill;
     use crate::serialize::SerializeContext;
     use crate::surface::{Surface, TextDirection};
     use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
-    use krilla_macros::{snapshot, visreg};
-    use skrifa::GlyphId;
-    use tiny_skia_path::Point;
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializeContext) {

@@ -1,15 +1,15 @@
 //! Internal utilities.
 
-use base64::Engine;
-use pdf_writer::types::{LineCapStyle, LineJoinStyle};
-use pdf_writer::Name;
-use siphasher::sip128::{Hasher128, SipHasher13};
 use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
+use base64::Engine;
+use pdf_writer::types::{LineCapStyle, LineJoinStyle};
+use pdf_writer::Name;
+use siphasher::sip128::{Hasher128, SipHasher13};
 #[cfg(feature = "svg")]
 use tiny_skia_path::PathBuilder;
 use tiny_skia_path::{FiniteF32, Path, Rect, Transform};

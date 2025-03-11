@@ -172,18 +172,16 @@ impl LinkAnnotation {
 
 #[cfg(test)]
 mod tests {
+    use krilla_macros::snapshot;
+    use tiny_skia_path::{Point, Rect};
+
     use crate::document::{Document, PageSettings};
     use crate::object::action::LinkAction;
     use crate::object::annotation::{LinkAnnotation, Target};
     use crate::object::destination::XyzDestination;
-
     use crate::object::page::Page;
-
     use crate::tests::{green_fill, rect_to_path, red_fill};
-
     use crate::SerializeSettings;
-    use krilla_macros::snapshot;
-    use tiny_skia_path::{Point, Rect};
 
     #[snapshot(single_page)]
     fn annotation_to_link(page: &mut Page) {

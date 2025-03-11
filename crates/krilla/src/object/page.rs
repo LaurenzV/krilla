@@ -8,6 +8,7 @@ use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use tiny_skia_path::{Rect, Transform};
 
+use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
@@ -19,7 +20,6 @@ use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
 
-use crate::configure::PdfVersion;
 pub use pdf_writer::types::NumberingStyle;
 
 /// A single page.
@@ -380,18 +380,18 @@ impl<'a> PageLabelContainer<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroUsize;
+
+    use krilla_macros::{snapshot, visreg};
+    use pdf_writer::types::NumberingStyle;
+    use tiny_skia_path::{PathBuilder, Rect};
 
     use crate::document::{Document, PageSettings};
     use crate::object::page::{InternalPage, PageLabel};
+    use crate::path::Fill;
     use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
-
-    use crate::path::Fill;
     use crate::tests::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
-    use krilla_macros::{snapshot, visreg};
-    use pdf_writer::types::NumberingStyle;
-    use std::num::NonZeroUsize;
-    use tiny_skia_path::{PathBuilder, Rect};
 
     #[snapshot]
     fn page_simple(sc: &mut SerializeContext) {

@@ -15,6 +15,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::Range;
 use std::sync::Arc;
 
+use skrifa::instance::Location;
+use skrifa::metrics::GlyphMetrics;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
@@ -26,10 +28,8 @@ use crate::object::font::PaintMode;
 use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::{Prehashed, RectWrapper};
-use skrifa::instance::Location;
-use skrifa::metrics::GlyphMetrics;
-
 use crate::Data;
+
 pub use skrifa::GlyphId;
 
 #[cfg(feature = "raster-images")]
