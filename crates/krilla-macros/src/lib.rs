@@ -145,7 +145,7 @@ impl RendererExt for Renderer {
             Renderer::Quartz => quote!(Renderer::Quartz),
             Renderer::Pdfbox => quote!(Renderer::Pdfbox),
             Renderer::Ghostscript => quote!(Renderer::Ghostscript),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
