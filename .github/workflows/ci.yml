@@ -185,7 +185,7 @@ jobs:
         run: |
           ls
           /tmp/arlington
-          /tmp/arlington/arlington-pdf-model-checker snapshots --format text -r -v --loglevel 0 -e ISO_19005_3
+          /tmp/arlington/arlington-pdf-model-checker store --format text -r -v --loglevel 0 -e ISO_19005_3
 
   checks:
     name: Check clippy, formatting, and documentation
