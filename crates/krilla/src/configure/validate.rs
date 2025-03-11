@@ -651,6 +651,26 @@ impl Validator {
         }
     }
 
+    pub(crate) fn write_embedded_files(&self, is_empty: bool) -> bool {
+        match self {
+            Validator::None
+            | Validator::A1_A
+            | Validator::A1_B
+            | Validator::A2_A
+            | Validator::A2_B
+            | Validator::A2_U
+            | Validator::A3_A
+            | Validator::A3_B
+            | Validator::A3_U
+            | Validator::A4
+            | Validator::A4E
+            | Validator::UA1 => !is_empty,
+            // For this one we always need to write an `EmbeddedFiles` entry,
+            // even if empty.
+            Validator::A4F => true,
+        }
+    }
+
     pub(crate) fn allows_associated_files(&self) -> bool {
         match self {
             // PDF 2.0 _does_ support associated files. However, in this case the document has to
