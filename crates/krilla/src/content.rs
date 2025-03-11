@@ -367,6 +367,7 @@ impl ContentBuilder {
         size: f32,
         paint_mode: PaintMode,
         glyphs: &[impl Glyph],
+        text: &str,
         glyph_units: GlyphUnits,
     ) {
         let font_name = self
@@ -392,7 +393,10 @@ impl ContentBuilder {
             if glyph.glyph_id() == GlyphId::new(0)
                 || pdf_font.font().postscript_name() == Some("LastResort")
             {
-                sc.register_validation_error(ValidationError::ContainsNotDefGlyph(sc.location));
+                sc.register_validation_error(ValidationError::ContainsNotDefGlyph(
+                    sc.location,
+                    text[glyph.text_range()].to_string(),
+                ));
             }
 
             let pdf_glyph = pdf_font
@@ -526,6 +530,7 @@ impl ContentBuilder {
                             font_size,
                             paint_mode,
                             glyph_group.glyphs,
+                            text,
                             glyph_units,
                         );
 
