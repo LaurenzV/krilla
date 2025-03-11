@@ -723,13 +723,13 @@ mod tests {
     use crate::surface::TextDirection;
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{
-        blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, rect_to_path, red_fill,
-        stops_with_2_solid_1, youtube_link, NOTO_SANS,
+        blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,
+        red_fill, stops_with_2_solid_1, youtube_link, NOTO_SANS,
     };
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
     use pdf_writer::types::{ListNumbering, TableHeaderScope};
-    use tiny_skia_path::{Point, Rect};
+    use tiny_skia_path::{Point, Rect, Size};
 
     fn pdfa_document() -> Document {
         Document::new_with(SerializeSettings::settings_7())
@@ -1309,6 +1309,29 @@ mod tests {
         let mut page = document.start_page();
         let mut surface = page.surface();
         surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(0.5));
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::Transparency(None)
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa1_no_image_transparency() {
+        let mut document = Document::new_with(SerializeSettings::settings_19());
+        let metadata = Metadata::new().language("en".to_string());
+        document.set_metadata(metadata);
+
+        let image = load_png_image("rgba8.png");
+        let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        surface.draw_image(image, size);
         surface.finish();
         page.finish();
 
