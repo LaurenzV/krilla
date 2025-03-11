@@ -363,7 +363,7 @@ impl Image {
         });
 
         if self.0.interpolate {
-            sc.register_validation_error(ValidationError::ImageInterpolation);
+            sc.register_validation_error(ValidationError::ImageInterpolation(sc.location));
         }
 
         let serialize_settings = sc.serialize_settings().clone();

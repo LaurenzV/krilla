@@ -31,6 +31,7 @@ use crate::object::{Cacheable, Resourceable};
 use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
+use crate::surface::Location;
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::SipHashable;
 
@@ -213,6 +214,8 @@ pub(crate) struct SerializeContext {
     /// need to merge limits from postscript functions, which are not directly accessible
     /// from the chunk they are written to.
     limits: Limits,
+    /// The current location, if set.
+    pub(crate) location: Option<Location>,
 }
 
 impl SerializeContext {
@@ -230,6 +233,7 @@ impl SerializeContext {
             chunk_container: ChunkContainer::new(),
             page_tree_ref: None,
             page_infos: vec![],
+            location: None,
             validation_errors: vec![],
             serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
@@ -255,6 +259,14 @@ impl SerializeContext {
         {
             self.global_objects.outline = MaybeTaken::new(Some(outline));
         }
+    }
+
+    pub(crate) fn set_location(&mut self, location: Location) {
+        self.location = Some(location)
+    }
+
+    pub(crate) fn reset_location(&mut self) {
+        self.location = None
     }
 
     pub(crate) fn set_metadata(&mut self, metadata: Metadata) {

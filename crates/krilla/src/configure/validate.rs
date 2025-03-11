@@ -23,6 +23,7 @@
 use crate::configure::PdfVersion;
 use crate::embed::EmbedError;
 use crate::font::Font;
+use crate::surface::Location;
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::{Chunk, Finish};
 use skrifa::GlyphId;
@@ -64,8 +65,8 @@ pub enum ValidationError {
     TooHighQNestingLevel,
     /// The PDF contains PostScript code, which is forbidden by some export formats.
     ///
-    /// Occurs if a gradient with spread method `Repeat`/`Reflect` was used.
-    ContainsPostScript,
+    /// Occurs if a gradient with spread method `Repeat`/`Reflect` or a sweep gradient was used.
+    ContainsPostScript(Option<Location>),
     /// No CMYK ICC profile was provided, even though one is necessary.
     ///
     /// Occurs if the export format requires a device-independent color representation,
@@ -75,18 +76,18 @@ pub enum ValidationError {
     ///
     /// Can occur if a glyph could not be found in the font for a corresponding codepoint
     /// in the input text, or if it was explicitly mapped that way.
-    ContainsNotDefGlyph,
+    ContainsNotDefGlyph(Option<Location>),
     /// A glyph was mapped either to the codepoint 0x0, 0xFEFF or 0xFFFE, or no codepoint at all,
     /// which is forbidden by some standards.
     ///
     /// Can occur if those codepoints appeared in the input text, or were explicitly
     /// mapped to that glyph.
-    InvalidCodepointMapping(Font, GlyphId),
+    InvalidCodepointMapping(Font, GlyphId, Option<Location>),
     /// A glyph was mapped to a codepoint in the Unicode private use area, which is forbidden
     /// by some standards, like for example PDF/A2-A.
     // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
     // attribute to be present. But we just completely forbid it, for simplicity.
-    UnicodePrivateArea(Font, GlyphId),
+    UnicodePrivateArea(Font, GlyphId, Option<Location>),
     /// No document language was set via the metadata, even though it is required
     /// by the standard.
     NoDocumentLanguage,
@@ -102,9 +103,9 @@ pub enum ValidationError {
     /// An annotation is missing an alt text.
     MissingAnnotationAltText,
     /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
-    Transparency,
+    Transparency(Option<Location>),
     /// The PDF contains an image with `interpolate` set to `true`.
-    ImageInterpolation,
+    ImageInterpolation(Option<Location>),
     /// The PDF contains an embedded file.
     EmbeddedFile(EmbedError),
     /// The PDF contains no tagging.
@@ -276,21 +277,21 @@ impl Validator {
                 ValidationError::TooLongDictionary => true,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
-                ValidationError::ContainsPostScript => true,
+                ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph => false,
-                ValidationError::InvalidCodepointMapping(_, _) => {
+                ValidationError::ContainsNotDefGlyph(_) => false,
+                ValidationError::InvalidCodepointMapping(_, _, _) => {
                     self.requires_codepoint_mappings()
                 }
-                ValidationError::UnicodePrivateArea(_, _) => false,
+                ValidationError::UnicodePrivateArea(_, _, _) => false,
                 ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
-                ValidationError::Transparency => true,
-                ValidationError::ImageInterpolation => true,
+                ValidationError::Transparency(_) => true,
+                ValidationError::ImageInterpolation(_) => true,
                 // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
                 // which we always insert. So we just forbid it overall.
                 ValidationError::EmbeddedFile(e) => match e {
@@ -312,21 +313,21 @@ impl Validator {
                 ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
-                ValidationError::ContainsPostScript => true,
+                ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph => true,
-                ValidationError::InvalidCodepointMapping(_, _) => {
+                ValidationError::ContainsNotDefGlyph(_) => true,
+                ValidationError::InvalidCodepointMapping(_, _, _) => {
                     self.requires_codepoint_mappings()
                 }
-                ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A2_A,
+                ValidationError::UnicodePrivateArea(_, _, _) => *self == Validator::A2_A,
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
-                ValidationError::Transparency => false,
-                ValidationError::ImageInterpolation => true,
+                ValidationError::Transparency(_) => false,
+                ValidationError::ImageInterpolation(_) => true,
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
                 // so we just forbid it completely.
                 ValidationError::EmbeddedFile(e) => match e {
@@ -348,21 +349,21 @@ impl Validator {
                 ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => true,
                 ValidationError::TooHighQNestingLevel => true,
-                ValidationError::ContainsPostScript => true,
+                ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph => true,
-                ValidationError::InvalidCodepointMapping(_, _) => {
+                ValidationError::ContainsNotDefGlyph(_) => true,
+                ValidationError::InvalidCodepointMapping(_, _, _) => {
                     self.requires_codepoint_mappings()
                 }
-                ValidationError::UnicodePrivateArea(_, _) => *self == Validator::A3_A,
+                ValidationError::UnicodePrivateArea(_, _, _) => *self == Validator::A3_A,
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
-                ValidationError::Transparency => false,
-                ValidationError::ImageInterpolation => true,
+                ValidationError::Transparency(_) => false,
+                ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(er) => match er {
                     EmbedError::Existence => false,
                     EmbedError::MissingDate => true,
@@ -379,21 +380,21 @@ impl Validator {
                 ValidationError::TooLargeFloat => false,
                 ValidationError::TooManyIndirectObjects => false,
                 ValidationError::TooHighQNestingLevel => false,
-                ValidationError::ContainsPostScript => false,
+                ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph => true,
-                ValidationError::InvalidCodepointMapping(_, _) => true,
+                ValidationError::ContainsNotDefGlyph(_) => true,
+                ValidationError::InvalidCodepointMapping(_, _, _) => true,
                 // Not strictly forbidden if we surround with actual text, but
                 // easier to just forbid it.
-                ValidationError::UnicodePrivateArea(_, _) => true,
+                ValidationError::UnicodePrivateArea(_, _, _) => true,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
                 ValidationError::MissingAnnotationAltText => false,
-                ValidationError::Transparency => false,
-                ValidationError::ImageInterpolation => true,
+                ValidationError::Transparency(_) => false,
+                ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(e) => match e {
                     EmbedError::Existence => matches!(self, Validator::A4),
                     // Since existence is forbidden in the first place for A4,
@@ -416,21 +417,21 @@ impl Validator {
                 ValidationError::TooLongDictionary => false,
                 ValidationError::TooManyIndirectObjects => false,
                 ValidationError::TooHighQNestingLevel => false,
-                ValidationError::ContainsPostScript => false,
+                ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => false,
-                ValidationError::ContainsNotDefGlyph => true,
-                ValidationError::InvalidCodepointMapping(_, _) => {
+                ValidationError::ContainsNotDefGlyph(_) => true,
+                ValidationError::InvalidCodepointMapping(_, _, _) => {
                     self.requires_codepoint_mappings()
                 }
-                ValidationError::UnicodePrivateArea(_, _) => false,
+                ValidationError::UnicodePrivateArea(_, _, _) => false,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
                 ValidationError::MissingAltText => true,
                 ValidationError::MissingHeadingTitle => true,
                 ValidationError::MissingDocumentOutline => true,
                 ValidationError::MissingAnnotationAltText => true,
-                ValidationError::Transparency => false,
-                ValidationError::ImageInterpolation => false,
+                ValidationError::Transparency(_) => false,
+                ValidationError::ImageInterpolation(_) => false,
                 ValidationError::EmbeddedFile(er) => match er {
                     EmbedError::Existence => false,
                     EmbedError::MissingDate => false,
@@ -828,7 +829,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::ContainsPostScript
+                ValidationError::ContainsPostScript(None)
             ]))
         )
     }
@@ -897,7 +898,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::ContainsNotDefGlyph
+                ValidationError::ContainsNotDefGlyph(None)
             ]))
         )
     }
@@ -1000,7 +1001,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::InvalidCodepointMapping(font, GlyphId::new(2),)
+                ValidationError::InvalidCodepointMapping(font, GlyphId::new(2), None)
             ]))
         )
     }
@@ -1018,7 +1019,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::UnicodePrivateArea(font, GlyphId::new(2))
+                ValidationError::UnicodePrivateArea(font, GlyphId::new(2), None)
             ]))
         )
     }
@@ -1235,7 +1236,7 @@ mod tests {
         assert_eq!(
             document.finish(),
             Err(KrillaError::ValidationError(vec![
-                ValidationError::Transparency
+                ValidationError::Transparency(None)
             ]))
         )
     }

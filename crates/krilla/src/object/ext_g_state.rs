@@ -114,7 +114,7 @@ impl Cacheable for ExtGState {
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
             if nsa != NormalizedF32::ONE {
-                sc.register_validation_error(ValidationError::Transparency);
+                sc.register_validation_error(ValidationError::Transparency(sc.location));
             }
 
             ext_st.non_stroking_alpha(nsa.get());
@@ -122,7 +122,7 @@ impl Cacheable for ExtGState {
 
         if let Some(sa) = self.0.stroking_alpha {
             if sa != NormalizedF32::ONE {
-                sc.register_validation_error(ValidationError::Transparency);
+                sc.register_validation_error(ValidationError::Transparency(sc.location));
             }
 
             ext_st.stroking_alpha(sa.get());
@@ -130,14 +130,14 @@ impl Cacheable for ExtGState {
 
         if let Some(bm) = self.0.blend_mode {
             if bm != BlendMode::Normal {
-                sc.register_validation_error(ValidationError::Transparency);
+                sc.register_validation_error(ValidationError::Transparency(sc.location));
             }
 
             ext_st.blend_mode(bm);
         }
 
         if let Some(mask_ref) = self.0.mask {
-            sc.register_validation_error(ValidationError::Transparency);
+            sc.register_validation_error(ValidationError::Transparency(sc.location));
 
             ext_st.pair(Name(b"SMask"), mask_ref);
         }

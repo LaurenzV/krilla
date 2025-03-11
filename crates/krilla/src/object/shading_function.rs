@@ -244,7 +244,7 @@ impl Cacheable for ShadingFunction {
                 serialize_axial_radial_shading(sc, &mut chunk, root_ref, rag, self.0.use_opacities)
             }
             GradientProperties::PostScriptGradient(psg) => {
-                sc.register_validation_error(ValidationError::ContainsPostScript);
+                sc.register_validation_error(ValidationError::ContainsPostScript(sc.location));
                 serialize_postscript_shading(sc, &mut chunk, root_ref, psg, self.0.use_opacities)
             }
         }

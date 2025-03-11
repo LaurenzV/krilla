@@ -360,6 +360,9 @@ pub trait Glyph {
     fn y_offset(&self) -> f32;
     /// The advance in the y direction of the glyph.
     fn y_advance(&self) -> f32;
+    /// A location identifying the glyph. If set, `krilla` will automatically call
+    /// `set_location` before processing the glyph.
+    fn location(&self) -> Option<crate::surface::Location>;
 }
 
 /// The units of the metrics of a glyph.
@@ -417,6 +420,10 @@ impl Glyph for KrillaGlyph {
 
     fn y_advance(&self) -> f32 {
         self.y_advance
+    }
+
+    fn location(&self) -> Option<crate::surface::Location> {
+        None
     }
 }
 

@@ -43,6 +43,11 @@ pub(crate) enum PushInstruction {
     Isolated,
 }
 
+/// Can be used to associate render operations with a unique identifier.
+/// This is useful if you want to backtrack a validation error to a specific
+/// identifier chosen by you.
+pub type Location = u64;
+
 /// A surface.
 ///
 /// Represents a drawing area for defining graphical content. The origin of the
@@ -345,6 +350,16 @@ impl<'a> Surface<'a> {
             GlyphUnits::UserSpace,
             outlined,
         );
+    }
+
+    /// Set the location that should be assumed for subsequent operations.
+    pub fn set_location(&mut self, location: Location) {
+        self.sc.set_location(location);
+    }
+
+    /// Reset the location that should be assumed for subsequent operations.
+    pub fn reset_location(&mut self) {
+        self.sc.reset_location();
     }
 
     /// Return the current transformation matrix.

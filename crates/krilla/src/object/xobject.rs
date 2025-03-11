@@ -76,7 +76,7 @@ impl Cacheable for XObject {
         );
 
         if self.isolated || self.transparency_group_color_space {
-            sc.register_validation_error(ValidationError::Transparency);
+            sc.register_validation_error(ValidationError::Transparency(sc.location));
 
             let mut group = x_object.group();
             let transparency = group.transparency();

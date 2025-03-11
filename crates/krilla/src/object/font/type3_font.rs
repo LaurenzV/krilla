@@ -20,6 +20,7 @@ use crate::path::Fill;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
+use crate::surface::Location;
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::{font, SvgSettings};
 
@@ -69,7 +70,7 @@ pub(crate) struct Type3Font {
     font: Font,
     glyphs: Vec<OwnedCoveredGlyph>,
     widths: Vec<f32>,
-    cmap_entries: BTreeMap<Gid, String>,
+    cmap_entries: BTreeMap<Gid, (String, Option<Location>)>,
     glyph_set: HashSet<OwnedCoveredGlyph>,
     index: usize,
 }
@@ -129,13 +130,13 @@ impl Type3Font {
 
     #[inline]
     pub(crate) fn get_codepoints(&self, gid: Gid) -> Option<&str> {
-        self.cmap_entries.get(&gid).map(|s| s.as_str())
+        self.cmap_entries.get(&gid).map(|s| s.0.as_str())
     }
 
     #[inline]
-    pub(crate) fn set_codepoints(&mut self, gid: Gid, text: String) {
+    pub(crate) fn set_codepoints(&mut self, gid: Gid, text: String, location: Option<Location>) {
         if !text.is_empty() {
-            self.cmap_entries.insert(gid, text);
+            self.cmap_entries.insert(gid, (text, location));
         }
     }
 
@@ -391,8 +392,9 @@ impl Type3Font {
                     None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                         self.font.clone(),
                         GlyphId::new(g as u32),
+                        None,
                     )),
-                    Some(text) => {
+                    Some((text, loc)) => {
                         // Note: Keep in sync with CIDFont
                         let mut invalid_codepoint = false;
                         let mut private_unicode = false;
@@ -406,6 +408,7 @@ impl Type3Font {
                             sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                                 self.font.clone(),
                                 GlyphId::new(g as u32),
+                                *loc,
                             ))
                         }
 
@@ -413,6 +416,7 @@ impl Type3Font {
                             sc.register_validation_error(ValidationError::UnicodePrivateArea(
                                 self.font.clone(),
                                 GlyphId::new(g as u32),
+                                *loc,
                             ))
                         }
 
