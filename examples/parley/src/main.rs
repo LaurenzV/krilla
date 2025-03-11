@@ -121,6 +121,7 @@ fn main() {
                         glyph.y,
                         0.0,
                         cluster.text_range(),
+                        None,
                     ));
                     // And make sure keep track of the current x position.
                     x += glyph.advance;

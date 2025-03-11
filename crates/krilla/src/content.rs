@@ -35,6 +35,7 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
+use crate::surface::Location;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 
@@ -366,6 +367,7 @@ impl ContentBuilder {
         size: f32,
         paint_mode: PaintMode,
         glyphs: &[impl Glyph],
+        text: &str,
         glyph_units: GlyphUnits,
     ) {
         let font_name = self
@@ -383,10 +385,19 @@ impl ContentBuilder {
         let mut encoded = vec![];
 
         for glyph in glyphs {
+            match glyph.location() {
+                None => sc.reset_location(),
+                Some(l) => sc.set_location(l),
+            };
+
             if glyph.glyph_id() == GlyphId::new(0)
                 || pdf_font.font().postscript_name() == Some("LastResort")
             {
-                sc.register_validation_error(ValidationError::ContainsNotDefGlyph);
+                sc.register_validation_error(ValidationError::ContainsNotDefGlyph(
+                    pdf_font.font(),
+                    sc.location,
+                    text[glyph.text_range()].to_string(),
+                ));
             }
 
             let pdf_glyph = pdf_font
@@ -426,6 +437,8 @@ impl ContentBuilder {
             adjustment -= x_offset;
             // cur_x/cur_y and glyph metrics are in user space units.
             *cur_x += normalize(glyph.x_advance()) * size;
+
+            sc.reset_location();
         }
 
         if !encoded.is_empty() {
@@ -518,6 +531,7 @@ impl ContentBuilder {
                             font_size,
                             paint_mode,
                             glyph_group.glyphs,
+                            text,
                             glyph_units,
                         );
 
@@ -983,7 +997,7 @@ pub(crate) trait PdfFont {
     fn units_per_em(&self) -> f32;
     fn font(&self) -> Font;
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
-    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String);
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>);
     fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
     fn force_fill(&self) -> bool;
 }
@@ -1004,9 +1018,9 @@ impl PdfFont for Type3Font {
         }
     }
 
-    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) {
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
         match pdf_glyph {
-            PDFGlyph::Type3(t3) => self.set_codepoints(t3, text),
+            PDFGlyph::Type3(t3) => self.set_codepoints(t3, text, location),
             PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
         }
     }
@@ -1036,10 +1050,10 @@ impl PdfFont for CIDFont {
         }
     }
 
-    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String) {
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
         match pdf_glyph {
             PDFGlyph::Type3(_) => panic!("attempted to pass cid to type 3 font"),
-            PDFGlyph::Cid(cid) => self.set_codepoints(cid, text),
+            PDFGlyph::Cid(cid) => self.set_codepoints(cid, text, location),
         }
     }
 
@@ -1177,7 +1191,7 @@ where
             if !incompatible_codepoint
                 && (previous_range != Some(range.clone()) || forbid_invalid_codepoints)
             {
-                pdf_font.set_codepoints(pdf_glyph, text.to_string());
+                pdf_font.set_codepoints(pdf_glyph, text.to_string(), g.location());
             }
 
             (range, incompatible_codepoint)
