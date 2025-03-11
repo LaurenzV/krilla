@@ -720,44 +720,47 @@ impl SerializeContext {
             tree.insert(Name(b"K")).array().item(document_ref);
 
             let mut sub_chunks = vec![];
-            let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
-            let mut tree_nums = parent_tree.nums();
+            
+            if !struct_parents.is_empty() {
+                let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
+                let mut tree_nums = parent_tree.nums();
 
-            for (index, struct_parent) in struct_parents.iter().enumerate() {
-                match *struct_parent {
-                    StructParentElement::Page(index, num_mcids) => {
-                        let mut list_chunk = Chunk::new();
-                        let list_ref = self.new_ref();
+                for (index, struct_parent) in struct_parents.iter().enumerate() {
+                    match *struct_parent {
+                        StructParentElement::Page(index, num_mcids) => {
+                            let mut list_chunk = Chunk::new();
+                            let list_ref = self.new_ref();
 
-                        let mut refs = list_chunk.indirect(list_ref).array();
+                            let mut refs = list_chunk.indirect(list_ref).array();
 
-                        for mcid in 0..num_mcids {
-                            let rci = PageTagIdentifier::new(index, mcid);
-                            refs.item(parent_tree_map.get(&rci.into()).ok_or(
-                                KrillaError::UserError(
-                                    "an identifier doesn't appear in the tag tree".to_string(),
-                                ),
-                            )?);
+                            for mcid in 0..num_mcids {
+                                let rci = PageTagIdentifier::new(index, mcid);
+                                refs.item(parent_tree_map.get(&rci.into()).ok_or(
+                                    KrillaError::UserError(
+                                        "an identifier doesn't appear in the tag tree".to_string(),
+                                    ),
+                                )?);
+                            }
+
+                            refs.finish();
+
+                            sub_chunks.push(list_chunk);
+                            tree_nums.insert(index as i32, list_ref);
                         }
-
-                        refs.finish();
-
-                        sub_chunks.push(list_chunk);
-                        tree_nums.insert(index as i32, list_ref);
-                    }
-                    StructParentElement::Annotation(page_index, annot_index) => {
-                        let it = IdentifierType::AnnotationIdentifier(AnnotationIdentifier::new(
-                            page_index,
-                            annot_index,
-                        ));
-                        let ref_ = parent_tree_map.get(&it).unwrap();
-                        tree_nums.insert(index as i32, *ref_);
+                        StructParentElement::Annotation(page_index, annot_index) => {
+                            let it = IdentifierType::AnnotationIdentifier(AnnotationIdentifier::new(
+                                page_index,
+                                annot_index,
+                            ));
+                            let ref_ = parent_tree_map.get(&it).unwrap();
+                            tree_nums.insert(index as i32, *ref_);
+                        }
                     }
                 }
-            }
 
-            tree_nums.finish();
-            parent_tree.finish();
+                tree_nums.finish();
+                parent_tree.finish();
+            }
 
             if !id_tree_map.is_empty() {
                 let mut id_tree = tree.insert(Name(b"IDTree")).start::<NameTree<Ref>>();
@@ -768,7 +771,9 @@ impl SerializeContext {
                 }
             }
 
-            tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
+            if !struct_parents.is_empty() {
+                tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
+            }
             tree.finish();
 
             for sub_chunk in sub_chunks {
