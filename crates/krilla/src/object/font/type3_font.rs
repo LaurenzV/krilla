@@ -135,9 +135,7 @@ impl Type3Font {
 
     #[inline]
     pub(crate) fn set_codepoints(&mut self, gid: Gid, text: String, location: Option<Location>) {
-        if !text.is_empty() {
-            self.cmap_entries.insert(gid, (text, location));
-        }
+        self.cmap_entries.insert(gid, (text, location));
     }
 
     #[inline]
@@ -388,34 +386,46 @@ impl Type3Font {
 
             for g in 0..self.glyphs.len() {
                 let g = u8::try_from(g).unwrap();
+
                 match self.cmap_entries.get(&g) {
                     None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                         self.font.clone(),
                         GlyphId::new(g as u32),
                         None,
+                        None,
                     )),
                     Some((text, loc)) => {
-                        // Note: Keep in sync with CIDFont
-                        let mut invalid_codepoint = false;
-                        let mut private_unicode = false;
+                        // Note: Keep in sync with CIDFont.
+                        let mut invalid_codepoint = text.is_empty();
+                        let mut invalid_code = None;
+                        let mut private_unicode = None;
 
                         for c in text.chars() {
-                            invalid_codepoint |= matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE);
-                            private_unicode |= matches!(c as u32, 0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD);
+                            if matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE) {
+                                invalid_codepoint = true;
+                                invalid_code = Some(c);
+                            }
+
+                            if matches!(c as u32, 0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD)
+                            {
+                                private_unicode = Some(c);
+                            }
                         }
 
                         if invalid_codepoint {
                             sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                                 self.font.clone(),
                                 GlyphId::new(g as u32),
+                                invalid_code,
                                 *loc,
                             ))
                         }
 
-                        if private_unicode {
+                        if let Some(code) = private_unicode {
                             sc.register_validation_error(ValidationError::UnicodePrivateArea(
                                 self.font.clone(),
                                 GlyphId::new(g as u32),
+                                code,
                                 *loc,
                             ))
                         }
