@@ -97,7 +97,7 @@ impl MaskType {
 
 impl Cacheable for Mask {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.masks)
+        |cc| &mut cc.masks
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {

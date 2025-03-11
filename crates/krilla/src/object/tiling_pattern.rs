@@ -73,7 +73,7 @@ impl TilingPattern {
 
 impl Cacheable for TilingPattern {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.patterns)
+        |cc| &mut cc.patterns
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {

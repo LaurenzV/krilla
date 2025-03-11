@@ -48,7 +48,7 @@ pub struct EmbeddedFile {
 
 impl Cacheable for EmbeddedFile {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.embedded_files)
+        |cc| &mut cc.embedded_files
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {

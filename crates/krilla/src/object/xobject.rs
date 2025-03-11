@@ -47,7 +47,7 @@ impl XObject {
 
 impl Cacheable for XObject {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.x_objects)
+        |cc| &mut cc.x_objects
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {

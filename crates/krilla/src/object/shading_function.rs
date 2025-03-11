@@ -233,7 +233,7 @@ impl ShadingFunction {
 
 impl Cacheable for ShadingFunction {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.shading_functions)
+        |cc| &mut cc.shading_functions
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {

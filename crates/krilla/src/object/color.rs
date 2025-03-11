@@ -292,7 +292,7 @@ impl GenericICCProfile {
 
 impl Cacheable for GenericICCProfile {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.icc_profiles)
+        |cc| &mut cc.icc_profiles
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
@@ -334,7 +334,7 @@ impl<const C: u8> ICCProfile<C> {
 
 impl<const C: u8> Cacheable for ICCProfile<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.icc_profiles)
+        |cc| &mut cc.icc_profiles
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
@@ -356,7 +356,7 @@ pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile<C>);
 
 impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
     fn chunk_container(&self) -> ChunkContainerFn {
-        Box::new(|cc| &mut cc.color_spaces)
+        |cc| &mut cc.color_spaces
     }
 
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {

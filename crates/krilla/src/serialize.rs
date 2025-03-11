@@ -514,7 +514,7 @@ impl SerializeContext {
         T: Cacheable,
     {
         self.register_cached(object, |sc, object, root_ref| {
-            let mut chunk_container_fn = object.chunk_container();
+            let chunk_container_fn = object.chunk_container();
             let chunk = object.serialize(sc, root_ref);
             chunk_container_fn(&mut sc.chunk_container).push(chunk);
         })

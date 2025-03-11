@@ -24,7 +24,7 @@ pub(crate) mod shading_pattern;
 pub(crate) mod tiling_pattern;
 pub(crate) mod xobject;
 
-pub(crate) type ChunkContainerFn = Box<dyn FnMut(&mut ChunkContainer) -> &mut Vec<Chunk>>;
+pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<Chunk>;
 
 pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
