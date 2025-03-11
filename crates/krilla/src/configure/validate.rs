@@ -77,7 +77,7 @@ pub enum ValidationError {
     /// Can occur if a glyph could not be found in the font for a corresponding codepoint
     /// in the input text, or if it was explicitly mapped that way.
     ///
-    /// The second argument contains the text range of the glyph.
+    /// The third argument contains the text range of the glyph.
     ContainsNotDefGlyph(Font, Option<Location>, String),
     /// A glyph was mapped either to the codepoint 0x0, 0xFEFF or 0xFFFE, or no codepoint at all,
     /// which is forbidden by some standards.
