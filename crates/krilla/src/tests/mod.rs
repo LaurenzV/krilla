@@ -11,8 +11,8 @@ use image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
-    render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_pdfjs, render_poppler,
-    render_quartz, RenderOptions, RenderedDocument, RenderedPage, Renderer,
+    render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_poppler, render_quartz,
+    RenderOptions, RenderedDocument, RenderedPage, Renderer,
 };
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
@@ -498,9 +498,9 @@ pub fn render_document(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
         Renderer::Mupdf => render_mupdf(doc, &options).unwrap(),
         Renderer::Poppler => render_poppler(doc, &options).unwrap(),
         Renderer::Quartz => render_quartz(doc, &options).unwrap(),
-        Renderer::Pdfjs => render_pdfjs(doc, &options).unwrap(),
         Renderer::Pdfbox => render_pdfbox(doc, &options).unwrap(),
         Renderer::Ghostscript => render_ghostscript(doc, &options).unwrap(),
+        _ => unreachable!(),
     }
 }
 
