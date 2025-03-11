@@ -134,6 +134,7 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
 struct ImageMetadata {
     size: (u32, u32),
     color_space: ImageColorspace,
+    has_alpha: bool,
     icc: Option<GenericICCProfile>,
 }
 
@@ -264,6 +265,7 @@ impl Image {
         let metadata = ImageMetadata {
             size: image.size(),
             color_space: image.color_space(),
+            has_alpha: image.alpha_channel().is_some(),
             icc: image
                 .icc_profile()
                 .and_then(|d| get_icc_profile_type(d, image.color_space())),
@@ -301,6 +303,7 @@ impl Image {
     pub(crate) fn from_rgba8(data: Vec<u8>, width: u32, height: u32) -> Self {
         let hash = data.sip_hash();
         let metadata = ImageMetadata {
+            has_alpha: true,
             size: (width, height),
             color_space: ImageColorspace::Rgb,
             icc: None,
@@ -341,7 +344,10 @@ impl Image {
         sc: &mut SerializeContext,
         root_ref: Ref,
     ) -> Deferred<KrillaResult<Chunk>> {
-        let soft_mask_id = sc.new_ref();
+        let soft_mask_id = self.0.metadata.has_alpha.then(|| {
+            sc.register_validation_error(ValidationError::Transparency(sc.location));
+            sc.new_ref()
+        });
         let icc_ref = self.icc().and_then(|ic| {
             if sc
                 .serialize_settings()
@@ -380,6 +386,7 @@ impl Image {
 
             let alpha_mask = match repr {
                 Repr::Sampled(sampled) => sampled.alpha_channel.as_ref().map(|mask_data| {
+                    let soft_mask_id = soft_mask_id.unwrap();
                     let mask_stream = FilterStreamBuilder::new_from_deflated(mask_data)
                         .finish(&serialize_settings);
                     let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
@@ -470,6 +477,7 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
         .and_then(|d| get_icc_profile_type(d, image_color_space));
 
     Some(ImageMetadata {
+        has_alpha: color_space.has_alpha(),
         size,
         color_space: image_color_space,
         icc,
@@ -514,6 +522,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
         .and_then(|d| get_icc_profile_type(&d, image_color_space));
 
     Some(ImageMetadata {
+        has_alpha: false,
         size,
         color_space: image_color_space,
         icc,
@@ -565,6 +574,8 @@ fn gif_metadata(data: &[u8]) -> Option<ImageMetadata> {
     let size = imagesize::blob_size(data).ok()?;
 
     Some(ImageMetadata {
+        // We always decode GIFs using RGBA, see `decode_gif`
+        has_alpha: true,
         size: (size.width as u32, size.height as u32),
         color_space: ImageColorspace::Rgb,
         icc: None,
@@ -581,6 +592,7 @@ fn webp_metadata(data: &[u8]) -> Option<ImageMetadata> {
         .and_then(|d| get_icc_profile_type(&d, color_space));
 
     Some(ImageMetadata {
+        has_alpha: decoder.has_alpha(),
         size,
         color_space,
         icc,
