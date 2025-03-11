@@ -242,13 +242,10 @@ impl ChunkContainer {
 
                 if write_embedded_files {
                     let mut embedded_files_name_tree = names.embedded_files();
-                    
-                    if !embedded_files.is_empty() {
-                        let mut embedded_name_entries = embedded_files_name_tree.names();
+                    let mut embedded_name_entries = embedded_files_name_tree.names();
 
-                        for (name, _ref) in &embedded_files {
-                            embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
-                        }
+                    for (name, _ref) in &embedded_files {
+                        embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
                     }
                 }
             }
