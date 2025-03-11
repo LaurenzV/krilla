@@ -218,10 +218,7 @@ mod tests {
     fn validation_pdf_a3_with_embedded_file(d: &mut Document) {
         embedded_file_impl(d)
     }
-
-    // For some reason arlington doesn't like this file because it contains an empty
-    // EmbeddedFiles entry, but if you remove it then the veraPDF model checker doesn't
-    // like it.
+    
     #[snapshot(document, settings_27)]
     fn validation_pdf_a4f_with_embedded_file(d: &mut Document) {
         embedded_file_impl(d)
