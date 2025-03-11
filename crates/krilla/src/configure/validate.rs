@@ -723,8 +723,8 @@ mod tests {
     use crate::surface::TextDirection;
     use crate::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
     use crate::tests::{
-        cmyk_fill, dummy_text_with_spans, rect_to_path, red_fill, stops_with_2_solid_1,
-        youtube_link, NOTO_SANS,
+        blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, rect_to_path, red_fill,
+        stops_with_2_solid_1, youtube_link, NOTO_SANS,
     };
     use crate::{Document, SerializeSettings};
     use krilla_macros::snapshot;
@@ -939,6 +939,40 @@ mod tests {
             document.finish(),
             Err(KrillaError::ValidationError(vec![
                 ValidationError::ContainsNotDefGlyph(font, Some(4), "i".to_string())
+            ]))
+        )
+    }
+
+    #[test]
+    fn validation_pdfa1b_transparency_with_location() {
+        let mut document = Document::new_with(SerializeSettings::settings_19());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        surface.set_location(2);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), red_fill(1.0));
+        surface.set_location(3);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), green_fill(1.0));
+        surface.set_location(4);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), green_fill(0.9));
+        surface.set_location(5);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), green_fill(1.0));
+        surface.set_location(6);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), blue_fill(0.8));
+        surface.set_location(7);
+        surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), blue_fill(0.9));
+
+        surface.finish();
+        page.finish();
+
+        assert_eq!(
+            document.finish(),
+            Err(KrillaError::ValidationError(vec![
+                ValidationError::Transparency(Some(4)),
+                ValidationError::Transparency(Some(6)),
+                // Note that we don't have 7 here, even though we should in theory. The reason is
+                // that since we cache graphics states, only the first time we serialize it will
+                // it trigger the validation error. Not optimal, but changing that would be a pain.
             ]))
         )
     }
