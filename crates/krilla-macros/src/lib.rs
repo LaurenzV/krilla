@@ -143,9 +143,9 @@ impl RendererExt for Renderer {
             Renderer::Mupdf => quote!(Renderer::Mupdf),
             Renderer::Poppler => quote!(Renderer::Poppler),
             Renderer::Quartz => quote!(Renderer::Quartz),
-            Renderer::Pdfjs => quote!(Renderer::Pdfjs),
             Renderer::Pdfbox => quote!(Renderer::Pdfbox),
             Renderer::Ghostscript => quote!(Renderer::Ghostscript),
+            _ => unreachable!()
         }
     }
 }
@@ -163,7 +163,6 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut mupdf = false;
     let mut pdfbox = false;
     let mut ghostscript = false;
-    let mut pdfjs = false;
     let mut poppler = false;
     let mut quartz = false;
     let mut document = false;
@@ -175,7 +174,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let string_ident = ident.to_string();
         matches!(
             string_ident.as_str(),
-            "pdfium" | "mupdf" | "pdfbox" | "ghostscript" | "pdfjs" | "poppler" | "quartz" | "all"
+            "pdfium" | "mupdf" | "pdfbox" | "ghostscript" | "poppler" | "quartz" | "all"
         )
     }) {
         pdfium = true;
@@ -195,7 +194,6 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             "mupdf" => mupdf = true,
             "pdfbox" => pdfbox = true,
             "ghostscript" => ghostscript = true,
-            "pdfjs" => pdfjs = true,
             "poppler" => poppler = true,
             "quartz" => quartz = true,
             "document" => document = true,
@@ -207,7 +205,6 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 mupdf = true;
                 pdfbox = true;
                 ghostscript = true;
-                pdfjs = true;
                 poppler = true;
                 quartz = true;
             }
@@ -294,7 +291,6 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mupdf = renderer_body(Renderer::Mupdf, mupdf);
     let ghostscript = renderer_body(Renderer::Ghostscript, ghostscript);
     let pdfbox = renderer_body(Renderer::Pdfbox, pdfbox);
-    let pdfjs = renderer_body(Renderer::Pdfjs, pdfjs);
     let poppler = renderer_body(Renderer::Poppler, poppler);
     let quartz = renderer_body(Renderer::Quartz, quartz);
 
@@ -305,7 +301,6 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         #mupdf
         #ghostscript
         #pdfbox
-        #pdfjs
         #poppler
         #quartz
     };

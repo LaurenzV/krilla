@@ -160,11 +160,6 @@ jobs:
         run: |
           git clone https://github.com/LaurenzV/sitro
 
-      - name: npm install
-        run: |
-          cd sitro/src/pdfjs
-          npm i
-
       - name: Setup
         run: |
           sudo chmod +x pdfium
@@ -173,7 +168,6 @@ jobs:
           echo "GHOSTSCRIPT_BIN=$(pwd)/gs" >> $GITHUB_ENV
           echo "PDFIUM_BIN=$(pwd)/pdfium" >> $GITHUB_ENV
           echo "PDFBOX_BIN=$(pwd)/pdfbox.jar" >> $GITHUB_ENV
-          echo "PDFJS_BIN=$(pwd)/sitro/src/pdfjs/pdfjs_render.mjs" >> $GITHUB_ENV
           echo "MUPDF_BIN=$(pwd)/mutool" >> $GITHUB_ENV
 
       - name: Build

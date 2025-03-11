@@ -890,17 +890,17 @@ mod tests {
         image_visreg_impl(surface, "rgba16.png", load_custom_image);
     }
 
-    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    #[visreg(pdfium, mupdf, pdfbox, poppler, quartz)]
     fn image_luma8_jpg(surface: &mut Surface) {
         image_visreg_impl(surface, "luma8.jpg", load_jpg_image);
     }
 
-    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    #[visreg(pdfium, mupdf, pdfbox, poppler, quartz)]
     fn image_rgb8_jpg(surface: &mut Surface) {
         image_visreg_impl(surface, "rgb8.jpg", load_jpg_image);
     }
 
-    #[visreg(pdfium, mupdf, pdfbox, pdfjs, poppler, quartz)]
+    #[visreg(pdfium, mupdf, pdfbox, poppler, quartz)]
     fn image_cmyk_jpg(surface: &mut Surface) {
         image_visreg_impl(surface, "cmyk.jpg", load_jpg_image);
     }
