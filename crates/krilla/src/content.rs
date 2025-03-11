@@ -1094,7 +1094,7 @@ where
 }
 
 /// In PDF, correspondences between glyphs and Unicode codepoints are expressed
-/// via a CMAP. In a CMAP, you can assign a sequence of unicode codepoints to each
+/// via a CMAP. In a CMAP, you can assign a sequence of Unicode codepoints to each
 /// glyph. There are two issues with this approach:
 /// - How to deal with the fact that the same glyph might be assigned two different codepoints
 ///   in different contexts (i.e. space and NZWJ).
@@ -1213,13 +1213,13 @@ where
             self.text,
         );
 
-        let mut last_range = first_range.clone();
+        let mut prev_range = first_range.clone();
 
         for next in iter {
             let (next_range, next_incompatible) = func(
                 next,
                 self.paint_mode,
-                Some(last_range.clone()),
+                Some(prev_range.clone()),
                 self.forbid_invalid_codepoints,
                 self.font_container.borrow_mut(),
                 self.text,
@@ -1229,9 +1229,9 @@ where
                 // In this case, we just started and we are looking at the first two glyphs.
                 // This decides whether the current run will be spanned, or not.
                 None => {
-                    // The two glyphs are in the same range, so we definitely want this run
-                    // to be spanned, and also want to include both glyphs in that run.
-                    if last_range == next_range {
+                    if prev_range == next_range {
+                        // The two glyphs are in the same range, so we definitely want this run
+                        // to be spanned, and also want to include both glyphs in that run.
                         use_span = Some(true);
                     } else {
                         // Else, whether we use a span depends on whether the first glyph
@@ -1253,18 +1253,19 @@ where
                 Some(true) => {
                     // If the next glyph is not part of the same cluster, terminate the current
                     // span and don't include the next one.
-                    if last_range != next_range {
+                    if prev_range != next_range {
                         break;
                     }
                 }
                 // We are currently building an unspanned range, meaning the
                 // glyphs are not part of the same cluster.
                 Some(false) => {
-                    // If the current and the last one are part of the same range
-                    // this means that they are part of the same cluster. This means
-                    // that the current AND the last one belong to a spanned segment,
-                    // so we need to do count -= 1 as well before terminating.
-                    if last_range == next_range {
+                    // If the previous and next glyph are part of the same range this means
+                    // that they are part of the same cluster. This means that the previous
+                    // AND the next glyph should be part of the upcoming spanned range, not
+                    // the current one. To exclude the next glyph, we need to do
+                    // `count -= 1` before terminating.
+                    if prev_range == next_range {
                         count -= 1;
                         break;
                     }
@@ -1277,7 +1278,7 @@ where
                 }
             }
 
-            last_range = next.text_range().clone();
+            prev_range = next.text_range().clone();
             count += 1;
         }
 
