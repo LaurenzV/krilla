@@ -156,7 +156,7 @@ impl CIDFont {
             let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
                 KrillaError::FontError(self.font.clone(), "failed to read font subset".to_string())
             })?;
-            
+
             num_glyphs = subsetted_ref.maxp().map(|m| m.num_glyphs()).map_err(|_| {
                 KrillaError::FontError(self.font.clone(), "failed to read font subset".to_string())
             })?;
