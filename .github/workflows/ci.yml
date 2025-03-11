@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   KRILLA_THRESHOLD: "200"
-  VISREG: ""
+#  VISREG: ""
   STORE: ""
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
@@ -182,7 +182,10 @@ jobs:
           path: ./assets/diffs
           
       - name: Run Arlington PDF tests
-        run: /tmp/arlington/arlington-pdf-model-checker store --format text -r -v --loglevel 0 -e ISO_19005_3
+        # We are excluding one file because of https://github.com/pdf-association/arlington-pdf-model/issues/132     
+        run: find store -name "*.pdf" \
+              | grep -v "validation_pdfa4f_full_example.pdf" \
+              | /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
 
   checks:
     name: Check clippy, formatting, and documentation

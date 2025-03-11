@@ -216,8 +216,11 @@ impl ChunkContainer {
             if let Some(ol) = &self.outline {
                 catalog.outlines(remapper[&ol.0]);
             }
-            
-            let write_embedded_files = sc.serialize_settings().validator().write_embedded_files(self.embedded_files.is_empty());
+
+            let write_embedded_files = sc
+                .serialize_settings()
+                .validator()
+                .write_embedded_files(self.embedded_files.is_empty());
 
             if !named_destinations.is_empty() || write_embedded_files {
                 // Cannot use pdf-writer API here because it requires Ref's, while
