@@ -517,7 +517,8 @@ impl<'a> Surface<'a> {
             .draw_opacified(self.sc, opacity, stream)
     }
 
-    pub(crate) fn cur_transform(&self) -> Transform {
+    /// Return the current transformation matrix of the surface.
+    pub fn cur_transform(&self) -> Transform {
         Self::cur_builder(&self.root_builder, &self.sub_builders).cur_transform()
     }
 
