@@ -131,3 +131,51 @@ mod colr {
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 }
+
+mod svg {
+    use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
+    use krilla::surface::{Surface, TextDirection};
+    use krilla::{Document, Font};
+    use krilla_macros::visreg2;
+    use tiny_skia_path::Point;
+
+    #[visreg2(document, all)]
+    fn twitter_color_emoji(document: &mut Document) {
+        let font_data = TWITTER_COLOR_EMOJI.clone();
+        all_glyphs_to_pdf(font_data, None, false, true, document);
+    }
+
+    #[visreg2(document)]
+    fn twitter_color_emoji_no_color(document: &mut Document) {
+        let font_data = TWITTER_COLOR_EMOJI.clone();
+        all_glyphs_to_pdf(font_data, None, false, false, document);
+    }
+
+    #[visreg2]
+    fn svg_extra(surface: &mut Surface) {
+        let font_data = SVG_EXTRA.clone();
+        let font = Font::new(font_data, 0, true).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0., 30.0),
+            purple_fill(1.0),
+            font.clone(),
+            30.0,
+            &[],
+            "😀",
+            false,
+            TextDirection::Auto,
+        );
+
+        surface.fill_text(
+            Point::from_xy(30., 30.0),
+            red_fill(1.0),
+            font.clone(),
+            30.0,
+            &[],
+            "😀",
+            false,
+            TextDirection::Auto,
+        );
+    }
+}
