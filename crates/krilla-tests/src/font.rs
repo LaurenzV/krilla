@@ -187,8 +187,9 @@ mod cid {
     use krilla::path::Fill;
     use krilla::surface::{Surface, TextDirection};
     use krilla::Font;
-    use tiny_skia_path::Point;
     use krilla_macros::visreg;
+    use tiny_skia_path::Point;
+
     use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
 
     #[visreg(all)]

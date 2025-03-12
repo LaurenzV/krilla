@@ -322,3 +322,48 @@ impl<T: Send + Sync + 'static> Deferred<T> {
         self.0.wait()
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test_utils {
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::sync::LazyLock;
+
+    use once_cell::sync::Lazy;
+
+    use crate::Data;
+    use crate::{Configuration, SerializeSettings};
+
+    pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
+        Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+
+    pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
+        LazyLock::new(|| WORKSPACE_PATH.join("assets"));
+
+    static FONT_PATH: LazyLock<PathBuf> = LazyLock::new(|| ASSETS_PATH.join("fonts"));
+
+    macro_rules! lazy_font {
+        ($name:ident, $path:expr) => {
+            pub static $name: LazyLock<Data> =
+                LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()).into());
+        };
+    }
+
+    lazy_font!(
+        NOTO_COLOR_EMOJI_COLR,
+        FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf")
+    );
+
+    pub fn settings_1() -> SerializeSettings {
+        SerializeSettings {
+            ascii_compatible: true,
+            compress_content_streams: false,
+            no_device_cs: false,
+            xmp_metadata: false,
+            cmyk_profile: None,
+            enable_tagging: true,
+            configuration: Configuration::new(),
+            render_svg_glyph_fn: |_, _, _, _| None,
+        }
+    }
+}

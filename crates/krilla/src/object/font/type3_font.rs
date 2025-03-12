@@ -556,8 +556,8 @@ mod tests {
     use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::object::font::{FontContainer, OwnedPaintMode};
     use crate::path::Fill;
-    use crate::serialize::{SerializeContext, SerializeSettings};
-    use crate::tests::TWITTER_COLOR_EMOJI;
+    use crate::serialize::SerializeContext;
+    use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
 
     impl OwnedCoveredGlyph {
         pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {
@@ -570,8 +570,8 @@ mod tests {
 
     #[test]
     fn type3_more_than_256_glyphs() {
-        let mut sc = SerializeContext::new(SerializeSettings::settings_1());
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
+        let mut sc = SerializeContext::new(settings_1());
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
         let container = sc.register_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 

@@ -119,8 +119,6 @@ mod serialize;
 mod util;
 
 pub(crate) mod content;
-#[cfg(test)]
-pub(crate) mod tests;
 
 pub mod configure;
 pub mod document;
