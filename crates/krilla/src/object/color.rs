@@ -482,25 +482,3 @@ impl ICCMetadata {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use krilla_macros::{snapshot, visreg};
-
-    use crate::color::ColorSpace;
-    use crate::page::Page;
-    use crate::path::Fill;
-    use crate::serialize::SerializeContext;
-    use crate::surface::Surface;
-    use crate::tests::{cmyk_fill, rect_to_path, red_fill};
-
-    #[snapshot]
-    fn color_space_sgray(sc: &mut SerializeContext) {
-        sc.register_colorspace(ColorSpace::Luma);
-    }
-
-    #[snapshot]
-    fn color_space_srgb(sc: &mut SerializeContext) {
-        sc.register_colorspace(ColorSpace::Srgb);
-    }
-}

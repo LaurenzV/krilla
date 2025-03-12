@@ -125,34 +125,3 @@ impl Cacheable for Mask {
 impl Resourceable for Mask {
     type Resource = resource::XObject;
 }
-
-#[cfg(test)]
-mod tests {
-    use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::{PathBuilder, Rect};
-
-    use crate::mask::MaskType;
-    use crate::object::mask::Mask;
-    use crate::serialize::SerializeContext;
-    use crate::stream::StreamBuilder;
-    use crate::tests::{basic_mask, rect_to_path, red_fill};
-
-    fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializeContext) {
-        let mut stream_builder = StreamBuilder::new(sc);
-        let mut surface = stream_builder.surface();
-
-        let mut builder = PathBuilder::new();
-        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
-        let path = builder.finish().unwrap();
-
-        surface.fill_path(&path, red_fill(0.5));
-        surface.finish();
-        let mask = Mask::new(stream_builder.finish(), mask_type);
-        sc.register_cacheable(mask);
-    }
-
-    #[snapshot]
-    pub fn mask_luminosity(sc: &mut SerializeContext) {
-        mask_snapshot_impl(MaskType::Luminosity, sc);
-    }
-}

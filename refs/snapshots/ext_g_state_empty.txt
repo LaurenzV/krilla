@@ -1,9 +1,0 @@
-%PDF-1.7
-%AAAA
-
-1 0 obj
-<<
-  /Type /ExtGState
->>
-endobj
-

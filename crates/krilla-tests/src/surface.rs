@@ -8,8 +8,8 @@ use krilla::surface::{BlendMode, Surface};
 use krilla_macros::{snapshot2, visreg2};
 use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Point, Size, Transform};
-
-use crate::{basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB};
+use krilla::Data;
+use crate::{basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB, LATIN_MODERN_ROMAN};
 use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, NOTO_COLOR_EMOJI_COLR,
     NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
@@ -192,12 +192,12 @@ fn text_direction_btt(surface: &mut Surface) {
     );
 }
 
-fn simple_text_impl(page: &mut Page) {
+fn simple_text_impl(page: &mut Page, font_data: Data) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
         Fill::default(),
-        Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+        Font::new(font_data, 0, true).unwrap(),
         16.0,
         &[],
         "A line of text.",
@@ -207,15 +207,20 @@ fn simple_text_impl(page: &mut Page) {
 }
 
 #[snapshot2(single_page)]
+fn simple_text_cff(page: &mut Page) {
+    simple_text_impl(page, LATIN_MODERN_ROMAN.clone());
+}
+
+#[snapshot2(single_page)]
 fn simple_text(page: &mut Page) {
-    simple_text_impl(page);
+    simple_text_impl(page, NOTO_SANS.clone());
 }
 
 #[snapshot2(single_page, settings_25)]
 fn simple_text_pdf20(page: &mut Page) {
     // The main purpose of this test is to ensure that the fonts without CIDSet are
     // still written properly for PDF 2.0.
-    simple_text_impl(page);
+    simple_text_impl(page, NOTO_SANS.clone());
 }
 
 #[snapshot2(single_page)]
