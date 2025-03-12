@@ -47,6 +47,7 @@ mod outline;
 mod page;
 mod pattern;
 mod surface;
+mod tagging;
 mod validate;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
