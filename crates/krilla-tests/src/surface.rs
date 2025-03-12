@@ -1,18 +1,136 @@
 use krilla::font::Font;
+use krilla::mask::MaskType;
 use krilla::page::Page;
 use krilla::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::path::{Fill, Stroke};
-use krilla::surface::Surface;
 use krilla::surface::TextDirection;
+use krilla::surface::{BlendMode, Surface};
 use krilla_macros::{snapshot2, visreg2};
 use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Point, Size, Transform};
 
-use crate::FONTDB;
+use crate::{basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB};
 use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, NOTO_COLOR_EMOJI_COLR,
     NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
 };
+
+#[snapshot2(single_page)]
+fn stream_path_single_with_rgb(page: &mut Page) {
+    let mut surface = page.surface();
+    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+    let fill = red_fill(1.0);
+    surface.fill_path(&path, fill);
+}
+
+#[snapshot2(single_page)]
+fn stream_path_single_with_luma(page: &mut Page) {
+    let mut surface = page.surface();
+    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+    let fill = gray_fill(1.0);
+    surface.fill_path(&path, fill);
+}
+
+#[snapshot2(single_page)]
+fn stream_path_single_with_rgb_and_opacity(page: &mut Page) {
+    let mut surface = page.surface();
+    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+    let fill = red_fill(0.5);
+    surface.fill_path(&path, fill);
+}
+
+#[snapshot2(single_page)]
+fn stream_path_single_with_cmyk(page: &mut Page) {
+    let mut surface = page.surface();
+    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
+    let fill = cmyk_fill(1.0);
+    surface.fill_path(&path, fill);
+}
+
+#[snapshot2(single_page, settings_2)]
+fn stream_resource_cache(page: &mut Page) {
+    let mut surface = page.surface();
+    let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+    let path2 = rect_to_path(50.0, 50.0, 150.0, 150.0);
+    let path3 = rect_to_path(100.0, 100.0, 200.0, 200.0);
+
+    surface.fill_path(&path1, green_fill(1.0));
+    surface.fill_path(&path2, red_fill(1.0));
+    surface.fill_path(&path3, blue_fill(1.0));
+}
+
+#[snapshot2(single_page)]
+fn stream_nested_transforms(page: &mut Page) {
+    let mut surface = page.surface();
+    let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+
+    surface.push_transform(&Transform::from_translate(50.0, 50.0));
+    surface.fill_path(&path1, green_fill(1.0));
+    surface.push_transform(&Transform::from_translate(100.0, 100.0));
+    surface.fill_path(&path1, red_fill(1.0));
+
+    surface.pop();
+    surface.pop();
+}
+
+#[snapshot2(single_page)]
+fn stream_reused_graphics_state(page: &mut Page) {
+    let mut surface = page.surface();
+    let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+    surface.fill_path(&path1, green_fill(0.5));
+    surface.push_blend_mode(BlendMode::ColorBurn);
+    surface.fill_path(&path1, green_fill(0.5));
+    surface.pop();
+    surface.fill_path(&path1, green_fill(0.5));
+}
+
+#[snapshot2(single_page)]
+fn stream_fill_text(page: &mut Page) {
+    let mut surface = page.surface();
+    surface.fill_text(
+        Point::from_xy(0.0, 50.0),
+        Fill::default(),
+        Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+        16.0,
+        &[],
+        "hi there",
+        false,
+        TextDirection::Auto,
+    );
+}
+
+#[snapshot2(single_page)]
+fn stream_stroke_text(page: &mut Page) {
+    let mut surface = page.surface();
+    surface.stroke_text(
+        Point::from_xy(0.0, 50.0),
+        Stroke::default(),
+        Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+        16.0,
+        &[],
+        "hi there",
+        false,
+        TextDirection::Auto,
+    );
+}
+
+#[snapshot2(single_page)]
+fn stream_image(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_png_image("rgb8.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
+#[snapshot2(single_page)]
+fn stream_mask(page: &mut Page) {
+    let mut surface = page.surface();
+    let mask = basic_mask(&mut surface, MaskType::Alpha);
+    surface.push_mask(mask);
+    let path = rect_to_path(0.0, 0.0, 100.0, 100.0);
+    surface.fill_path(&path, green_fill(0.5));
+    surface.pop();
+}
 
 #[visreg2]
 fn text_direction_ltr(surface: &mut Surface) {
