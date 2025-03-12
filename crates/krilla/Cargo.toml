@@ -8,7 +8,8 @@ authors = { workspace = true }
 edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
-exclude = ["src/tests"]
+exclude = ["src/tests", "tests"]
+
 
 [features]
 default = ["simple-text", "raster-images", "svg"]

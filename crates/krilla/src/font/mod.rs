@@ -151,7 +151,8 @@ impl Font {
         (&self.0.font_info.location).into()
     }
 
-    pub(crate) fn font_ref(&self) -> &FontRef {
+    /// Return the underlying `FontRef`.
+    pub fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }
 

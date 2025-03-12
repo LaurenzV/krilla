@@ -3,6 +3,7 @@
 use std::cmp::max;
 use std::env;
 use std::hash::{Hash, Hasher};
+use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, OnceLock};
 
@@ -19,29 +20,23 @@ use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
-use crate::action::LinkAction;
-use crate::annotation::{Annotation, LinkAnnotation, Target};
-use crate::color::{cmyk, luma, rgb, ICCProfile};
-use crate::configure::{Configuration, PdfVersion, Validator};
-use crate::document::{Document, PageSettings};
-use crate::font::{Font, GlyphUnits, KrillaGlyph};
-use crate::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
-use crate::mask::{Mask, MaskType};
-use crate::paint::{Stop, Stops};
-use crate::path::{Fill, Stroke};
-use crate::stream::Stream;
-use crate::stream::StreamBuilder;
-use crate::surface::Surface;
-use crate::Data;
-use crate::{SerializeSettings, SvgSettings};
+use krilla::action::LinkAction;
+use krilla::annotation::{Annotation, LinkAnnotation, Target};
+use krilla::color::{cmyk, luma, rgb, ICCProfile};
+use krilla::configure::{Configuration, PdfVersion, Validator};
+use krilla::document::{Document, PageSettings};
+use krilla::font::{Font, GlyphUnits, KrillaGlyph};
+use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
+use krilla::mask::{Mask, MaskType};
+use krilla::paint::{Stop, Stops};
+use krilla::path::{Fill, Stroke};
+use krilla::stream::Stream;
+use krilla::stream::StreamBuilder;
+use krilla::surface::Surface;
+use krilla::Data;
+use krilla::{SerializeSettings, SvgSettings};
 
-#[allow(dead_code)]
-#[rustfmt::skip]
-mod svg;
-
-// TODO: The reason we store all tests here instead of creating a root `tests` folder is that
-// we want to avoid duplicating all of the asset paths for both, crate-internal unit tests and
-// external integration tests. Would be nice to figure out a better solution to this.
+mod font;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
@@ -189,12 +184,20 @@ impl CustomImage for TestImage {
     }
 }
 
+fn dummy_glyph(
+    glyph_id: GlyphId,
+    range: Range<usize>,
+    location: Option<krilla::surface::Location>,
+) -> KrillaGlyph {
+    KrillaGlyph::new(glyph_id, 0.0, 0.0, 0.0, 0.0, range, location)
+}
+
 pub fn dummy_text_with_spans() -> (String, Vec<KrillaGlyph>) {
     let text = "Hi.".to_string();
     let glyphs = vec![
-        KrillaGlyph::dummy(GlyphId::new(10), 0..1, Some(3)),
-        KrillaGlyph::dummy(GlyphId::new(0), 1..2, Some(4)),
-        KrillaGlyph::dummy(GlyphId::new(20), 2..3, Some(5)),
+        dummy_glyph(GlyphId::new(10), 0..1, Some(3)),
+        dummy_glyph(GlyphId::new(0), 1..2, Some(4)),
+        dummy_glyph(GlyphId::new(20), 2..3, Some(5)),
     ];
 
     (text, glyphs)
@@ -568,8 +571,8 @@ pub fn all_glyphs_to_pdf(
     allow_color: bool,
     d: &mut Document,
 ) {
-    use crate::font::KrillaGlyph;
-    use crate::geom::Transform;
+    use krilla::font::KrillaGlyph;
+    use krilla::geom::Transform;
 
     let font = Font::new(font_data, 0, allow_color).unwrap();
     let font_ref = font.font_ref();
@@ -778,201 +781,4 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
         &pdf,
         ignore_renderer,
     );
-}
-
-#[allow(missing_docs)]
-impl SerializeSettings {
-    pub fn settings_1() -> Self {
-        Self {
-            ascii_compatible: true,
-            compress_content_streams: false,
-            no_device_cs: false,
-            xmp_metadata: false,
-            cmyk_profile: None,
-            enable_tagging: true,
-            configuration: Configuration::new(),
-        }
-    }
-
-    pub fn settings_2() -> Self {
-        Self {
-            no_device_cs: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_5() -> Self {
-        Self {
-            xmp_metadata: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_6() -> Self {
-        Self {
-            no_device_cs: true,
-            cmyk_profile: Some(
-                ICCProfile::new(
-                    &std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-                )
-                .unwrap(),
-            ),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_7() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A2_B),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_8() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A2_B),
-            cmyk_profile: Some(
-                ICCProfile::new(
-                    &std::fs::read(crate::tests::ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap(),
-                )
-                .unwrap(),
-            ),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_9() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A2_U),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_10() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A3_B),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_11() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A3_U),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_12() -> Self {
-        Self {
-            enable_tagging: false,
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_13() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A2_A),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_14() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A3_A),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_15() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::UA1),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_16() -> Self {
-        Self {
-            configuration: Configuration::new_with_version(PdfVersion::Pdf14),
-            xmp_metadata: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_17() -> Self {
-        Self {
-            configuration: Configuration::new_with_version(PdfVersion::Pdf14),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_18() -> Self {
-        Self {
-            configuration: Configuration::new_with_version(PdfVersion::Pdf14),
-            no_device_cs: true,
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_19() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A1_B),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_20() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A1_A),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_22() -> Self {
-        Self {
-            configuration: Configuration::new_with(Validator::A2_B, PdfVersion::Pdf14).unwrap(),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_23() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A3_B),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_24() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A3_A),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_25() -> Self {
-        Self {
-            configuration: Configuration::new_with_version(PdfVersion::Pdf20),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_26() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A4),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_27() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A4F),
-            ..Self::settings_1()
-        }
-    }
-
-    pub fn settings_28() -> Self {
-        Self {
-            configuration: Configuration::new_with_validator(Validator::A4E),
-            ..Self::settings_1()
-        }
-    }
 }

@@ -8,10 +8,6 @@ publish = false
 [lib]
 proc-macro = true
 
-[[test]]
-name = "tests"
-path = "tests/test.rs"
-
 [dependencies]
 syn = { workspace = true }
 quote = { workspace = true }
