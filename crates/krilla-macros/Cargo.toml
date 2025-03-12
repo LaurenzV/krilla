@@ -1,8 +1,9 @@
 [package]
 name = "krilla-macros"
 description = "Proc-macros for krilla."
-edition = {workspace = true}
-version = {workspace = true}
+edition = { workspace = true }
+version = { workspace = true }
+publish = false
 
 [lib]
 proc-macro = true
