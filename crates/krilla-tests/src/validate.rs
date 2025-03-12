@@ -12,7 +12,7 @@ use krilla::surface::TextDirection;
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, TableHeaderScope, Tag, TagGroup, TagTree,
 };
-use krilla_macros::{snapshot, snapshot2};
+use krilla_macros::snapshot;
 use tiny_skia_path::{Point, Rect, Size};
 
 use crate::{
@@ -45,7 +45,7 @@ fn q_nesting_impl(settings: SerializeSettings) -> Document {
     document
 }
 
-#[snapshot2(document, settings_7)]
+#[snapshot(document, settings_7)]
 pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -83,7 +83,7 @@ pub fn validation_pdfa_string_length() {
     );
 }
 
-#[snapshot2(single_page, settings_7)]
+#[snapshot(single_page, settings_7)]
 fn validation_pdfa_annotation(page: &mut Page) {
     page.add_annotation(
         LinkAnnotation::new(
@@ -389,62 +389,62 @@ fn validation_pdfa_private_unicode_codepoint() {
     )
 }
 
-#[snapshot2(document, settings_20)]
+#[snapshot(document, settings_20)]
 fn validation_pdfa1_a_full_example(document: &mut Document) {
     validation_pdf_tagged_full_example(document);
 }
 
-#[snapshot2(document, settings_19)]
+#[snapshot(document, settings_19)]
 fn validation_pdfa1_b_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_13)]
+#[snapshot(document, settings_13)]
 fn validation_pdfa2_a_full_example(document: &mut Document) {
     validation_pdf_tagged_full_example(document);
 }
 
-#[snapshot2(document, settings_7)]
+#[snapshot(document, settings_7)]
 fn validation_pdfa2_b_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_9)]
+#[snapshot(document, settings_9)]
 fn validation_pdfa2_u_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_14)]
+#[snapshot(document, settings_14)]
 fn validation_pdfa3_a_full_example(document: &mut Document) {
     validation_pdf_tagged_full_example(document);
 }
 
-#[snapshot2(document, settings_10)]
+#[snapshot(document, settings_10)]
 fn validation_pdfa3_b_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_11)]
+#[snapshot(document, settings_11)]
 fn validation_pdfa3_u_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_26)]
+#[snapshot(document, settings_26)]
 fn validation_pdfa4_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_27)]
+#[snapshot(document, settings_27)]
 fn validation_pdfa4f_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_28)]
+#[snapshot(document, settings_28)]
 fn validation_pdfa4e_full_example(document: &mut Document) {
     validation_pdf_full_example(document);
 }
 
-#[snapshot2(document, settings_15, ignore)]
+#[snapshot(document, settings_15, ignore)]
 fn validation_pdfua1_full_example(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -546,7 +546,7 @@ fn validation_pdfua1_missing_requirements() {
     )
 }
 
-#[snapshot2(document, settings_15, ignore)]
+#[snapshot(document, settings_15, ignore)]
 fn validation_pdfua1_attributes(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -583,7 +583,7 @@ fn validation_pdfua1_attributes(document: &mut Document) {
     document.set_outline(outline);
 }
 
-#[snapshot2(document, settings_16)]
+#[snapshot(document, settings_16)]
 fn pdf_version_14_tagged(document: &mut Document) {
     validation_pdf_tagged_full_example(document);
 }
@@ -630,7 +630,7 @@ fn validation_pdfa1_no_image_transparency() {
     )
 }
 
-#[snapshot2(document, settings_22)]
+#[snapshot(document, settings_22)]
 fn validation_other_version(document: &mut Document) {
     validation_pdf_full_example(document);
 }

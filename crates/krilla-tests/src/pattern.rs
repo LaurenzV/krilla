@@ -3,7 +3,7 @@ mod shading {
     use krilla::path::Fill;
     use krilla::surface::Surface;
     use krilla::Page;
-    use krilla_macros::{snapshot2, visreg2};
+    use krilla_macros::{snapshot, visreg2};
     use tiny_skia_path::NormalizedF32;
 
     use crate::{rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1};
@@ -105,7 +105,7 @@ mod shading {
     }
 
     // Should be turned into a solid color.
-    #[snapshot2(single_page)]
+    #[snapshot(single_page)]
     fn gradient_single_stop(page: &mut Page) {
         let mut surface = page.surface();
 

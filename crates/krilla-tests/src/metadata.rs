@@ -1,6 +1,6 @@
 use krilla::metadata::{DateTime, Metadata};
 use krilla::Document;
-use krilla_macros::snapshot2;
+use krilla_macros::snapshot;
 
 fn metadata_impl(document: &mut Document) {
     let date = DateTime::new(2024)
@@ -28,31 +28,31 @@ fn metadata_impl(document: &mut Document) {
     document.set_metadata(metadata);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn empty_document(_: &mut Document) {}
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn metadata_empty(document: &mut Document) {
     let metadata = Metadata::new();
     document.set_metadata(metadata);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn metadata_full(document: &mut Document) {
     metadata_impl(document);
 }
 
-#[snapshot2(document, settings_5)]
+#[snapshot(document, settings_5)]
 fn metadata_full_with_xmp(document: &mut Document) {
     metadata_impl(document);
 }
 
-#[snapshot2(document, settings_16)]
+#[snapshot(document, settings_16)]
 fn pdf_version_14(document: &mut Document) {
     metadata_impl(document);
 }
 
-#[snapshot2(document, settings_25)]
+#[snapshot(document, settings_25)]
 fn pdf_version_20(document: &mut Document) {
     metadata_impl(document);
 }

@@ -5,17 +5,21 @@ use krilla::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
-use krilla_macros::{snapshot2, visreg2};
+use krilla::Data;
+use krilla_macros::{snapshot, visreg2};
 use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Point, Size, Transform};
-use krilla::Data;
-use crate::{basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB, LATIN_MODERN_ROMAN};
+
+use crate::{
+    basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB,
+    LATIN_MODERN_ROMAN,
+};
 use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, NOTO_COLOR_EMOJI_COLR,
     NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
 };
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_path_single_with_rgb(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -23,7 +27,7 @@ fn stream_path_single_with_rgb(page: &mut Page) {
     surface.fill_path(&path, fill);
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_path_single_with_luma(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -31,7 +35,7 @@ fn stream_path_single_with_luma(page: &mut Page) {
     surface.fill_path(&path, fill);
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_path_single_with_rgb_and_opacity(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -39,7 +43,7 @@ fn stream_path_single_with_rgb_and_opacity(page: &mut Page) {
     surface.fill_path(&path, fill);
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_path_single_with_cmyk(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -47,7 +51,7 @@ fn stream_path_single_with_cmyk(page: &mut Page) {
     surface.fill_path(&path, fill);
 }
 
-#[snapshot2(single_page, settings_2)]
+#[snapshot(single_page, settings_2)]
 fn stream_resource_cache(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
@@ -59,7 +63,7 @@ fn stream_resource_cache(page: &mut Page) {
     surface.fill_path(&path3, blue_fill(1.0));
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_nested_transforms(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
@@ -73,7 +77,7 @@ fn stream_nested_transforms(page: &mut Page) {
     surface.pop();
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_reused_graphics_state(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
@@ -84,7 +88,7 @@ fn stream_reused_graphics_state(page: &mut Page) {
     surface.fill_path(&path1, green_fill(0.5));
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_fill_text(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -99,7 +103,7 @@ fn stream_fill_text(page: &mut Page) {
     );
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_stroke_text(page: &mut Page) {
     let mut surface = page.surface();
     surface.stroke_text(
@@ -114,7 +118,7 @@ fn stream_stroke_text(page: &mut Page) {
     );
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_image(page: &mut Page) {
     let mut surface = page.surface();
     let image = load_png_image("rgb8.png");
@@ -122,7 +126,7 @@ fn stream_image(page: &mut Page) {
     surface.draw_image(image, size);
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn stream_mask(page: &mut Page) {
     let mut surface = page.surface();
     let mask = basic_mask(&mut surface, MaskType::Alpha);
@@ -206,24 +210,24 @@ fn simple_text_impl(page: &mut Page, font_data: Data) {
     );
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn simple_text_cff(page: &mut Page) {
     simple_text_impl(page, LATIN_MODERN_ROMAN.clone());
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn simple_text(page: &mut Page) {
     simple_text_impl(page, NOTO_SANS.clone());
 }
 
-#[snapshot2(single_page, settings_25)]
+#[snapshot(single_page, settings_25)]
 fn simple_text_pdf20(page: &mut Page) {
     // The main purpose of this test is to ensure that the fonts without CIDSet are
     // still written properly for PDF 2.0.
     simple_text_impl(page, NOTO_SANS.clone());
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn complex_text(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -238,7 +242,7 @@ fn complex_text(page: &mut Page) {
     );
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn complex_text_2(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -253,7 +257,7 @@ fn complex_text_2(page: &mut Page) {
     );
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn complex_text_3(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -268,7 +272,7 @@ fn complex_text_3(page: &mut Page) {
     );
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn complex_text_4(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(

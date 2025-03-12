@@ -1,17 +1,17 @@
 use krilla::path::Fill;
 use krilla::surface::Surface;
 use krilla::Page;
-use krilla_macros::{snapshot2, visreg2};
+use krilla_macros::{snapshot, visreg2};
 
 use crate::{cmyk_fill, rect_to_path, red_fill};
 
-#[snapshot2(single_page, settings_18)]
+#[snapshot(single_page, settings_18)]
 fn icc_v2_srgb(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), red_fill(1.0));
 }
 
-#[snapshot2(single_page, settings_18)]
+#[snapshot(single_page, settings_18)]
 fn icc_v2_sgrey(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), Fill::default());

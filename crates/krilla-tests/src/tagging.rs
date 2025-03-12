@@ -5,7 +5,7 @@ use krilla::path::Fill;
 use krilla::surface::{Surface, TextDirection};
 use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
 use krilla::{Document, Font};
-use krilla_macros::snapshot2;
+use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Rect, Size, Transform};
 
@@ -33,7 +33,7 @@ impl SurfaceTaggingExt for Surface<'_> {
     }
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_empty(document: &mut Document) {
     let tag_root = TagTree::new();
     document.set_tag_tree(tag_root);
@@ -95,22 +95,22 @@ fn tagging_simple_with_link_impl(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_simple(document: &mut Document) {
     tagging_simple_impl(document);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_simple_with_link(document: &mut Document) {
     tagging_simple_with_link_impl(document);
 }
 
-#[snapshot2(document, settings_12)]
+#[snapshot(document, settings_12)]
 fn tagging_disabled(document: &mut Document) {
     tagging_simple_impl(document);
 }
 
-#[snapshot2(document, settings_12)]
+#[snapshot(document, settings_12)]
 fn tagging_disabled_2(document: &mut Document) {
     tagging_simple_with_link_impl(document);
 }
@@ -120,7 +120,7 @@ pub(crate) fn sample_svg() -> usvg::Tree {
     usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_image_with_alt(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut image_group =
@@ -143,7 +143,7 @@ fn tagging_image_with_alt(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_multiple_content_tags(document: &mut Document) {
     let mut tag_tree = TagTree::new();
 
@@ -191,7 +191,7 @@ fn tagging_multiple_content_tags(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_multiple_pages(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut par_1 = TagGroup::new(Tag::P);
@@ -249,7 +249,7 @@ fn tagging_multiple_pages(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn tagging_two_footnotes(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut fn_group_1 = TagGroup::new(Tag::Note);

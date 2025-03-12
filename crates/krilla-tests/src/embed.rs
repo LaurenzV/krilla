@@ -3,7 +3,7 @@ use krilla::embed::{AssociationKind, EmbedError, EmbeddedFile};
 use krilla::error::KrillaError;
 use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
-use krilla_macros::snapshot2;
+use krilla_macros::snapshot;
 
 use crate::Document;
 use crate::{settings_13, settings_23, ASSETS_PATH};
@@ -49,13 +49,13 @@ fn file_3() -> EmbeddedFile {
     }
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn embedded_file(d: &mut Document) {
     let file = file_1();
     d.embed_file(file);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn embedded_file_with_compression(d: &mut Document) {
     let mut file = file_1();
     file.compress = true;
@@ -63,7 +63,7 @@ fn embedded_file_with_compression(d: &mut Document) {
     d.embed_file(file);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn multiple_embedded_files(d: &mut Document) {
     let f1 = file_1();
     let f2 = file_2();
@@ -83,17 +83,17 @@ fn embedded_file_impl(d: &mut Document) {
     d.embed_file(f1);
 }
 
-#[snapshot2(document, settings_23)]
+#[snapshot(document, settings_23)]
 fn validation_pdf_a3_with_embedded_file(d: &mut Document) {
     embedded_file_impl(d)
 }
 
-#[snapshot2(document, settings_27)]
+#[snapshot(document, settings_27)]
 fn validation_pdf_a4f_with_embedded_file(d: &mut Document) {
     embedded_file_impl(d)
 }
 
-#[snapshot2(document, settings_25)]
+#[snapshot(document, settings_25)]
 fn pdf_20_with_embedded_file(d: &mut Document) {
     // Technically PDF 2.0 supports associated files, but we only use them for PDF/A-3.
     embedded_file_impl(d)

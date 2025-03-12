@@ -3,12 +3,12 @@ use std::num::NonZeroUsize;
 use krilla::page::{NumberingStyle, PageLabel};
 use krilla::path::Fill;
 use krilla::{Document, Page, PageSettings};
-use krilla_macros::{snapshot, snapshot2, visreg, visreg2};
+use krilla_macros::{snapshot, visreg, visreg2};
 use tiny_skia_path::{PathBuilder, Rect};
 
 use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn page_label_complex(d: &mut Document) {
     d.start_page_with(PageSettings::new(200.0, 200.0));
     d.start_page_with(PageSettings::new(250.0, 200.0));
@@ -22,7 +22,7 @@ fn page_label_complex(d: &mut Document) {
     d.start_page_with(settings);
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn page_with_crop_bleeding_trim_art_boxes(d: &mut Document) {
     // Create page settings with different boxes
     let page_settings = PageSettings::new(200.0, 200.0)

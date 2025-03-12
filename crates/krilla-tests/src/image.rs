@@ -1,6 +1,6 @@
 use krilla::surface::Surface;
 use krilla::{Document, Image, Page};
-use krilla_macros::{snapshot2, visreg2};
+use krilla_macros::{snapshot, visreg2};
 use tiny_skia_path::Size;
 
 use crate::{
@@ -119,7 +119,7 @@ fn image_resized(surface: &mut Surface) {
     surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());
 }
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn image_deduplication(document: &mut Document) {
     let size = load_png_image("luma8.png").size();
     let size = Size::from_wh(size.0 as f32, size.1 as f32).unwrap();
@@ -136,7 +136,7 @@ fn image_deduplication(document: &mut Document) {
     surface.draw_image(load_png_image("luma8.png"), size);
 }
 
-#[snapshot2(single_page)]
+#[snapshot(single_page)]
 fn image_interpolate(page: &mut Page) {
     let image = Image::from_png(
         std::fs::read(ASSETS_PATH.join("images").join("rgba8.png"))

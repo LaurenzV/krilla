@@ -1,12 +1,12 @@
 use krilla::destination::XyzDestination;
 use krilla::document::{Document, PageSettings};
 use krilla::outline::{Outline, OutlineNode};
-use krilla_macros::{snapshot, snapshot2};
+use krilla_macros::snapshot;
 use tiny_skia_path::Point;
 
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};
 
-#[snapshot2(document)]
+#[snapshot(document)]
 fn outline_simple(d: &mut Document) {
     let fills = [red_fill(1.0), green_fill(1.0), blue_fill(1.0)];
     for (index, fill) in fills.into_iter().enumerate() {

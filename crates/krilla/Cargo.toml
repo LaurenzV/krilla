@@ -49,7 +49,6 @@ zune-jpeg = { workspace = true, optional = true }
 [dev-dependencies]
 difference = { workspace = true }
 image = { workspace = true, features = ["png"] }
-krilla-macros = { workspace = true }
 oxipng = { workspace = true }
 paste = { workspace = true }
 sitro = { workspace = true }

@@ -550,9 +550,7 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use krilla_macros::snapshot;
     use skrifa::GlyphId;
-    use tiny_skia_path::Point;
 
     use crate::font::Font;
     use crate::object::font::type3_font::OwnedCoveredGlyph;
