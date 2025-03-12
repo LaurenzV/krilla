@@ -9,7 +9,7 @@ license.workspace = true
 
 [dependencies]
 krilla-svg = { workspace = true }
-krilla = { workspace = true, features = ["svg", "raster-images", "simple-text"] }
+krilla = { workspace = true, features = ["raster-images", "simple-text"] }
 krilla-macros = { workspace = true }
 fontdb = { workspace = true }
 usvg = { workspace = true }

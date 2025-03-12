@@ -10,7 +10,7 @@ license.workspace = true
 [dependencies]
 tiny-skia-path = { workspace = true }
 zune-png = { workspace = true }
-krilla = { workspace = true, features = ["raster-images", "svg"] }
+krilla = { workspace = true, features = ["raster-images"] }
 usvg = { workspace = true }
 tiny-skia = { workspace = true }
 resvg = { workspace = true }

@@ -13,11 +13,11 @@ exclude = ["src/tests"]
 
 [features]
 default = ["raster-images"]
+
+# Enable global caching of certain objects
 "comemo" = ["dep:comemo"]
 # Allow for multi-threaded PDF creation.
 "rayon" = ["dep:rayon"]
-# Allow for rendering SVG images and SVG-based glyphs.
-"svg" = ["dep:fontdb", "dep:usvg"]
 # Allow for rendering simple text without having to shape it yourself.
 "simple-text" = ["dep:rustybuzz"]
 # Allow for adding raster images to your document.
@@ -28,7 +28,6 @@ base64 = { workspace = true }
 bumpalo = { workspace = true }
 comemo = { workspace = true, optional = true }
 float-cmp = { workspace = true }
-fontdb = { workspace = true, optional = true }
 gif = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
 imagesize = { workspace = true, optional = true }
@@ -36,14 +35,12 @@ miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
 rayon = { workspace = true, optional = true }
-resvg = { workspace = true, optional = true }
 rustybuzz = { workspace = true, optional = true }
 siphasher = { workspace = true }
 subsetter = { workspace = true }
 skrifa = { workspace = true }
 tiny-skia = { workspace = true, optional = true }
 tiny-skia-path = { workspace = true }
-usvg = { workspace = true, optional = true }
 xmp-writer = { workspace = true }
 yoke = { workspace = true }
 zune-png = { workspace = true, optional = true }
