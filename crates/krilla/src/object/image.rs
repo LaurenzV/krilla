@@ -299,8 +299,8 @@ impl Image {
         })))
     }
 
-    // Used for SVG filters
-    pub(crate) fn from_rgba8(data: Vec<u8>, width: u32, height: u32) -> Self {
+    /// TODO: add docs
+    pub fn from_rgba8(data: Vec<u8>, width: u32, height: u32) -> Self {
         let hash = data.sip_hash();
         let metadata = ImageMetadata {
             has_alpha: true,

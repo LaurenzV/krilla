@@ -841,6 +841,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "krilla-svg"
+version = "0.3.0"
+dependencies = [
+ "fontdb",
+ "krilla",
+ "resvg",
+ "tiny-skia",
+ "tiny-skia-path",
+ "usvg",
+ "zune-png",
+]
+
+[[package]]
 name = "krilla-test"
 version = "0.3.0"
 dependencies = [

@@ -498,7 +498,7 @@ impl<'a> Surface<'a> {
 
     /// Convert a `fontdb` into `krilla` `Font` objects.
     #[cfg(feature = "svg")]
-    pub(crate) fn convert_fontdb(
+    pub fn convert_fontdb(
         &mut self,
         db: &mut fontdb::Database,
         ids: Option<Vec<fontdb::ID>>,

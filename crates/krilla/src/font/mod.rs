@@ -137,7 +137,8 @@ impl Font {
         self.0.font_info.italic_angle.get()
     }
 
-    pub(crate) fn units_per_em(&self) -> f32 {
+    /// The units per em of the font.
+    pub fn units_per_em(&self) -> f32 {
         self.0.font_info.units_per_em as f32
     }
 
