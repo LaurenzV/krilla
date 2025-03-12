@@ -393,40 +393,6 @@ mod tests {
     use crate::tests::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
     #[snapshot]
-    fn page_simple(sc: &mut SerializeContext) {
-        let mut stream_builder = StreamBuilder::new(sc);
-        let mut surface = stream_builder.surface();
-
-        let mut builder = PathBuilder::new();
-        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
-        let path = builder.finish().unwrap();
-
-        let page_settings = PageSettings::new(200.0, 200.0);
-
-        surface.fill_path(&path, Fill::default());
-        surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
-        sc.register_page(page);
-    }
-
-    #[snapshot(settings_2)]
-    fn page_with_resources(sc: &mut SerializeContext) {
-        let mut stream_builder = StreamBuilder::new(sc);
-        let mut surface = stream_builder.surface();
-
-        let mut builder = PathBuilder::new();
-        builder.push_rect(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap());
-        let path = builder.finish().unwrap();
-
-        let page_settings = PageSettings::new(200.0, 200.0);
-
-        surface.fill_path(&path, Fill::default());
-        surface.finish();
-        let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
-        sc.register_page(page);
-    }
-
-    #[snapshot]
     fn page_with_crop_bleeding_trim_art_boxes(sc: &mut SerializeContext) {
         let mut stream_builder = StreamBuilder::new(sc);
         let mut surface = stream_builder.surface();
@@ -449,16 +415,5 @@ mod tests {
 
         let page = InternalPage::new(stream_builder.finish(), sc, vec![], None, page_settings, 0);
         sc.register_page(page);
-    }
-
-    #[snapshot]
-    fn page_label(sc: &mut SerializeContext) {
-        let page_label = PageLabel::new(
-            Some(NumberingStyle::Arabic),
-            Some("P".to_string()),
-            NonZeroUsize::new(2),
-        );
-
-        sc.register_page_label(page_label);
     }
 }

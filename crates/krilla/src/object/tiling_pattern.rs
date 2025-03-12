@@ -114,34 +114,3 @@ impl Cacheable for TilingPattern {
 impl Resourceable for TilingPattern {
     type Resource = resource::Pattern;
 }
-
-#[cfg(test)]
-mod tests {
-    use krilla_macros::{snapshot, visreg};
-    use tiny_skia_path::{NormalizedF32, Transform};
-
-    use crate::paint::Pattern;
-    use crate::path::Fill;
-    use crate::serialize::SerializeContext;
-    use crate::stream::StreamBuilder;
-    use crate::surface::Surface;
-    use crate::tests::{basic_pattern_stream, rect_to_path};
-    use crate::tiling_pattern::TilingPattern;
-
-    #[snapshot]
-    fn tiling_pattern_basic(sc: &mut SerializeContext) {
-        let stream_builder = StreamBuilder::new(sc);
-        let pattern_stream = basic_pattern_stream(stream_builder);
-
-        let tiling_pattern = TilingPattern::new(
-            pattern_stream,
-            Transform::identity(),
-            NormalizedF32::ONE,
-            20.0,
-            20.0,
-            sc,
-        );
-
-        sc.register_cacheable(tiling_pattern);
-    }
-}
