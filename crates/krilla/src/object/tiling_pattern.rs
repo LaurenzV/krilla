@@ -144,27 +144,4 @@ mod tests {
 
         sc.register_cacheable(tiling_pattern);
     }
-
-    #[visreg(all)]
-    fn tiling_pattern_basic(surface: &mut Surface) {
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let stream_builder = surface.stream_builder();
-        let pattern_stream = basic_pattern_stream(stream_builder);
-
-        let pattern = Pattern {
-            stream: pattern_stream,
-            transform: Default::default(),
-            width: 20.0,
-            height: 20.0,
-        };
-
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: pattern.into(),
-                opacity: NormalizedF32::new(0.5).unwrap(),
-                rule: Default::default(),
-            },
-        )
-    }
 }

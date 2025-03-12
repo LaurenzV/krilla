@@ -256,15 +256,6 @@ mod tests {
     use crate::metadata::{DateTime, Metadata};
     use crate::Document;
 
-    #[snapshot(document)]
-    fn empty_document(_: &mut Document) {}
-
-    #[snapshot(document)]
-    fn metadata_empty(document: &mut Document) {
-        let metadata = Metadata::new();
-        document.set_metadata(metadata);
-    }
-
     fn metadata_impl(document: &mut Document) {
         let date = DateTime::new(2024)
             .month(11)
@@ -288,6 +279,15 @@ mod tests {
             ])
             .title("An awesome title".to_string())
             .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()]);
+        document.set_metadata(metadata);
+    }
+
+    #[snapshot(document)]
+    fn empty_document(_: &mut Document) {}
+
+    #[snapshot(document)]
+    fn metadata_empty(document: &mut Document) {
+        let metadata = Metadata::new();
         document.set_metadata(metadata);
     }
 

@@ -42,6 +42,7 @@ mod embed;
 mod font;
 mod image;
 mod mask;
+mod metadata;
 mod outline;
 mod page;
 mod pattern;
