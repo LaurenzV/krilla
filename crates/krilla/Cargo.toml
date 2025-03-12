@@ -27,7 +27,6 @@ default = ["raster-images"]
 base64 = { workspace = true }
 bumpalo = { workspace = true }
 comemo = { workspace = true, optional = true }
-flate2 = { workspace = true }
 float-cmp = { workspace = true }
 fontdb = { workspace = true, optional = true }
 gif = { workspace = true, optional = true }

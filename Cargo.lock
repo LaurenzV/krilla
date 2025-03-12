@@ -801,7 +801,6 @@ dependencies = [
  "bumpalo",
  "comemo",
  "difference",
- "flate2",
  "float-cmp 0.10.0",
  "fontdb",
  "gif",
@@ -844,11 +843,13 @@ dependencies = [
 name = "krilla-svg"
 version = "0.3.0"
 dependencies = [
+ "flate2",
  "fontdb",
  "krilla",
  "krilla-macros",
  "once_cell",
  "resvg",
+ "roxmltree 0.20.0",
  "sitro",
  "tiny-skia",
  "tiny-skia-path",

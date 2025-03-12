@@ -1,15 +1,16 @@
 //! Drawing SVG files to a surface.
 
 use std::collections::{HashMap, HashSet};
+use std::io::Read;
 use std::sync::Arc;
 
 use fontdb::Database;
-use krilla::font::{Font, FontInfo};
+use krilla::color::rgb;
+use krilla::font::{Font, FontInfo, GlyphId};
 use krilla::path::FillRule;
 use krilla::surface::Surface;
-use krilla::SvgSettings;
 use tiny_skia_path::{Rect, Size, Transform};
-use usvg::{fontdb, Group, ImageKind, Node, Tree};
+use usvg::{fontdb, roxmltree, Group, ImageKind, Node, Tree};
 
 use crate::util::RectExt;
 
@@ -21,6 +22,26 @@ mod mask;
 mod path;
 mod text;
 mod util;
+
+/// Settings that should be applied when converting a SVG.
+#[derive(Copy, Clone, Debug)]
+pub struct SvgSettings {
+    /// Whether text should be embedded as properly selectable text. Otherwise,
+    /// it will be drawn as outlined paths instead.
+    pub embed_text: bool,
+    /// How much filters, which will be converted to bitmaps, should be scaled. Higher values
+    /// mean better quality, but also bigger file sizes.
+    pub filter_scale: f32,
+}
+
+impl Default for SvgSettings {
+    fn default() -> Self {
+        Self {
+            embed_text: true,
+            filter_scale: 4.0,
+        }
+    }
+}
 
 pub trait SurfaceExt {
     fn draw_svg(&mut self, tree: &usvg::Tree, size: Size, svg_settings: SvgSettings) -> Option<()>;
@@ -69,14 +90,14 @@ impl ProcessContext {
 ///
 /// Returns `None` if the conversion was not successful (for example if a fontdb ID is
 /// referenced that doesn't exist in the database).
-pub fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
+pub(crate) fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
     let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root(), surface);
     group::render(tree.root(), surface, &mut fc);
 }
 
 /// Render a usvg `Node` into a surface.
-pub fn render_node(
+pub(crate) fn render_node(
     node: &Node,
     mut tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,
@@ -85,6 +106,53 @@ pub fn render_node(
     let mut fc =
         get_context_from_node(Arc::make_mut(&mut tree_fontdb), svg_settings, node, surface);
     group::render_node(node, surface, &mut fc);
+}
+
+/// Render an SVG glyph from an OpenType font into a surface.
+pub fn render_svg_glyph(
+    data: &[u8],
+    context_color: rgb::Color,
+    glyph: GlyphId,
+    surface: &mut Surface,
+) -> Option<()> {
+    let mut data = data;
+    let settings = SvgSettings::default();
+
+    let mut decoded = vec![];
+    if data.starts_with(&[0x1f, 0x8b]) {
+        let mut decoder = flate2::read::GzDecoder::new(data);
+        decoder.read_to_end(&mut decoded).ok()?;
+        data = &decoded;
+    }
+
+    let xml = std::str::from_utf8(data).ok()?;
+    let document = roxmltree::Document::parse(xml).ok()?;
+
+    // Reparsing every time might be pretty slow in some cases, because Noto Color Emoji
+    // for example contains hundreds of glyphs in the same SVG document, meaning that we have
+    // to reparse it every time. However, Twitter Color Emoji does have each glyph in a
+    // separate SVG document, and since we use COLRv1 for Noto Color Emoji anyway, this is
+    // good enough.
+    let opts = usvg::Options {
+        style_sheet: Some(format!(
+            "svg {{ color: rgb({}, {}, {}) }}",
+            context_color.red(),
+            context_color.green(),
+            context_color.blue()
+        )),
+        ..Default::default()
+    };
+    let tree = Tree::from_xmltree(&document, &opts).ok()?;
+
+    if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
+        render_node(node, tree.fontdb().clone(), settings, surface)
+    } else {
+        // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
+        // usvg. So in this case, we simply draw the whole document.
+        render_tree(&tree, settings, surface)
+    };
+
+    Some(())
 }
 
 /// Get the `PorcessContext` from a `Group`.

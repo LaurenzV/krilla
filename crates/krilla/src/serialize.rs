@@ -13,12 +13,12 @@ use skrifa::raw::TableProvider;
 use tiny_skia_path::Size;
 
 use crate::chunk_container::ChunkContainer;
-use crate::color::{ColorSpace, ICCBasedColorSpace, ICCProfile};
+use crate::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, FontInfo};
+use crate::font::{Font, FontInfo, GlyphId};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
@@ -103,17 +103,10 @@ pub struct SerializeSettings {
     /// [`tagging`]: crate::tagging
     pub enable_tagging: bool,
     /// TODO
-    #[cfg(feature = "svg")]
-    pub render_node_fn: RenderNodeFn,
-    /// TODO
-    #[cfg(feature = "svg")]
-    pub render_tree_fn: RenderTreeFn,
+    pub render_svg_glyph_fn: RenderSvgGlyphFn,
 }
 
-#[cfg(feature = "svg")]
-pub type RenderNodeFn = fn(&usvg::Node, Arc<fontdb::Database>, SvgSettings, &mut Surface);
-#[cfg(feature = "svg")]
-pub type RenderTreeFn = fn(&usvg::Tree, SvgSettings, &mut Surface);
+pub type RenderSvgGlyphFn = fn(&[u8], rgb::Color, GlyphId, &mut Surface) -> Option<()>;
 
 impl SerializeSettings {
     pub(crate) fn pdf_version(&self) -> PdfVersion {
@@ -135,30 +128,7 @@ impl Default for SerializeSettings {
             cmyk_profile: None,
             configuration: Configuration::new(),
             enable_tagging: true,
-            #[cfg(feature = "svg")]
-            render_node_fn: |_, _, _, _| {},
-            #[cfg(feature = "svg")]
-            render_tree_fn: |_, _, _| {},
-        }
-    }
-}
-
-/// Settings that should be applied when converting a SVG.
-#[derive(Copy, Clone, Debug)]
-pub struct SvgSettings {
-    /// Whether text should be embedded as properly selectable text. Otherwise,
-    /// it will be drawn as outlined paths instead.
-    pub embed_text: bool,
-    /// How much filters, which will be converted to bitmaps, should be scaled. Higher values
-    /// mean better quality, but also bigger file sizes.
-    pub filter_scale: f32,
-}
-
-impl Default for SvgSettings {
-    fn default() -> Self {
-        Self {
-            embed_text: true,
-            filter_scale: 4.0,
+            render_svg_glyph_fn: |_, _, _, _| None,
         }
     }
 }

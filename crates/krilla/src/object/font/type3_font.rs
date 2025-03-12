@@ -22,7 +22,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
 use crate::util::{NameExt, RectExt, TransformExt};
-use crate::SvgSettings;
 
 pub(crate) type Gid = u8;
 
@@ -165,7 +164,6 @@ impl Type3Font {
                     // In case this returns `None`, the surface is guaranteed to be empty.
                     let drawn_color_glyph = font::draw_color_glyph(
                         self.font.clone(),
-                        SvgSettings::default(),
                         glyph.glyph_id,
                         glyph.paint_mode.as_ref(),
                         Transform::default(),

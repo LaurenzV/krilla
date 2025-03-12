@@ -28,7 +28,7 @@ For more examples, feel free to take a look at the [examples] directory of the G
 # use krilla::surface::TextDirection;
 # use krilla::path::Fill;
 # use krilla::{Document, PageSettings};
-# use krilla::SvgSettings;
+# // use krilla::SvgSettings;
 # use std::path::PathBuf;
 # use std::sync::Arc;
 # use usvg::NormalizedF32;

@@ -26,7 +26,6 @@ use tiny_skia_path::{FiniteF32, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
 use crate::object::font::PaintMode;
-use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::{Prehashed, RectWrapper};
 use crate::Data;
@@ -294,8 +293,6 @@ struct FontRefYoke<'a> {
 /// Draw a color glyph to a surface.
 pub(crate) fn draw_color_glyph(
     font: Font,
-    #[cfg(feature = "svg")] svg_settings: SvgSettings,
-    #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     paint_mode: PaintMode,
     base_transform: Transform,
@@ -307,7 +304,7 @@ pub(crate) fn draw_color_glyph(
     let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
         .or_else(|| {
             #[cfg(feature = "svg")]
-            let res = svg::draw_glyph(font.clone(), glyph, surface, paint_mode, svg_settings);
+            let res = svg::draw_glyph(font.clone(), glyph, surface, paint_mode);
 
             #[cfg(not(feature = "svg"))]
             let res = None;
@@ -333,21 +330,13 @@ pub(crate) fn draw_color_glyph(
 /// Draw a color glyph or outline glyph to a surface.
 pub(crate) fn draw_glyph(
     font: Font,
-    svg_settings: SvgSettings,
     glyph: GlyphId,
     paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
-    draw_color_glyph(
-        font.clone(),
-        svg_settings,
-        glyph,
-        paint_mode,
-        base_transform,
-        surface,
-    )
-    .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
+    draw_color_glyph(font.clone(), glyph, paint_mode, base_transform, surface)
+        .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
 }
 
 /// A glyph with certain properties.

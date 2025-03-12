@@ -31,7 +31,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::util::RectExt;
-use crate::SvgSettings;
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -186,7 +185,6 @@ impl<'a> Surface<'a> {
             ));
             draw_glyph(
                 font.clone(),
-                SvgSettings::default(),
                 glyph.glyph_id(),
                 paint_mode,
                 base_transform,

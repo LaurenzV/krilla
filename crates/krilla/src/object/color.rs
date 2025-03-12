@@ -229,6 +229,21 @@ pub mod rgb {
             Self::new(255, 255, 255)
         }
 
+        /// The `red` component of the color.
+        pub fn red(&self) -> u8 {
+            self.0
+        }
+
+        /// The `green` component of the color.
+        pub fn green(&self) -> u8 {
+            self.1
+        }
+
+        /// The `blue` component of the color.
+        pub fn blue(&self) -> u8 {
+            self.2
+        }
+
         pub(crate) fn to_pdf_color(self) -> [f32; 3] {
             [
                 self.0 as f32 / 255.0,

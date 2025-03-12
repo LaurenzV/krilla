@@ -4,12 +4,10 @@ use std::io::Read;
 
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
-use usvg::roxmltree;
 
 use crate::color::rgb;
 use crate::font::Font;
 use crate::object::font::PaintMode;
-use crate::serialize::{RenderNodeFn, RenderTreeFn, SvgSettings};
 use crate::surface::Surface;
 
 /// Draw an SVG-based glyph on a surface.
@@ -18,7 +16,6 @@ pub(crate) fn draw_glyph(
     glyph: GlyphId,
     surface: &mut Surface,
     paint_mode: PaintMode,
-    svg_settings: SvgSettings,
 ) -> Option<()> {
     let svg_data = font
         .font_ref()
@@ -26,47 +23,14 @@ pub(crate) fn draw_glyph(
         .and_then(|svg_table| svg_table.glyph_data(glyph))
         .ok()??;
 
-    let mut data = svg_data;
-
-    let mut decoded = vec![];
-    if data.starts_with(&[0x1f, 0x8b]) {
-        let mut decoder = flate2::read::GzDecoder::new(data);
-        decoder.read_to_end(&mut decoded).ok()?;
-        data = &decoded;
-    }
-
     let context_color = match paint_mode {
         PaintMode::Fill(f) => f.paint.as_rgb(),
         PaintMode::Stroke(s) => s.paint.as_rgb(),
     }
     .unwrap_or(rgb::Color::black());
 
-    let xml = std::str::from_utf8(data).ok()?;
-    let document = roxmltree::Document::parse(xml).ok()?;
-
-    // Reparsing every time might be pretty slow in some cases, because Noto Color Emoji
-    // for example contains hundreds of glyphs in the same SVG document, meaning that we have
-    // to reparse it every time. However, Twitter Color Emoji does have each glyph in a
-    // separate SVG document, and since we use COLRv1 for Noto Color Emoji anyway, this is
-    // good enough.
-    let opts = usvg::Options {
-        style_sheet: Some(format!(
-            "svg {{ color: rgb({}, {}, {}) }}",
-            context_color.0, context_color.1, context_color.2
-        )),
-        ..Default::default()
-    };
-    let tree = usvg::Tree::from_xmltree(&document, &opts).ok()?;
-
-    if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
-        let fn_ = surface.sc.serialize_settings().render_node_fn;
-        fn_(node, tree.fontdb().clone(), svg_settings, surface)
-    } else {
-        let fn_ = surface.sc.serialize_settings().render_tree_fn;
-        // Twitter Color Emoji SVGs contain the glyph ID on the root element, which isn't saved by
-        // usvg. So in this case, we simply draw the whole document.
-        fn_(&tree, svg_settings, surface)
-    };
+    let fn_ = surface.sc.serialize_settings().render_svg_glyph_fn;
+    fn_(svg_data, context_color, glyph, surface)?;
 
     Some(())
 }

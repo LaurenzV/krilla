@@ -33,11 +33,7 @@ use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::surface::Surface;
 use crate::Data;
-use crate::{SerializeSettings, SvgSettings};
-
-// TODO: The reason we store all tests here instead of creating a root `tests` folder is that
-// we want to avoid duplicating all of the asset paths for both, crate-internal unit tests and
-// external integration tests. Would be nice to figure out a better solution to this.
+use crate::SerializeSettings;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
@@ -749,9 +745,7 @@ impl SerializeSettings {
             enable_tagging: true,
             configuration: Configuration::new(),
             #[cfg(feature = "svg")]
-            render_node_fn: |_, _, _, _| {},
-            #[cfg(feature = "svg")]
-            render_tree_fn: |_, _, _| {},
+            render_svg_glyph_fn: |_, _, _, _| None,
         }
     }
 

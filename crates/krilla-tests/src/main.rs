@@ -23,8 +23,8 @@ use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
 use krilla::Data;
-use krilla::{SerializeSettings, SvgSettings};
-use krilla_svg::{render_node, render_tree, SurfaceExt};
+use krilla::SerializeSettings;
+use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
@@ -801,8 +801,7 @@ pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
 
 pub fn default() -> SerializeSettings {
     SerializeSettings {
-        render_node_fn: render_node,
-        render_tree_fn: render_tree,
+        render_svg_glyph_fn: render_svg_glyph,
         ..Default::default()
     }
 }
@@ -816,8 +815,7 @@ pub fn settings_1() -> SerializeSettings {
         cmyk_profile: None,
         enable_tagging: true,
         configuration: Configuration::new(),
-        render_node_fn: render_node,
-        render_tree_fn: render_tree,
+        render_svg_glyph_fn: render_svg_glyph,
     }
 }
 

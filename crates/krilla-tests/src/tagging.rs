@@ -4,9 +4,9 @@ use krilla::error::KrillaError;
 use krilla::path::Fill;
 use krilla::surface::{Surface, TextDirection};
 use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-use krilla::{Document, Font, SvgSettings};
+use krilla::{Document, Font};
 use krilla_macros::snapshot2;
-use krilla_svg::SurfaceExt;
+use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Rect, Size, Transform};
 
 use crate::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
