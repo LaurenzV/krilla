@@ -36,6 +36,7 @@ use krilla::surface::Surface;
 use krilla::Data;
 use krilla::{SerializeSettings, SvgSettings};
 
+mod annotation;
 mod font;
 mod validate;
 

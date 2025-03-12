@@ -277,12 +277,12 @@ mod cid {
 }
 
 mod type3 {
-    use tiny_skia_path::Point;
-    use krilla::{Font, Page};
+    use crate::TWITTER_COLOR_EMOJI;
     use krilla::path::Fill;
     use krilla::surface::TextDirection;
+    use krilla::{Font, Page};
     use krilla_macros::snapshot2;
-    use crate::TWITTER_COLOR_EMOJI;
+    use tiny_skia_path::Point;
 
     #[snapshot2(single_page, settings_1)]
     fn type3_color_glyphs(page: &mut Page) {
