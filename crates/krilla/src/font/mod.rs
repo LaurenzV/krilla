@@ -71,7 +71,8 @@ impl Font {
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
 
-    pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
+    #[doc(hidden)]
+    pub fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
         let font_ref_yoke =
             Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.0.clone(),
@@ -184,8 +185,10 @@ impl Debug for Font {
 /// information, such as the font name and the checksum, and has this instead.
 /// This is much faster, and since we also include the checksum, the odds of two
 /// different fonts ending up with the same hash is pretty much zero.
+// We unfortunately need to make this public so that `krilla-svg` can cache fonts.
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub(crate) struct FontInfo {
+#[doc(hidden)]
+pub struct FontInfo {
     index: u32,
     checksum: u32,
     location: Location,
@@ -220,7 +223,8 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
+    #[doc(hidden)]
+    pub fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().ok()?.checksum_adjustment();
 

@@ -203,7 +203,7 @@ pub(crate) struct SerializeContext {
     /// A cache for mapping `FontInfo`s to existing Font objects. Is mainly used to
     /// speed up SVG conversion, so that if we convert many SVGs with the same font,
     /// we can cache the font.
-    font_cache: HashMap<Arc<FontInfo>, Font>,
+    pub(crate) font_cache: HashMap<Arc<FontInfo>, Font>,
     /// The ref of the page tree.
     page_tree_ref: Option<Ref>,
     /// All global objects, such as PDF fonts, that are populated over time.
@@ -367,38 +367,6 @@ impl SerializeContext {
                 }
             })
             .clone()
-    }
-
-    #[cfg(feature = "svg")]
-    pub(crate) fn convert_fontdb(
-        &mut self,
-        db: &mut fontdb::Database,
-        ids: Option<Vec<fontdb::ID>>,
-    ) -> HashMap<fontdb::ID, Font> {
-        let mut map = HashMap::new();
-
-        let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
-
-        for id in ids {
-            // What we could do is just go through each font and then create a new Font object for each of them.
-            // However, this is somewhat wasteful and expensive, because we have to hash each font, which
-            // can go be multiple MB. So instead, we first construct a font info object, which is much
-            // cheaper, and then check whether we already have a corresponding font object in the cache.
-            // If not, we still need to construct it.
-            if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-                if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, true) {
-                    let font_info = Arc::new(font_info);
-                    let font = self
-                        .font_cache
-                        .get(&font_info.clone())
-                        .cloned()
-                        .unwrap_or(Font::new_with_info(font_data.into(), font_info).unwrap());
-                    map.insert(id, font);
-                }
-            }
-        }
-
-        map
     }
 
     pub(crate) fn finish(mut self) -> KrillaResult<Pdf> {

@@ -7,6 +7,7 @@
 
 #[cfg(feature = "svg")]
 use std::collections::HashMap;
+use std::sync::Arc;
 
 pub use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
@@ -19,7 +20,7 @@ use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph};
+use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits, KrillaGlyph};
 use crate::object::font::PaintMode;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -468,14 +469,12 @@ impl<'a> Surface<'a> {
             .draw_shading(shading, self.sc);
     }
 
-    /// Convert a `fontdb` into `krilla` `Font` objects.
-    #[cfg(feature = "svg")]
-    pub fn convert_fontdb(
-        &mut self,
-        db: &mut fontdb::Database,
-        ids: Option<Vec<fontdb::ID>>,
-    ) -> HashMap<fontdb::ID, Font> {
-        self.sc.convert_fontdb(db, ids)
+    /// THIS IS AN INTERNAL FUNCTION, DO NOT USE DIRECTLY!
+    ///
+    /// Returns the font cache of the surface
+    #[doc(hidden)]
+    pub fn font_cache(&self) -> &HashMap<Arc<FontInfo>, Font> {
+        &self.sc.font_cache
     }
 
     /// A convenience method for `std::mem::drop`.

@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use fontdb::Database;
-use krilla::font::Font;
+use krilla::font::{Font, FontInfo};
 use krilla::path::FillRule;
 use krilla::surface::Surface;
 use krilla::SvgSettings;
@@ -97,8 +97,9 @@ fn get_context_from_group(
     let mut ids = HashSet::new();
     get_ids_from_group_impl(group, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
+    let db = convert_fontdb(&surface, tree_fontdb, Some(ids));
 
-    ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids)), svg_settings)
+    ProcessContext::new(db, svg_settings)
 }
 
 /// Get the `PorcessContext` from a `Node`.
@@ -111,8 +112,9 @@ fn get_context_from_node(
     let mut ids = HashSet::new();
     get_ids_impl(node, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
+    let db = convert_fontdb(&surface, tree_fontdb, Some(ids));
 
-    ProcessContext::new(surface.convert_fontdb(tree_fontdb, Some(ids)), svg_settings)
+    ProcessContext::new(db, svg_settings)
 }
 
 fn get_ids_from_group_impl(group: &Group, ids: &mut HashSet<fontdb::ID>) {
@@ -143,4 +145,35 @@ fn get_ids_impl(node: &Node, ids: &mut HashSet<fontdb::ID>) {
     }
 
     node.subroots(|subroot| get_ids_from_group_impl(subroot, ids));
+}
+
+fn convert_fontdb(
+    surface: &Surface,
+    db: &mut Database,
+    ids: Option<Vec<fontdb::ID>>,
+) -> HashMap<fontdb::ID, Font> {
+    let mut map = HashMap::new();
+
+    let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
+
+    for id in ids {
+        // What we could do is just go through each font and then create a new Font object for each of them.
+        // However, this is somewhat wasteful and expensive, because we have to hash each font, which
+        // can go be multiple MB. So instead, we first construct a font info object, which is much
+        // cheaper, and then check whether we already have a corresponding font object in the cache.
+        // If not, we still need to construct it.
+        if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
+            if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, true) {
+                let font_info = Arc::new(font_info);
+                let font = surface
+                    .font_cache()
+                    .get(&font_info.clone())
+                    .cloned()
+                    .unwrap_or(Font::new_with_info(font_data.into(), font_info).unwrap());
+                map.insert(id, font);
+            }
+        }
+    }
+
+    map
 }
