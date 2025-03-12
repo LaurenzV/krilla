@@ -1,5 +1,5 @@
 [package]
-name = "krilla-test"
+name = "krilla-tests"
 publish = false
 authors.workspace = true
 edition.workspace = true

@@ -857,7 +857,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "krilla-test"
+name = "krilla-tests"
 version = "0.0.0"
 dependencies = [
  "difference",
