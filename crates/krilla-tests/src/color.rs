@@ -1,7 +1,7 @@
 use krilla::path::Fill;
 use krilla::surface::Surface;
 use krilla::Page;
-use krilla_macros::{snapshot, visreg2};
+use krilla_macros::{snapshot, visreg};
 
 use crate::{cmyk_fill, rect_to_path, red_fill};
 
@@ -17,14 +17,14 @@ fn icc_v2_sgrey(page: &mut Page) {
     surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0), Fill::default());
 }
 
-#[visreg2(all)]
+#[visreg(all)]
 fn cmyk_color(surface: &mut Surface) {
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
     surface.fill_path(&path, cmyk_fill(1.0));
 }
 
-#[visreg2(all, settings_6)]
+#[visreg(all, settings_6)]
 fn cmyk_with_icc(surface: &mut Surface) {
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 

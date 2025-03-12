@@ -6,7 +6,7 @@ use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
 use krilla::Data;
-use krilla_macros::{snapshot, visreg2};
+use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Point, Size, Transform};
 
@@ -136,7 +136,7 @@ fn stream_mask(page: &mut Page) {
     surface.pop();
 }
 
-#[visreg2]
+#[visreg]
 fn text_direction_ltr(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
@@ -151,7 +151,7 @@ fn text_direction_ltr(surface: &mut Surface) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn text_direction_rtl(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
@@ -166,7 +166,7 @@ fn text_direction_rtl(surface: &mut Surface) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn text_direction_ttb(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
@@ -181,7 +181,7 @@ fn text_direction_ttb(surface: &mut Surface) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn text_direction_btt(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
@@ -292,13 +292,13 @@ pub(crate) fn sample_svg() -> usvg::Tree {
     usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
 }
 
-#[visreg2]
+#[visreg]
 fn svg_simple(surface: &mut Surface) {
     let tree = sample_svg();
     surface.draw_svg(&tree, tree.size(), SvgSettings::default());
 }
 
-#[visreg2]
+#[visreg]
 fn svg_outlined_text(surface: &mut Surface) {
     let data = std::fs::read(SVGS_PATH.join("resvg_text_text_simple_case.svg")).unwrap();
     let tree = usvg::Tree::from_data(
@@ -316,7 +316,7 @@ fn svg_outlined_text(surface: &mut Surface) {
     surface.draw_svg(&tree, tree.size(), settings);
 }
 
-#[visreg2]
+#[visreg]
 fn svg_resized(surface: &mut Surface) {
     surface.draw_svg(
         &sample_svg(),
@@ -325,7 +325,7 @@ fn svg_resized(surface: &mut Surface) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn svg_should_be_clipped(surface: &mut Surface) {
     let data =
         std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
@@ -336,7 +336,7 @@ fn svg_should_be_clipped(surface: &mut Surface) {
     surface.pop();
 }
 
-#[visreg2]
+#[visreg]
 fn svg_with_filter(surface: &mut Surface) {
     let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
     let tree = usvg::Tree::from_data(
@@ -434,7 +434,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn text_outlined_with_fill(surface: &mut Surface) {
     text_with_fill_impl(surface, true)
 }
@@ -493,12 +493,12 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn text_outlined_with_stroke(surface: &mut Surface) {
     text_with_stroke_impl(surface, true);
 }
 
-#[visreg2]
+#[visreg]
 fn text_zalgo(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
     surface.fill_text(
@@ -513,7 +513,7 @@ fn text_zalgo(surface: &mut Surface) {
     );
 }
 
-#[visreg2]
+#[visreg]
 fn text_zalgo_outlined(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
     surface.fill_text(

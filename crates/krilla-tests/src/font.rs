@@ -1,17 +1,17 @@
 mod bitmap {
     use krilla::Document;
-    use krilla_macros::visreg2;
+    use krilla_macros::visreg;
 
     use crate::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
 
-    #[visreg2(document, all)]
+    #[visreg(document, all)]
     fn noto_color_emoji_cbdt(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 
     #[cfg(target_os = "macos")]
-    #[visreg2(document, all)]
+    #[visreg(document, all)]
     fn apple_color_emoji(document: &mut Document) {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc")
             .unwrap()
@@ -25,14 +25,14 @@ mod colr {
     use krilla::path::{Fill, Stroke};
     use krilla::surface::{Surface, TextDirection};
     use krilla::{Document, Font};
-    use krilla_macros::visreg2;
+    use krilla_macros::visreg;
     use tiny_skia_path::Point;
 
     use crate::{
         all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
     };
 
-    #[visreg2(document)]
+    #[visreg(document)]
     fn colr_test_glyphs(document: &mut Document) {
         let font_data = COLR_TEST_GLYPHS.clone();
 
@@ -43,7 +43,7 @@ mod colr {
         all_glyphs_to_pdf(font_data, Some(glyphs), false, true, document);
     }
 
-    #[visreg2]
+    #[visreg]
     fn colr_context_color(surface: &mut Surface) {
         let font_data = COLR_TEST_GLYPHS.clone();
         let font = Font::new(font_data, 0, true).unwrap();
@@ -127,7 +127,7 @@ mod colr {
 
     // We don't run on pdf.js because it leads to a high pixel difference in CI
     // for some reason.
-    #[visreg2(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
+    #[visreg(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
     fn noto_color_emoji_colr(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_COLR.clone();
         all_glyphs_to_pdf(font_data, None, false, true, document);
@@ -137,24 +137,24 @@ mod colr {
 mod svg {
     use krilla::surface::{Surface, TextDirection};
     use krilla::{Document, Font};
-    use krilla_macros::visreg2;
+    use krilla_macros::visreg;
     use tiny_skia_path::Point;
 
     use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
 
-    #[visreg2(document, all)]
+    #[visreg(document, all)]
     fn twitter_color_emoji(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 
-    #[visreg2(document)]
+    #[visreg(document)]
     fn twitter_color_emoji_no_color(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
         all_glyphs_to_pdf(font_data, None, false, false, document);
     }
 
-    #[visreg2]
+    #[visreg]
     fn svg_extra(surface: &mut Surface) {
         let font_data = SVG_EXTRA.clone();
         let font = Font::new(font_data, 0, true).unwrap();
@@ -187,12 +187,11 @@ mod cid {
     use krilla::path::Fill;
     use krilla::surface::{Surface, TextDirection};
     use krilla::Font;
-    use krilla_macros::{visreg, visreg2};
     use tiny_skia_path::Point;
-
+    use krilla_macros::visreg;
     use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
         surface.fill_text(
@@ -207,7 +206,7 @@ mod cid {
         );
     }
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
         surface.fill_text(
@@ -222,7 +221,7 @@ mod cid {
         );
     }
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
         surface.fill_text(
@@ -238,7 +237,7 @@ mod cid {
     }
 
     #[cfg(target_os = "macos")]
-    #[visreg2(macos)]
+    #[visreg(macos)]
     fn cid_font_true_type_collection(surface: &mut Surface) {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
             .unwrap()

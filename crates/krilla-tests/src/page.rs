@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use krilla::page::{NumberingStyle, PageLabel};
 use krilla::path::Fill;
 use krilla::{Document, Page, PageSettings};
-use krilla_macros::{snapshot, visreg, visreg2};
+use krilla_macros::{snapshot, visreg};
 use tiny_skia_path::{PathBuilder, Rect};
 
 use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
@@ -45,27 +45,27 @@ fn media_box_impl(d: &mut Document, media_box: Rect) {
     surface.fill_path(&rect_to_path(100.0, 100.0, 200.0, 200.0), purple_fill(0.5));
 }
 
-#[visreg2(document)]
+#[visreg(document)]
 fn custom_media_box_top_left(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-100.0, -100.0, 200.0, 200.0).unwrap())
 }
 
-#[visreg2(document)]
+#[visreg(document)]
 fn custom_media_box_top_right(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(100.0, -100.0, 200.0, 200.0).unwrap())
 }
 
-#[visreg2(document)]
+#[visreg(document)]
 fn custom_media_box_bottom_left(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-100.0, 100.0, 200.0, 200.0).unwrap())
 }
 
-#[visreg2(document)]
+#[visreg(document)]
 fn custom_media_box_bottom_right(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(100.0, 100.0, 200.0, 200.0).unwrap())
 }
 
-#[visreg2(document)]
+#[visreg(document)]
 fn custom_media_box_zoomed_out(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-150.0, -200.0, 500.0, 500.0).unwrap())
 }

@@ -3,12 +3,12 @@ mod shading {
     use krilla::path::Fill;
     use krilla::surface::Surface;
     use krilla::Page;
-    use krilla_macros::{snapshot, visreg2};
+    use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::NormalizedF32;
 
     use crate::{rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1};
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn linear_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = LinearGradient {
@@ -32,7 +32,7 @@ mod shading {
         );
     }
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn linear_gradient_repeat(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = LinearGradient {
@@ -56,7 +56,7 @@ mod shading {
         );
     }
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn sweep_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = SweepGradient {
@@ -80,7 +80,7 @@ mod shading {
         );
     }
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn sweep_gradient_repeat(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = SweepGradient {
@@ -133,7 +133,7 @@ mod shading {
         );
     }
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn radial_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = RadialGradient {
@@ -165,11 +165,11 @@ mod tiling {
     use krilla::path::Fill;
     use krilla::surface::Surface;
     use krilla::NormalizedF32;
-    use krilla_macros::visreg2;
+    use krilla_macros::visreg;
 
     use crate::{basic_pattern_stream, rect_to_path};
 
-    #[visreg2(all)]
+    #[visreg(all)]
     fn tiling_pattern_basic(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let stream_builder = surface.stream_builder();
