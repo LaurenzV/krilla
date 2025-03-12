@@ -25,7 +25,6 @@ impl SurfaceTaggingExt for Surface<'_> {
             Fill::default(),
             font,
             20.0,
-            &[],
             content,
             false,
             TextDirection::Auto,

@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 pub use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
-use rustybuzz::{Direction, Feature, UnicodeBuffer};
+use rustybuzz::{Direction, UnicodeBuffer};
 #[cfg(feature = "simple-text")]
 use skrifa::GlyphId;
 use tiny_skia_path::NormalizedF32;
@@ -253,12 +253,11 @@ impl<'a> Surface<'a> {
         fill: Fill,
         font: Font,
         font_size: f32,
-        features: &[Feature],
         text: &str,
         outlined: bool,
         direction: TextDirection,
     ) {
-        let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
+        let glyphs = naive_shape(text, font.clone(), font_size, direction);
 
         self.fill_glyphs(
             start,
@@ -328,12 +327,11 @@ impl<'a> Surface<'a> {
         stroke: Stroke,
         font: Font,
         font_size: f32,
-        features: &[Feature],
         text: &str,
         outlined: bool,
         direction: TextDirection,
     ) {
-        let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
+        let glyphs = naive_shape(text, font.clone(), font_size, direction);
 
         self.stroke_glyphs(
             start,
@@ -538,13 +536,7 @@ pub enum TextDirection {
 
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
-fn naive_shape(
-    text: &str,
-    font: Font,
-    features: &[Feature],
-    size: f32,
-    direction: TextDirection,
-) -> Vec<KrillaGlyph> {
+fn naive_shape(text: &str, font: Font, size: f32, direction: TextDirection) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
 
@@ -562,7 +554,7 @@ fn naive_shape(
 
     let dir = buffer.direction();
 
-    let output = rustybuzz::shape(&rb_font, features, buffer);
+    let output = rustybuzz::shape(&rb_font, &[], buffer);
 
     let positions = output.glyph_positions();
     let infos = output.glyph_infos();

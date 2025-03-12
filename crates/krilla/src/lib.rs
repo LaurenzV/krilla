@@ -54,7 +54,6 @@ surface.fill_text(
     Fill::default(),
     font.clone(),
     14.0,
-    &[],
     "This text has font size 14!",
     false,
     TextDirection::Auto
@@ -69,7 +68,6 @@ surface.fill_text(
     },
     font.clone(),
     16.0,
-    &[],
     "This text has font size 16!",
     false,
     TextDirection::Auto
