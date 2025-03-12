@@ -393,16 +393,13 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u
 
 #[cfg(test)]
 mod tests {
-    use krilla_macros::{snapshot, visreg};
+    use krilla_macros::snapshot;
     use skrifa::GlyphId;
-    use tiny_skia_path::Point;
 
     use crate::font::Font;
     use crate::object::font::FontContainer;
-    use crate::path::Fill;
     use crate::serialize::SerializeContext;
-    use crate::surface::{Surface, TextDirection};
-    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::tests::{LATIN_MODERN_ROMAN, NOTO_SANS};
 
     #[snapshot]
     fn cid_font_noto_sans_two_glyphs(sc: &mut SerializeContext) {
@@ -419,51 +416,6 @@ mod tests {
                 cid_font.set_codepoints(2, "B".to_string(), None);
             }
         }
-    }
-
-    #[visreg(all)]
-    fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "hello world",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg(all)]
-    fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "hello world",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg(all)]
-    fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "مرحبا بالعالم",
-            false,
-            TextDirection::Auto,
-        );
     }
 
     #[snapshot]
@@ -485,47 +437,5 @@ mod tests {
                 cid_font.set_codepoints(4, "L".to_string(), None);
             }
         }
-    }
-
-    #[cfg(target_os = "macos")]
-    #[visreg(macos)]
-    fn cid_font_true_type_collection(surface: &mut Surface) {
-        let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
-            .unwrap()
-            .into();
-        let font_1 = Font::new(font_data.clone(), 0, true).unwrap();
-        let font_2 = Font::new(font_data.clone(), 3, true).unwrap();
-        let font_3 = Font::new(font_data, 6, true).unwrap();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 75.0),
-            Fill::default(),
-            font_1.clone(),
-            20.0,
-            &[],
-            "这是一段测试文字。",
-            false,
-            TextDirection::Auto,
-        );
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font_2.clone(),
-            20.0,
-            &[],
-            "这是一段测试文字。",
-            false,
-            TextDirection::Auto,
-        );
-        surface.fill_text(
-            Point::from_xy(0.0, 125.0),
-            Fill::default(),
-            font_3.clone(),
-            20.0,
-            &[],
-            "这是一段测试文字。",
-            false,
-            TextDirection::Auto,
-        );
     }
 }

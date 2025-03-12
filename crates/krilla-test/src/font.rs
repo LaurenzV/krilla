@@ -179,3 +179,99 @@ mod svg {
         );
     }
 }
+
+mod cid {
+    use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use krilla::path::Fill;
+    use krilla::surface::{Surface, TextDirection};
+    use krilla::Font;
+    use krilla_macros::{visreg, visreg2};
+    use tiny_skia_path::Point;
+
+    #[visreg2(all)]
+    fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            32.0,
+            &[],
+            "hello world",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[visreg2(all)]
+    fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            32.0,
+            &[],
+            "hello world",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[visreg2(all)]
+    fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font,
+            32.0,
+            &[],
+            "مرحبا بالعالم",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[visreg2(macos)]
+    fn cid_font_true_type_collection(surface: &mut Surface) {
+        let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
+            .unwrap()
+            .into();
+        let font_1 = Font::new(font_data.clone(), 0, true).unwrap();
+        let font_2 = Font::new(font_data.clone(), 3, true).unwrap();
+        let font_3 = Font::new(font_data, 6, true).unwrap();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 75.0),
+            Fill::default(),
+            font_1.clone(),
+            20.0,
+            &[],
+            "这是一段测试文字。",
+            false,
+            TextDirection::Auto,
+        );
+        surface.fill_text(
+            Point::from_xy(0.0, 100.0),
+            Fill::default(),
+            font_2.clone(),
+            20.0,
+            &[],
+            "这是一段测试文字。",
+            false,
+            TextDirection::Auto,
+        );
+        surface.fill_text(
+            Point::from_xy(0.0, 125.0),
+            Fill::default(),
+            font_3.clone(),
+            20.0,
+            &[],
+            "这是一段测试文字。",
+            false,
+            TextDirection::Auto,
+        );
+    }
+}
