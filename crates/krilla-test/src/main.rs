@@ -37,6 +37,7 @@ use krilla::Data;
 use krilla::{SerializeSettings, SvgSettings};
 
 mod annotation;
+mod color;
 mod font;
 mod validate;
 
@@ -783,6 +784,10 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
         &pdf,
         ignore_renderer,
     );
+}
+
+pub fn default() -> SerializeSettings {
+    SerializeSettings::default()
 }
 
 pub fn settings_1() -> SerializeSettings {

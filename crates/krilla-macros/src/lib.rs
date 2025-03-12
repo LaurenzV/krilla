@@ -310,7 +310,7 @@ pub fn visreg2(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     } else if document {
         quote! {
-            let settings = SerializeSettings::#serialize_settings();
+            let settings = crate::#serialize_settings();
             let mut d = Document::new_with(settings);
             #impl_ident(&mut d);
             let pdf = d.finish().unwrap();
@@ -320,7 +320,7 @@ pub fn visreg2(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     } else {
         quote! {
-            let settings = SerializeSettings::#serialize_settings();
+            let settings = crate::#serialize_settings();
             let mut d = Document::new_with(settings);
             let page_settings = PageSettings::new(200.0, 200.0).with_media_box(None);
             let mut page = d.start_page_with(page_settings);
