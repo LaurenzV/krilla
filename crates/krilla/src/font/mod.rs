@@ -34,7 +34,6 @@ use crate::Data;
 pub(crate) mod bitmap;
 pub(crate) mod colr;
 pub(crate) mod outline;
-#[cfg(feature = "svg")]
 pub(crate) mod svg;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
@@ -302,15 +301,7 @@ pub(crate) fn draw_color_glyph(
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
     let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
-        .or_else(|| {
-            #[cfg(feature = "svg")]
-            let res = svg::draw_glyph(font.clone(), glyph, surface, paint_mode);
-
-            #[cfg(not(feature = "svg"))]
-            let res = None;
-
-            res
-        })
+        .or_else(|| svg::draw_glyph(font.clone(), glyph, surface, paint_mode))
         .or_else(|| {
             #[cfg(feature = "raster-images")]
             let res = bitmap::draw_glyph(font.clone(), glyph, surface);

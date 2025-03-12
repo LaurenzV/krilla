@@ -1,4 +1,52 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [4 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+  /BM /ColorBurn
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ExtGState <<
+      /g0 2 0 R
+      /g1 3 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 221
+>>
+stream
 q
+1 0 0 -1 0 200 cm
 /g0 gs
 0 1 0 rg
 0 0 m
@@ -9,6 +57,7 @@ h
 f
 Q
 q
+1 0 0 -1 0 200 cm
 /g1 gs
 0 1 0 rg
 0 0 m
@@ -19,6 +68,7 @@ h
 f
 Q
 q
+1 0 0 -1 0 200 cm
 /g0 gs
 0 1 0 rg
 0 0 m
@@ -28,3 +78,31 @@ q
 h
 f
 Q
+endstream
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000131 00000 n
+0000000199 00000 n
+0000000415 00000 n
+0000000690 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(RjiJuqf4I++yH97EcdhA+w==) (RjiJuqf4I++yH97EcdhA+w==)]
+>>
+startxref
+744
+%%EOF

@@ -744,7 +744,6 @@ impl SerializeSettings {
             cmyk_profile: None,
             enable_tagging: true,
             configuration: Configuration::new(),
-            #[cfg(feature = "svg")]
             render_svg_glyph_fn: |_, _, _, _| None,
         }
     }

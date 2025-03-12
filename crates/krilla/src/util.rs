@@ -10,8 +10,6 @@ use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
-#[cfg(feature = "svg")]
-use tiny_skia_path::PathBuilder;
 use tiny_skia_path::{FiniteF32, Path, Rect, Transform};
 
 use crate::path::{LineCap, LineJoin, Stroke};
@@ -73,8 +71,6 @@ impl LineJoinExt for LineJoin {
 pub(crate) trait RectExt {
     fn expand(&mut self, other: &Rect);
     fn to_pdf_rect(&self) -> pdf_writer::Rect;
-    #[cfg(feature = "svg")]
-    fn to_clip_path(&self) -> Path;
 }
 
 impl RectExt for Rect {
@@ -93,17 +89,6 @@ impl RectExt for Rect {
             self.x() + self.width(),
             self.y() + self.height(),
         )
-    }
-
-    #[cfg(feature = "svg")]
-    fn to_clip_path(&self) -> Path {
-        let mut path_builder = PathBuilder::new();
-        path_builder.move_to(self.left(), self.top());
-        path_builder.line_to(self.right(), self.top());
-        path_builder.line_to(self.right(), self.bottom());
-        path_builder.line_to(self.left(), self.bottom());
-        path_builder.close();
-        path_builder.finish().unwrap()
     }
 }
 
