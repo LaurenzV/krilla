@@ -1,8 +1,10 @@
-use tiny_skia_path::Size;
-use krilla::{Document, Image, Page};
+use crate::{
+    load_custom_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH,
+};
 use krilla::surface::Surface;
+use krilla::{Document, Image, Page};
 use krilla_macros::{snapshot2, visreg2};
-use crate::{load_custom_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH};
+use tiny_skia_path::Size;
 
 fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
     let image = load_fn(name);
@@ -141,7 +143,7 @@ fn image_interpolate(page: &mut Page) {
             .into(),
         true,
     )
-        .unwrap();
+    .unwrap();
     let size = image.size();
     let size = Size::from_wh(size.0 as f32, size.1 as f32).unwrap();
     let mut surface = page.surface();

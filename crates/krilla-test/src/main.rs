@@ -1,13 +1,7 @@
 //! Test utilities.
 
-use std::cmp::max;
-use std::env;
-use std::hash::{Hash, Hasher};
-use std::ops::Range;
-use std::path::PathBuf;
-use std::sync::{Arc, LazyLock, OnceLock};
-use difference::{Changeset, Difference};
 use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
+use difference::{Changeset, Difference};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
@@ -17,6 +11,12 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{GlyphId, MetadataProvider};
+use std::cmp::max;
+use std::env;
+use std::hash::{Hash, Hasher};
+use std::ops::Range;
+use std::path::PathBuf;
+use std::sync::{Arc, LazyLock, OnceLock};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 use krilla::action::LinkAction;
@@ -40,11 +40,12 @@ mod color;
 mod destination;
 mod embed;
 mod font;
-mod validate;
 mod image;
 mod mask;
 mod outline;
 mod page;
+mod pattern;
+mod validate;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
