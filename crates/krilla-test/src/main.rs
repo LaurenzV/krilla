@@ -40,6 +40,7 @@ mod annotation;
 mod color;
 mod font;
 mod validate;
+mod destination;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
