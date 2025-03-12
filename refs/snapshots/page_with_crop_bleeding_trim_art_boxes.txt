@@ -27,18 +27,10 @@ endobj
 
 3 0 obj
 <<
-  /Length 47
+  /Length 0
 >>
 stream
-q
-0 g
-20 20 m
-180 20 l
-180 180 l
-20 180 l
-h
-f
-Q
+
 endstream
 endobj
 
@@ -49,3 +41,19 @@ endobj
 >>
 endobj
 
+xref
+0 5
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000347 00000 n
+0000000399 00000 n
+trailer
+<<
+  /Size 5
+  /Root 4 0 R
+  /ID [(BpmiBnHgBPZEaIDgdVV4Mw==) (BpmiBnHgBPZEaIDgdVV4Mw==)]
+>>
+startxref
+453
+%%EOF

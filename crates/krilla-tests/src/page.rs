@@ -1,9 +1,10 @@
 use std::num::NonZeroUsize;
 
 use krilla::page::{NumberingStyle, PageLabel};
-use krilla::{Document, PageSettings};
-use krilla_macros::{snapshot2, visreg, visreg2};
-use tiny_skia_path::Rect;
+use krilla::path::Fill;
+use krilla::{Document, Page, PageSettings};
+use krilla_macros::{snapshot, snapshot2, visreg, visreg2};
+use tiny_skia_path::{PathBuilder, Rect};
 
 use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
@@ -19,6 +20,19 @@ fn page_label_complex(d: &mut Document) {
     ));
 
     d.start_page_with(settings);
+}
+
+#[snapshot2(document)]
+fn page_with_crop_bleeding_trim_art_boxes(d: &mut Document) {
+    // Create page settings with different boxes
+    let page_settings = PageSettings::new(200.0, 200.0)
+        .with_media_box(Some(Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap()))
+        .with_crop_box(Some(Rect::from_xywh(10.0, 10.0, 180.0, 180.0).unwrap()))
+        .with_bleed_box(Some(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap()))
+        .with_trim_box(Some(Rect::from_xywh(30.0, 30.0, 140.0, 140.0).unwrap()))
+        .with_art_box(Some(Rect::from_xywh(40.0, 40.0, 120.0, 120.0).unwrap()));
+
+    let _ = d.start_page_with(page_settings);
 }
 
 fn media_box_impl(d: &mut Document, media_box: Rect) {
