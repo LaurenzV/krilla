@@ -42,6 +42,7 @@ mod embed;
 mod font;
 mod validate;
 mod image;
+mod mask;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
