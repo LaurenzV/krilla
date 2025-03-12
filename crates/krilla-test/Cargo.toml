@@ -14,7 +14,7 @@ fontdb = { workspace = true }
 usvg = { workspace = true }
 skrifa = { workspace = true }
 oxipng = { workspace = true }
-image = { workspace = true }
+image = { workspace = true, features = ["png"] }
 sitro = { workspace = true }
 difference = { workspace = true }
 tiny-skia-path = { workspace = true }

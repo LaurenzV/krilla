@@ -6,9 +6,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, OnceLock};
-
 use difference::{Changeset, Difference};
-use image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
+use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
@@ -42,6 +41,7 @@ mod destination;
 mod embed;
 mod font;
 mod validate;
+mod image;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
@@ -119,7 +119,7 @@ struct TestImage {
 
 impl TestImage {
     pub fn new(data: Vec<u8>, icc: Option<Vec<u8>>) -> Self {
-        let image = image::load_from_memory(&data).unwrap();
+        let image = ::image::load_from_memory(&data).unwrap();
         Self {
             original_dynamic: Arc::new(image),
             alpha_channel: OnceLock::new(),
@@ -458,7 +458,7 @@ pub fn check_render(
         if pixel_diff > threshold {
             let diff_path = DIFFS_PATH.join(format!("{}.png", name));
             diff_image
-                .save_with_format(&diff_path, image::ImageFormat::Png)
+                .save_with_format(&diff_path, ::image::ImageFormat::Png)
                 .unwrap();
 
             if REPLACE.is_some() {
