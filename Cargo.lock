@@ -841,6 +841,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "krilla-test"
+version = "0.3.0"
+dependencies = [
+ "difference",
+ "fontdb",
+ "image 0.25.2",
+ "krilla",
+ "krilla-macros",
+ "once_cell",
+ "oxipng",
+ "sitro",
+ "skrifa 0.28.1",
+ "tiny-skia-path",
+ "usvg",
+]
+
+[[package]]
 name = "kurbo"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

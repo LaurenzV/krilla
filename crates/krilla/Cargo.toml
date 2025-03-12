@@ -8,7 +8,7 @@ authors = { workspace = true }
 edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
-exclude = ["src/tests", "tests"]
+exclude = ["src/tests"]
 
 
 [features]

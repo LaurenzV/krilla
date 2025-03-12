@@ -132,7 +132,6 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-
 #[proc_macro_attribute]
 pub fn snapshot2(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);

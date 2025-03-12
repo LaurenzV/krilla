@@ -1,0 +1,21 @@
+[package]
+name = "krilla-test"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[dependencies]
+krilla = { workspace = true }
+krilla-macros = { workspace = true }
+fontdb = { workspace = true }
+usvg = { workspace = true }
+skrifa = { workspace = true }
+oxipng = { workspace = true }
+image = { workspace = true }
+sitro = { workspace = true }
+difference = { workspace = true }
+tiny-skia-path = { workspace = true }
+once_cell = { workspace = true }
