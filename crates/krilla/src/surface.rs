@@ -13,9 +13,9 @@ pub use pdf_writer::types::BlendMode;
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
 #[cfg(feature = "simple-text")]
 use skrifa::GlyphId;
+use tiny_skia_path::NormalizedF32;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::NormalizedF32;
 use tiny_skia_path::{Path, Point, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};

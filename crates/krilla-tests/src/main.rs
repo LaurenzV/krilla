@@ -1,5 +1,8 @@
 //! Test utilities.
 
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 use std::cmp::max;
 use std::env;
 use std::hash::{Hash, Hasher};
@@ -53,6 +56,7 @@ mod validate;
 #[allow(dead_code)]
 #[rustfmt::skip]
 mod svg;
+
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
