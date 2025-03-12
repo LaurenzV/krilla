@@ -1,10 +1,10 @@
 use krilla_macros::snapshot2;
 use tiny_skia_path::{Point, Rect};
 
+use crate::Document;
+use crate::{blue_fill, green_fill, rect_to_path, red_fill};
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::destination::{NamedDestination, XyzDestination};
-use crate::{blue_fill, green_fill, rect_to_path, red_fill};
-use crate::Document;
 
 #[snapshot2(document)]
 fn named_destination_basic(d: &mut Document) {
@@ -24,7 +24,7 @@ fn named_destination_basic(d: &mut Document) {
             None,
             Target::Destination(dest1.clone().into()),
         )
-            .into(),
+        .into(),
     );
     page.add_annotation(
         LinkAnnotation::new(
@@ -32,7 +32,7 @@ fn named_destination_basic(d: &mut Document) {
             None,
             Target::Destination(dest2.clone().into()),
         )
-            .into(),
+        .into(),
     );
 
     let mut surface = page.surface();
@@ -48,7 +48,7 @@ fn named_destination_basic(d: &mut Document) {
             None,
             Target::Destination(dest1.clone().into()),
         )
-            .into(),
+        .into(),
     );
     let mut surface = page.surface();
     surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), blue_fill(1.0));

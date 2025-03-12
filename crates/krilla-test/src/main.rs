@@ -38,9 +38,10 @@ use krilla::{SerializeSettings, SvgSettings};
 
 mod annotation;
 mod color;
+mod destination;
+mod embed;
 mod font;
 mod validate;
-mod destination;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
