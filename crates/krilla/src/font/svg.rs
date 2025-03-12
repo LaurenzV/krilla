@@ -1,7 +1,5 @@
 //! Drawing SVG-based glyphs on a surface.
 
-use std::io::Read;
-
 use skrifa::raw::TableProvider;
 use skrifa::GlyphId;
 

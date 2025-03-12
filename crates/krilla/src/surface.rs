@@ -15,7 +15,7 @@ use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use skrifa::GlyphId;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::{NormalizedF32, Rect};
+use tiny_skia_path::NormalizedF32;
 use tiny_skia_path::{Path, Point, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};
@@ -29,7 +29,6 @@ use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
-use crate::util::RectExt;
 
 pub(crate) enum PushInstruction {
     Transform,

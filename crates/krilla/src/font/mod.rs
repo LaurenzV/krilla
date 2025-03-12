@@ -435,13 +435,4 @@ impl KrillaGlyph {
             location,
         }
     }
-
-    #[cfg(test)]
-    pub(crate) fn dummy(
-        glyph_id: GlyphId,
-        range: Range<usize>,
-        location: Option<crate::surface::Location>,
-    ) -> Self {
-        Self::new(glyph_id, 0.0, 0.0, 0.0, 0.0, range, location)
-    }
 }
