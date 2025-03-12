@@ -8,6 +8,7 @@
 #[cfg(feature = "svg")]
 use std::collections::HashMap;
 
+pub use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, Feature, UnicodeBuffer};
 #[cfg(feature = "simple-text")]
@@ -32,8 +33,6 @@ use crate::svg;
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::util::RectExt;
 use crate::SvgSettings;
-
-pub use pdf_writer::types::BlendMode;
 
 pub(crate) enum PushInstruction {
     Transform,

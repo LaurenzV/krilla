@@ -20,6 +20,7 @@ use skrifa::metrics::GlyphMetrics;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
+pub use skrifa::GlyphId;
 use skrifa::{FontRef, MetadataProvider};
 use tiny_skia_path::{FiniteF32, Rect, Transform};
 use yoke::{Yoke, Yokeable};
@@ -29,8 +30,6 @@ use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::{Prehashed, RectWrapper};
 use crate::Data;
-
-pub use skrifa::GlyphId;
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;

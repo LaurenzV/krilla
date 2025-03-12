@@ -114,7 +114,7 @@ pub enum ValidationError {
     /// The PDF contains an image with `interpolate` set to `true`.
     ImageInterpolation(Option<Location>),
     /// The PDF contains an embedded file.
-    EmbeddedFile(EmbedError),
+    EmbeddedFile(EmbedError, Option<Location>),
     /// The PDF contains no tagging.
     MissingTagging,
 }
@@ -301,7 +301,7 @@ impl Validator {
                 ValidationError::ImageInterpolation(_) => true,
                 // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
                 // which we always insert. So we just forbid it overall.
-                ValidationError::EmbeddedFile(e) => match e {
+                ValidationError::EmbeddedFile(e, _) => match e {
                     EmbedError::Existence => true,
                     // Since existence is forbidden in the first place,
                     // we can just set the others to `false` to prevent unnecessary
@@ -337,7 +337,7 @@ impl Validator {
                 ValidationError::ImageInterpolation(_) => true,
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
                 // so we just forbid it completely.
-                ValidationError::EmbeddedFile(e) => match e {
+                ValidationError::EmbeddedFile(e, _) => match e {
                     EmbedError::Existence => true,
                     // Since existence is forbidden in the first place,
                     // we can just set the others to `false` to prevent unnecessary
@@ -371,7 +371,7 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
-                ValidationError::EmbeddedFile(er) => match er {
+                ValidationError::EmbeddedFile(er, _) => match er {
                     EmbedError::Existence => false,
                     EmbedError::MissingDate => true,
                     EmbedError::MissingDescription => true,
@@ -402,7 +402,7 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => false,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
-                ValidationError::EmbeddedFile(e) => match e {
+                ValidationError::EmbeddedFile(e, _) => match e {
                     EmbedError::Existence => matches!(self, Validator::A4),
                     // Since existence is forbidden in the first place for A4,
                     // we can just set the others to `false` to prevent
@@ -439,7 +439,7 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText => true,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => false,
-                ValidationError::EmbeddedFile(er) => match er {
+                ValidationError::EmbeddedFile(er, _) => match er {
                     EmbedError::Existence => false,
                     EmbedError::MissingDate => false,
                     EmbedError::MissingDescription => true,

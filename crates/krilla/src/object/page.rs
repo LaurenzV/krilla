@@ -3,6 +3,7 @@
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
+pub use pdf_writer::types::NumberingStyle;
 use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
@@ -19,8 +20,6 @@ use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
-
-pub use pdf_writer::types::NumberingStyle;
 
 /// A single page.
 ///
