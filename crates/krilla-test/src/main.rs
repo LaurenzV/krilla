@@ -44,6 +44,7 @@ mod validate;
 mod image;
 mod mask;
 mod outline;
+mod page;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
