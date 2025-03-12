@@ -5,21 +5,21 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-#[cfg(feature = "svg")]
 use std::collections::HashMap;
+use std::sync::Arc;
 
 pub use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
-use rustybuzz::{Direction, Feature, UnicodeBuffer};
+use rustybuzz::{Direction, UnicodeBuffer};
 #[cfg(feature = "simple-text")]
 use skrifa::GlyphId;
+use tiny_skia_path::NormalizedF32;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::{NormalizedF32, Rect};
 use tiny_skia_path::{Path, Point, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, Glyph, GlyphUnits, KrillaGlyph};
+use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits, KrillaGlyph};
 use crate::object::font::PaintMode;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -28,11 +28,7 @@ use crate::object::shading_function::ShadingFunction;
 use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
-#[cfg(feature = "svg")]
-use crate::svg;
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
-use crate::util::RectExt;
-use crate::SvgSettings;
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -77,7 +73,7 @@ pub type Location = u64;
 /// [`stream`]: crate::stream
 /// [`Page::surface`]: crate::page::Page::surface
 pub struct Surface<'a> {
-    sc: &'a mut SerializeContext,
+    pub(crate) sc: &'a mut SerializeContext,
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
@@ -187,7 +183,6 @@ impl<'a> Surface<'a> {
             ));
             draw_glyph(
                 font.clone(),
-                SvgSettings::default(),
                 glyph.glyph_id(),
                 paint_mode,
                 base_transform,
@@ -258,12 +253,11 @@ impl<'a> Surface<'a> {
         fill: Fill,
         font: Font,
         font_size: f32,
-        features: &[Feature],
         text: &str,
         outlined: bool,
         direction: TextDirection,
     ) {
-        let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
+        let glyphs = naive_shape(text, font.clone(), font_size, direction);
 
         self.fill_glyphs(
             start,
@@ -333,12 +327,11 @@ impl<'a> Surface<'a> {
         stroke: Stroke,
         font: Font,
         font_size: f32,
-        features: &[Feature],
         text: &str,
         outlined: bool,
         direction: TextDirection,
     ) {
-        let glyphs = naive_shape(text, font.clone(), features, font_size, direction);
+        let glyphs = naive_shape(text, font.clone(), font_size, direction);
 
         self.stroke_glyphs(
             start,
@@ -465,45 +458,17 @@ impl<'a> Surface<'a> {
             .draw_image(image, size, self.sc);
     }
 
-    #[cfg(feature = "svg")]
-    /// Draw a new SVG image.
-    pub fn draw_svg(
-        &mut self,
-        tree: &usvg::Tree,
-        size: Size,
-        svg_settings: SvgSettings,
-    ) -> Option<()> {
-        let transform = Transform::from_scale(
-            size.width() / tree.size().width(),
-            size.height() / tree.size().height(),
-        );
-        self.push_transform(&transform);
-        self.push_clip_path(
-            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
-                .unwrap()
-                .to_clip_path(),
-            &FillRule::NonZero,
-        );
-        svg::render_tree(tree, svg_settings, self);
-        self.pop();
-        self.pop();
-
-        Some(())
-    }
-
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .draw_shading(shading, self.sc);
     }
 
-    /// Convert a `fontdb` into `krilla` `Font` objects.
-    #[cfg(feature = "svg")]
-    pub(crate) fn convert_fontdb(
-        &mut self,
-        db: &mut fontdb::Database,
-        ids: Option<Vec<fontdb::ID>>,
-    ) -> HashMap<fontdb::ID, Font> {
-        self.sc.convert_fontdb(db, ids)
+    /// THIS IS AN INTERNAL FUNCTION, DO NOT USE DIRECTLY!
+    ///
+    /// Returns the font cache of the surface
+    #[doc(hidden)]
+    pub fn font_cache(&self) -> &HashMap<Arc<FontInfo>, Font> {
+        &self.sc.font_cache
     }
 
     /// A convenience method for `std::mem::drop`.
@@ -517,7 +482,8 @@ impl<'a> Surface<'a> {
             .draw_opacified(self.sc, opacity, stream)
     }
 
-    pub(crate) fn cur_transform(&self) -> Transform {
+    /// Return the current transformation matrix of the surface.
+    pub fn cur_transform(&self) -> Transform {
         Self::cur_builder(&self.root_builder, &self.sub_builders).cur_transform()
     }
 
@@ -570,13 +536,7 @@ pub enum TextDirection {
 
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
-fn naive_shape(
-    text: &str,
-    font: Font,
-    features: &[Feature],
-    size: f32,
-    direction: TextDirection,
-) -> Vec<KrillaGlyph> {
+fn naive_shape(text: &str, font: Font, size: f32, direction: TextDirection) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
 
@@ -594,7 +554,7 @@ fn naive_shape(
 
     let dir = buffer.direction();
 
-    let output = rustybuzz::shape(&rb_font, features, buffer);
+    let output = rustybuzz::shape(&rb_font, &[], buffer);
 
     let positions = output.glyph_positions();
     let infos = output.glyph_infos();
@@ -652,518 +612,4 @@ fn naive_shape(
     }
 
     glyphs
-}
-
-#[cfg(test)]
-mod tests {
-    use krilla_macros::{snapshot, visreg};
-    use pdf_writer::types::BlendMode;
-    use tiny_skia_path::{Point, Size, Transform};
-
-    use crate::font::Font;
-    use crate::mask::MaskType;
-    use crate::page::Page;
-    use crate::paint::{LinearGradient, Paint, SpreadMethod};
-    use crate::path::Fill;
-    use crate::surface::Surface;
-    use crate::surface::{Stroke, TextDirection};
-    use crate::tests::{
-        basic_mask, blue_fill, blue_stroke, cmyk_fill, gray_fill, green_fill, load_png_image,
-        rect_to_path, red_fill, red_stroke, stops_with_3_solid_1, FONTDB, NOTO_COLOR_EMOJI_COLR,
-        NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
-    };
-    use crate::SvgSettings;
-
-    #[visreg]
-    fn text_direction_ltr(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            20.0,
-            &[],
-            "你好这是一段则是文字",
-            false,
-            TextDirection::LeftToRight,
-        );
-    }
-
-    #[visreg]
-    fn text_direction_rtl(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            20.0,
-            &[],
-            "你好这是一段则是文字",
-            false,
-            TextDirection::RightToLeft,
-        );
-    }
-
-    #[visreg]
-    fn text_direction_ttb(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(100.0, 0.0),
-            Fill::default(),
-            font,
-            20.0,
-            &[],
-            "你好这是一段则是文字",
-            false,
-            TextDirection::TopToBottom,
-        );
-    }
-
-    #[visreg]
-    fn text_direction_btt(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(100.0, 0.0),
-            Fill::default(),
-            font,
-            20.0,
-            &[],
-            "你好这是一段则是文字",
-            false,
-            TextDirection::BottomToTop,
-        );
-    }
-
-    #[snapshot(stream)]
-    fn stream_path_single_with_rgb(surface: &mut Surface) {
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let fill = red_fill(1.0);
-        surface.fill_path(&path, fill);
-    }
-
-    #[snapshot(stream)]
-    fn stream_path_single_with_luma(surface: &mut Surface) {
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let fill = gray_fill(1.0);
-        surface.fill_path(&path, fill);
-    }
-
-    #[snapshot(stream)]
-    fn stream_path_single_with_rgb_and_opacity(surface: &mut Surface) {
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let fill = red_fill(0.5);
-        surface.fill_path(&path, fill);
-    }
-
-    #[snapshot(stream)]
-    fn stream_path_single_with_cmyk(surface: &mut Surface) {
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let fill = cmyk_fill(1.0);
-        surface.fill_path(&path, fill);
-    }
-
-    #[snapshot(stream, settings_2)]
-    fn stream_resource_cache(surface: &mut Surface) {
-        let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
-        let path2 = rect_to_path(50.0, 50.0, 150.0, 150.0);
-        let path3 = rect_to_path(100.0, 100.0, 200.0, 200.0);
-
-        surface.fill_path(&path1, green_fill(1.0));
-        surface.fill_path(&path2, red_fill(1.0));
-        surface.fill_path(&path3, blue_fill(1.0));
-    }
-
-    #[snapshot(stream)]
-    fn stream_nested_transforms(surface: &mut Surface) {
-        let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
-
-        surface.push_transform(&Transform::from_translate(50.0, 50.0));
-        surface.fill_path(&path1, green_fill(1.0));
-        surface.push_transform(&Transform::from_translate(100.0, 100.0));
-        surface.fill_path(&path1, red_fill(1.0));
-
-        surface.pop();
-        surface.pop();
-    }
-
-    #[snapshot(stream)]
-    fn stream_reused_graphics_state(surface: &mut Surface) {
-        let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
-        surface.fill_path(&path1, green_fill(0.5));
-        surface.push_blend_mode(BlendMode::ColorBurn);
-        surface.fill_path(&path1, green_fill(0.5));
-        surface.pop();
-        surface.fill_path(&path1, green_fill(0.5));
-    }
-
-    #[snapshot(stream)]
-    fn stream_fill_text(surface: &mut Surface) {
-        surface.fill_text(
-            Point::from_xy(0.0, 50.0),
-            Fill::default(),
-            Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
-            16.0,
-            &[],
-            "hi there",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(stream)]
-    fn stream_stroke_text(surface: &mut Surface) {
-        surface.stroke_text(
-            Point::from_xy(0.0, 50.0),
-            Stroke::default(),
-            Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
-            16.0,
-            &[],
-            "hi there",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    fn simple_text_impl(page: &mut Page) {
-        let mut surface = page.surface();
-        surface.fill_text(
-            Point::from_xy(0.0, 50.0),
-            Fill::default(),
-            Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
-            16.0,
-            &[],
-            "A line of text.",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page)]
-    fn simple_text(page: &mut Page) {
-        simple_text_impl(page);
-    }
-
-    #[snapshot(single_page, settings_25)]
-    fn simple_text_pdf20(page: &mut Page) {
-        // The main purpose of this test is to ensure that the fonts without CIDSet are
-        // still written properly for PDF 2.0.
-        simple_text_impl(page);
-    }
-
-    #[snapshot(single_page)]
-    fn complex_text(page: &mut Page) {
-        let mut surface = page.surface();
-        surface.fill_text(
-            Point::from_xy(0.0, 50.0),
-            Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
-            16.0,
-            &[],
-            "यह कुछ जटिल पाठ है.",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page)]
-    fn complex_text_2(page: &mut Page) {
-        let mut surface = page.surface();
-        surface.fill_text(
-            Point::from_xy(0.0, 50.0),
-            Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
-            16.0,
-            &[],
-            "यु॒धा नर॑ ऋ॒ष्वा",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page)]
-    fn complex_text_3(page: &mut Page) {
-        let mut surface = page.surface();
-        surface.fill_text(
-            Point::from_xy(0.0, 50.0),
-            Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
-            12.0,
-            &[],
-            "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page)]
-    fn complex_text_4(page: &mut Page) {
-        let mut surface = page.surface();
-        surface.fill_text(
-            Point::from_xy(0.0, 50.0),
-            Fill::default(),
-            Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
-            10.0,
-            &[],
-            "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(stream)]
-    fn stream_image(surface: &mut Surface) {
-        let image = load_png_image("rgb8.png");
-        let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
-        surface.draw_image(image, size);
-    }
-
-    #[snapshot(stream)]
-    fn stream_mask(surface: &mut Surface) {
-        let mask = basic_mask(surface, MaskType::Alpha);
-        surface.push_mask(mask);
-        let path = rect_to_path(0.0, 0.0, 100.0, 100.0);
-        surface.fill_path(&path, green_fill(0.5));
-        surface.pop();
-    }
-
-    pub(crate) fn sample_svg() -> usvg::Tree {
-        let data = std::fs::read(SVGS_PATH.join("resvg_masking_mask_with_opacity_1.svg")).unwrap();
-        usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
-    }
-
-    #[visreg]
-    fn svg_simple(surface: &mut Surface) {
-        let tree = sample_svg();
-        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
-    }
-
-    #[visreg]
-    fn svg_outlined_text(surface: &mut Surface) {
-        let data = std::fs::read(SVGS_PATH.join("resvg_text_text_simple_case.svg")).unwrap();
-        let tree = usvg::Tree::from_data(
-            &data,
-            &usvg::Options {
-                fontdb: FONTDB.clone(),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        let settings = SvgSettings {
-            embed_text: false,
-            ..Default::default()
-        };
-        surface.draw_svg(&tree, tree.size(), settings);
-    }
-
-    #[visreg]
-    fn svg_resized(surface: &mut Surface) {
-        surface.draw_svg(
-            &sample_svg(),
-            Size::from_wh(120.0, 80.0).unwrap(),
-            SvgSettings::default(),
-        );
-    }
-
-    #[visreg]
-    fn svg_should_be_clipped(surface: &mut Surface) {
-        let data =
-            std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
-        let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
-
-        surface.push_transform(&Transform::from_translate(100.0, 0.0));
-        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
-        surface.pop();
-    }
-
-    #[visreg]
-    fn svg_with_filter(surface: &mut Surface) {
-        let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
-        let tree = usvg::Tree::from_data(
-            &data,
-            &usvg::Options {
-                fontdb: FONTDB.clone(),
-                ..usvg::Options::default()
-            },
-        )
-        .unwrap();
-
-        surface.draw_svg(&tree, tree.size(), SvgSettings::default());
-    }
-
-    fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
-        LinearGradient {
-            x1: 50.0,
-            y1: 0.0,
-            x2: 150.0,
-            y2: 0.0,
-            transform: Default::default(),
-            spread_method,
-            stops: stops_with_3_solid_1(),
-            anti_alias: false,
-        }
-    }
-
-    fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
-        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 80.0),
-            red_fill(0.5),
-            font.clone(),
-            20.0,
-            &[],
-            "red outlined text",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            blue_fill(0.8),
-            font.clone(),
-            20.0,
-            &[],
-            "blue outlined text",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        let grad_fill = Fill {
-            paint: Paint::from(text_gradient(SpreadMethod::Pad)),
-            ..Default::default()
-        };
-
-        surface.fill_text(
-            Point::from_xy(0.0, 120.0),
-            grad_fill,
-            font.clone(),
-            20.0,
-            &[],
-            "gradient text",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        let noto_font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 140.0),
-            blue_fill(0.8),
-            noto_font.clone(),
-            20.0,
-            &[],
-            "😄😁😆",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        let grad_fill = Fill {
-            paint: Paint::from(text_gradient(SpreadMethod::Reflect)),
-            ..Default::default()
-        };
-
-        surface.fill_text(
-            Point::from_xy(0.0, 160.0),
-            grad_fill,
-            font,
-            20.0,
-            &[],
-            "longer gradient text with repeat",
-            outlined,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg]
-    fn text_outlined_with_fill(surface: &mut Surface) {
-        text_with_fill_impl(surface, true)
-    }
-
-    fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
-        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        surface.stroke_text(
-            Point::from_xy(0.0, 80.0),
-            red_stroke(0.5, 1.0),
-            font.clone(),
-            20.0,
-            &[],
-            "red outlined text",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        surface.stroke_text(
-            Point::from_xy(0.0, 100.0),
-            blue_stroke(0.8),
-            font.clone(),
-            20.0,
-            &[],
-            "blue outlined text",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        let grad_stroke = Stroke {
-            paint: Paint::from(text_gradient(SpreadMethod::Pad)),
-            ..Default::default()
-        };
-
-        surface.stroke_text(
-            Point::from_xy(0.0, 120.0),
-            grad_stroke,
-            font,
-            20.0,
-            &[],
-            "gradient text",
-            outlined,
-            TextDirection::Auto,
-        );
-
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
-
-        surface.stroke_text(
-            Point::from_xy(0.0, 140.0),
-            blue_stroke(0.8),
-            font,
-            20.0,
-            &[],
-            "😄😁😆",
-            outlined,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg]
-    fn text_outlined_with_stroke(surface: &mut Surface) {
-        text_with_stroke_impl(surface, true);
-    }
-
-    #[visreg]
-    fn text_zalgo(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[visreg]
-    fn text_zalgo_outlined(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        surface.fill_text(
-            Point::from_xy(0.0, 100.0),
-            Fill::default(),
-            font,
-            32.0,
-            &[],
-            "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
-            true,
-            TextDirection::Auto,
-        );
-    }
 }

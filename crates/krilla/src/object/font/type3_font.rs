@@ -22,7 +22,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
 use crate::util::{NameExt, RectExt, TransformExt};
-use crate::SvgSettings;
 
 pub(crate) type Gid = u8;
 
@@ -165,7 +164,6 @@ impl Type3Font {
                     // In case this returns `None`, the surface is guaranteed to be empty.
                     let drawn_color_glyph = font::draw_color_glyph(
                         self.font.clone(),
-                        SvgSettings::default(),
                         glyph.glyph_id,
                         glyph.paint_mode.as_ref(),
                         Transform::default(),
@@ -552,18 +550,14 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use krilla_macros::snapshot;
     use skrifa::GlyphId;
-    use tiny_skia_path::Point;
 
     use crate::font::Font;
     use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::object::font::{FontContainer, OwnedPaintMode};
-    use crate::page::Page;
     use crate::path::Fill;
-    use crate::serialize::{SerializeContext, SerializeSettings};
-    use crate::surface::TextDirection;
-    use crate::tests::TWITTER_COLOR_EMOJI;
+    use crate::serialize::SerializeContext;
+    use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
 
     impl OwnedCoveredGlyph {
         pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {
@@ -576,8 +570,8 @@ mod tests {
 
     #[test]
     fn type3_more_than_256_glyphs() {
-        let mut sc = SerializeContext::new(SerializeSettings::settings_1());
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
+        let mut sc = SerializeContext::new(settings_1());
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
         let container = sc.register_font_container(font.clone());
         let mut font_container = container.borrow_mut();
 
@@ -607,39 +601,5 @@ mod tests {
             }
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
-    }
-
-    #[snapshot(single_page, settings_1)]
-    fn type3_color_glyphs(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
-        let mut surface = page.surface();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 25.0),
-            Fill::default(),
-            font.clone(),
-            25.0,
-            &[],
-            "😀😃",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page, settings_17)]
-    fn type3_pdf_14(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
-        let mut surface = page.surface();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 25.0),
-            Fill::default(),
-            font.clone(),
-            25.0,
-            &[],
-            "😀",
-            false,
-            TextDirection::Auto,
-        );
     }
 }

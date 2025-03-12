@@ -801,21 +801,18 @@ dependencies = [
  "bumpalo",
  "comemo",
  "difference",
- "flate2",
  "float-cmp 0.10.0",
  "fontdb",
  "gif",
  "image 0.25.2",
  "image-webp",
  "imagesize 0.13.0",
- "krilla-macros",
  "miniz_oxide 0.8.0",
  "once_cell",
  "oxipng",
  "paste",
  "pdf-writer",
  "rayon",
- "resvg",
  "rustybuzz",
  "siphasher",
  "sitro",
@@ -823,7 +820,6 @@ dependencies = [
  "subsetter",
  "tiny-skia",
  "tiny-skia-path",
- "usvg",
  "xmp-writer",
  "yoke",
  "zune-jpeg",
@@ -838,6 +834,42 @@ dependencies = [
  "quote",
  "sitro",
  "syn",
+]
+
+[[package]]
+name = "krilla-svg"
+version = "0.3.0"
+dependencies = [
+ "flate2",
+ "fontdb",
+ "krilla",
+ "krilla-macros",
+ "once_cell",
+ "resvg",
+ "roxmltree 0.20.0",
+ "sitro",
+ "tiny-skia",
+ "tiny-skia-path",
+ "usvg",
+ "zune-png",
+]
+
+[[package]]
+name = "krilla-tests"
+version = "0.0.0"
+dependencies = [
+ "difference",
+ "fontdb",
+ "image 0.25.2",
+ "krilla",
+ "krilla-macros",
+ "krilla-svg",
+ "once_cell",
+ "oxipng",
+ "sitro",
+ "skrifa 0.28.1",
+ "tiny-skia-path",
+ "usvg",
 ]
 
 [[package]]

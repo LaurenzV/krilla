@@ -19,9 +19,7 @@ impl Parse for AttributeInput {
 }
 
 enum SnapshotMode {
-    SerializeContext,
     SinglePage,
-    Stream,
     Document,
 }
 
@@ -31,7 +29,7 @@ const SKIP_SNAPSHOT: Option<&str> = option_env!("SKIP_SNAPSHOT");
 pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
     let mut serialize_settings = format_ident!("settings_1");
-    let mut mode = SnapshotMode::SerializeContext;
+    let mut mode = SnapshotMode::SinglePage;
     let mut ignore = SKIP_SNAPSHOT.is_some();
 
     for attr in attrs.identifiers {
@@ -43,8 +41,6 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             mode = SnapshotMode::SinglePage;
         } else if st == "document" {
             mode = SnapshotMode::Document;
-        } else if st == "stream" {
-            mode = SnapshotMode::Stream;
         } else if st == "ignore" {
             ignore = true;
         } else {
@@ -62,38 +58,17 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     fn_name = Ident::new(&format!("{}_snapshot", fn_name), fn_name.span());
 
     let common = quote! {
-        use crate::serialize::{SerializeSettings, SerializeContext};
-        use crate::tests::check_snapshot;
-        use crate::document::{Document, PageSettings};
-        use crate::geom::Size;
+        use krilla::SerializeSettings;
+        use crate::check_snapshot;
+        use krilla::document::{Document, PageSettings};
+        use krilla::geom::Size;
     };
 
     let fn_content = match mode {
-        SnapshotMode::SerializeContext => {
-            quote! {
-                #common
-                let settings = SerializeSettings::#serialize_settings();
-                let mut sc = SerializeContext::new(settings);
-                #impl_ident(&mut sc);
-                check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
-            }
-        }
-        SnapshotMode::Stream => {
-            quote! {
-                #common
-                let settings = SerializeSettings::#serialize_settings();
-                let mut sc = SerializeContext::new(settings);
-                let mut stream_builder = crate::stream::StreamBuilder::new(&mut sc);
-                let mut surface = stream_builder.surface();
-                #impl_ident(&mut surface);
-                surface.finish();
-                check_snapshot(#snapshot_name, &stream_builder.finish().content, false);
-            }
-        }
         SnapshotMode::SinglePage => {
             quote! {
                 #common
-                let settings = SerializeSettings::#serialize_settings();
+                let settings = crate::#serialize_settings();
                 let page_settings = PageSettings::new(200.0, 200.0);
                 let mut d = Document::new_with(settings);
                 let mut page = d.start_page_with(page_settings);
@@ -105,7 +80,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         SnapshotMode::Document => {
             quote! {
                 #common
-                let settings = SerializeSettings::#serialize_settings();
+                let settings = crate::#serialize_settings();
                 let mut d = Document::new_with(settings);
                 #impl_ident(&mut d);
                 check_snapshot(#snapshot_name, &d.finish().unwrap(), true);
@@ -220,12 +195,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_body = if is_svg {
         quote! {
-            use crate::tests::svg_impl;
+            use crate::svg_impl;
             svg_impl(stringify!(#fn_name), renderer, #ignore_renderer);
         }
     } else if document {
         quote! {
-            let settings = SerializeSettings::#serialize_settings();
+            let settings = crate::#serialize_settings();
             let mut d = Document::new_with(settings);
             #impl_ident(&mut d);
             let pdf = d.finish().unwrap();
@@ -235,7 +210,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     } else {
         quote! {
-            let settings = SerializeSettings::#serialize_settings();
+            let settings = crate::#serialize_settings();
             let mut d = Document::new_with(settings);
             let page_settings = PageSettings::new(200.0, 200.0).with_media_box(None);
             let mut page = d.start_page_with(page_settings);
@@ -272,10 +247,10 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #quartz_snippet
                 #[test]
                 fn #name() {
-                    use crate::tests::{render_document, check_render};
-                    use crate::geom::Size;
-                    use crate::document::{Document, PageSettings};
-                    use crate::serialize::SerializeSettings;
+                    use crate::{render_document, check_render};
+                    use krilla::geom::Size;
+                    use krilla::document::{Document, PageSettings};
+                    use krilla::SerializeSettings;
                     use sitro::Renderer;
                     let renderer = #renderer_ident;
 

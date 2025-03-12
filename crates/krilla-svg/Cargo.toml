@@ -1,0 +1,24 @@
+[package]
+name = "krilla-svg"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[dependencies]
+tiny-skia-path = { workspace = true }
+zune-png = { workspace = true }
+krilla = { workspace = true, features = ["raster-images"] }
+usvg = { workspace = true }
+tiny-skia = { workspace = true }
+resvg = { workspace = true }
+flate2 = { workspace = true }
+roxmltree = { workspace = true }
+fontdb = { workspace = true }
+
+[dev-dependencies]
+krilla-macros = { workspace = true }
+sitro = { workspace = true }
+once_cell = { workspace = true }

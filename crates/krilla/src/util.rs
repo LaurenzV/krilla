@@ -10,8 +10,6 @@ use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
-#[cfg(feature = "svg")]
-use tiny_skia_path::PathBuilder;
 use tiny_skia_path::{FiniteF32, Path, Rect, Transform};
 
 use crate::path::{LineCap, LineJoin, Stroke};
@@ -73,8 +71,6 @@ impl LineJoinExt for LineJoin {
 pub(crate) trait RectExt {
     fn expand(&mut self, other: &Rect);
     fn to_pdf_rect(&self) -> pdf_writer::Rect;
-    #[cfg(feature = "svg")]
-    fn to_clip_path(&self) -> Path;
 }
 
 impl RectExt for Rect {
@@ -93,17 +89,6 @@ impl RectExt for Rect {
             self.x() + self.width(),
             self.y() + self.height(),
         )
-    }
-
-    #[cfg(feature = "svg")]
-    fn to_clip_path(&self) -> Path {
-        let mut path_builder = PathBuilder::new();
-        path_builder.move_to(self.left(), self.top());
-        path_builder.line_to(self.right(), self.top());
-        path_builder.line_to(self.right(), self.bottom());
-        path_builder.line_to(self.left(), self.bottom());
-        path_builder.close();
-        path_builder.finish().unwrap()
     }
 }
 
@@ -335,5 +320,50 @@ impl<T: Send + Sync + 'static> Deferred<T> {
         while let Some(rayon::Yield::Executed) = rayon::yield_now() {}
 
         self.0.wait()
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod test_utils {
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::sync::LazyLock;
+
+    use once_cell::sync::Lazy;
+
+    use crate::Data;
+    use crate::{Configuration, SerializeSettings};
+
+    pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
+        Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+
+    pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
+        LazyLock::new(|| WORKSPACE_PATH.join("assets"));
+
+    static FONT_PATH: LazyLock<PathBuf> = LazyLock::new(|| ASSETS_PATH.join("fonts"));
+
+    macro_rules! lazy_font {
+        ($name:ident, $path:expr) => {
+            pub static $name: LazyLock<Data> =
+                LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()).into());
+        };
+    }
+
+    lazy_font!(
+        NOTO_COLOR_EMOJI_COLR,
+        FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf")
+    );
+
+    pub fn settings_1() -> SerializeSettings {
+        SerializeSettings {
+            ascii_compatible: true,
+            compress_content_streams: false,
+            no_device_cs: false,
+            xmp_metadata: false,
+            cmyk_profile: None,
+            enable_tagging: true,
+            configuration: Configuration::new(),
+            render_svg_glyph_fn: |_, _, _, _| None,
+        }
     }
 }

@@ -28,10 +28,11 @@ For more examples, feel free to take a look at the [examples] directory of the G
 # use krilla::surface::TextDirection;
 # use krilla::path::Fill;
 # use krilla::{Document, PageSettings};
-# use krilla::SvgSettings;
+# // use krilla::SvgSettings;
 # use std::path::PathBuf;
 # use std::sync::Arc;
-# use usvg::NormalizedF32;
+# use krilla::NormalizedF32;
+# // TODO: Fix example
 # fn main() {
 // Create a new document.
 let mut document = Document::new();
@@ -53,7 +54,6 @@ surface.fill_text(
     Fill::default(),
     font.clone(),
     14.0,
-    &[],
     "This text has font size 14!",
     false,
     TextDirection::Auto
@@ -68,7 +68,6 @@ surface.fill_text(
     },
     font.clone(),
     16.0,
-    &[],
     "This text has font size 16!",
     false,
     TextDirection::Auto
@@ -78,24 +77,25 @@ surface.fill_text(
 surface.finish();
 page.finish();
 
-// Load an SVG.
-let svg_tree = {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
-    let data = std::fs::read(&path).unwrap();
-    usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
-};
+// // Load an SVG.
+// let svg_tree = {
+//     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+//         .join("../../assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
+//     let data = std::fs::read(&path).unwrap();
+//     // usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
+// };
 
 // Start a new page, with the same dimensions as the SVG.
-let svg_size = svg_tree.size();
-let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
-let mut surface = page.surface();
+// let svg_size = svg_tree.size();
+// let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
+// let mut surface = page.surface();
 // Draw the SVG.
-surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
+//
+// surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
 
 // Finish up and write the resulting PDF.
-surface.finish();
-page.finish();
+// surface.finish();
+// page.finish();
 let pdf = document.finish().unwrap();
 std::fs::write("../../target/example.pdf", &pdf).unwrap();
 # }
@@ -106,6 +106,7 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 */
 
 #![deny(missing_docs)]
+#![forbid(unsafe_code)]
 
 mod chunk_container;
 mod graphics_state;
@@ -113,13 +114,9 @@ mod object;
 mod prelude;
 mod resource;
 mod serialize;
-#[cfg(feature = "svg")]
-mod svg;
 mod util;
 
 pub(crate) mod content;
-#[cfg(test)]
-pub(crate) mod tests;
 
 pub mod configure;
 pub mod document;

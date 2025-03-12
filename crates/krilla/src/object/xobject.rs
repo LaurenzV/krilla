@@ -111,26 +111,3 @@ impl Cacheable for XObject {
 impl Resourceable for XObject {
     type Resource = resource::XObject;
 }
-
-#[cfg(test)]
-mod tests {
-    use krilla_macros::snapshot;
-
-    use crate::object::xobject::XObject;
-    use crate::path::Fill;
-    use crate::serialize::SerializeContext;
-    use crate::stream::StreamBuilder;
-    use crate::tests::rect_to_path;
-
-    #[snapshot]
-    fn x_object_with_transparency(sc: &mut SerializeContext) {
-        let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-        let mut sb = StreamBuilder::new(sc);
-        let mut surface = sb.surface();
-        surface.fill_path(&path, Fill::default());
-        surface.finish();
-        let stream = sb.finish();
-        let x_object = XObject::new(stream, true, true, None);
-        sc.register_cacheable(x_object);
-    }
-}

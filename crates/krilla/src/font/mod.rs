@@ -26,7 +26,6 @@ use tiny_skia_path::{FiniteF32, Rect, Transform};
 use yoke::{Yoke, Yokeable};
 
 use crate::object::font::PaintMode;
-use crate::serialize::SvgSettings;
 use crate::surface::Surface;
 use crate::util::{Prehashed, RectWrapper};
 use crate::Data;
@@ -35,7 +34,6 @@ use crate::Data;
 pub(crate) mod bitmap;
 pub(crate) mod colr;
 pub(crate) mod outline;
-#[cfg(feature = "svg")]
 pub(crate) mod svg;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
@@ -71,7 +69,8 @@ impl Font {
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
 
-    pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
+    #[doc(hidden)]
+    pub fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
         let font_ref_yoke =
             Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.0.clone(),
@@ -137,7 +136,8 @@ impl Font {
         self.0.font_info.italic_angle.get()
     }
 
-    pub(crate) fn units_per_em(&self) -> f32 {
+    /// The units per em of the font.
+    pub fn units_per_em(&self) -> f32 {
         self.0.font_info.units_per_em as f32
     }
 
@@ -150,7 +150,8 @@ impl Font {
         (&self.0.font_info.location).into()
     }
 
-    pub(crate) fn font_ref(&self) -> &FontRef {
+    /// Return the underlying `FontRef`.
+    pub fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }
 
@@ -182,8 +183,10 @@ impl Debug for Font {
 /// information, such as the font name and the checksum, and has this instead.
 /// This is much faster, and since we also include the checksum, the odds of two
 /// different fonts ending up with the same hash is pretty much zero.
+// We unfortunately need to make this public so that `krilla-svg` can cache fonts.
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub(crate) struct FontInfo {
+#[doc(hidden)]
+pub struct FontInfo {
     index: u32,
     checksum: u32,
     location: Location,
@@ -218,7 +221,8 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
+    #[doc(hidden)]
+    pub fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let checksum = font_ref.head().ok()?.checksum_adjustment();
 
@@ -288,8 +292,6 @@ struct FontRefYoke<'a> {
 /// Draw a color glyph to a surface.
 pub(crate) fn draw_color_glyph(
     font: Font,
-    #[cfg(feature = "svg")] svg_settings: SvgSettings,
-    #[cfg(not(feature = "svg"))] _: SvgSettings,
     glyph: GlyphId,
     paint_mode: PaintMode,
     base_transform: Transform,
@@ -299,15 +301,7 @@ pub(crate) fn draw_color_glyph(
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
     let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
-        .or_else(|| {
-            #[cfg(feature = "svg")]
-            let res = svg::draw_glyph(font.clone(), glyph, surface, paint_mode, svg_settings);
-
-            #[cfg(not(feature = "svg"))]
-            let res = None;
-
-            res
-        })
+        .or_else(|| svg::draw_glyph(font.clone(), glyph, surface, paint_mode))
         .or_else(|| {
             #[cfg(feature = "raster-images")]
             let res = bitmap::draw_glyph(font.clone(), glyph, surface);
@@ -327,21 +321,13 @@ pub(crate) fn draw_color_glyph(
 /// Draw a color glyph or outline glyph to a surface.
 pub(crate) fn draw_glyph(
     font: Font,
-    svg_settings: SvgSettings,
     glyph: GlyphId,
     paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
-    draw_color_glyph(
-        font.clone(),
-        svg_settings,
-        glyph,
-        paint_mode,
-        base_transform,
-        surface,
-    )
-    .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
+    draw_color_glyph(font.clone(), glyph, paint_mode, base_transform, surface)
+        .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
 }
 
 /// A glyph with certain properties.
@@ -448,14 +434,5 @@ impl KrillaGlyph {
             text_range: range,
             location,
         }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn dummy(
-        glyph_id: GlyphId,
-        range: Range<usize>,
-        location: Option<crate::surface::Location>,
-    ) -> Self {
-        Self::new(glyph_id, 0.0, 0.0, 0.0, 0.0, range, location)
     }
 }
