@@ -167,38 +167,17 @@ pub fn snapshot2(attr: TokenStream, item: TokenStream) -> TokenStream {
     fn_name = Ident::new(&format!("{}_snapshot", fn_name), fn_name.span());
 
     let common = quote! {
-        use krilla::serialize::{SerializeSettings, SerializeContext};
+        use krilla::SerializeSettings;
         use crate::check_snapshot;
         use krilla::document::{Document, PageSettings};
         use krilla::geom::Size;
     };
 
     let fn_content = match mode {
-        SnapshotMode::SerializeContext => {
-            quote! {
-                #common
-                let settings = SerializeSettings::#serialize_settings();
-                let mut sc = SerializeContext::new(settings);
-                #impl_ident(&mut sc);
-                check_snapshot(#snapshot_name, sc.finish().unwrap().as_bytes(), false);
-            }
-        }
-        SnapshotMode::Stream => {
-            quote! {
-                #common
-                let settings = SerializeSettings::#serialize_settings();
-                let mut sc = SerializeContext::new(settings);
-                let mut stream_builder = crate::stream::StreamBuilder::new(&mut sc);
-                let mut surface = stream_builder.surface();
-                #impl_ident(&mut surface);
-                surface.finish();
-                check_snapshot(#snapshot_name, &stream_builder.finish().content, false);
-            }
-        }
         SnapshotMode::SinglePage => {
             quote! {
                 #common
-                let settings = SerializeSettings::#serialize_settings();
+                let settings = crate::#serialize_settings();
                 let page_settings = PageSettings::new(200.0, 200.0);
                 let mut d = Document::new_with(settings);
                 let mut page = d.start_page_with(page_settings);
@@ -210,12 +189,13 @@ pub fn snapshot2(attr: TokenStream, item: TokenStream) -> TokenStream {
         SnapshotMode::Document => {
             quote! {
                 #common
-                let settings = SerializeSettings::#serialize_settings();
+                let settings = crate::#serialize_settings();
                 let mut d = Document::new_with(settings);
                 #impl_ident(&mut d);
                 check_snapshot(#snapshot_name, &d.finish().unwrap(), true);
             }
         }
+        _ => unimplemented!(),
     };
 
     let ignore_snippet = if ignore {

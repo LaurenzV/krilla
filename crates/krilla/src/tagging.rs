@@ -122,7 +122,7 @@
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
 
-use pdf_writer::types::{
+pub use pdf_writer::types::{
     ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
 };
 use pdf_writer::writers::{PropertyList, StructElement};

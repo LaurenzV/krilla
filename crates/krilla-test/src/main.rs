@@ -37,6 +37,7 @@ use krilla::Data;
 use krilla::{SerializeSettings, SvgSettings};
 
 mod font;
+mod validate;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
@@ -781,4 +782,198 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
         &pdf,
         ignore_renderer,
     );
+}
+
+pub fn settings_1() -> SerializeSettings {
+    SerializeSettings {
+        ascii_compatible: true,
+        compress_content_streams: false,
+        no_device_cs: false,
+        xmp_metadata: false,
+        cmyk_profile: None,
+        enable_tagging: true,
+        configuration: Configuration::new(),
+    }
+}
+
+pub fn settings_2() -> SerializeSettings {
+    SerializeSettings {
+        no_device_cs: true,
+        ..settings_1()
+    }
+}
+
+pub fn settings_5() -> SerializeSettings {
+    SerializeSettings {
+        xmp_metadata: true,
+        ..settings_1()
+    }
+}
+
+pub fn settings_6() -> SerializeSettings {
+    SerializeSettings {
+        no_device_cs: true,
+        cmyk_profile: Some(
+            ICCProfile::new(&std::fs::read(ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap())
+                .unwrap(),
+        ),
+        ..settings_1()
+    }
+}
+
+pub fn settings_7() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A2_B),
+        ..settings_1()
+    }
+}
+
+pub fn settings_8() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A2_B),
+        cmyk_profile: Some(
+            ICCProfile::new(&std::fs::read(ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap())
+                .unwrap(),
+        ),
+        ..settings_1()
+    }
+}
+
+pub fn settings_9() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A2_U),
+        ..settings_1()
+    }
+}
+
+pub fn settings_10() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A3_B),
+        ..settings_1()
+    }
+}
+
+pub fn settings_11() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A3_U),
+        ..settings_1()
+    }
+}
+
+pub fn settings_12() -> SerializeSettings {
+    SerializeSettings {
+        enable_tagging: false,
+        ..settings_1()
+    }
+}
+
+pub fn settings_13() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A2_A),
+        ..settings_1()
+    }
+}
+
+pub fn settings_14() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A3_A),
+        ..settings_1()
+    }
+}
+
+pub fn settings_15() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::UA1),
+        ..settings_1()
+    }
+}
+
+pub fn settings_16() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_version(PdfVersion::Pdf14),
+        xmp_metadata: true,
+        ..settings_1()
+    }
+}
+
+pub fn settings_17() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_version(PdfVersion::Pdf14),
+        ..settings_1()
+    }
+}
+
+pub fn settings_18() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_version(PdfVersion::Pdf14),
+        no_device_cs: true,
+        ..settings_1()
+    }
+}
+
+pub fn settings_19() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A1_B),
+        ..settings_1()
+    }
+}
+
+pub fn settings_20() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A1_A),
+        ..settings_1()
+    }
+}
+
+pub fn settings_22() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with(Validator::A2_B, PdfVersion::Pdf14).unwrap(),
+        ..settings_1()
+    }
+}
+
+pub fn settings_23() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A3_B),
+        ..settings_1()
+    }
+}
+
+pub fn settings_24() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A3_A),
+        ..settings_1()
+    }
+}
+
+pub fn settings_25() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_version(PdfVersion::Pdf20),
+        ..settings_1()
+    }
+}
+
+pub fn settings_26() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A4),
+        ..settings_1()
+    }
+}
+
+pub fn settings_27() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A4F),
+        ..settings_1()
+    }
+}
+
+pub fn settings_28() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validator(Validator::A4E),
+        ..settings_1()
+    }
+}
+
+fn main() {
+    panic!("This crate shouldn't be run directly.");
 }
