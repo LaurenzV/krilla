@@ -608,38 +608,4 @@ mod tests {
             FontContainer::CIDFont(_) => panic!("expected type 3 font"),
         }
     }
-
-    #[snapshot(single_page, settings_1)]
-    fn type3_color_glyphs(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
-        let mut surface = page.surface();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 25.0),
-            Fill::default(),
-            font.clone(),
-            25.0,
-            &[],
-            "😀😃",
-            false,
-            TextDirection::Auto,
-        );
-    }
-
-    #[snapshot(single_page, settings_17)]
-    fn type3_pdf_14(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
-        let mut surface = page.surface();
-
-        surface.fill_text(
-            Point::from_xy(0.0, 25.0),
-            Fill::default(),
-            font.clone(),
-            25.0,
-            &[],
-            "😀",
-            false,
-            TextDirection::Auto,
-        );
-    }
 }

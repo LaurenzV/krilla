@@ -275,3 +275,46 @@ mod cid {
         );
     }
 }
+
+mod type3 {
+    use tiny_skia_path::Point;
+    use krilla::{Font, Page};
+    use krilla::path::Fill;
+    use krilla::surface::TextDirection;
+    use krilla_macros::snapshot2;
+    use crate::TWITTER_COLOR_EMOJI;
+
+    #[snapshot2(single_page, settings_1)]
+    fn type3_color_glyphs(page: &mut Page) {
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "😀😃",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    #[snapshot2(single_page, settings_17)]
+    fn type3_pdf_14(page: &mut Page) {
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
+        let mut surface = page.surface();
+
+        surface.fill_text(
+            Point::from_xy(0.0, 25.0),
+            Fill::default(),
+            font.clone(),
+            25.0,
+            &[],
+            "😀",
+            false,
+            TextDirection::Auto,
+        );
+    }
+}
