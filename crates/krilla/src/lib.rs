@@ -107,6 +107,7 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 */
 
 #![deny(missing_docs)]
+#![forbid(unsafe_code)]
 
 mod chunk_container;
 mod graphics_state;
