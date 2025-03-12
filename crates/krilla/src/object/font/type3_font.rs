@@ -559,10 +559,8 @@ mod tests {
     use crate::font::Font;
     use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::object::font::{FontContainer, OwnedPaintMode};
-    use crate::page::Page;
     use crate::path::Fill;
     use crate::serialize::{SerializeContext, SerializeSettings};
-    use crate::surface::TextDirection;
     use crate::tests::TWITTER_COLOR_EMOJI;
 
     impl OwnedCoveredGlyph {

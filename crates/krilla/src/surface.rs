@@ -28,8 +28,6 @@ use crate::object::shading_function::ShadingFunction;
 use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
-#[cfg(feature = "svg")]
-use crate::svg;
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::util::RectExt;
 use crate::SvgSettings;
@@ -77,7 +75,7 @@ pub type Location = u64;
 /// [`stream`]: crate::stream
 /// [`Page::surface`]: crate::page::Page::surface
 pub struct Surface<'a> {
-    sc: &'a mut SerializeContext,
+    pub(crate) sc: &'a mut SerializeContext,
     pub(crate) root_builder: ContentBuilder,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
@@ -465,32 +463,6 @@ impl<'a> Surface<'a> {
             .draw_image(image, size, self.sc);
     }
 
-    #[cfg(feature = "svg")]
-    /// Draw a new SVG image.
-    pub fn draw_svg(
-        &mut self,
-        tree: &usvg::Tree,
-        size: Size,
-        svg_settings: SvgSettings,
-    ) -> Option<()> {
-        let transform = Transform::from_scale(
-            size.width() / tree.size().width(),
-            size.height() / tree.size().height(),
-        );
-        self.push_transform(&transform);
-        self.push_clip_path(
-            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
-                .unwrap()
-                .to_clip_path(),
-            &FillRule::NonZero,
-        );
-        svg::render_tree(tree, svg_settings, self);
-        self.pop();
-        self.pop();
-
-        Some(())
-    }
-
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
             .draw_shading(shading, self.sc);
@@ -664,8 +636,10 @@ mod tests {
     use crate::font::Font;
     use crate::mask::MaskType;
     use crate::path::Fill;
+    use crate::surface::Stroke;
     use crate::surface::Surface;
-    use crate::surface::{Stroke, TextDirection};
+    #[cfg(feature = "simple-text")]
+    use crate::surface::TextDirection;
     use crate::tests::{
         basic_mask, blue_fill, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path,
         red_fill, NOTO_SANS,

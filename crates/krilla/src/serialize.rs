@@ -31,7 +31,7 @@ use crate::object::{Cacheable, Resourceable};
 use crate::page::PageLabel;
 use crate::resource;
 use crate::resource::Resource;
-use crate::surface::Location;
+use crate::surface::{Location, Surface};
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::SipHashable;
 
@@ -102,7 +102,18 @@ pub struct SerializeSettings {
     ///
     /// [`tagging`]: crate::tagging
     pub enable_tagging: bool,
+    /// TODO
+    #[cfg(feature = "svg")]
+    pub render_node_fn: RenderNodeFn,
+    /// TODO
+    #[cfg(feature = "svg")]
+    pub render_tree_fn: RenderTreeFn,
 }
+
+#[cfg(feature = "svg")]
+pub type RenderNodeFn = fn(&usvg::Node, Arc<fontdb::Database>, SvgSettings, &mut Surface);
+#[cfg(feature = "svg")]
+pub type RenderTreeFn = fn(&usvg::Tree, SvgSettings, &mut Surface);
 
 impl SerializeSettings {
     pub(crate) fn pdf_version(&self) -> PdfVersion {
@@ -124,6 +135,10 @@ impl Default for SerializeSettings {
             cmyk_profile: None,
             configuration: Configuration::new(),
             enable_tagging: true,
+            #[cfg(feature = "svg")]
+            render_node_fn: |_, _, _, _| {},
+            #[cfg(feature = "svg")]
+            render_tree_fn: |_, _, _| {},
         }
     }
 }

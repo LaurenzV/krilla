@@ -6,15 +6,16 @@ use krilla::surface::{Surface, TextDirection};
 use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
 use krilla::{Document, Font, SvgSettings};
 use krilla_macros::snapshot2;
+use krilla_svg::SurfaceExt;
 use tiny_skia_path::{Rect, Size, Transform};
 
 use crate::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
 
-pub trait SurfaceExt {
+pub trait SurfaceTaggingExt {
     fn fill_text_(&mut self, y: f32, content: &str);
 }
 
-impl SurfaceExt for Surface<'_> {
+impl SurfaceTaggingExt for Surface<'_> {
     fn fill_text_(&mut self, y: f32, content: &str) {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, true).unwrap();

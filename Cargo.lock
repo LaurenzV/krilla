@@ -846,7 +846,10 @@ version = "0.3.0"
 dependencies = [
  "fontdb",
  "krilla",
+ "krilla-macros",
+ "once_cell",
  "resvg",
+ "sitro",
  "tiny-skia",
  "tiny-skia-path",
  "usvg",
@@ -855,13 +858,14 @@ dependencies = [
 
 [[package]]
 name = "krilla-test"
-version = "0.3.0"
+version = "0.0.0"
 dependencies = [
  "difference",
  "fontdb",
  "image 0.25.2",
  "krilla",
  "krilla-macros",
+ "krilla-svg",
  "once_cell",
  "oxipng",
  "sitro",

@@ -130,15 +130,11 @@ impl Resourceable for Mask {
 mod tests {
     use krilla_macros::{snapshot, visreg};
     use tiny_skia_path::{PathBuilder, Rect};
-    use usvg::NormalizedF32;
 
-    use crate::color::rgb;
     use crate::mask::MaskType;
     use crate::object::mask::Mask;
-    use crate::path::Fill;
     use crate::serialize::SerializeContext;
     use crate::stream::StreamBuilder;
-    use crate::surface::Surface;
     use crate::tests::{basic_mask, rect_to_path, red_fill};
 
     fn mask_snapshot_impl(mask_type: MaskType, sc: &mut SerializeContext) {

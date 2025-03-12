@@ -5,9 +5,13 @@ use std::sync::Arc;
 
 use fontdb::Database;
 use krilla::font::Font;
+use krilla::path::FillRule;
 use krilla::surface::Surface;
 use krilla::SvgSettings;
-use usvg::{fontdb, Group, ImageKind, Node};
+use tiny_skia_path::{Rect, Size, Transform};
+use usvg::{fontdb, Group, ImageKind, Node, Tree};
+
+use crate::util::RectExt;
 
 mod clip_path;
 mod filter;
@@ -17,6 +21,31 @@ mod mask;
 mod path;
 mod text;
 mod util;
+
+pub trait SurfaceExt {
+    fn draw_svg(&mut self, tree: &usvg::Tree, size: Size, svg_settings: SvgSettings) -> Option<()>;
+}
+
+impl SurfaceExt for Surface<'_> {
+    fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()> {
+        let transform = Transform::from_scale(
+            size.width() / tree.size().width(),
+            size.height() / tree.size().height(),
+        );
+        self.push_transform(&transform);
+        self.push_clip_path(
+            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
+                .unwrap()
+                .to_clip_path(),
+            &FillRule::NonZero,
+        );
+        render_tree(tree, svg_settings, self);
+        self.pop();
+        self.pop();
+
+        Some(())
+    }
+}
 
 /// A struct that stores some information that is needed globally when processing an SVG.
 struct ProcessContext {
@@ -40,14 +69,14 @@ impl ProcessContext {
 ///
 /// Returns `None` if the conversion was not successful (for example if a fontdb ID is
 /// referenced that doesn't exist in the database).
-pub(crate) fn render_tree(tree: &usvg::Tree, svg_settings: SvgSettings, surface: &mut Surface) {
+pub fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
     let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root(), surface);
     group::render(tree.root(), surface, &mut fc);
 }
 
 /// Render a usvg `Node` into a surface.
-pub(crate) fn render_node(
+pub fn render_node(
     node: &Node,
     mut tree_fontdb: Arc<Database>,
     svg_settings: SvgSettings,

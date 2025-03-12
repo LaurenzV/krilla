@@ -1,6 +1,6 @@
 [package]
 name = "krilla-test"
-version.workspace = true
+publish = false
 authors.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -8,7 +8,8 @@ readme.workspace = true
 license.workspace = true
 
 [dependencies]
-krilla = { workspace = true }
+krilla-svg = { workspace = true }
+krilla = { workspace = true, features = ["svg", "raster-images", "simple-text"] }
 krilla-macros = { workspace = true }
 fontdb = { workspace = true }
 usvg = { workspace = true }

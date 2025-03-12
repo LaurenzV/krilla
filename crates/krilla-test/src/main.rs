@@ -24,6 +24,7 @@ use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
 use krilla::Data;
 use krilla::{SerializeSettings, SvgSettings};
+use krilla_svg::{render_node, render_tree, SurfaceExt};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 use sitro::{
@@ -49,6 +50,9 @@ mod pattern;
 mod surface;
 mod tagging;
 mod validate;
+#[allow(dead_code)]
+#[rustfmt::skip]
+mod svg;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
@@ -756,8 +760,8 @@ pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     Arc::new(fontdb)
 });
 
-fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
-    let settings = SerializeSettings::default();
+pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
+    let settings = default();
     let mut d = Document::new_with(settings);
     let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", name));
     let data = std::fs::read(&svg_path).unwrap();
@@ -796,7 +800,11 @@ fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
 }
 
 pub fn default() -> SerializeSettings {
-    SerializeSettings::default()
+    SerializeSettings {
+        render_node_fn: render_node,
+        render_tree_fn: render_tree,
+        ..Default::default()
+    }
 }
 
 pub fn settings_1() -> SerializeSettings {
@@ -808,6 +816,8 @@ pub fn settings_1() -> SerializeSettings {
         cmyk_profile: None,
         enable_tagging: true,
         configuration: Configuration::new(),
+        render_node_fn: render_node,
+        render_tree_fn: render_tree,
     }
 }
 

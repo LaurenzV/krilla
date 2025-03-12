@@ -91,7 +91,8 @@ let svg_size = svg_tree.size();
 let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
 let mut surface = page.surface();
 // Draw the SVG.
-surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
+// TODO: Fix
+// surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
 
 // Finish up and write the resulting PDF.
 surface.finish();
@@ -113,8 +114,6 @@ mod object;
 mod prelude;
 mod resource;
 mod serialize;
-#[cfg(feature = "svg")]
-mod svg;
 mod util;
 
 pub(crate) mod content;

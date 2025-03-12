@@ -35,10 +35,6 @@ use crate::surface::Surface;
 use crate::Data;
 use crate::{SerializeSettings, SvgSettings};
 
-#[allow(dead_code)]
-#[rustfmt::skip]
-mod svg;
-
 // TODO: The reason we store all tests here instead of creating a root `tests` folder is that
 // we want to avoid duplicating all of the asset paths for both, crate-internal unit tests and
 // external integration tests. Would be nice to figure out a better solution to this.
@@ -741,45 +737,6 @@ pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     Arc::new(fontdb)
 });
 
-fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
-    let settings = SerializeSettings::default();
-    let mut d = Document::new_with(settings);
-    let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", name));
-    let data = std::fs::read(&svg_path).unwrap();
-    let tree = usvg::Tree::from_data(
-        &data,
-        &usvg::Options {
-            fontdb: FONTDB.clone(),
-            ..Default::default()
-        },
-    )
-    .unwrap();
-
-    let mut page = d.start_page_with(PageSettings::new(tree.size().width(), tree.size().height()));
-    let mut surface = page.surface();
-    surface.draw_svg(
-        &tree,
-        tree.size(),
-        SvgSettings {
-            embed_text: true,
-            filter_scale: 2.0,
-        },
-    );
-    surface.finish();
-    page.finish();
-
-    let pdf = d.finish().unwrap();
-    let rendered = render_document(&pdf, &renderer);
-    check_render(
-        name,
-        Some("svg"),
-        &renderer,
-        rendered,
-        &pdf,
-        ignore_renderer,
-    );
-}
-
 #[allow(missing_docs)]
 impl SerializeSettings {
     pub fn settings_1() -> Self {
@@ -791,6 +748,10 @@ impl SerializeSettings {
             cmyk_profile: None,
             enable_tagging: true,
             configuration: Configuration::new(),
+            #[cfg(feature = "svg")]
+            render_node_fn: |_, _, _, _| {},
+            #[cfg(feature = "svg")]
+            render_tree_fn: |_, _, _| {},
         }
     }
 
