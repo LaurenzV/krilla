@@ -1,11 +1,12 @@
 mod shading {
-    use crate::{rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1};
     use krilla::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use krilla::path::Fill;
     use krilla::surface::Surface;
     use krilla::Page;
     use krilla_macros::{snapshot2, visreg2};
     use tiny_skia_path::NormalizedF32;
+
+    use crate::{rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1};
 
     #[visreg2(all)]
     fn linear_gradient_pad(surface: &mut Surface) {
@@ -160,12 +161,13 @@ mod shading {
 }
 
 mod tiling {
-    use crate::{basic_pattern_stream, rect_to_path};
     use krilla::paint::Pattern;
     use krilla::path::Fill;
     use krilla::surface::Surface;
     use krilla::NormalizedF32;
     use krilla_macros::visreg2;
+
+    use crate::{basic_pattern_stream, rect_to_path};
 
     #[visreg2(all)]
     fn tiling_pattern_basic(surface: &mut Surface) {

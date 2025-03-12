@@ -1,12 +1,3 @@
-use krilla_macros::{snapshot, snapshot2};
-use tiny_skia_path::{Point, Rect, Size};
-
-use crate::{
-    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,
-    red_fill, settings_13, settings_15, settings_19, settings_24, settings_7, settings_8,
-    settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
-};
-use crate::{Document, SerializeSettings};
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::configure::ValidationError;
@@ -21,6 +12,15 @@ use krilla::surface::TextDirection;
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, TableHeaderScope, Tag, TagGroup, TagTree,
 };
+use krilla_macros::{snapshot, snapshot2};
+use tiny_skia_path::{Point, Rect, Size};
+
+use crate::{
+    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,
+    red_fill, settings_13, settings_15, settings_19, settings_24, settings_7, settings_8,
+    settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+};
+use crate::{Document, SerializeSettings};
 
 fn pdfa_document() -> Document {
     Document::new_with(settings_7())

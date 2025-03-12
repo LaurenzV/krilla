@@ -14,8 +14,6 @@ use crate::surface::Location;
 use crate::util::NameExt;
 use crate::Data;
 
-pub use pdf_writer::types::AssociationKind;
-
 /// An error while embedding the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum EmbedError {

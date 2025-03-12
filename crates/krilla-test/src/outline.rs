@@ -1,10 +1,10 @@
+use krilla::destination::XyzDestination;
+use krilla::document::{Document, PageSettings};
+use krilla::outline::{Outline, OutlineNode};
 use krilla_macros::{snapshot, snapshot2};
 use tiny_skia_path::Point;
 
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};
-use krilla::destination::XyzDestination;
-use krilla::document::{Document, PageSettings};
-use krilla::outline::{Outline, OutlineNode};
 
 #[snapshot2(document)]
 fn outline_simple(d: &mut Document) {

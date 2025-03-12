@@ -1,10 +1,11 @@
-use crate::{
-    load_custom_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH,
-};
 use krilla::surface::Surface;
 use krilla::{Document, Image, Page};
 use krilla_macros::{snapshot2, visreg2};
 use tiny_skia_path::Size;
+
+use crate::{
+    load_custom_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH,
+};
 
 fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
     let image = load_fn(name);

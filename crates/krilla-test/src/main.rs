@@ -1,24 +1,14 @@
 //! Test utilities.
 
-use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
-use difference::{Changeset, Difference};
-use once_cell::sync::Lazy;
-use oxipng::{InFile, OutFile};
-use sitro::{
-    render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_poppler, render_quartz,
-    RenderOptions, RenderedDocument, RenderedPage, Renderer,
-};
-use skrifa::instance::{LocationRef, Size};
-use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
 use std::cmp::max;
 use std::env;
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, OnceLock};
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
+use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
+use difference::{Changeset, Difference};
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb, ICCProfile};
@@ -34,6 +24,16 @@ use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
 use krilla::Data;
 use krilla::{SerializeSettings, SvgSettings};
+use once_cell::sync::Lazy;
+use oxipng::{InFile, OutFile};
+use sitro::{
+    render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_poppler, render_quartz,
+    RenderOptions, RenderedDocument, RenderedPage, Renderer,
+};
+use skrifa::instance::{LocationRef, Size};
+use skrifa::raw::TableProvider;
+use skrifa::{GlyphId, MetadataProvider};
+use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod annotation;
 mod color;

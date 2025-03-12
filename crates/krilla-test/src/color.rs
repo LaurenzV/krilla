@@ -1,8 +1,9 @@
-use crate::{cmyk_fill, rect_to_path, red_fill};
 use krilla::path::Fill;
 use krilla::surface::Surface;
 use krilla::Page;
 use krilla_macros::{snapshot2, visreg2};
+
+use crate::{cmyk_fill, rect_to_path, red_fill};
 
 #[snapshot2(single_page, settings_18)]
 fn icc_v2_srgb(page: &mut Page) {

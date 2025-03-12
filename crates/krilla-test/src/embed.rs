@@ -1,12 +1,12 @@
-use krilla_macros::snapshot2;
-
-use crate::Document;
-use crate::{settings_13, settings_23, ASSETS_PATH};
 use krilla::configure::ValidationError;
 use krilla::embed::{AssociationKind, EmbedError, EmbeddedFile};
 use krilla::error::KrillaError;
 use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
+use krilla_macros::snapshot2;
+
+use crate::Document;
+use crate::{settings_13, settings_23, ASSETS_PATH};
 
 fn file_1() -> EmbeddedFile {
     let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
@@ -17,6 +17,7 @@ fn file_1() -> EmbeddedFile {
         association_kind: AssociationKind::Supplement,
         data: data.into(),
         compress: false,
+        location: None,
     }
 }
 
@@ -30,6 +31,7 @@ fn file_2() -> EmbeddedFile {
         association_kind: AssociationKind::Supplement,
         data: data.into(),
         compress: false,
+        location: None,
     }
 }
 
@@ -43,6 +45,7 @@ fn file_3() -> EmbeddedFile {
         association_kind: AssociationKind::Unspecified,
         data: data.into(),
         compress: false,
+        location: None,
     }
 }
 
@@ -117,8 +120,8 @@ fn pdf_a3_missing_fields() {
     assert_eq!(
         d.finish(),
         Err(KrillaError::ValidationError(vec![
-            ValidationError::EmbeddedFile(EmbedError::MissingDate),
-            ValidationError::EmbeddedFile(EmbedError::MissingDescription)
+            ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
+            ValidationError::EmbeddedFile(EmbedError::MissingDescription, None)
         ]))
     )
 }
@@ -137,7 +140,7 @@ fn pdf_a2_embedded_file() {
     assert_eq!(
         d.finish(),
         Err(KrillaError::ValidationError(vec![
-            ValidationError::EmbeddedFile(EmbedError::Existence),
+            ValidationError::EmbeddedFile(EmbedError::Existence, None),
         ]))
     )
 }

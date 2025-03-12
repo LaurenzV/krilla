@@ -1,11 +1,12 @@
-use crate::{green_fill, rect_to_path, red_fill};
-use crate::{settings_1, LinkAction};
-use crate::{LinkAnnotation, Target};
 use krilla::destination::XyzDestination;
 use krilla::document::{Document, PageSettings};
 use krilla::Page;
 use krilla_macros::snapshot2;
 use tiny_skia_path::{Point, Rect};
+
+use crate::{green_fill, rect_to_path, red_fill};
+use crate::{settings_1, LinkAction};
+use crate::{LinkAnnotation, Target};
 
 #[snapshot2(single_page)]
 fn annotation_to_link(page: &mut Page) {

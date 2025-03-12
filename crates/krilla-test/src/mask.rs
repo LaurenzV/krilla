@@ -1,10 +1,11 @@
-use crate::{basic_mask, rect_to_path};
 use krilla::color::rgb;
 use krilla::mask::MaskType;
 use krilla::path::Fill;
 use krilla::surface::Surface;
 use krilla::NormalizedF32;
 use krilla_macros::visreg2;
+
+use crate::{basic_mask, rect_to_path};
 
 fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);

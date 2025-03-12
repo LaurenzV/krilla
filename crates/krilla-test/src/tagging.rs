@@ -1,4 +1,3 @@
-use crate::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
@@ -8,6 +7,8 @@ use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
 use krilla::{Document, Font, SvgSettings};
 use krilla_macros::snapshot2;
 use tiny_skia_path::{Rect, Size, Transform};
+
+use crate::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
 
 pub trait SurfaceExt {
     fn fill_text_(&mut self, y: f32, content: &str);

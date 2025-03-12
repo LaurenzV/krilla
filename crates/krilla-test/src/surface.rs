@@ -1,3 +1,9 @@
+use krilla::font::Font;
+use krilla::page::Page;
+use krilla::paint::{LinearGradient, Paint, SpreadMethod};
+use krilla::path::{Fill, Stroke};
+use krilla::surface::Surface;
+use krilla::surface::TextDirection;
 use krilla_macros::{snapshot2, visreg2};
 use tiny_skia_path::{Point, Size, Transform};
 
@@ -6,12 +12,6 @@ use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, FONTDB,
     NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
 };
-use krilla::font::Font;
-use krilla::page::Page;
-use krilla::paint::{LinearGradient, Paint, SpreadMethod};
-use krilla::path::{Fill, Stroke};
-use krilla::surface::Surface;
-use krilla::surface::TextDirection;
 
 #[visreg2]
 fn text_direction_ltr(surface: &mut Surface) {

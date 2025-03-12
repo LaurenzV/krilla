@@ -1,7 +1,6 @@
-use krilla_macros::snapshot2;
-
 use krilla::metadata::{DateTime, Metadata};
 use krilla::Document;
+use krilla_macros::snapshot2;
 
 fn metadata_impl(document: &mut Document) {
     let date = DateTime::new(2024)

@@ -1,7 +1,8 @@
 mod bitmap {
-    use crate::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
     use krilla::Document;
     use krilla_macros::visreg2;
+
+    use crate::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
 
     #[visreg2(document, all)]
     fn noto_color_emoji_cbdt(document: &mut Document) {
@@ -20,15 +21,16 @@ mod bitmap {
 }
 
 mod colr {
-    use crate::{
-        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
-    };
     use krilla::font::GlyphId;
     use krilla::path::{Fill, Stroke};
     use krilla::surface::{Surface, TextDirection};
     use krilla::{Document, Font};
     use krilla_macros::visreg2;
     use tiny_skia_path::Point;
+
+    use crate::{
+        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
+    };
 
     #[visreg2(document)]
     fn colr_test_glyphs(document: &mut Document) {
@@ -133,11 +135,12 @@ mod colr {
 }
 
 mod svg {
-    use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
     use krilla::surface::{Surface, TextDirection};
     use krilla::{Document, Font};
     use krilla_macros::visreg2;
     use tiny_skia_path::Point;
+
+    use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
 
     #[visreg2(document, all)]
     fn twitter_color_emoji(document: &mut Document) {
@@ -181,12 +184,13 @@ mod svg {
 }
 
 mod cid {
-    use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
     use krilla::path::Fill;
     use krilla::surface::{Surface, TextDirection};
     use krilla::Font;
     use krilla_macros::{visreg, visreg2};
     use tiny_skia_path::Point;
+
+    use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
 
     #[visreg2(all)]
     fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
@@ -277,12 +281,13 @@ mod cid {
 }
 
 mod type3 {
-    use crate::TWITTER_COLOR_EMOJI;
     use krilla::path::Fill;
     use krilla::surface::TextDirection;
     use krilla::{Font, Page};
     use krilla_macros::snapshot2;
     use tiny_skia_path::Point;
+
+    use crate::TWITTER_COLOR_EMOJI;
 
     #[snapshot2(single_page, settings_1)]
     fn type3_color_glyphs(page: &mut Page) {

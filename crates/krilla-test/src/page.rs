@@ -1,9 +1,11 @@
-use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
+use std::num::NonZeroUsize;
+
 use krilla::page::{NumberingStyle, PageLabel};
 use krilla::{Document, PageSettings};
 use krilla_macros::{snapshot2, visreg, visreg2};
-use std::num::NonZeroUsize;
 use tiny_skia_path::Rect;
+
+use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
 #[snapshot2(document)]
 fn page_label_complex(d: &mut Document) {

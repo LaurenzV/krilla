@@ -1,10 +1,10 @@
+use krilla::annotation::{LinkAnnotation, Target};
+use krilla::destination::{NamedDestination, XyzDestination};
 use krilla_macros::snapshot2;
 use tiny_skia_path::{Point, Rect};
 
 use crate::Document;
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};
-use krilla::annotation::{LinkAnnotation, Target};
-use krilla::destination::{NamedDestination, XyzDestination};
 
 #[snapshot2(document)]
 fn named_destination_basic(d: &mut Document) {
