@@ -423,7 +423,7 @@ impl Glyph for KrillaGlyph {
 
 impl KrillaGlyph {
     /// Create a new Krilla glyph.
-    /// 
+    ///
     /// Important: `x_advance`, `x_offset`, `y_offset` and `y_advance`
     /// need to be normalized, i.e. divided by the units per em!
     pub fn new(

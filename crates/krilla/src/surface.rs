@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, UnicodeBuffer};
 
-use crate::content::{unit_normalize, ContentBuilder};
+use crate::content::ContentBuilder;
 #[cfg(feature = "simple-text")]
 use crate::font::GlyphId;
 #[cfg(feature = "simple-text")]
@@ -188,13 +188,12 @@ impl<'a> Surface<'a> {
         font_size: f32,
         paint_mode: PaintMode,
     ) {
-        let normalize = |val| unit_normalize(font_size, val);
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
             let mut base_transform = tiny_skia_path::Transform::from_translate(
-                cur_x + normalize(glyph.x_offset(font_size)) * font_size,
-                y - normalize(glyph.y_offset(font_size)) * font_size,
+                cur_x + glyph.x_offset(font_size),
+                y - glyph.y_offset(font_size),
             );
             base_transform = base_transform.pre_concat(tiny_skia_path::Transform::from_scale(
                 font_size / font.units_per_em(),
@@ -208,7 +207,7 @@ impl<'a> Surface<'a> {
                 self,
             );
 
-            cur_x += normalize(glyph.x_advance(font_size)) * font_size;
+            cur_x += glyph.x_advance(font_size);
         }
     }
 
@@ -272,14 +271,7 @@ impl<'a> Surface<'a> {
     ) {
         let glyphs = naive_shape(text, font.clone(), direction);
 
-        self.fill_glyphs(
-            start,
-            &glyphs,
-            font,
-            text,
-            font_size,
-            outlined,
-        );
+        self.fill_glyphs(start, &glyphs, font, text, font_size, outlined);
     }
 
     /// Draw a sequence of glyphs using the current stroke.
@@ -338,14 +330,7 @@ impl<'a> Surface<'a> {
     ) {
         let glyphs = naive_shape(text, font.clone(), direction);
 
-        self.stroke_glyphs(
-            start,
-            &glyphs,
-            font,
-            text,
-            font_size,
-            outlined,
-        );
+        self.stroke_glyphs(start, &glyphs, font, text, font_size, outlined);
     }
 
     /// Set the location that should be assumed for subsequent operations.

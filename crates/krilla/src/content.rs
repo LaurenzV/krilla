@@ -398,15 +398,14 @@ impl ContentBuilder {
                 .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode))
                 .unwrap();
 
-            let normalize =
-                |v| unit_normalize(size, v);
+            let scale = |val| val * pdf_font.units_per_em();
 
-            let x_advance = normalize(glyph.x_advance(size)) * pdf_font.units_per_em();
+            let x_advance = scale(glyph.x_advance(1.0));
             let font_advance = pdf_font
                 .font()
                 .advance_width(glyph.glyph_id())
-                .map(|n| (n / pdf_font.font().units_per_em()) * pdf_font.units_per_em());
-            let x_offset = normalize(glyph.x_offset(size)) * pdf_font.units_per_em();
+                .map(|n| scale(n / pdf_font.font().units_per_em()));
+            let x_offset = scale(glyph.x_offset(1.0));
 
             adjustment += x_offset;
 
@@ -430,7 +429,7 @@ impl ContentBuilder {
 
             adjustment -= x_offset;
             // cur_x/cur_y and glyph metrics are in user space units.
-            *cur_x += normalize(glyph.x_advance(size)) * size;
+            *cur_x += glyph.x_advance(size);
 
             sc.reset_location();
         }
@@ -928,13 +927,7 @@ impl ContentBuilder {
 // not too critical if it doesn't work in edge cases. What matters most is that the performance
 // is good, since this code is on the hot path in text-intensive PDFs.
 // TODO: Improve this so that `zalgo_text` test case shows up fully in the reference image.
-fn get_glyphs_bbox(
-    glyphs: &[impl Glyph],
-    x: f32,
-    y: f32,
-    size: f32,
-    font: Font,
-) -> Rect {
+fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font) -> Rect {
     let font_bbox = font.bbox();
     let (mut bl, mut bt, mut br, mut bb) = font_bbox
         .transform(tiny_skia_path::Transform::from_scale(
@@ -947,13 +940,12 @@ fn get_glyphs_bbox(
 
     let mut x = x;
     let mut y = y;
-    let normalize = |v| unit_normalize(size, v);
 
     for glyph in glyphs {
-        let xo = normalize(glyph.x_offset(size)) * size;
-        let xa = normalize(glyph.x_advance(size)) * size;
-        let yo = normalize(glyph.y_offset(size)) * size;
-        let ya = normalize(glyph.y_advance(size)) * size;
+        let xo = glyph.x_offset(size);
+        let xa = glyph.x_advance(size);
+        let yo = glyph.y_offset(size);
+        let ya = glyph.y_advance(size);
 
         x += xa;
         y -= ya;
@@ -965,10 +957,6 @@ fn get_glyphs_bbox(
     }
 
     Rect::from_ltrb(bl, bt, br, bb).unwrap()
-}
-
-pub(crate) fn unit_normalize(size: f32, val: f32) -> f32 {
-    val / size
 }
 
 pub(crate) trait PdfFont {
