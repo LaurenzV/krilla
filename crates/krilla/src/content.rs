@@ -11,7 +11,7 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
+use tiny_skia_path::{Path, PathSegment, Point, Rect, Transform};
 
 use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
@@ -30,13 +30,13 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::surface::Location;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::{resource, NormalizedF32};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,

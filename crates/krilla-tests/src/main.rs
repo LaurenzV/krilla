@@ -37,7 +37,7 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
+use tiny_skia_path::{Path, PathBuilder, Point, Rect, Transform};
 
 mod annotation;
 mod color;

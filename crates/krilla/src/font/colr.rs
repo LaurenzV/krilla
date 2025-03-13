@@ -6,7 +6,7 @@ use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::MetadataProvider;
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
+use tiny_skia_path::{Path, PathBuilder, Transform};
 
 use crate::font::outline::OutlineBuilder;
 use crate::font::{Font, GlyphId};
@@ -16,6 +16,7 @@ use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGrad
 use crate::path::{Fill, FillRule};
 use crate::surface::BlendMode;
 use crate::surface::Surface;
+use crate::NormalizedF32;
 
 /// Draw a COLR-based glyph on a surface.
 pub(crate) fn draw_glyph(
@@ -138,10 +139,10 @@ impl ColrBuilder {
 
             Some((
                 rgb::Color::new(color.red, color.green, color.blue),
-                NormalizedF32::new(alpha * color.alpha as f32 / 255.0).unwrap(),
+                NormalizedF32::new(alpha * color.alpha as f32 / 255.0),
             ))
         } else {
-            Some((self.context_color, NormalizedF32::new(alpha).unwrap()))
+            Some((self.context_color, NormalizedF32::new(alpha)))
         }
     }
 
@@ -152,7 +153,7 @@ impl ColrBuilder {
             let (color, alpha) = self.palette_index_to_color(stop.palette_index, stop.alpha)?;
 
             converted_stops.push(Stop {
-                offset: NormalizedF32::new(stop.offset).unwrap(),
+                offset: NormalizedF32::new(stop.offset),
                 color,
                 opacity: alpha,
             })

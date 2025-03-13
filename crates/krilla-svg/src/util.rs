@@ -6,7 +6,7 @@ use krilla::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod
 use krilla::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use krilla::stream::StreamBuilder;
 use krilla::surface::BlendMode;
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Rect, Transform};
+use tiny_skia_path::{Path, PathBuilder, Rect, Transform};
 
 use crate::{group, ProcessContext};
 

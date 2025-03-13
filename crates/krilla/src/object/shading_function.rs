@@ -7,7 +7,7 @@ use std::sync::Arc;
 use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
-use tiny_skia_path::{NormalizedF32, Point, Rect, Transform};
+use tiny_skia_path::{Point, Rect, Transform};
 
 use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::configure::ValidationError;
@@ -18,6 +18,7 @@ use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource::{self, Resource};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::util::{NameExt, RectExt, RectWrapper};
+use crate::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
@@ -345,7 +346,7 @@ fn select_axial_radial_function(
     let mut stops = properties.stops.clone();
 
     if let Some(first) = stops.first() {
-        if first.offset != 0.0 {
+        if first.offset.get() != 0.0 {
             let mut new_stop = *first;
             new_stop.offset = NormalizedF32::ZERO;
             stops.insert(0, new_stop);
@@ -353,7 +354,7 @@ fn select_axial_radial_function(
     }
 
     if let Some(last) = stops.last() {
-        if last.offset != 1.0 {
+        if last.offset.get() != 1.0 {
             let mut new_stop = *last;
             new_stop.offset = NormalizedF32::ONE;
             stops.push(new_stop);
