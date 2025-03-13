@@ -21,13 +21,13 @@ use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::{FiniteF32, Rect};
+use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
 use crate::object::font::PaintMode;
 use crate::surface::Surface;
-use crate::util::{Prehashed, RectWrapper};
-use crate::{Data, Transform};
+use crate::util::Prehashed;
+use crate::{Data, Rect, Transform};
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;
@@ -141,7 +141,7 @@ impl Font {
     }
 
     pub(crate) fn bbox(&self) -> Rect {
-        self.0.font_info.global_bbox.0
+        self.0.font_info.global_bbox
     }
 
     // For now, location will always be default, until we support variable fonts.
@@ -190,7 +190,7 @@ pub struct FontInfo {
     checksum: u32,
     location: Location,
     units_per_em: u16,
-    global_bbox: RectWrapper,
+    global_bbox: Rect,
     postscript_name: Option<String>,
     ascent: FiniteF32,
     allow_color: bool,
@@ -275,7 +275,7 @@ impl FontInfo {
             weight,
             stretch,
             italic_angle,
-            global_bbox: RectWrapper(global_bbox),
+            global_bbox,
         })
     }
 }

@@ -10,9 +10,10 @@ use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
-use tiny_skia_path::{FiniteF32, Path, Rect};
+use tiny_skia_path::Path;
 
 use crate::path::{LineCap, LineJoin, Stroke};
+use crate::Rect;
 
 pub(crate) trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -78,10 +79,10 @@ impl RectExt for Rect {
 
     fn to_pdf_rect(&self) -> pdf_writer::Rect {
         pdf_writer::Rect::new(
-            self.x(),
-            self.y(),
-            self.x() + self.width(),
-            self.y() + self.height(),
+            self.left(),
+            self.top(),
+            self.left() + self.width(),
+            self.top() + self.height(),
         )
     }
 }
@@ -90,7 +91,7 @@ pub(crate) fn calculate_stroke_bbox(stroke: &Stroke, path: &Path) -> Option<Rect
     let stroke = stroke.clone().into_tiny_skia();
 
     if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
-        return stroked_path.compute_tight_bounds();
+        return Some(Rect::from_tsp(stroked_path.compute_tight_bounds()?));
     }
 
     None
@@ -188,31 +189,8 @@ where
     }
 }
 
-// TODO: Remove with new tiny-skia release
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub(crate) struct RectWrapper(pub Rect);
-
-impl Deref for RectWrapper {
-    type Target = Rect;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Eq for RectWrapper {}
-
-impl Hash for RectWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        FiniteF32::new(self.0.left()).unwrap().hash(state);
-        FiniteF32::new(self.0.top()).unwrap().hash(state);
-        FiniteF32::new(self.0.right()).unwrap().hash(state);
-        FiniteF32::new(self.0.bottom()).unwrap().hash(state);
-    }
-}
-
 pub(crate) trait HashExt {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H);
+    fn hash<H: Hasher>(&self, state: &mut H);
 }
 
 pub(crate) trait SipHashable {

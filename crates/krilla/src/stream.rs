@@ -29,15 +29,13 @@ use std::fmt::Write;
 use std::ops::DerefMut;
 
 use pdf_writer::{Array, Dict, Name};
-use tiny_skia_path::Rect;
 
 use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
 use crate::surface::Surface;
-use crate::util::RectWrapper;
-use crate::{SerializeSettings, Transform};
+use crate::{Rect, SerializeSettings, Transform};
 
 /// A stream.
 ///
@@ -47,7 +45,7 @@ use crate::{SerializeSettings, Transform};
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Stream {
     pub(crate) content: Vec<u8>,
-    pub(crate) bbox: RectWrapper,
+    pub(crate) bbox: Rect,
     // Important: Each object that uses a stream must ensure to pass on the validation
     // errors to the `SerializeContext` at some point. Currently, only `Mask`,
     // `TilingPattern`, `InternalPage` and `XObject` require that.
@@ -64,7 +62,7 @@ impl Stream {
     ) -> Self {
         Self {
             content,
-            bbox: RectWrapper(bbox),
+            bbox,
             validation_errors,
             resource_dictionary,
         }
@@ -77,7 +75,7 @@ impl Stream {
     pub(crate) fn empty() -> Self {
         Self {
             content: vec![],
-            bbox: RectWrapper(Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap()),
+            bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             validation_errors: vec![],
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
         }

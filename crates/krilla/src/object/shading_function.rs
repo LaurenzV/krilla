@@ -7,7 +7,7 @@ use std::sync::Arc;
 use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
-use tiny_skia_path::{Point, Rect};
+use tiny_skia_path::Point;
 
 use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::configure::ValidationError;
@@ -17,8 +17,8 @@ use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource::{self, Resource};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
-use crate::util::{NameExt, RectExt, RectWrapper};
-use crate::{NormalizedF32, Transform};
+use crate::util::{NameExt, RectExt};
+use crate::{NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
@@ -64,7 +64,7 @@ pub(crate) struct PostScriptGradient {
     // Only used for sweep gradient
     pub(crate) cy: f32,
     pub(crate) stops: Vec<Stop>,
-    pub(crate) domain: RectWrapper,
+    pub(crate) domain: Rect,
     pub(crate) spread_method: SpreadMethod,
     pub(crate) gradient_type: GradientType,
     pub(crate) anti_alias: bool,
@@ -118,11 +118,7 @@ fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
     // We need to make sure the shading covers the whole bbox of the object after
     // the transform as been applied. In order to know that, we need to calculate the
     // resulting bbox from the inverted transform.
-    bbox.expand(
-        &bbox
-            .transform(shading_transform.to_tsp().invert().unwrap())
-            .unwrap(),
-    );
+    bbox.expand(&bbox.transform(shading_transform.invert().unwrap()).unwrap());
     bbox
 }
 
@@ -167,7 +163,7 @@ impl GradientPropertiesExt for LinearGradient {
                     cx: 0.0,
                     cy: 0.0,
                     stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
-                    domain: RectWrapper(get_expanded_bbox(bbox, self.transform.pre_concat(ts))),
+                    domain: get_expanded_bbox(bbox, self.transform.pre_concat(ts)),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
                     anti_alias: self.anti_alias,
@@ -192,7 +188,7 @@ impl GradientPropertiesExt for SweepGradient {
                 cx: self.cx,
                 cy: self.cy,
                 stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
-                domain: RectWrapper(get_expanded_bbox(bbox, transform)),
+                domain: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
                 anti_alias: self.anti_alias,

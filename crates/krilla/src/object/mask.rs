@@ -1,7 +1,6 @@
 //! Alpha and luminosity masks.
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use tiny_skia_path::Rect;
 
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
@@ -9,8 +8,7 @@ use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::util::RectWrapper;
-use crate::{resource, Transform};
+use crate::{resource, Rect, Transform};
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]
@@ -23,7 +21,7 @@ pub struct Mask {
     /// transparencies, we create a custom mask where we call the shading operator. In this case,
     /// we want to manually set the bbox of the underlying XObject to match the shape that the
     /// gradient is being applied to.
-    custom_bbox: Option<RectWrapper>,
+    custom_bbox: Option<Rect>,
 }
 
 impl Mask {
@@ -72,7 +70,7 @@ impl Mask {
         Some(Self {
             stream: shading_stream,
             mask_type: MaskType::Luminosity,
-            custom_bbox: Some(RectWrapper(bbox)),
+            custom_bbox: Some(bbox),
         })
     }
 }
@@ -104,12 +102,8 @@ impl Cacheable for Mask {
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
         let mut chunk = Chunk::new();
 
-        let x_object = sc.register_cacheable(XObject::new(
-            self.stream,
-            false,
-            true,
-            self.custom_bbox.map(|c| c.0),
-        ));
+        let x_object =
+            sc.register_cacheable(XObject::new(self.stream, false, true, self.custom_bbox));
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
