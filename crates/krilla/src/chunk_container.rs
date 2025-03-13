@@ -192,7 +192,6 @@ impl ChunkContainer {
                 sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
 
-
             if let Some(st) = &self.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
                 let mut mark_info = catalog.mark_info();
