@@ -2,7 +2,7 @@ use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::configure::ValidationError;
 use krilla::error::KrillaError;
-use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
+use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::metadata::Metadata;
 use krilla::outline::Outline;
 use krilla::page::Page;
@@ -220,7 +220,6 @@ fn validation_pdfa2u_text_with_location() {
         font.clone(),
         &text,
         20.0,
-        GlyphUnits::UserSpace,
         false,
     );
     surface.finish();
@@ -352,7 +351,6 @@ fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
         font.clone(),
         text,
         20.0,
-        GlyphUnits::UnitsPerEm,
         false,
     );
     surface.finish();

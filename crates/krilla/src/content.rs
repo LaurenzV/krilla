@@ -13,7 +13,7 @@ use tiny_skia_path::{Path, PathSegment, Rect};
 
 use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
-use crate::font::{Font, Glyph, GlyphId, GlyphUnits};
+use crate::font::{Font, Glyph, GlyphId};
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::graphics_state::GraphicsStates;
@@ -23,7 +23,7 @@ use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::{CoveredGlyph, Type3Font};
-use crate::object::font::{FontContainer, FontIdentifier, PDFGlyph, PaintMode};
+use crate::object::font::{FontContainer, FontIdentifier, PDFGlyph, PaintMode, PDF_UNITS_PER_EM};
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
@@ -260,7 +260,6 @@ impl ContentBuilder {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits,
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -277,7 +276,7 @@ impl ContentBuilder {
             sc,
             TextRenderingMode::Fill,
             |sb, sc| {
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
                 sb.expand_bbox(bbox);
                 sb.content_set_fill_properties(bbox, &fill, sc)
             },
@@ -286,7 +285,6 @@ impl ContentBuilder {
             PaintMode::Fill(&fill),
             text,
             font_size,
-            glyph_units,
         );
 
         self.graphics_states.restore_state();
@@ -302,7 +300,6 @@ impl ContentBuilder {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits,
     ) {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
@@ -323,7 +320,7 @@ impl ContentBuilder {
             TextRenderingMode::Stroke,
             |sb, sc| {
                 // TODO: Bbox should also account for stroke.
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone(), glyph_units);
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
                 sb.expand_bbox(bbox);
                 sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
 
@@ -346,7 +343,6 @@ impl ContentBuilder {
             PaintMode::Stroke(&stroke),
             text,
             font_size,
-            glyph_units,
         );
 
         self.graphics_states.restore_state();
@@ -367,7 +363,6 @@ impl ContentBuilder {
         paint_mode: PaintMode,
         glyphs: &[impl Glyph],
         text: &str,
-        glyph_units: GlyphUnits,
     ) {
         let font_name = self
             .rd_builder
@@ -403,15 +398,14 @@ impl ContentBuilder {
                 .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode))
                 .unwrap();
 
-            let normalize =
-                |v| unit_normalize(glyph_units, pdf_font.font().units_per_em(), size, v);
+            let scale = |val| val * pdf_font.units_per_em();
 
-            let x_advance = normalize(glyph.x_advance()) * pdf_font.units_per_em();
+            let x_advance = scale(glyph.x_advance(1.0));
             let font_advance = pdf_font
                 .font()
                 .advance_width(glyph.glyph_id())
-                .map(|n| (n / pdf_font.font().units_per_em()) * pdf_font.units_per_em());
-            let x_offset = normalize(glyph.x_offset()) * pdf_font.units_per_em();
+                .map(|n| scale(n / pdf_font.font().units_per_em()));
+            let x_offset = scale(glyph.x_offset(1.0));
 
             adjustment += x_offset;
 
@@ -423,7 +417,7 @@ impl ContentBuilder {
                 }
 
                 // Adjustment is always in 1000 units, even for Type3 fonts.
-                items.adjust(-(adjustment / pdf_font.units_per_em() * 1000.0));
+                items.adjust(-(adjustment / pdf_font.units_per_em() * PDF_UNITS_PER_EM));
                 adjustment = 0.0;
             }
 
@@ -435,7 +429,7 @@ impl ContentBuilder {
 
             adjustment -= x_offset;
             // cur_x/cur_y and glyph metrics are in user space units.
-            *cur_x += normalize(glyph.x_advance()) * size;
+            *cur_x += glyph.x_advance(size);
 
             sc.reset_location();
         }
@@ -461,7 +455,6 @@ impl ContentBuilder {
         paint_mode: PaintMode,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits,
     ) {
         self.apply_isolated_op(
             |_, _| {},
@@ -505,15 +498,6 @@ impl ContentBuilder {
                             .get_from_identifier(glyph_group.font_identifier.clone())
                             .unwrap();
 
-                        let normalize = |v| {
-                            unit_normalize(
-                                glyph_units,
-                                pdf_font.font().units_per_em(),
-                                font_size,
-                                v,
-                            )
-                        };
-
                         if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
                             sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
                         } else {
@@ -524,17 +508,16 @@ impl ContentBuilder {
                         sb.encode_consecutive_glyph_run(
                             sc,
                             &mut cur_x,
-                            cur_y - normalize(glyph_group.y_offset) * font_size,
+                            cur_y - glyph_group.y_offset * font_size,
                             glyph_group.font_identifier,
                             pdf_font,
                             font_size,
                             paint_mode,
                             glyph_group.glyphs,
                             text,
-                            glyph_units,
                         );
 
-                        cur_y -= normalize(glyph_group.y_advance) * font_size;
+                        cur_y -= glyph_group.y_advance * font_size;
                     }
 
                     if fragment.actual_text().is_some() {
@@ -944,14 +927,7 @@ impl ContentBuilder {
 // not too critical if it doesn't work in edge cases. What matters most is that the performance
 // is good, since this code is on the hot path in text-intensive PDFs.
 // TODO: Improve this so that `zalgo_text` test case shows up fully in the reference image.
-fn get_glyphs_bbox(
-    glyphs: &[impl Glyph],
-    x: f32,
-    y: f32,
-    size: f32,
-    font: Font,
-    glyph_units: GlyphUnits,
-) -> Rect {
+fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font) -> Rect {
     let font_bbox = font.bbox();
     let (mut bl, mut bt, mut br, mut bb) = font_bbox
         .transform(tiny_skia_path::Transform::from_scale(
@@ -964,13 +940,12 @@ fn get_glyphs_bbox(
 
     let mut x = x;
     let mut y = y;
-    let normalize = |v| unit_normalize(glyph_units, font.units_per_em(), size, v);
 
     for glyph in glyphs {
-        let xo = normalize(glyph.x_offset()) * size;
-        let xa = normalize(glyph.x_advance()) * size;
-        let yo = normalize(glyph.y_offset()) * size;
-        let ya = normalize(glyph.y_advance()) * size;
+        let xo = glyph.x_offset(size);
+        let xa = glyph.x_advance(size);
+        let yo = glyph.y_offset(size);
+        let ya = glyph.y_advance(size);
 
         x += xa;
         y -= ya;
@@ -982,14 +957,6 @@ fn get_glyphs_bbox(
     }
 
     Rect::from_ltrb(bl, bt, br, bb).unwrap()
-}
-
-pub(crate) fn unit_normalize(glyph_units: GlyphUnits, upem: f32, size: f32, val: f32) -> f32 {
-    match glyph_units {
-        GlyphUnits::Normalized => val,
-        GlyphUnits::UnitsPerEm => val / upem,
-        GlyphUnits::UserSpace => val / size,
-    }
 }
 
 pub(crate) trait PdfFont {
@@ -1299,7 +1266,9 @@ where
 {
     font_identifier: FontIdentifier,
     glyphs: &'a [T],
+    // This will be stored in normalized form.
     y_offset: f32,
+    // This will be stored in normalized form.
     y_advance: f32,
 }
 
@@ -1388,8 +1357,8 @@ where
 
                 GlyphProps {
                     font_identifier,
-                    y_offset: g.y_offset(),
-                    y_advance: g.y_advance(),
+                    y_offset: g.y_offset(1.0),
+                    y_advance: g.y_advance(1.0),
                 }
             }
 

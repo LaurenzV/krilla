@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use krilla::color::rgb;
-use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
+use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::geom::{NormalizedF32, Point};
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
@@ -105,7 +105,6 @@ fn main() {
                                 krilla_font.clone(),
                                 &text,
                                 font_size,
-                                GlyphUnits::UserSpace,
                                 false,
                             );
                             glyphs.clear();
@@ -118,9 +117,9 @@ fn main() {
                     // Add the current glyph to our buffer of glyphs.
                     glyphs.push(KrillaGlyph::new(
                         GlyphId::new(glyph.id as u32),
-                        glyph.advance,
-                        glyph.x,
-                        glyph.y,
+                        glyph.advance / font_size,
+                        glyph.x / font_size,
+                        glyph.y / font_size,
                         0.0,
                         cluster.text_range(),
                         None,
@@ -143,7 +142,6 @@ fn main() {
                     krilla_font.clone(),
                     &text,
                     font_size,
-                    GlyphUnits::UserSpace,
                     false,
                 );
             }

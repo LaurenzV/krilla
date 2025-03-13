@@ -17,7 +17,7 @@ use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb, ICCProfile};
 use krilla::configure::{Configuration, PdfVersion, Validator};
 use krilla::document::{Document, PageSettings};
-use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
+use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::{Stop, Stops};
@@ -684,7 +684,6 @@ pub fn all_glyphs_to_pdf(
             font.clone(),
             text,
             size as f32,
-            GlyphUnits::UserSpace,
             false,
         );
         surface.pop();
