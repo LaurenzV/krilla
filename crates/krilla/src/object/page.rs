@@ -3,7 +3,6 @@
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
-pub use pdf_writer::types::NumberingStyle;
 use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
@@ -129,6 +128,22 @@ impl Drop for Page<'_> {
         self.sc.register_page(page);
     }
 }
+
+/// The numbering style of a page label.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum NumberingStyle {
+    /// Arabic numerals.
+    Arabic,
+    /// Lowercase Roman numerals.
+    LowerRoman,
+    /// Uppercase Roman numerals.
+    UpperRoman,
+    /// Lowercase letters (a-z, then aa-zz, ...).
+    LowerAlpha,
+    /// Uppercase letters (A-Z, then AA-ZZ, ...).
+    UpperAlpha,
+}
+
 
 pub(crate) struct InternalPage {
     pub stream_ref: Ref,
@@ -309,7 +324,7 @@ impl PageLabel {
             .start::<pdf_writer::writers::PageLabel>();
 
         if let Some(style) = self.style {
-            label.style(style);
+            label.style(style.into());
         }
 
         if let Some(prefix) = &self.prefix {

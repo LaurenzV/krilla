@@ -557,29 +557,6 @@ pub enum BlendMode {
     Luminosity,
 }
 
-impl From<BlendMode> for pdf_writer::types::BlendMode {
-    fn from(value: BlendMode) -> Self {
-        match value {
-            BlendMode::Normal => pdf_writer::types::BlendMode::Normal,
-            BlendMode::Multiply => pdf_writer::types::BlendMode::Multiply,
-            BlendMode::Screen => pdf_writer::types::BlendMode::Screen,
-            BlendMode::Overlay => pdf_writer::types::BlendMode::Overlay,
-            BlendMode::Darken => pdf_writer::types::BlendMode::Darken,
-            BlendMode::Lighten => pdf_writer::types::BlendMode::Lighten,
-            BlendMode::ColorDodge => pdf_writer::types::BlendMode::ColorDodge,
-            BlendMode::ColorBurn => pdf_writer::types::BlendMode::ColorBurn,
-            BlendMode::HardLight => pdf_writer::types::BlendMode::HardLight,
-            BlendMode::SoftLight => pdf_writer::types::BlendMode::SoftLight,
-            BlendMode::Difference => pdf_writer::types::BlendMode::Difference,
-            BlendMode::Exclusion => pdf_writer::types::BlendMode::Exclusion,
-            BlendMode::Hue => pdf_writer::types::BlendMode::Hue,
-            BlendMode::Saturation => pdf_writer::types::BlendMode::Saturation,
-            BlendMode::Color => pdf_writer::types::BlendMode::Color,
-            BlendMode::Luminosity => pdf_writer::types::BlendMode::Luminosity,
-        }
-    }
-}
-
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
 fn naive_shape(text: &str, font: Font, size: f32, direction: TextDirection) -> Vec<KrillaGlyph> {

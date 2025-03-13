@@ -152,15 +152,3 @@ pub enum AssociationKind {
     /// There is no clear relationship or it is not known.
     Unspecified,
 }
-
-impl From<AssociationKind> for pdf_writer::types::AssociationKind {
-    fn from(value: AssociationKind) -> Self {
-        match value {
-            AssociationKind::Source => pdf_writer::types::AssociationKind::Source,
-            AssociationKind::Data => pdf_writer::types::AssociationKind::Data,
-            AssociationKind::Alternative => pdf_writer::types::AssociationKind::Alternative,
-            AssociationKind::Supplement => pdf_writer::types::AssociationKind::Supplement,
-            AssociationKind::Unspecified => pdf_writer::types::AssociationKind::Unspecified,
-        }
-    }
-}
