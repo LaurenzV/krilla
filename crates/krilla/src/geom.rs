@@ -1,6 +1,6 @@
 //! Geometrical helper structs.
 
-pub use tiny_skia_path::{Rect, Size, Transform};
+pub use tiny_skia_path::{Rect, Transform};
 
 /// An immutable, finite `f32` in a 0..=1 range.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -43,5 +43,28 @@ impl Point {
 
     pub(crate) fn to_tsp(&self) -> tiny_skia_path::Point {
         tiny_skia_path::Point::from_xy(self.x, self.y)
+    }
+}
+
+/// A size.
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct Size(tiny_skia_path::Size);
+
+impl Size {
+    /// Creates a new `Size` from width and height.
+    ///
+    /// Returns `None` if either the width or the height is not > 0.
+    pub fn from_wh(width: f32, height: f32) -> Option<Self> {
+        Some(Self(tiny_skia_path::Size::from_wh(width, height)?))
+    }
+
+    /// Returns the width of the size.
+    pub fn width(&self) -> f32 {
+        self.0.width()
+    }
+
+    /// Returns the height of the size.
+    pub fn height(&self) -> f32 {
+        self.0.height()
     }
 }

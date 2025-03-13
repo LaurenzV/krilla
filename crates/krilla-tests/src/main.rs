@@ -790,7 +790,7 @@ pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     let mut surface = page.surface();
     surface.draw_svg(
         &tree,
-        tree.size(),
+        krilla::Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
         SvgSettings {
             embed_text: true,
             filter_scale: 2.0,

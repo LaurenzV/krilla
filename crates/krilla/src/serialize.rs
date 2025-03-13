@@ -10,7 +10,6 @@ use pdf_writer::types::StructRole;
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
-use tiny_skia_path::Size;
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
@@ -29,11 +28,11 @@ use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::{Cacheable, Resourceable};
 use crate::page::PageLabel;
-use crate::resource;
 use crate::resource::Resource;
 use crate::surface::{Location, Surface};
 use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::SipHashable;
+use crate::{resource, Size};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]

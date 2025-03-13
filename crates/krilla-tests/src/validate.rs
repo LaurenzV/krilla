@@ -12,9 +12,9 @@ use krilla::surface::TextDirection;
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, TableHeaderScope, Tag, TagGroup, TagTree,
 };
-use krilla::Point;
+use krilla::{Point, Size};
 use krilla_macros::snapshot;
-use tiny_skia_path::{Rect, Size};
+use tiny_skia_path::Rect;
 
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,

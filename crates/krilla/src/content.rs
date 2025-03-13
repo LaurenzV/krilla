@@ -9,13 +9,13 @@ use std::sync::Arc;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
-#[cfg(feature = "raster-images")]
-use tiny_skia_path::Size;
 use tiny_skia_path::{Path, PathSegment, Rect, Transform};
 
 use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
 use crate::font::{Font, Glyph, GlyphId, GlyphUnits};
+#[cfg(feature = "raster-images")]
+use crate::geom::Size;
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;

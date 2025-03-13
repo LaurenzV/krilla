@@ -1,12 +1,13 @@
 //! Drawing bitmap-based glyphs to a surface.
 
 use skrifa::MetadataProvider;
-use tiny_skia_path::{Size, Transform};
+use tiny_skia_path::Transform;
 
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::{Font, GlyphId};
 use crate::object::image::Image;
 use crate::surface::Surface;
+use crate::Size;
 
 /// Draw a bitmap-based glyph on a surface.
 pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {

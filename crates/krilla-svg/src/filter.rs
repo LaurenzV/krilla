@@ -1,8 +1,8 @@
 //! Filter conversion
 
 use krilla::surface::Surface;
-use krilla::Image;
-use tiny_skia_path::{Size, Transform};
+use krilla::{Image, Size};
+use tiny_skia_path::Transform;
 
 use crate::ProcessContext;
 

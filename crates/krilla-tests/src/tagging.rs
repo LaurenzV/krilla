@@ -4,10 +4,10 @@ use krilla::error::KrillaError;
 use krilla::path::Fill;
 use krilla::surface::{Surface, TextDirection};
 use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-use krilla::{Document, Font, Point};
+use krilla::{Document, Font, Point, Size};
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
-use tiny_skia_path::{Rect, Size, Transform};
+use tiny_skia_path::{Rect, Transform};
 
 use crate::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
 
@@ -130,7 +130,11 @@ fn tagging_image_with_alt(document: &mut Document) {
 
     let id = surface.start_tagged(ContentTag::Other);
     let tree = sample_svg();
-    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
     surface.end_tagged();
 
     surface.finish();
@@ -161,7 +165,11 @@ fn tagging_multiple_content_tags(document: &mut Document) {
     let id4 = surface.start_tagged(ContentTag::Other);
     let tree = sample_svg();
     surface.push_transform(&Transform::from_translate(100.0, 100.0));
-    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
     surface.pop();
     surface.end_tagged();
 
