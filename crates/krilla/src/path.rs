@@ -20,16 +20,6 @@ pub enum LineCap {
     Square,
 }
 
-impl From<LineCap> for tiny_skia_path::LineCap {
-    fn from(value: LineCap) -> Self {
-        match value {
-            LineCap::Butt => tiny_skia_path::LineCap::Butt,
-            LineCap::Round => tiny_skia_path::LineCap::Round,
-            LineCap::Square => tiny_skia_path::LineCap::Square,
-        }
-    }
-}
-
 /// A line join.
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Default, Hash)]
 pub enum LineJoin {
@@ -40,16 +30,6 @@ pub enum LineJoin {
     Round,
     /// The bevel line join.
     Bevel,
-}
-
-impl From<LineJoin> for tiny_skia_path::LineJoin {
-    fn from(value: LineJoin) -> Self {
-        match value {
-            LineJoin::Miter => tiny_skia_path::LineJoin::Miter,
-            LineJoin::Round => tiny_skia_path::LineJoin::Round,
-            LineJoin::Bevel => tiny_skia_path::LineJoin::Bevel,
-        }
-    }
 }
 
 /// A stroke dash.
