@@ -186,11 +186,12 @@ impl ChunkContainer {
                 catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
             }
 
-            if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.clone()) {
-                catalog.lang(TextStr(&lang));
+            if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.as_ref()) {
+                catalog.lang(TextStr(lang)); // lang is now a reference to a String, so no cloning or moving needed
             } else {
                 sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
+
 
             if let Some(st) = &self.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
