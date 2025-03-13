@@ -1,7 +1,7 @@
 //! Text conversion
 
 use krilla::color::rgb;
-use krilla::font::{GlyphId, GlyphUnits, KrillaGlyph};
+use krilla::font::{GlyphId, KrillaGlyph};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::Surface;
 use krilla::{Font, NormalizedF32, Point};
@@ -80,7 +80,6 @@ pub(crate) fn render(
                     font,
                     &glyph.text,
                     span.font_size.get(),
-                    GlyphUnits::UnitsPerEm,
                     !embed_text,
                 );
             };
@@ -102,7 +101,6 @@ pub(crate) fn render(
                     font,
                     &glyph.text,
                     span.font_size.get(),
-                    GlyphUnits::UnitsPerEm,
                     !embed_text,
                 );
             };

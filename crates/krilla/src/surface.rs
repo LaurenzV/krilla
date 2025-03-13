@@ -16,7 +16,7 @@ use crate::content::{unit_normalize, ContentBuilder};
 use crate::font::GlyphId;
 #[cfg(feature = "simple-text")]
 use crate::font::KrillaGlyph;
-use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits};
+use crate::font::{draw_glyph, Font, FontInfo, Glyph};
 use crate::object::font::PaintMode;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
@@ -186,16 +186,15 @@ impl<'a> Surface<'a> {
         start: Point,
         font: Font,
         font_size: f32,
-        glyph_units: GlyphUnits,
         paint_mode: PaintMode,
     ) {
-        let normalize = |val| unit_normalize(glyph_units, font.units_per_em(), font_size, val);
+        let normalize = |val| unit_normalize(font_size, val);
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
             let mut base_transform = tiny_skia_path::Transform::from_translate(
-                cur_x + normalize(glyph.x_offset()) * font_size,
-                y - normalize(glyph.y_offset()) * font_size,
+                cur_x + normalize(glyph.x_offset(font_size)) * font_size,
+                y - normalize(glyph.y_offset(font_size)) * font_size,
             );
             base_transform = base_transform.pre_concat(tiny_skia_path::Transform::from_scale(
                 font_size / font.units_per_em(),
@@ -209,7 +208,7 @@ impl<'a> Surface<'a> {
                 self,
             );
 
-            cur_x += normalize(glyph.x_advance()) * font_size;
+            cur_x += normalize(glyph.x_advance(font_size)) * font_size;
         }
     }
 
@@ -226,7 +225,6 @@ impl<'a> Surface<'a> {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits,
         outlined: bool,
     ) {
         if outlined {
@@ -235,7 +233,6 @@ impl<'a> Surface<'a> {
                 start,
                 font,
                 font_size,
-                glyph_units,
                 PaintMode::Fill(&self.fill.clone()),
             );
         } else {
@@ -247,7 +244,6 @@ impl<'a> Surface<'a> {
                 font,
                 text,
                 font_size,
-                glyph_units,
             );
         }
     }
@@ -274,7 +270,7 @@ impl<'a> Surface<'a> {
         outlined: bool,
         direction: TextDirection,
     ) {
-        let glyphs = naive_shape(text, font.clone(), font_size, direction);
+        let glyphs = naive_shape(text, font.clone(), direction);
 
         self.fill_glyphs(
             start,
@@ -282,7 +278,6 @@ impl<'a> Surface<'a> {
             font,
             text,
             font_size,
-            GlyphUnits::UserSpace,
             outlined,
         );
     }
@@ -296,7 +291,6 @@ impl<'a> Surface<'a> {
         font: Font,
         text: &str,
         font_size: f32,
-        glyph_units: GlyphUnits,
         outlined: bool,
     ) {
         if outlined {
@@ -305,7 +299,6 @@ impl<'a> Surface<'a> {
                 start,
                 font,
                 font_size,
-                glyph_units,
                 PaintMode::Stroke(&self.stroke.clone()),
             );
         } else {
@@ -317,7 +310,6 @@ impl<'a> Surface<'a> {
                 font,
                 text,
                 font_size,
-                glyph_units,
             );
         }
     }
@@ -344,7 +336,7 @@ impl<'a> Surface<'a> {
         outlined: bool,
         direction: TextDirection,
     ) {
-        let glyphs = naive_shape(text, font.clone(), font_size, direction);
+        let glyphs = naive_shape(text, font.clone(), direction);
 
         self.stroke_glyphs(
             start,
@@ -352,7 +344,6 @@ impl<'a> Surface<'a> {
             font,
             text,
             font_size,
-            GlyphUnits::UserSpace,
             outlined,
         );
     }
@@ -593,7 +584,7 @@ impl BlendMode {
 
 /// Shape some text with a single font.
 #[cfg(feature = "simple-text")]
-fn naive_shape(text: &str, font: Font, size: f32, direction: TextDirection) -> Vec<KrillaGlyph> {
+fn naive_shape(text: &str, font: Font, direction: TextDirection) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
 
@@ -659,10 +650,10 @@ fn naive_shape(text: &str, font: Font, size: f32, direction: TextDirection) -> V
 
         glyphs.push(KrillaGlyph::new(
             GlyphId::new(start_info.glyph_id),
-            (pos.x_advance as f32 / font.units_per_em()) * size,
-            (pos.x_offset as f32 / font.units_per_em()) * size,
-            (pos.y_offset as f32 / font.units_per_em()) * size,
-            (pos.y_advance as f32 / font.units_per_em()) * size,
+            pos.x_advance as f32 / font.units_per_em(),
+            pos.x_offset as f32 / font.units_per_em(),
+            pos.y_offset as f32 / font.units_per_em(),
+            pos.y_advance as f32 / font.units_per_em(),
             start..end,
             None,
         ));

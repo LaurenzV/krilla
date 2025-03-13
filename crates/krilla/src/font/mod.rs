@@ -356,29 +356,17 @@ pub trait Glyph {
     /// The range of bytes in the original text covered by the cluster that the glyph
     /// belongs to.
     fn text_range(&self) -> Range<usize>;
-    /// The advance in the x direction of the glyph.
-    fn x_advance(&self) -> f32;
-    /// The offset in the x direction of the glyph.
-    fn x_offset(&self) -> f32;
-    /// The offset in the y direction of the glyph.
-    fn y_offset(&self) -> f32;
-    /// The advance in the y direction of the glyph.
-    fn y_advance(&self) -> f32;
+    /// The advance in the x direction of the glyph, at the given font size.
+    fn x_advance(&self, size: f32) -> f32;
+    /// The offset in the x direction of the glyph, at the given font size.
+    fn x_offset(&self, size: f32) -> f32;
+    /// The offset in the y direction of the glyph, at the given font size.
+    fn y_offset(&self, size: f32) -> f32;
+    /// The advance in the y direction of the glyph, at the given font size.
+    fn y_advance(&self, size: f32) -> f32;
     /// A location identifying the glyph. If set, `krilla` will automatically call
     /// `set_location` before processing the glyph.
     fn location(&self) -> Option<crate::surface::Location>;
-}
-
-/// The units of the metrics of a glyph.
-#[derive(Debug, Copy, Clone)]
-pub enum GlyphUnits {
-    /// The units are normalized, i.e. `val`/`units_per_em`.
-    Normalized,
-    /// The units are given relative the `units_per_em` of the
-    /// corresponding font.
-    UnitsPerEm,
-    /// The units are in user space units, i.e. (`val`/`units_per_em`) * `font_size`
-    UserSpace,
 }
 
 /// A glyph type that implements `Glyph`.
@@ -412,20 +400,20 @@ impl Glyph for KrillaGlyph {
         self.text_range.clone()
     }
 
-    fn x_advance(&self) -> f32 {
-        self.x_advance
+    fn x_advance(&self, size: f32) -> f32 {
+        self.x_advance * size
     }
 
-    fn x_offset(&self) -> f32 {
-        self.x_offset
+    fn x_offset(&self, size: f32) -> f32 {
+        self.x_offset * size
     }
 
-    fn y_offset(&self) -> f32 {
-        self.y_offset
+    fn y_offset(&self, size: f32) -> f32 {
+        self.y_offset * size
     }
 
-    fn y_advance(&self) -> f32 {
-        self.y_advance
+    fn y_advance(&self, size: f32) -> f32 {
+        self.y_advance * size
     }
 
     fn location(&self) -> Option<crate::surface::Location> {
@@ -435,6 +423,9 @@ impl Glyph for KrillaGlyph {
 
 impl KrillaGlyph {
     /// Create a new Krilla glyph.
+    /// 
+    /// Important: `x_advance`, `x_offset`, `y_offset` and `y_advance`
+    /// need to be normalized, i.e. divided by the units per em!
     pub fn new(
         glyph_id: GlyphId,
         x_advance: f32,
