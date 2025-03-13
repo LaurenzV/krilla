@@ -1,6 +1,5 @@
 //! Drawing COLR-based glyphs to a surface.
 
-use crate::surface::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
@@ -15,6 +14,7 @@ use crate::object::color::rgb;
 use crate::object::font::PaintMode;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
+use crate::surface::BlendMode;
 use crate::surface::Surface;
 
 /// Draw a COLR-based glyph on a surface.

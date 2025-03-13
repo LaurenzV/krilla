@@ -120,7 +120,7 @@ impl Cacheable for EmbeddedFile {
             .validator()
             .allows_associated_files()
         {
-            file_spec.association_kind(self.association_kind.into());
+            file_spec.association_kind(self.association_kind.to_pdf());
         }
 
         if let Some(description) = self.description {
@@ -151,4 +151,16 @@ pub enum AssociationKind {
     Supplement,
     /// There is no clear relationship or it is not known.
     Unspecified,
+}
+
+impl AssociationKind {
+    fn to_pdf(&self) -> pdf_writer::types::AssociationKind {
+        match self {
+            AssociationKind::Source => pdf_writer::types::AssociationKind::Source,
+            AssociationKind::Data => pdf_writer::types::AssociationKind::Data,
+            AssociationKind::Alternative => pdf_writer::types::AssociationKind::Alternative,
+            AssociationKind::Supplement => pdf_writer::types::AssociationKind::Supplement,
+            AssociationKind::Unspecified => pdf_writer::types::AssociationKind::Unspecified,
+        }
+    }
 }

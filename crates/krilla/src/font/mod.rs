@@ -294,7 +294,7 @@ impl GlyphId {
     pub fn to_u32(&self) -> u32 {
         self.0
     }
-    
+
     pub(crate) fn to_skrifa(&self) -> skrifa::GlyphId {
         skrifa::GlyphId::new(self.0)
     }

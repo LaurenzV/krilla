@@ -144,6 +144,17 @@ pub enum NumberingStyle {
     UpperAlpha,
 }
 
+impl NumberingStyle {
+    fn to_pdf(&self) -> pdf_writer::types::NumberingStyle {
+        match self {
+            NumberingStyle::Arabic => pdf_writer::types::NumberingStyle::Arabic,
+            NumberingStyle::LowerRoman => pdf_writer::types::NumberingStyle::LowerRoman,
+            NumberingStyle::UpperRoman => pdf_writer::types::NumberingStyle::UpperRoman,
+            NumberingStyle::LowerAlpha => pdf_writer::types::NumberingStyle::LowerAlpha,
+            NumberingStyle::UpperAlpha => pdf_writer::types::NumberingStyle::UpperAlpha,
+        }
+    }
+}
 
 pub(crate) struct InternalPage {
     pub stream_ref: Ref,
@@ -324,7 +335,7 @@ impl PageLabel {
             .start::<pdf_writer::writers::PageLabel>();
 
         if let Some(style) = self.style {
-            label.style(style.into());
+            label.style(style.to_pdf());
         }
 
         if let Some(prefix) = &self.prefix {

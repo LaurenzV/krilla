@@ -122,9 +122,10 @@
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
 
+use pdf_writer::types::{ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
-use pdf_writer::types::{ArtifactSubtype, StructRole};
+
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
@@ -723,11 +724,15 @@ impl TagGroup {
 
         match self.tag {
             Tag::L(ln) => {
-                struct_elem.attributes().push().list().list_numbering(ln.into());
+                struct_elem
+                    .attributes()
+                    .push()
+                    .list()
+                    .list_numbering(ln.to_pdf());
             }
             Tag::TH(ths) => {
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    struct_elem.attributes().push().table().scope(ths.into());
+                    struct_elem.attributes().push().table().scope(ths.to_pdf());
                 }
             }
             Tag::Note => {
@@ -923,7 +928,7 @@ fn serialize_children(
     Ok(())
 }
 
-/// Where a layout [`Artifact`] is attached to the page edge.
+/// Where a layout artifact is attached to the page edge.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[allow(missing_docs)]
 pub enum ArtifactAttachment {
@@ -956,6 +961,22 @@ pub enum ListNumbering {
     UpperAlpha,
 }
 
+impl ListNumbering {
+    fn to_pdf(&self) -> pdf_writer::types::ListNumbering {
+        match self {
+            ListNumbering::None => pdf_writer::types::ListNumbering::None,
+            ListNumbering::Disc => pdf_writer::types::ListNumbering::Disc,
+            ListNumbering::Circle => pdf_writer::types::ListNumbering::Circle,
+            ListNumbering::Square => pdf_writer::types::ListNumbering::Square,
+            ListNumbering::Decimal => pdf_writer::types::ListNumbering::Decimal,
+            ListNumbering::LowerRoman => pdf_writer::types::ListNumbering::LowerRoman,
+            ListNumbering::UpperRoman => pdf_writer::types::ListNumbering::UpperRoman,
+            ListNumbering::LowerAlpha => pdf_writer::types::ListNumbering::LowerAlpha,
+            ListNumbering::UpperAlpha => pdf_writer::types::ListNumbering::UpperAlpha,
+        }
+    }
+}
+
 /// The scope of a table header cell.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum TableHeaderScope {
@@ -965,4 +986,14 @@ pub enum TableHeaderScope {
     Column,
     /// The header cell refers to both the row and the column.
     Both,
+}
+
+impl TableHeaderScope {
+    fn to_pdf(&self) -> pdf_writer::types::TableHeaderScope {
+        match self {
+            TableHeaderScope::Row => pdf_writer::types::TableHeaderScope::Row,
+            TableHeaderScope::Column => pdf_writer::types::TableHeaderScope::Column,
+            TableHeaderScope::Both => pdf_writer::types::TableHeaderScope::Both,
+        }
+    }
 }
