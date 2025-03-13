@@ -1,6 +1,6 @@
 //! Geometrical helper structs.
 
-pub use tiny_skia_path::{FiniteF32, Point, Rect, Size, Transform};
+pub use tiny_skia_path::{Point, Rect, Size, Transform};
 
 /// An immutable, finite `f32` in a 0..=1 range.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
