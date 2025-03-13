@@ -1,10 +1,10 @@
 //! Drawing bitmap-based glyphs to a surface.
 
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::MetadataProvider;
 use tiny_skia_path::{Size, Transform};
 
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::object::image::Image;
 use crate::surface::Surface;
 
@@ -16,7 +16,10 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
 
     let bitmap_strikes = BitmapStrikes::new(font.font_ref());
 
-    let bitmap_glyph = bitmap_strikes.iter().filter_map(|s| s.get(glyph)).last()?;
+    let bitmap_glyph = bitmap_strikes
+        .iter()
+        .filter_map(|s| s.get(glyph.into()))
+        .last()?;
     let upem = metrics.units_per_em as f32;
 
     match bitmap_glyph.data {
@@ -79,10 +82,10 @@ mod utils {
         metrics::GlyphMetrics,
         raw::{
             tables::{bitmap, cbdt, cblc, ebdt, eblc, sbix},
-            types::{GlyphId, Tag},
+            types::Tag,
             FontData, TableProvider,
         },
-        MetadataProvider,
+        GlyphId, MetadataProvider,
     };
 
     /// Set of strikes, each containing embedded bitmaps of a single size.

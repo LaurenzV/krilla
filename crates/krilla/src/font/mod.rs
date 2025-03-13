@@ -20,7 +20,6 @@ use skrifa::metrics::GlyphMetrics;
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
-pub use skrifa::GlyphId;
 use skrifa::{FontRef, MetadataProvider};
 use tiny_skia_path::{FiniteF32, Rect, Transform};
 use yoke::{Yoke, Yokeable};
@@ -151,7 +150,7 @@ impl Font {
     }
 
     /// Return the underlying `FontRef`.
-    pub fn font_ref(&self) -> &FontRef {
+    pub(crate) fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }
 
@@ -165,7 +164,7 @@ impl Font {
 
     #[inline]
     pub(crate) fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
-        self.glyph_metrics().advance_width(glyph_id)
+        self.glyph_metrics().advance_width(glyph_id.into())
     }
 }
 
@@ -278,6 +277,28 @@ impl FontInfo {
             italic_angle,
             global_bbox: RectWrapper(global_bbox),
         })
+    }
+}
+
+/// A glyph ID.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct GlyphId(u32);
+
+impl GlyphId {
+    /// Create a new glyph ID.
+    pub fn new(id: u32) -> Self {
+        Self(id)
+    }
+
+    /// Get the glyph ID as a u32.
+    pub fn to_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+impl From<GlyphId> for skrifa::GlyphId {
+    fn from(value: GlyphId) -> Self {
+        skrifa::GlyphId::new(value.0)
     }
 }
 

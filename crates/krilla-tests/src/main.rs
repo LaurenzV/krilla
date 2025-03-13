@@ -17,7 +17,7 @@ use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb, ICCProfile};
 use krilla::configure::{Configuration, PdfVersion, Validator};
 use krilla::document::{Document, PageSettings};
-use krilla::font::{Font, GlyphUnits, KrillaGlyph};
+use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::{Stop, Stops};
@@ -36,7 +36,7 @@ use sitro::{
 };
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::{FontRef, MetadataProvider};
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
 
 mod annotation;
@@ -594,8 +594,8 @@ pub fn all_glyphs_to_pdf(
     use krilla::font::KrillaGlyph;
     use krilla::geom::Transform;
 
-    let font = Font::new(font_data, 0, allow_color).unwrap();
-    let font_ref = font.font_ref();
+    let font = Font::new(font_data.clone(), 0, allow_color).unwrap();
+    let font_ref = FontRef::from_index(font_data.as_ref(), 0).unwrap();
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
@@ -606,7 +606,7 @@ pub fn all_glyphs_to_pdf(
                     .cmap()
                     .unwrap()
                     .map_codepoint(c)
-                    .map(|g| (g, c.to_string()))
+                    .map(|g| (GlyphId::new(g.to_u32()), c.to_string()))
             })
             .collect::<Vec<_>>()
     });
@@ -667,7 +667,15 @@ pub fn all_glyphs_to_pdf(
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
-            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0.0, 0..text.len(), None)],
+            &[KrillaGlyph::new(
+                krilla::font::GlyphId::new(i.to_u32()),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0..text.len(),
+                None,
+            )],
             font.clone(),
             &text,
             size as f32,

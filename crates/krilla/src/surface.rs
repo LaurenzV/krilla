@@ -11,15 +11,17 @@ use std::sync::Arc;
 pub use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, UnicodeBuffer};
-#[cfg(feature = "simple-text")]
-use skrifa::GlyphId;
 use tiny_skia_path::NormalizedF32;
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
 use tiny_skia_path::{Path, Point, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits, KrillaGlyph};
+#[cfg(feature = "simple-text")]
+use crate::font::GlyphId;
+#[cfg(feature = "simple-text")]
+use crate::font::KrillaGlyph;
+use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits};
 use crate::object::font::PaintMode;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;

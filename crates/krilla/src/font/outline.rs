@@ -1,10 +1,10 @@
 //! Drawing outline-based glyphs to a surface.
 
 use skrifa::outline::{DrawSettings, OutlinePen};
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::MetadataProvider;
 use tiny_skia_path::{Path, PathBuilder, Transform};
 
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::object::font::PaintMode;
 use crate::surface::Surface;
 
@@ -12,7 +12,7 @@ pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
-    if let Some(outline_glyph) = outline_glyphs.get(glyph) {
+    if let Some(outline_glyph) = outline_glyphs.get(glyph.into()) {
         outline_glyph
             .draw(
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),

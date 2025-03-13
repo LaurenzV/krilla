@@ -7,13 +7,12 @@ use std::ops::DerefMut;
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
-use skrifa::GlyphId;
 use tiny_skia_path::{Rect, Transform};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::font::outline::glyph_path;
-use crate::font::{self, Font};
+use crate::font::{self, Font, GlyphId};
 use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::Fill;
@@ -121,8 +120,11 @@ impl Type3Font {
 
             self.glyph_set.insert(glyph.clone());
             self.glyphs.push(glyph.clone());
-            self.widths
-                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
+            self.widths.push(
+                self.font
+                    .advance_width(glyph.glyph_id.into())
+                    .unwrap_or(0.0),
+            );
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -550,9 +552,7 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use skrifa::GlyphId;
-
-    use crate::font::Font;
+    use crate::font::{Font, GlyphId};
     use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::object::font::{FontContainer, OwnedPaintMode};
     use crate::path::Fill;

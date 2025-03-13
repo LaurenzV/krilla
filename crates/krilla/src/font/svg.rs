@@ -1,10 +1,9 @@
 //! Drawing SVG-based glyphs on a surface.
 
 use skrifa::raw::TableProvider;
-use skrifa::GlyphId;
 
 use crate::color::rgb;
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::object::font::PaintMode;
 use crate::surface::Surface;
 
@@ -18,7 +17,7 @@ pub(crate) fn draw_glyph(
     let svg_data = font
         .font_ref()
         .svg()
-        .and_then(|svg_table| svg_table.glyph_data(glyph))
+        .and_then(|svg_table| svg_table.glyph_data(glyph.into()))
         .ok()??;
 
     let context_color = match paint_mode {

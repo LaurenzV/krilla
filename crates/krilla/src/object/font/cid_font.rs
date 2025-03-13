@@ -9,13 +9,12 @@ use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::GlyphId;
 use subsetter::GlyphRemapper;
 
 use super::{CIDIdentifer, FontIdentifier};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
@@ -55,7 +54,7 @@ impl CIDFont {
     pub(crate) fn new(font: Font) -> CIDFont {
         // Always include the .notdef glyph. Will also always be included by the subsetter in
         // the glyph remapper.
-        let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
+        let widths = vec![font.advance_width(GlyphId::new(0).into()).unwrap_or(0.0)];
 
         Self {
             glyph_remapper: GlyphRemapper::new(),
@@ -91,7 +90,7 @@ impl CIDFont {
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id as usize >= self.widths.len() {
             self.widths
-                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
+                .push(self.font.advance_width(glyph_id.into()).unwrap_or(0.0));
         }
 
         new_id

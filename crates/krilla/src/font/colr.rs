@@ -6,11 +6,11 @@ use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
+use skrifa::MetadataProvider;
 use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Transform};
 
 use crate::font::outline::OutlineBuilder;
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::object::color::rgb;
 use crate::object::font::PaintMode;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
@@ -37,7 +37,7 @@ pub(crate) fn draw_glyph(
     .unwrap_or(rgb::Color::black());
 
     let colr_glyphs = font.font_ref().color_glyphs();
-    let colr_glyph = colr_glyphs.get(glyph)?;
+    let colr_glyph = colr_glyphs.get(glyph.into())?;
 
     let mut colr_canvas = ColrBuilder::new(font.clone(), context_color);
     colr_glyph
@@ -202,7 +202,7 @@ impl ColorPainter for ColrBuilder {
         };
     }
 
-    fn push_clip_glyph(&mut self, glyph_id: GlyphId) {
+    fn push_clip_glyph(&mut self, glyph_id: skrifa::GlyphId) {
         let Some(mut old) = self.clips.last().cloned() else {
             self.error = true;
             return;
@@ -210,7 +210,7 @@ impl ColorPainter for ColrBuilder {
 
         let mut glyph_builder = OutlineBuilder::new();
         let outline_glyphs = self.font.font_ref().outline_glyphs();
-        let Some(outline_glyph) = outline_glyphs.get(glyph_id) else {
+        let Some(outline_glyph) = outline_glyphs.get(glyph_id.into()) else {
             self.error = true;
             return;
         };
