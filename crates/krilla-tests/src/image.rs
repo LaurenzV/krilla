@@ -118,6 +118,14 @@ fn image_resized(surface: &mut Surface) {
     surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());
 }
 
+#[snapshot(single_page)]
+fn image(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_png_image("rgb8.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
 #[snapshot(document)]
 fn image_deduplication(document: &mut Document) {
     let size = load_png_image("luma8.png").size();

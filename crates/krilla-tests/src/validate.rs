@@ -1,6 +1,7 @@
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::configure::ValidationError;
+use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::metadata::Metadata;
@@ -15,10 +16,11 @@ use krilla::tagging::{
 use krilla::{Point, Rect, Size};
 use krilla_macros::snapshot;
 
+use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,
-    red_fill, settings_13, settings_15, settings_19, settings_24, settings_7, settings_8,
-    settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+    red_fill, settings_13, settings_15, settings_19, settings_23, settings_24, settings_7,
+    settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -46,7 +48,7 @@ fn q_nesting_impl(settings: SerializeSettings) -> Document {
 }
 
 #[snapshot(document, settings_7)]
-pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
+pub fn validate_pdfa_q_nesting_28(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -60,7 +62,7 @@ pub fn validation_pdfa_q_nesting_28(document: &mut Document) {
 }
 
 #[test]
-pub fn validation_pdfa_q_nesting_28() {
+pub fn validate_pdfa_q_nesting_28() {
     let document = q_nesting_impl(settings_7());
     assert_eq!(
         document.finish(),
@@ -71,7 +73,7 @@ pub fn validation_pdfa_q_nesting_28() {
 }
 
 #[test]
-pub fn validation_pdfa_string_length() {
+pub fn validate_pdfa_string_length() {
     let mut document = pdfa_document();
     let metadata = Metadata::new().creator("A".repeat(32768));
     document.set_metadata(metadata);
@@ -84,7 +86,7 @@ pub fn validation_pdfa_string_length() {
 }
 
 #[snapshot(single_page, settings_7)]
-fn validation_pdfa_annotation(page: &mut Page) {
+fn validate_pdfa_annotation(page: &mut Page) {
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
@@ -96,7 +98,7 @@ fn validation_pdfa_annotation(page: &mut Page) {
 }
 
 #[test]
-fn validation_pdfa_postscript() {
+fn validate_pdfa_postscript() {
     let mut document = pdfa_document();
     let mut page = document.start_page();
 
@@ -133,7 +135,7 @@ fn validation_pdfa_postscript() {
 }
 
 #[test]
-pub fn validation_disabled_q_nesting_28() {
+pub fn validate_disabled_q_nesting_28() {
     let document = q_nesting_impl(SerializeSettings::default());
     assert!(document.finish().is_ok());
 }
@@ -152,7 +154,7 @@ fn cmyk_document_impl(document: &mut Document) {
 }
 
 #[test]
-fn validation_pdfa_missing_cmyk() {
+fn validate_pdfa_missing_cmyk() {
     let mut document = pdfa_document();
     cmyk_document_impl(&mut document);
 
@@ -165,7 +167,7 @@ fn validation_pdfa_missing_cmyk() {
 }
 
 #[test]
-fn validation_pdfa_existing_cmyk() {
+fn validate_pdfa_existing_cmyk() {
     let mut document = Document::new_with(settings_8());
     cmyk_document_impl(&mut document);
 
@@ -173,7 +175,7 @@ fn validation_pdfa_existing_cmyk() {
 }
 
 #[test]
-fn validation_pdfa_notdef_glyph() {
+fn validate_pdfa_notdef_glyph() {
     let mut document = pdfa_document();
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -201,7 +203,7 @@ fn validation_pdfa_notdef_glyph() {
 }
 
 #[test]
-fn validation_pdfa2u_text_with_location() {
+fn validate_pdfa2u_text_with_location() {
     let mut document = Document::new_with(settings_9());
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -234,7 +236,7 @@ fn validation_pdfa2u_text_with_location() {
 }
 
 #[test]
-fn validation_pdfa1b_transparency_with_location() {
+fn validate_pdfa1b_transparency_with_location() {
     let mut document = Document::new_with(settings_19());
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -273,7 +275,7 @@ fn validation_pdfa1b_transparency_with_location() {
     )
 }
 
-fn validation_pdf_full_example(document: &mut Document) {
+fn validate_pdf_full_example(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -296,7 +298,7 @@ fn validation_pdf_full_example(document: &mut Document) {
     page.finish();
 }
 
-pub(crate) fn validation_pdf_tagged_full_example(document: &mut Document) {
+pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -358,7 +360,7 @@ fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
 }
 
 #[test]
-fn validation_pdfu_invalid_codepoint() {
+fn validate_pdfu_invalid_codepoint() {
     let mut document = Document::new_with(settings_9());
     let font_data = NOTO_SANS.clone();
     let font = Font::new(font_data, 0, true).unwrap();
@@ -373,7 +375,7 @@ fn validation_pdfu_invalid_codepoint() {
 }
 
 #[test]
-fn validation_pdfa_private_unicode_codepoint() {
+fn validate_pdfa_private_unicode_codepoint() {
     let mut document = Document::new_with(settings_13());
     let metadata = Metadata::new().language("en".to_string());
     document.set_metadata(metadata);
@@ -391,62 +393,62 @@ fn validation_pdfa_private_unicode_codepoint() {
 }
 
 #[snapshot(document, settings_20)]
-fn validation_pdfa1_a_full_example(document: &mut Document) {
-    validation_pdf_tagged_full_example(document);
+fn validate_pdfa1_a_full_example(document: &mut Document) {
+    validate_pdf_tagged_full_example(document);
 }
 
 #[snapshot(document, settings_19)]
-fn validation_pdfa1_b_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa1_b_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_13)]
-fn validation_pdfa2_a_full_example(document: &mut Document) {
-    validation_pdf_tagged_full_example(document);
+fn validate_pdfa2_a_full_example(document: &mut Document) {
+    validate_pdf_tagged_full_example(document);
 }
 
 #[snapshot(document, settings_7)]
-fn validation_pdfa2_b_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa2_b_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_9)]
-fn validation_pdfa2_u_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa2_u_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_14)]
-fn validation_pdfa3_a_full_example(document: &mut Document) {
-    validation_pdf_tagged_full_example(document);
+fn validate_pdfa3_a_full_example(document: &mut Document) {
+    validate_pdf_tagged_full_example(document);
 }
 
 #[snapshot(document, settings_10)]
-fn validation_pdfa3_b_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa3_b_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_11)]
-fn validation_pdfa3_u_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa3_u_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_26)]
-fn validation_pdfa4_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa4_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_27)]
-fn validation_pdfa4f_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa4f_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_28)]
-fn validation_pdfa4e_full_example(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_pdfa4e_full_example(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_15, ignore)]
-fn validation_pdfua1_full_example(document: &mut Document) {
+fn validate_pdfua1_full_example(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -493,7 +495,7 @@ fn validation_pdfua1_full_example(document: &mut Document) {
 
 #[test]
 #[ignore]
-fn validation_pdfua1_missing_requirements() {
+fn validate_pdfua1_missing_requirements() {
     let mut document = Document::new_with(settings_15());
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -544,7 +546,7 @@ fn validation_pdfua1_missing_requirements() {
 }
 
 #[snapshot(document, settings_15, ignore)]
-fn validation_pdfua1_attributes(document: &mut Document) {
+fn validate_pdfua1_attributes(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -584,11 +586,11 @@ fn validation_pdfua1_attributes(document: &mut Document) {
 
 #[snapshot(document, settings_16)]
 fn pdf_version_14_tagged(document: &mut Document) {
-    validation_pdf_tagged_full_example(document);
+    validate_pdf_tagged_full_example(document);
 }
 
 #[test]
-fn validation_pdfa1_no_transparency() {
+fn validate_pdfa1_no_transparency() {
     let mut document = Document::new_with(settings_19());
     let metadata = Metadata::new().language("en".to_string());
     document.set_metadata(metadata);
@@ -608,7 +610,7 @@ fn validation_pdfa1_no_transparency() {
 }
 
 #[test]
-fn validation_pdfa1_no_image_transparency() {
+fn validate_pdfa1_no_image_transparency() {
     let mut document = Document::new_with(settings_19());
     let metadata = Metadata::new().language("en".to_string());
     document.set_metadata(metadata);
@@ -631,12 +633,12 @@ fn validation_pdfa1_no_image_transparency() {
 }
 
 #[snapshot(document, settings_22)]
-fn validation_other_version(document: &mut Document) {
-    validation_pdf_full_example(document);
+fn validate_other_version(document: &mut Document) {
+    validate_pdf_full_example(document);
 }
 
 #[test]
-fn validation_pdfa1_limits() {
+fn validate_pdfa1_limits() {
     let mut document = Document::new_with(settings_19());
     let mut page = document.start_page();
 
@@ -658,7 +660,7 @@ fn validation_pdfa1_limits() {
 }
 
 #[test]
-fn validation_pdfa3a_no_tag_tree() {
+fn validate_pdfa3a_no_tag_tree() {
     let mut document = Document::new_with(settings_24());
     document.set_metadata(Metadata::new().language("en".to_string()));
 
@@ -668,4 +670,30 @@ fn validation_pdfa3a_no_tag_tree() {
             ValidationError::MissingTagging
         ]))
     )
+}
+
+#[test]
+fn validate_pdf_a3_missing_fields() {
+    let mut d = Document::new_with(settings_23());
+    let mut f1 = file_1();
+    f1.description = None;
+    d.embed_file(f1);
+
+    assert_eq!(
+        d.finish(),
+        Err(KrillaError::ValidationError(vec![
+            ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
+            ValidationError::EmbeddedFile(EmbedError::MissingDescription, None)
+        ]))
+    )
+}
+
+#[snapshot(document, settings_23)]
+fn validate_pdf_a3_with_embedded_file(d: &mut Document) {
+    embedded_file_impl(d)
+}
+
+#[snapshot(document, settings_27)]
+fn validate_pdf_a4f_with_embedded_file(d: &mut Document) {
+    embedded_file_impl(d)
 }

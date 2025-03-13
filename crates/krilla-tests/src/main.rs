@@ -48,14 +48,14 @@ mod mask;
 mod metadata;
 mod outline;
 mod page;
+mod path;
 mod pattern;
-mod surface;
-mod tagging;
-mod validate;
-#[allow(dead_code)]
-#[rustfmt::skip]
+mod pdf;
+mod stream;
 mod svg;
-
+mod tagging;
+mod text;
+mod validate;
 
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");

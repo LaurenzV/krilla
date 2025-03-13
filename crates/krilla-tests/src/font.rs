@@ -263,7 +263,7 @@ mod type3 {
     use crate::TWITTER_COLOR_EMOJI;
 
     #[snapshot(single_page, settings_1)]
-    fn type3_color_glyphs(page: &mut Page) {
+    fn font_type3_color_glyphs(page: &mut Page) {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 
@@ -278,7 +278,7 @@ mod type3 {
     }
 
     #[snapshot(single_page, settings_17)]
-    fn type3_pdf_14(page: &mut Page) {
+    fn font_ype3_pdf_14(page: &mut Page) {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 
