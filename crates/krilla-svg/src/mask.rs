@@ -3,6 +3,7 @@
 use krilla::mask::Mask;
 use krilla::path::FillRule;
 use krilla::surface::Surface;
+use krilla::Rect;
 
 use crate::util::{convert_mask_type, RectExt};
 use crate::{group, ProcessContext};
@@ -21,7 +22,13 @@ pub(crate) fn render(
         pop_count += render(sub_mask, &mut sub_surface, process_context)
     }
 
-    let clip_path = mask.rect().to_rect().to_clip_path();
+    let clip_path = {
+        let rect = mask.rect().to_rect();
+        Rect::from_ltrb(rect.left(), rect.top(), rect.right(), rect.bottom())
+            .unwrap()
+            .to_clip_path()
+    };
+
     sub_surface.push_clip_path(&clip_path, &FillRule::NonZero);
     pop_count += 1;
     group::render(mask.root(), &mut sub_surface, process_context);

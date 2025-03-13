@@ -122,9 +122,7 @@
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
 
-pub use pdf_writer::types::{
-    ArtifactAttachment, ArtifactSubtype, ListNumbering, StructRole, TableHeaderScope,
-};
+use pdf_writer::types::{ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
@@ -223,12 +221,12 @@ impl ContentTag<'_> {
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
                     if *at == ArtifactType::Header {
-                        artifact.attached([ArtifactAttachment::Top]);
+                        artifact.attached([pdf_writer::types::ArtifactAttachment::Top]);
                         artifact.subtype(ArtifactSubtype::Header);
                     }
 
                     if *at == ArtifactType::Footer {
-                        artifact.attached([ArtifactAttachment::Bottom]);
+                        artifact.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
                         artifact.subtype(ArtifactSubtype::Footer);
                     }
                 }
@@ -726,11 +724,15 @@ impl TagGroup {
 
         match self.tag {
             Tag::L(ln) => {
-                struct_elem.attributes().push().list().list_numbering(ln);
+                struct_elem
+                    .attributes()
+                    .push()
+                    .list()
+                    .list_numbering(ln.to_pdf());
             }
             Tag::TH(ths) => {
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    struct_elem.attributes().push().table().scope(ths);
+                    struct_elem.attributes().push().table().scope(ths.to_pdf());
                 }
             }
             Tag::Note => {
@@ -924,4 +926,74 @@ fn serialize_children(
     }
 
     Ok(())
+}
+
+/// Where a layout artifact is attached to the page edge.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(missing_docs)]
+pub enum ArtifactAttachment {
+    Left,
+    Top,
+    Right,
+    Bottom,
+}
+
+/// The list numbering type.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum ListNumbering {
+    /// No numbering.
+    None,
+    /// Solid circular bullets.
+    Disc,
+    /// Open circular bullets.
+    Circle,
+    /// Solid square bullets.
+    Square,
+    /// Decimal numbers.
+    Decimal,
+    /// Lowercase Roman numerals.
+    LowerRoman,
+    /// Uppercase Roman numerals.
+    UpperRoman,
+    /// Lowercase letters.
+    LowerAlpha,
+    /// Uppercase letters.
+    UpperAlpha,
+}
+
+impl ListNumbering {
+    fn to_pdf(self) -> pdf_writer::types::ListNumbering {
+        match self {
+            ListNumbering::None => pdf_writer::types::ListNumbering::None,
+            ListNumbering::Disc => pdf_writer::types::ListNumbering::Disc,
+            ListNumbering::Circle => pdf_writer::types::ListNumbering::Circle,
+            ListNumbering::Square => pdf_writer::types::ListNumbering::Square,
+            ListNumbering::Decimal => pdf_writer::types::ListNumbering::Decimal,
+            ListNumbering::LowerRoman => pdf_writer::types::ListNumbering::LowerRoman,
+            ListNumbering::UpperRoman => pdf_writer::types::ListNumbering::UpperRoman,
+            ListNumbering::LowerAlpha => pdf_writer::types::ListNumbering::LowerAlpha,
+            ListNumbering::UpperAlpha => pdf_writer::types::ListNumbering::UpperAlpha,
+        }
+    }
+}
+
+/// The scope of a table header cell.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum TableHeaderScope {
+    /// The header cell refers to the row.
+    Row,
+    /// The header cell refers to the column.
+    Column,
+    /// The header cell refers to both the row and the column.
+    Both,
+}
+
+impl TableHeaderScope {
+    fn to_pdf(self) -> pdf_writer::types::TableHeaderScope {
+        match self {
+            TableHeaderScope::Row => pdf_writer::types::TableHeaderScope::Row,
+            TableHeaderScope::Column => pdf_writer::types::TableHeaderScope::Column,
+            TableHeaderScope::Both => pdf_writer::types::TableHeaderScope::Both,
+        }
+    }
 }

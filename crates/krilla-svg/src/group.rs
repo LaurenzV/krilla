@@ -1,9 +1,10 @@
 //! Group conversion
 
 use krilla::surface::Surface;
+use krilla::NormalizedF32;
 use usvg::Node;
 
-use crate::util::{convert_blend_mode, convert_transform};
+use crate::util::{convert_blend_mode, UsvgTransformExt};
 use crate::{clip_path, filter, image, mask, path, text, ProcessContext};
 
 pub(crate) fn render(
@@ -23,7 +24,7 @@ pub(crate) fn render(
         pop_count += 1
     }
 
-    surface.push_transform(&convert_transform(&group.transform()));
+    surface.push_transform(&group.transform().to_krilla());
     pop_count += 1;
 
     if let Some(clip_path) = group.clip_path() {
@@ -35,7 +36,7 @@ pub(crate) fn render(
     }
 
     surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));
-    surface.push_opacity(group.opacity());
+    surface.push_opacity(NormalizedF32::new(group.opacity().get()).unwrap());
     pop_count += 2;
 
     for child in group.children() {

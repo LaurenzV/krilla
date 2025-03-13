@@ -8,27 +8,27 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-pub use pdf_writer::types::BlendMode;
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, UnicodeBuffer};
-#[cfg(feature = "simple-text")]
-use skrifa::GlyphId;
-use tiny_skia_path::NormalizedF32;
-#[cfg(feature = "raster-images")]
-use tiny_skia_path::Size;
-use tiny_skia_path::{Path, Point, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};
-use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits, KrillaGlyph};
+#[cfg(feature = "simple-text")]
+use crate::font::GlyphId;
+#[cfg(feature = "simple-text")]
+use crate::font::KrillaGlyph;
+use crate::font::{draw_glyph, Font, FontInfo, Glyph, GlyphUnits};
 use crate::object::font::PaintMode;
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
-use crate::path::{Fill, FillRule, Stroke};
+use crate::path::{Fill, FillRule, Path, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
+#[cfg(feature = "raster-images")]
+use crate::Size;
+use crate::{NormalizedF32, Point, Transform};
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -106,13 +106,13 @@ impl<'a> Surface<'a> {
     /// Fill a path.
     pub fn fill_path(&mut self, path: &Path, fill: Fill) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path(path, fill, self.sc);
+            .fill_path(&path.0, fill, self.sc);
     }
 
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_path(path, stroke, self.sc)
+            .stroke_path(&path.0, stroke, self.sc)
     }
 
     /// Start a new tagged content section.
@@ -173,11 +173,11 @@ impl<'a> Surface<'a> {
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
-            let mut base_transform = Transform::from_translate(
+            let mut base_transform = tiny_skia_path::Transform::from_translate(
                 cur_x + normalize(glyph.x_offset()) * font_size,
                 y - normalize(glyph.y_offset()) * font_size,
             );
-            base_transform = base_transform.pre_concat(Transform::from_scale(
+            base_transform = base_transform.pre_concat(tiny_skia_path::Transform::from_scale(
                 font_size / font.units_per_em(),
                 -font_size / font.units_per_em(),
             ));
@@ -185,7 +185,7 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 glyph.glyph_id(),
                 paint_mode,
-                base_transform,
+                Transform::from_tsp(base_transform),
                 self,
             );
 
@@ -373,14 +373,14 @@ impl<'a> Surface<'a> {
         self.push_instructions.push(PushInstruction::BlendMode);
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).save_graphics_state();
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .set_blend_mode(blend_mode);
+            .set_blend_mode(blend_mode.to_pdf());
     }
 
     /// Push a new clip path.
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.push_instructions.push(PushInstruction::ClipPath);
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .push_clip_path(path, clip_rule);
+            .push_clip_path(&path.0, clip_rule);
     }
 
     /// Push a new mask.
@@ -532,6 +532,51 @@ pub enum TextDirection {
     TopToBottom,
     /// Bottom to top.
     BottomToTop,
+}
+
+/// How to blend source and backdrop.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[allow(missing_docs)]
+pub enum BlendMode {
+    Normal,
+    Multiply,
+    Screen,
+    Overlay,
+    Darken,
+    Lighten,
+    ColorDodge,
+    ColorBurn,
+    HardLight,
+    SoftLight,
+    Difference,
+    Exclusion,
+    Hue,
+    Saturation,
+    Color,
+    Luminosity,
+}
+
+impl BlendMode {
+    fn to_pdf(self) -> pdf_writer::types::BlendMode {
+        match self {
+            BlendMode::Normal => pdf_writer::types::BlendMode::Normal,
+            BlendMode::Multiply => pdf_writer::types::BlendMode::Multiply,
+            BlendMode::Screen => pdf_writer::types::BlendMode::Screen,
+            BlendMode::Overlay => pdf_writer::types::BlendMode::Overlay,
+            BlendMode::Darken => pdf_writer::types::BlendMode::Darken,
+            BlendMode::Lighten => pdf_writer::types::BlendMode::Lighten,
+            BlendMode::ColorDodge => pdf_writer::types::BlendMode::ColorDodge,
+            BlendMode::ColorBurn => pdf_writer::types::BlendMode::ColorBurn,
+            BlendMode::HardLight => pdf_writer::types::BlendMode::HardLight,
+            BlendMode::SoftLight => pdf_writer::types::BlendMode::SoftLight,
+            BlendMode::Difference => pdf_writer::types::BlendMode::Difference,
+            BlendMode::Exclusion => pdf_writer::types::BlendMode::Exclusion,
+            BlendMode::Hue => pdf_writer::types::BlendMode::Hue,
+            BlendMode::Saturation => pdf_writer::types::BlendMode::Saturation,
+            BlendMode::Color => pdf_writer::types::BlendMode::Color,
+            BlendMode::Luminosity => pdf_writer::types::BlendMode::Luminosity,
+        }
+    }
 }
 
 /// Shape some text with a single font.

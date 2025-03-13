@@ -1,9 +1,10 @@
 //! Filter conversion
 
 use krilla::surface::Surface;
-use krilla::Image;
-use tiny_skia_path::{Size, Transform};
+use krilla::{Image, Size};
+use usvg::tiny_skia_path::Transform;
 
+use crate::util::KrillaTransformExt;
 use crate::ProcessContext;
 
 /// Render a filter into a surface by rasterizing it with `resvg` and drawing
@@ -25,7 +26,7 @@ pub(crate) fn render(
         // are currently in a XObject. But it's as good as it gets.
         let actual_bbox = group
             .layer_bounding_box()
-            .transform(surface.cur_transform())?
+            .transform(surface.cur_transform().to_usvg())?
             .transform(group.transform())?;
         // Calculate the necessary scale in the x/y direction, and take the maximum of that.
         let scale = {
@@ -88,7 +89,10 @@ pub(crate) fn render(
     let image = Image::from_rgba8(demultiplied, width, height);
     let size = Size::from_wh(layer_bbox.width(), layer_bbox.height())?;
 
-    surface.push_transform(&Transform::from_translate(layer_bbox.x(), layer_bbox.y()));
+    surface.push_transform(&krilla::geom::Transform::from_translate(
+        layer_bbox.x(),
+        layer_bbox.y(),
+    ));
     surface.draw_image(image, size);
     surface.pop();
 

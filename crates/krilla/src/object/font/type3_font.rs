@@ -7,21 +7,21 @@ use std::ops::DerefMut;
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
-use skrifa::GlyphId;
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::font::outline::glyph_path;
-use crate::font::{self, Font};
+use crate::font::{self, Font, GlyphId};
 use crate::object::font::cid_font::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
-use crate::path::Fill;
+use crate::path::{Fill, Path};
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
 use crate::util::{NameExt, RectExt, TransformExt};
+use crate::Transform;
 
 pub(crate) type Gid = u8;
 
@@ -202,7 +202,7 @@ impl Type3Font {
                                 ),
                             })
                         {
-                            surface.fill_path(&path, fill);
+                            surface.fill_path(&Path(path), fill);
                         }
                     };
 
@@ -550,9 +550,7 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use skrifa::GlyphId;
-
-    use crate::font::Font;
+    use crate::font::{Font, GlyphId};
     use crate::object::font::type3_font::OwnedCoveredGlyph;
     use crate::object::font::{FontContainer, OwnedPaintMode};
     use crate::path::Fill;

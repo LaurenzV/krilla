@@ -818,7 +818,6 @@ dependencies = [
  "sitro",
  "skrifa 0.28.1",
  "subsetter",
- "tiny-skia",
  "tiny-skia-path",
  "xmp-writer",
  "yoke",
@@ -846,10 +845,8 @@ dependencies = [
  "krilla-macros",
  "once_cell",
  "resvg",
- "roxmltree 0.20.0",
  "sitro",
  "tiny-skia",
- "tiny-skia-path",
  "usvg",
  "zune-png",
 ]

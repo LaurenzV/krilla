@@ -8,7 +8,6 @@
 
 use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
-use tiny_skia_path::{Point, Rect};
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
@@ -17,6 +16,7 @@ use crate::object::destination::Destination;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::RectExt;
+use crate::{Point, Rect};
 
 /// An annotation.
 pub struct Annotation {
@@ -144,7 +144,8 @@ impl LinkAnnotation {
 
         let actual_rect = self
             .rect
-            .transform(page_root_transform(page_height))
+            .to_tsp()
+            .transform(page_root_transform(page_height).to_tsp())
             .unwrap();
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
@@ -152,8 +153,8 @@ impl LinkAnnotation {
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16 {
             self.quad_points.as_ref().map(|p| {
                 annotation.quad_points(p.iter().flat_map(|p| {
-                    let mut p = *p;
-                    page_root_transform(page_height).map_point(&mut p);
+                    let mut p = p.to_tsp();
+                    page_root_transform(page_height).to_tsp().map_point(&mut p);
                     [p.x, p.y]
                 }))
             });

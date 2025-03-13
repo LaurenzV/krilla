@@ -7,7 +7,7 @@ use krilla::geom::Transform;
 use krilla::paint::Pattern;
 use krilla::path::{Fill, Stroke};
 use krilla::{Document, PageSettings};
-use tiny_skia_path::{Path, PathBuilder, Rect};
+use tiny_skia_path::{Path, PathBuilder};
 
 fn main() {
     let mut document = Document::new();

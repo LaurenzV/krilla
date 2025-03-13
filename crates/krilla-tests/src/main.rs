@@ -17,16 +17,16 @@ use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb, ICCProfile};
 use krilla::configure::{Configuration, PdfVersion, Validator};
 use krilla::document::{Document, PageSettings};
-use krilla::font::{Font, GlyphUnits, KrillaGlyph};
+use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::{Stop, Stops};
-use krilla::path::{Fill, Stroke};
+use krilla::path::{Fill, Path, PathBuilder, Stroke};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
-use krilla::Data;
-use krilla::SerializeSettings;
+use krilla::{Data, NormalizedF32, Transform};
+use krilla::{Point, SerializeSettings};
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
@@ -36,8 +36,7 @@ use sitro::{
 };
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
-use skrifa::{GlyphId, MetadataProvider};
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Point, Rect, Transform};
+use skrifa::{FontRef, MetadataProvider};
 
 mod annotation;
 mod color;
@@ -301,7 +300,12 @@ pub fn cmyk_fill(opacity: f32) -> Fill {
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
-    builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
+    builder.move_to(x1, y1);
+    builder.line_to(x2, y1);
+    builder.line_to(x2, y2);
+    builder.line_to(x1, y2);
+    builder.close();
+
     builder.finish().unwrap()
 }
 
@@ -594,8 +598,8 @@ pub fn all_glyphs_to_pdf(
     use krilla::font::KrillaGlyph;
     use krilla::geom::Transform;
 
-    let font = Font::new(font_data, 0, allow_color).unwrap();
-    let font_ref = font.font_ref();
+    let font = Font::new(font_data.clone(), 0, allow_color).unwrap();
+    let font_ref = FontRef::from_index(font_data.as_ref(), 0).unwrap();
 
     let glyphs = glyphs.unwrap_or_else(|| {
         let file = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
@@ -606,7 +610,7 @@ pub fn all_glyphs_to_pdf(
                     .cmap()
                     .unwrap()
                     .map_codepoint(c)
-                    .map(|g| (g, c.to_string()))
+                    .map(|g| (GlyphId::new(g.to_u32()), c.to_string()))
             })
             .collect::<Vec<_>>()
     });
@@ -639,7 +643,7 @@ pub fn all_glyphs_to_pdf(
     let mut color_picker = colors.iter().cycle();
     let mut color = *color_picker.next().unwrap();
 
-    for (i, text) in glyphs.iter().cloned() {
+    for (i, text) in glyphs.iter() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;
@@ -667,9 +671,17 @@ pub fn all_glyphs_to_pdf(
                 opacity: NormalizedF32::ONE,
                 rule: Default::default(),
             },
-            &[KrillaGlyph::new(i, 0.0, 0.0, 0.0, 0.0, 0..text.len(), None)],
+            &[KrillaGlyph::new(
+                GlyphId::new(i.to_u32()),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0..text.len(),
+                None,
+            )],
             font.clone(),
-            &text,
+            text,
             size as f32,
             GlyphUnits::UserSpace,
             false,
@@ -731,7 +743,7 @@ pub fn stops_with_3_solid_1() -> Stops {
 
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
     LinkAnnotation::new(
-        Rect::from_xywh(x, y, w, h).unwrap(),
+        krilla::Rect::from_xywh(x, y, w, h).unwrap(),
         None,
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )
@@ -782,7 +794,7 @@ pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     let mut surface = page.surface();
     surface.draw_svg(
         &tree,
-        tree.size(),
+        krilla::Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
         SvgSettings {
             embed_text: true,
             filter_scale: 2.0,

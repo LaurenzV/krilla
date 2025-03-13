@@ -3,7 +3,7 @@
 use krilla::surface::Surface;
 use usvg::PaintOrder;
 
-use crate::util::{convert_fill, convert_stroke};
+use crate::util::{convert_fill, convert_stroke, PathExt};
 use crate::ProcessContext;
 
 /// Render a path into a surface.
@@ -39,9 +39,9 @@ pub(crate) fn fill_path(
             fill,
             surface.stream_builder(),
             process_context,
-            tiny_skia_path::Transform::identity(),
+            usvg::tiny_skia_path::Transform::identity(),
         );
-        surface.fill_path(path.data(), fill);
+        surface.fill_path(&path.to_krilla(), fill);
     }
 }
 
@@ -56,8 +56,8 @@ pub(crate) fn stroke_path(
             stroke,
             surface.stream_builder(),
             process_context,
-            tiny_skia_path::Transform::identity(),
+            usvg::tiny_skia_path::Transform::identity(),
         );
-        surface.stroke_path(path.data(), stroke);
+        surface.stroke_path(&path.to_krilla(), stroke);
     }
 }

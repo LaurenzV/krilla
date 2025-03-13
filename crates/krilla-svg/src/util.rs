@@ -3,24 +3,14 @@
 use krilla::color::{luma, rgb};
 use krilla::mask::MaskType;
 use krilla::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
-use krilla::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
+use krilla::path::{Fill, FillRule, LineCap, LineJoin, Path, PathBuilder, Stroke, StrokeDash};
 use krilla::stream::StreamBuilder;
 use krilla::surface::BlendMode;
-use tiny_skia_path::{NormalizedF32, Path, PathBuilder, Rect, Transform};
+use krilla::{NormalizedF32, Rect};
+use tiny_skia::PathSegment;
+use usvg::tiny_skia_path::Transform;
 
 use crate::{group, ProcessContext};
-
-/// Convert a usvg `Transform` into a krilla `Transform`.
-pub(crate) fn convert_transform(transform: &Transform) -> Transform {
-    Transform {
-        sx: transform.sx,
-        kx: transform.kx,
-        ky: transform.ky,
-        sy: transform.sy,
-        tx: transform.tx,
-        ty: transform.ty,
-    }
-}
 
 /// Convert a usvg `SpreadMethod` into a krilla `SpreadMethod`.
 pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod {
@@ -34,7 +24,7 @@ pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> Sprea
 /// Convert a usvg `Stop` into a krilla `Stop`.
 pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
     Stop {
-        offset: stop.offset(),
+        offset: NormalizedF32::new(stop.offset().get()).unwrap(),
         color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
@@ -65,7 +55,7 @@ pub(crate) fn convert_paint(
             y1: lg.y1(),
             x2: lg.x2(),
             y2: lg.y2(),
-            transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
+            transform: additional_transform.pre_concat(lg.transform()).to_krilla(),
             spread_method: convert_spread_method(&lg.spread_method()),
             stops: lg
                 .stops()
@@ -83,7 +73,7 @@ pub(crate) fn convert_paint(
             fx: rg.fx(),
             fy: rg.fy(),
             fr: 0.0,
-            transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
+            transform: additional_transform.pre_concat(rg.transform()).to_krilla(),
             spread_method: convert_spread_method(&rg.spread_method()),
             stops: rg
                 .stops()
@@ -104,7 +94,8 @@ pub(crate) fn convert_paint(
                 stream,
                 transform: additional_transform
                     .pre_concat(pat.transform())
-                    .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
+                    .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y()))
+                    .to_krilla(),
                 width: pat.rect().width(),
                 height: pat.rect().height(),
             }
@@ -154,7 +145,7 @@ pub(crate) fn convert_fill(
             process_context,
             additional_transform,
         ),
-        opacity: fill.opacity(),
+        opacity: NormalizedF32::new(fill.opacity().get()).unwrap(),
         rule: convert_fill_rule(&fill.rule()),
     }
 }
@@ -182,7 +173,7 @@ pub(crate) fn convert_stroke(
         miter_limit: stroke.miterlimit().get(),
         line_cap: convert_line_cap(&stroke.linecap()),
         line_join: convert_line_join(&stroke.linejoin()),
-        opacity: stroke.opacity(),
+        opacity: NormalizedF32::new(stroke.opacity().get()).unwrap(),
         dash,
     }
 }
@@ -230,5 +221,54 @@ impl RectExt for Rect {
         path_builder.line_to(self.left(), self.bottom());
         path_builder.close();
         path_builder.finish().unwrap()
+    }
+}
+
+pub(crate) trait KrillaTransformExt {
+    fn to_usvg(&self) -> Transform;
+}
+
+impl KrillaTransformExt for krilla::geom::Transform {
+    fn to_usvg(&self) -> Transform {
+        Transform::from_row(
+            self.sx(),
+            self.ky(),
+            self.kx(),
+            self.sy(),
+            self.tx(),
+            self.ty(),
+        )
+    }
+}
+
+pub(crate) trait UsvgTransformExt {
+    fn to_krilla(&self) -> krilla::geom::Transform;
+}
+
+impl UsvgTransformExt for Transform {
+    fn to_krilla(&self) -> krilla::geom::Transform {
+        krilla::geom::Transform::from_row(self.sx, self.ky, self.kx, self.sy, self.tx, self.ty)
+    }
+}
+
+pub(crate) trait PathExt {
+    fn to_krilla(&self) -> Path;
+}
+
+impl PathExt for usvg::Path {
+    fn to_krilla(&self) -> Path {
+        let mut pb = PathBuilder::new();
+
+        for seg in self.data().segments() {
+            match seg {
+                PathSegment::MoveTo(p) => pb.move_to(p.x, p.y),
+                PathSegment::LineTo(p) => pb.line_to(p.x, p.y),
+                PathSegment::QuadTo(p1, p2) => pb.quad_to(p1.x, p1.y, p2.x, p2.y),
+                PathSegment::CubicTo(p1, p2, p3) => pb.cubic_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y),
+                PathSegment::Close => pb.close(),
+            }
+        }
+
+        pb.finish().unwrap()
     }
 }

@@ -9,14 +9,13 @@ use std::sync::Arc;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
-use skrifa::GlyphId;
-#[cfg(feature = "raster-images")]
-use tiny_skia_path::Size;
-use tiny_skia_path::{NormalizedF32, Path, PathSegment, Point, Rect, Transform};
+use tiny_skia_path::{Path, PathSegment, Rect};
 
 use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
-use crate::font::{Font, Glyph, GlyphUnits};
+use crate::font::{Font, Glyph, GlyphId, GlyphUnits};
+#[cfg(feature = "raster-images")]
+use crate::geom::Size;
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
@@ -31,13 +30,13 @@ use crate::object::tiling_pattern::TilingPattern;
 use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
-use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::surface::Location;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
+use crate::{resource, NormalizedF32, Point, Transform};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -234,7 +233,7 @@ impl ContentBuilder {
         self.content_save_state();
         self.content_draw_path(
             path.clone()
-                .transform(self.cur_transform_with_root_transform())
+                .transform(self.cur_transform_with_root_transform().to_tsp())
                 .unwrap()
                 .segments(),
         );
@@ -955,11 +954,11 @@ fn get_glyphs_bbox(
 ) -> Rect {
     let font_bbox = font.bbox();
     let (mut bl, mut bt, mut br, mut bb) = font_bbox
-        .transform(Transform::from_scale(
+        .transform(tiny_skia_path::Transform::from_scale(
             size / font.units_per_em(),
             -size / font.units_per_em(),
         ))
-        .and_then(|b| b.transform(Transform::from_translate(x, y)))
+        .and_then(|b| b.transform(tiny_skia_path::Transform::from_translate(x, y)))
         .map(|b| (b.left(), b.top(), b.right(), b.bottom()))
         .unwrap_or((x, y, x + 1.0, y + 1.0));
 

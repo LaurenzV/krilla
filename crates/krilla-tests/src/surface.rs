@@ -5,10 +5,9 @@ use krilla::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
-use krilla::Data;
+use krilla::{Data, Point, Size, Transform};
 use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
-use tiny_skia_path::{Point, Size, Transform};
 
 use crate::{
     basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB,
@@ -284,7 +283,11 @@ pub(crate) fn sample_svg() -> usvg::Tree {
 #[visreg]
 fn svg_simple(surface: &mut Surface) {
     let tree = sample_svg();
-    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
 }
 
 #[visreg]
@@ -302,7 +305,11 @@ fn svg_outlined_text(surface: &mut Surface) {
         embed_text: false,
         ..Default::default()
     };
-    surface.draw_svg(&tree, tree.size(), settings);
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        settings,
+    );
 }
 
 #[visreg]
@@ -321,7 +328,11 @@ fn svg_should_be_clipped(surface: &mut Surface) {
     let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
 
     surface.push_transform(&Transform::from_translate(100.0, 0.0));
-    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
     surface.pop();
 }
 
@@ -337,7 +348,11 @@ fn svg_with_filter(surface: &mut Surface) {
     )
     .unwrap();
 
-    surface.draw_svg(&tree, tree.size(), SvgSettings::default());
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
 }
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {

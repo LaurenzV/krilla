@@ -9,13 +9,12 @@ use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::GlyphId;
 use subsetter::GlyphRemapper;
 
 use super::{CIDIdentifer, FontIdentifier};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;

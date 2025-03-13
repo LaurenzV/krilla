@@ -4,11 +4,11 @@ use krilla::color::rgb;
 use krilla::font::{GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::Font;
-use tiny_skia_path::{Point, Transform};
-use usvg::{NormalizedF32, PaintOrder};
+use krilla::{Font, NormalizedF32, Point};
+use usvg::tiny_skia_path::Transform;
+use usvg::PaintOrder;
 
-use crate::util::{convert_fill, convert_stroke};
+use crate::util::{convert_fill, convert_stroke, UsvgTransformExt};
 use crate::{path, ProcessContext};
 
 /// Render a text into a surface.
@@ -107,7 +107,7 @@ pub(crate) fn render(
                 );
             };
 
-            surface.push_transform(&transform);
+            surface.push_transform(&transform.to_krilla());
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {

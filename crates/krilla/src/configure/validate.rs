@@ -24,12 +24,11 @@ use std::fmt::Debug;
 
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::Finish;
-use skrifa::GlyphId;
 use xmp_writer::XmpWriter;
 
 use crate::configure::PdfVersion;
 use crate::embed::EmbedError;
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::surface::Location;
 
 /// An error that occurred during validation

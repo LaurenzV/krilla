@@ -12,8 +12,8 @@ use krilla::surface::TextDirection;
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, TableHeaderScope, Tag, TagGroup, TagTree,
 };
+use krilla::{Point, Rect, Size};
 use krilla_macros::snapshot;
-use tiny_skia_path::{Point, Rect, Size};
 
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,

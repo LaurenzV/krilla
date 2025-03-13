@@ -3,11 +3,10 @@
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
-pub use pdf_writer::types::NumberingStyle;
 use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
@@ -20,6 +19,7 @@ use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
+use crate::Transform;
 
 /// A single page.
 ///
@@ -130,6 +130,33 @@ impl Drop for Page<'_> {
     }
 }
 
+/// The numbering style of a page label.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum NumberingStyle {
+    /// Arabic numerals.
+    Arabic,
+    /// Lowercase Roman numerals.
+    LowerRoman,
+    /// Uppercase Roman numerals.
+    UpperRoman,
+    /// Lowercase letters (a-z, then aa-zz, ...).
+    LowerAlpha,
+    /// Uppercase letters (A-Z, then AA-ZZ, ...).
+    UpperAlpha,
+}
+
+impl NumberingStyle {
+    fn to_pdf(self) -> pdf_writer::types::NumberingStyle {
+        match self {
+            NumberingStyle::Arabic => pdf_writer::types::NumberingStyle::Arabic,
+            NumberingStyle::LowerRoman => pdf_writer::types::NumberingStyle::LowerRoman,
+            NumberingStyle::UpperRoman => pdf_writer::types::NumberingStyle::UpperRoman,
+            NumberingStyle::LowerAlpha => pdf_writer::types::NumberingStyle::LowerAlpha,
+            NumberingStyle::UpperAlpha => pdf_writer::types::NumberingStyle::UpperAlpha,
+        }
+    }
+}
+
 pub(crate) struct InternalPage {
     pub stream_ref: Ref,
     pub stream_resources: ResourceDictionary,
@@ -211,34 +238,37 @@ impl InternalPage {
             .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version());
 
         let transform_rect = |rect: Rect| {
-            rect.transform(page_root_transform(
-                self.page_settings.surface_size().height(),
-            ))
-            .unwrap()
+            rect.transform(page_root_transform(self.page_settings.surface_size().height()).to_tsp())
+                .unwrap()
         };
 
         // media box is mandatory, so we need to fall back to the default bbox
-        let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
+        let media_box = transform_rect(
+            self.page_settings
+                .media_box()
+                .map(|r| r.to_tsp())
+                .unwrap_or(self.bbox),
+        );
         page.media_box(media_box.to_pdf_rect());
 
         // the remaining type of box are not mandatory, so we only set them if they are present
         if let Some(crop_box) = self.page_settings.crop_box() {
-            let crop_box = transform_rect(crop_box);
+            let crop_box = transform_rect(crop_box.to_tsp());
             page.crop_box(crop_box.to_pdf_rect());
         }
 
         if let Some(bleed_box) = self.page_settings.bleed_box() {
-            let bleed_box = transform_rect(bleed_box);
+            let bleed_box = transform_rect(bleed_box.to_tsp());
             page.bleed_box(bleed_box.to_pdf_rect());
         }
 
         if let Some(trim_box) = self.page_settings.trim_box() {
-            let trim_box = transform_rect(trim_box);
+            let trim_box = transform_rect(trim_box.to_tsp());
             page.trim_box(trim_box.to_pdf_rect());
         }
 
         if let Some(art_box) = self.page_settings.art_box() {
-            let art_box = transform_rect(art_box);
+            let art_box = transform_rect(art_box.to_tsp());
             page.art_box(art_box.to_pdf_rect());
         }
 
@@ -309,7 +339,7 @@ impl PageLabel {
             .start::<pdf_writer::writers::PageLabel>();
 
         if let Some(style) = self.style {
-            label.style(style);
+            label.style(style.to_pdf());
         }
 
         if let Some(prefix) = &self.prefix {

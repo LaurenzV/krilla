@@ -1,18 +1,19 @@
 //! Drawing outline-based glyphs to a surface.
 
 use skrifa::outline::{DrawSettings, OutlinePen};
-use skrifa::{GlyphId, MetadataProvider};
-use tiny_skia_path::{Path, PathBuilder, Transform};
+use skrifa::MetadataProvider;
 
-use crate::font::Font;
+use crate::font::{Font, GlyphId};
 use crate::object::font::PaintMode;
+use crate::path::Path;
 use crate::surface::Surface;
+use crate::Transform;
 
-pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
+pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<tiny_skia_path::Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
-    if let Some(outline_glyph) = outline_glyphs.get(glyph) {
+    if let Some(outline_glyph) = outline_glyphs.get(glyph.to_skrifa()) {
         outline_glyph
             .draw(
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),
@@ -32,7 +33,7 @@ pub(crate) fn draw_glyph(
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
-    let path = glyph_path(font, glyph).and_then(|p| p.transform(base_transform))?;
+    let path = Path(glyph_path(font, glyph).and_then(|p| p.transform(base_transform.to_tsp()))?);
 
     match paint_mode {
         PaintMode::Fill(f) => surface.fill_path(&path, f.clone()),
@@ -45,14 +46,14 @@ pub(crate) fn draw_glyph(
 }
 
 /// A wrapper struct for implementing the `OutlinePen` trait.
-pub(crate) struct OutlineBuilder(PathBuilder);
+pub(crate) struct OutlineBuilder(tiny_skia_path::PathBuilder);
 
 impl OutlineBuilder {
     pub(crate) fn new() -> Self {
-        Self(PathBuilder::new())
+        Self(tiny_skia_path::PathBuilder::new())
     }
 
-    pub(crate) fn finish(self) -> Option<Path> {
+    pub(crate) fn finish(self) -> Option<tiny_skia_path::Path> {
         self.0.finish()
     }
 }

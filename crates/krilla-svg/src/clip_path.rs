@@ -1,11 +1,11 @@
 //! Clip path conversion
 
 use krilla::mask::{Mask, MaskType};
-use krilla::path::FillRule;
+use krilla::path::{FillRule, Path, PathBuilder};
 use krilla::surface::Surface;
-use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
+use usvg::tiny_skia_path::{PathSegment, Transform};
 
-use crate::util::{convert_fill_rule, convert_transform};
+use crate::util::{convert_fill_rule, UsvgTransformExt};
 use crate::{group, ProcessContext};
 
 /// Render a clip path into a surface.
@@ -205,7 +205,7 @@ fn render_complex(
         pop_count += render(parent, clip_path, &mut sub_surface, process_context);
     }
 
-    sub_surface.push_transform(&convert_transform(&clip_path.transform()));
+    sub_surface.push_transform(&clip_path.transform().to_krilla());
     pop_count += 1;
     group::render(clip_path.root(), &mut sub_surface, process_context);
 

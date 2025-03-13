@@ -1,7 +1,6 @@
 use krilla::surface::Surface;
-use krilla::{Document, Image, Page};
+use krilla::{Document, Image, Page, Size};
 use krilla_macros::{snapshot, visreg};
-use tiny_skia_path::Size;
 
 use crate::{
     load_custom_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH,
