@@ -848,7 +848,6 @@ dependencies = [
  "roxmltree 0.20.0",
  "sitro",
  "tiny-skia",
- "tiny-skia-path",
  "usvg",
  "zune-png",
 ]

@@ -2,7 +2,7 @@
 
 use krilla::surface::Surface;
 use krilla::{Image, Size};
-use tiny_skia_path::Transform;
+use usvg::tiny_skia_path::Transform;
 
 use crate::util::KrillaTransformExt;
 use crate::ProcessContext;

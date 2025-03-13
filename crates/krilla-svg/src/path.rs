@@ -39,7 +39,7 @@ pub(crate) fn fill_path(
             fill,
             surface.stream_builder(),
             process_context,
-            tiny_skia_path::Transform::identity(),
+            usvg::tiny_skia_path::Transform::identity(),
         );
         surface.fill_path(path.data(), fill);
     }
@@ -56,7 +56,7 @@ pub(crate) fn stroke_path(
             stroke,
             surface.stream_builder(),
             process_context,
-            tiny_skia_path::Transform::identity(),
+            usvg::tiny_skia_path::Transform::identity(),
         );
         surface.stroke_path(path.data(), stroke);
     }

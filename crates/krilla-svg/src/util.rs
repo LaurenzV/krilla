@@ -7,7 +7,7 @@ use krilla::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use krilla::stream::StreamBuilder;
 use krilla::surface::BlendMode;
 use krilla::{NormalizedF32, Rect};
-use tiny_skia_path::{Path, PathBuilder, Transform};
+use usvg::tiny_skia_path::{Path, PathBuilder, Transform};
 
 use crate::{group, ProcessContext};
 

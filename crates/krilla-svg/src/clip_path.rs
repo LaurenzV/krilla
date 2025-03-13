@@ -3,7 +3,7 @@
 use krilla::mask::{Mask, MaskType};
 use krilla::path::FillRule;
 use krilla::surface::Surface;
-use tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
+use usvg::tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
 
 use crate::util::{convert_fill_rule, UsvgTransformExt};
 use crate::{group, ProcessContext};
