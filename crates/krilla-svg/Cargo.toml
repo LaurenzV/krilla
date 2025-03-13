@@ -14,7 +14,6 @@ usvg = { workspace = true }
 tiny-skia = { workspace = true }
 resvg = { workspace = true }
 flate2 = { workspace = true }
-roxmltree = { workspace = true }
 fontdb = { workspace = true }
 
 [dev-dependencies]

@@ -845,7 +845,6 @@ dependencies = [
  "krilla-macros",
  "once_cell",
  "resvg",
- "roxmltree 0.20.0",
  "sitro",
  "tiny-skia",
  "usvg",
