@@ -2,8 +2,7 @@
 
 use krilla::path::FillRule;
 use krilla::surface::Surface;
-use krilla::{Image, Size};
-use tiny_skia_path::Rect;
+use krilla::{Image, Rect, Size};
 use usvg::ImageKind;
 
 use crate::util::RectExt;

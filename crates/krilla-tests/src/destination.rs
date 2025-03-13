@@ -1,8 +1,7 @@
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::destination::{NamedDestination, XyzDestination};
-use krilla::Point;
+use krilla::{Point, Rect};
 use krilla_macros::snapshot;
-use tiny_skia_path::Rect;
 
 use crate::Document;
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};

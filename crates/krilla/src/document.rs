@@ -14,8 +14,6 @@
 //!
 //! [`Page`]: crate::page::Page
 
-use tiny_skia_path::Rect;
-
 use crate::embed::EmbeddedFile;
 use crate::error::KrillaResult;
 use crate::metadata::Metadata;
@@ -24,7 +22,7 @@ use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::tagging::TagTree;
-use crate::Size;
+use crate::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {

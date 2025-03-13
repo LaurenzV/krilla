@@ -9,8 +9,8 @@ use krilla::color::rgb;
 use krilla::font::{Font, FontInfo, GlyphId};
 use krilla::path::FillRule;
 use krilla::surface::Surface;
-use krilla::Size;
-use tiny_skia_path::{Rect, Transform};
+use krilla::{Rect, Size};
+use tiny_skia_path::Transform;
 use usvg::{fontdb, roxmltree, Group, ImageKind, Node, Tree};
 
 use crate::util::RectExt;

@@ -1,8 +1,7 @@
 use krilla::destination::XyzDestination;
 use krilla::document::{Document, PageSettings};
-use krilla::{Page, Point};
+use krilla::{Page, Point, Rect};
 use krilla_macros::snapshot;
-use tiny_skia_path::Rect;
 
 use crate::{green_fill, rect_to_path, red_fill};
 use crate::{settings_1, LinkAction};

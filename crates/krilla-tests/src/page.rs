@@ -2,9 +2,9 @@ use std::num::NonZeroUsize;
 
 use krilla::page::{NumberingStyle, PageLabel};
 use krilla::path::Fill;
-use krilla::{Document, Page, PageSettings};
+use krilla::{Document, Page, PageSettings, Rect};
 use krilla_macros::{snapshot, visreg};
-use tiny_skia_path::{PathBuilder, Rect};
+use tiny_skia_path::PathBuilder;
 
 use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
