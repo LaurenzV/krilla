@@ -36,9 +36,13 @@ pub(crate) fn draw_glyph(
     let path = Path(glyph_path(font, glyph).and_then(|p| p.transform(base_transform.to_tsp()))?);
 
     match paint_mode {
-        PaintMode::Fill(f) => surface.fill_path(&path, f.clone()),
+        PaintMode::Fill(f) => {
+            surface.set_fill(f.clone());
+            surface.fill_path(&path)
+        }
         PaintMode::Stroke(s) => {
-            surface.stroke_path(&path, s.clone());
+            surface.set_stroke(s.clone());
+            surface.stroke_path(&path);
         }
     }
 

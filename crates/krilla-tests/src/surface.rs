@@ -23,7 +23,8 @@ fn stream_path_single_with_rgb(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let fill = red_fill(1.0);
-    surface.fill_path(&path, fill);
+    surface.set_fill(fill);
+    surface.fill_path(&path);
 }
 
 #[snapshot(single_page)]
@@ -31,7 +32,8 @@ fn stream_path_single_with_luma(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let fill = gray_fill(1.0);
-    surface.fill_path(&path, fill);
+    surface.set_fill(fill);
+    surface.fill_path(&path);
 }
 
 #[snapshot(single_page)]
@@ -39,7 +41,8 @@ fn stream_path_single_with_rgb_and_opacity(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let fill = red_fill(0.5);
-    surface.fill_path(&path, fill);
+    surface.set_fill(fill);
+    surface.fill_path(&path);
 }
 
 #[snapshot(single_page)]
@@ -47,7 +50,8 @@ fn stream_path_single_with_cmyk(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let fill = cmyk_fill(1.0);
-    surface.fill_path(&path, fill);
+    surface.set_fill(fill);
+    surface.fill_path(&path);
 }
 
 #[snapshot(single_page, settings_2)]
@@ -57,9 +61,12 @@ fn stream_resource_cache(page: &mut Page) {
     let path2 = rect_to_path(50.0, 50.0, 150.0, 150.0);
     let path3 = rect_to_path(100.0, 100.0, 200.0, 200.0);
 
-    surface.fill_path(&path1, green_fill(1.0));
-    surface.fill_path(&path2, red_fill(1.0));
-    surface.fill_path(&path3, blue_fill(1.0));
+    surface.set_fill(green_fill(1.0));
+    surface.fill_path(&path1);
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&path2);
+    surface.set_fill(blue_fill(1.0));
+    surface.fill_path(&path3);
 }
 
 #[snapshot(single_page)]
@@ -68,9 +75,11 @@ fn stream_nested_transforms(page: &mut Page) {
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
 
     surface.push_transform(&Transform::from_translate(50.0, 50.0));
-    surface.fill_path(&path1, green_fill(1.0));
+    surface.set_fill(green_fill(1.0));
+    surface.fill_path(&path1);
     surface.push_transform(&Transform::from_translate(100.0, 100.0));
-    surface.fill_path(&path1, red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&path1);
 
     surface.pop();
     surface.pop();
@@ -80,11 +89,14 @@ fn stream_nested_transforms(page: &mut Page) {
 fn stream_reused_graphics_state(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
-    surface.fill_path(&path1, green_fill(0.5));
+    surface.set_fill(green_fill(0.5));
+    surface.fill_path(&path1);
     surface.push_blend_mode(BlendMode::ColorBurn);
-    surface.fill_path(&path1, green_fill(0.5));
+    surface.set_fill(green_fill(0.5));
+    surface.fill_path(&path1);
     surface.pop();
-    surface.fill_path(&path1, green_fill(0.5));
+    surface.set_fill(green_fill(0.5));
+    surface.fill_path(&path1);
 }
 
 #[snapshot(single_page)]
@@ -92,7 +104,6 @@ fn stream_fill_text(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
-        Fill::default(),
         Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
         16.0,
         "hi there",
@@ -106,7 +117,6 @@ fn stream_stroke_text(page: &mut Page) {
     let mut surface = page.surface();
     surface.stroke_text(
         Point::from_xy(0.0, 50.0),
-        Stroke::default(),
         Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
         16.0,
         "hi there",
@@ -129,7 +139,8 @@ fn stream_mask(page: &mut Page) {
     let mask = basic_mask(&mut surface, MaskType::Alpha);
     surface.push_mask(mask);
     let path = rect_to_path(0.0, 0.0, 100.0, 100.0);
-    surface.fill_path(&path, green_fill(0.5));
+    surface.set_fill(green_fill(0.5));
+    surface.fill_path(&path);
     surface.pop();
 }
 
@@ -138,7 +149,6 @@ fn text_direction_ltr(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -152,7 +162,6 @@ fn text_direction_rtl(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -166,7 +175,6 @@ fn text_direction_ttb(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
         Point::from_xy(100.0, 0.0),
-        Fill::default(),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -180,7 +188,6 @@ fn text_direction_btt(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
     surface.fill_text(
         Point::from_xy(100.0, 0.0),
-        Fill::default(),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -193,7 +200,6 @@ fn simple_text_impl(page: &mut Page, font_data: Data) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
-        Fill::default(),
         Font::new(font_data, 0, true).unwrap(),
         16.0,
         "A line of text.",
@@ -224,7 +230,6 @@ fn complex_text(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
-        Fill::default(),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         16.0,
         "यह कुछ जटिल पाठ है.",
@@ -238,7 +243,6 @@ fn complex_text_2(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
-        Fill::default(),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         16.0,
         "यु॒धा नर॑ ऋ॒ष्वा",
@@ -252,7 +256,6 @@ fn complex_text_3(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
-        Fill::default(),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         12.0,
         "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
@@ -266,7 +269,6 @@ fn complex_text_4(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
         Point::from_xy(0.0, 50.0),
-        Fill::default(),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         10.0,
         "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
@@ -370,9 +372,9 @@ fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
 
 fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+    surface.set_fill(red_fill(0.5));
     surface.fill_text(
         Point::from_xy(0.0, 80.0),
-        red_fill(0.5),
         font.clone(),
         20.0,
         "red outlined text",
@@ -380,9 +382,9 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         TextDirection::Auto,
     );
 
+    surface.set_fill(blue_fill(0.8));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        blue_fill(0.8),
         font.clone(),
         20.0,
         "blue outlined text",
@@ -395,9 +397,9 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         ..Default::default()
     };
 
+    surface.set_fill(grad_fill);
     surface.fill_text(
         Point::from_xy(0.0, 120.0),
-        grad_fill,
         font.clone(),
         20.0,
         "gradient text",
@@ -407,9 +409,9 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
 
     let noto_font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
 
+    surface.set_fill(blue_fill(0.8));
     surface.fill_text(
         Point::from_xy(0.0, 140.0),
-        blue_fill(0.8),
         noto_font.clone(),
         20.0,
         "😄😁😆",
@@ -422,9 +424,9 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         ..Default::default()
     };
 
+    surface.set_fill(grad_fill);
     surface.fill_text(
         Point::from_xy(0.0, 160.0),
-        grad_fill,
         font,
         20.0,
         "longer gradient text with repeat",
@@ -440,9 +442,9 @@ fn text_outlined_with_fill(surface: &mut Surface) {
 
 fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+    surface.set_stroke(red_stroke(0.5, 1.0));
     surface.stroke_text(
         Point::from_xy(0.0, 80.0),
-        red_stroke(0.5, 1.0),
         font.clone(),
         20.0,
         "red outlined text",
@@ -450,9 +452,9 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         TextDirection::Auto,
     );
 
+    surface.set_stroke(blue_stroke(0.8));
     surface.stroke_text(
         Point::from_xy(0.0, 100.0),
-        blue_stroke(0.8),
         font.clone(),
         20.0,
         "blue outlined text",
@@ -465,9 +467,9 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         ..Default::default()
     };
 
+    surface.set_stroke(grad_stroke);
     surface.stroke_text(
         Point::from_xy(0.0, 120.0),
-        grad_stroke,
         font,
         20.0,
         "gradient text",
@@ -477,9 +479,9 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
 
     let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
 
+    surface.set_stroke(blue_stroke(0.8));
     surface.stroke_text(
         Point::from_xy(0.0, 140.0),
-        blue_stroke(0.8),
         font,
         20.0,
         "😄😁😆",
@@ -498,7 +500,6 @@ fn text_zalgo(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         32.0,
         "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
@@ -512,7 +513,6 @@ fn text_zalgo_outlined(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         32.0,
         "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",

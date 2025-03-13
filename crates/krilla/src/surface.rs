@@ -75,6 +75,8 @@ pub type Location = u64;
 pub struct Surface<'a> {
     pub(crate) sc: &'a mut SerializeContext,
     pub(crate) root_builder: ContentBuilder,
+    fill: Fill,
+    stroke: Stroke,
     sub_builders: Vec<ContentBuilder>,
     push_instructions: Vec<PushInstruction>,
     page_identifier: Option<PageTagIdentifier>,
@@ -92,6 +94,8 @@ impl<'a> Surface<'a> {
             sc,
             root_builder,
             page_identifier,
+            fill: Fill::default(),
+            stroke: Stroke::default(),
             sub_builders: vec![],
             push_instructions: vec![],
             finish_fn,
@@ -103,16 +107,32 @@ impl<'a> Surface<'a> {
         StreamBuilder::new(self.sc)
     }
 
+    /// Set the fill that should be used for filling operations.
+    pub fn set_fill(&mut self, fill: Fill) {
+        self.fill = fill;
+    }
+
+    /// Set the stroke that should be used for stroking operations.
+    pub fn set_stroke(&mut self, stroke: Stroke) {
+        self.stroke = stroke;
+    }
+
     /// Fill a path.
-    pub fn fill_path(&mut self, path: &Path, fill: Fill) {
-        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path(&path.0, fill, self.sc);
+    pub fn fill_path(&mut self, path: &Path) {
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).fill_path(
+            &path.0,
+            self.fill.clone(),
+            self.sc,
+        );
     }
 
     /// Stroke a path.
-    pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) {
-        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_path(&path.0, stroke, self.sc)
+    pub fn stroke_path(&mut self, path: &Path) {
+        Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).stroke_path(
+            &path.0,
+            self.stroke.clone(),
+            self.sc,
+        )
     }
 
     /// Start a new tagged content section.
@@ -193,16 +213,14 @@ impl<'a> Surface<'a> {
         }
     }
 
-    /// Draw a sequence of glyphs with a fill.
+    /// Draw a sequence of glyphs using the current fill.
     ///
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
-    #[allow(clippy::too_many_arguments)]
     pub fn fill_glyphs(
         &mut self,
         start: Point,
-        fill: Fill,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -217,13 +235,13 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                PaintMode::Fill(&fill),
+                PaintMode::Fill(&self.fill.clone()),
             );
         } else {
             Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).fill_glyphs(
                 start,
                 self.sc,
-                fill,
+                self.fill.clone(),
                 glyphs,
                 font,
                 text,
@@ -233,7 +251,7 @@ impl<'a> Surface<'a> {
         }
     }
 
-    /// Draw some text with a fill.
+    /// Draw some text using the current fill.
     ///
     /// This is a high-level method which allows you to just provide some text, which will
     /// then be rendered into a single line. However, this approach has restrictions:
@@ -246,11 +264,9 @@ impl<'a> Surface<'a> {
     /// If you need more advanced control over how your text looks,
     /// you can use the `fill_glyphs` method.
     #[cfg(feature = "simple-text")]
-    #[allow(clippy::too_many_arguments)]
     pub fn fill_text(
         &mut self,
         start: Point,
-        fill: Fill,
         font: Font,
         font_size: f32,
         text: &str,
@@ -261,7 +277,6 @@ impl<'a> Surface<'a> {
 
         self.fill_glyphs(
             start,
-            fill,
             &glyphs,
             font,
             text,
@@ -271,12 +286,11 @@ impl<'a> Surface<'a> {
         );
     }
 
-    /// Draw a sequence of glyphs with a stroke.
+    /// Draw a sequence of glyphs using the current stroke.
     #[allow(clippy::too_many_arguments)]
     pub fn stroke_glyphs(
         &mut self,
         start: Point,
-        stroke: Stroke,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -291,13 +305,13 @@ impl<'a> Surface<'a> {
                 font,
                 font_size,
                 glyph_units,
-                PaintMode::Stroke(&stroke),
+                PaintMode::Stroke(&self.stroke.clone()),
             );
         } else {
             Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders).stroke_glyphs(
                 start,
                 self.sc,
-                stroke,
+                self.stroke.clone(),
                 glyphs,
                 font,
                 text,
@@ -320,11 +334,9 @@ impl<'a> Surface<'a> {
     /// If you need more advanced control over how your text looks,
     /// you can use the `stroke_glyphs` method.
     #[cfg(feature = "simple-text")]
-    #[allow(clippy::too_many_arguments)]
     pub fn stroke_text(
         &mut self,
         start: Point,
-        stroke: Stroke,
         font: Font,
         font_size: f32,
         text: &str,
@@ -335,7 +347,6 @@ impl<'a> Surface<'a> {
 
         self.stroke_glyphs(
             start,
-            stroke,
             &glyphs,
             font,
             text,
@@ -465,7 +476,7 @@ impl<'a> Surface<'a> {
 
     /// THIS IS AN INTERNAL FUNCTION, DO NOT USE DIRECTLY!
     ///
-    /// Returns the font cache of the surface
+    /// Returns the font cache of the surface.
     #[doc(hidden)]
     pub fn font_cache(&self) -> &HashMap<Arc<FontInfo>, Font> {
         &self.sc.font_cache

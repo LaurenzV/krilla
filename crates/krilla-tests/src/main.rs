@@ -235,7 +235,8 @@ pub fn basic_mask(surface: &mut Surface, mask_type: MaskType) -> Mask {
     let mut sub_surface = stream_builder.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
-    sub_surface.fill_path(&path, red_fill(0.2));
+    sub_surface.set_fill(red_fill(0.2));
+    sub_surface.fill_path(&path);
     sub_surface.finish();
 
     Mask::new(stream_builder.finish(), mask_type)
@@ -664,13 +665,13 @@ pub fn all_glyphs_to_pdf(
         }
 
         surface.push_transform(&get_transform(cur_point, size, num_cols, units_per_em));
+        surface.set_fill(Fill {
+            paint: color.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
         surface.fill_glyphs(
             Point::from_xy(0.0, 0.0),
-            Fill {
-                paint: color.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
             &[KrillaGlyph::new(
                 GlyphId::new(i.to_u32()),
                 0.0,
@@ -754,9 +755,11 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
     let path = rect_to_path(0.0, 0.0, 10.0, 10.0);
 
     let mut surface = stream_builder.surface();
-    surface.fill_path(&path, red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&path);
     surface.push_transform(&Transform::from_translate(10.0, 10.0));
-    surface.fill_path(&path, green_fill(1.0));
+    surface.set_fill(green_fill(1.0));
+    surface.fill_path(&path);
     surface.pop();
     surface.finish();
 

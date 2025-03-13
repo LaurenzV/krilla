@@ -72,7 +72,8 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
                     surface.push_clip_path(&crate::path::Path(path), &FillRule::NonZero);
                 }
 
-                surface.fill_path(&crate::path::Path(filled[0].clone()), *fill);
+                surface.set_fill(*fill);
+                surface.fill_path(&crate::path::Path(filled[0].clone()));
 
                 for _ in 0..num_clips {
                     surface.pop();

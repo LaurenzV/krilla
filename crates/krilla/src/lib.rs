@@ -51,21 +51,21 @@ let mut surface = page.surface();
 // Draw some text.
 surface.fill_text(
     Point::from_xy(0.0, 25.0),
-    Fill::default(),
     font.clone(),
     14.0,
     "This text has font size 14!",
     false,
     TextDirection::Auto
 );
+
+surface.set_fill(Fill {
+    paint: rgb::Color::new(255, 0, 0).into(),
+    opacity: NormalizedF32::new(0.5).unwrap(),
+    rule: Default::default(),
+});
 // Draw some more text, in a different color with an opacity and bigger font size.
 surface.fill_text(
     Point::from_xy(0.0, 50.0),
-    Fill {
-        paint: rgb::Color::new(255, 0, 0).into(),
-        opacity: NormalizedF32::new(0.5).unwrap(),
-        rule: Default::default(),
-    },
     font.clone(),
     16.0,
     "This text has font size 16!",

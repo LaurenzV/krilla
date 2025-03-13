@@ -21,14 +21,12 @@ mod shading {
             anti_alias: false,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: gradient.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
-        );
+        surface.set_fill(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
+        surface.fill_path(&path);
     }
 
     #[visreg(all)]
@@ -45,14 +43,12 @@ mod shading {
             anti_alias: false,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: gradient.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
-        );
+        surface.set_fill(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
+        surface.fill_path(&path);
     }
 
     #[visreg(all)]
@@ -69,14 +65,12 @@ mod shading {
             anti_alias: false,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: gradient.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
-        );
+        surface.set_fill(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
+        surface.fill_path(&path);
     }
 
     #[visreg(all)]
@@ -93,14 +87,12 @@ mod shading {
             anti_alias: false,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: gradient.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
-        );
+        surface.set_fill(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
+        surface.fill_path(&path);
     }
 
     // Should be turned into a solid color.
@@ -122,14 +114,12 @@ mod shading {
             anti_alias: false,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: gradient.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
-        );
+        surface.set_fill(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
+        surface.fill_path(&path);
     }
 
     #[visreg(all)]
@@ -148,14 +138,12 @@ mod shading {
             anti_alias: false,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: gradient.into(),
-                opacity: NormalizedF32::ONE,
-                rule: Default::default(),
-            },
-        );
+        surface.set_fill(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        });
+        surface.fill_path(&path);
     }
 }
 
@@ -181,13 +169,11 @@ mod tiling {
             height: 20.0,
         };
 
-        surface.fill_path(
-            &path,
-            Fill {
-                paint: pattern.into(),
-                opacity: NormalizedF32::new(0.5).unwrap(),
-                rule: Default::default(),
-            },
-        )
+        surface.set_fill(Fill {
+            paint: pattern.into(),
+            opacity: NormalizedF32::new(0.5).unwrap(),
+            rule: Default::default(),
+        });
+        surface.fill_path(&path)
     }
 }

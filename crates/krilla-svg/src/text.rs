@@ -63,10 +63,10 @@ pub(crate) fn render(
                 .as_ref()
                 .map(|s| convert_stroke(s, surface.stream_builder(), process_context, inverted));
 
-            let fill_op = |sb: &mut Surface, fill: Fill, font: Font, embed_text: bool| {
-                sb.fill_glyphs(
+            let fill_op = |s: &mut Surface, fill: Fill, font: Font, embed_text: bool| {
+                s.set_fill(fill);
+                s.fill_glyphs(
                     Point::from_xy(0.0, 0.0),
-                    fill,
                     &[KrillaGlyph::new(
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
@@ -85,10 +85,10 @@ pub(crate) fn render(
                 );
             };
 
-            let stroke_op = |sb: &mut Surface, stroke: Stroke, font: Font, embed_text: bool| {
-                sb.stroke_glyphs(
+            let stroke_op = |s: &mut Surface, stroke: Stroke, font: Font, embed_text: bool| {
+                s.set_stroke(stroke);
+                s.stroke_glyphs(
                     Point::from_xy(0.0, 0.0),
-                    stroke,
                     &[KrillaGlyph::new(
                         GlyphId::new(glyph.id.0 as u32),
                         // Don't care about those, since we render only one glyph.
