@@ -1,6 +1,6 @@
 //! Drawing COLR-based glyphs to a surface.
 
-use pdf_writer::types::BlendMode;
+use crate::surface::BlendMode;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;

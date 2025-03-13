@@ -2,7 +2,6 @@
 
 use std::ops::DerefMut;
 
-pub use pdf_writer::types::AssociationKind;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
@@ -121,7 +120,7 @@ impl Cacheable for EmbeddedFile {
             .validator()
             .allows_associated_files()
         {
-            file_spec.association_kind(self.association_kind);
+            file_spec.association_kind(self.association_kind.into());
         }
 
         if let Some(description) = self.description {
@@ -136,5 +135,32 @@ impl Cacheable for EmbeddedFile {
         file_spec.finish();
 
         chunk
+    }
+}
+
+/// How an embedded file relates to the PDF document it is embedded in.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum AssociationKind {
+    /// The PDF document was created from this source file.
+    Source,
+    /// This file was used to derive a visual presentation in the PDF.
+    Data,
+    /// An alternative representation of this document.
+    Alternative,
+    /// Additional resources for this document.
+    Supplement,
+    /// There is no clear relationship or it is not known.
+    Unspecified,
+}
+
+impl From<AssociationKind> for pdf_writer::types::AssociationKind {
+    fn from(value: AssociationKind) -> Self {
+        match value {
+            AssociationKind::Source => pdf_writer::types::AssociationKind::Source,
+            AssociationKind::Data => pdf_writer::types::AssociationKind::Data,
+            AssociationKind::Alternative => pdf_writer::types::AssociationKind::Alternative,
+            AssociationKind::Supplement => pdf_writer::types::AssociationKind::Supplement,
+            AssociationKind::Unspecified => pdf_writer::types::AssociationKind::Unspecified,
+        }
     }
 }

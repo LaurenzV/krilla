@@ -12,7 +12,8 @@ exclude = ["src/tests"]
 
 
 [features]
-default = ["raster-images"]
+# TODO: Remove simple-text?
+default = ["raster-images", "simple-text"]
 
 # Enable global caching of certain objects
 "comemo" = ["dep:comemo"]
