@@ -218,6 +218,7 @@ impl<'a> Surface<'a> {
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
+    #[allow(clippy::too_many_arguments)]
     pub fn fill_glyphs(
         &mut self,
         start: Point,
