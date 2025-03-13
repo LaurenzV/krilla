@@ -25,8 +25,8 @@ use krilla::path::{Fill, Stroke};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
-use krilla::SerializeSettings;
 use krilla::{Data, NormalizedF32};
+use krilla::{Point, SerializeSettings};
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
@@ -37,7 +37,7 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::{Path, PathBuilder, Point, Rect, Transform};
+use tiny_skia_path::{Path, PathBuilder, Rect, Transform};
 
 mod annotation;
 mod color;
@@ -668,7 +668,7 @@ pub fn all_glyphs_to_pdf(
                 rule: Default::default(),
             },
             &[KrillaGlyph::new(
-                krilla::font::GlyphId::new(i.to_u32()),
+                GlyphId::new(i.to_u32()),
                 0.0,
                 0.0,
                 0.0,

@@ -4,7 +4,7 @@ use krilla::error::KrillaError;
 use krilla::path::Fill;
 use krilla::surface::{Surface, TextDirection};
 use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
-use krilla::{Document, Font};
+use krilla::{Document, Font, Point};
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
 use tiny_skia_path::{Rect, Size, Transform};
@@ -21,7 +21,7 @@ impl SurfaceTaggingExt for Surface<'_> {
         let font = Font::new(font_data, 0, true).unwrap();
 
         self.fill_text(
-            tiny_skia_path::Point::from_xy(0.0, y),
+            Point::from_xy(0.0, y),
             Fill::default(),
             font,
             20.0,

@@ -9,10 +9,11 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use pdf_writer::{Chunk, Obj, Ref, Str};
-use tiny_skia_path::{Point, Transform};
+use tiny_skia_path::Transform;
 
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
+use crate::Point;
 
 /// The type of destination.
 #[derive(Hash)]
@@ -135,7 +136,7 @@ impl XyzDestination {
         let page_ref = page_info.ref_;
         let page_size = page_info.surface_size.height();
 
-        let mut mapped_point = self.0.point;
+        let mut mapped_point = self.0.point.to_tsp();
         // Convert to PDF coordinates
         let invert_transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_size);
         invert_transform.map_point(&mut mapped_point);

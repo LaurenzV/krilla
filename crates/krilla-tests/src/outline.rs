@@ -1,8 +1,8 @@
 use krilla::destination::XyzDestination;
 use krilla::document::{Document, PageSettings};
 use krilla::outline::{Outline, OutlineNode};
+use krilla::Point;
 use krilla_macros::snapshot;
-use tiny_skia_path::Point;
 
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};
 

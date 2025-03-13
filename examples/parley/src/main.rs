@@ -94,7 +94,7 @@ fn main() {
                             cur_style = Some(glyph_style);
                             let style = layout.styles()[style as usize].brush;
                             surface.fill_glyphs(
-                                Point::from_xy(cur_x, y),
+                                Point { x: cur_x, y },
                                 Fill {
                                     paint: style.into(),
                                     opacity: NormalizedF32::ONE,

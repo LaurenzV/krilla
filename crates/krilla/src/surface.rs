@@ -12,7 +12,7 @@ use std::sync::Arc;
 use rustybuzz::{Direction, UnicodeBuffer};
 #[cfg(feature = "raster-images")]
 use tiny_skia_path::Size;
-use tiny_skia_path::{Path, Point, Transform};
+use tiny_skia_path::{Path, Transform};
 
 use crate::content::{unit_normalize, ContentBuilder};
 #[cfg(feature = "simple-text")]
@@ -29,7 +29,7 @@ use crate::path::{Fill, FillRule, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
-use crate::NormalizedF32;
+use crate::{NormalizedF32, Point};
 
 pub(crate) enum PushInstruction {
     Transform,

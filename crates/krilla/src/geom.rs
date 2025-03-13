@@ -1,6 +1,6 @@
 //! Geometrical helper structs.
 
-pub use tiny_skia_path::{Point, Rect, Size, Transform};
+pub use tiny_skia_path::{Rect, Size, Transform};
 
 /// An immutable, finite `f32` in a 0..=1 range.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -24,5 +24,24 @@ impl NormalizedF32 {
     #[inline]
     pub const fn get(self) -> f32 {
         self.0.get()
+    }
+}
+
+/// A point.
+#[allow(missing_docs)]
+#[derive(Copy, Clone, PartialEq, Default, Debug)]
+pub struct Point {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Point {
+    /// Create a new point with the given x and y coordinates.
+    pub fn from_xy(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+
+    pub(crate) fn to_tsp(&self) -> tiny_skia_path::Point {
+        tiny_skia_path::Point::from_xy(self.x, self.y)
     }
 }
