@@ -28,7 +28,8 @@ mod colr {
     use krilla_macros::visreg;
 
     use crate::{
-        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
+        all_glyphs_to_pdf, blue_stroke, cmyk_fill, purple_fill, COLR_TEST_GLYPHS,
+        NOTO_COLOR_EMOJI_COLR,
     };
 
     #[visreg(document)]
@@ -57,7 +58,6 @@ mod colr {
 
         surface.fill_text(
             Point::from_xy(0., 30.0),
-            Fill::default(),
             font.clone(),
             15.0,
             &text,
@@ -65,9 +65,9 @@ mod colr {
             TextDirection::Auto,
         );
 
+        surface.set_fill(purple_fill(1.0));
         surface.fill_text(
             Point::from_xy(0., 50.0),
-            purple_fill(1.0),
             font.clone(),
             15.0,
             &text,
@@ -77,7 +77,6 @@ mod colr {
 
         surface.fill_text(
             Point::from_xy(0., 70.0),
-            purple_fill(1.0),
             font.clone(),
             15.0,
             &text,
@@ -87,7 +86,6 @@ mod colr {
 
         surface.stroke_text(
             Point::from_xy(0., 130.0),
-            Stroke::default(),
             font.clone(),
             15.0,
             &text,
@@ -97,9 +95,9 @@ mod colr {
 
         // Since it a COLR glyph, it will still be filled, but the color should be taken from
         // the stroke.
+        surface.set_stroke(blue_stroke(1.0));
         surface.stroke_text(
             Point::from_xy(0., 150.0),
-            blue_stroke(1.0),
             font.clone(),
             15.0,
             &text,
@@ -109,7 +107,6 @@ mod colr {
 
         surface.stroke_text(
             Point::from_xy(0., 170.0),
-            blue_stroke(1.0),
             font.clone(),
             15.0,
             &text,
@@ -151,9 +148,9 @@ mod svg {
         let font_data = SVG_EXTRA.clone();
         let font = Font::new(font_data, 0, true).unwrap();
 
+        surface.set_fill(purple_fill(1.0));
         surface.fill_text(
             Point::from_xy(0., 30.0),
-            purple_fill(1.0),
             font.clone(),
             30.0,
             "😀",
@@ -161,9 +158,9 @@ mod svg {
             TextDirection::Auto,
         );
 
+        surface.set_fill(red_fill(1.0));
         surface.fill_text(
             Point::from_xy(30., 30.0),
-            red_fill(1.0),
             font.clone(),
             30.0,
             "😀",
@@ -186,7 +183,6 @@ mod cid {
         let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::default(),
             font,
             32.0,
             "hello world",
@@ -200,7 +196,6 @@ mod cid {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::default(),
             font,
             32.0,
             "hello world",
@@ -214,7 +209,6 @@ mod cid {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::default(),
             font,
             32.0,
             "مرحبا بالعالم",
@@ -235,7 +229,6 @@ mod cid {
 
         surface.fill_text(
             Point::from_xy(0.0, 75.0),
-            Fill::default(),
             font_1.clone(),
             20.0,
             "这是一段测试文字。",
@@ -244,7 +237,6 @@ mod cid {
         );
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
-            Fill::default(),
             font_2.clone(),
             20.0,
             "这是一段测试文字。",
@@ -253,7 +245,6 @@ mod cid {
         );
         surface.fill_text(
             Point::from_xy(0.0, 125.0),
-            Fill::default(),
             font_3.clone(),
             20.0,
             "这是一段测试文字。",
@@ -278,7 +269,6 @@ mod type3 {
 
         surface.fill_text(
             Point::from_xy(0.0, 25.0),
-            Fill::default(),
             font.clone(),
             25.0,
             "😀😃",
@@ -294,7 +284,6 @@ mod type3 {
 
         surface.fill_text(
             Point::from_xy(0.0, 25.0),
-            Fill::default(),
             font.clone(),
             25.0,
             "😀",

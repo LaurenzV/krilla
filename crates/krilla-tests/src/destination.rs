@@ -3,8 +3,8 @@ use krilla::destination::{NamedDestination, XyzDestination};
 use krilla::{Point, Rect};
 use krilla_macros::snapshot;
 
-use crate::Document;
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};
+use crate::{cmyk_fill, Document};
 
 #[snapshot(document)]
 fn named_destination_basic(d: &mut Document) {
@@ -36,8 +36,10 @@ fn named_destination_basic(d: &mut Document) {
     );
 
     let mut surface = page.surface();
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
-    surface.fill_path(&rect_to_path(100.0, 100.0, 200.0, 200.0), green_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
+    surface.set_fill(green_fill(1.0));
+    surface.fill_path(&rect_to_path(100.0, 100.0, 200.0, 200.0));
     surface.finish();
     page.finish();
 
@@ -51,7 +53,8 @@ fn named_destination_basic(d: &mut Document) {
         .into(),
     );
     let mut surface = page.surface();
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), blue_fill(1.0));
+    surface.set_fill(blue_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.finish();
     page.finish();
 }

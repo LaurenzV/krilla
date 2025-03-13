@@ -11,14 +11,12 @@ fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Colo
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let mask = basic_mask(surface, mask_type);
     surface.push_mask(mask);
-    surface.fill_path(
-        &path,
-        Fill {
-            paint: color.into(),
-            opacity: NormalizedF32::ONE,
-            rule: Default::default(),
-        },
-    );
+    surface.set_fill(Fill {
+        paint: color.into(),
+        opacity: NormalizedF32::ONE,
+        rule: Default::default(),
+    });
+    surface.fill_path(&path);
     surface.pop();
 }
 

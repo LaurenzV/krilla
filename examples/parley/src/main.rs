@@ -93,13 +93,14 @@ fn main() {
                             // If style doesn't match, flush all glyphs up to now.
                             cur_style = Some(glyph_style);
                             let style = layout.styles()[style as usize].brush;
+                            surface.set_fill(Fill {
+                                paint: style.into(),
+                                opacity: NormalizedF32::ONE,
+                                rule: Default::default(),
+                            });
+
                             surface.fill_glyphs(
                                 Point { x: cur_x, y },
-                                Fill {
-                                    paint: style.into(),
-                                    opacity: NormalizedF32::ONE,
-                                    rule: Default::default(),
-                                },
                                 &glyphs,
                                 krilla_font.clone(),
                                 &text,
@@ -131,13 +132,13 @@ fn main() {
 
             // Flush all remaining glyphs, if existing.
             if !glyphs.is_empty() {
+                surface.set_fill(Fill {
+                    paint: layout.styles()[cur_style.unwrap() as usize].brush.into(),
+                    opacity: NormalizedF32::ONE,
+                    rule: Default::default(),
+                });
                 surface.fill_glyphs(
                     Point::from_xy(cur_x, y),
-                    Fill {
-                        paint: layout.styles()[cur_style.unwrap() as usize].brush.into(),
-                        opacity: NormalizedF32::ONE,
-                        rule: Default::default(),
-                    },
                     &glyphs,
                     krilla_font.clone(),
                     &text,

@@ -118,7 +118,8 @@ fn validation_pdfa_postscript() {
 
     let mut surface = page.surface();
 
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), fill);
+    surface.set_fill(fill);
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
 
     surface.finish();
     page.finish();
@@ -143,7 +144,8 @@ fn cmyk_document_impl(document: &mut Document) {
 
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let fill = cmyk_fill(1.0);
-    surface.fill_path(&path, fill);
+    surface.set_fill(fill);
+    surface.fill_path(&path);
 
     surface.finish();
     page.finish();
@@ -181,7 +183,6 @@ fn validation_pdfa_notdef_glyph() {
 
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font.clone(),
         20.0,
         "你",
@@ -210,11 +211,11 @@ fn validation_pdfa2u_text_with_location() {
     let (text, glyphs) = dummy_text_with_spans();
 
     surface.set_location(2);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), red_fill(0.1));
+    surface.set_fill(red_fill(0.1));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
     surface.fill_glyphs(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         &glyphs,
         font.clone(),
         &text,
@@ -240,17 +241,23 @@ fn validation_pdfa1b_transparency_with_location() {
     let mut surface = page.surface();
 
     surface.set_location(2);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(3);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), green_fill(1.0));
+    surface.set_fill(green_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(4);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), green_fill(0.9));
+    surface.set_fill(green_fill(0.9));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(5);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), green_fill(1.0));
+    surface.set_fill(green_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(6);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), blue_fill(0.8));
+    surface.set_fill(blue_fill(0.8));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(7);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0), blue_fill(0.9));
+    surface.set_fill(blue_fill(0.9));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
     surface.finish();
     page.finish();
@@ -276,7 +283,6 @@ fn validation_pdf_full_example(document: &mut Document) {
 
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         20.0,
         "This is some text",
@@ -284,7 +290,8 @@ fn validation_pdf_full_example(document: &mut Document) {
         TextDirection::Auto,
     );
 
-    surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
 
     surface.finish();
     page.finish();
@@ -305,7 +312,6 @@ pub(crate) fn validation_pdf_tagged_full_example(document: &mut Document) {
     ));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         20.0,
         "This is some text",
@@ -315,7 +321,8 @@ pub(crate) fn validation_pdf_tagged_full_example(document: &mut Document) {
     surface.end_tagged();
 
     let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
-    surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0), red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
     surface.end_tagged();
 
     surface.finish();
@@ -341,7 +348,6 @@ fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
 
     surface.fill_glyphs(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         &glyphs,
         font.clone(),
         text,
@@ -452,7 +458,6 @@ fn validation_pdfua1_full_example(document: &mut Document) {
     let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         20.0,
         "This is some text",
@@ -501,7 +506,6 @@ fn validation_pdfua1_missing_requirements() {
     let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
-        Fill::default(),
         font,
         20.0,
         "Hi",
@@ -547,11 +551,13 @@ fn validation_pdfua1_attributes(document: &mut Document) {
     let mut surface = page.surface();
 
     let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.end_tagged();
 
     let id2 = surface.start_tagged(ContentTag::Other);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(1.0));
+    surface.set_fill(red_fill(1.0));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.end_tagged();
 
     surface.finish();
@@ -590,7 +596,8 @@ fn validation_pdfa1_no_transparency() {
     document.set_metadata(metadata);
     let mut page = document.start_page();
     let mut surface = page.surface();
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0), red_fill(0.5));
+    surface.set_fill(red_fill(0.5));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.finish();
     page.finish();
 
