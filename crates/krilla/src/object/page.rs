@@ -6,7 +6,7 @@ use std::ops::DerefMut;
 use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
@@ -19,6 +19,7 @@ use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
+use crate::Transform;
 
 /// A single page.
 ///
@@ -237,10 +238,8 @@ impl InternalPage {
             .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version());
 
         let transform_rect = |rect: Rect| {
-            rect.transform(page_root_transform(
-                self.page_settings.surface_size().height(),
-            ))
-            .unwrap()
+            rect.transform(page_root_transform(self.page_settings.surface_size().height()).to_tsp())
+                .unwrap()
         };
 
         // media box is mandatory, so we need to fall back to the default bbox

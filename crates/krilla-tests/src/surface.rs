@@ -5,10 +5,9 @@ use krilla::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
-use krilla::{Data, Point, Size};
+use krilla::{Data, Point, Size, Transform};
 use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
-use tiny_skia_path::Transform;
 
 use crate::{
     basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB,

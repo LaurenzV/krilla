@@ -8,7 +8,7 @@ use krilla::{Font, NormalizedF32, Point};
 use tiny_skia_path::Transform;
 use usvg::PaintOrder;
 
-use crate::util::{convert_fill, convert_stroke};
+use crate::util::{convert_fill, convert_stroke, UsvgTransformExt};
 use crate::{path, ProcessContext};
 
 /// Render a text into a surface.
@@ -107,7 +107,7 @@ pub(crate) fn render(
                 );
             };
 
-            surface.push_transform(&transform);
+            surface.push_transform(&transform.to_krilla());
 
             match (fill, stroke) {
                 (Some(fill), Some(stroke)) => match span.paint_order {

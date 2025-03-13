@@ -7,7 +7,7 @@ use std::sync::Arc;
 use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
-use tiny_skia_path::{Point, Rect, Transform};
+use tiny_skia_path::{Point, Rect};
 
 use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::configure::ValidationError;
@@ -18,7 +18,7 @@ use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::resource::{self, Resource};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::util::{NameExt, RectExt, RectWrapper};
-use crate::NormalizedF32;
+use crate::{NormalizedF32, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
@@ -118,7 +118,11 @@ fn get_expanded_bbox(mut bbox: Rect, shading_transform: Transform) -> Rect {
     // We need to make sure the shading covers the whole bbox of the object after
     // the transform as been applied. In order to know that, we need to calculate the
     // resulting bbox from the inverted transform.
-    bbox.expand(&bbox.transform(shading_transform.invert().unwrap()).unwrap());
+    bbox.expand(
+        &bbox
+            .transform(shading_transform.to_tsp().invert().unwrap())
+            .unwrap(),
+    );
     bbox
 }
 

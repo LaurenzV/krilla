@@ -3,12 +3,10 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
-use tiny_skia_path::Transform;
-
 use crate::color::{cmyk, luma, rgb, Color};
 use crate::stream::Stream;
 use crate::util::HashExt;
-use crate::NormalizedF32;
+use crate::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {

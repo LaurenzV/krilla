@@ -2,10 +2,11 @@
 
 use std::hash::Hash;
 
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use crate::object::ext_g_state::ExtGState;
 use crate::util::HashExt;
+use crate::Transform;
 
 /// A simulation of the PDF graphics state, so that we
 /// can write our transforms/graphics state all at once
@@ -96,6 +97,6 @@ impl GraphicsStates {
         // corresponding ContentBuilder into account, because we
         // want it to be in krilla coordinates, not in PDF
         // coordinates.
-        bbox.transform(self.cur().transform()).unwrap()
+        bbox.transform(self.cur().transform().to_tsp()).unwrap()
     }
 }

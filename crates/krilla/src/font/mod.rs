@@ -21,13 +21,13 @@ use skrifa::prelude::{LocationRef, Size};
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::{FiniteF32, Rect, Transform};
+use tiny_skia_path::{FiniteF32, Rect};
 use yoke::{Yoke, Yokeable};
 
 use crate::object::font::PaintMode;
 use crate::surface::Surface;
 use crate::util::{Prehashed, RectWrapper};
-use crate::Data;
+use crate::{Data, Transform};
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;

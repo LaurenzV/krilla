@@ -29,7 +29,7 @@ use std::fmt::Write;
 use std::ops::DerefMut;
 
 use pdf_writer::{Array, Dict, Name};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
@@ -37,7 +37,7 @@ use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
 use crate::surface::Surface;
 use crate::util::RectWrapper;
-use crate::SerializeSettings;
+use crate::{SerializeSettings, Transform};
 
 /// A stream.
 ///

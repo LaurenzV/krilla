@@ -6,7 +6,7 @@ use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::MetadataProvider;
-use tiny_skia_path::{Path, PathBuilder, Transform};
+use tiny_skia_path::{Path, PathBuilder};
 
 use crate::font::outline::OutlineBuilder;
 use crate::font::{Font, GlyphId};
@@ -16,7 +16,7 @@ use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGrad
 use crate::path::{Fill, FillRule};
 use crate::surface::BlendMode;
 use crate::surface::Surface;
-use crate::NormalizedF32;
+use crate::{NormalizedF32, Transform};
 
 /// Draw a COLR-based glyph on a surface.
 pub(crate) fn draw_glyph(
@@ -226,7 +226,7 @@ impl ColorPainter for ColrBuilder {
 
         let Some(path) = glyph_builder
             .finish()
-            .and_then(|p| p.transform(*self.transforms.last()?))
+            .and_then(|p| p.transform(self.transforms.last()?.to_tsp()))
         else {
             self.error = true;
             return;
@@ -252,7 +252,7 @@ impl ColorPainter for ColrBuilder {
 
         let Some(path) = path_builder
             .finish()
-            .and_then(|p| p.transform(*self.transforms.last()?))
+            .and_then(|p| p.transform(self.transforms.last()?.to_tsp()))
         else {
             self.error = true;
             return;

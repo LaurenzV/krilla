@@ -1,16 +1,16 @@
 //! Alpha and luminosity masks.
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use crate::object::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::xobject::XObject;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
-use crate::resource;
 use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 use crate::util::RectWrapper;
+use crate::{resource, Transform};
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]

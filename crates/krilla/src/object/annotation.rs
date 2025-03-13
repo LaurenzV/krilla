@@ -145,7 +145,7 @@ impl LinkAnnotation {
         let actual_rect = self
             .rect
             .to_tsp()
-            .transform(page_root_transform(page_height))
+            .transform(page_root_transform(page_height).to_tsp())
             .unwrap();
         annotation.rect(actual_rect.to_pdf_rect());
         annotation.border(0.0, 0.0, 0.0, None);
@@ -154,7 +154,7 @@ impl LinkAnnotation {
             self.quad_points.as_ref().map(|p| {
                 annotation.quad_points(p.iter().flat_map(|p| {
                     let mut p = p.to_tsp();
-                    page_root_transform(page_height).map_point(&mut p);
+                    page_root_transform(page_height).to_tsp().map_point(&mut p);
                     [p.x, p.y]
                 }))
             });

@@ -7,7 +7,7 @@ use std::ops::DerefMut;
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
-use tiny_skia_path::{Rect, Transform};
+use tiny_skia_path::Rect;
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
@@ -21,6 +21,7 @@ use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
 use crate::util::{NameExt, RectExt, TransformExt};
+use crate::Transform;
 
 pub(crate) type Gid = u8;
 

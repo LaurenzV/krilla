@@ -25,7 +25,7 @@ use krilla::path::{Fill, Stroke};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
-use krilla::{Data, NormalizedF32};
+use krilla::{Data, NormalizedF32, Transform};
 use krilla::{Point, SerializeSettings};
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
@@ -37,7 +37,7 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::{Path, PathBuilder, Rect, Transform};
+use tiny_skia_path::{Path, PathBuilder, Rect};
 
 mod annotation;
 mod color;

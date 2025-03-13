@@ -10,9 +10,10 @@ use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::Name;
 use siphasher::sip128::{Hasher128, SipHasher13};
-use tiny_skia_path::{FiniteF32, Path, Rect, Transform};
+use tiny_skia_path::{FiniteF32, Path, Rect};
 
 use crate::path::{LineCap, LineJoin, Stroke};
+use crate::Transform;
 
 pub(crate) trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -32,12 +33,6 @@ impl NameExt for &str {
 
 pub(crate) trait TransformExt {
     fn to_pdf_transform(&self) -> [f32; 6];
-}
-
-impl TransformExt for tiny_skia_path::Transform {
-    fn to_pdf_transform(&self) -> [f32; 6] {
-        [self.sx, self.ky, self.kx, self.sy, self.tx, self.ty]
-    }
 }
 
 pub(crate) trait LineCapExt {
@@ -219,17 +214,6 @@ impl Hash for RectWrapper {
 
 pub(crate) trait HashExt {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H);
-}
-
-impl HashExt for Transform {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.tx.to_bits().hash(state);
-        self.ty.to_bits().hash(state);
-        self.sx.to_bits().hash(state);
-        self.sy.to_bits().hash(state);
-        self.kx.to_bits().hash(state);
-        self.ky.to_bits().hash(state);
-    }
 }
 
 pub(crate) trait SipHashable {

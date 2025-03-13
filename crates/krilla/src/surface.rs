@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, UnicodeBuffer};
-use tiny_skia_path::{Path, Transform};
+use tiny_skia_path::Path;
 
 use crate::content::{unit_normalize, ContentBuilder};
 #[cfg(feature = "simple-text")]
@@ -29,7 +29,7 @@ use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 #[cfg(feature = "raster-images")]
 use crate::Size;
-use crate::{NormalizedF32, Point};
+use crate::{NormalizedF32, Point, Transform};
 
 pub(crate) enum PushInstruction {
     Transform,
@@ -174,11 +174,11 @@ impl<'a> Surface<'a> {
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
-            let mut base_transform = Transform::from_translate(
+            let mut base_transform = tiny_skia_path::Transform::from_translate(
                 cur_x + normalize(glyph.x_offset()) * font_size,
                 y - normalize(glyph.y_offset()) * font_size,
             );
-            base_transform = base_transform.pre_concat(Transform::from_scale(
+            base_transform = base_transform.pre_concat(tiny_skia_path::Transform::from_scale(
                 font_size / font.units_per_em(),
                 -font_size / font.units_per_em(),
             ));
@@ -186,7 +186,7 @@ impl<'a> Surface<'a> {
                 font.clone(),
                 glyph.glyph_id(),
                 paint_mode,
-                base_transform,
+                Transform::from_tsp(base_transform),
                 self,
             );
 

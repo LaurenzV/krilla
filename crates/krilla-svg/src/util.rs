@@ -11,18 +11,6 @@ use tiny_skia_path::{Path, PathBuilder, Transform};
 
 use crate::{group, ProcessContext};
 
-/// Convert a usvg `Transform` into a krilla `Transform`.
-pub(crate) fn convert_transform(transform: &Transform) -> Transform {
-    Transform {
-        sx: transform.sx,
-        kx: transform.kx,
-        ky: transform.ky,
-        sy: transform.sy,
-        tx: transform.tx,
-        ty: transform.ty,
-    }
-}
-
 /// Convert a usvg `SpreadMethod` into a krilla `SpreadMethod`.
 pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> SpreadMethod {
     match spread_method {
@@ -66,7 +54,7 @@ pub(crate) fn convert_paint(
             y1: lg.y1(),
             x2: lg.x2(),
             y2: lg.y2(),
-            transform: additional_transform.pre_concat(convert_transform(&lg.transform())),
+            transform: additional_transform.pre_concat(lg.transform()).to_krilla(),
             spread_method: convert_spread_method(&lg.spread_method()),
             stops: lg
                 .stops()
@@ -84,7 +72,7 @@ pub(crate) fn convert_paint(
             fx: rg.fx(),
             fy: rg.fy(),
             fr: 0.0,
-            transform: additional_transform.pre_concat(convert_transform(&rg.transform())),
+            transform: additional_transform.pre_concat(rg.transform()).to_krilla(),
             spread_method: convert_spread_method(&rg.spread_method()),
             stops: rg
                 .stops()
@@ -105,7 +93,8 @@ pub(crate) fn convert_paint(
                 stream,
                 transform: additional_transform
                     .pre_concat(pat.transform())
-                    .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y())),
+                    .pre_concat(Transform::from_translate(pat.rect().x(), pat.rect().y()))
+                    .to_krilla(),
                 width: pat.rect().width(),
                 height: pat.rect().height(),
             }
@@ -231,5 +220,32 @@ impl RectExt for Rect {
         path_builder.line_to(self.left(), self.bottom());
         path_builder.close();
         path_builder.finish().unwrap()
+    }
+}
+
+pub(crate) trait KrillaTransformExt {
+    fn to_usvg(&self) -> Transform;
+}
+
+impl KrillaTransformExt for krilla::geom::Transform {
+    fn to_usvg(&self) -> Transform {
+        Transform::from_row(
+            self.sx(),
+            self.ky(),
+            self.kx(),
+            self.sy(),
+            self.tx(),
+            self.ty(),
+        )
+    }
+}
+
+pub(crate) trait UsvgTransformExt {
+    fn to_krilla(&self) -> krilla::geom::Transform;
+}
+
+impl UsvgTransformExt for Transform {
+    fn to_krilla(&self) -> krilla::geom::Transform {
+        krilla::geom::Transform::from_row(self.sx, self.ky, self.kx, self.sy, self.tx, self.ty)
     }
 }

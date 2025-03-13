@@ -2,11 +2,12 @@
 
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::MetadataProvider;
-use tiny_skia_path::{Path, PathBuilder, Transform};
+use tiny_skia_path::{Path, PathBuilder};
 
 use crate::font::{Font, GlyphId};
 use crate::object::font::PaintMode;
 use crate::surface::Surface;
+use crate::Transform;
 
 pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
@@ -32,7 +33,7 @@ pub(crate) fn draw_glyph(
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
-    let path = glyph_path(font, glyph).and_then(|p| p.transform(base_transform))?;
+    let path = glyph_path(font, glyph).and_then(|p| p.transform(base_transform.to_tsp()))?;
 
     match paint_mode {
         PaintMode::Fill(f) => surface.fill_path(&path, f.clone()),

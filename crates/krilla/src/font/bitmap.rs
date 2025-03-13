@@ -1,13 +1,12 @@
 //! Drawing bitmap-based glyphs to a surface.
 
 use skrifa::MetadataProvider;
-use tiny_skia_path::Transform;
 
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::{Font, GlyphId};
 use crate::object::image::Image;
 use crate::surface::Surface;
-use crate::Size;
+use crate::{Size, Transform};
 
 /// Draw a bitmap-based glyph on a surface.
 pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
@@ -32,12 +31,17 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
             let scale_factor = upem / (bitmap_glyph.ppem_y);
             let mut transform =
                 Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
-                    .pre_scale(scale_factor, scale_factor)
-                    .pre_translate(-bitmap_glyph.inner_bearing_x, -bitmap_glyph.inner_bearing_y);
+                    .pre_concat(Transform::from_scale(scale_factor, scale_factor))
+                    .pre_concat(Transform::from_translate(
+                        -bitmap_glyph.inner_bearing_x,
+                        -bitmap_glyph.inner_bearing_y,
+                    ));
 
             transform = match bitmap_glyph.placement_origin {
                 Origin::TopLeft => transform,
-                Origin::BottomLeft => transform.pre_translate(0.0, -(image.size().1 as f32)),
+                Origin::BottomLeft => {
+                    transform.pre_concat(Transform::from_translate(0.0, -(image.size().1 as f32)))
+                }
             };
 
             transform = if let Some(format) = bitmap_strikes.format() {
