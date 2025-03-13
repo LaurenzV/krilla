@@ -15,6 +15,7 @@ use super::{CIDIdentifer, FontIdentifier};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, GlyphId};
+use crate::prelude::font::PDF_UNITS_PER_EM;
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
@@ -71,7 +72,7 @@ impl CIDFont {
     // Note that this refers to the units per em in PDF (which is always 1000), and not the
     // units per em of the underlying font.
     pub(crate) fn units_per_em(&self) -> f32 {
-        1000.0
+        PDF_UNITS_PER_EM
     }
 
     #[inline]

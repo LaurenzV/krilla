@@ -23,7 +23,7 @@ use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::font::cid_font::CIDFont;
 use crate::object::font::type3_font::{CoveredGlyph, Type3Font};
-use crate::object::font::{FontContainer, FontIdentifier, PDFGlyph, PaintMode};
+use crate::object::font::{FontContainer, FontIdentifier, PDFGlyph, PaintMode, PDF_UNITS_PER_EM};
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
@@ -417,7 +417,7 @@ impl ContentBuilder {
                 }
 
                 // Adjustment is always in 1000 units, even for Type3 fonts.
-                items.adjust(-(adjustment / pdf_font.units_per_em() * 1000.0));
+                items.adjust(-(adjustment / pdf_font.units_per_em() * PDF_UNITS_PER_EM));
                 adjustment = 0.0;
             }
 

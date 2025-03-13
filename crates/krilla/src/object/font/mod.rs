@@ -9,6 +9,8 @@ use crate::path::{Fill, Stroke};
 pub(crate) mod cid_font;
 pub(crate) mod type3_font;
 
+pub(crate) const PDF_UNITS_PER_EM: f32 = 1000.0;
+
 impl PaintMode<'_> {
     pub(crate) fn to_owned(self) -> OwnedPaintMode {
         match self {
