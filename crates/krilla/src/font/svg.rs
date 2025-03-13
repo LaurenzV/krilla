@@ -17,7 +17,7 @@ pub(crate) fn draw_glyph(
     let svg_data = font
         .font_ref()
         .svg()
-        .and_then(|svg_table| svg_table.glyph_data(glyph.into()))
+        .and_then(|svg_table| svg_table.glyph_data(glyph.to_skrifa()))
         .ok()??;
 
     let context_color = match paint_mode {

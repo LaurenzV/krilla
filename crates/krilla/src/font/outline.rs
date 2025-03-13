@@ -12,7 +12,7 @@ pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
-    if let Some(outline_glyph) = outline_glyphs.get(glyph.into()) {
+    if let Some(outline_glyph) = outline_glyphs.get(glyph.to_skrifa()) {
         outline_glyph
             .draw(
                 DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),

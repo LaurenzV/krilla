@@ -18,7 +18,7 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
 
     let bitmap_glyph = bitmap_strikes
         .iter()
-        .filter_map(|s| s.get(glyph.into()))
+        .filter_map(|s| s.get(glyph.to_skrifa()))
         .last()?;
     let upem = metrics.units_per_em as f32;
 

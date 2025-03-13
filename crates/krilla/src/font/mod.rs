@@ -164,7 +164,7 @@ impl Font {
 
     #[inline]
     pub(crate) fn advance_width(&self, glyph_id: GlyphId) -> Option<f32> {
-        self.glyph_metrics().advance_width(glyph_id.into())
+        self.glyph_metrics().advance_width(glyph_id.to_skrifa())
     }
 }
 
@@ -294,11 +294,9 @@ impl GlyphId {
     pub fn to_u32(&self) -> u32 {
         self.0
     }
-}
-
-impl From<GlyphId> for skrifa::GlyphId {
-    fn from(value: GlyphId) -> Self {
-        skrifa::GlyphId::new(value.0)
+    
+    pub(crate) fn to_skrifa(&self) -> skrifa::GlyphId {
+        skrifa::GlyphId::new(self.0)
     }
 }
 

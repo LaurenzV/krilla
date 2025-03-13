@@ -37,7 +37,7 @@ pub(crate) fn draw_glyph(
     .unwrap_or(rgb::Color::black());
 
     let colr_glyphs = font.font_ref().color_glyphs();
-    let colr_glyph = colr_glyphs.get(glyph.into())?;
+    let colr_glyph = colr_glyphs.get(glyph.to_skrifa())?;
 
     let mut colr_canvas = ColrBuilder::new(font.clone(), context_color);
     colr_glyph
