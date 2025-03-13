@@ -9,7 +9,7 @@ use std::sync::Arc;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
-use tiny_skia_path::{Path, PathSegment, Rect};
+use tiny_skia_path::{Path, PathSegment};
 
 use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
@@ -36,7 +36,7 @@ use crate::stream::Stream;
 use crate::surface::Location;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{resource, NormalizedF32, Point, Transform};
+use crate::{resource, NormalizedF32, Point, Rect, Transform};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -179,7 +179,7 @@ impl ContentBuilder {
 
         self.apply_isolated_op(
             |sb, _| {
-                sb.expand_bbox(path.bounds());
+                sb.expand_bbox(Rect::from_tsp(path.bounds()));
 
                 // PDF viewers don't show patterns with fill/stroke opacities consistently.
                 // Because of this, the opacity is accounted for in the pattern itself.
@@ -189,7 +189,7 @@ impl ContentBuilder {
             },
             |sb, sc| {
                 let fill_rule = fill.rule;
-                sb.content_set_fill_properties(path.bounds(), &fill, sc);
+                sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), &fill, sc);
                 sb.content_draw_path(path.segments());
 
                 match fill_rule {
@@ -206,7 +206,8 @@ impl ContentBuilder {
             return;
         }
 
-        let stroke_bbox = calculate_stroke_bbox(&stroke, path).unwrap_or(path.bounds());
+        let stroke_bbox =
+            calculate_stroke_bbox(&stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
 
         let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
         let stroke_opacity = stroke.opacity;
@@ -930,11 +931,11 @@ impl ContentBuilder {
 fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font) -> Rect {
     let font_bbox = font.bbox();
     let (mut bl, mut bt, mut br, mut bb) = font_bbox
-        .transform(tiny_skia_path::Transform::from_scale(
+        .transform(Transform::from_scale(
             size / font.units_per_em(),
             -size / font.units_per_em(),
         ))
-        .and_then(|b| b.transform(tiny_skia_path::Transform::from_translate(x, y)))
+        .and_then(|b| b.transform(Transform::from_translate(x, y)))
         .map(|b| (b.left(), b.top(), b.right(), b.bottom()))
         .unwrap_or((x, y, x + 1.0, y + 1.0));
 

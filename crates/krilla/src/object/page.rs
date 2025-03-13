@@ -6,7 +6,6 @@ use std::ops::DerefMut;
 use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
-use tiny_skia_path::Rect;
 
 use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
@@ -19,7 +18,7 @@ use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::{Identifier, PageTagIdentifier};
 use crate::util::{Deferred, RectExt};
-use crate::Transform;
+use crate::{Rect, Transform};
 
 /// A single page.
 ///
@@ -203,7 +202,7 @@ impl InternalPage {
             stream_ref,
             stream_chunk,
             struct_parent,
-            bbox: stream.bbox.0,
+            bbox: stream.bbox,
             annotations,
             page_settings,
             page_index,
@@ -238,37 +237,34 @@ impl InternalPage {
             .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version());
 
         let transform_rect = |rect: Rect| {
-            rect.transform(page_root_transform(self.page_settings.surface_size().height()).to_tsp())
-                .unwrap()
+            rect.transform(page_root_transform(
+                self.page_settings.surface_size().height(),
+            ))
+            .unwrap()
         };
 
         // media box is mandatory, so we need to fall back to the default bbox
-        let media_box = transform_rect(
-            self.page_settings
-                .media_box()
-                .map(|r| r.to_tsp())
-                .unwrap_or(self.bbox),
-        );
+        let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
         page.media_box(media_box.to_pdf_rect());
 
         // the remaining type of box are not mandatory, so we only set them if they are present
         if let Some(crop_box) = self.page_settings.crop_box() {
-            let crop_box = transform_rect(crop_box.to_tsp());
+            let crop_box = transform_rect(crop_box);
             page.crop_box(crop_box.to_pdf_rect());
         }
 
         if let Some(bleed_box) = self.page_settings.bleed_box() {
-            let bleed_box = transform_rect(bleed_box.to_tsp());
+            let bleed_box = transform_rect(bleed_box);
             page.bleed_box(bleed_box.to_pdf_rect());
         }
 
         if let Some(trim_box) = self.page_settings.trim_box() {
-            let trim_box = transform_rect(trim_box.to_tsp());
+            let trim_box = transform_rect(trim_box);
             page.trim_box(trim_box.to_pdf_rect());
         }
 
         if let Some(art_box) = self.page_settings.art_box() {
-            let art_box = transform_rect(art_box.to_tsp());
+            let art_box = transform_rect(art_box);
             page.art_box(art_box.to_pdf_rect());
         }
 

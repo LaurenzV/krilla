@@ -76,6 +76,17 @@ impl Size {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Rect(tiny_skia_path::Rect);
 
+impl Eq for Rect {}
+
+impl Hash for Rect {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.left().to_bits().hash(state);
+        self.0.top().to_bits().hash(state);
+        self.0.right().to_bits().hash(state);
+        self.0.bottom().to_bits().hash(state);
+    }
+}
+
 impl Rect {
     /// Creates new `Rect`.
     pub fn from_ltrb(left: f32, top: f32, right: f32, bottom: f32) -> Option<Self> {
@@ -126,6 +137,10 @@ impl Rect {
 
     pub(crate) fn to_tsp(self) -> tiny_skia_path::Rect {
         self.0
+    }
+
+    pub(crate) fn from_tsp(rect: tiny_skia_path::Rect) -> Self {
+        Self(rect)
     }
 }
 
@@ -206,6 +221,11 @@ impl Transform {
     /// Return the `ty` component
     pub fn ty(&self) -> f32 {
         self.0.ty
+    }
+
+    /// Returns the inverted transform.
+    pub fn invert(&self) -> Option<Self> {
+        Some(Self(self.0.invert()?))
     }
 
     pub(crate) fn pre_concat(&self, other: Self) -> Self {
