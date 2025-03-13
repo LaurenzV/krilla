@@ -643,7 +643,7 @@ pub fn all_glyphs_to_pdf(
     let mut color_picker = colors.iter().cycle();
     let mut color = *color_picker.next().unwrap();
 
-    for (i, text) in glyphs.iter().cloned() {
+    for (i, text) in glyphs.iter() {
         fn get_transform(cur_point: u32, size: u32, num_cols: u32, _: f32) -> Transform {
             let el = cur_point / size;
             let col = el % num_cols;
@@ -681,7 +681,7 @@ pub fn all_glyphs_to_pdf(
                 None,
             )],
             font.clone(),
-            &text,
+            text,
             size as f32,
             GlyphUnits::UserSpace,
             false,

@@ -557,7 +557,7 @@ pub enum BlendMode {
 }
 
 impl BlendMode {
-    fn to_pdf(&self) -> pdf_writer::types::BlendMode {
+    fn to_pdf(self) -> pdf_writer::types::BlendMode {
         match self {
             BlendMode::Normal => pdf_writer::types::BlendMode::Normal,
             BlendMode::Multiply => pdf_writer::types::BlendMode::Multiply,

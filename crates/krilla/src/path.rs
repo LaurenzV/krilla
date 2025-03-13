@@ -4,18 +4,26 @@ use std::hash::{Hash, Hasher};
 
 use crate::color::luma;
 use crate::paint::Paint;
-use crate::NormalizedF32;
+use crate::{NormalizedF32, Rect, Transform};
 
 /// A path.
 pub struct Path(pub(crate) tiny_skia_path::Path);
 
+impl Path {
+    /// Apply a transformation to the path.
+    pub fn transform(self, transform: Transform) -> Option<Self> {
+        Some(Self(self.0.transform(transform.to_tsp())?))
+    }
+}
+
 /// A path builder.
+#[derive(Default)]
 pub struct PathBuilder(tiny_skia_path::PathBuilder);
 
 impl PathBuilder {
     /// Create a new path.
     pub fn new() -> Self {
-        Self(tiny_skia_path::PathBuilder::new())
+        Self::default()
     }
 
     /// Adds beginning of a contour.
@@ -40,6 +48,11 @@ impl PathBuilder {
     /// Close the current contour.
     pub fn close(&mut self) {
         self.0.close()
+    }
+
+    /// Push a rectangle to the path.
+    pub fn push_rect(&mut self, rect: Rect) {
+        self.0.push_rect(rect.to_tsp())
     }
 
     /// Finish the current path.

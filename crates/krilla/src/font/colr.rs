@@ -212,7 +212,7 @@ impl ColorPainter for ColrBuilder {
 
         let mut glyph_builder = OutlineBuilder::new();
         let outline_glyphs = self.font.font_ref().outline_glyphs();
-        let Some(outline_glyph) = outline_glyphs.get(glyph_id.into()) else {
+        let Some(outline_glyph) = outline_glyphs.get(glyph_id) else {
             self.error = true;
             return;
         };

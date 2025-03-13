@@ -962,7 +962,7 @@ pub enum ListNumbering {
 }
 
 impl ListNumbering {
-    fn to_pdf(&self) -> pdf_writer::types::ListNumbering {
+    fn to_pdf(self) -> pdf_writer::types::ListNumbering {
         match self {
             ListNumbering::None => pdf_writer::types::ListNumbering::None,
             ListNumbering::Disc => pdf_writer::types::ListNumbering::Disc,
@@ -989,7 +989,7 @@ pub enum TableHeaderScope {
 }
 
 impl TableHeaderScope {
-    fn to_pdf(&self) -> pdf_writer::types::TableHeaderScope {
+    fn to_pdf(self) -> pdf_writer::types::TableHeaderScope {
         match self {
             TableHeaderScope::Row => pdf_writer::types::TableHeaderScope::Row,
             TableHeaderScope::Column => pdf_writer::types::TableHeaderScope::Column,

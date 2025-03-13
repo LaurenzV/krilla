@@ -121,11 +121,8 @@ impl Type3Font {
 
             self.glyph_set.insert(glyph.clone());
             self.glyphs.push(glyph.clone());
-            self.widths.push(
-                self.font
-                    .advance_width(glyph.glyph_id.into())
-                    .unwrap_or(0.0),
-            );
+            self.widths
+                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }

@@ -154,7 +154,7 @@ pub enum AssociationKind {
 }
 
 impl AssociationKind {
-    fn to_pdf(&self) -> pdf_writer::types::AssociationKind {
+    fn to_pdf(self) -> pdf_writer::types::AssociationKind {
         match self {
             AssociationKind::Source => pdf_writer::types::AssociationKind::Source,
             AssociationKind::Data => pdf_writer::types::AssociationKind::Data,

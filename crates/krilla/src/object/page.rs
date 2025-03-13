@@ -146,7 +146,7 @@ pub enum NumberingStyle {
 }
 
 impl NumberingStyle {
-    fn to_pdf(&self) -> pdf_writer::types::NumberingStyle {
+    fn to_pdf(self) -> pdf_writer::types::NumberingStyle {
         match self {
             NumberingStyle::Arabic => pdf_writer::types::NumberingStyle::Arabic,
             NumberingStyle::LowerRoman => pdf_writer::types::NumberingStyle::LowerRoman,

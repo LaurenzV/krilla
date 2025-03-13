@@ -43,7 +43,7 @@ impl Point {
         Self { x, y }
     }
 
-    pub(crate) fn to_tsp(&self) -> tiny_skia_path::Point {
+    pub(crate) fn to_tsp(self) -> tiny_skia_path::Point {
         tiny_skia_path::Point::from_xy(self.x, self.y)
     }
 }
@@ -84,6 +84,11 @@ impl Rect {
         )?))
     }
 
+    /// Apply a transform to the rect.
+    pub fn transform(self, transform: Transform) -> Option<Self> {
+        Some(Self(self.0.transform(transform.to_tsp())?))
+    }
+
     /// Creates new `Rect`.
     pub fn from_xywh(x: f32, y: f32, w: f32, h: f32) -> Option<Self> {
         Some(Self(tiny_skia_path::Rect::from_xywh(x, y, w, h)?))
@@ -119,7 +124,7 @@ impl Rect {
         self.0.height()
     }
 
-    pub(crate) fn to_tsp(&self) -> tiny_skia_path::Rect {
+    pub(crate) fn to_tsp(self) -> tiny_skia_path::Rect {
         self.0
     }
 }
@@ -211,7 +216,7 @@ impl Transform {
         Self(self.0.post_concat(other.0))
     }
 
-    pub(crate) fn to_tsp(&self) -> tiny_skia_path::Transform {
+    pub(crate) fn to_tsp(self) -> tiny_skia_path::Transform {
         self.0
     }
 
