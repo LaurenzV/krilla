@@ -1,5 +1,5 @@
 use krilla::metadata::{DateTime, Metadata};
-use krilla::Document;
+use krilla::{Document, TextDirection};
 use krilla_macros::snapshot;
 
 fn metadata_impl(document: &mut Document) {
@@ -24,7 +24,8 @@ fn metadata_impl(document: &mut Document) {
             "keyword3".to_string(),
         ])
         .title("An awesome title".to_string())
-        .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()]);
+        .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()])
+        .text_direction(TextDirection::LeftToRight);
     document.set_metadata(metadata);
 }
 

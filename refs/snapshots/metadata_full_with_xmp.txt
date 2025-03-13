@@ -60,6 +60,9 @@ endobj
   /Pages 1 0 R
   /Metadata 5 0 R
   /Lang (en)
+  /ViewerPreferences <<
+    /Direction /L2R
+  >>
 >>
 endobj
 
@@ -80,5 +83,5 @@ trailer
   /ID [(CGF89dB/kZ8HG+0AeiObmg==) (j4s7vQi5tH1RUV+BhUAvDQ==)]
 >>
 startxref
-2101
+2150
 %%EOF

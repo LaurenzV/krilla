@@ -40,6 +40,9 @@ endobj
   /Type /Catalog
   /Pages 1 0 R
   /Lang (en)
+  /ViewerPreferences <<
+    /Direction /L2R
+  >>
 >>
 endobj
 
@@ -59,5 +62,5 @@ trailer
   /ID [(F1CF232GUzEL/FGeYRuxqw==) (MwwFglmw0BSz8PWEY/ZfSg==)]
 >>
 startxref
-412
+461
 %%EOF

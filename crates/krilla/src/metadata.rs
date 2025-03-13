@@ -10,6 +10,7 @@ use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
 use crate::configure::{Configuration, PdfVersion};
+use crate::TextDirection;
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]
@@ -24,6 +25,7 @@ pub struct Metadata {
     pub(crate) language: Option<String>,
     pub(crate) modification_date: Option<DateTime>,
     pub(crate) creation_date: Option<DateTime>,
+    pub(crate) text_direction: Option<TextDirection>,
 }
 
 impl Metadata {
@@ -108,6 +110,12 @@ impl Metadata {
     /// The modification date of the document.
     pub fn modification_date(mut self, modification_date: DateTime) -> Self {
         self.modification_date = Some(modification_date);
+        self
+    }
+
+    /// The main text direction of the document.
+    pub fn text_direction(mut self, text_direction: TextDirection) -> Self {
+        self.text_direction = Some(text_direction);
         self
     }
 
