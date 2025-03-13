@@ -187,7 +187,7 @@ impl ChunkContainer {
             }
 
             if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.as_ref()) {
-                catalog.lang(TextStr(lang)); // lang is now a reference to a String, so no cloning or moving needed
+                catalog.lang(TextStr(lang));
             } else {
                 sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
