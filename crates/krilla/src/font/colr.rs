@@ -67,13 +67,14 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
             Instruction::Filled(fill, mut clips) => {
                 let filled = clips.split_off(clips.len() - 1);
 
-                for path in &clips {
-                    surface.push_clip_path(path, &FillRule::NonZero);
+                let num_clips = clips.len();
+                for path in clips {
+                    surface.push_clip_path(&crate::path::Path(path), &FillRule::NonZero);
                 }
 
-                surface.fill_path(&filled[0], *fill);
+                surface.fill_path(&crate::path::Path(filled[0].clone()), *fill);
 
-                for _ in clips {
+                for _ in 0..num_clips {
                     surface.pop();
                 }
             }

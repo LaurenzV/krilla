@@ -3,11 +3,12 @@
 use krilla::color::{luma, rgb};
 use krilla::mask::MaskType;
 use krilla::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
-use krilla::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
+use krilla::path::{Fill, FillRule, LineCap, LineJoin, Path, PathBuilder, Stroke, StrokeDash};
 use krilla::stream::StreamBuilder;
 use krilla::surface::BlendMode;
 use krilla::{NormalizedF32, Rect};
-use usvg::tiny_skia_path::{Path, PathBuilder, Transform};
+use tiny_skia::PathSegment;
+use usvg::tiny_skia_path::Transform;
 
 use crate::{group, ProcessContext};
 
@@ -247,5 +248,27 @@ pub(crate) trait UsvgTransformExt {
 impl UsvgTransformExt for Transform {
     fn to_krilla(&self) -> krilla::geom::Transform {
         krilla::geom::Transform::from_row(self.sx, self.ky, self.kx, self.sy, self.tx, self.ty)
+    }
+}
+
+pub(crate) trait PathExt {
+    fn to_krilla(&self) -> Path;
+}
+
+impl PathExt for usvg::Path {
+    fn to_krilla(&self) -> Path {
+        let mut pb = PathBuilder::new();
+
+        for seg in self.data().segments() {
+            match seg {
+                PathSegment::MoveTo(p) => pb.move_to(p.x, p.y),
+                PathSegment::LineTo(p) => pb.line_to(p.x, p.y),
+                PathSegment::QuadTo(p1, p2) => pb.quad_to(p1.x, p1.y, p2.x, p2.y),
+                PathSegment::CubicTo(p1, p2, p3) => pb.cubic_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y),
+                PathSegment::Close => pb.close(),
+            }
+        }
+
+        pb.finish().unwrap()
     }
 }

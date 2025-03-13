@@ -10,7 +10,6 @@ use std::sync::Arc;
 
 #[cfg(feature = "simple-text")]
 use rustybuzz::{Direction, UnicodeBuffer};
-use tiny_skia_path::Path;
 
 use crate::content::{unit_normalize, ContentBuilder};
 #[cfg(feature = "simple-text")]
@@ -23,7 +22,7 @@ use crate::object::font::PaintMode;
 use crate::object::image::Image;
 use crate::object::mask::Mask;
 use crate::object::shading_function::ShadingFunction;
-use crate::path::{Fill, FillRule, Stroke};
+use crate::path::{Fill, FillRule, Path, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
@@ -107,13 +106,13 @@ impl<'a> Surface<'a> {
     /// Fill a path.
     pub fn fill_path(&mut self, path: &Path, fill: Fill) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .fill_path(path, fill, self.sc);
+            .fill_path(&path.0, fill, self.sc);
     }
 
     /// Stroke a path.
     pub fn stroke_path(&mut self, path: &Path, stroke: Stroke) {
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .stroke_path(path, stroke, self.sc)
+            .stroke_path(&path.0, stroke, self.sc)
     }
 
     /// Start a new tagged content section.
@@ -381,7 +380,7 @@ impl<'a> Surface<'a> {
     pub fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.push_instructions.push(PushInstruction::ClipPath);
         Self::cur_builder_mut(&mut self.root_builder, &mut self.sub_builders)
-            .push_clip_path(path, clip_rule);
+            .push_clip_path(&path.0, clip_rule);
     }
 
     /// Push a new mask.

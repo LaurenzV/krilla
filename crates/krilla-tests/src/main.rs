@@ -21,7 +21,7 @@ use krilla::font::{Font, GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::{Stop, Stops};
-use krilla::path::{Fill, Stroke};
+use krilla::path::{Fill, Path, PathBuilder, Stroke};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
@@ -37,7 +37,6 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::{Path, PathBuilder, Rect};
 
 mod annotation;
 mod color;
@@ -301,7 +300,12 @@ pub fn cmyk_fill(opacity: f32) -> Fill {
 
 pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     let mut builder = PathBuilder::new();
-    builder.push_rect(Rect::from_ltrb(x1, y1, x2, y2).unwrap());
+    builder.move_to(x1, y1);
+    builder.line_to(x2, y1);
+    builder.line_to(x2, y2);
+    builder.line_to(x1, y2);
+    builder.close();
+
     builder.finish().unwrap()
 }
 

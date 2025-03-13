@@ -1,9 +1,9 @@
 //! Clip path conversion
 
 use krilla::mask::{Mask, MaskType};
-use krilla::path::FillRule;
+use krilla::path::{FillRule, Path, PathBuilder};
 use krilla::surface::Surface;
-use usvg::tiny_skia_path::{Path, PathBuilder, PathSegment, Transform};
+use usvg::tiny_skia_path::{PathSegment, Transform};
 
 use crate::util::{convert_fill_rule, UsvgTransformExt};
 use crate::{group, ProcessContext};
