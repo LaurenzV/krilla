@@ -247,3 +247,20 @@ impl Default for PageSettings {
         }
     }
 }
+
+/// The main text direction of the document.
+#[allow(missing_docs)]
+#[derive(Copy, Clone, Debug)]
+pub enum TextDirection {
+    LeftToRight,
+    RightToLeft,
+}
+
+impl TextDirection {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::Direction {
+        match self {
+            TextDirection::LeftToRight => pdf_writer::types::Direction::L2R,
+            TextDirection::RightToLeft => pdf_writer::types::Direction::R2L,
+        }
+    }
+}

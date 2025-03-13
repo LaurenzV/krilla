@@ -186,8 +186,8 @@ impl ChunkContainer {
                 catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
             }
 
-            if let Some(lang) = self.metadata.and_then(|m| m.language).as_ref() {
-                catalog.lang(TextStr(lang));
+            if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.clone()) {
+                catalog.lang(TextStr(&lang));
             } else {
                 sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
@@ -205,12 +205,22 @@ impl ChunkContainer {
                 mark_info.finish();
             }
 
-            if sc
+            let write_doc_title = sc
                 .serialize_settings()
                 .validator()
-                .requires_display_doc_title()
-            {
-                catalog.viewer_preferences().display_doc_title(true);
+                .requires_display_doc_title();
+            let text_direction = self.metadata.and_then(|m| m.text_direction);
+
+            if write_doc_title || text_direction.is_some() {
+                let mut vp = catalog.viewer_preferences();
+
+                if write_doc_title {
+                    vp.display_doc_title(true);
+                }
+
+                if let Some(dir) = text_direction {
+                    vp.direction(dir.to_pdf());
+                }
             }
 
             if let Some(ol) = &self.outline {
