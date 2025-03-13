@@ -1,6 +1,7 @@
 //! Group conversion
 
 use krilla::surface::Surface;
+use krilla::NormalizedF32;
 use usvg::Node;
 
 use crate::util::{convert_blend_mode, convert_transform};
@@ -35,7 +36,7 @@ pub(crate) fn render(
     }
 
     surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));
-    surface.push_opacity(group.opacity());
+    surface.push_opacity(NormalizedF32::new(group.opacity().get()).unwrap());
     pop_count += 2;
 
     for child in group.children() {

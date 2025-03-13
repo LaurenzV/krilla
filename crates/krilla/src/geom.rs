@@ -16,8 +16,8 @@ impl NormalizedF32 {
     /// Create a new normalized f32.
     ///
     /// Panics if the number is not normalized.
-    pub fn new(num: f32) -> Self {
-        Self(tiny_skia_path::NormalizedF32::new(num).unwrap())
+    pub fn new(num: f32) -> Option<Self> {
+        Some(Self(tiny_skia_path::NormalizedF32::new(num)?))
     }
 
     /// Returns the value as a primitive type.

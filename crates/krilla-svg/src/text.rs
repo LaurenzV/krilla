@@ -4,9 +4,9 @@ use krilla::color::rgb;
 use krilla::font::{GlyphId, GlyphUnits, KrillaGlyph};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::Font;
+use krilla::{Font, NormalizedF32};
 use tiny_skia_path::{Point, Transform};
-use usvg::{NormalizedF32, PaintOrder};
+use usvg::PaintOrder;
 
 use crate::util::{convert_fill, convert_stroke};
 use crate::{path, ProcessContext};

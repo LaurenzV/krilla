@@ -63,7 +63,7 @@ surface.fill_text(
     Point::from_xy(0.0, 50.0),
     Fill {
         paint: rgb::Color::new(255, 0, 0).into(),
-        opacity: NormalizedF32::new(0.5),
+        opacity: NormalizedF32::new(0.5).unwrap(),
         rule: Default::default(),
     },
     font.clone(),

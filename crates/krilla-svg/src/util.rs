@@ -6,6 +6,7 @@ use krilla::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod
 use krilla::path::{Fill, FillRule, LineCap, LineJoin, Stroke, StrokeDash};
 use krilla::stream::StreamBuilder;
 use krilla::surface::BlendMode;
+use krilla::NormalizedF32;
 use tiny_skia_path::{Path, PathBuilder, Rect, Transform};
 
 use crate::{group, ProcessContext};
@@ -34,7 +35,7 @@ pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> Sprea
 /// Convert a usvg `Stop` into a krilla `Stop`.
 pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
     Stop {
-        offset: stop.offset(),
+        offset: NormalizedF32::new(stop.offset().get()).unwrap(),
         color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
@@ -154,7 +155,7 @@ pub(crate) fn convert_fill(
             process_context,
             additional_transform,
         ),
-        opacity: fill.opacity(),
+        opacity: NormalizedF32::new(fill.opacity().get()).unwrap(),
         rule: convert_fill_rule(&fill.rule()),
     }
 }
@@ -182,7 +183,7 @@ pub(crate) fn convert_stroke(
         miter_limit: stroke.miterlimit().get(),
         line_cap: convert_line_cap(&stroke.linecap()),
         line_join: convert_line_join(&stroke.linejoin()),
-        opacity: stroke.opacity(),
+        opacity: NormalizedF32::new(stroke.opacity().get()).unwrap(),
         dash,
     }
 }

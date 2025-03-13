@@ -139,10 +139,10 @@ impl ColrBuilder {
 
             Some((
                 rgb::Color::new(color.red, color.green, color.blue),
-                NormalizedF32::new(alpha * color.alpha as f32 / 255.0),
+                NormalizedF32::new(alpha * color.alpha as f32 / 255.0)?,
             ))
         } else {
-            Some((self.context_color, NormalizedF32::new(alpha)))
+            Some((self.context_color, NormalizedF32::new(alpha)?))
         }
     }
 
@@ -153,7 +153,7 @@ impl ColrBuilder {
             let (color, alpha) = self.palette_index_to_color(stop.palette_index, stop.alpha)?;
 
             converted_stops.push(Stop {
-                offset: NormalizedF32::new(stop.offset),
+                offset: NormalizedF32::new(stop.offset)?,
                 color,
                 opacity: alpha,
             })
