@@ -32,6 +32,61 @@ pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo {
 
 pub(crate) type Cid = u16;
 
+/// A shared macro for CID fonts and Type3 fonts to write the cmap entries.
+#[macro_export]
+macro_rules! cmap_inner {
+    ($self:expr, $entry:expr, $sc:expr, $cmap:expr, $g:expr) => {
+        match $entry {
+            None => $sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                $self.font.clone(),
+                GlyphId::new($g as u32),
+                None,
+                None,
+            )),
+            Some((text, loc)) => {
+
+                let mut invalid_codepoint = text.is_empty();
+                let mut invalid_code = None;
+                let mut private_unicode = None;
+
+                for c in text.chars() {
+                    if matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE) {
+                        invalid_code = Some(c);
+                        invalid_codepoint = true;
+                    }
+
+                    if matches!(c as u32, 0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD)
+                    {
+                        private_unicode = Some(c);
+                    }
+                }
+
+                if invalid_codepoint {
+                    $sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+                        $self.font.clone(),
+                        GlyphId::new($g as u32),
+                        invalid_code,
+                        *loc,
+                    ))
+                }
+
+                if let Some(code) = private_unicode {
+                    $sc.register_validation_error(ValidationError::UnicodePrivateArea(
+                        $self.font.clone(),
+                        GlyphId::new($g as u32),
+                        code,
+                        *loc,
+                    ))
+                }
+
+                if !text.is_empty() {
+                    $cmap.pair_with_multiple($g, text.chars());
+                }
+            }
+        }
+    };
+}
+
 /// A CID-keyed font.
 #[derive(Debug, Clone)]
 pub(crate) struct CIDFont {
@@ -287,54 +342,8 @@ impl CIDFont {
             // For the .notdef glyph, it's fine if no mapping exists, since it is included
             // even if it was not referenced in the text.
             for g in 1..self.glyph_remapper.num_gids() {
-                match self.cmap_entries.get(&g) {
-                    None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
-                        self.font.clone(),
-                        GlyphId::new(g as u32),
-                        None,
-                        None,
-                    )),
-                    Some((text, loc)) => {
-                        // Note: Keep in sync with Type3
-                        let mut invalid_codepoint = text.is_empty();
-                        let mut invalid_code = None;
-                        let mut private_unicode = None;
-
-                        for c in text.chars() {
-                            if matches!(c as u32, 0x0 | 0xFEFF | 0xFFFE) {
-                                invalid_code = Some(c);
-                                invalid_codepoint = true;
-                            }
-
-                            if matches!(c as u32, 0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD)
-                            {
-                                private_unicode = Some(c);
-                            }
-                        }
-
-                        if invalid_codepoint {
-                            sc.register_validation_error(ValidationError::InvalidCodepointMapping(
-                                self.font.clone(),
-                                GlyphId::new(g as u32),
-                                invalid_code,
-                                *loc,
-                            ))
-                        }
-
-                        if let Some(code) = private_unicode {
-                            sc.register_validation_error(ValidationError::UnicodePrivateArea(
-                                self.font.clone(),
-                                GlyphId::new(g as u32),
-                                code,
-                                *loc,
-                            ))
-                        }
-
-                        if !text.is_empty() {
-                            cmap.pair_with_multiple(g, text.chars());
-                        }
-                    }
-                }
+                let entry = self.cmap_entries.get(&g);
+                cmap_inner!(&self, entry, sc, &mut cmap, g);
             }
 
             cmap
@@ -371,7 +380,7 @@ pub(crate) fn subset_tag<T: Hash>(data: &T) -> String {
 
 pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
     const REST_LEN: usize = SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len();
-    
+
     let postscript_name = font.postscript_name().unwrap_or("unknown");
     let max_len = 127 - REST_LEN;
     let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
