@@ -1,10 +1,8 @@
 //! Path-related properties.
 
-use std::hash::{Hash, Hasher};
+use std::hash::Hasher;
 
-use crate::graphics::color::luma;
-use crate::paint::Paint;
-use crate::{NormalizedF32, Rect, Transform};
+use crate::{Rect, Transform};
 
 /// A path.
 pub struct Path(pub(crate) tiny_skia_path::Path);
