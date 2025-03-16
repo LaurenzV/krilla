@@ -10,6 +10,7 @@ use crate::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {
+    LumaStops(Vec<Stop<luma::Color>>),
     RgbStops(Vec<Stop<rgb::Color>>),
     CmykStops(Vec<Stop<cmyk::Color>>),
 }
@@ -21,6 +22,7 @@ impl InnerStops {
         match self {
             InnerStops::RgbStops(r) => Box::new(r.into_iter().map(|c| c.into())),
             InnerStops::CmykStops(c) => Box::new(c.into_iter().map(|c| c.into())),
+            InnerStops::LumaStops(l) => Box::new(l.into_iter().map(|c| c.into())),
         }
     }
 }
@@ -28,6 +30,12 @@ impl InnerStops {
 /// The color stops of a gradient.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Stops(pub(crate) InnerStops);
+
+impl From<Vec<Stop<luma::Color>>> for Stops {
+    fn from(value: Vec<Stop<luma::Color>>) -> Self {
+        Stops(InnerStops::LumaStops(value))
+    }
+}
 
 impl From<Vec<Stop<rgb::Color>>> for Stops {
     fn from(value: Vec<Stop<rgb::Color>>) -> Self {

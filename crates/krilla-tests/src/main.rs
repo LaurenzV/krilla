@@ -740,6 +740,27 @@ pub fn stops_with_3_solid_1() -> Stops {
     .into()
 }
 
+pub fn stops_with_3_luma() -> Stops {
+    vec![
+        Stop {
+            offset: NormalizedF32::new(0.0).unwrap(),
+            color: luma::Color::new(0),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.3).unwrap(),
+            color: luma::Color::new(128),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(1.0).unwrap(),
+            color: luma::Color::new(255),
+            opacity: NormalizedF32::ONE,
+        },
+    ]
+    .into()
+}
+
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
     LinkAnnotation::new(
         krilla::Rect::from_xywh(x, y, w, h).unwrap(),
