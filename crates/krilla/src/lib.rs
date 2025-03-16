@@ -130,15 +130,8 @@ pub mod surface;
 pub mod text;
 pub(crate) mod data;
 
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 
-use chunk_container::ChunkContainerFn;
 pub use page::PageSettings;
-use pdf_writer::{Chunk, Ref};
 pub use prelude::*;
 pub use data::*;
 
-use crate::serialize::SerializeContext;
-use crate::util::SipHashable;
