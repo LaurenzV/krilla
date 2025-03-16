@@ -14,10 +14,10 @@ use subsetter::GlyphRemapper;
 use super::{CIDIdentifier, FontIdentifier, PDF_UNITS_PER_EM};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, GlyphId};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
+use crate::text::{Font, GlyphId};
 use crate::util::{hash128, RectExt, SliceExt};
 
 const SUBSET_TAG_LEN: usize = 6;

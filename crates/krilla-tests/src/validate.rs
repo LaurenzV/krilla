@@ -1,6 +1,5 @@
 use krilla::configure::ValidationError;
 use krilla::error::KrillaError;
-use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::interactive::action::LinkAction;
 use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::interchange::embed::EmbedError;
@@ -12,6 +11,7 @@ use krilla::interchange::tagging::{
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::surface::TextDirection;
+use krilla::text::{Font, GlyphId, KrillaGlyph};
 use krilla::{Point, Rect, Size};
 use krilla_macros::snapshot;
 

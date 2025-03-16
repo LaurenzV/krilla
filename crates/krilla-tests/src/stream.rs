@@ -1,8 +1,8 @@
-use krilla::font::Font;
 use krilla::page::Page;
 use krilla::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
+use krilla::text::Font;
 use krilla::{Data, Point, Size, Transform};
 use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};

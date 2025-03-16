@@ -12,10 +12,6 @@ use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use tiny_skia_path::{Path, PathSegment};
 
 use crate::configure::ValidationError;
-use crate::font::type3::CoveredGlyph;
-use crate::font::{
-    Font, FontContainer, FontIdentifier, Glyph, GlyphId, PaintMode, PdfFont, PDF_UNITS_PER_EM,
-};
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::graphics::color::{Color, ColorSpace};
@@ -33,6 +29,10 @@ use crate::paint::{Fill, FillRule, InnerPaint, LineCap, LineJoin, Paint, Stroke}
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
+use crate::text::type3::CoveredGlyph;
+use crate::text::{
+    Font, FontContainer, FontIdentifier, Glyph, GlyphId, PaintMode, PdfFont, PDF_UNITS_PER_EM,
+};
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{resource, NormalizedF32, Point, Rect, Transform};
 

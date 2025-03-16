@@ -12,11 +12,6 @@ use std::sync::Arc;
 use rustybuzz::{Direction, UnicodeBuffer};
 
 use crate::content::ContentBuilder;
-#[cfg(feature = "simple-text")]
-use crate::font::GlyphId;
-#[cfg(feature = "simple-text")]
-use crate::font::KrillaGlyph;
-use crate::font::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
@@ -26,6 +21,11 @@ use crate::paint::{Fill, FillRule, Stroke};
 use crate::path::Path;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
+#[cfg(feature = "simple-text")]
+use crate::text::GlyphId;
+#[cfg(feature = "simple-text")]
+use crate::text::KrillaGlyph;
+use crate::text::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::Size;
 use crate::{NormalizedF32, Point, Transform};

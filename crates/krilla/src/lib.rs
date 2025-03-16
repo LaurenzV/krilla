@@ -22,7 +22,7 @@ For more examples, feel free to take a look at the [examples] directory of the G
 
 ```
 # use krilla::graphics::color::rgb;
-# use krilla::font::Font;
+# use krilla::text::Font;
 # use krilla::geom::Point;
 # use krilla::paint::Paint;
 # use krilla::surface::TextDirection;
@@ -119,7 +119,6 @@ pub(crate) mod content;
 pub mod configure;
 pub mod document;
 pub mod error;
-pub mod font;
 pub mod geom;
 pub mod graphics;
 pub mod interactive;
@@ -129,6 +128,7 @@ pub mod paint;
 pub mod path;
 pub mod stream;
 pub mod surface;
+pub mod text;
 
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};

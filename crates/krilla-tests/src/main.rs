@@ -14,7 +14,6 @@ use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage}
 use difference::{Changeset, Difference};
 use krilla::configure::{Configuration, PdfVersion, Validator};
 use krilla::document::{Document, PageSettings};
-use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::graphics::color::{cmyk, luma, rgb, ICCProfile};
 use krilla::graphics::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::graphics::mask::{Mask, MaskType};
@@ -25,6 +24,7 @@ use krilla::path::{Path, PathBuilder};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
+use krilla::text::{Font, GlyphId, KrillaGlyph};
 use krilla::{Data, NormalizedF32, Transform};
 use krilla::{Point, SerializeSettings};
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
@@ -595,8 +595,8 @@ pub fn all_glyphs_to_pdf(
     allow_color: bool,
     d: &mut Document,
 ) {
-    use krilla::font::KrillaGlyph;
     use krilla::geom::Transform;
+    use krilla::text::KrillaGlyph;
 
     let font = Font::new(font_data.clone(), 0, allow_color).unwrap();
     let font_ref = FontRef::from_index(font_data.as_ref(), 0).unwrap();

@@ -14,9 +14,6 @@ use skrifa::raw::TableProvider;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::cid::CIDFont;
-use crate::font::type3::Type3FontMapper;
-use crate::font::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
 use crate::graphics::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -30,6 +27,9 @@ use crate::interchange::tagging::{
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::resource::Resource;
 use crate::surface::{Location, Surface};
+use crate::text::cid::CIDFont;
+use crate::text::type3::Type3FontMapper;
+use crate::text::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
 use crate::util::SipHashable;
 use crate::{resource, Cacheable, Resourceable, Size};
 

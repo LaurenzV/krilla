@@ -4,9 +4,9 @@
 //! invalid fonts are provided. This module provides the basic error types krilla uses.
 
 use crate::configure::ValidationError;
-use crate::font::Font;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
+use crate::text::Font;
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;

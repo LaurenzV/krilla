@@ -10,9 +10,6 @@ use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
-use crate::font::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
-use crate::font::outline::glyph_path;
-use crate::font::{self, Font, GlyphId};
 use crate::graphics::xobject::XObject;
 use crate::paint::Fill;
 use crate::path::Path;
@@ -20,6 +17,9 @@ use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
+use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
+use crate::text::outline::glyph_path;
+use crate::text::{self, Font, GlyphId};
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::{cmap_inner, Rect, Transform};
 
@@ -162,7 +162,7 @@ impl Type3Font {
                     let mut surface = stream_surface.surface();
 
                     // In case this returns `None`, the surface is guaranteed to be empty.
-                    let drawn_color_glyph = font::draw_color_glyph(
+                    let drawn_color_glyph = text::draw_color_glyph(
                         self.font.clone(),
                         glyph.glyph_id,
                         glyph.paint_mode.as_ref(),
@@ -504,10 +504,10 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::type3::OwnedCoveredGlyph;
-    use crate::font::{Font, FontContainer, GlyphId, OwnedPaintMode};
     use crate::paint::Fill;
     use crate::serialize::SerializeContext;
+    use crate::text::type3::OwnedCoveredGlyph;
+    use crate::text::{Font, FontContainer, GlyphId, OwnedPaintMode};
     use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
 
     impl OwnedCoveredGlyph {

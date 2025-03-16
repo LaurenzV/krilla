@@ -2,9 +2,9 @@
 
 use skrifa::raw::TableProvider;
 
-use crate::font::{Font, GlyphId, PaintMode};
 use crate::graphics::color::rgb;
 use crate::surface::Surface;
+use crate::text::{Font, GlyphId, PaintMode};
 
 /// Draw an SVG-based glyph on a surface.
 pub(crate) fn draw_glyph(

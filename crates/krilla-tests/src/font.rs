@@ -21,8 +21,8 @@ mod bitmap {
 }
 
 mod colr {
-    use krilla::font::GlyphId;
     use krilla::surface::{Surface, TextDirection};
+    use krilla::text::GlyphId;
     use krilla::{Document, Font, Point};
     use krilla_macros::visreg;
 

@@ -2,10 +2,10 @@
 
 use std::collections::HashMap;
 
-use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::geom::{NormalizedF32, Point};
 use krilla::graphics::color::rgb;
 use krilla::paint::Fill;
+use krilla::text::{Font, GlyphId, KrillaGlyph};
 use krilla::{Document, PageSettings};
 use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};

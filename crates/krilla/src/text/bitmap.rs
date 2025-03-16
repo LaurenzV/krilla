@@ -2,10 +2,10 @@
 
 use skrifa::MetadataProvider;
 
-use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
-use crate::font::{Font, GlyphId};
 use crate::graphics::image::Image;
 use crate::surface::Surface;
+use crate::text::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
+use crate::text::{Font, GlyphId};
 use crate::{Size, Transform};
 
 /// Draw a bitmap-based glyph on a surface.
