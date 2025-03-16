@@ -16,9 +16,6 @@ pub type KrillaResult<T> = Result<T, KrillaError>;
 pub enum KrillaError {
     /// An error while attempting to embed a font.
     Font(Font, String),
-    /// A user-related error, indicating API misuse (for example attempting to add
-    /// a link to a page that doesn't exist).
-    User(String),
     /// A list of validation errors. Can only occur if you set the `validator` in
     /// the [`SerializeSettings`] to something else than the dummy validator.
     ///
