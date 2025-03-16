@@ -134,6 +134,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use chunk_container::ChunkContainerFn;
+pub use page::PageSettings;
 use pdf_writer::{Chunk, Ref};
 pub use prelude::*;
 

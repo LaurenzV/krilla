@@ -41,7 +41,6 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-
 use crate::configure::ValidationError;
 use crate::graphics::icc::ICCBasedColorSpace;
 use crate::serialize::SerializeContext;

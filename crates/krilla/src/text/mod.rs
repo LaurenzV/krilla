@@ -13,7 +13,6 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 
-
 use crate::graphics::paint::{Fill, Stroke};
 use crate::text::cid::CIDFont;
 use crate::text::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
