@@ -62,7 +62,7 @@ pub fn validate_pdf_a_q_nesting_28(document: &mut Document) {
 }
 
 #[test]
-pub fn validate_pdfa_q_nesting_28() {
+pub fn validate_pdf_a_q_nesting_28() {
     let document = q_nesting_impl(settings_7());
     assert_eq!(
         document.finish(),
@@ -73,7 +73,7 @@ pub fn validate_pdfa_q_nesting_28() {
 }
 
 #[test]
-pub fn validate_pdfa_string_length() {
+pub fn validate_pdf_a_string_length() {
     let mut document = pdfa_document();
     let metadata = Metadata::new().creator("A".repeat(32768));
     document.set_metadata(metadata);
@@ -98,7 +98,7 @@ fn validate_pdf_a_annotation(page: &mut Page) {
 }
 
 #[test]
-fn validate_pdfa_postscript() {
+fn validate_pdf_a_postscript() {
     let mut document = pdfa_document();
     let mut page = document.start_page();
 
@@ -154,7 +154,7 @@ fn cmyk_document_impl(document: &mut Document) {
 }
 
 #[test]
-fn validate_pdfa_missing_cmyk() {
+fn validate_pdf_a_missing_cmyk() {
     let mut document = pdfa_document();
     cmyk_document_impl(&mut document);
 
@@ -167,7 +167,7 @@ fn validate_pdfa_missing_cmyk() {
 }
 
 #[test]
-fn validate_pdfa_existing_cmyk() {
+fn validate_pdf_a_existing_cmyk() {
     let mut document = Document::new_with(settings_8());
     cmyk_document_impl(&mut document);
 
@@ -175,7 +175,7 @@ fn validate_pdfa_existing_cmyk() {
 }
 
 #[test]
-fn validate_pdfa_notdef_glyph() {
+fn validate_pdf_a_notdef_glyph() {
     let mut document = pdfa_document();
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -438,12 +438,12 @@ fn validate_pdf_a4_full_example(document: &mut Document) {
 }
 
 #[snapshot(document, settings_27)]
-fn validate_pdfa_4f_full_example(document: &mut Document) {
+fn validate_pdf_a4f_full_example(document: &mut Document) {
     validate_pdf_full_example(document);
 }
 
 #[snapshot(document, settings_28)]
-fn validate_pdfa_4e_full_example(document: &mut Document) {
+fn validate_pdf_a4e_full_example(document: &mut Document) {
     validate_pdf_full_example(document);
 }
 
