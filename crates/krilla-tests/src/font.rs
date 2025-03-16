@@ -255,9 +255,10 @@ mod cid {
 }
 
 mod type3 {
+    use krilla::page::Page;
     use krilla::path::Fill;
     use krilla::surface::TextDirection;
-    use krilla::{Font, Page, Point};
+    use krilla::{Font, Point};
     use krilla_macros::snapshot;
 
     use crate::TWITTER_COLOR_EMOJI;

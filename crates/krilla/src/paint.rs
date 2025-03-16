@@ -3,7 +3,7 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
-use crate::color::{cmyk, luma, rgb, Color};
+use crate::graphics::color::{cmyk, luma, rgb, Color};
 use crate::stream::Stream;
 use crate::util::HashExt;
 use crate::{NormalizedF32, Transform};
@@ -18,7 +18,7 @@ pub(crate) enum InnerStops {
 impl InnerStops {
     pub(crate) fn into_iter(
         self,
-    ) -> Box<dyn Iterator<Item = crate::object::shading_function::Stop>> {
+    ) -> Box<dyn Iterator<Item = crate::graphics::shading_function::Stop>> {
         match self {
             InnerStops::Rgb(r) => Box::new(r.into_iter().map(|c| c.into())),
             InnerStops::Cmyk(c) => Box::new(c.into_iter().map(|c| c.into())),
@@ -296,12 +296,12 @@ where
     pub opacity: NormalizedF32,
 }
 
-impl<C> From<Stop<C>> for crate::object::shading_function::Stop
+impl<C> From<Stop<C>> for crate::graphics::shading_function::Stop
 where
     C: Into<Color>,
 {
     fn from(val: Stop<C>) -> Self {
-        crate::object::shading_function::Stop {
+        crate::graphics::shading_function::Stop {
             offset: val.offset,
             opacity: val.opacity,
             color: val.color.into(),

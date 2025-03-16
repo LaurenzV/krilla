@@ -5,8 +5,8 @@ use std::io::Read;
 use std::sync::Arc;
 
 use fontdb::Database;
-use krilla::color::rgb;
 use krilla::font::{Font, FontInfo, GlyphId};
+use krilla::graphics::color::rgb;
 use krilla::path::FillRule;
 use krilla::surface::Surface;
 use krilla::{Rect, Size, Transform};

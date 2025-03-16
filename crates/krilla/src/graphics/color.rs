@@ -96,7 +96,7 @@ impl Color {
 
 /// Gray-scale colors.
 pub mod luma {
-    use crate::object::color::ColorSpace;
+    use crate::graphics::color::ColorSpace;
 
     /// A luma color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -146,8 +146,8 @@ pub mod luma {
 
 /// CMYK colors.
 pub mod cmyk {
-    use crate::color::ICCBasedColorSpace;
-    use crate::object::color::ColorSpace;
+    use crate::graphics::color::ColorSpace;
+    use crate::graphics::color::ICCBasedColorSpace;
     use crate::SerializeSettings;
 
     /// A CMYK color.
@@ -196,7 +196,7 @@ pub mod cmyk {
 
 /// RGB colors.
 pub mod rgb {
-    use crate::object::color::ColorSpace;
+    use crate::graphics::color::ColorSpace;
 
     /// An RGB color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

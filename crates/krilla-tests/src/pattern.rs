@@ -1,8 +1,9 @@
 mod shading {
+    use krilla::page::Page;
     use krilla::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use krilla::path::Fill;
     use krilla::surface::Surface;
-    use krilla::{NormalizedF32, Page};
+    use krilla::NormalizedF32;
     use krilla_macros::{snapshot, visreg};
 
     use crate::{

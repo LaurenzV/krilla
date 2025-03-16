@@ -2,8 +2,8 @@
 
 use skrifa::raw::TableProvider;
 
-use crate::color::rgb;
 use crate::font::{Font, GlyphId, PaintMode};
+use crate::graphics::color::rgb;
 use crate::surface::Surface;
 
 /// Draw an SVG-based glyph on a surface.

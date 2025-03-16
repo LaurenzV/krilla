@@ -2,9 +2,9 @@
 
 use std::collections::HashMap;
 
-use krilla::color::rgb;
 use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::geom::{NormalizedF32, Point};
+use krilla::graphics::color::rgb;
 use krilla::path::Fill;
 use krilla::{Document, PageSettings};
 use parley::layout::Alignment;

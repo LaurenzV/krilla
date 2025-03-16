@@ -19,10 +19,10 @@ use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
-use crate::color::{cmyk, luma, rgb, GenericICCProfile, ICCBasedColorSpace, ICCProfile};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
-use crate::object::color::DEVICE_GRAY;
+use crate::graphics::color::DEVICE_GRAY;
+use crate::graphics::color::{cmyk, luma, rgb, GenericICCProfile, ICCBasedColorSpace, ICCProfile};
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};

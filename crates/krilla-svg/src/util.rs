@@ -1,7 +1,7 @@
 //! Utilities for SVG conversion.
 
-use krilla::color::{luma, rgb};
-use krilla::mask::MaskType;
+use krilla::graphics::color::{luma, rgb};
+use krilla::graphics::mask::MaskType;
 use krilla::paint::{LinearGradient, Paint, Pattern, RadialGradient, SpreadMethod, Stop};
 use krilla::path::{Fill, FillRule, LineCap, LineJoin, Path, PathBuilder, Stroke, StrokeDash};
 use krilla::stream::StreamBuilder;

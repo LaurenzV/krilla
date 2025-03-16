@@ -1,8 +1,9 @@
-use krilla::color::rgb;
-use krilla::mask::MaskType;
+use krilla::graphics::color::rgb;
+use krilla::graphics::mask::MaskType;
+use krilla::page::Page;
 use krilla::path::Fill;
 use krilla::surface::Surface;
-use krilla::{NormalizedF32, Page};
+use krilla::NormalizedF32;
 use krilla_macros::{snapshot, visreg};
 
 use crate::{basic_mask, green_fill, rect_to_path};

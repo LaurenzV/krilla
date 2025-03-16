@@ -13,7 +13,7 @@ use crate::configure::{PdfVersion, ValidationError};
 use crate::font::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::font::outline::glyph_path;
 use crate::font::{self, Font, GlyphId};
-use crate::object::xobject::XObject;
+use crate::graphics::xobject::XObject;
 use crate::path::{Fill, Path};
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;

@@ -4,8 +4,8 @@ use std::ops::DerefMut;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::color::{rgb, DEVICE_RGB};
 use crate::configure::ValidationError;
+use crate::graphics::color::{rgb, DEVICE_RGB};
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource::Resource;
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};

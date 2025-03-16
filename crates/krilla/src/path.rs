@@ -2,7 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
-use crate::color::luma;
+use crate::graphics::color::luma;
 use crate::paint::Paint;
 use crate::{NormalizedF32, Rect, Transform};
 

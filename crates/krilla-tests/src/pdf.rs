@@ -1,4 +1,5 @@
-use krilla::{Document, Page};
+use krilla::page::Page;
+use krilla::Document;
 use krilla_macros::snapshot;
 
 use crate::metadata::metadata_impl;

@@ -6,7 +6,7 @@
 use crate::configure::ValidationError;
 use crate::font::Font;
 #[cfg(feature = "raster-images")]
-use crate::Image;
+use crate::graphics::image::Image;
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;

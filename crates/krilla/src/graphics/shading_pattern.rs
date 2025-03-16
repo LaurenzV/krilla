@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::object::shading_function::{GradientProperties, ShadingFunction};
+use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::serialize::SerializeContext;
 use crate::util::{HashExt, TransformExt};

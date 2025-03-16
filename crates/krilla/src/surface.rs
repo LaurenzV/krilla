@@ -17,11 +17,11 @@ use crate::font::GlyphId;
 #[cfg(feature = "simple-text")]
 use crate::font::KrillaGlyph;
 use crate::font::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
-use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 #[cfg(feature = "raster-images")]
-use crate::object::image::Image;
-use crate::object::mask::Mask;
-use crate::object::shading_function::ShadingFunction;
+use crate::graphics::image::Image;
+use crate::graphics::mask::Mask;
+use crate::graphics::shading_function::ShadingFunction;
+use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::path::{Fill, FillRule, Path, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};

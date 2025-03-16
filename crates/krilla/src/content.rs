@@ -11,7 +11,6 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use tiny_skia_path::{Path, PathSegment};
 
-use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
 use crate::font::type3::CoveredGlyph;
 use crate::font::{
@@ -19,16 +18,17 @@ use crate::font::{
 };
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
-use crate::graphics_state::GraphicsStates;
-#[cfg(feature = "raster-images")]
-use crate::image::Image;
+use crate::graphics::color::{Color, ColorSpace};
+use crate::graphics::graphics_state::{ExtGState, GraphicsStates};
+use crate::graphics::image::Image;
+use crate::graphics::mask::Mask;
+use crate::graphics::shading_function::{
+    GradientProperties, GradientPropertiesExt, ShadingFunction,
+};
+use crate::graphics::shading_pattern::ShadingPattern;
+use crate::graphics::tiling_pattern::TilingPattern;
+use crate::graphics::xobject::XObject;
 use crate::interchange::tagging::ContentTag;
-use crate::mask::Mask;
-use crate::object::ext_g_state::ExtGState;
-use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
-use crate::object::shading_pattern::ShadingPattern;
-use crate::object::tiling_pattern::TilingPattern;
-use crate::object::xobject::XObject;
 use crate::paint::{InnerPaint, Paint};
 use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{Resource, ResourceDictionaryBuilder};

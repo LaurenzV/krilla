@@ -1,5 +1,4 @@
 use krilla::font::Font;
-use krilla::mask::MaskType;
 use krilla::page::Page;
 use krilla::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::path::{Fill, Stroke};

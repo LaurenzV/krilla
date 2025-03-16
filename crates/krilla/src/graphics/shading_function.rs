@@ -9,9 +9,9 @@ use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::Point;
 
-use crate::color::luma;
 use crate::configure::ValidationError;
-use crate::object::color::Color;
+use crate::graphics::color::luma;
+use crate::graphics::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};

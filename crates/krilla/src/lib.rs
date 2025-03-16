@@ -21,7 +21,7 @@ Consult the documentation to see all features that are available in krilla.
 For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
-# use krilla::color::rgb;
+# use krilla::graphics::color::rgb;
 # use krilla::font::Font;
 # use krilla::geom::Point;
 # use krilla::paint::Paint;
@@ -109,7 +109,6 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 #![forbid(unsafe_code)]
 
 mod chunk_container;
-mod graphics_state;
 mod object;
 mod prelude;
 mod resource;
@@ -123,6 +122,7 @@ pub mod document;
 pub mod error;
 pub mod font;
 pub mod geom;
+pub mod graphics;
 pub mod interactive;
 pub mod interchange;
 pub mod paint;

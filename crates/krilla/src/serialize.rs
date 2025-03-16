@@ -12,14 +12,14 @@ use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 
 use crate::chunk_container::ChunkContainer;
-use crate::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::cid::CIDFont;
 use crate::font::type3::Type3FontMapper;
 use crate::font::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
+use crate::graphics::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
-use crate::image::Image;
+use crate::graphics::image::Image;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;

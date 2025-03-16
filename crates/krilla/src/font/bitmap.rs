@@ -4,7 +4,7 @@ use skrifa::MetadataProvider;
 
 use crate::font::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::font::{Font, GlyphId};
-use crate::object::image::Image;
+use crate::graphics::image::Image;
 use crate::surface::Surface;
 use crate::{Size, Transform};
 
