@@ -3,8 +3,7 @@
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::MetadataProvider;
 
-use crate::font::{Font, GlyphId};
-use crate::object::font::PaintMode;
+use crate::font::{Font, GlyphId, PaintMode};
 use crate::path::Path;
 use crate::surface::Surface;
 use crate::Transform;

@@ -10,9 +10,9 @@ use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
+use crate::font::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::font::outline::glyph_path;
 use crate::font::{self, Font, GlyphId};
-use crate::object::font::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::object::xobject::XObject;
 use crate::path::{Fill, Path};
 use crate::resource::ResourceDictionaryBuilder;
@@ -503,9 +503,8 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{Font, GlyphId};
-    use crate::object::font::type3::OwnedCoveredGlyph;
-    use crate::object::font::{FontContainer, OwnedPaintMode};
+    use crate::font::type3::OwnedCoveredGlyph;
+    use crate::font::{Font, FontContainer, GlyphId, OwnedPaintMode};
     use crate::path::Fill;
     use crate::serialize::SerializeContext;
     use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};

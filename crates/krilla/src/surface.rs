@@ -16,8 +16,7 @@ use crate::content::ContentBuilder;
 use crate::font::GlyphId;
 #[cfg(feature = "simple-text")]
 use crate::font::KrillaGlyph;
-use crate::font::{draw_glyph, Font, FontInfo, Glyph};
-use crate::object::font::PaintMode;
+use crate::font::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;

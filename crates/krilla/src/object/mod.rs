@@ -13,7 +13,6 @@ pub mod color;
 pub mod destination;
 pub mod embed;
 pub(crate) mod ext_g_state;
-pub(crate) mod font;
 #[cfg(feature = "raster-images")]
 pub mod image;
 pub mod mask;

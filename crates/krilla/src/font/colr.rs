@@ -9,9 +9,8 @@ use skrifa::MetadataProvider;
 use tiny_skia_path::{Path, PathBuilder};
 
 use crate::font::outline::OutlineBuilder;
-use crate::font::{Font, GlyphId};
+use crate::font::{Font, GlyphId, PaintMode};
 use crate::object::color::rgb;
-use crate::object::font::PaintMode;
 use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::path::{Fill, FillRule};
 use crate::surface::BlendMode;

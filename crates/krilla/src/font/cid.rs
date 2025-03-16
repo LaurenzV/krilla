@@ -11,11 +11,10 @@ use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use subsetter::GlyphRemapper;
 
-use super::{CIDIdentifier, FontIdentifier};
+use super::{CIDIdentifier, FontIdentifier, PDF_UNITS_PER_EM};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, GlyphId};
-use crate::prelude::font::PDF_UNITS_PER_EM;
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;

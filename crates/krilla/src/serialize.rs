@@ -17,13 +17,12 @@ use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::destination::{NamedDestination, XyzDestination};
 use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, FontInfo, GlyphId};
+use crate::font::cid::CIDFont;
+use crate::font::type3::Type3FontMapper;
+use crate::font::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::font::cid::CIDFont;
-use crate::object::font::type3::Type3FontMapper;
-use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::{Cacheable, Resourceable};

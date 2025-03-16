@@ -13,7 +13,10 @@ use tiny_skia_path::{Path, PathSegment};
 
 use crate::color::{Color, ColorSpace};
 use crate::configure::ValidationError;
-use crate::font::{Font, Glyph, GlyphId};
+use crate::font::type3::CoveredGlyph;
+use crate::font::{
+    Font, FontContainer, FontIdentifier, Glyph, GlyphId, PaintMode, PdfFont, PDF_UNITS_PER_EM,
+};
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::graphics_state::GraphicsStates;
@@ -21,8 +24,6 @@ use crate::graphics_state::GraphicsStates;
 use crate::image::Image;
 use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
-use crate::object::font::type3::CoveredGlyph;
-use crate::object::font::{FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
