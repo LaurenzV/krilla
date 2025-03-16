@@ -1,10 +1,10 @@
 //! PDF fonts.
 
-use crate::content::PdfFont;
 use crate::font::Font;
 use crate::object::font::cid_font::CIDFont;
-use crate::object::font::type3_font::{CoveredGlyph, Type3FontMapper, Type3ID};
+use crate::object::font::type3_font::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
 use crate::path::{Fill, Stroke};
+use crate::surface::Location;
 
 pub(crate) mod cid_font;
 pub(crate) mod type3_font;
@@ -168,5 +168,82 @@ impl FontContainer {
                 (cid_font.identifier(), PDFGlyph::Cid(cid))
             }
         }
+    }
+}
+
+pub(crate) trait PdfFont {
+    fn units_per_em(&self) -> f32;
+    fn font(&self) -> Font;
+    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>);
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
+    fn force_fill(&self) -> bool;
+}
+
+impl PdfFont for Type3Font {
+    fn units_per_em(&self) -> f32 {
+        self.unit_per_em()
+    }
+
+    fn font(&self) -> Font {
+        Type3Font::font(self)
+    }
+
+    #[track_caller]
+    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
+        match pdf_glyph {
+            PDFGlyph::Type3(t3) => self.get_codepoints(t3),
+            PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
+        }
+    }
+
+    #[track_caller]
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
+        match pdf_glyph {
+            PDFGlyph::Type3(t3) => self.set_codepoints(t3, text, location),
+            PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
+        }
+    }
+
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_gid(&glyph.to_owned()).map(PDFGlyph::Type3)
+    }
+
+    fn force_fill(&self) -> bool {
+        true
+    }
+}
+
+impl PdfFont for CIDFont {
+    fn units_per_em(&self) -> f32 {
+        self.units_per_em()
+    }
+
+    fn font(&self) -> Font {
+        CIDFont::font(self)
+    }
+
+    #[track_caller]
+    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
+        match pdf_glyph {
+            PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
+            PDFGlyph::Cid(cid) => self.get_codepoints(cid),
+        }
+    }
+
+    #[track_caller]
+    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
+        match pdf_glyph {
+            PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
+            PDFGlyph::Cid(cid) => self.set_codepoints(cid, text, location),
+        }
+    }
+
+    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+        self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
+    }
+
+    fn force_fill(&self) -> bool {
+        false
     }
 }

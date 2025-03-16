@@ -21,9 +21,8 @@ use crate::graphics_state::GraphicsStates;
 use crate::image::Image;
 use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
-use crate::object::font::cid_font::CIDFont;
-use crate::object::font::type3_font::{CoveredGlyph, Type3Font};
-use crate::object::font::{FontContainer, FontIdentifier, PDFGlyph, PaintMode, PDF_UNITS_PER_EM};
+use crate::object::font::type3_font::CoveredGlyph;
+use crate::object::font::{FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
 use crate::object::tiling_pattern::TilingPattern;
@@ -33,7 +32,6 @@ use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::surface::Location;
 use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{resource, NormalizedF32, Point, Rect, Transform};
@@ -960,83 +958,6 @@ fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font)
     }
 
     Rect::from_ltrb(bl, bt, br, bb).unwrap()
-}
-
-pub(crate) trait PdfFont {
-    fn units_per_em(&self) -> f32;
-    fn font(&self) -> Font;
-    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str>;
-    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>);
-    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
-    fn force_fill(&self) -> bool;
-}
-
-impl PdfFont for Type3Font {
-    fn units_per_em(&self) -> f32 {
-        self.unit_per_em()
-    }
-
-    fn font(&self) -> Font {
-        Type3Font::font(self)
-    }
-
-    #[track_caller]
-    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
-        match pdf_glyph {
-            PDFGlyph::Type3(t3) => self.get_codepoints(t3),
-            PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
-        }
-    }
-
-    #[track_caller]
-    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
-        match pdf_glyph {
-            PDFGlyph::Type3(t3) => self.set_codepoints(t3, text, location),
-            PDFGlyph::Cid(_) => panic!("attempted to pass cid to type 3 font"),
-        }
-    }
-
-    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
-        self.get_gid(&glyph.to_owned()).map(PDFGlyph::Type3)
-    }
-
-    fn force_fill(&self) -> bool {
-        true
-    }
-}
-
-impl PdfFont for CIDFont {
-    fn units_per_em(&self) -> f32 {
-        self.units_per_em()
-    }
-
-    fn font(&self) -> Font {
-        CIDFont::font(self)
-    }
-
-    #[track_caller]
-    fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
-        match pdf_glyph {
-            PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
-            PDFGlyph::Cid(cid) => self.get_codepoints(cid),
-        }
-    }
-
-    #[track_caller]
-    fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
-        match pdf_glyph {
-            PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
-            PDFGlyph::Cid(cid) => self.set_codepoints(cid, text, location),
-        }
-    }
-
-    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
-        self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
-    }
-
-    fn force_fill(&self) -> bool {
-        false
-    }
 }
 
 pub(crate) enum TextSpan<'a, T>
