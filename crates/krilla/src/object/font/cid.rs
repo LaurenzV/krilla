@@ -11,7 +11,7 @@ use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use subsetter::GlyphRemapper;
 
-use super::{CIDIdentifer, FontIdentifier};
+use super::{CIDIdentifier, FontIdentifier};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::{Font, GlyphId};
@@ -164,7 +164,7 @@ impl CIDFont {
 
     #[inline]
     pub(crate) fn identifier(&self) -> FontIdentifier {
-        FontIdentifier::Cid(CIDIdentifer(self.font.clone()))
+        FontIdentifier::Cid(CIDIdentifier(self.font.clone()))
     }
 
     pub(crate) fn serialize(

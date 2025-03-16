@@ -30,7 +30,7 @@ pub(crate) enum PaintMode<'a> {
 
 /// A unique CID identifier.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) struct CIDIdentifer(pub Font);
+pub(crate) struct CIDIdentifier(pub Font);
 
 /// A unique Type3 font identifier. Type3 fonts can only hold 256 glyphs, which
 /// means that we might have to create more than one Type3 font. This is why we
@@ -42,7 +42,7 @@ pub(crate) struct Type3Identifier(pub Font, pub Type3ID);
 /// A font identifier for a PDF font.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) enum FontIdentifier {
-    Cid(CIDIdentifer),
+    Cid(CIDIdentifier),
     Type3(Type3Identifier),
 }
 
