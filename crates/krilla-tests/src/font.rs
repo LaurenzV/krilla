@@ -278,7 +278,7 @@ mod type3 {
     }
 
     #[snapshot(single_page, settings_17)]
-    fn font_ype3_pdf_14(page: &mut Page) {
+    fn font_type3_pdf_14(page: &mut Page) {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 

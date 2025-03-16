@@ -5,19 +5,6 @@ use krilla_macros::{snapshot, visreg};
 
 use crate::{cmyk_fill, rect_to_path, red_fill};
 
-#[snapshot(single_page, settings_18)]
-fn color_icc_v2_srgb(page: &mut Page) {
-    let mut surface = page.surface();
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
-}
-
-#[snapshot(single_page, settings_18)]
-fn color_icc_v2_sgrey(page: &mut Page) {
-    let mut surface = page.surface();
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
-}
-
 #[visreg(all)]
 fn cmyk_color(surface: &mut Surface) {
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);

@@ -127,7 +127,7 @@ fn image(page: &mut Page) {
 }
 
 #[snapshot(document)]
-fn image_deduplication(document: &mut Document) {
+fn image_deduplicate(document: &mut Document) {
     let size = load_png_image("luma8.png").size();
     let size = Size::from_wh(size.0 as f32, size.1 as f32).unwrap();
     let mut page = document.start_page();
