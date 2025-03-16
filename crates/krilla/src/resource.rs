@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
-
+use crate::Cacheable;
 use crate::configure::PdfVersion;
 use crate::util::NameExt;
 
@@ -18,6 +18,10 @@ pub(crate) trait Resource {
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
     fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Self>;
+}
+
+pub(crate) trait Resourceable: Cacheable {
+    type Resource: Resource;
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]

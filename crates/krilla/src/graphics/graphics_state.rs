@@ -11,7 +11,8 @@ use crate::configure::ValidationError;
 use crate::graphics::mask::Mask;
 use crate::serialize::SerializeContext;
 use crate::util::HashExt;
-use crate::{resource, Cacheable, NormalizedF32, Rect, Resourceable, Transform};
+use crate::{resource, Cacheable, NormalizedF32, Rect, Transform};
+use crate::resource::Resourceable;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

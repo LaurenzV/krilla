@@ -8,7 +8,8 @@ use crate::graphics::xobject::XObject;
 use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::{resource, Cacheable, Rect, Resourceable, Transform};
+use crate::{resource, Cacheable, Rect, Transform};
+use crate::resource::Resourceable;
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]

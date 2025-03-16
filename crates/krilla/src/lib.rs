@@ -186,6 +186,3 @@ pub(crate) trait Cacheable: SipHashable {
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
 }
 
-pub(crate) trait Resourceable: Cacheable {
-    type Resource: Resource;
-}

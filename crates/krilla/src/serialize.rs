@@ -25,13 +25,13 @@ use crate::interchange::tagging::{
     AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
 };
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
-use crate::resource::Resource;
+use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
 use crate::text::cid::CIDFont;
 use crate::text::type3::Type3FontMapper;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
 use crate::util::SipHashable;
-use crate::{resource, Cacheable, Resourceable, Size};
+use crate::{resource, Cacheable, Size};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]

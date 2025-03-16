@@ -50,7 +50,8 @@ use crate::configure::ValidationError;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::Prehashed;
-use crate::{resource, Cacheable, Resourceable};
+use crate::{resource, Cacheable};
+use crate::resource::Resourceable;
 
 /// The PDF name for the device RGB color space.
 pub(crate) const DEVICE_RGB: &str = "DeviceRGB";
