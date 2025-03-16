@@ -2,7 +2,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::{Document, TextDirection};
 use krilla_macros::snapshot;
 
-fn metadata_impl(document: &mut Document) {
+pub(crate) fn metadata_impl(document: &mut Document) {
     let date = DateTime::new(2024)
         .month(11)
         .day(8)
@@ -30,9 +30,6 @@ fn metadata_impl(document: &mut Document) {
 }
 
 #[snapshot(document)]
-fn empty_document(_: &mut Document) {}
-
-#[snapshot(document)]
 fn metadata_empty(document: &mut Document) {
     let metadata = Metadata::new();
     document.set_metadata(metadata);
@@ -45,15 +42,5 @@ fn metadata_full(document: &mut Document) {
 
 #[snapshot(document, settings_5)]
 fn metadata_full_with_xmp(document: &mut Document) {
-    metadata_impl(document);
-}
-
-#[snapshot(document, settings_16)]
-fn pdf_version_14(document: &mut Document) {
-    metadata_impl(document);
-}
-
-#[snapshot(document, settings_25)]
-fn pdf_version_20(document: &mut Document) {
     metadata_impl(document);
 }

@@ -8,7 +8,7 @@ use krilla_macros::snapshot;
 use crate::Document;
 use crate::{settings_13, settings_23, ASSETS_PATH};
 
-fn file_1() -> EmbeddedFile {
+pub(crate) fn file_1() -> EmbeddedFile {
     let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
     EmbeddedFile {
         path: "emojis.txt".to_string(),
@@ -64,7 +64,7 @@ fn embedded_file_with_compression(d: &mut Document) {
 }
 
 #[snapshot(document)]
-fn multiple_embedded_files(d: &mut Document) {
+fn embedded_file_multiple(d: &mut Document) {
     let f1 = file_1();
     let f2 = file_2();
     let f3 = file_3();
@@ -74,7 +74,7 @@ fn multiple_embedded_files(d: &mut Document) {
     d.embed_file(f3);
 }
 
-fn embedded_file_impl(d: &mut Document) {
+pub(crate) fn embedded_file_impl(d: &mut Document) {
     let metadata = Metadata::new()
         .modification_date(DateTime::new(2001))
         .language("en".to_string());
@@ -83,24 +83,14 @@ fn embedded_file_impl(d: &mut Document) {
     d.embed_file(f1);
 }
 
-#[snapshot(document, settings_23)]
-fn validation_pdf_a3_with_embedded_file(d: &mut Document) {
-    embedded_file_impl(d)
-}
-
-#[snapshot(document, settings_27)]
-fn validation_pdf_a4f_with_embedded_file(d: &mut Document) {
-    embedded_file_impl(d)
-}
-
 #[snapshot(document, settings_25)]
-fn pdf_20_with_embedded_file(d: &mut Document) {
+fn embedded_file_pdf_20(d: &mut Document) {
     // Technically PDF 2.0 supports associated files, but we only use them for PDF/A-3.
     embedded_file_impl(d)
 }
 
 #[test]
-fn duplicate_embedded_file() {
+fn embedded_file_duplicate() {
     let mut d = Document::new();
     let f1 = file_1();
     let mut f2 = file_2();
@@ -111,23 +101,7 @@ fn duplicate_embedded_file() {
 }
 
 #[test]
-fn pdf_a3_missing_fields() {
-    let mut d = Document::new_with(settings_23());
-    let mut f1 = file_1();
-    f1.description = None;
-    d.embed_file(f1);
-
-    assert_eq!(
-        d.finish(),
-        Err(KrillaError::ValidationError(vec![
-            ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
-            ValidationError::EmbeddedFile(EmbedError::MissingDescription, None)
-        ]))
-    )
-}
-
-#[test]
-fn pdf_a2_embedded_file() {
+fn embedded_file_pdf_a2() {
     let mut d = Document::new_with(settings_13());
     let metadata = Metadata::new().language("en".to_string());
     d.set_metadata(metadata);

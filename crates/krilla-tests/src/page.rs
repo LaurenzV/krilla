@@ -8,8 +8,22 @@ use tiny_skia_path::PathBuilder;
 
 use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
+fn media_box_impl(d: &mut Document, media_box: Rect) {
+    let mut page =
+        d.start_page_with(PageSettings::new(200.0, 200.0).with_media_box(Some(media_box)));
+    let mut surface = page.surface();
+    surface.set_fill(red_fill(0.5));
+    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
+    surface.set_fill(green_fill(0.5));
+    surface.fill_path(&rect_to_path(100.0, 0.0, 200.0, 100.0));
+    surface.set_fill(blue_fill(0.5));
+    surface.fill_path(&rect_to_path(0.0, 100.0, 100.0, 200.0));
+    surface.set_fill(purple_fill(0.5));
+    surface.fill_path(&rect_to_path(100.0, 100.0, 200.0, 200.0));
+}
+
 #[snapshot(document)]
-fn page_label_complex(d: &mut Document) {
+fn page_label(d: &mut Document) {
     d.start_page_with(PageSettings::new(200.0, 200.0));
     d.start_page_with(PageSettings::new(250.0, 200.0));
 
@@ -35,41 +49,27 @@ fn page_with_crop_bleeding_trim_art_boxes(d: &mut Document) {
     let _ = d.start_page_with(page_settings);
 }
 
-fn media_box_impl(d: &mut Document, media_box: Rect) {
-    let mut page =
-        d.start_page_with(PageSettings::new(200.0, 200.0).with_media_box(Some(media_box)));
-    let mut surface = page.surface();
-    surface.set_fill(red_fill(0.5));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
-    surface.set_fill(green_fill(0.5));
-    surface.fill_path(&rect_to_path(100.0, 0.0, 200.0, 100.0));
-    surface.set_fill(blue_fill(0.5));
-    surface.fill_path(&rect_to_path(0.0, 100.0, 100.0, 200.0));
-    surface.set_fill(purple_fill(0.5));
-    surface.fill_path(&rect_to_path(100.0, 100.0, 200.0, 200.0));
-}
-
 #[visreg(document)]
-fn custom_media_box_top_left(d: &mut Document) {
+fn page_media_box_top_left(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-100.0, -100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_top_right(d: &mut Document) {
+fn page_media_box_top_right(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(100.0, -100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_bottom_left(d: &mut Document) {
+fn page_media_box_bottom_left(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-100.0, 100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_bottom_right(d: &mut Document) {
+fn page_media_box_bottom_right(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(100.0, 100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_zoomed_out(d: &mut Document) {
+fn page_media_box_zoomed_out(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-150.0, -200.0, 500.0, 500.0).unwrap())
 }

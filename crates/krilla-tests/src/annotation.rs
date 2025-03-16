@@ -7,7 +7,7 @@ use crate::{green_fill, rect_to_path, red_fill};
 use crate::{settings_1, LinkAction};
 use crate::{LinkAnnotation, Target};
 
-#[snapshot(single_page)]
+#[snapshot]
 fn annotation_to_link(page: &mut Page) {
     page.add_annotation(
         LinkAnnotation::new(
@@ -19,7 +19,7 @@ fn annotation_to_link(page: &mut Page) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn annotation_with_quad_points(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 50.0, 50.0);

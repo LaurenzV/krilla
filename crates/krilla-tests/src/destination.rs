@@ -7,7 +7,7 @@ use crate::{blue_fill, green_fill, rect_to_path, red_fill};
 use crate::{cmyk_fill, Document};
 
 #[snapshot(document)]
-fn named_destination_basic(d: &mut Document) {
+fn destination_named(d: &mut Document) {
     let dest1 = NamedDestination::new(
         "hi".to_string(),
         XyzDestination::new(0, Point::from_xy(100.0, 100.0)),

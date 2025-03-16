@@ -37,8 +37,6 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         if st.starts_with("settings") {
             serialize_settings = attr.clone();
-        } else if st == "single_page" {
-            mode = SnapshotMode::SinglePage;
         } else if st == "document" {
             mode = SnapshotMode::Document;
         } else if st == "ignore" {
