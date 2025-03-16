@@ -7,7 +7,7 @@ use xmp_writer::{RenditionClass, XmpWriter};
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
-use crate::metadata::Metadata;
+use crate::interchange::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 

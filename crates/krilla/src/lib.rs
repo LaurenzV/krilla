@@ -124,12 +124,11 @@ pub mod error;
 pub mod font;
 pub mod geom;
 pub mod interactive;
-pub mod metadata;
+pub mod interchange;
 pub mod paint;
 pub mod path;
 pub mod stream;
 pub mod surface;
-pub mod tagging;
 
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};

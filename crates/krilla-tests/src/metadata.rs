@@ -1,4 +1,4 @@
-use krilla::metadata::{DateTime, Metadata};
+use krilla::interchange::metadata::{DateTime, Metadata};
 use krilla::{Document, TextDirection};
 use krilla_macros::snapshot;
 

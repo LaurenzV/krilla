@@ -22,6 +22,7 @@ use crate::geom::Size;
 use crate::graphics_state::GraphicsStates;
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
+use crate::interchange::tagging::ContentTag;
 use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
@@ -33,7 +34,6 @@ use crate::path::{Fill, FillRule, LineCap, LineJoin, Stroke};
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::tagging::ContentTag;
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{resource, NormalizedF32, Point, Rect, Transform};
 

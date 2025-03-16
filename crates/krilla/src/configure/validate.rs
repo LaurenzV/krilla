@@ -27,8 +27,8 @@ use pdf_writer::Finish;
 use xmp_writer::XmpWriter;
 
 use crate::configure::PdfVersion;
-use crate::embed::EmbedError;
 use crate::font::{Font, GlyphId};
+use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
 
 /// An error that occurred during validation

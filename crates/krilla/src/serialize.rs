@@ -14,7 +14,6 @@ use skrifa::raw::TableProvider;
 use crate::chunk_container::ChunkContainer;
 use crate::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
-use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
 use crate::font::cid::CIDFont;
 use crate::font::type3::Type3FontMapper;
@@ -22,14 +21,17 @@ use crate::font::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
-use crate::metadata::Metadata;
-use crate::object::outline::Outline;
+use crate::interchange::embed::EmbeddedFile;
+use crate::interchange::metadata::Metadata;
+use crate::interchange::outline::Outline;
+use crate::interchange::tagging::{
+    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
+};
 use crate::object::page::{InternalPage, PageLabelContainer};
 use crate::object::{Cacheable, Resourceable};
 use crate::page::PageLabel;
 use crate::resource::Resource;
 use crate::surface::{Location, Surface};
-use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
 use crate::util::SipHashable;
 use crate::{resource, Size};
 

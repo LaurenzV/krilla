@@ -17,6 +17,7 @@ use crate::font::GlyphId;
 #[cfg(feature = "simple-text")]
 use crate::font::KrillaGlyph;
 use crate::font::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
+use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 #[cfg(feature = "raster-images")]
 use crate::object::image::Image;
 use crate::object::mask::Mask;
@@ -24,7 +25,6 @@ use crate::object::shading_function::ShadingFunction;
 use crate::path::{Fill, FillRule, Path, Stroke};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
-use crate::tagging::{ContentTag, Identifier, PageTagIdentifier};
 #[cfg(feature = "raster-images")]
 use crate::Size;
 use crate::{NormalizedF32, Point, Transform};

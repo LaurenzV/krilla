@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
-use crate::metadata::pdf_date;
+use crate::interchange::metadata::pdf_date;
 use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;

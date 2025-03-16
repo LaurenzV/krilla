@@ -8,12 +8,10 @@ use crate::serialize::SerializeContext;
 use crate::util::SipHashable;
 
 pub mod color;
-pub mod embed;
 pub(crate) mod ext_g_state;
 #[cfg(feature = "raster-images")]
 pub mod image;
 pub mod mask;
-pub mod outline;
 pub mod page;
 pub(crate) mod shading_function;
 pub(crate) mod shading_pattern;

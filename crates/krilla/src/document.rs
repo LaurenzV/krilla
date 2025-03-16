@@ -14,14 +14,14 @@
 //!
 //! [`Page`]: crate::page::Page
 
-use crate::embed::EmbeddedFile;
 use crate::error::KrillaResult;
-use crate::metadata::Metadata;
-use crate::object::outline::Outline;
+use crate::interchange::embed::EmbeddedFile;
+use crate::interchange::metadata::Metadata;
+use crate::interchange::outline::Outline;
+use crate::interchange::tagging::TagTree;
 use crate::object::page::Page;
 use crate::object::page::PageLabel;
 use crate::serialize::{SerializeContext, SerializeSettings};
-use crate::tagging::TagTree;
 use crate::{Rect, Size};
 
 /// A PDF document.
