@@ -18,7 +18,7 @@ use crate::{
     NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
 };
 
-#[snapshot(single_page, settings_2)]
+#[snapshot(settings_2)]
 fn stream_resource_cache(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
@@ -33,7 +33,7 @@ fn stream_resource_cache(page: &mut Page) {
     surface.fill_path(&path3);
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn stream_nested_transforms(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
@@ -49,7 +49,7 @@ fn stream_nested_transforms(page: &mut Page) {
     surface.pop();
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn stream_reused_graphics_state(page: &mut Page) {
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);

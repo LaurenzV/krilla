@@ -224,17 +224,17 @@ pub(crate) fn simple_text_impl(page: &mut Page, font_data: Data) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_simple_cff(page: &mut Page) {
     simple_text_impl(page, LATIN_MODERN_ROMAN.clone());
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_simple_ttf(page: &mut Page) {
     simple_text_impl(page, NOTO_SANS.clone());
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_complex(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -247,7 +247,7 @@ fn text_complex(page: &mut Page) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_complex_2(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -260,7 +260,7 @@ fn text_complex_2(page: &mut Page) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_complex_3(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -273,7 +273,7 @@ fn text_complex_3(page: &mut Page) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_complex_4(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -299,7 +299,7 @@ fn text_zalgo_outlined(surface: &mut Surface) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_fill(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_text(
@@ -312,7 +312,7 @@ fn text_fill(page: &mut Page) {
     );
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn text_stroke(page: &mut Page) {
     let mut surface = page.surface();
     surface.stroke_text(

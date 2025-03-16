@@ -18,21 +18,21 @@ fn pdf_20(document: &mut Document) {
     metadata_impl(document);
 }
 
-#[snapshot(single_page, settings_25)]
+#[snapshot(settings_25)]
 fn pdf_20_simple_text(page: &mut Page) {
     // The main purpose of this test is to ensure that the fonts without CIDSet are
     // still written properly for PDF 2.0.
     simple_text_impl(page, NOTO_SANS.clone());
 }
 
-#[snapshot(single_page, settings_18)]
+#[snapshot(settings_18)]
 fn pdf_14_icc_srgb(page: &mut Page) {
     let mut surface = page.surface();
     surface.set_fill(red_fill(1.0));
     surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
 }
 
-#[snapshot(single_page, settings_18)]
+#[snapshot(settings_18)]
 fn pdf_14_icc_sgray(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));

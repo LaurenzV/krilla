@@ -118,7 +118,7 @@ fn image_resized(surface: &mut Surface) {
     surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn image(page: &mut Page) {
     let mut surface = page.surface();
     let image = load_png_image("rgb8.png");
@@ -143,7 +143,7 @@ fn image_deduplicate(document: &mut Document) {
     surface.draw_image(load_png_image("luma8.png"), size);
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn image_interpolate(page: &mut Page) {
     let image = Image::from_png(
         std::fs::read(ASSETS_PATH.join("images").join("rgba8.png"))

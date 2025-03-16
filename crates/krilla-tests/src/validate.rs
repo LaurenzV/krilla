@@ -85,7 +85,7 @@ pub fn validate_pdfa_string_length() {
     );
 }
 
-#[snapshot(single_page, settings_7)]
+#[snapshot(settings_7)]
 fn validate_pdfa_annotation(page: &mut Page) {
     page.add_annotation(
         LinkAnnotation::new(

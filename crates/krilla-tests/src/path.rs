@@ -1,10 +1,10 @@
-use krilla::Page;
 use krilla::surface::Surface;
+use krilla::Page;
 use krilla_macros::{snapshot, visreg};
 
 use crate::{cmyk_fill, gray_fill, rect_to_path, red_fill};
 
-#[snapshot(single_page)]
+#[snapshot]
 fn path_with_rgb(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -13,7 +13,7 @@ fn path_with_rgb(page: &mut Page) {
     surface.fill_path(&path);
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn path_with_luma(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -22,7 +22,7 @@ fn path_with_luma(page: &mut Page) {
     surface.fill_path(&path);
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn path_with_rgb_and_opacity(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
@@ -31,7 +31,7 @@ fn path_with_rgb_and_opacity(page: &mut Page) {
     surface.fill_path(&path);
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn path_with_cmyk(page: &mut Page) {
     let mut surface = page.surface();
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);

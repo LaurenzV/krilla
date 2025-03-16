@@ -120,7 +120,7 @@ mod shading {
     }
 
     // Should be turned into a solid color.
-    #[snapshot(single_page)]
+    #[snapshot]
     fn pattern_gradient_single_stop(page: &mut Page) {
         let mut surface = page.surface();
 

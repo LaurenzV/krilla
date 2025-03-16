@@ -30,7 +30,7 @@ pub fn mask_alpha(surface: &mut Surface) {
     mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 0, 128));
 }
 
-#[snapshot(single_page)]
+#[snapshot]
 fn mask(page: &mut Page) {
     let mut surface = page.surface();
     let mask = basic_mask(&mut surface, MaskType::Alpha);
