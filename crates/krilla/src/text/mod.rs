@@ -11,11 +11,8 @@
 //! an appropriate index and variation coordinates.
 
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
-use skrifa::raw::TableProvider;
-use skrifa::MetadataProvider;
-use yoke::Yokeable;
 
 use crate::graphics::paint::{Fill, Stroke};
 use crate::text::cid::CIDFont;

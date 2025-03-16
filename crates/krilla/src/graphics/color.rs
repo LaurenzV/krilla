@@ -40,15 +40,11 @@
 
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::ops::{Deref, DerefMut};
 
-use pdf_writer::Finish;
 
 use crate::configure::ValidationError;
 use crate::graphics::icc::ICCBasedColorSpace;
-use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
-use crate::Cacheable;
 
 /// The PDF name for the device RGB color space.
 pub(crate) const DEVICE_RGB: &str = "DeviceRGB";
