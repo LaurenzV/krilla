@@ -148,6 +148,7 @@ impl StreamFilter {
 }
 
 impl StreamFilter {
+    #[track_caller]
     pub(crate) fn apply(&self, content: &[u8]) -> Vec<u8> {
         match self {
             StreamFilter::Flate => deflate_encode(content),

@@ -99,11 +99,13 @@ impl ContentBuilder {
         self.active_marked_content = true;
     }
 
+    #[track_caller]
     pub(crate) fn start_marked_content(&mut self, name: Name) {
         self.start_marked_content_prelude();
         self.content.begin_marked_content(name);
     }
 
+    #[track_caller]
     pub(crate) fn start_marked_content_with_properties(
         &mut self,
         sc: &mut SerializeContext,
@@ -978,6 +980,7 @@ impl PdfFont for Type3Font {
         Type3Font::font(self)
     }
 
+    #[track_caller]
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
         match pdf_glyph {
             PDFGlyph::Type3(t3) => self.get_codepoints(t3),
@@ -985,6 +988,7 @@ impl PdfFont for Type3Font {
         }
     }
 
+    #[track_caller]
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
         match pdf_glyph {
             PDFGlyph::Type3(t3) => self.set_codepoints(t3, text, location),
@@ -1010,6 +1014,7 @@ impl PdfFont for CIDFont {
         CIDFont::font(self)
     }
 
+    #[track_caller]
     fn get_codepoints(&self, pdf_glyph: PDFGlyph) -> Option<&str> {
         match pdf_glyph {
             PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
@@ -1017,6 +1022,7 @@ impl PdfFont for CIDFont {
         }
     }
 
+    #[track_caller]
     fn set_codepoints(&mut self, pdf_glyph: PDFGlyph, text: String, location: Option<Location>) {
         match pdf_glyph {
             PDFGlyph::Type3(_) => panic!("attempted to pass type 3 glyph to cid font"),
