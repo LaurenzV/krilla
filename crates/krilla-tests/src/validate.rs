@@ -11,7 +11,7 @@ use krilla::paint::{LinearGradient, SpreadMethod};
 use krilla::path::{Fill, FillRule};
 use krilla::surface::TextDirection;
 use krilla::tagging::{
-    ArtifactType, ContentTag, ListNumbering, TableHeaderScope, Tag, TagGroup, TagTree,
+    ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagTree,
 };
 use krilla::{Point, Rect, Size};
 use krilla_macros::snapshot;
@@ -305,12 +305,12 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     let font_data = NOTO_SANS.clone();
     let font = Font::new(font_data, 0, true).unwrap();
 
-    let id1 = surface.start_tagged(ContentTag::Span(
-        "",
-        Some("Alt"),
-        Some("Expanded"),
-        Some("ActualText"),
-    ));
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag {
+        lang: "",
+        alt_text: Some("Alt"),
+        expanded: Some("Expanded"),
+        actual_text: Some("ActualText"),
+    }));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -455,7 +455,7 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     let font_data = NOTO_SANS.clone();
     let font = Font::new(font_data, 0, true).unwrap();
 
-    let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -503,7 +503,7 @@ fn validate_pdf_ua1_missing_requirements() {
     let font_data = NOTO_SANS.clone();
     let font = Font::new(font_data, 0, true).unwrap();
 
-    let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -550,7 +550,7 @@ fn validate_pdf_ua1_attributes(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
-    let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.set_fill(red_fill(1.0));
     surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.end_tagged();

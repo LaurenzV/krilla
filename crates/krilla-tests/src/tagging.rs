@@ -3,7 +3,7 @@ use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
 use krilla::path::Fill;
 use krilla::surface::{Surface, TextDirection};
-use krilla::tagging::{ArtifactType, ContentTag, Tag, TagGroup, TagTree};
+use krilla::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
 use krilla::{Document, Font, Point, Rect, Size, Transform};
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
@@ -42,12 +42,12 @@ fn tagging_simple_impl(document: &mut Document) {
 
     let mut page = document.start_page();
     let mut surface = page.surface();
-    let id = surface.start_tagged(ContentTag::Span(
-        "en",
-        Some("an alt text"),
-        Some("expanded"),
-        Some("actual text"),
-    ));
+    let id = surface.start_tagged(ContentTag::Span(SpanTag {
+        lang: "en",
+        alt_text: Some("an alt text"),
+        expanded: Some("expanded"),
+        actual_text: Some("actual text"),
+    }));
     surface.fill_text_(25.0, "a paragraph");
     surface.end_tagged();
 
@@ -67,7 +67,7 @@ fn tagging_simple_with_link_impl(document: &mut Document) {
 
     let mut page = document.start_page();
     let mut surface = page.surface();
-    let id = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(25.0, "a paragraph");
     surface.end_tagged();
 
@@ -150,7 +150,7 @@ fn tagging_multiple_content_tags(document: &mut Document) {
 
     let mut page = document.start_page();
     let mut surface = page.surface();
-    let id1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(25.0, "a span");
     surface.end_tagged();
     let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
@@ -208,10 +208,10 @@ fn tagging_multiple_pages(document: &mut Document) {
 
     let mut page = document.start_page();
     let mut surface = page.surface();
-    let h1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let h1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(25.0, "a heading");
     surface.end_tagged();
-    let p1 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let p1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(50.0, "a paragraph");
     surface.end_tagged();
     surface.finish();
@@ -219,7 +219,7 @@ fn tagging_multiple_pages(document: &mut Document) {
 
     let mut page = document.start_page();
     let mut surface = page.surface();
-    let p2 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let p2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(75.0, "a second paragraph");
     surface.end_tagged();
     surface.finish();
@@ -227,10 +227,10 @@ fn tagging_multiple_pages(document: &mut Document) {
 
     let mut page = document.start_page();
     let mut surface = page.surface();
-    let h2 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let h2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(25.0, "another heading");
     surface.end_tagged();
-    let p3 = surface.start_tagged(ContentTag::Span("", None, None, None));
+    let p3 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(50.0, "another paragraph");
     surface.end_tagged();
     surface.finish();

@@ -152,7 +152,7 @@ impl<'a> Surface<'a> {
 
                     Identifier::dummy()
                 }
-                ContentTag::Span(_, _, _, _) | ContentTag::Other => {
+                ContentTag::Span(_) | ContentTag::Other => {
                     self.bd.get_mut().start_marked_content_with_properties(
                         self.sc,
                         Some(id.mcid),
