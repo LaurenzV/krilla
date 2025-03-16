@@ -173,23 +173,12 @@ pub enum ContentTag<'a> {
     /// of a document and should be excluded in the logical tree. These include for example headers,
     /// footers, page background and similar.
     Artifact(ArtifactType),
-    /// A content tag that wraps some text with specific properties. The properties you can/need to
-    /// set are:
-    /// - Lang: The language of the text. If the language is unknown, pass an empty string to it.
-    /// - Alt: An optional alternate text that describes the text (for example, if the text consists
-    ///   a star symbol, the alt text should describe that in natural language).
-    /// - Expanded: If the content of the span is an abbreviation, the expanded form of the
-    ///   abbreviation should be provided here.
+    /// A content tag that wraps some text with specific properties.
     ///
     /// Spans should not be too long. At most, they should contain a single like of text, but they
     /// can obviously be shorter, if text within a single line contains text with different styles
     /// or different languages.
-    Span(
-        Lang<'a>,
-        Option<Alt<'a>>,
-        Option<Expanded<'a>>,
-        Option<ActualText<'a>>,
-    ),
+    Span(SpanTag<'a>),
     /// Use this tag for anything else that does not semantically fit into `Span` or `Artifact`.
     /// This includes for example arbitrary paths, images or a mix of different content that cannot
     /// be split up more.
@@ -200,7 +189,7 @@ impl ContentTag<'_> {
     pub(crate) fn name(&self) -> Name {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
-            ContentTag::Span(_, _, _, _) => Name(b"Span"),
+            ContentTag::Span(_) => Name(b"Span"),
             ContentTag::Other => Name(b"P"),
         }
     }
@@ -233,26 +222,60 @@ impl ContentTag<'_> {
 
                 artifact.kind(artifact_type);
             }
-            ContentTag::Span(lang, alt, exp, actual) => {
+            ContentTag::Span(SpanTag {
+                lang,
+                alt_text,
+                expanded,
+                actual_text,
+            }) => {
                 properties.pair(Name(b"Lang"), TextStr(lang));
 
-                if let Some(alt) = alt {
+                if let Some(alt) = alt_text {
                     if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                         properties.pair(Name(b"Alt"), TextStr(alt));
                     }
                 }
 
-                if let Some(exp) = exp {
+                if let Some(exp) = expanded {
                     properties.pair(Name(b"E"), TextStr(exp));
                 }
 
-                if let Some(actual) = actual {
+                if let Some(actual) = actual_text {
                     if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                         properties.actual_text(TextStr(actual));
                     }
                 }
             }
             ContentTag::Other => {}
+        }
+    }
+}
+
+/// A span tag.
+#[derive(Clone, Copy, Debug)]
+pub struct SpanTag<'a> {
+    /// The language of the text.
+    pub lang: Lang<'a>,
+    /// An optional alternate text that describes the text (for example, if the text consists
+    /// of a star symbol, the alt text should describe that in natural language).
+    pub alt_text: Option<Alt<'a>>,
+    /// If the content of the span is an abbreviation, the expanded form of the
+    /// abbreviation should be provided here.
+    pub expanded: Option<Expanded<'a>>,
+    /// The actual text represented by the glyphs, i.e. if you have a hyphenated span
+    /// `row-`, then you can wrap it in an `ActualText` to remove the hyphenation
+    /// when copy-pasting.
+    pub actual_text: Option<ActualText<'a>>,
+}
+
+impl SpanTag<'_> {
+    /// An empty span tag.
+    pub fn empty() -> Self {
+        Self {
+            lang: "",
+            alt_text: None,
+            expanded: None,
+            actual_text: None,
         }
     }
 }
