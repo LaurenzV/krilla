@@ -46,7 +46,7 @@ pub(crate) struct CIDFont {
     glyph_remapper: GlyphRemapper,
     /// A mapping from CIDs to their string in the original text.
     cmap_entries: BTreeMap<u16, (String, Option<Location>)>,
-    /// The widths of the glyphs, _index by their CID_.
+    /// The widths of the glyphs, _indexed by their CID_.
     widths: Vec<f32>,
 }
 
@@ -371,14 +371,10 @@ pub(crate) fn subset_tag<T: Hash>(data: &T) -> String {
 
 pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
     const REST_LEN: usize = SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len();
+    
     let postscript_name = font.postscript_name().unwrap_or("unknown");
-
     let max_len = 127 - REST_LEN;
-
     let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
-
-    // Hash the full name (we might have trimmed) and the glyphs to produce
-    // a fairly unique subset tag.
     let subset_tag = subset_tag(&data);
 
     format!("{subset_tag}+{trimmed}")
