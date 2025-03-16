@@ -3,6 +3,7 @@
 pub mod blend;
 pub mod color;
 pub mod graphics_state;
+pub mod icc;
 #[cfg(feature = "raster-images")]
 pub mod image;
 pub mod mask;

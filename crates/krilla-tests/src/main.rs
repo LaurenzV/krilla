@@ -14,7 +14,8 @@ use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage}
 use difference::{Changeset, Difference};
 use krilla::configure::{Configuration, PdfVersion, Validator};
 use krilla::document::{Document, PageSettings};
-use krilla::graphics::color::{cmyk, luma, rgb, ICCProfile};
+use krilla::graphics::color::{cmyk, luma, rgb};
+use krilla::graphics::icc::ICCProfile;
 use krilla::graphics::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::graphics::mask::{Mask, MaskType};
 use krilla::graphics::paint::{Fill, Stop, Stops, Stroke};

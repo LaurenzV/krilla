@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
-use crate::graphics::color::{ICCMetadata, ICCProfile};
+use crate::graphics::icc::{ICCMetadata, ICCProfile};
 
 /// The version of a PDF document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

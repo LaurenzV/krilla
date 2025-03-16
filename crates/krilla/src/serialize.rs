@@ -14,7 +14,8 @@ use skrifa::raw::TableProvider;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::error::{KrillaError, KrillaResult};
-use crate::graphics::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
+use crate::graphics::color::{rgb, ColorSpace};
+use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
