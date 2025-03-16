@@ -6,18 +6,18 @@ use std::sync::Arc;
 
 use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
-use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::Point;
 
-use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::luma;
 use crate::configure::ValidationError;
 use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::resource::{self, Resource};
-use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
-use crate::util::{set_colorspace, NameExt, RectExt};
+use crate::resource;
+use crate::serialize::SerializeContext;
+use crate::util::{set_colorspace, RectExt};
 use crate::{NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

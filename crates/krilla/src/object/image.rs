@@ -19,9 +19,7 @@ use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
-use crate::color::{
-    cmyk, luma, rgb, GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB,
-};
+use crate::color::{cmyk, luma, rgb, GenericICCProfile, ICCBasedColorSpace, ICCProfile};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;

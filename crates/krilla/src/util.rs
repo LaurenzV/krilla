@@ -8,14 +8,14 @@ use std::ops::Deref;
 
 use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
-use pdf_writer::{Dict, Name, Obj};
+use pdf_writer::{Dict, Name};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use tiny_skia_path::Path;
 
-use crate::color::{ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::path::{LineCap, LineJoin, Stroke};
 use crate::resource::Resource;
-use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
+use crate::serialize::MaybeDeviceColorSpace;
 use crate::Rect;
 
 pub(crate) trait NameExt {
