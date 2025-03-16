@@ -1,9 +1,10 @@
-use krilla::action::{Action, LinkAction};
-use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
-use krilla::path::Fill;
-use krilla::surface::{Surface, TextDirection};
-use krilla::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
+use krilla::graphics::paint::Fill;
+use krilla::interactive::action::{Action, LinkAction};
+use krilla::interactive::annotation::{LinkAnnotation, Target};
+use krilla::interchange::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
+use krilla::surface::Surface;
+use krilla::text::TextDirection;
 use krilla::{Document, Font, Point, Rect, Size, Transform};
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};

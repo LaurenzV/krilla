@@ -12,27 +12,28 @@ use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 
 use crate::chunk_container::ChunkContainer;
-use crate::color::{rgb, ColorSpace, ICCBasedColorSpace, ICCProfile};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
-use crate::destination::{NamedDestination, XyzDestination};
-use crate::embed::EmbeddedFile;
 use crate::error::{KrillaError, KrillaResult};
-use crate::font::{Font, FontInfo, GlyphId};
+use crate::graphics::color::{rgb, ColorSpace};
+use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
-use crate::image::Image;
-use crate::metadata::Metadata;
-use crate::object::font::cid_font::CIDFont;
-use crate::object::font::type3_font::Type3FontMapper;
-use crate::object::font::{FontContainer, FontIdentifier};
-use crate::object::outline::Outline;
-use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::{Cacheable, Resourceable};
-use crate::page::PageLabel;
-use crate::resource::Resource;
+use crate::graphics::image::Image;
+use crate::interactive::destination::{NamedDestination, XyzDestination};
+use crate::interchange::embed::EmbeddedFile;
+use crate::interchange::metadata::Metadata;
+use crate::interchange::outline::Outline;
+use crate::interchange::tagging::{
+    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
+};
+use crate::page::{InternalPage, PageLabel, PageLabelContainer};
+use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
-use crate::tagging::{AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree};
+use crate::text::cid::CIDFont;
+use crate::text::type3::Type3FontMapper;
+use crate::text::GlyphId;
+use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::SipHashable;
-use crate::{resource, Size};
+use crate::{resource, Cacheable, Size};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -99,7 +100,7 @@ pub struct SerializeSettings {
     /// you use. For example, when exporting with PDF-UA, this value will always
     /// be set to `true`.
     ///
-    /// [`tagging`]: crate::tagging
+    /// [`tagging`]: crate::interchange::tagging
     pub enable_tagging: bool,
     /// TODO
     pub render_svg_glyph_fn: RenderSvgGlyphFn,

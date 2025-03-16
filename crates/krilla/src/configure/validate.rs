@@ -27,9 +27,10 @@ use pdf_writer::Finish;
 use xmp_writer::XmpWriter;
 
 use crate::configure::PdfVersion;
-use crate::embed::EmbedError;
-use crate::font::{Font, GlyphId};
+use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
+use crate::text::Font;
+use crate::text::GlyphId;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -142,7 +143,7 @@ pub enum Validator {
     /// - All requirements of PDF/A2-B.
     /// - You need to follow all requirements outlined in the _Other Notes_ section of the
     ///   [`tagging`] module.
-    /// - You need to follow all best practices when using [tags](`crate::tagging::Tag`), as outlined in the documentation
+    /// - You need to follow all best practices when using [tags](`crate::interchange::tagging::Tag`), as outlined in the documentation
     ///   of each tag.
     /// - Artifacts such as page numbers, backgrounds, cut marks and color bars should be specified
     ///   correspondingly as artifacts.
@@ -154,7 +155,7 @@ pub enum Validator {
     /// - You should provide an alternate text to span content tags, if applicable.
     /// - You should provide the expansion of abbreviations to span content tags, if applicable.
     ///
-    /// [`tagging`]: crate::tagging
+    /// [`tagging`]: crate::interchange::tagging
     A2_A,
     /// The validator for the PDF/A2-B standard.
     ///
@@ -252,7 +253,7 @@ pub enum Validator {
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     ///   universal rendering.
     ///
-    /// [`Tag`]: crate::tagging::Tag
+    /// [`Tag`]: crate::interchange::tagging::Tag
     UA1,
     /// The validator for the PDF/A4 standard.
     ///

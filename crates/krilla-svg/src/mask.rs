@@ -1,7 +1,7 @@
 //! Mask conversion
 
-use krilla::mask::Mask;
-use krilla::path::FillRule;
+use krilla::graphics::mask::Mask;
+use krilla::graphics::paint::FillRule;
 use krilla::surface::Surface;
 use krilla::Rect;
 

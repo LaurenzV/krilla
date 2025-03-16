@@ -21,12 +21,12 @@ Consult the documentation to see all features that are available in krilla.
 For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
-# use krilla::color::rgb;
-# use krilla::font::Font;
+# use krilla::graphics::color::rgb;
+# use krilla::text::Font;
 # use krilla::geom::Point;
-# use krilla::paint::Paint;
-# use krilla::surface::TextDirection;
-# use krilla::path::Fill;
+# use krilla::graphics::paint::Paint;
+# use krilla::text::TextDirection;
+# use krilla::graphics::paint::Fill;
 # use krilla::{Document, PageSettings};
 # // use krilla::SvgSettings;
 # use std::path::PathBuf;
@@ -109,8 +109,6 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 #![forbid(unsafe_code)]
 
 mod chunk_container;
-mod graphics_state;
-mod object;
 mod prelude;
 mod resource;
 mod serialize;
@@ -119,59 +117,19 @@ mod util;
 pub(crate) mod content;
 
 pub mod configure;
+pub(crate) mod data;
 pub mod document;
 pub mod error;
-pub mod font;
 pub mod geom;
-pub mod metadata;
-pub mod paint;
+pub mod graphics;
+pub mod interactive;
+pub mod interchange;
+pub mod page;
 pub mod path;
 pub mod stream;
 pub mod surface;
-pub mod tagging;
+pub mod text;
 
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::sync::Arc;
-
+pub use data::*;
+pub use page::PageSettings;
 pub use prelude::*;
-
-/// A type that holds some bytes.
-#[derive(Clone)]
-pub struct Data(Arc<dyn AsRef<[u8]> + Send + Sync>);
-
-impl AsRef<[u8]> for Data {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref().as_ref()
-    }
-}
-
-impl Hash for Data {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.as_ref().hash(state);
-    }
-}
-
-impl From<Arc<dyn AsRef<[u8]> + Send + Sync>> for Data {
-    fn from(value: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
-        Self(value)
-    }
-}
-
-impl From<Vec<u8>> for Data {
-    fn from(value: Vec<u8>) -> Self {
-        Self(Arc::new(value))
-    }
-}
-
-impl From<Arc<Vec<u8>>> for Data {
-    fn from(value: Arc<Vec<u8>>) -> Self {
-        Self(value)
-    }
-}
-
-impl Debug for Data {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Data {{..}}")
-    }
-}

@@ -1,5 +1,5 @@
-use krilla::annotation::{LinkAnnotation, Target};
-use krilla::destination::{NamedDestination, XyzDestination};
+use krilla::interactive::annotation::{LinkAnnotation, Target};
+use krilla::interactive::destination::{NamedDestination, XyzDestination};
 use krilla::{Point, Rect};
 use krilla_macros::snapshot;
 

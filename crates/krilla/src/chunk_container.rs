@@ -7,9 +7,11 @@ use xmp_writer::{RenditionClass, XmpWriter};
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
-use crate::metadata::Metadata;
+use crate::interchange::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
+
+pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<Chunk>;
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.

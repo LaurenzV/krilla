@@ -4,7 +4,7 @@
 
 use krilla::color::rgb;
 use krilla::geom::Transform;
-use krilla::paint::Pattern;
+use krilla::graphics::paint::Pattern;
 use krilla::path::{Fill, Stroke};
 use krilla::{Document, PageSettings};
 use tiny_skia_path::{Path, PathBuilder};

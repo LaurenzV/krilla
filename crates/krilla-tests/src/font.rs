@@ -21,15 +21,14 @@ mod bitmap {
 }
 
 mod colr {
-    use krilla::font::GlyphId;
-    use krilla::path::{Fill, Stroke};
-    use krilla::surface::{Surface, TextDirection};
+    use krilla::surface::Surface;
+    use krilla::text::GlyphId;
+    use krilla::text::TextDirection;
     use krilla::{Document, Font, Point};
     use krilla_macros::visreg;
 
     use crate::{
-        all_glyphs_to_pdf, blue_stroke, cmyk_fill, purple_fill, COLR_TEST_GLYPHS,
-        NOTO_COLOR_EMOJI_COLR,
+        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
     };
 
     #[visreg(document)]
@@ -125,7 +124,8 @@ mod colr {
 }
 
 mod svg {
-    use krilla::surface::{Surface, TextDirection};
+    use krilla::surface::Surface;
+    use krilla::text::TextDirection;
     use krilla::{Document, Font, Point};
     use krilla_macros::visreg;
 
@@ -171,8 +171,8 @@ mod svg {
 }
 
 mod cid {
-    use krilla::path::Fill;
-    use krilla::surface::{Surface, TextDirection};
+    use krilla::surface::Surface;
+    use krilla::text::TextDirection;
     use krilla::{Font, Point};
     use krilla_macros::visreg;
 
@@ -255,9 +255,9 @@ mod cid {
 }
 
 mod type3 {
-    use krilla::path::Fill;
-    use krilla::surface::TextDirection;
-    use krilla::{Font, Page, Point};
+    use krilla::page::Page;
+    use krilla::text::TextDirection;
+    use krilla::{Font, Point};
     use krilla_macros::snapshot;
 
     use crate::TWITTER_COLOR_EMOJI;

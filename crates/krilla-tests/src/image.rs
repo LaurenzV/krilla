@@ -1,5 +1,7 @@
+use krilla::graphics::image::Image;
+use krilla::page::Page;
 use krilla::surface::Surface;
-use krilla::{Document, Image, Page, Size};
+use krilla::{Document, Size};
 use krilla_macros::{snapshot, visreg};
 
 use crate::{

@@ -9,10 +9,10 @@
 use std::sync::Arc;
 
 use krilla::color::rgb;
-use krilla::font::Font;
+use krilla::text::Font;
 use krilla::geom::NormalizedF32;
 use krilla::geom::Point;
-use krilla::paint::{LinearGradient, SpreadMethod, Stop};
+use krilla::graphics::paint::{LinearGradient, SpreadMethod, Stop};
 use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::{Document, PageSettings};

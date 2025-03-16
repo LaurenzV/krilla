@@ -5,10 +5,11 @@ use std::io::Read;
 use std::sync::Arc;
 
 use fontdb::Database;
-use krilla::color::rgb;
-use krilla::font::{Font, FontInfo, GlyphId};
-use krilla::path::FillRule;
+use krilla::graphics::color::rgb;
+use krilla::graphics::paint::FillRule;
 use krilla::surface::Surface;
+use krilla::text::GlyphId;
+use krilla::text::{Font, FontInfo};
 use krilla::{Rect, Size, Transform};
 use usvg::{fontdb, roxmltree, Group, ImageKind, Node, Tree};
 

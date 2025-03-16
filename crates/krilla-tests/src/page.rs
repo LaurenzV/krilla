@@ -1,8 +1,7 @@
 use std::num::NonZeroUsize;
 
-use krilla::page::{NumberingStyle, PageLabel};
-use krilla::path::Fill;
-use krilla::{Document, Page, PageSettings, Rect};
+use krilla::page::{NumberingStyle, PageLabel, PageSettings};
+use krilla::{Document, Rect};
 use krilla_macros::{snapshot, visreg};
 use tiny_skia_path::PathBuilder;
 

@@ -7,13 +7,14 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
 use base64::Engine;
+pub(crate) use deferred::*;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::{Dict, Name};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use tiny_skia_path::Path;
 
-use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::path::{LineCap, LineJoin, Stroke};
+use crate::graphics::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::graphics::paint::{LineCap, LineJoin, Stroke};
 use crate::resource::Resource;
 use crate::serialize::MaybeDeviceColorSpace;
 use crate::Rect;
@@ -224,69 +225,6 @@ pub(crate) fn hash128<T: Hash + ?Sized>(value: &T) -> u128 {
     state.finish128().as_u128()
 }
 
-#[cfg(not(feature = "rayon"))]
-pub(crate) struct Deferred<T>(T);
-
-#[cfg(not(feature = "rayon"))]
-impl<T: Send + Sync + 'static> Deferred<T> {
-    pub fn new<F>(f: F) -> Self
-    where
-        F: FnOnce() -> T + Send + Sync + 'static,
-    {
-        Self(f())
-    }
-
-    pub fn wait(&self) -> &T {
-        &self.0
-    }
-}
-
-/// A value that is lazily executed on another thread.
-///
-/// Execution will be started in the background and can be waited on.
-#[cfg(feature = "rayon")]
-pub(crate) struct Deferred<T>(std::sync::Arc<once_cell::sync::OnceCell<T>>);
-
-#[cfg(feature = "rayon")]
-impl<T: Send + Sync + 'static> Deferred<T> {
-    /// Creates a new deferred value.
-    ///
-    /// The closure will be called on a secondary thread such that the value
-    /// can be initialized in parallel.
-    pub fn new<F>(f: F) -> Self
-    where
-        F: FnOnce() -> T + Send + Sync + 'static,
-    {
-        let inner = std::sync::Arc::new(once_cell::sync::OnceCell::new());
-        let cloned = std::sync::Arc::clone(&inner);
-        rayon::spawn(move || {
-            // Initialize the value if it hasn't been initialized yet.
-            // We do this to avoid panicking in case it was set externally.
-            cloned.get_or_init(f);
-        });
-        Self(inner)
-    }
-
-    /// Waits on the value to be initialized.
-    ///
-    /// If the value has already been initialized, this will return
-    /// immediately. Otherwise, this will block until the value is
-    /// initialized in another thread.
-    pub fn wait(&self) -> &T {
-        // Fast path if the value is already available. We don't want to yield
-        // to rayon in that case.
-        if let Some(value) = self.0.get() {
-            return value;
-        }
-
-        // Ensure that we yield to give the deferred value a chance to compute
-        // single-threaded platforms (for WASM compatibility).
-        while let Some(rayon::Yield::Executed) = rayon::yield_now() {}
-
-        self.0.wait()
-    }
-}
-
 pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {
     let pdf_cs = target.insert(Name(b"ColorSpace"));
 
@@ -295,6 +233,73 @@ pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {
         MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
         MaybeDeviceColorSpace::DeviceCMYK => pdf_cs.primitive(DEVICE_CMYK.to_pdf_name()),
         MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
+    }
+}
+
+#[cfg(not(feature = "rayon"))]
+mod deferred {
+    pub(crate) struct Deferred<T>(T);
+
+    impl<T: Send + Sync + 'static> Deferred<T> {
+        pub fn new<F>(f: F) -> Self
+        where
+            F: FnOnce() -> T + Send + Sync + 'static,
+        {
+            Self(f())
+        }
+
+        pub fn wait(&self) -> &T {
+            &self.0
+        }
+    }
+}
+
+#[cfg(feature = "rayon")]
+mod deferred {
+    /// A value that is lazily executed on another thread.
+    ///
+    /// Execution will be started in the background and can be waited on.
+
+    pub(crate) struct Deferred<T>(std::sync::Arc<once_cell::sync::OnceCell<T>>);
+
+    #[cfg(feature = "rayon")]
+    impl<T: Send + Sync + 'static> Deferred<T> {
+        /// Creates a new deferred value.
+        ///
+        /// The closure will be called on a secondary thread such that the value
+        /// can be initialized in parallel.
+        pub fn new<F>(f: F) -> Self
+        where
+            F: FnOnce() -> T + Send + Sync + 'static,
+        {
+            let inner = std::sync::Arc::new(once_cell::sync::OnceCell::new());
+            let cloned = std::sync::Arc::clone(&inner);
+            rayon::spawn(move || {
+                // Initialize the value if it hasn't been initialized yet.
+                // We do this to avoid panicking in case it was set externally.
+                cloned.get_or_init(f);
+            });
+            Self(inner)
+        }
+
+        /// Waits on the value to be initialized.
+        ///
+        /// If the value has already been initialized, this will return
+        /// immediately. Otherwise, this will block until the value is
+        /// initialized in another thread.
+        pub fn wait(&self) -> &T {
+            // Fast path if the value is already available. We don't want to yield
+            // to rayon in that case.
+            if let Some(value) = self.0.get() {
+                return value;
+            }
+
+            // Ensure that we yield to give the deferred value a chance to compute
+            // single-threaded platforms (for WASM compatibility).
+            while let Some(rayon::Yield::Executed) = rayon::yield_now() {}
+
+            self.0.wait()
+        }
     }
 }
 

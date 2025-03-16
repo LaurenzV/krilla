@@ -14,15 +14,17 @@
 //!
 //! [`Page`]: crate::page::Page
 
-use crate::embed::EmbeddedFile;
+// TODO: Remove
+pub use page::PageSettings;
+
 use crate::error::KrillaResult;
-use crate::metadata::Metadata;
-use crate::object::outline::Outline;
-use crate::object::page::Page;
-use crate::object::page::PageLabel;
+use crate::interchange::embed::EmbeddedFile;
+use crate::interchange::metadata::Metadata;
+use crate::interchange::outline::Outline;
+use crate::interchange::tagging::TagTree;
+use crate::page;
+use crate::page::Page;
 use crate::serialize::{SerializeContext, SerializeSettings};
-use crate::tagging::TagTree;
-use crate::{Rect, Size};
 
 /// A PDF document.
 pub struct Document {
@@ -97,170 +99,5 @@ impl Document {
         }
 
         Ok(self.serializer_context.finish()?.finish())
-    }
-}
-
-#[derive(Clone, Debug)]
-/// The settings of a page.
-pub struct PageSettings {
-    /// The media box of the page, which defines the visible area of the surface.
-    media_box: Option<Rect>,
-    /// The page label of the page.
-    page_label: PageLabel,
-    /// The size of the surface.
-    surface_size: Size,
-    /// The crop box of the page
-    crop_box: Option<Rect>,
-    /// The bleed box of the page
-    bleed_box: Option<Rect>,
-    /// The trim box of the page
-    trim_box: Option<Rect>,
-    /// The actual content boundaries
-    art_box: Option<Rect>,
-}
-
-impl PageSettings {
-    /// Create new page settings and define the size of the page surface.
-    pub fn new(width: f32, height: f32) -> Self {
-        Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
-            surface_size: Size::from_wh(width, height).unwrap(),
-            ..Default::default()
-        }
-    }
-
-    /// Change the media box.
-    ///
-    /// The media box defines the visible area of the page when opening the PDF,
-    /// so it can be distinct from the size of the surface, but in the majority
-    /// of the cases you want them to match in size and align the media box
-    /// at the origin of the coordinate system.
-    ///
-    /// If set to `None`, the dimensions will be chosen in such a way that all
-    /// contents fit on the page.
-    pub fn with_media_box(mut self, media_box: Option<Rect>) -> PageSettings {
-        self.media_box = media_box;
-        self
-    }
-
-    /// Change the page label.
-    pub fn with_page_label(mut self, page_label: PageLabel) -> PageSettings {
-        self.page_label = page_label;
-        self
-    }
-
-    /// The current media box.
-    pub(crate) fn media_box(&self) -> Option<Rect> {
-        self.media_box
-    }
-
-    /// The current surface size.
-    pub(crate) fn surface_size(&self) -> Size {
-        self.surface_size
-    }
-
-    /// The current page label.
-    pub(crate) fn page_label(&self) -> &PageLabel {
-        &self.page_label
-    }
-
-    /// Change the crop box.
-    ///
-    /// The crop box defines the region to which the page contents are to be clipped
-    /// when displayed or printed. Default is the media box.
-    ///
-    /// If `None`, no /CropBox attribute will be written to the page.
-    pub fn with_crop_box(mut self, crop_box: Option<Rect>) -> PageSettings {
-        self.crop_box = crop_box;
-        self
-    }
-
-    /// The current crop box.
-    pub(crate) fn crop_box(&self) -> Option<Rect> {
-        self.crop_box
-    }
-
-    /// Change the bleed box.
-    ///
-    /// The bleed box defines the region to which the page contents needs to be clipped
-    /// when output in a production environment. It includes any extra bleed area needed
-    /// for printing.
-    ///
-    /// If `None`, no /BleedBox attribute will be written to the page.
-    pub fn with_bleed_box(mut self, bleed_box: Option<Rect>) -> PageSettings {
-        self.bleed_box = bleed_box;
-        self
-    }
-
-    /// The current bleed box.
-    pub(crate) fn bleed_box(&self) -> Option<Rect> {
-        self.bleed_box
-    }
-
-    /// Change the trim box.
-    ///
-    /// The trim box defines the intended dimensions of the finished page after trimming.
-    /// It may be smaller than the media box and bleed box to accommodate bleed for printing.
-    ///
-    /// If `None`, no /TrimBox attribute will be written to the page.
-    pub fn with_trim_box(mut self, trim_box: Option<Rect>) -> PageSettings {
-        self.trim_box = trim_box;
-        self
-    }
-
-    /// The current trim box.
-    pub(crate) fn trim_box(&self) -> Option<Rect> {
-        self.trim_box
-    }
-
-    /// Change the art box.
-    ///
-    /// The art box defines the extent of the page's meaningful content (including
-    /// potential white space) as intended by the page's creator.
-    ///
-    /// If `None`, no /ArtBox attribute will be written to the page.
-    pub fn with_art_box(mut self, art_box: Option<Rect>) -> PageSettings {
-        self.art_box = art_box;
-        self
-    }
-
-    /// The current art box.
-    pub(crate) fn art_box(&self) -> Option<Rect> {
-        self.art_box
-    }
-}
-
-impl Default for PageSettings {
-    fn default() -> Self {
-        // Default for A4.
-        let width = 595.0;
-        let height = 842.0;
-
-        Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
-            surface_size: Size::from_wh(width, height).unwrap(),
-            page_label: PageLabel::default(),
-            crop_box: None,
-            bleed_box: None,
-            trim_box: None,
-            art_box: None,
-        }
-    }
-}
-
-/// The main text direction of the document.
-#[allow(missing_docs)]
-#[derive(Copy, Clone, Debug)]
-pub enum TextDirection {
-    LeftToRight,
-    RightToLeft,
-}
-
-impl TextDirection {
-    pub(crate) fn to_pdf(self) -> pdf_writer::types::Direction {
-        match self {
-            TextDirection::LeftToRight => pdf_writer::types::Direction::L2R,
-            TextDirection::RightToLeft => pdf_writer::types::Direction::R2L,
-        }
     }
 }

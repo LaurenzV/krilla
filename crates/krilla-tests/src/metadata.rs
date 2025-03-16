@@ -1,5 +1,5 @@
-use krilla::metadata::{DateTime, Metadata};
-use krilla::{Document, TextDirection};
+use krilla::interchange::metadata::{DateTime, Metadata, TextDirection};
+use krilla::Document;
 use krilla_macros::snapshot;
 
 pub(crate) fn metadata_impl(document: &mut Document) {

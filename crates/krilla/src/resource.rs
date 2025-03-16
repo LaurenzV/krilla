@@ -11,6 +11,7 @@ use pdf_writer::{Dict, Finish, Ref};
 
 use crate::configure::PdfVersion;
 use crate::util::NameExt;
+use crate::Cacheable;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;
@@ -18,6 +19,10 @@ pub(crate) trait Resource {
     fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a>;
     fn get_prefix() -> &'static str;
     fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Self>;
+}
+
+pub(crate) trait Resourceable: Cacheable {
+    type Resource: Resource;
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]

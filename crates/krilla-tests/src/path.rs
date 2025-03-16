@@ -1,5 +1,5 @@
+use krilla::page::Page;
 use krilla::surface::Surface;
-use krilla::Page;
 use krilla_macros::{snapshot, visreg};
 
 use crate::{cmyk_fill, gray_fill, rect_to_path, red_fill};
