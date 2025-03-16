@@ -1,7 +1,5 @@
 //! Path-related properties.
 
-use std::hash::Hasher;
-
 use crate::{Rect, Transform};
 
 /// A path.
