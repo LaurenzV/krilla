@@ -1,19 +1,10 @@
-use krilla::graphics::paint::{LinearGradient, Paint, SpreadMethod};
+use krilla::graphics::blend::BlendMode;
 use krilla::page::Page;
-use krilla::surface::{BlendMode, Surface};
-use krilla::text::Font;
-use krilla::{Data, Point, Size, Transform};
-use krilla_macros::{snapshot, visreg};
-use krilla_svg::{SurfaceExt, SvgSettings};
+use krilla::Transform;
+use krilla_macros::snapshot;
 
-use crate::{
-    basic_mask, cmyk_fill, gray_fill, green_fill, load_png_image, rect_to_path, FONTDB,
-    LATIN_MODERN_ROMAN,
-};
-use crate::{
-    blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, NOTO_COLOR_EMOJI_COLR,
-    NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, SVGS_PATH,
-};
+use crate::{blue_fill, red_fill};
+use crate::{green_fill, rect_to_path};
 
 #[snapshot(settings_2)]
 fn stream_resource_cache(page: &mut Page) {

@@ -1,5 +1,6 @@
 //! Rendering graphics objects into a PDF file.
 
+pub mod blend;
 pub mod color;
 pub mod graphics_state;
 #[cfg(feature = "raster-images")]

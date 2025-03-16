@@ -137,7 +137,6 @@ use chunk_container::ChunkContainerFn;
 use pdf_writer::{Chunk, Ref};
 pub use prelude::*;
 
-use crate::resource::Resource;
 use crate::serialize::SerializeContext;
 use crate::util::SipHashable;
 
@@ -185,4 +184,3 @@ pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
 }
-

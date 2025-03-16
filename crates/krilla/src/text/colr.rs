@@ -8,11 +8,11 @@ use skrifa::raw::TableProvider;
 use skrifa::MetadataProvider;
 use tiny_skia_path::{Path, PathBuilder};
 
+use crate::graphics::blend::BlendMode;
 use crate::graphics::color::rgb;
 use crate::graphics::paint::{
     Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient,
 };
-use crate::surface::BlendMode;
 use crate::surface::Surface;
 use crate::text::outline::OutlineBuilder;
 use crate::text::{Font, GlyphId, PaintMode};

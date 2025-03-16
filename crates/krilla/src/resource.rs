@@ -8,9 +8,10 @@ use std::marker::PhantomData;
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
-use crate::Cacheable;
+
 use crate::configure::PdfVersion;
 use crate::util::NameExt;
+use crate::Cacheable;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;
