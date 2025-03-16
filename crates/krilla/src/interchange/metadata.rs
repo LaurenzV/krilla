@@ -10,7 +10,6 @@ use pdf_writer::{Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
 use crate::configure::{Configuration, PdfVersion};
-use crate::TextDirection;
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]
@@ -388,5 +387,22 @@ fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
         minute: datetime.minute,
         second: datetime.second,
         timezone,
+    }
+}
+
+/// The main text direction of the document.
+#[allow(missing_docs)]
+#[derive(Copy, Clone, Debug)]
+pub enum TextDirection {
+    LeftToRight,
+    RightToLeft,
+}
+
+impl TextDirection {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::Direction {
+        match self {
+            TextDirection::LeftToRight => pdf_writer::types::Direction::L2R,
+            TextDirection::RightToLeft => pdf_writer::types::Direction::R2L,
+        }
     }
 }

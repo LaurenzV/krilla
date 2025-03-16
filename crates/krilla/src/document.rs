@@ -22,9 +22,9 @@ use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
-use crate::page::{Page, PageLabel};
+use crate::page;
+use crate::page::Page;
 use crate::serialize::{SerializeContext, SerializeSettings};
-use crate::{page, Rect, Size};
 
 /// A PDF document.
 pub struct Document {
@@ -99,22 +99,5 @@ impl Document {
         }
 
         Ok(self.serializer_context.finish()?.finish())
-    }
-}
-
-/// The main text direction of the document.
-#[allow(missing_docs)]
-#[derive(Copy, Clone, Debug)]
-pub enum TextDirection {
-    LeftToRight,
-    RightToLeft,
-}
-
-impl TextDirection {
-    pub(crate) fn to_pdf(self) -> pdf_writer::types::Direction {
-        match self {
-            TextDirection::LeftToRight => pdf_writer::types::Direction::L2R,
-            TextDirection::RightToLeft => pdf_writer::types::Direction::R2L,
-        }
     }
 }
