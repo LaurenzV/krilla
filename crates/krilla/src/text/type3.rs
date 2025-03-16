@@ -10,8 +10,8 @@ use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::configure::{PdfVersion, ValidationError};
+use crate::graphics::paint::Fill;
 use crate::graphics::xobject::XObject;
-use crate::paint::Fill;
 use crate::path::Path;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
@@ -504,7 +504,7 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::paint::Fill;
+    use crate::graphics::paint::Fill;
     use crate::serialize::SerializeContext;
     use crate::text::type3::OwnedCoveredGlyph;
     use crate::text::{Font, FontContainer, GlyphId, OwnedPaintMode};

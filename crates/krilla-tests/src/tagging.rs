@@ -1,8 +1,8 @@
 use krilla::error::KrillaError;
+use krilla::graphics::paint::Fill;
 use krilla::interactive::action::{Action, LinkAction};
 use krilla::interactive::annotation::{LinkAnnotation, Target};
 use krilla::interchange::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
-use krilla::paint::Fill;
 use krilla::surface::{Surface, TextDirection};
 use krilla::{Document, Font, Point, Rect, Size, Transform};
 use krilla_macros::snapshot;

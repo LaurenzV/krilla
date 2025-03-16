@@ -18,6 +18,7 @@ use crate::graphics::color::{Color, ColorSpace};
 use crate::graphics::graphics_state::{ExtGState, GraphicsStates};
 use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
+use crate::graphics::paint::{Fill, FillRule, InnerPaint, LineCap, LineJoin, Paint, Stroke};
 use crate::graphics::shading_function::{
     GradientProperties, GradientPropertiesExt, ShadingFunction,
 };
@@ -25,7 +26,6 @@ use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
 use crate::graphics::xobject::XObject;
 use crate::interchange::tagging::ContentTag;
-use crate::paint::{Fill, FillRule, InnerPaint, LineCap, LineJoin, Paint, Stroke};
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;

@@ -2,7 +2,7 @@
 
 use krilla::graphics::color::{luma, rgb};
 use krilla::graphics::mask::MaskType;
-use krilla::paint::{
+use krilla::graphics::paint::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, Pattern, RadialGradient,
     SpreadMethod, Stop, Stroke, StrokeDash,
 };

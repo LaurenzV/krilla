@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use krilla::geom::{NormalizedF32, Point};
 use krilla::graphics::color::rgb;
-use krilla::paint::Fill;
+use krilla::graphics::paint::Fill;
 use krilla::text::{Font, GlyphId, KrillaGlyph};
 use krilla::{Document, PageSettings};
 use parley::layout::Alignment;

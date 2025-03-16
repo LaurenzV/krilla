@@ -24,7 +24,7 @@ use skrifa::{FontRef, MetadataProvider};
 use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
-use crate::paint::{Fill, Stroke};
+use crate::graphics::paint::{Fill, Stroke};
 use crate::surface::Surface;
 use crate::text::cid::CIDFont;
 use crate::text::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};

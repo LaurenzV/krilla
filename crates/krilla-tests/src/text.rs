@@ -1,5 +1,5 @@
+use krilla::graphics::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::page::Page;
-use krilla::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::surface::{Surface, TextDirection};
 use krilla::{Data, Font, Point};
 use krilla_macros::{snapshot, visreg};

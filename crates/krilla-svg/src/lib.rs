@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use fontdb::Database;
 use krilla::graphics::color::rgb;
-use krilla::paint::FillRule;
+use krilla::graphics::paint::FillRule;
 use krilla::surface::Surface;
 use krilla::text::{Font, FontInfo, GlyphId};
 use krilla::{Rect, Size, Transform};

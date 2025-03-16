@@ -9,7 +9,7 @@ use skrifa::MetadataProvider;
 use tiny_skia_path::{Path, PathBuilder};
 
 use crate::graphics::color::rgb;
-use crate::paint::{
+use crate::graphics::paint::{
     Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient,
 };
 use crate::surface::BlendMode;

@@ -21,7 +21,7 @@
 //!
 //! [`Page::surface`]: crate::page::Page::surface
 //! [`Surface::stream_builder`]: crate::surface::Surface::stream_builder
-//! [`Pattern`]: crate::paint::Pattern
+//! [`Pattern`]: crate::graphics::paint::Pattern
 //! [`Mask`]: crate::mask::Mask
 
 use std::borrow::Cow;

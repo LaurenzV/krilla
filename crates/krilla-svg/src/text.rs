@@ -1,7 +1,7 @@
 //! Text conversion
 
 use krilla::graphics::color::rgb;
-use krilla::paint::{Fill, Stroke};
+use krilla::graphics::paint::{Fill, Stroke};
 use krilla::surface::Surface;
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla::{Font, NormalizedF32, Point};
