@@ -5,14 +5,14 @@ mod bitmap {
     use crate::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
 
     #[visreg(document, all)]
-    fn noto_color_emoji_cbdt(document: &mut Document) {
+    fn font_noto_color_emoji_cbdt(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 
     #[cfg(target_os = "macos")]
     #[visreg(document, all)]
-    fn apple_color_emoji(document: &mut Document) {
+    fn font_apple_color_emoji(document: &mut Document) {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc")
             .unwrap()
             .into();
@@ -33,7 +33,7 @@ mod colr {
     };
 
     #[visreg(document)]
-    fn colr_test_glyphs(document: &mut Document) {
+    fn font_colr_test_glyphs(document: &mut Document) {
         let font_data = COLR_TEST_GLYPHS.clone();
 
         let glyphs = (0..=220)
@@ -44,7 +44,7 @@ mod colr {
     }
 
     #[visreg]
-    fn colr_context_color(surface: &mut Surface) {
+    fn font_colr_context_color(surface: &mut Surface) {
         let font_data = COLR_TEST_GLYPHS.clone();
         let font = Font::new(font_data, 0, true).unwrap();
 
@@ -118,7 +118,7 @@ mod colr {
     // We don't run on pdf.js because it leads to a high pixel difference in CI
     // for some reason.
     #[visreg(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
-    fn noto_color_emoji_colr(document: &mut Document) {
+    fn font_noto_color_emoji_colr(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_COLR.clone();
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
@@ -132,19 +132,19 @@ mod svg {
     use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
 
     #[visreg(document, all)]
-    fn twitter_color_emoji(document: &mut Document) {
+    fn font_twitter_color_emoji(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
         all_glyphs_to_pdf(font_data, None, false, true, document);
     }
 
     #[visreg(document)]
-    fn twitter_color_emoji_no_color(document: &mut Document) {
+    fn font_twitter_color_emoji_no_color(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
         all_glyphs_to_pdf(font_data, None, false, false, document);
     }
 
     #[visreg]
-    fn svg_extra(surface: &mut Surface) {
+    fn font_svg_extra(surface: &mut Surface) {
         let font_data = SVG_EXTRA.clone();
         let font = Font::new(font_data, 0, true).unwrap();
 
@@ -179,7 +179,7 @@ mod cid {
     use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
 
     #[visreg(all)]
-    fn cid_font_noto_sans_simple_text(surface: &mut Surface) {
+    fn font_ttf_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -192,7 +192,7 @@ mod cid {
     }
 
     #[visreg(all)]
-    fn cid_font_latin_modern_simple_text(surface: &mut Surface) {
+    fn font_cff_simple_text(surface: &mut Surface) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -205,7 +205,7 @@ mod cid {
     }
 
     #[visreg(all)]
-    fn cid_font_noto_arabic_simple_text(surface: &mut Surface) {
+    fn font_arabic_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
         surface.fill_text(
             Point::from_xy(0.0, 100.0),
@@ -219,7 +219,7 @@ mod cid {
 
     #[cfg(target_os = "macos")]
     #[visreg(macos)]
-    fn cid_font_true_type_collection(surface: &mut Surface) {
+    fn font_ttc(surface: &mut Surface) {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
             .unwrap()
             .into();

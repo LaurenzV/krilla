@@ -50,26 +50,26 @@ fn page_with_crop_bleeding_trim_art_boxes(d: &mut Document) {
 }
 
 #[visreg(document)]
-fn custom_media_box_top_left(d: &mut Document) {
+fn page_media_box_top_left(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-100.0, -100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_top_right(d: &mut Document) {
+fn page_media_box_top_right(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(100.0, -100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_bottom_left(d: &mut Document) {
+fn page_media_box_bottom_left(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-100.0, 100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_bottom_right(d: &mut Document) {
+fn page_media_box_bottom_right(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(100.0, 100.0, 200.0, 200.0).unwrap())
 }
 
 #[visreg(document)]
-fn custom_media_box_zoomed_out(d: &mut Document) {
+fn page_media_box_zoomed_out(d: &mut Document) {
     media_box_impl(d, Rect::from_xywh(-150.0, -200.0, 500.0, 500.0).unwrap())
 }

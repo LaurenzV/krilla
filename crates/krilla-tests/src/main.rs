@@ -39,7 +39,6 @@ use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
 
 mod annotation;
-mod color;
 mod destination;
 mod embed;
 mod font;

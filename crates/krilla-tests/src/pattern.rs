@@ -8,7 +8,7 @@ mod shading {
     use crate::{rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_solid_1};
 
     #[visreg(all)]
-    fn linear_gradient_pad(surface: &mut Surface) {
+    fn pattern_linear_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = LinearGradient {
             x1: 50.0,
@@ -30,7 +30,7 @@ mod shading {
     }
 
     #[visreg(all)]
-    fn linear_gradient_repeat(surface: &mut Surface) {
+    fn pattern_linear_gradient_repeat(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = LinearGradient {
             x1: 50.0,
@@ -52,7 +52,7 @@ mod shading {
     }
 
     #[visreg(all)]
-    fn sweep_gradient_pad(surface: &mut Surface) {
+    fn pattern_sweep_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = SweepGradient {
             cx: 100.0,
@@ -74,7 +74,7 @@ mod shading {
     }
 
     #[visreg(all)]
-    fn sweep_gradient_repeat(surface: &mut Surface) {
+    fn pattern_sweep_gradient_repeat(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = SweepGradient {
             cx: 100.0,
@@ -96,7 +96,7 @@ mod shading {
     }
 
     #[visreg(all)]
-    fn radial_gradient_pad(surface: &mut Surface) {
+    fn pattern_radial_gradient_pad(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = RadialGradient {
             cx: 100.0,
@@ -157,7 +157,7 @@ mod tiling {
     use crate::{basic_pattern_stream, rect_to_path};
 
     #[visreg(all)]
-    fn tiling_pattern_basic(surface: &mut Surface) {
+    fn pattern_tiling_basic(surface: &mut Surface) {
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let stream_builder = surface.stream_builder();
         let pattern_stream = basic_pattern_stream(stream_builder);
