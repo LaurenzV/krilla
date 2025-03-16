@@ -19,8 +19,7 @@ use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
-use crate::object::page::Page;
-use crate::object::page::PageLabel;
+use crate::page::{Page, PageLabel};
 use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::{Rect, Size};
 

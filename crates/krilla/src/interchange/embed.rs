@@ -6,12 +6,11 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
-use crate::object::{Cacheable, ChunkContainerFn};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
 use crate::util::NameExt;
-use crate::Data;
+use crate::{Cacheable, ChunkContainerFn, Data};
 
 /// An error while embedding the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

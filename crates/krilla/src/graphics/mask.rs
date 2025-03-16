@@ -4,11 +4,10 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::graphics::xobject::XObject;
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::serialize::SerializeContext;
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::{resource, Rect, Transform};
+use crate::{resource, Cacheable, ChunkContainerFn, Rect, Resourceable, Transform};
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]

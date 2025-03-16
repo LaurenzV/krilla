@@ -6,12 +6,11 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 
 use crate::configure::ValidationError;
 use crate::graphics::color::{rgb, DEVICE_RGB};
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::resource::Resource;
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{NameExt, RectExt};
-use crate::{resource, Rect};
+use crate::{resource, Cacheable, ChunkContainerFn, Rect, Resourceable};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {

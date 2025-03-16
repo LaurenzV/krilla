@@ -109,7 +109,6 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 #![forbid(unsafe_code)]
 
 mod chunk_container;
-mod object;
 mod prelude;
 mod resource;
 mod serialize;
@@ -125,6 +124,7 @@ pub mod geom;
 pub mod graphics;
 pub mod interactive;
 pub mod interchange;
+pub mod page;
 pub mod paint;
 pub mod path;
 pub mod stream;
@@ -134,7 +134,13 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
+use pdf_writer::{Chunk, Ref};
 pub use prelude::*;
+
+use crate::chunk_container::ChunkContainer;
+use crate::resource::Resource;
+use crate::serialize::SerializeContext;
+use crate::util::SipHashable;
 
 /// A type that holds some bytes.
 #[derive(Clone)]
@@ -174,4 +180,15 @@ impl Debug for Data {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Data {{..}}")
     }
+}
+
+pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<Chunk>;
+
+pub(crate) trait Cacheable: SipHashable {
+    fn chunk_container(&self) -> ChunkContainerFn;
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
+}
+
+pub(crate) trait Resourceable: Cacheable {
+    type Resource: Resource;
 }

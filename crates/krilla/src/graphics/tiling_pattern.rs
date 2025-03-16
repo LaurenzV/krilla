@@ -6,13 +6,12 @@ use std::ops::DerefMut;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::serialize::SerializeContext;
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::HashExt;
 use crate::util::TransformExt;
-use crate::{resource, NormalizedF32, Transform};
+use crate::{resource, Cacheable, ChunkContainerFn, NormalizedF32, Resourceable, Transform};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {

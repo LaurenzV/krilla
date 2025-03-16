@@ -27,13 +27,11 @@ use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{
     AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
 };
-use crate::object::page::{InternalPage, PageLabelContainer};
-use crate::object::{Cacheable, Resourceable};
-use crate::page::PageLabel;
+use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::resource::Resource;
 use crate::surface::{Location, Surface};
 use crate::util::SipHashable;
-use crate::{resource, Size};
+use crate::{resource, Cacheable, Resourceable, Size};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]

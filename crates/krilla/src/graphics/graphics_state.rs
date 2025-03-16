@@ -8,10 +8,9 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 
 use crate::configure::ValidationError;
 use crate::graphics::mask::Mask;
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::serialize::SerializeContext;
 use crate::util::HashExt;
-use crate::{resource, NormalizedF32, Rect, Transform};
+use crate::{resource, Cacheable, ChunkContainerFn, NormalizedF32, Rect, Resourceable, Transform};
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

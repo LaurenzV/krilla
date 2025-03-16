@@ -46,11 +46,10 @@ use std::sync::Arc;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
 use crate::configure::ValidationError;
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
-use crate::resource;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::Prehashed;
+use crate::{resource, Cacheable, ChunkContainerFn, Resourceable};
 
 /// The PDF name for the device RGB color space.
 pub(crate) const DEVICE_RGB: &str = "DeviceRGB";

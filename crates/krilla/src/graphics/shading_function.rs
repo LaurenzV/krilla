@@ -12,12 +12,11 @@ use tiny_skia_path::Point;
 use crate::configure::ValidationError;
 use crate::graphics::color::luma;
 use crate::graphics::color::Color;
-use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::resource;
 use crate::serialize::SerializeContext;
 use crate::util::{set_colorspace, RectExt};
+use crate::{resource, Cacheable, ChunkContainerFn, Resourceable};
 use crate::{NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
