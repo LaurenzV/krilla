@@ -11,8 +11,9 @@ use tiny_skia_path::{Path, PathBuilder};
 use crate::font::outline::OutlineBuilder;
 use crate::font::{Font, GlyphId, PaintMode};
 use crate::graphics::color::rgb;
-use crate::paint::{LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
-use crate::path::{Fill, FillRule};
+use crate::paint::{
+    Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient,
+};
 use crate::surface::BlendMode;
 use crate::surface::Surface;
 use crate::{NormalizedF32, Transform};

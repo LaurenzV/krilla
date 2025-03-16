@@ -1,7 +1,7 @@
 use krilla::graphics::color::rgb;
 use krilla::graphics::mask::MaskType;
 use krilla::page::Page;
-use krilla::path::Fill;
+use krilla::paint::Fill;
 use krilla::surface::Surface;
 use krilla::NormalizedF32;
 use krilla_macros::{snapshot, visreg};

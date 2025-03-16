@@ -1,7 +1,7 @@
 //! Image conversion
 
 use krilla::graphics::image::Image;
-use krilla::path::FillRule;
+use krilla::paint::FillRule;
 use krilla::surface::Surface;
 use krilla::{Rect, Size};
 use usvg::ImageKind;

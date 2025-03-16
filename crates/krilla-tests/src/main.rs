@@ -20,8 +20,8 @@ use krilla::graphics::image::{BitsPerComponent, CustomImage, Image, ImageColorsp
 use krilla::graphics::mask::{Mask, MaskType};
 use krilla::interactive::action::LinkAction;
 use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
-use krilla::paint::{Stop, Stops};
-use krilla::path::{Fill, Path, PathBuilder, Stroke};
+use krilla::paint::{Fill, Stop, Stops, Stroke};
+use krilla::path::{Path, PathBuilder};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;

@@ -22,7 +22,8 @@ use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
-use crate::path::{Fill, FillRule, Path, Stroke};
+use crate::paint::{Fill, FillRule, Stroke};
+use crate::path::Path;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 #[cfg(feature = "raster-images")]

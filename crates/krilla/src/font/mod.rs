@@ -26,7 +26,7 @@ use yoke::{Yoke, Yokeable};
 
 use crate::font::cid::CIDFont;
 use crate::font::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
-use crate::path::{Fill, Stroke};
+use crate::paint::{Fill, Stroke};
 use crate::surface::Surface;
 use crate::util::Prehashed;
 use crate::{Data, Rect, Transform};

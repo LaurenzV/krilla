@@ -22,7 +22,6 @@ mod bitmap {
 
 mod colr {
     use krilla::font::GlyphId;
-    use krilla::path::{Fill, Stroke};
     use krilla::surface::{Surface, TextDirection};
     use krilla::{Document, Font, Point};
     use krilla_macros::visreg;
@@ -171,7 +170,6 @@ mod svg {
 }
 
 mod cid {
-    use krilla::path::Fill;
     use krilla::surface::{Surface, TextDirection};
     use krilla::{Font, Point};
     use krilla_macros::visreg;
@@ -256,7 +254,6 @@ mod cid {
 
 mod type3 {
     use krilla::page::Page;
-    use krilla::path::Fill;
     use krilla::surface::TextDirection;
     use krilla::{Font, Point};
     use krilla_macros::snapshot;

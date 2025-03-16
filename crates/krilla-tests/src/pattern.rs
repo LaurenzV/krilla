@@ -1,7 +1,6 @@
 mod shading {
     use krilla::page::Page;
-    use krilla::paint::{LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
-    use krilla::path::Fill;
+    use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
     use krilla::surface::Surface;
     use krilla::NormalizedF32;
     use krilla_macros::{snapshot, visreg};
@@ -178,8 +177,7 @@ mod shading {
 }
 
 mod tiling {
-    use krilla::paint::Pattern;
-    use krilla::path::Fill;
+    use krilla::paint::{Fill, Pattern};
     use krilla::surface::Surface;
     use krilla::NormalizedF32;
     use krilla_macros::visreg;

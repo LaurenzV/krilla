@@ -14,7 +14,8 @@ use crate::font::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::font::outline::glyph_path;
 use crate::font::{self, Font, GlyphId};
 use crate::graphics::xobject::XObject;
-use crate::path::{Fill, Path};
+use crate::paint::Fill;
+use crate::path::Path;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
@@ -505,7 +506,7 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 mod tests {
     use crate::font::type3::OwnedCoveredGlyph;
     use crate::font::{Font, FontContainer, GlyphId, OwnedPaintMode};
-    use crate::path::Fill;
+    use crate::paint::Fill;
     use crate::serialize::SerializeContext;
     use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
 

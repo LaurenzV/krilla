@@ -1,7 +1,6 @@
 use krilla::font::Font;
 use krilla::page::Page;
 use krilla::paint::{LinearGradient, Paint, SpreadMethod};
-use krilla::path::{Fill, Stroke};
 use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
 use krilla::{Data, Point, Size, Transform};
