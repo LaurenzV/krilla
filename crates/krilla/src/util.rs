@@ -8,11 +8,14 @@ use std::ops::Deref;
 
 use base64::Engine;
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
-use pdf_writer::Name;
+use pdf_writer::{Dict, Name};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use tiny_skia_path::Path;
 
+use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::path::{LineCap, LineJoin, Stroke};
+use crate::resource::Resource;
+use crate::serialize::MaybeDeviceColorSpace;
 use crate::Rect;
 
 pub(crate) trait NameExt {
@@ -281,6 +284,17 @@ impl<T: Send + Sync + 'static> Deferred<T> {
         while let Some(rayon::Yield::Executed) = rayon::yield_now() {}
 
         self.0.wait()
+    }
+}
+
+pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {
+    let pdf_cs = target.insert(Name(b"ColorSpace"));
+
+    match cs {
+        MaybeDeviceColorSpace::DeviceGray => pdf_cs.primitive(DEVICE_GRAY.to_pdf_name()),
+        MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
+        MaybeDeviceColorSpace::DeviceCMYK => pdf_cs.primitive(DEVICE_CMYK.to_pdf_name()),
+        MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
     }
 }
 

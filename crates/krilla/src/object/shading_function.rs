@@ -6,18 +6,18 @@ use std::sync::Arc;
 
 use bumpalo::Bump;
 use pdf_writer::types::{FunctionShadingType, PostScriptOp};
-use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::Point;
 
-use crate::color::{luma, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
+use crate::color::luma;
 use crate::configure::ValidationError;
 use crate::object::color::Color;
 use crate::object::{Cacheable, ChunkContainerFn, Resourceable};
 use crate::paint::SpreadMethod;
 use crate::paint::{LinearGradient, RadialGradient, SweepGradient};
-use crate::resource::{self, Resource};
-use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
-use crate::util::{NameExt, RectExt};
+use crate::resource;
+use crate::serialize::SerializeContext;
+use crate::util::{set_colorspace, RectExt};
 use crate::{NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -278,7 +278,7 @@ fn serialize_postscript_shading(
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
 
-    set_colorspace(sc, cs, shading.deref_mut());
+    set_colorspace(sc.register_colorspace(cs), shading.deref_mut());
 
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
@@ -288,17 +288,6 @@ fn serialize_postscript_shading(
 
     shading.domain([domain.left(), domain.right(), domain.top(), domain.bottom()]);
     shading.finish();
-}
-
-fn set_colorspace(sc: &mut SerializeContext, cs: ColorSpace, target: &mut Dict) {
-    let pdf_cs = target.insert(Name(b"ColorSpace"));
-
-    match sc.register_colorspace(cs) {
-        MaybeDeviceColorSpace::DeviceGray => pdf_cs.primitive(DEVICE_GRAY.to_pdf_name()),
-        MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
-        MaybeDeviceColorSpace::DeviceCMYK => pdf_cs.primitive(DEVICE_CMYK.to_pdf_name()),
-        MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
-    }
 }
 
 fn serialize_axial_radial_shading(
@@ -326,7 +315,7 @@ fn serialize_axial_radial_shading(
         shading.shading_type(FunctionShadingType::Axial);
     }
 
-    set_colorspace(sc, cs, shading.deref_mut());
+    set_colorspace(sc.register_colorspace(cs), shading.deref_mut());
 
     shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);

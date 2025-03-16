@@ -256,6 +256,7 @@ pub mod rgb {
             Color::rgb_color_space(no_device_cs)
         }
 
+        // TODO: Rename
         pub(crate) fn rgb_color_space(no_device_cs: bool) -> ColorSpace {
             if no_device_cs {
                 ColorSpace::Srgb
