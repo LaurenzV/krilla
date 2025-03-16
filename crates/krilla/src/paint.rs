@@ -10,9 +10,9 @@ use crate::{NormalizedF32, Transform};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) enum InnerStops {
-    LumaStops(Vec<Stop<luma::Color>>),
-    RgbStops(Vec<Stop<rgb::Color>>),
-    CmykStops(Vec<Stop<cmyk::Color>>),
+    Luma(Vec<Stop<luma::Color>>),
+    Rgb(Vec<Stop<rgb::Color>>),
+    Cmyk(Vec<Stop<cmyk::Color>>),
 }
 
 impl InnerStops {
@@ -20,9 +20,9 @@ impl InnerStops {
         self,
     ) -> Box<dyn Iterator<Item = crate::object::shading_function::Stop>> {
         match self {
-            InnerStops::RgbStops(r) => Box::new(r.into_iter().map(|c| c.into())),
-            InnerStops::CmykStops(c) => Box::new(c.into_iter().map(|c| c.into())),
-            InnerStops::LumaStops(l) => Box::new(l.into_iter().map(|c| c.into())),
+            InnerStops::Rgb(r) => Box::new(r.into_iter().map(|c| c.into())),
+            InnerStops::Cmyk(c) => Box::new(c.into_iter().map(|c| c.into())),
+            InnerStops::Luma(l) => Box::new(l.into_iter().map(|c| c.into())),
         }
     }
 }
@@ -33,19 +33,19 @@ pub struct Stops(pub(crate) InnerStops);
 
 impl From<Vec<Stop<luma::Color>>> for Stops {
     fn from(value: Vec<Stop<luma::Color>>) -> Self {
-        Stops(InnerStops::LumaStops(value))
+        Stops(InnerStops::Luma(value))
     }
 }
 
 impl From<Vec<Stop<rgb::Color>>> for Stops {
     fn from(value: Vec<Stop<rgb::Color>>) -> Self {
-        Stops(InnerStops::RgbStops(value))
+        Stops(InnerStops::Rgb(value))
     }
 }
 
 impl From<Vec<Stop<cmyk::Color>>> for Stops {
     fn from(value: Vec<Stop<cmyk::Color>>) -> Self {
-        Stops(InnerStops::CmykStops(value))
+        Stops(InnerStops::Cmyk(value))
     }
 }
 
