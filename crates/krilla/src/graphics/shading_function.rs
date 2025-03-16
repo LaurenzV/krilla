@@ -9,6 +9,7 @@ use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::Point;
 
+use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::graphics::color::luma;
 use crate::graphics::color::Color;
@@ -16,7 +17,7 @@ use crate::graphics::paint::SpreadMethod;
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::serialize::SerializeContext;
 use crate::util::{set_colorspace, RectExt};
-use crate::{resource, Cacheable, ChunkContainerFn, Resourceable};
+use crate::{resource, Cacheable, Resourceable};
 use crate::{NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

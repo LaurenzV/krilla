@@ -5,10 +5,11 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
+use crate::chunk_container::ChunkContainerFn;
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::serialize::SerializeContext;
 use crate::util::{HashExt, TransformExt};
-use crate::{resource, Cacheable, ChunkContainerFn, Resourceable, Transform};
+use crate::{resource, Cacheable, Resourceable, Transform};
 
 #[derive(Debug, PartialEq)]
 struct Repr {

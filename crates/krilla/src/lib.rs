@@ -133,10 +133,10 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
+use chunk_container::ChunkContainerFn;
 use pdf_writer::{Chunk, Ref};
 pub use prelude::*;
 
-use crate::chunk_container::ChunkContainer;
 use crate::resource::Resource;
 use crate::serialize::SerializeContext;
 use crate::util::SipHashable;
@@ -180,8 +180,6 @@ impl Debug for Data {
         write!(f, "Data {{..}}")
     }
 }
-
-pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<Chunk>;
 
 pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
