@@ -185,7 +185,7 @@ jobs:
       - name: Run Arlington PDF tests
         # We are excluding one file because of https://github.com/pdf-association/arlington-pdf-model/issues/132     
         run: find ./store -name "*.pdf" 
-          | grep -v "validation_pdfa4f_full_example.pdf" 
+          | grep -v "validate_pdf_a4_f_full_example.pdf" 
           | xargs /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
         
       - name: Run veraPDF tests  
