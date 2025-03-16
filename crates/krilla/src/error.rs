@@ -5,6 +5,7 @@
 
 use crate::configure::ValidationError;
 use crate::font::Font;
+#[cfg(feature = "raster-images")]
 use crate::Image;
 
 /// A wrapper type for krilla errors.
