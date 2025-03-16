@@ -5,7 +5,10 @@ mod shading {
     use krilla::{NormalizedF32, Page};
     use krilla_macros::{snapshot, visreg};
 
-    use crate::{rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_luma, stops_with_3_solid_1};
+    use crate::{
+        rect_to_path, stops_with_1_solid, stops_with_2_solid_1, stops_with_3_luma,
+        stops_with_3_solid_1,
+    };
 
     #[visreg(all)]
     fn pattern_linear_gradient_pad(surface: &mut Surface) {
