@@ -1,6 +1,7 @@
+//! Iterators for grouping glyphs into sub-runs for easier processing.
+
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
-///! Iterators for grouping glyphs into sub-runs for easier processing.
 use std::rc::Rc;
 
 use crate::text::type3::CoveredGlyph;
