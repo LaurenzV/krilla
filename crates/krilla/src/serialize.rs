@@ -21,8 +21,8 @@ use crate::font::{Font, FontInfo, GlyphId};
 #[cfg(feature = "raster-images")]
 use crate::image::Image;
 use crate::metadata::Metadata;
-use crate::object::font::cid_font::CIDFont;
-use crate::object::font::type3_font::Type3FontMapper;
+use crate::object::font::cid::CIDFont;
+use crate::object::font::type3::Type3FontMapper;
 use crate::object::font::{FontContainer, FontIdentifier};
 use crate::object::outline::Outline;
 use crate::object::page::{InternalPage, PageLabelContainer};

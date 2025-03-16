@@ -1,13 +1,13 @@
 //! PDF fonts.
 
 use crate::font::Font;
-use crate::object::font::cid_font::CIDFont;
-use crate::object::font::type3_font::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
+use crate::object::font::cid::CIDFont;
+use crate::object::font::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
 use crate::path::{Fill, Stroke};
 use crate::surface::Location;
 
-pub(crate) mod cid_font;
-pub(crate) mod type3_font;
+pub(crate) mod cid;
+pub(crate) mod type3;
 
 pub(crate) const PDF_UNITS_PER_EM: f32 = 1000.0;
 

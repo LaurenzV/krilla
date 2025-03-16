@@ -21,7 +21,7 @@ use crate::graphics_state::GraphicsStates;
 use crate::image::Image;
 use crate::mask::Mask;
 use crate::object::ext_g_state::ExtGState;
-use crate::object::font::type3_font::CoveredGlyph;
+use crate::object::font::type3::CoveredGlyph;
 use crate::object::font::{FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::object::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::object::shading_pattern::ShadingPattern;
