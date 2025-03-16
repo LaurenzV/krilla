@@ -27,15 +27,6 @@ use crate::text::{Font, FontInfo, PaintMode};
 use crate::Size;
 use crate::{NormalizedF32, Point, Transform};
 
-pub(crate) enum PushInstruction {
-    Transform,
-    Opacity(NormalizedF32),
-    ClipPath,
-    BlendMode,
-    Mask(Box<Mask>),
-    Isolated,
-}
-
 /// Can be used to associate render operations with a unique identifier.
 /// This is useful if you want to backtrack a validation error to a specific
 /// identifier chosen by you.
@@ -494,4 +485,13 @@ impl Builders {
     fn get(&self) -> &ContentBuilder {
         self.sub_builders.last().unwrap_or(&self.root_builder)
     }
+}
+
+pub(crate) enum PushInstruction {
+    Transform,
+    Opacity(NormalizedF32),
+    ClipPath,
+    BlendMode,
+    Mask(Box<Mask>),
+    Isolated,
 }
