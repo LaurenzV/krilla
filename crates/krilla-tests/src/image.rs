@@ -89,7 +89,7 @@ fn image_rgba8_webp(surface: &mut Surface) {
 
 #[visreg]
 fn image_cmyk_icc_jpg(surface: &mut Surface) {
-    image_visreg_impl(surface, "cmyk_icc.jpg", load_jpg_image);
+    image_visreg_impl(surface, "ccyk_icc.jpg", load_jpg_image);
 }
 
 #[visreg]
