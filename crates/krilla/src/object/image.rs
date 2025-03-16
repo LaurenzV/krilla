@@ -19,13 +19,15 @@ use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
 use zune_png::PngDecoder;
 
-use crate::color::{GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB};
+use crate::color::{
+    cmyk, luma, rgb, GenericICCProfile, ICCBasedColorSpace, ICCProfile, DEVICE_CMYK, DEVICE_RGB,
+};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::object::color::DEVICE_GRAY;
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::{Deferred, NameExt, SipHashable};
+use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};
 use crate::Data;
 
 /// The number of buits per color component.
@@ -374,6 +376,20 @@ impl Image {
 
         let serialize_settings = sc.serialize_settings().clone();
 
+        let cs = {
+            let cs = match self.color_space() {
+                ImageColorspace::Rgb => {
+                    rgb::Color::rgb_color_space(sc.serialize_settings().no_device_cs)
+                }
+                ImageColorspace::Luma => {
+                    luma::Color::color_space(sc.serialize_settings().no_device_cs)
+                }
+                ImageColorspace::Cmyk => cmyk::Color::color_space(&sc.serialize_settings()),
+            };
+
+            sc.register_colorspace(cs)
+        };
+
         Deferred::new(move || {
             let mut chunk = Chunk::new();
 
@@ -424,13 +440,7 @@ impl Image {
             if let Some(icc_ref) = icc_ref {
                 image_x_object.pair(Name(b"ColorSpace"), icc_ref);
             } else {
-                let name = match self.color_space() {
-                    ImageColorspace::Rgb => DEVICE_RGB.to_pdf_name(),
-                    ImageColorspace::Luma => DEVICE_GRAY.to_pdf_name(),
-                    ImageColorspace::Cmyk => DEVICE_CMYK.to_pdf_name(),
-                };
-
-                image_x_object.pair(Name(b"ColorSpace"), name);
+                set_colorspace(cs, image_x_object.deref_mut());
             }
 
             if self.0.interpolate {

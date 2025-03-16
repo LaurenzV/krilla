@@ -157,3 +157,12 @@ fn image_interpolate(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_image(image, size);
 }
+
+#[snapshot(settings_2)]
+// See https://github.com/LaurenzV/krilla/issues/152
+fn image_no_device_cs(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_png_image("rgb8.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
