@@ -368,7 +368,7 @@ impl SerializeContext {
         if !self.validation_errors.is_empty() {
             // Deduplicate errors with no span.
             self.validation_errors.dedup();
-            return Err(KrillaError::ValidationError(self.validation_errors));
+            return Err(KrillaError::Validation(self.validation_errors));
         }
 
         // Just a sanity check that we've actually processed all items.
@@ -688,7 +688,7 @@ impl SerializeContext {
                             for mcid in 0..num_mcids {
                                 let rci = PageTagIdentifier::new(index, mcid);
                                 refs.item(parent_tree_map.get(&rci.into()).ok_or(
-                                    KrillaError::UserError(
+                                    KrillaError::User(
                                         "an identifier doesn't appear in the tag tree".to_string(),
                                     ),
                                 )?);

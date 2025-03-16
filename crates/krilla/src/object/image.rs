@@ -382,7 +382,7 @@ impl Image {
                 .inner
                 .wait()
                 .as_ref()
-                .ok_or(KrillaError::ImageError(self.clone()))?;
+                .ok_or(KrillaError::Image(self.clone()))?;
 
             let alpha_mask = match repr {
                 Repr::Sampled(sampled) => sampled.alpha_channel.as_ref().map(|mask_data| {

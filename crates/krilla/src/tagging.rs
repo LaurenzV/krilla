@@ -855,7 +855,7 @@ fn serialize_children(
                     let page_ref = sc
                             .page_infos()
                             .get(pi.page_index)
-                            .ok_or(KrillaError::UserError(format!(
+                            .ok_or(KrillaError::User(format!(
                                 "tag tree contains identifier from page {}, but document only has {} pages",
                                 pi.page_index + 1,
                                 sc.page_infos().len()
@@ -867,7 +867,7 @@ fn serialize_children(
                     }
 
                     if parent_tree_map.contains_key(&pi.into()) {
-                        return Err(KrillaError::UserError(
+                        return Err(KrillaError::User(
                             "an identifier appears twice in the tag tree".to_string(),
                         ));
                     }
@@ -887,7 +887,7 @@ fn serialize_children(
                     let page_info =
                         sc.page_infos()
                             .get(ai.page_index)
-                            .ok_or(KrillaError::UserError(format!(
+                            .ok_or(KrillaError::User(format!(
                         "tag tree contains identifier from page {}, but document only has {} pages",
                         ai.page_index + 1,
                         sc.page_infos().len()
@@ -897,7 +897,7 @@ fn serialize_children(
                     let annotation_ref =
                             *page_info.annotations
                                 .get(ai.annot_index)
-                                .ok_or(KrillaError::UserError(format!(
+                                .ok_or(KrillaError::User(format!(
                                     "tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
                                     ai.annot_index + 1,
                                     ai.page_index + 1,
@@ -905,7 +905,7 @@ fn serialize_children(
                                 )))?;
 
                     if parent_tree_map.contains_key(&ai.into()) {
-                        return Err(KrillaError::UserError(
+                        return Err(KrillaError::User(
                             "an identifier appears twice in the tag tree".to_string(),
                         ));
                     }

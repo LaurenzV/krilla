@@ -113,7 +113,7 @@ fn embedded_file_pdf_a2() {
 
     assert_eq!(
         d.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::EmbeddedFile(EmbedError::Existence, None),
         ]))
     )

@@ -66,7 +66,7 @@ pub fn validate_pdf_a_q_nesting_28() {
     let document = q_nesting_impl(settings_7());
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::TooHighQNestingLevel
         ]))
     );
@@ -79,7 +79,7 @@ pub fn validate_pdf_a_string_length() {
     document.set_metadata(metadata);
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::TooLongString
         ]))
     );
@@ -128,7 +128,7 @@ fn validate_pdf_a_postscript() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::ContainsPostScript(None)
         ]))
     )
@@ -160,7 +160,7 @@ fn validate_pdf_a_missing_cmyk() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::MissingCMYKProfile
         ]))
     )
@@ -196,7 +196,7 @@ fn validate_pdf_a_notdef_glyph() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::ContainsNotDefGlyph(font, None, "你".to_string())
         ]))
     )
@@ -229,7 +229,7 @@ fn validate_pdfa2u_text_with_location() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::ContainsNotDefGlyph(font, Some(4), "i".to_string())
         ]))
     )
@@ -265,7 +265,7 @@ fn validate_pdfa1b_transparency_with_location() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::Transparency(Some(4)),
             ValidationError::Transparency(Some(6)),
             // Note that we don't have 7 here, even though we should in theory. The reason is
@@ -368,7 +368,7 @@ fn validate_pdfu_invalid_codepoint() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::InvalidCodepointMapping(font, GlyphId::new(2), Some('\u{FEFF}'), None)
         ]))
     )
@@ -386,7 +386,7 @@ fn validate_pdfa_private_unicode_codepoint() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::UnicodePrivateArea(font, GlyphId::new(2), '\u{E022}', None)
         ]))
     )
@@ -536,7 +536,7 @@ fn validate_pdf_ua1_missing_requirements() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::MissingDocumentOutline,
             ValidationError::MissingAnnotationAltText,
             ValidationError::MissingAltText,
@@ -603,7 +603,7 @@ fn validate_pdf_a1_no_transparency() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::Transparency(None)
         ]))
     )
@@ -626,7 +626,7 @@ fn validate_pdf_a1_no_image_transparency() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::Transparency(None)
         ]))
     )
@@ -652,7 +652,7 @@ fn validate_pdf_a1_limits() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::TooLargeFloat,
             ValidationError::TooLongArray,
         ]))
@@ -666,7 +666,7 @@ fn validate_pdf_a3_a_no_tag_tree() {
 
     assert_eq!(
         document.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::MissingTagging
         ]))
     )
@@ -681,7 +681,7 @@ fn validate_pdf_a3_missing_fields() {
 
     assert_eq!(
         d.finish(),
-        Err(KrillaError::ValidationError(vec![
+        Err(KrillaError::Validation(vec![
             ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
             ValidationError::EmbeddedFile(EmbedError::MissingDescription, None)
         ]))
