@@ -311,7 +311,7 @@ fn tagging_page_identifer_appears_twice() {
 
     document.set_tag_tree(tag_tree);
 
-    assert!(matches!(document.finish(), Err(KrillaError::UserError(_))))
+    assert!(matches!(document.finish(), Err(KrillaError::User(_))))
 }
 
 #[test]
@@ -339,7 +339,7 @@ fn tagging_annotation_identifer_appears_twice() {
 
     document.set_tag_tree(tag_tree);
 
-    assert!(matches!(document.finish(), Err(KrillaError::UserError(_))))
+    assert!(matches!(document.finish(), Err(KrillaError::User(_))))
 }
 
 #[test]
@@ -360,5 +360,5 @@ fn tagging_missing_identifier_in_tree() {
 
     document.set_tag_tree(tag_tree);
 
-    assert!(matches!(document.finish(), Err(KrillaError::UserError(_))))
+    assert!(matches!(document.finish(), Err(KrillaError::User(_))))
 }

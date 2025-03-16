@@ -134,12 +134,12 @@ impl CIDFont {
             let is_cff2 = self.font.font_ref().cff2().is_ok();
 
             return if is_cff2 {
-                Err(KrillaError::FontError(
+                Err(KrillaError::Font(
                     self.font.clone(),
                     "CFF2 fonts are not supported".to_string(),
                 ))
             } else {
-                Err(KrillaError::FontError(
+                Err(KrillaError::Font(
                     self.font.clone(),
                     "font is missing `glyf` or `CFF` table".to_string(),
                 ))
@@ -154,11 +154,11 @@ impl CIDFont {
 
             // If we have a CFF font, only embed the standalone CFF program.
             let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
-                KrillaError::FontError(self.font.clone(), "failed to read font subset".to_string())
+                KrillaError::Font(self.font.clone(), "failed to read font subset".to_string())
             })?;
 
             num_glyphs = subsetted_ref.maxp().map(|m| m.num_glyphs()).map_err(|_| {
-                KrillaError::FontError(self.font.clone(), "failed to read font subset".to_string())
+                KrillaError::Font(self.font.clone(), "failed to read font subset".to_string())
             })?;
 
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
@@ -388,5 +388,5 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u8>> {
     let font_data = font.font_data();
     subsetter::subset(font_data.as_ref(), font.index(), glyph_remapper)
-        .map_err(|e| KrillaError::FontError(font.clone(), format!("failed to subset font: {}", e)))
+        .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {}", e)))
 }

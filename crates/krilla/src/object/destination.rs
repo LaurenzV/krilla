@@ -128,7 +128,7 @@ impl XyzDestination {
         let page_info = sc
             .page_infos()
             .get(self.0.page_index)
-            .ok_or(KrillaError::UserError(format!(
+            .ok_or(KrillaError::User(format!(
                 "attempted to link to page {}, but document only has {} pages",
                 self.0.page_index + 1,
                 sc.page_infos().len()

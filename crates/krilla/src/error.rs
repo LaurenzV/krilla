@@ -5,6 +5,8 @@
 
 use crate::configure::ValidationError;
 use crate::font::Font;
+#[cfg(feature = "raster-images")]
+use crate::Image;
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;
@@ -13,16 +15,16 @@ pub type KrillaResult<T> = Result<T, KrillaError>;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum KrillaError {
     /// An error while attempting to embed a font.
-    FontError(Font, String),
+    Font(Font, String),
     /// A user-related error, indicating API misuse (for example attempting to add
     /// a link to a page that doesn't exist).
-    UserError(String),
+    User(String),
     /// A list of validation errors. Can only occur if you set the `validator` in
     /// the [`SerializeSettings`] to something else than the dummy validator.
     ///
     /// [`SerializeSettings`]: crate::SerializeSettings
-    ValidationError(Vec<ValidationError>),
+    Validation(Vec<ValidationError>),
     /// An image couldn't be processed properly.
     #[cfg(feature = "raster-images")]
-    ImageError(crate::image::Image),
+    Image(Image),
 }
