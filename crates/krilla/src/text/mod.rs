@@ -30,19 +30,16 @@ use crate::text::cid::CIDFont;
 use crate::text::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
 use crate::{Data, Rect, Transform};
 
-#[cfg(feature = "raster-images")]
-pub(crate) mod bitmap;
 pub(crate) mod cid;
-pub(crate) mod colr;
 pub(crate) mod font;
 pub(crate) mod group;
-pub(crate) mod outline;
 #[cfg(feature = "simple-text")]
 pub(crate) mod shape;
-pub(crate) mod svg;
 pub(crate) mod type3;
+pub(crate) mod glyph;
 
 pub use font::*;
+pub use glyph::*;
 #[cfg(feature = "simple-text")]
 pub use shape::TextDirection;
 
