@@ -22,7 +22,7 @@
 //! [`Page::surface`]: crate::page::Page::surface
 //! [`Surface::stream_builder`]: crate::surface::Surface::stream_builder
 //! [`Pattern`]: crate::graphics::paint::Pattern
-//! [`Mask`]: crate::mask::Mask
+//! [`Mask`]: crate::graphics::mask::Mask
 
 use std::borrow::Cow;
 use std::fmt::Write;

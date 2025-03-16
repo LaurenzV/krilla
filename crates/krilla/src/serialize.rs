@@ -100,7 +100,7 @@ pub struct SerializeSettings {
     /// you use. For example, when exporting with PDF-UA, this value will always
     /// be set to `true`.
     ///
-    /// [`tagging`]: crate::tagging
+    /// [`tagging`]: crate::interchange::tagging
     pub enable_tagging: bool,
     /// TODO
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
