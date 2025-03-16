@@ -49,6 +49,7 @@ fn annotation_with_quad_points(page: &mut Page) {
 }
 
 #[test]
+#[should_panic]
 fn annotation_to_invalid_destination() {
     let mut d = Document::new_with(settings_1());
     let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
@@ -61,7 +62,8 @@ fn annotation_to_invalid_destination() {
         .into(),
     );
     page.finish();
-    assert!(d.finish().is_err())
+
+    let _ = d.finish();
 }
 
 #[snapshot(document)]

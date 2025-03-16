@@ -11,7 +11,7 @@ use std::sync::Arc;
 use pdf_writer::{Chunk, Obj, Ref, Str};
 use tiny_skia_path::Transform;
 
-use crate::error::{KrillaError, KrillaResult};
+use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
 use crate::Point;
 
@@ -125,14 +125,13 @@ impl XyzDestination {
         let mut chunk = Chunk::new();
         let destination = chunk.destination(root_ref);
 
-        let page_info = sc
-            .page_infos()
-            .get(self.0.page_index)
-            .ok_or(KrillaError::User(format!(
+        let page_info = sc.page_infos().get(self.0.page_index).unwrap_or_else(|| {
+            panic!(
                 "attempted to link to page {}, but document only has {} pages",
                 self.0.page_index + 1,
                 sc.page_infos().len()
-            )))?;
+            )
+        });
         let page_ref = page_info.ref_;
         let page_size = page_info.surface_size.height();
 

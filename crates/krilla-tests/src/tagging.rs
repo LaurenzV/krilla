@@ -287,6 +287,7 @@ fn tagging_two_footnotes(document: &mut Document) {
 }
 
 #[test]
+#[should_panic]
 fn tagging_page_identifer_appears_twice() {
     let mut document = Document::new();
     let mut tag_tree = TagTree::new();
@@ -311,10 +312,11 @@ fn tagging_page_identifer_appears_twice() {
 
     document.set_tag_tree(tag_tree);
 
-    assert!(matches!(document.finish(), Err(KrillaError::User(_))))
+    let _ = document.finish();
 }
 
 #[test]
+#[should_panic]
 fn tagging_annotation_identifer_appears_twice() {
     let mut document = Document::new();
     let mut tag_tree = TagTree::new();
@@ -339,10 +341,11 @@ fn tagging_annotation_identifer_appears_twice() {
 
     document.set_tag_tree(tag_tree);
 
-    assert!(matches!(document.finish(), Err(KrillaError::User(_))))
+    let _ = document.finish();
 }
 
 #[test]
+#[should_panic]
 fn tagging_missing_identifier_in_tree() {
     let mut document = Document::new();
     let tag_tree = TagTree::new();
@@ -360,5 +363,5 @@ fn tagging_missing_identifier_in_tree() {
 
     document.set_tag_tree(tag_tree);
 
-    assert!(matches!(document.finish(), Err(KrillaError::User(_))))
+    let _ = document.finish();
 }

@@ -127,7 +127,7 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
-use crate::error::{KrillaError, KrillaResult};
+use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
 
 /// A type of artifact.
@@ -878,11 +878,9 @@ fn serialize_children(
                     let page_ref = sc
                             .page_infos()
                             .get(pi.page_index)
-                            .ok_or(KrillaError::User(format!(
-                                "tag tree contains identifier from page {}, but document only has {} pages",
+                            .unwrap_or_else(|| panic!("tag tree contains identifier from page {}, but document only has {} pages",
                                 pi.page_index + 1,
-                                sc.page_infos().len()
-                            )))?
+                                sc.page_infos().len()))
                             .ref_;
 
                     if struct_page_ref.is_none() {
@@ -890,9 +888,7 @@ fn serialize_children(
                     }
 
                     if parent_tree_map.contains_key(&pi.into()) {
-                        return Err(KrillaError::User(
-                            "an identifier appears twice in the tag tree".to_string(),
-                        ));
+                        panic!("the identifier {:?} appears twice in the tag tree", pi);
                     }
 
                     parent_tree_map.insert(pi.into(), root_ref);
@@ -907,30 +903,21 @@ fn serialize_children(
                     }
                 }
                 IdentifierType::AnnotationIdentifier(ai) => {
-                    let page_info =
-                        sc.page_infos()
-                            .get(ai.page_index)
-                            .ok_or(KrillaError::User(format!(
-                        "tag tree contains identifier from page {}, but document only has {} pages",
+                    let page_info = sc.page_infos().get(ai.page_index).unwrap_or_else(|| panic!("tag tree contains identifier from page {}, but document only has {} pages",
                         ai.page_index + 1,
-                        sc.page_infos().len()
-                    )))?;
+                        sc.page_infos().len()));
 
                     let page_ref = page_info.ref_;
                     let annotation_ref =
                             *page_info.annotations
                                 .get(ai.annot_index)
-                                .ok_or(KrillaError::User(format!(
-                                    "tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
+                                .unwrap_or_else(|| panic!("tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
                                     ai.annot_index + 1,
                                     ai.page_index + 1,
-                                    page_info.annotations.len()
-                                )))?;
+                                    page_info.annotations.len()));
 
                     if parent_tree_map.contains_key(&ai.into()) {
-                        return Err(KrillaError::User(
-                            "an identifier appears twice in the tag tree".to_string(),
-                        ));
+                        panic!("identifier {:?} appears twice in the tag tree", ai);
                     }
                     parent_tree_map.insert(ai.into(), annotation_ref);
 
