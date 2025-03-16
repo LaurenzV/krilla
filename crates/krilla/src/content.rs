@@ -28,7 +28,8 @@ use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::text::group::{GlyphGrouper, TextSpanner};
 use crate::text::type3::CoveredGlyph;
-use crate::text::{Font, FontIdentifier, Glyph, GlyphId, PaintMode, PdfFont, PDF_UNITS_PER_EM};
+use crate::text::{Font, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
+use crate::text::{Glyph, GlyphId};
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
 use crate::{resource, NormalizedF32, Point, Rect, Transform};
 

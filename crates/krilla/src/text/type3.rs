@@ -19,7 +19,8 @@ use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
 use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::text::outline::glyph_path;
-use crate::text::{self, Font, GlyphId};
+use crate::text::GlyphId;
+use crate::text::{self, Font};
 use crate::util::{NameExt, RectExt, TransformExt};
 use crate::{cmap_inner, Rect, Transform};
 
@@ -507,7 +508,8 @@ mod tests {
     use crate::graphics::paint::Fill;
     use crate::serialize::SerializeContext;
     use crate::text::type3::OwnedCoveredGlyph;
-    use crate::text::{Font, FontContainer, GlyphId, OwnedPaintMode};
+    use crate::text::GlyphId;
+    use crate::text::{Font, FontContainer, OwnedPaintMode};
     use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
 
     impl OwnedCoveredGlyph {

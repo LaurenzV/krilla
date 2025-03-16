@@ -19,9 +19,10 @@ use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::path::Path;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
-use crate::text::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
+use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
+use crate::text::{Font, FontInfo, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::Size;
 use crate::{NormalizedF32, Point, Transform};

@@ -10,33 +10,23 @@
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index and variation coordinates.
 
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
-use std::ops::Range;
-use std::sync::Arc;
 
-use skrifa::instance::Location;
-use skrifa::metrics::GlyphMetrics;
-use skrifa::prelude::{LocationRef, Size};
-use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, MetadataProvider};
-use tiny_skia_path::FiniteF32;
-use yoke::{Yoke, Yokeable};
+use skrifa::MetadataProvider;
+use yoke::Yokeable;
 
 use crate::graphics::paint::{Fill, Stroke};
-use crate::surface::Surface;
 use crate::text::cid::CIDFont;
 use crate::text::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
-use crate::{Data, Rect, Transform};
-
 pub(crate) mod cid;
 pub(crate) mod font;
+pub(crate) mod glyph;
 pub(crate) mod group;
 #[cfg(feature = "simple-text")]
 pub(crate) mod shape;
 pub(crate) mod type3;
-pub(crate) mod glyph;
 
 pub use font::*;
 pub use glyph::*;
@@ -44,165 +34,6 @@ pub use glyph::*;
 pub use shape::TextDirection;
 
 pub(crate) const PDF_UNITS_PER_EM: f32 = 1000.0;
-
-/// A glyph ID.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct GlyphId(u32);
-
-impl GlyphId {
-    /// Create a new glyph ID.
-    pub fn new(id: u32) -> Self {
-        Self(id)
-    }
-
-    /// Get the glyph ID as a u32.
-    pub fn to_u32(&self) -> u32 {
-        self.0
-    }
-
-    pub(crate) fn to_skrifa(self) -> skrifa::GlyphId {
-        skrifa::GlyphId::new(self.0)
-    }
-}
-
-/// Draw a color glyph to a surface.
-pub(crate) fn draw_color_glyph(
-    font: Font,
-    glyph: GlyphId,
-    paint_mode: PaintMode,
-    base_transform: Transform,
-    surface: &mut Surface,
-) -> Option<()> {
-    surface.push_transform(&base_transform);
-    surface.push_transform(&Transform::from_scale(1.0, -1.0));
-
-    let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
-        .or_else(|| svg::draw_glyph(font.clone(), glyph, surface, paint_mode))
-        .or_else(|| {
-            #[cfg(feature = "raster-images")]
-            let res = bitmap::draw_glyph(font.clone(), glyph, surface);
-
-            #[cfg(not(feature = "raster-images"))]
-            let res = None;
-
-            res
-        });
-
-    surface.pop();
-    surface.pop();
-
-    drawn
-}
-
-/// Draw a color glyph or outline glyph to a surface.
-pub(crate) fn draw_glyph(
-    font: Font,
-    glyph: GlyphId,
-    paint_mode: PaintMode,
-    base_transform: Transform,
-    surface: &mut Surface,
-) -> Option<()> {
-    draw_color_glyph(font.clone(), glyph, paint_mode, base_transform, surface)
-        .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
-}
-
-/// A glyph with certain properties.
-pub trait Glyph {
-    /// The glyph ID of the glyph.
-    fn glyph_id(&self) -> GlyphId;
-    /// The range of bytes in the original text covered by the cluster that the glyph
-    /// belongs to.
-    fn text_range(&self) -> Range<usize>;
-    /// The advance in the x direction of the glyph, at the given font size.
-    fn x_advance(&self, size: f32) -> f32;
-    /// The offset in the x direction of the glyph, at the given font size.
-    fn x_offset(&self, size: f32) -> f32;
-    /// The offset in the y direction of the glyph, at the given font size.
-    fn y_offset(&self, size: f32) -> f32;
-    /// The advance in the y direction of the glyph, at the given font size.
-    fn y_advance(&self, size: f32) -> f32;
-    /// A location identifying the glyph. If set, `krilla` will automatically call
-    /// `set_location` before processing the glyph.
-    fn location(&self) -> Option<crate::surface::Location>;
-}
-
-/// A glyph type that implements `Glyph`.
-///
-/// You can use it if you don't  have your own type of glyph that you want to use.
-#[derive(Debug, Clone)]
-pub struct KrillaGlyph {
-    /// The glyph ID of the glyph.
-    pub glyph_id: GlyphId,
-    /// The range in the original text that corresponds to the
-    /// cluster of the glyph.
-    pub text_range: Range<usize>,
-    /// The advance of the glyph.
-    pub x_advance: f32,
-    /// The x offset of the glyph.
-    pub x_offset: f32,
-    /// The y offset of the glyph.
-    pub y_offset: f32,
-    /// The y advance of the glyph.
-    pub y_advance: f32,
-    /// The location of the glyph.
-    pub location: Option<crate::surface::Location>,
-}
-
-impl Glyph for KrillaGlyph {
-    fn glyph_id(&self) -> GlyphId {
-        self.glyph_id
-    }
-
-    fn text_range(&self) -> Range<usize> {
-        self.text_range.clone()
-    }
-
-    fn x_advance(&self, size: f32) -> f32 {
-        self.x_advance * size
-    }
-
-    fn x_offset(&self, size: f32) -> f32 {
-        self.x_offset * size
-    }
-
-    fn y_offset(&self, size: f32) -> f32 {
-        self.y_offset * size
-    }
-
-    fn y_advance(&self, size: f32) -> f32 {
-        self.y_advance * size
-    }
-
-    fn location(&self) -> Option<crate::surface::Location> {
-        self.location
-    }
-}
-
-impl KrillaGlyph {
-    /// Create a new Krilla glyph.
-    ///
-    /// Important: `x_advance`, `x_offset`, `y_offset` and `y_advance`
-    /// need to be normalized, i.e. divided by the units per em!
-    pub fn new(
-        glyph_id: GlyphId,
-        x_advance: f32,
-        x_offset: f32,
-        y_offset: f32,
-        y_advance: f32,
-        range: Range<usize>,
-        location: Option<crate::surface::Location>,
-    ) -> Self {
-        Self {
-            glyph_id,
-            x_advance,
-            x_offset,
-            y_offset,
-            y_advance,
-            text_range: range,
-            location,
-        }
-    }
-}
 
 impl PaintMode<'_> {
     pub(crate) fn to_owned(self) -> OwnedPaintMode {
@@ -263,26 +94,6 @@ impl OwnedPaintMode {
         match self {
             OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
             OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
-        }
-    }
-}
-
-/// A glyph that belongs either to a CID font or a Type 3 font.
-#[derive(Clone, Copy)]
-pub(crate) enum PDFGlyph {
-    Type3(u8),
-    Cid(u16),
-}
-
-impl PDFGlyph {
-    /// Encode the glyph into a content stream.
-    pub(crate) fn encode_into(&self, slice: &mut Vec<u8>) {
-        match self {
-            PDFGlyph::Type3(cg) => slice.push(*cg),
-            PDFGlyph::Cid(cid) => {
-                slice.push((cid >> 8) as u8);
-                slice.push((cid & 0xff) as u8);
-            }
         }
     }
 }

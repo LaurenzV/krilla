@@ -4,7 +4,8 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use crate::text::type3::CoveredGlyph;
-use crate::text::{FontContainer, FontIdentifier, Glyph, PaintMode};
+use crate::text::Glyph;
+use crate::text::{FontContainer, FontIdentifier, PaintMode};
 
 pub(crate) enum TextSpan<'a, T>
 where

@@ -15,7 +15,8 @@ use crate::graphics::paint::{
 };
 use crate::surface::Surface;
 use crate::text::outline::OutlineBuilder;
-use crate::text::{Font, GlyphId, PaintMode};
+use crate::text::GlyphId;
+use crate::text::{Font, PaintMode};
 use crate::{NormalizedF32, Transform};
 
 /// Draw a COLR-based glyph on a surface.

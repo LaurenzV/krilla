@@ -29,7 +29,8 @@ use xmp_writer::XmpWriter;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
-use crate::text::{Font, GlyphId};
+use crate::text::Font;
+use crate::text::GlyphId;
 
 /// An error that occurred during validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

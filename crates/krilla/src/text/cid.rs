@@ -17,7 +17,8 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
-use crate::text::{Font, GlyphId};
+use crate::text::Font;
+use crate::text::GlyphId;
 use crate::util::{hash128, RectExt, SliceExt};
 
 const SUBSET_TAG_LEN: usize = 6;

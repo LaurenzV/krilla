@@ -30,7 +30,8 @@ use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
 use crate::text::cid::CIDFont;
 use crate::text::type3::Type3FontMapper;
-use crate::text::{Font, FontContainer, FontIdentifier, FontInfo, GlyphId};
+use crate::text::GlyphId;
+use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::SipHashable;
 use crate::{resource, Cacheable, Size};
 
