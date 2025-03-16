@@ -35,6 +35,7 @@ use crate::{Data, Rect, Transform};
 pub(crate) mod bitmap;
 pub(crate) mod cid;
 pub(crate) mod colr;
+pub(crate) mod group;
 pub(crate) mod outline;
 #[cfg(feature = "simple-text")]
 pub(crate) mod shape;
