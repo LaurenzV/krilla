@@ -1,7 +1,9 @@
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+
 use pdf_writer::{Chunk, Ref};
+
 use crate::chunk_container::ChunkContainerFn;
 use crate::serialize::SerializeContext;
 use crate::util::SipHashable;

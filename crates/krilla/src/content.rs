@@ -13,6 +13,7 @@ use crate::configure::ValidationError;
 use crate::geom::Size;
 use crate::graphics::color::{Color, ColorSpace};
 use crate::graphics::graphics_state::{ExtGState, GraphicsStates};
+#[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
 use crate::graphics::paint::{Fill, FillRule, InnerPaint, LineCap, LineJoin, Paint, Stroke};

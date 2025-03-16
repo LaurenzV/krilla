@@ -117,6 +117,7 @@ mod util;
 pub(crate) mod content;
 
 pub mod configure;
+pub(crate) mod data;
 pub mod document;
 pub mod error;
 pub mod geom;
@@ -128,10 +129,7 @@ pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod text;
-pub(crate) mod data;
 
-
+pub use data::*;
 pub use page::PageSettings;
 pub use prelude::*;
-pub use data::*;
-
