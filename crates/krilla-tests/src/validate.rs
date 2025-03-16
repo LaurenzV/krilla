@@ -10,8 +10,7 @@ use krilla::interchange::tagging::{
     ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagTree,
 };
 use krilla::page::Page;
-use krilla::surface::TextDirection;
-use krilla::text::{Font, GlyphId, KrillaGlyph};
+use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
 use krilla::{Point, Rect, Size};
 use krilla_macros::snapshot;
 

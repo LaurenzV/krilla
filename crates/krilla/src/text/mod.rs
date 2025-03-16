@@ -36,8 +36,13 @@ pub(crate) mod bitmap;
 pub(crate) mod cid;
 pub(crate) mod colr;
 pub(crate) mod outline;
+#[cfg(feature = "simple-text")]
+pub(crate) mod shape;
 pub(crate) mod svg;
 pub(crate) mod type3;
+
+#[cfg(feature = "simple-text")]
+pub use shape::TextDirection;
 
 pub(crate) const PDF_UNITS_PER_EM: f32 = 1000.0;
 

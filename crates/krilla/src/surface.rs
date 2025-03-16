@@ -8,9 +8,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-#[cfg(feature = "simple-text")]
-use rustybuzz::{Direction, UnicodeBuffer};
-
 use crate::content::ContentBuilder;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -21,11 +18,9 @@ use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::path::Path;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
-#[cfg(feature = "simple-text")]
-use crate::text::GlyphId;
-#[cfg(feature = "simple-text")]
-use crate::text::KrillaGlyph;
 use crate::text::{draw_glyph, Font, FontInfo, Glyph, PaintMode};
+#[cfg(feature = "simple-text")]
+use crate::text::{shape::naive_shape, TextDirection};
 #[cfg(feature = "raster-images")]
 use crate::Size;
 use crate::{NormalizedF32, Point, Transform};
@@ -499,21 +494,6 @@ impl Builders {
     }
 }
 
-#[cfg(feature = "simple-text")]
-/// The direction of a text.
-pub enum TextDirection {
-    /// Determine the direction automatically.
-    Auto,
-    /// Left to right.
-    LeftToRight,
-    /// Right to left.
-    RightToLeft,
-    /// Top to bottom.
-    TopToBottom,
-    /// Bottom to top.
-    BottomToTop,
-}
-
 /// How to blend source and backdrop.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[allow(missing_docs)]
@@ -557,84 +537,4 @@ impl BlendMode {
             BlendMode::Luminosity => pdf_writer::types::BlendMode::Luminosity,
         }
     }
-}
-
-/// Shape some text with a single font.
-#[cfg(feature = "simple-text")]
-fn naive_shape(text: &str, font: Font, direction: TextDirection) -> Vec<KrillaGlyph> {
-    let data = font.font_data();
-    let rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
-
-    let mut buffer = UnicodeBuffer::new();
-    buffer.push_str(text);
-    buffer.guess_segment_properties();
-
-    match direction {
-        TextDirection::LeftToRight => buffer.set_direction(Direction::LeftToRight),
-        TextDirection::RightToLeft => buffer.set_direction(Direction::RightToLeft),
-        TextDirection::TopToBottom => buffer.set_direction(Direction::TopToBottom),
-        TextDirection::BottomToTop => buffer.set_direction(Direction::BottomToTop),
-        TextDirection::Auto => {}
-    }
-
-    let dir = buffer.direction();
-
-    let output = rustybuzz::shape(&rb_font, &[], buffer);
-
-    let positions = output.glyph_positions();
-    let infos = output.glyph_infos();
-
-    let mut glyphs = vec![];
-
-    for i in 0..output.len() {
-        let pos = positions[i];
-        let start_info = infos[i];
-
-        let start = start_info.cluster as usize;
-
-        let end = if dir == Direction::LeftToRight || dir == Direction::TopToBottom {
-            let mut e = i.checked_add(1);
-            loop {
-                if let Some(index) = e {
-                    if let Some(end_info) = infos.get(index) {
-                        if end_info.cluster == start_info.cluster {
-                            e = index.checked_add(1);
-                            continue;
-                        }
-                    }
-                }
-
-                break;
-            }
-
-            e
-        } else {
-            let mut e = i.checked_sub(1);
-            while let Some(index) = e {
-                if let Some(end_info) = infos.get(index) {
-                    if end_info.cluster == start_info.cluster {
-                        e = index.checked_sub(1);
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            e
-        }
-        .and_then(|last| infos.get(last))
-        .map_or(text.len(), |info| info.cluster as usize);
-
-        glyphs.push(KrillaGlyph::new(
-            GlyphId::new(start_info.glyph_id),
-            pos.x_advance as f32 / font.units_per_em(),
-            pos.x_offset as f32 / font.units_per_em(),
-            pos.y_offset as f32 / font.units_per_em(),
-            pos.y_advance as f32 / font.units_per_em(),
-            start..end,
-            None,
-        ));
-    }
-
-    glyphs
 }

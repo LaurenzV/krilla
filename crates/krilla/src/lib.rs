@@ -25,7 +25,7 @@ For more examples, feel free to take a look at the [examples] directory of the G
 # use krilla::text::Font;
 # use krilla::geom::Point;
 # use krilla::graphics::paint::Paint;
-# use krilla::surface::TextDirection;
+# use krilla::text::TextDirection;
 # use krilla::graphics::paint::Fill;
 # use krilla::{Document, PageSettings};
 # // use krilla::SvgSettings;

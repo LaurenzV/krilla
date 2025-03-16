@@ -1,6 +1,5 @@
 use krilla::graphics::paint::{LinearGradient, Paint, SpreadMethod};
 use krilla::page::Page;
-use krilla::surface::TextDirection;
 use krilla::surface::{BlendMode, Surface};
 use krilla::text::Font;
 use krilla::{Data, Point, Size, Transform};

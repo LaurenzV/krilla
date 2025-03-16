@@ -1,6 +1,7 @@
 use krilla::graphics::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::page::Page;
-use krilla::surface::{Surface, TextDirection};
+use krilla::surface::Surface;
+use krilla::text::TextDirection;
 use krilla::{Data, Font, Point};
 use krilla_macros::{snapshot, visreg};
 
