@@ -22,7 +22,7 @@ use pdf_writer::writers::OutlineItem;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 use crate::error::KrillaResult;
-use crate::object::destination::XyzDestination;
+use crate::interactive::destination::XyzDestination;
 use crate::serialize::SerializeContext;
 
 /// An outline.

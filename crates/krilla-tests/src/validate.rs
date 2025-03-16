@@ -1,9 +1,9 @@
-use krilla::action::LinkAction;
-use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::configure::ValidationError;
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::font::{Font, GlyphId, KrillaGlyph};
+use krilla::interactive::action::LinkAction;
+use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::metadata::Metadata;
 use krilla::outline::Outline;
 use krilla::page::Page;

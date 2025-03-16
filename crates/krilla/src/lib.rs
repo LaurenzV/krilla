@@ -123,6 +123,7 @@ pub mod document;
 pub mod error;
 pub mod font;
 pub mod geom;
+pub mod interactive;
 pub mod metadata;
 pub mod paint;
 pub mod path;

@@ -1,5 +1,5 @@
-use krilla::destination::XyzDestination;
 use krilla::document::{Document, PageSettings};
+use krilla::interactive::destination::XyzDestination;
 use krilla::outline::{Outline, OutlineNode};
 use krilla::Point;
 use krilla_macros::snapshot;

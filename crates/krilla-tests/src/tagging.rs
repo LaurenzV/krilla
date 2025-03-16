@@ -1,6 +1,6 @@
-use krilla::action::{Action, LinkAction};
-use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
+use krilla::interactive::action::{Action, LinkAction};
+use krilla::interactive::annotation::{LinkAnnotation, Target};
 use krilla::path::Fill;
 use krilla::surface::{Surface, TextDirection};
 use krilla::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};

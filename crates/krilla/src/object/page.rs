@@ -11,7 +11,7 @@ use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
 use crate::document::PageSettings;
 use crate::error::KrillaResult;
-use crate::object::annotation::Annotation;
+use crate::interactive::annotation::Annotation;
 use crate::resource::ResourceDictionary;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};

@@ -9,8 +9,8 @@
 use pdf_writer::types::ActionType;
 use pdf_writer::{Name, Str};
 
-use crate::destination::Destination;
 use crate::error::KrillaResult;
+use crate::interactive::destination::Destination;
 use crate::serialize::SerializeContext;
 
 /// A type of action.

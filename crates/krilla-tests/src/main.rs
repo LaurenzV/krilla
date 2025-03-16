@@ -12,13 +12,13 @@ use std::sync::{Arc, LazyLock, OnceLock};
 
 use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
 use difference::{Changeset, Difference};
-use krilla::action::LinkAction;
-use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb, ICCProfile};
 use krilla::configure::{Configuration, PdfVersion, Validator};
 use krilla::document::{Document, PageSettings};
 use krilla::font::{Font, GlyphId, KrillaGlyph};
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
+use krilla::interactive::action::LinkAction;
+use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::{Stop, Stops};
 use krilla::path::{Fill, Path, PathBuilder, Stroke};

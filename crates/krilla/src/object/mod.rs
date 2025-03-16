@@ -7,10 +7,7 @@ use crate::resource::Resource;
 use crate::serialize::SerializeContext;
 use crate::util::SipHashable;
 
-pub mod action;
-pub mod annotation;
 pub mod color;
-pub mod destination;
 pub mod embed;
 pub(crate) mod ext_g_state;
 #[cfg(feature = "raster-images")]
