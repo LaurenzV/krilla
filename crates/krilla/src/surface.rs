@@ -5,9 +5,6 @@
 //! operations such as applying linear transformations,
 //! showing text or images and drawing paths.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use crate::content::ContentBuilder;
 use crate::graphics::blend::BlendMode;
 #[cfg(feature = "raster-images")]
@@ -22,7 +19,7 @@ use crate::stream::{Stream, StreamBuilder};
 use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
-use crate::text::{Font, FontInfo, PaintMode};
+use crate::text::{Font, PaintMode};
 #[cfg(feature = "raster-images")]
 use crate::Size;
 use crate::{NormalizedF32, Point, Transform};
@@ -417,14 +414,6 @@ impl<'a> Surface<'a> {
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
         self.bd.get_mut().draw_shading(shading, self.sc);
-    }
-
-    /// THIS IS AN INTERNAL FUNCTION, DO NOT USE DIRECTLY!
-    ///
-    /// Returns the font cache of the surface.
-    #[doc(hidden)]
-    pub fn font_cache(&self) -> &HashMap<Arc<FontInfo>, Font> {
-        &self.sc.font_cache
     }
 
     /// A convenience method for `std::mem::drop`.

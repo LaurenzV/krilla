@@ -8,8 +8,8 @@ use fontdb::Database;
 use krilla::graphics::color::rgb;
 use krilla::graphics::paint::FillRule;
 use krilla::surface::Surface;
+use krilla::text::Font;
 use krilla::text::GlyphId;
-use krilla::text::{Font, FontInfo};
 use krilla::{Rect, Size, Transform};
 use usvg::{fontdb, roxmltree, Group, ImageKind, Node, Tree};
 
@@ -93,7 +93,7 @@ impl ProcessContext {
 /// referenced that doesn't exist in the database).
 pub(crate) fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
-    let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root(), surface);
+    let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root());
     group::render(tree.root(), surface, &mut fc);
 }
 
@@ -104,8 +104,7 @@ pub(crate) fn render_node(
     svg_settings: SvgSettings,
     surface: &mut Surface,
 ) {
-    let mut fc =
-        get_context_from_node(Arc::make_mut(&mut tree_fontdb), svg_settings, node, surface);
+    let mut fc = get_context_from_node(Arc::make_mut(&mut tree_fontdb), svg_settings, node);
     group::render_node(node, surface, &mut fc);
 }
 
@@ -161,12 +160,11 @@ fn get_context_from_group(
     tree_fontdb: &mut Database,
     svg_settings: SvgSettings,
     group: &Group,
-    surface: &mut Surface,
 ) -> ProcessContext {
     let mut ids = HashSet::new();
     get_ids_from_group_impl(group, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
-    let db = convert_fontdb(surface, tree_fontdb, Some(ids));
+    let db = convert_fontdb(tree_fontdb, Some(ids));
 
     ProcessContext::new(db, svg_settings)
 }
@@ -176,12 +174,11 @@ fn get_context_from_node(
     tree_fontdb: &mut Database,
     svg_settings: SvgSettings,
     node: &Node,
-    surface: &mut Surface,
 ) -> ProcessContext {
     let mut ids = HashSet::new();
     get_ids_impl(node, &mut ids);
     let ids = ids.into_iter().collect::<Vec<_>>();
-    let db = convert_fontdb(surface, tree_fontdb, Some(ids));
+    let db = convert_fontdb(tree_fontdb, Some(ids));
 
     ProcessContext::new(db, svg_settings)
 }
@@ -216,11 +213,7 @@ fn get_ids_impl(node: &Node, ids: &mut HashSet<fontdb::ID>) {
     node.subroots(|subroot| get_ids_from_group_impl(subroot, ids));
 }
 
-fn convert_fontdb(
-    surface: &Surface,
-    db: &mut Database,
-    ids: Option<Vec<fontdb::ID>>,
-) -> HashMap<fontdb::ID, Font> {
+fn convert_fontdb(db: &mut Database, ids: Option<Vec<fontdb::ID>>) -> HashMap<fontdb::ID, Font> {
     let mut map = HashMap::new();
 
     let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
@@ -232,13 +225,7 @@ fn convert_fontdb(
         // cheaper, and then check whether we already have a corresponding font object in the cache.
         // If not, we still need to construct it.
         if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-            if let Some(font_info) = FontInfo::new(font_data.as_ref().as_ref(), index, true) {
-                let font_info = Arc::new(font_info);
-                let font = surface
-                    .font_cache()
-                    .get(&font_info.clone())
-                    .cloned()
-                    .unwrap_or(Font::new_with_info(font_data.into(), font_info).unwrap());
+            if let Some(font) = Font::new(font_data.into(), index, true) {
                 map.insert(id, font);
             }
         }
