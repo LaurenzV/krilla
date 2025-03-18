@@ -96,7 +96,6 @@ impl PartialEq for XyzDestRepr {
     }
 }
 
-// We don't care about Nan's
 impl Eq for XyzDestRepr {}
 
 /// A destination pointing to a specific location at a specific page.

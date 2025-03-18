@@ -1,5 +1,3 @@
-//! Group conversion
-
 use krilla::num::NormalizedF32;
 use krilla::surface::Surface;
 use usvg::Node;

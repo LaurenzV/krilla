@@ -1,5 +1,3 @@
-//! Image conversion
-
 use krilla::geom::{Rect, Size};
 use krilla::image::Image;
 use krilla::paint::FillRule;

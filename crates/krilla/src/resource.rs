@@ -1,5 +1,3 @@
-//! Dealing with PDF resources.
-
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -10,8 +8,8 @@ use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
 
 use crate::configure::PdfVersion;
+use crate::serialize::Cacheable;
 use crate::util::NameExt;
-use crate::Cacheable;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;

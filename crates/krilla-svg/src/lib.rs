@@ -1,4 +1,13 @@
-//! Drawing SVG files to a surface.
+/*!
+An extension to krilla that allows rendering SVG files to a PDF file.
+
+It is based on [usvg](https://github.com/linebender/resvg) and passes nearly the whole
+resvg test suite. See the [examples]( https://github.com/LaurenzV/krilla/tree/main/crates/krilla-svg/examples)
+directory for an example on how to use this crate in combination with krilla to convert SVG files
+to PDF.
+*/
+
+#![deny(missing_docs)]
 
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
@@ -44,8 +53,10 @@ impl Default for SvgSettings {
     }
 }
 
+/// An extension trait for the `Surface` struct that allows you to draw SVGs onto a surface.
 pub trait SurfaceExt {
-    fn draw_svg(&mut self, tree: &usvg::Tree, size: Size, svg_settings: SvgSettings) -> Option<()>;
+    /// Draw a `usvg` tree onto a surface with the given size and settings.
+    fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()>;
 }
 
 impl SurfaceExt for Surface<'_> {
@@ -69,16 +80,12 @@ impl SurfaceExt for Surface<'_> {
     }
 }
 
-/// A struct that stores some information that is needed globally when processing an SVG.
 struct ProcessContext {
-    /// A map from font IDs to `Font` objects.
     fonts: HashMap<fontdb::ID, Font>,
-    /// A number of settings that can be used to configure the behavior for converting the SVG.
     svg_settings: SvgSettings,
 }
 
 impl ProcessContext {
-    /// Create a new `ProcessContext`.
     fn new(fonts: HashMap<fontdb::ID, Font>, svg_settings: SvgSettings) -> Self {
         Self {
             fonts,
@@ -87,17 +94,12 @@ impl ProcessContext {
     }
 }
 
-/// Render a usvg `Tree` into a surface.
-///
-/// Returns `None` if the conversion was not successful (for example if a fontdb ID is
-/// referenced that doesn't exist in the database).
 pub(crate) fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
     let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root());
     group::render(tree.root(), surface, &mut fc);
 }
 
-/// Render a usvg `Node` into a surface.
 pub(crate) fn render_node(
     node: &Node,
     mut tree_fontdb: Arc<Database>,
@@ -108,7 +110,8 @@ pub(crate) fn render_node(
     group::render_node(node, surface, &mut fc);
 }
 
-/// Render an SVG glyph from an OpenType font into a surface.
+/// Render an SVG glyph from an OpenType font into a surface. You can plug this method into the
+/// `render_svg_glyph_fn` field of `SerializeSettings` in krilla..
 pub fn render_svg_glyph(
     data: &[u8],
     context_color: rgb::Color,
@@ -155,7 +158,6 @@ pub fn render_svg_glyph(
     Some(())
 }
 
-/// Get the `PorcessContext` from a `Group`.
 fn get_context_from_group(
     tree_fontdb: &mut Database,
     svg_settings: SvgSettings,
@@ -169,7 +171,6 @@ fn get_context_from_group(
     ProcessContext::new(db, svg_settings)
 }
 
-/// Get the `PorcessContext` from a `Node`.
 fn get_context_from_node(
     tree_fontdb: &mut Database,
     svg_settings: SvgSettings,

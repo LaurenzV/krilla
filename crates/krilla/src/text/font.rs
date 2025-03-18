@@ -19,13 +19,7 @@ use crate::Data;
 /// It holds a reference to the underlying data as well as some basic information
 /// about the font.
 ///
-/// Cloning and hashing this type is cheap. Creating it is a little expensive, so if
-/// possible, the font should be cached.
-///
-/// While an object of this type is associated with an OTF font, it is only associated
-/// with a specific instance, i.e. with specific variation coordinates and with a specific
-/// index for TrueType collections. This means that if you want to use the same font with
-/// different variation axes, you need to create separate instances of [`Font`].
+/// Cloning and hashing this type is cheap.
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Font(Arc<Prehashed<Repr>>);
 
@@ -128,7 +122,6 @@ impl Font {
         (&self.0.font_info.location).into()
     }
 
-    /// Return the underlying `FontRef`.
     pub(crate) fn font_ref(&self) -> &FontRef {
         &self.0.font_ref_yoke.get().font_ref
     }

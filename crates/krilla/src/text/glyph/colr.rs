@@ -1,5 +1,3 @@
-//! Drawing COLR-based glyphs to a surface.
-
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
@@ -71,11 +69,11 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
 
                 let num_clips = clips.len();
                 for path in clips {
-                    surface.push_clip_path(&crate::path::Path(path), &FillRule::NonZero);
+                    surface.push_clip_path(&crate::geom::Path(path), &FillRule::NonZero);
                 }
 
                 surface.set_fill(*fill);
-                surface.fill_path(&crate::path::Path(filled[0].clone()));
+                surface.fill_path(&crate::geom::Path(filled[0].clone()));
 
                 for _ in 0..num_clips {
                     surface.pop();

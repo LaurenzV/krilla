@@ -1,5 +1,3 @@
-//! Drawing bitmap-based glyphs to a surface.
-
 use skrifa::MetadataProvider;
 
 use crate::geom::{Size, Transform};

@@ -1,5 +1,3 @@
-//! Selecting a PDF version.
-
 use once_cell::sync::Lazy;
 use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;

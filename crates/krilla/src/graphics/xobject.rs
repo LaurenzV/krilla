@@ -1,5 +1,3 @@
-//! XObjects.
-
 use std::ops::DerefMut;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
@@ -8,11 +6,11 @@ use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
 use crate::graphics::color::{rgb, DEVICE_RGB};
+use crate::resource;
 use crate::resource::{Resource, Resourceable};
-use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
+use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{NameExt, RectExt};
-use crate::{resource, Cacheable};
+use crate::util::NameExt;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {

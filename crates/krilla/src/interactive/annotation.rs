@@ -16,7 +16,6 @@ use crate::interactive::action::Action;
 use crate::interactive::destination::Destination;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
-use crate::util::RectExt;
 
 /// An annotation.
 pub struct Annotation {

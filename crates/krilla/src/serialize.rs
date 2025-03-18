@@ -1,5 +1,3 @@
-//! Serializing PDF documents.
-
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::{Deref, DerefMut};
@@ -11,7 +9,7 @@ use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 
-use crate::chunk_container::ChunkContainer;
+use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Size;
@@ -27,6 +25,7 @@ use crate::interchange::tagging::{
     AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
 };
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
+use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
 use crate::text::cid::CIDFont;
@@ -34,13 +33,12 @@ use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::SipHashable;
-use crate::{resource, Cacheable};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
 pub struct SerializeSettings {
     /// Whether content streams should be compressed. Leads to significantly smaller file sizes,
-    /// but also longer running times. It is highly recommended that you set this to true.
+    /// but also longer running times. It is highly recommended that you set this to `true`.
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
@@ -59,7 +57,7 @@ pub struct SerializeSettings {
     ///
     /// Binary streams will always be hex encoded and thus are ascii compatible, though.
     pub ascii_compatible: bool,
-    /// Whether the PDF should contain XMP metadata.
+    /// Whether the PDF should include XMP metadata.
     ///
     /// Note that this value might be overridden depending on which validator
     /// you use. For example, when exporting to PDF/A, this value will be set to
@@ -103,7 +101,9 @@ pub struct SerializeSettings {
     ///
     /// [`tagging`]: crate::interchange::tagging
     pub enable_tagging: bool,
-    /// TODO
+    /// A function that should be used to render SVG glyphs. If you don't need this, yu can
+    /// just use the default function which doesn't render them at all. If you do want this, it
+    /// is recommended that you use the function provided by the `krilla-svg` crate.
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
 }
 
@@ -863,4 +863,9 @@ impl GlobalObjects {
         assert!(self.tag_tree.is_taken());
         assert!(self.embedded_files.is_taken());
     }
+}
+
+pub(crate) trait Cacheable: SipHashable {
+    fn chunk_container(&self) -> ChunkContainerFn;
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
 }

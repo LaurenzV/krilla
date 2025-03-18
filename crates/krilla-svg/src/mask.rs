@@ -1,5 +1,3 @@
-//! Mask conversion
-
 use krilla::geom::Rect;
 use krilla::mask::Mask;
 use krilla::paint::FillRule;

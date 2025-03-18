@@ -3,7 +3,7 @@
 //! # Color spaces
 //!
 //! krilla currently supports three color spaces:
-//! - Rgb (including linear RGB)
+//! - Rgb
 //! - Luma
 //! - CMYK
 //!
@@ -33,10 +33,12 @@
 //!
 //! In 90% of the cases, it is totally fine to just use a device-dependent colorspace, and it's
 //! what krilla does by default. However, if you do care about that, then you can set the
-//! `no_device_cs` property to true, in which case krilla will embed an ICC profile for the
-//! sgrey and srgb color space (for luma and rgb colors, respectively). If a CMYK profile
+//! `no_device_cs` property of [`SerializeSettings`] to true, in which case krilla will embed an ICC profile for the
+//! sgrey and srgb color spaces (for luma and rgb colors, respectively). If a CMYK profile
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
+//!
+//! [`SerializeSettings`]: crate::SerializeSettings
 
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -52,7 +54,7 @@ pub(crate) const DEVICE_GRAY: &str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
 pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
-/// A wrapper enum for storing colors from different color spaces.
+/// A wrapper for storing colors from different color spaces.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
     /// An RGB-based color.

@@ -1,8 +1,6 @@
-//! Clip path conversion
-
+use krilla::geom::{Path, PathBuilder};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::FillRule;
-use krilla::path::{Path, PathBuilder};
 use krilla::surface::Surface;
 use usvg::tiny_skia_path::{PathSegment, Transform};
 

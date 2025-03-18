@@ -15,30 +15,28 @@ a document using krilla.
 The following example shows some of the features of krilla in action.
 
 The example creates a PDF file with two pages. On the first page,
-we add two small pieces of text, and on the second page we embed a full-page SVG.
-Consult the documentation to see all features that are available in krilla.
+we add two small pieces of text, and on the second page we draw a triangle
+with a gradient fill.
 
 For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
-# use krilla::color::rgb;
-# use krilla::text::Font;
-# use krilla::geom::Point;
-# use krilla::paint::Paint;
-# use krilla::text::TextDirection;
-# use krilla::paint::Fill;
-# use krilla::Document;
-# use krilla::page::PageSettings;
-# // use krilla::SvgSettings;
-# use std::path::PathBuf;
-# use std::sync::Arc;
-# use krilla::num::NormalizedF32;
-# // TODO: Fix example
-# fn main() {
+use std::path;
+use krilla::color::rgb;
+use krilla::text::Font;
+use krilla::geom::{Point, PathBuilder};
+use krilla::paint::{SpreadMethod, LinearGradient, Stop, FillRule};
+use krilla::text::TextDirection;
+use krilla::paint::Fill;
+use krilla::Document;
+use krilla::page::PageSettings;
+use std::path::PathBuf;
+use krilla::num::NormalizedF32;
+
 // Create a new document.
 let mut document = Document::new();
 // Load a font.
-let mut font = {
+let font = {
     let path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
     let data = std::fs::read(&path).unwrap();
@@ -78,32 +76,67 @@ surface.fill_text(
 surface.finish();
 page.finish();
 
-// // Load an SVG.
-// let svg_tree = {
-//     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-//         .join("../../assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
-//     let data = std::fs::read(&path).unwrap();
-//     // usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
-// };
+// Start a new page.
+let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+// Create the triangle.
+let triangle = {
+    let mut pb = PathBuilder::new();
+    pb.move_to(100.0, 20.0);
+    pb.line_to(160.0, 160.0);
+    pb.line_to(40.0, 160.0);
+    pb.close();
 
-// Start a new page, with the same dimensions as the SVG.
-// let svg_size = svg_tree.size();
-// let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
-// let mut surface = page.surface();
-// Draw the SVG.
-//
-// surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
+    pb.finish().unwrap()
+};
+
+// Create the linear gradient.
+let lg = LinearGradient {
+    x1: 60.0,
+    y1: 0.0,
+    x2: 140.0,
+    y2: 0.0,
+    transform: Default::default(),
+    spread_method: SpreadMethod::Repeat,
+    stops: vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(255, 0, 0).into(),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(255, 255, 0).into(),
+            opacity: NormalizedF32::ONE,
+        },
+    ],
+    anti_alias: false,
+};
+let mut surface = page.surface();
+
+// Set the fill.
+surface.set_fill(Fill {
+    paint: lg.into(),
+    rule: FillRule::EvenOdd,
+    opacity: NormalizedF32::ONE
+});
+
+// Fill the path.
+surface.fill_path(&triangle);
 
 // Finish up and write the resulting PDF.
-// surface.finish();
-// page.finish();
+surface.finish();
+page.finish();
+
 let pdf = document.finish().unwrap();
-std::fs::write("../../target/example.pdf", &pdf).unwrap();
-# }
+let path = path::absolute("basic.pdf").unwrap();
+eprintln!("Saved PDF to '{}'", path.display());
+
+// Write the PDF to a file.
+std::fs::write(path, &pdf).unwrap();
 ```
 [krilla]: https://github.com/LaurenzV/krilla
 [pdf-writer]: https://github.com/typst/pdf-writer
-[examples]: https://github.com/LaurenzV/krilla/tree/main/examples
+[examples]: https://github.com/LaurenzV/krilla/tree/main/crates/krilla/examples
 */
 
 #![deny(missing_docs)]
@@ -126,7 +159,6 @@ pub mod error;
 pub mod geom;
 pub mod num;
 pub mod page;
-pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod text;

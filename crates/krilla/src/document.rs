@@ -12,7 +12,7 @@
 //! state is passed back to the original document, which you can then use to add even
 //! more pages.
 //!
-//! [`Page`]: crate::page::Page
+//! [`Page`]: Page
 
 use crate::error::KrillaResult;
 use crate::interchange::embed::EmbeddedFile;
@@ -34,14 +34,14 @@ impl Default for Document {
 }
 
 impl Document {
-    /// Create a new document with default settings.
+    /// Create a new document with default serialize settings.
     pub fn new() -> Self {
         Self {
             serializer_context: SerializeContext::new(SerializeSettings::default()),
         }
     }
 
-    /// Create a new document with specific serialization settings.
+    /// Create a new document with custom serialize settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
         Self {
             serializer_context: SerializeContext::new(serialize_settings),
@@ -87,7 +87,7 @@ impl Document {
         self.serializer_context.embed_file(file)
     }
 
-    /// Attempt to write the document to a PDF.
+    /// Attempt to export the document to a PDF file.
     pub fn finish(mut self) -> KrillaResult<Vec<u8>> {
         // Write empty page if none has been created yet.
         if self.serializer_context.page_infos().is_empty() {

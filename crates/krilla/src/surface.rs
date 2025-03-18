@@ -2,10 +2,10 @@
 //!
 //! This module contains most core part of krilla: The [`Surface`] struct. A surface
 //! represents a drawing area on which you can define the contents of your page. This includes
-//! operations such as applying linear transformations,
-//! showing text or images and drawing paths.
+//! operations such as applying linear transformations, showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
+use crate::geom::Path;
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::geom::{Point, Transform};
@@ -17,7 +17,6 @@ use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
-use crate::path::Path;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::text::{draw_glyph, Glyph};
@@ -443,9 +442,11 @@ impl Drop for Surface<'_> {
             Some(pi) => pi.mcid,
             None => 0,
         };
+
         assert!(self.bd.sub_builders.is_empty());
         assert!(self.push_instructions.is_empty());
         assert!(!root_builder.active_marked_content);
+
         (self.finish_fn)(root_builder.finish(self.sc), num_mcids)
     }
 }

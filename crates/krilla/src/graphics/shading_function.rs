@@ -1,5 +1,3 @@
-//! Shading functions.
-
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -17,10 +15,10 @@ use crate::graphics::color::Color;
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::num::NormalizedF32;
+use crate::resource;
 use crate::resource::Resourceable;
-use crate::serialize::SerializeContext;
-use crate::util::{set_colorspace, RectExt};
-use crate::{resource, Cacheable};
+use crate::serialize::{Cacheable, SerializeContext};
+use crate::util::set_colorspace;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
@@ -297,9 +295,6 @@ fn serialize_axial_radial_shading(
     let cs = if use_opacities {
         luma::Color::color_space(sc.serialize_settings().no_device_cs)
     } else {
-        // Note: This means for example if the user provides a linear RGB stop as the first
-        // and sRGB as the remaining ones, the whole gradient will
-        // use linear RGB.
         radial_axial_gradient.stops[0].color.color_space(sc)
     };
 
@@ -837,5 +832,3 @@ fn serialize_exponential(
     exp.finish();
     root_ref
 }
-
-// No tests because we test directly via shading pattern.

@@ -1,5 +1,3 @@
-//! External graphics states.
-
 use std::hash::Hash;
 use std::sync::Arc;
 
@@ -11,10 +9,9 @@ use crate::configure::ValidationError;
 use crate::geom::{Rect, Transform};
 use crate::graphics::mask::Mask;
 use crate::num::NormalizedF32;
+use crate::resource;
 use crate::resource::Resourceable;
-use crate::serialize::SerializeContext;
-use crate::util::HashExt;
-use crate::{resource, Cacheable};
+use crate::serialize::{Cacheable, SerializeContext};
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

@@ -1,5 +1,3 @@
-//! Type 3 fonts.
-
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
@@ -11,10 +9,10 @@ use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
 use crate::cmap_inner;
 use crate::configure::{PdfVersion, ValidationError};
+use crate::geom::Path;
 use crate::geom::{Rect, Transform};
 use crate::graphics::paint::Fill;
 use crate::graphics::xobject::XObject;
-use crate::path::Path;
 use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
@@ -23,7 +21,7 @@ use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::text::outline::glyph_path;
 use crate::text::GlyphId;
 use crate::text::{self, Font};
-use crate::util::{NameExt, RectExt, TransformExt};
+use crate::util::NameExt;
 
 pub(crate) type Gid = u8;
 

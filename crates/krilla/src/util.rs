@@ -1,5 +1,3 @@
-//! Internal utilities.
-
 use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;
@@ -8,14 +6,13 @@ use std::ops::Deref;
 
 use base64::Engine;
 pub(crate) use deferred::*;
-use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::{Dict, Name};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use tiny_skia_path::Path;
 
 use crate::geom::Rect;
 use crate::graphics::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
-use crate::graphics::paint::{LineCap, LineJoin, Stroke};
+use crate::graphics::paint::Stroke;
 use crate::resource::Resource;
 use crate::serialize::MaybeDeviceColorSpace;
 
@@ -32,62 +29,6 @@ impl NameExt for String {
 impl NameExt for &str {
     fn to_pdf_name(&self) -> Name {
         Name(self.as_bytes())
-    }
-}
-
-pub(crate) trait TransformExt {
-    fn to_pdf_transform(&self) -> [f32; 6];
-}
-
-pub(crate) trait LineCapExt {
-    fn to_pdf_line_cap(&self) -> LineCapStyle;
-}
-
-impl LineCapExt for LineCap {
-    fn to_pdf_line_cap(&self) -> LineCapStyle {
-        match self {
-            LineCap::Butt => LineCapStyle::ButtCap,
-            LineCap::Round => LineCapStyle::RoundCap,
-            LineCap::Square => LineCapStyle::ProjectingSquareCap,
-        }
-    }
-}
-
-pub(crate) trait LineJoinExt {
-    fn to_pdf_line_join(&self) -> LineJoinStyle;
-}
-
-impl LineJoinExt for LineJoin {
-    fn to_pdf_line_join(&self) -> LineJoinStyle {
-        match self {
-            LineJoin::Miter => LineJoinStyle::MiterJoin,
-            LineJoin::Round => LineJoinStyle::RoundJoin,
-            LineJoin::Bevel => LineJoinStyle::BevelJoin,
-        }
-    }
-}
-
-pub(crate) trait RectExt {
-    fn expand(&mut self, other: &Rect);
-    fn to_pdf_rect(&self) -> pdf_writer::Rect;
-}
-
-impl RectExt for Rect {
-    fn expand(&mut self, other: &Rect) {
-        let left = self.left().min(other.left());
-        let top = self.top().min(other.top());
-        let right = self.right().max(other.right());
-        let bottom = self.bottom().max(other.bottom());
-        *self = Rect::from_ltrb(left, top, right, bottom).unwrap();
-    }
-
-    fn to_pdf_rect(&self) -> pdf_writer::Rect {
-        pdf_writer::Rect::new(
-            self.left(),
-            self.top(),
-            self.left() + self.width(),
-            self.top() + self.height(),
-        )
     }
 }
 
@@ -191,10 +132,6 @@ where
         self.slice = tail;
         Some((key, head))
     }
-}
-
-pub(crate) trait HashExt {
-    fn hash<H: Hasher>(&self, state: &mut H);
 }
 
 pub(crate) trait SipHashable {

@@ -4,3 +4,11 @@ data
 diffs
 store
 .DS_Store
+
+# Example files
+basic.pdf
+empty_document.pdf
+parley.pdf
+simple_text.pdf
+stream_builder.pdf
+svg.pdf
