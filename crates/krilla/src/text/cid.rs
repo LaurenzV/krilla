@@ -17,7 +17,7 @@ use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
-use crate::util::{hash128, RectExt, SliceExt};
+use crate::util::{hash128, SliceExt};
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";

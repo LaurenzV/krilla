@@ -41,7 +41,7 @@ impl Document {
         }
     }
 
-    /// Create a new document with specific serialization settings.
+    /// Create a new document with specific serialize settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
         Self {
             serializer_context: SerializeContext::new(serialize_settings),
@@ -87,7 +87,7 @@ impl Document {
         self.serializer_context.embed_file(file)
     }
 
-    /// Attempt to write the document to a PDF.
+    /// Attempt to export the document to a PDF file.
     pub fn finish(mut self) -> KrillaResult<Vec<u8>> {
         // Write empty page if none has been created yet.
         if self.serializer_context.page_infos().is_empty() {

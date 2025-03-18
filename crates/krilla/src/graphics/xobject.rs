@@ -9,7 +9,7 @@ use crate::graphics::color::{rgb, DEVICE_RGB};
 use crate::resource::{Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{NameExt, RectExt};
+use crate::util::{NameExt};
 use crate::resource;
 
 #[derive(Debug, Hash, Eq, PartialEq)]

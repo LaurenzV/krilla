@@ -2,7 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
-use crate::util::{HashExt, TransformExt};
+
 
 /// A point.
 #[allow(missing_docs)]
@@ -117,6 +117,23 @@ impl Rect {
     pub(crate) fn from_tsp(rect: tiny_skia_path::Rect) -> Self {
         Self(rect)
     }
+
+    pub(crate) fn expand(&mut self, other: &Rect) {
+        let left = self.left().min(other.left());
+        let top = self.top().min(other.top());
+        let right = self.right().max(other.right());
+        let bottom = self.bottom().max(other.bottom());
+        *self = Rect::from_ltrb(left, top, right, bottom).unwrap();
+    }
+
+    pub(crate) fn to_pdf_rect(&self) -> pdf_writer::Rect {
+        pdf_writer::Rect::new(
+            self.left(),
+            self.top(),
+            self.left() + self.width(),
+            self.top() + self.height(),
+        )
+    }
 }
 
 /// An affine transformation matrix.
@@ -218,10 +235,15 @@ impl Transform {
     pub(crate) fn from_tsp(ts: tiny_skia_path::Transform) -> Self {
         Self(ts)
     }
+    
+    pub(crate) fn to_pdf_transform(&self) -> [f32; 6] {
+        [
+            self.0.sx, self.0.ky, self.0.kx, self.0.sy, self.0.tx, self.0.ty,
+        ]
+    }
 }
 
-// TODO: Implement dircetly
-impl HashExt for Transform {
+impl Hash for Transform {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.tx.to_bits().hash(state);
         self.0.ty.to_bits().hash(state);
@@ -229,13 +251,5 @@ impl HashExt for Transform {
         self.0.sy.to_bits().hash(state);
         self.0.kx.to_bits().hash(state);
         self.0.ky.to_bits().hash(state);
-    }
-}
-
-impl TransformExt for Transform {
-    fn to_pdf_transform(&self) -> [f32; 6] {
-        [
-            self.0.sx, self.0.ky, self.0.kx, self.0.sy, self.0.tx, self.0.ty,
-        ]
     }
 }

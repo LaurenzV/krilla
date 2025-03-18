@@ -11,7 +11,6 @@ use crate::graphics::mask::Mask;
 use crate::num::NormalizedF32;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::HashExt;
 use crate::resource;
 
 /// The inner representation of an external graphics state.

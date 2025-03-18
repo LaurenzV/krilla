@@ -2,12 +2,11 @@
 
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-
+use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use crate::geom::Transform;
 use crate::graphics::color::{cmyk, luma, rgb, Color};
 use crate::num::NormalizedF32;
 use crate::stream::Stream;
-use crate::util::HashExt;
 
 /// A linear gradient.
 #[derive(Debug, Clone, PartialEq)]
@@ -277,6 +276,16 @@ pub enum LineCap {
     Square,
 }
 
+impl LineCap {
+    pub(crate) fn to_pdf_line_cap(&self) -> LineCapStyle {
+        match self {
+            LineCap::Butt => LineCapStyle::ButtCap,
+            LineCap::Round => LineCapStyle::RoundCap,
+            LineCap::Square => LineCapStyle::ProjectingSquareCap,
+        }
+    }
+}
+
 /// A line join.
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Default, Hash)]
 pub enum LineJoin {
@@ -287,6 +296,16 @@ pub enum LineJoin {
     Round,
     /// The bevel line join.
     Bevel,
+}
+
+impl LineJoin {
+    pub(crate) fn to_pdf_line_join(&self) -> LineJoinStyle {
+        match self {
+            LineJoin::Miter => LineJoinStyle::MiterJoin,
+            LineJoin::Round => LineJoinStyle::RoundJoin,
+            LineJoin::Bevel => LineJoinStyle::BevelJoin,
+        }
+    }
 }
 
 /// A stroke dash.

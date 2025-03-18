@@ -8,7 +8,6 @@ use crate::geom::Transform;
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::{HashExt, TransformExt};
 use crate::resource;
 
 #[derive(Debug, PartialEq)]

@@ -17,7 +17,7 @@ use crate::resource::ResourceDictionary;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
-use crate::util::{Deferred, RectExt};
+use crate::util::{Deferred};
 
 #[derive(Clone, Debug)]
 /// The settings of a page.

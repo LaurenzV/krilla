@@ -17,7 +17,7 @@ use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::num::NormalizedF32;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::{set_colorspace, RectExt};
+use crate::util::{set_colorspace};
 use crate::resource;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]

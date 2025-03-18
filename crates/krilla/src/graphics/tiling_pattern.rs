@@ -13,8 +13,6 @@ use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::HashExt;
-use crate::util::TransformExt;
 use crate::resource;
 
 #[derive(Debug, PartialEq)]
