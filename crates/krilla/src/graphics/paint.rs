@@ -279,7 +279,7 @@ pub enum LineCap {
 }
 
 impl LineCap {
-    pub(crate) fn to_pdf_line_cap(&self) -> LineCapStyle {
+    pub(crate) fn to_pdf_line_cap(self) -> LineCapStyle {
         match self {
             LineCap::Butt => LineCapStyle::ButtCap,
             LineCap::Round => LineCapStyle::RoundCap,
@@ -301,7 +301,7 @@ pub enum LineJoin {
 }
 
 impl LineJoin {
-    pub(crate) fn to_pdf_line_join(&self) -> LineJoinStyle {
+    pub(crate) fn to_pdf_line_join(self) -> LineJoinStyle {
         match self {
             LineJoin::Miter => LineJoinStyle::MiterJoin,
             LineJoin::Round => LineJoinStyle::RoundJoin,

@@ -124,7 +124,7 @@ impl Rect {
         *self = Rect::from_ltrb(left, top, right, bottom).unwrap();
     }
 
-    pub(crate) fn to_pdf_rect(&self) -> pdf_writer::Rect {
+    pub(crate) fn to_pdf_rect(self) -> pdf_writer::Rect {
         pdf_writer::Rect::new(
             self.left(),
             self.top(),
@@ -234,7 +234,7 @@ impl Transform {
         Self(ts)
     }
 
-    pub(crate) fn to_pdf_transform(&self) -> [f32; 6] {
+    pub(crate) fn to_pdf_transform(self) -> [f32; 6] {
         [
             self.0.sx, self.0.ky, self.0.kx, self.0.sy, self.0.tx, self.0.ty,
         ]

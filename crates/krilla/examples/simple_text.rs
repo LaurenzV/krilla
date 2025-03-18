@@ -55,8 +55,7 @@ fn main() {
                 color: rgb::Color::new(255, 255, 0).into(),
                 opacity: NormalizedF32::ONE,
             },
-        ]
-        .into(),
+        ],
         anti_alias: true,
     };
 
