@@ -32,10 +32,11 @@ use pdf_writer::{Array, Dict, Name};
 
 use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
+use crate::geom::{Rect, Transform};
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
 use crate::surface::Surface;
-use crate::{Rect, SerializeSettings, Transform};
+use crate::SerializeSettings;
 
 /// A stream.
 ///

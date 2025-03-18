@@ -1,6 +1,6 @@
 //! Path-related properties.
 
-use crate::{Rect, Transform};
+use crate::geom::{Rect, Transform};
 
 /// A path.
 pub struct Path(pub(crate) tiny_skia_path::Path);

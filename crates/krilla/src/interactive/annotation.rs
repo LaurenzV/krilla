@@ -11,12 +11,12 @@ use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
+use crate::geom::{Point, Rect};
 use crate::interactive::action::Action;
 use crate::interactive::destination::Destination;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::RectExt;
-use crate::{Point, Rect};
 
 /// An annotation.
 pub struct Annotation {

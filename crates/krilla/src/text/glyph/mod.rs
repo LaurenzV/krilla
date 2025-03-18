@@ -1,8 +1,9 @@
 use std::ops::Range;
 
+use crate::geom::Transform;
 use crate::surface::Surface;
+use crate::text::Font;
 use crate::text::PaintMode;
-use crate::{Font, Transform};
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;

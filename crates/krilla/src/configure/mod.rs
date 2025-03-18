@@ -1,7 +1,7 @@
 //! Configuring PDF version and export mode.
 
 pub mod validate;
-pub mod version;
+mod version;
 
 pub use validate::{ValidationError, Validator};
 pub use version::PdfVersion;

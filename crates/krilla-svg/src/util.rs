@@ -1,15 +1,16 @@
 //! Utilities for SVG conversion.
 
-use krilla::graphics::blend::BlendMode;
-use krilla::graphics::color::{luma, rgb};
-use krilla::graphics::mask::MaskType;
-use krilla::graphics::paint::{
+use krilla::blend::BlendMode;
+use krilla::color::{luma, rgb};
+use krilla::geom::Rect;
+use krilla::mask::MaskType;
+use krilla::num::NormalizedF32;
+use krilla::paint::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, Pattern, RadialGradient,
     SpreadMethod, Stop, Stroke, StrokeDash,
 };
 use krilla::path::{Path, PathBuilder};
 use krilla::stream::StreamBuilder;
-use krilla::{NormalizedF32, Rect};
 use tiny_skia::PathSegment;
 use usvg::tiny_skia_path::Transform;
 

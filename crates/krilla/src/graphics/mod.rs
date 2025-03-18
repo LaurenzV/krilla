@@ -2,13 +2,13 @@
 
 pub mod blend;
 pub mod color;
-pub mod graphics_state;
+pub(crate) mod graphics_state;
 pub mod icc;
 #[cfg(feature = "raster-images")]
 pub mod image;
 pub mod mask;
 pub mod paint;
-pub mod shading_function;
-pub mod shading_pattern;
-pub mod tiling_pattern;
-pub mod xobject;
+pub(crate) mod shading_function;
+pub(crate) mod shading_pattern;
+pub(crate) mod tiling_pattern;
+pub(crate) mod xobject;

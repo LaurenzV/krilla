@@ -1,7 +1,7 @@
 use rustybuzz::{Direction, UnicodeBuffer};
 
+use crate::text::Font;
 use crate::text::{GlyphId, KrillaGlyph};
-use crate::Font;
 
 /// Shape some text with a single font.
 pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> Vec<KrillaGlyph> {

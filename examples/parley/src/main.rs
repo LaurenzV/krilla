@@ -2,10 +2,11 @@
 
 use std::collections::HashMap;
 
-use krilla::geom::{NormalizedF32, Point};
-use krilla::graphics::color::rgb;
-use krilla::graphics::paint::Fill;
+use krilla::color::rgb;
+use krilla::geom::Point;
+use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
+use krilla::paint::Fill;
 use krilla::text::Font;
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla::Document;

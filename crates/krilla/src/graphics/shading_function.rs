@@ -11,15 +11,16 @@ use tiny_skia_path::Point;
 
 use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
+use crate::geom::{Rect, Transform};
 use crate::graphics::color::luma;
 use crate::graphics::color::Color;
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::graphics::paint::{SpreadMethod, Stop};
+use crate::num::NormalizedF32;
 use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::util::{set_colorspace, RectExt};
 use crate::{resource, Cacheable};
-use crate::{NormalizedF32, Rect, Transform};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {

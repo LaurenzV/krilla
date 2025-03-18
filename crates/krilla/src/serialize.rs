@@ -14,6 +14,7 @@ use skrifa::raw::TableProvider;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::error::{KrillaError, KrillaResult};
+use crate::geom::Size;
 use crate::graphics::color::{rgb, ColorSpace};
 use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
@@ -33,7 +34,7 @@ use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::SipHashable;
-use crate::{resource, Cacheable, Size};
+use crate::{resource, Cacheable};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]

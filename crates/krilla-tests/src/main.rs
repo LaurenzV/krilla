@@ -12,23 +12,26 @@ use std::sync::{Arc, LazyLock, OnceLock};
 
 use ::image::{load_from_memory, DynamicImage, GenericImageView, Rgba, RgbaImage};
 use difference::{Changeset, Difference};
+use krilla::action::LinkAction;
+use krilla::annotation::{Annotation, LinkAnnotation, Target};
+use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Configuration, PdfVersion, Validator};
-use krilla::document::{Document, PageSettings};
-use krilla::graphics::color::{cmyk, luma, rgb};
-use krilla::graphics::icc::ICCProfile;
-use krilla::graphics::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
-use krilla::graphics::mask::{Mask, MaskType};
-use krilla::graphics::paint::{Fill, Stop, Stroke};
-use krilla::interactive::action::LinkAction;
-use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
+use krilla::geom::{Point, Transform};
+use krilla::icc::ICCProfile;
+use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
+use krilla::mask::{Mask, MaskType};
+use krilla::num::NormalizedF32;
+use krilla::page::PageSettings;
+use krilla::paint::{Fill, Stop, Stroke};
 use krilla::path::{Path, PathBuilder};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
 use krilla::text::Font;
 use krilla::text::{GlyphId, KrillaGlyph};
-use krilla::{Data, NormalizedF32, Transform};
-use krilla::{Point, SerializeSettings};
+use krilla::Data;
+use krilla::Document;
+use krilla::SerializeSettings;
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
@@ -761,7 +764,7 @@ pub fn stops_with_3_luma() -> Vec<Stop> {
 
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
     LinkAnnotation::new(
-        krilla::Rect::from_xywh(x, y, w, h).unwrap(),
+        krilla::geom::Rect::from_xywh(x, y, w, h).unwrap(),
         None,
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )
@@ -814,7 +817,7 @@ pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     let mut surface = page.surface();
     surface.draw_svg(
         &tree,
-        krilla::Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        krilla::geom::Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
         SvgSettings {
             embed_text: true,
             filter_scale: 2.0,

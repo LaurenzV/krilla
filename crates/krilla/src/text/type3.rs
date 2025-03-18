@@ -9,7 +9,9 @@ use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use crate::cmap_inner;
 use crate::configure::{PdfVersion, ValidationError};
+use crate::geom::{Rect, Transform};
 use crate::graphics::paint::Fill;
 use crate::graphics::xobject::XObject;
 use crate::path::Path;
@@ -22,7 +24,6 @@ use crate::text::outline::glyph_path;
 use crate::text::GlyphId;
 use crate::text::{self, Font};
 use crate::util::{NameExt, RectExt, TransformExt};
-use crate::{cmap_inner, Rect, Transform};
 
 pub(crate) type Gid = u8;
 
