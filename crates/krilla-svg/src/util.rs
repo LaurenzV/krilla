@@ -60,12 +60,7 @@ pub(crate) fn convert_paint(
             y2: lg.y2(),
             transform: additional_transform.pre_concat(lg.transform()).to_krilla(),
             spread_method: convert_spread_method(&lg.spread_method()),
-            stops: lg
-                .stops()
-                .iter()
-                .map(convert_stop)
-                .collect::<Vec<_>>()
-                .into(),
+            stops: lg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
             anti_alias: false,
         }
         .into(),
@@ -78,12 +73,7 @@ pub(crate) fn convert_paint(
             fr: 0.0,
             transform: additional_transform.pre_concat(rg.transform()).to_krilla(),
             spread_method: convert_spread_method(&rg.spread_method()),
-            stops: rg
-                .stops()
-                .iter()
-                .map(convert_stop)
-                .collect::<Vec<_>>()
-                .into(),
+            stops: rg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
             anti_alias: false,
         }
         .into(),

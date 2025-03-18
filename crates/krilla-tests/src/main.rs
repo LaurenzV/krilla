@@ -702,7 +702,6 @@ pub fn stops_with_1_solid() -> Vec<Stop> {
         color: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::ONE,
     }]
-    .into()
 }
 
 pub fn stops_with_2_solid_1() -> Vec<Stop> {
@@ -718,7 +717,6 @@ pub fn stops_with_2_solid_1() -> Vec<Stop> {
             opacity: NormalizedF32::ONE,
         },
     ]
-    .into()
 }
 
 pub fn stops_with_3_solid_1() -> Vec<Stop> {
@@ -739,7 +737,6 @@ pub fn stops_with_3_solid_1() -> Vec<Stop> {
             opacity: NormalizedF32::ONE,
         },
     ]
-    .into()
 }
 
 pub fn stops_with_3_luma() -> Vec<Stop> {
@@ -760,7 +757,6 @@ pub fn stops_with_3_luma() -> Vec<Stop> {
             opacity: NormalizedF32::ONE,
         },
     ]
-    .into()
 }
 
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
