@@ -694,7 +694,11 @@ fn encode_stops_impl<'a>(
             }
 
             // Sanity check that both stops have the same number of components.
-            assert_eq!(c0.len(), c1.len());
+            assert_eq!(
+                c0.len(),
+                c1.len(),
+                "cannot create gradient with stops from different color spaces"
+            );
 
             // Normalize the x coordinate to be between 0 and 1.
             code.extend([Real(min), Sub, Real(max), Real(min), Sub, Div]);
@@ -815,7 +819,11 @@ fn serialize_exponential(
     sc: &mut SerializeContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
-    assert_eq!(c0.len(), c1.len());
+    assert_eq!(
+        c0.len(),
+        c1.len(),
+        "cannot create gradient with stops from different color spaces"
+    );
     let num_components = c0.len();
 
     let mut exp = chunk.exponential_function(root_ref);
