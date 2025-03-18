@@ -701,7 +701,7 @@ fn encode_stops_impl<'a>(
             }
 
             // Sanity check that both stops have the same number of components.
-            debug_assert_eq!(c0.len(), c1.len());
+            assert_eq!(c0.len(), c1.len());
 
             // Normalize the x coordinate to be between 0 and 1.
             code.extend([Real(min), Sub, Real(max), Real(min), Sub, Div]);
@@ -795,7 +795,7 @@ fn serialize_stitching(
                 second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
             )
         };
-        debug_assert!(c0_components.len() == c1_components.len());
+
         count = c0_components.len();
 
         let exp_ref = serialize_exponential(c0_components, c1_components, chunk, sc);
@@ -816,20 +816,20 @@ fn serialize_stitching(
 }
 
 fn serialize_exponential(
-    first_comps: Vec<f32>,
-    second_comps: Vec<f32>,
+    c0: Vec<f32>,
+    c1: Vec<f32>,
     chunk: &mut Chunk,
     sc: &mut SerializeContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
-    debug_assert_eq!(first_comps.len(), second_comps.len());
-    let num_components = first_comps.len();
+    assert_eq!(c0.len(), c1.len());
+    let num_components = c0.len();
 
     let mut exp = chunk.exponential_function(root_ref);
 
     exp.range([0.0, 1.0].repeat(num_components));
-    exp.c0(first_comps);
-    exp.c1(second_comps);
+    exp.c0(c0);
+    exp.c1(c1);
     exp.domain([0.0, 1.0]);
     exp.n(1.0);
     exp.finish();

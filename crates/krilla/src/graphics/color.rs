@@ -54,7 +54,7 @@ pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
 /// A wrapper enum that can hold colors from different color spaces.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub(crate) enum Color {
+pub enum Color {
     /// An RGB-based color.
     Rgb(rgb::Color),
     /// A luma-based color.
