@@ -12,8 +12,8 @@ use pdf_writer::{Chunk, Obj, Ref, Str};
 use tiny_skia_path::Transform;
 
 use crate::error::KrillaResult;
+use crate::geom::Point;
 use crate::serialize::SerializeContext;
-use crate::Point;
 
 /// The type of destination.
 #[derive(Hash)]

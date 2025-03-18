@@ -1,18 +1,18 @@
 use krilla::configure::ValidationError;
 use krilla::error::KrillaError;
-use krilla::graphics::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
-use krilla::interactive::action::LinkAction;
-use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
-use krilla::interchange::embed::EmbedError;
-use krilla::interchange::metadata::Metadata;
-use krilla::interchange::outline::Outline;
-use krilla::interchange::tagging::{
+use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
+use krilla::action::LinkAction;
+use krilla::annotation::{Annotation, LinkAnnotation, Target};
+use krilla::embed::EmbedError;
+use krilla::geom::{Point, Rect, Size};
+use krilla::metadata::Metadata;
+use krilla::outline::Outline;
+use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagTree,
 };
 use krilla::page::Page;
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
-use krilla::{Point, Rect, Size};
 use krilla_macros::snapshot;
 
 use crate::embed::{embedded_file_impl, file_1};

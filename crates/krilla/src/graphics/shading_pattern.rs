@@ -10,7 +10,8 @@ use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::util::{HashExt, TransformExt};
-use crate::{resource, Cacheable, Transform};
+use crate::{resource, Cacheable};
+use crate::geom::Transform;
 
 #[derive(Debug, PartialEq)]
 struct Repr {

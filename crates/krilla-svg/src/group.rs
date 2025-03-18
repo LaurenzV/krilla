@@ -1,7 +1,7 @@
 //! Group conversion
 
 use krilla::surface::Surface;
-use krilla::NormalizedF32;
+use krilla::num::NormalizedF32;
 use usvg::Node;
 
 use crate::util::{convert_blend_mode, UsvgTransformExt};

@@ -12,7 +12,9 @@ use crate::graphics::mask::Mask;
 use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::util::HashExt;
-use crate::{resource, Cacheable, NormalizedF32, Rect, Transform};
+use crate::{resource, Cacheable};
+use crate::geom::{Rect, Transform};
+use crate::num::NormalizedF32;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]

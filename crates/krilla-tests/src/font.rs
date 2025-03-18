@@ -22,9 +22,10 @@ mod bitmap {
 
 mod colr {
     use krilla::surface::Surface;
-    use krilla::text::GlyphId;
+    use krilla::text::{Font, GlyphId};
     use krilla::text::TextDirection;
-    use krilla::{Document, Font, Point};
+    use krilla::{Document};
+    use krilla::geom::Point;
     use krilla_macros::visreg;
 
     use crate::{
@@ -125,8 +126,9 @@ mod colr {
 
 mod svg {
     use krilla::surface::Surface;
-    use krilla::text::TextDirection;
-    use krilla::{Document, Font, Point};
+    use krilla::text::{Font, TextDirection};
+    use krilla::{Document};
+    use krilla::geom::Point;
     use krilla_macros::visreg;
 
     use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
@@ -172,8 +174,8 @@ mod svg {
 
 mod cid {
     use krilla::surface::Surface;
-    use krilla::text::TextDirection;
-    use krilla::{Font, Point};
+    use krilla::text::{Font, TextDirection};
+    use krilla::geom::Point;
     use krilla_macros::visreg;
 
     use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
@@ -256,8 +258,8 @@ mod cid {
 
 mod type3 {
     use krilla::page::Page;
-    use krilla::text::TextDirection;
-    use krilla::{Font, Point};
+    use krilla::text::{Font, TextDirection};
+    use krilla::geom::Point;
     use krilla_macros::snapshot;
 
     use crate::TWITTER_COLOR_EMOJI;

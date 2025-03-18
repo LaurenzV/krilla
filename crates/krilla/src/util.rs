@@ -12,12 +12,11 @@ use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 use pdf_writer::{Dict, Name};
 use siphasher::sip128::{Hasher128, SipHasher13};
 use tiny_skia_path::Path;
-
+use crate::geom::Rect;
 use crate::graphics::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::graphics::paint::{LineCap, LineJoin, Stroke};
 use crate::resource::Resource;
 use crate::serialize::MaybeDeviceColorSpace;
-use crate::Rect;
 
 pub(crate) trait NameExt {
     fn to_pdf_name(&self) -> Name;
@@ -312,7 +311,8 @@ pub(crate) mod test_utils {
     use once_cell::sync::Lazy;
 
     use crate::Data;
-    use crate::{Configuration, SerializeSettings};
+    use crate::{SerializeSettings};
+    use crate::configure::Configuration;
 
     pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
         Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));

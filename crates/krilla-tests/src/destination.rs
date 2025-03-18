@@ -1,6 +1,6 @@
-use krilla::interactive::annotation::{LinkAnnotation, Target};
-use krilla::interactive::destination::{NamedDestination, XyzDestination};
-use krilla::{Point, Rect};
+use krilla::annotation::{LinkAnnotation, Target};
+use krilla::destination::{NamedDestination, XyzDestination};
+use krilla::geom::{Point, Rect};
 use krilla_macros::snapshot;
 
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};

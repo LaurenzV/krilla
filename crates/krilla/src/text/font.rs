@@ -9,10 +9,10 @@ use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
 use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
-
+use crate::Data;
 use crate::text::GlyphId;
 use crate::util::Prehashed;
-use crate::{Data, Rect};
+use crate::geom::{Rect};
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information

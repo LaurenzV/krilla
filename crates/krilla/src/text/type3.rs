@@ -22,7 +22,8 @@ use crate::text::outline::glyph_path;
 use crate::text::GlyphId;
 use crate::text::{self, Font};
 use crate::util::{NameExt, RectExt, TransformExt};
-use crate::{cmap_inner, Rect, Transform};
+use crate::{cmap_inner};
+use crate::geom::{Rect, Transform};
 
 pub(crate) type Gid = u8;
 

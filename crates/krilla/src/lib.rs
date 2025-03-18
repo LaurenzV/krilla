@@ -21,17 +21,18 @@ Consult the documentation to see all features that are available in krilla.
 For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
-# use krilla::graphics::color::rgb;
+# use krilla::color::rgb;
 # use krilla::text::Font;
 # use krilla::geom::Point;
-# use krilla::graphics::paint::Paint;
+# use krilla::paint::Paint;
 # use krilla::text::TextDirection;
-# use krilla::graphics::paint::Fill;
-# use krilla::{Document, PageSettings};
+# use krilla::paint::Fill;
+# use krilla::Document;
+# use krilla::page::PageSettings;
 # // use krilla::SvgSettings;
 # use std::path::PathBuf;
 # use std::sync::Arc;
-# use krilla::NormalizedF32;
+# use krilla::num::NormalizedF32;
 # // TODO: Fix example
 # fn main() {
 // Create a new document.
@@ -108,28 +109,31 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod document;
+mod interactive;
+mod interchange;
+mod graphics;
 mod chunk_container;
-mod prelude;
 mod resource;
 mod serialize;
 mod util;
 
 pub(crate) mod content;
+pub(crate) mod data;
 
 pub mod configure;
-pub(crate) mod data;
-pub mod document;
 pub mod error;
 pub mod geom;
-pub mod graphics;
-pub mod interactive;
-pub mod interchange;
 pub mod page;
 pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod text;
+pub mod num;
 
+pub use document::*;
+pub use graphics::*;
 pub use data::*;
-pub use page::PageSettings;
-pub use prelude::*;
+pub use interactive::*;
+pub use interchange::*;
+pub use serialize::SerializeSettings;

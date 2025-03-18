@@ -58,7 +58,8 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let common = quote! {
         use krilla::SerializeSettings;
         use crate::check_snapshot;
-        use krilla::document::{Document, PageSettings};
+        use krilla::Document;
+        use krilla::page::PageSettings;
         use krilla::geom::Size;
     };
 
@@ -247,8 +248,8 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                 fn #name() {
                     use crate::{render_document, check_render};
                     use krilla::geom::Size;
-                    use krilla::document::{Document, PageSettings};
-                    use krilla::SerializeSettings;
+                    use krilla::{Document, SerializeSettings};
+                    use krilla::page::PageSettings;
                     use sitro::Renderer;
                     let renderer = #renderer_ident;
 

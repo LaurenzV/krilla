@@ -11,7 +11,8 @@ use crate::resource::{Resource, Resourceable};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{NameExt, RectExt};
-use crate::{resource, Cacheable, Rect};
+use crate::{resource, Cacheable};
+use crate::geom::Rect;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {

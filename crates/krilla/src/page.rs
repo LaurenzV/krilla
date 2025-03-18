@@ -10,6 +10,7 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
+use crate::geom::{Rect, Size, Transform};
 use crate::interactive::annotation::Annotation;
 use crate::interchange::tagging::{Identifier, PageTagIdentifier};
 use crate::resource::ResourceDictionary;
@@ -17,7 +18,6 @@ use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::util::{Deferred, RectExt};
-use crate::{Rect, Size, Transform};
 
 #[derive(Clone, Debug)]
 /// The settings of a page.

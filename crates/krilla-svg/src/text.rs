@@ -1,13 +1,13 @@
 //! Text conversion
 
-use krilla::graphics::color::rgb;
-use krilla::graphics::paint::{Fill, Stroke};
+use krilla::color::rgb;
+use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::text::{GlyphId, KrillaGlyph};
-use krilla::{Font, NormalizedF32, Point};
+use krilla::text::{Font, GlyphId, KrillaGlyph};
 use usvg::tiny_skia_path::Transform;
 use usvg::PaintOrder;
-
+use krilla::geom::Point;
+use krilla::num::NormalizedF32;
 use crate::util::{convert_fill, convert_stroke, UsvgTransformExt};
 use crate::{path, ProcessContext};
 

@@ -19,7 +19,8 @@ use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::util::{set_colorspace, RectExt};
 use crate::{resource, Cacheable};
-use crate::{NormalizedF32, Rect, Transform};
+use crate::geom::{Rect, Transform};
+use crate::num::NormalizedF32;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {

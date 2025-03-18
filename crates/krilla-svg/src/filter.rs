@@ -1,8 +1,8 @@
 //! Filter conversion
 
-use krilla::graphics::image::Image;
+use krilla::image::Image;
 use krilla::surface::Surface;
-use krilla::Size;
+use krilla::geom::Size;
 use usvg::tiny_skia_path::Transform;
 
 use crate::util::KrillaTransformExt;

@@ -32,7 +32,9 @@ use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{resource, NormalizedF32, Point, Rect, Transform};
+use crate::{resource};
+use crate::geom::{Point, Rect, Transform};
+use crate::num::NormalizedF32;
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,

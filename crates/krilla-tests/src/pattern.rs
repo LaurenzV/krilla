@@ -1,10 +1,10 @@
 mod shading {
-    use krilla::graphics::paint::{
+    use krilla::paint::{
         Fill, LinearGradient, RadialGradient, SpreadMethod, SweepGradient,
     };
     use krilla::page::Page;
     use krilla::surface::Surface;
-    use krilla::NormalizedF32;
+    use krilla::num::NormalizedF32;
     use krilla_macros::{snapshot, visreg};
 
     use crate::{
@@ -179,9 +179,9 @@ mod shading {
 }
 
 mod tiling {
-    use krilla::graphics::paint::{Fill, Pattern};
+    use krilla::paint::{Fill, Pattern};
     use krilla::surface::Surface;
-    use krilla::NormalizedF32;
+    use krilla::num::NormalizedF32;
     use krilla_macros::visreg;
 
     use crate::{basic_pattern_stream, rect_to_path};

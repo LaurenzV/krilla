@@ -2,11 +2,11 @@
 
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-
+use crate::geom::Transform;
 use crate::graphics::color::{cmyk, luma, rgb, Color};
+use crate::num::NormalizedF32;
 use crate::stream::Stream;
 use crate::util::HashExt;
-use crate::{NormalizedF32, Transform};
 
 /// A linear gradient.
 #[derive(Debug, Clone, PartialEq)]

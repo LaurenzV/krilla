@@ -7,7 +7,7 @@ use crate::surface::Surface;
 use crate::text::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
 use crate::text::Font;
 use crate::text::GlyphId;
-use crate::{Size, Transform};
+use crate::geom::{Size, Transform};
 
 /// Draw a bitmap-based glyph on a surface.
 pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {

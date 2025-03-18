@@ -7,7 +7,7 @@ use crate::path::Path;
 use crate::surface::Surface;
 use crate::text::GlyphId;
 use crate::text::{Font, PaintMode};
-use crate::Transform;
+use crate::geom::Transform;
 
 pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<tiny_skia_path::Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();

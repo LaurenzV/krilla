@@ -14,16 +14,12 @@
 //!
 //! [`Page`]: crate::page::Page
 
-// TODO: Remove
-pub use page::PageSettings;
-
 use crate::error::KrillaResult;
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
-use crate::page;
-use crate::page::Page;
+use crate::page::{Page, PageSettings};
 use crate::serialize::{SerializeContext, SerializeSettings};
 
 /// A PDF document.

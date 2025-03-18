@@ -33,7 +33,8 @@ use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::SipHashable;
-use crate::{resource, Cacheable, Size};
+use crate::{resource, Cacheable};
+use crate::geom::Size;
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]

@@ -48,6 +48,7 @@ impl Debug for Data {
     }
 }
 
+// TODO: Move
 pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;

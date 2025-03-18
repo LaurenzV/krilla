@@ -6,6 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
+use crate::geom::{Point, Transform};
 use crate::graphics::blend::BlendMode;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -21,8 +22,8 @@ use crate::text::{draw_glyph, Glyph};
 use crate::text::{shape::naive_shape, TextDirection};
 use crate::text::{Font, PaintMode};
 #[cfg(feature = "raster-images")]
-use crate::Size;
-use crate::{NormalizedF32, Point, Transform};
+use crate::geom::Size;
+use crate::num::NormalizedF32;
 
 /// Can be used to associate render operations with a unique identifier.
 /// This is useful if you want to backtrack a validation error to a specific
