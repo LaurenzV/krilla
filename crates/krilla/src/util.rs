@@ -1,5 +1,3 @@
-//! Internal utilities.
-
 use std::any::Any;
 use std::fmt;
 use std::fmt::Debug;

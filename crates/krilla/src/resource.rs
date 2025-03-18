@@ -1,5 +1,3 @@
-//! Dealing with PDF resources.
-
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;

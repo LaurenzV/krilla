@@ -2,8 +2,7 @@
 //!
 //! This module contains most core part of krilla: The [`Surface`] struct. A surface
 //! represents a drawing area on which you can define the contents of your page. This includes
-//! operations such as applying linear transformations,
-//! showing text or images and drawing paths.
+//! operations such as applying linear transformations, showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
 use crate::geom::Path;
@@ -443,9 +442,11 @@ impl Drop for Surface<'_> {
             Some(pi) => pi.mcid,
             None => 0,
         };
+
         assert!(self.bd.sub_builders.is_empty());
         assert!(self.push_instructions.is_empty());
         assert!(!root_builder.active_marked_content);
+
         (self.finish_fn)(root_builder.finish(self.sc), num_mcids)
     }
 }

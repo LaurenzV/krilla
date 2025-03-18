@@ -1,5 +1,3 @@
-//! Serializing PDF documents.
-
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::{Deref, DerefMut};
@@ -40,7 +38,7 @@ use crate::util::SipHashable;
 #[derive(Clone, Debug)]
 pub struct SerializeSettings {
     /// Whether content streams should be compressed. Leads to significantly smaller file sizes,
-    /// but also longer running times. It is highly recommended that you set this to true.
+    /// but also longer running times. It is highly recommended that you set this to `true`.
     pub compress_content_streams: bool,
     /// Whether device-independent colors should be used instead of
     /// device-dependent ones.
@@ -59,7 +57,7 @@ pub struct SerializeSettings {
     ///
     /// Binary streams will always be hex encoded and thus are ascii compatible, though.
     pub ascii_compatible: bool,
-    /// Whether the PDF should contain XMP metadata.
+    /// Whether the PDF should include XMP metadata.
     ///
     /// Note that this value might be overridden depending on which validator
     /// you use. For example, when exporting to PDF/A, this value will be set to
@@ -103,7 +101,9 @@ pub struct SerializeSettings {
     ///
     /// [`tagging`]: crate::interchange::tagging
     pub enable_tagging: bool,
-    /// TODO
+    /// A function that should be used to render SVG glyphs. If you don't need this, yu can
+    /// just use the default function which doesn't render them at all. If you do want this, it
+    /// is recommended that you use the function provided by the `krilla-svg` crate.
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
 }
 
