@@ -704,7 +704,7 @@ fn validate_pdf_a1_b_ttc(d: &mut Document) {
         .unwrap()
         .into();
     let font = Font::new(font_data.clone(), 3, true).unwrap();
-    
+
     let mut page = d.start_page();
     let mut surface = page.surface();
 
