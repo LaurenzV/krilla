@@ -38,6 +38,7 @@ impl Font {
     /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(data: Data, index: u32, allow_color: bool) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref(), index, allow_color)?;
+        eprintln!("{:?}", index);
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
@@ -47,7 +48,7 @@ impl Font {
             Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.0.clone(),
                 |data| {
-                    let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
+                    let font_ref = FontRef::from_index(data.as_ref(), font_info.index).unwrap();
                     FontRefYoke {
                         font_ref: font_ref.clone(),
                         glyph_metrics: font_ref
