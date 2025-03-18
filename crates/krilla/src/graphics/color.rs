@@ -78,13 +78,13 @@ impl Color {
         match self {
             Color::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
             Color::Luma(_) => luma::color_space(sc.serialize_settings().no_device_cs),
-            Color::Cmyk(_) => {
-                let color_space = cmyk::color_space(&sc.serialize_settings());
-                if color_space == ColorSpace::DeviceCmyk {
+            Color::Cmyk(_) => match cmyk::color_space(&sc.serialize_settings()) {
+                None => {
                     sc.register_validation_error(ValidationError::MissingCMYKProfile);
+                    ColorSpace::DeviceCmyk
                 }
-                color_space
-            }
+                Some(cs) => cs,
+            },
         }
     }
 }
@@ -141,8 +141,10 @@ pub mod luma {
 
 /// CMYK colors.
 pub mod cmyk {
+    use crate::configure::ValidationError;
     use crate::graphics::color::ColorSpace;
     use crate::graphics::icc::ICCBasedColorSpace;
+    use crate::serialize::SerializeContext;
     use crate::SerializeSettings;
 
     /// A CMYK color.
@@ -177,14 +179,13 @@ pub mod cmyk {
         }
     }
 
-    pub(crate) fn color_space(ss: &SerializeSettings) -> ColorSpace {
+    pub(crate) fn color_space(ss: &SerializeSettings) -> Option<ColorSpace> {
         if ss.no_device_cs {
             ss.clone()
                 .cmyk_profile
                 .map(|p| ColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())))
-                .unwrap_or(ColorSpace::DeviceCmyk)
         } else {
-            ColorSpace::DeviceCmyk
+            Some(ColorSpace::DeviceCmyk)
         }
     }
 }
@@ -247,7 +248,7 @@ pub mod rgb {
             ]
         }
 
-        pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpace {
+        pub(super) fn color_space(&self, no_device_cs: bool) -> ColorSpace {
             color_space(no_device_cs)
         }
     }
