@@ -9,13 +9,12 @@
 use std::sync::Arc;
 
 use krilla::color::rgb;
-use krilla::text::Font;
-use krilla::geom::NormalizedF32;
 use krilla::geom::Point;
-use krilla::graphics::paint::{LinearGradient, SpreadMethod, Stop};
-use krilla::path::{Fill, Stroke};
-use krilla::surface::TextDirection;
-use krilla::{Document, PageSettings};
+use krilla::num::NormalizedF32;
+use krilla::page::PageSettings;
+use krilla::paint::{Fill, LinearGradient, SpreadMethod, Stop, Stroke};
+use krilla::text::{Font, TextDirection};
+use krilla::Document;
 
 fn main() {
     // The usual page setup.
@@ -24,9 +23,9 @@ fn main() {
     let mut surface = page.surface();
 
     let noto_font = Font::new(
-        Arc::new(std::fs::read("assets/fonts/NotoSans-Regular.ttf").unwrap()),
+        Arc::new(std::fs::read("../../assets/fonts/NotoSans-Regular.ttf").unwrap()).into(),
         0,
-        vec![],
+        true,
     )
     .unwrap();
 
@@ -40,64 +39,63 @@ fn main() {
         stops: vec![
             Stop {
                 offset: NormalizedF32::new(0.2).unwrap(),
-                color: rgb::Color::new(255, 0, 0),
+                color: rgb::Color::new(255, 0, 0).into(),
                 opacity: NormalizedF32::ONE,
             },
             Stop {
                 offset: NormalizedF32::new(0.8).unwrap(),
-                color: rgb::Color::new(255, 255, 0),
+                color: rgb::Color::new(255, 255, 0).into(),
                 opacity: NormalizedF32::ONE,
             },
         ]
         .into(),
+        anti_alias: true,
     };
+
+    surface.set_fill(Fill {
+        paint: gradient.into(),
+        opacity: NormalizedF32::new(0.5).unwrap(),
+        rule: Default::default(),
+    });
 
     // Let's first write some red-colored text with some English text.
     surface.fill_text(
         Point::from_xy(0.0, 25.0),
-        Fill {
-            paint: gradient.into(),
-            opacity: NormalizedF32::new(0.5).unwrap(),
-            rule: Default::default(),
-        },
         noto_font.clone(),
         25.0,
-        &[],
         "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔͆̏̓͢",
         false,
         TextDirection::Auto,
     );
 
+    surface.set_stroke(Stroke {
+        paint: rgb::Color::new(0, 255, 0).into(),
+        ..Default::default()
+    });
     // Instead of applying fills, we can also apply strokes!
     surface.stroke_text(
         Point::from_xy(0.0, 50.0),
-        Stroke {
-            paint: rgb::Color::new(0, 255, 0).into(),
-            ..Default::default()
-        },
         noto_font.clone(),
         25.0,
-        &[],
         "This text is stroked green!",
         false,
         TextDirection::Auto,
     );
 
     let noto_arabic_font = Font::new(
-        Arc::new(std::fs::read("assets/fonts/NotoSansArabic-Regular.ttf").unwrap()),
+        Arc::new(std::fs::read("../../assets/fonts/NotoSansArabic-Regular.ttf").unwrap()).into(),
         0,
-        vec![],
+        true,
     )
     .unwrap();
 
+    surface.set_fill(Fill::default());
     // As mentioned above, complex scripts are supported, you just can't mix them in
     // one run.
     surface.fill_text(
         Point::from_xy(0.0, 75.0),
-        Fill::default(),
         noto_arabic_font.clone(),
         25.0,
-        &[],
         "هذا هو السطر الثاني من النص.",
         false,
         TextDirection::Auto,
@@ -107,5 +105,5 @@ fn main() {
     page.finish();
     let pdf = document.finish().unwrap();
 
-    std::fs::write("target/simple_text.pdf", &pdf).unwrap();
+    std::fs::write("../../target/simple_text.pdf", &pdf).unwrap();
 }

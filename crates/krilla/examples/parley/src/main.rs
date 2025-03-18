@@ -155,5 +155,5 @@ fn main() {
     page.finish();
 
     let pdf = document.finish().unwrap();
-    std::fs::write("../../target/parley.pdf", &pdf).unwrap();
+    std::fs::write("../../../../target/parley.pdf", &pdf).unwrap();
 }

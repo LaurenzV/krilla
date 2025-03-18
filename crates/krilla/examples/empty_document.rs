@@ -1,7 +1,8 @@
 //! This example contains the most basic document you can create: A document
 //! with a single empty page.
 
-use krilla::{Document, PageSettings};
+use krilla::page::PageSettings;
+use krilla::Document;
 
 fn main() {
     // First, we create a new document. This represents a single PDF document.
@@ -15,5 +16,5 @@ fn main() {
     let pdf = document.finish().unwrap();
 
     // Write the PDF to a file.
-    std::fs::write("target/empty_document.pdf", &pdf).unwrap();
+    std::fs::write("../../target/empty_document.pdf", &pdf).unwrap();
 }

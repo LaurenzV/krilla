@@ -3,11 +3,10 @@
 //! when defining patterns or mask.
 
 use krilla::color::rgb;
-use krilla::geom::Transform;
-use krilla::graphics::paint::Pattern;
-use krilla::path::{Fill, Stroke};
-use krilla::{Document, PageSettings};
-use tiny_skia_path::{Path, PathBuilder};
+use krilla::geom::{Path, PathBuilder, Rect, Transform};
+use krilla::page::PageSettings;
+use krilla::paint::{Fill, Pattern, Stroke};
+use krilla::Document;
 
 fn main() {
     let mut document = Document::new();
@@ -22,23 +21,19 @@ fn main() {
     let mut stream_builder = surface.stream_builder();
     let mut pattern_surface = stream_builder.surface();
 
+    pattern_surface.set_fill(Fill {
+        paint: rgb::Color::new(255, 0, 0).into(),
+        ..Default::default()
+    });
     // Draw the top-left rectangle.
-    pattern_surface.fill_path(
-        &rect_to_path(0.0, 0.0, 10.0, 10.0),
-        Fill {
-            paint: rgb::Color::new(255, 0, 0).into(),
-            ..Default::default()
-        },
-    );
+    pattern_surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
+    pattern_surface.set_fill(Fill {
+        paint: rgb::Color::new(0, 0, 255).into(),
+        ..Default::default()
+    });
     // Draw the bottom-right rectangle.
-    pattern_surface.fill_path(
-        &rect_to_path(10.0, 10.0, 20.0, 20.0),
-        Fill {
-            paint: rgb::Color::new(0, 0, 255).into(),
-            ..Default::default()
-        },
-    );
+    pattern_surface.fill_path(&rect_to_path(10.0, 10.0, 20.0, 20.0));
     pattern_surface.finish();
 
     // Get the pattern stream
@@ -58,23 +53,19 @@ fn main() {
 
     let rect_path = rect_to_path(30.0, 30.0, 170.0, 170.0);
 
+    surface.set_fill(Fill {
+        paint: pattern.into(),
+        ..Default::default()
+    });
     // Draw the rectangle.
-    surface.fill_path(
-        &rect_path,
-        Fill {
-            paint: pattern.into(),
-            ..Default::default()
-        },
-    );
+    surface.fill_path(&rect_path);
 
+    surface.set_stroke(Stroke {
+        paint: rgb::Color::black().into(),
+        ..Default::default()
+    });
     // Let's also add a stroke, makes it look a bit nicer.
-    surface.stroke_path(
-        &rect_path,
-        Stroke {
-            paint: rgb::Color::black().into(),
-            ..Default::default()
-        },
-    );
+    surface.stroke_path(&rect_path);
 
     // Don't forget to pop! Each `push_` method must have a corresponding pop.
     surface.pop();
@@ -83,7 +74,7 @@ fn main() {
     page.finish();
 
     let pdf = document.finish().unwrap();
-    std::fs::write("target/stream_builder.pdf", &pdf).unwrap();
+    std::fs::write("../../target/stream_builder.pdf", &pdf).unwrap();
 }
 
 // A simple convenience function that allow us to generate rectangle paths.
