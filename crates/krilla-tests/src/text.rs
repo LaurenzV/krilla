@@ -1,9 +1,9 @@
-use krilla::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
+use krilla::geom::Point;
 use krilla::page::Page;
+use krilla::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::surface::Surface;
 use krilla::text::{Font, TextDirection};
-use krilla::{Data};
-use krilla::geom::Point;
+use krilla::Data;
 use krilla_macros::{snapshot, visreg};
 
 use crate::{

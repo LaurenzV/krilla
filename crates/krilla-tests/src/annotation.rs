@@ -1,7 +1,7 @@
-use krilla::{Document};
 use krilla::destination::XyzDestination;
-use krilla::page::{Page, PageSettings};
 use krilla::geom::{Point, Rect};
+use krilla::page::{Page, PageSettings};
+use krilla::Document;
 use krilla_macros::snapshot;
 
 use crate::{green_fill, rect_to_path, red_fill};

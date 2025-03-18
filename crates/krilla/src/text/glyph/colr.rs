@@ -8,17 +8,17 @@ use skrifa::raw::TableProvider;
 use skrifa::MetadataProvider;
 use tiny_skia_path::{Path, PathBuilder};
 
+use crate::geom::Transform;
 use crate::graphics::blend::BlendMode;
 use crate::graphics::color::rgb;
 use crate::graphics::paint::{
     Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient,
 };
+use crate::num::NormalizedF32;
 use crate::surface::Surface;
 use crate::text::outline::OutlineBuilder;
 use crate::text::GlyphId;
 use crate::text::{Font, PaintMode};
-use crate::geom::Transform;
-use crate::num::NormalizedF32;
 
 /// Draw a COLR-based glyph on a surface.
 pub(crate) fn draw_glyph(

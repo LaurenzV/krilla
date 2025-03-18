@@ -11,6 +11,7 @@ use tiny_skia_path::{Path, PathSegment};
 use crate::configure::ValidationError;
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
+use crate::geom::{Point, Rect, Transform};
 use crate::graphics::color::{Color, ColorSpace};
 use crate::graphics::graphics_state::{ExtGState, GraphicsStates};
 #[cfg(feature = "raster-images")]
@@ -24,6 +25,8 @@ use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
 use crate::graphics::xobject::XObject;
 use crate::interchange::tagging::ContentTag;
+use crate::num::NormalizedF32;
+use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
@@ -32,9 +35,6 @@ use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
 use crate::util::{calculate_stroke_bbox, LineCapExt, LineJoinExt, NameExt, RectExt, TransformExt};
-use crate::{resource};
-use crate::geom::{Point, Rect, Transform};
-use crate::num::NormalizedF32;
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,

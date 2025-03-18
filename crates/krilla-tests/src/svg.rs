@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-use krilla::surface::Surface;
 use krilla::geom::{Size, Transform};
+use krilla::surface::Surface;
 use krilla_macros::visreg;
 use krilla_svg::{SurfaceExt, SvgSettings};
 

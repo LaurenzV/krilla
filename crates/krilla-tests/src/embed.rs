@@ -1,6 +1,6 @@
 use krilla::configure::ValidationError;
-use krilla::error::KrillaError;
 use krilla::embed::{AssociationKind, EmbedError, EmbeddedFile};
+use krilla::error::KrillaError;
 use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
 use krilla_macros::snapshot;

@@ -1,9 +1,9 @@
 //! Image conversion
 
+use krilla::geom::{Rect, Size};
 use krilla::image::Image;
 use krilla::paint::FillRule;
 use krilla::surface::Surface;
-use krilla::geom::{Rect, Size};
 use usvg::ImageKind;
 
 use crate::util::RectExt;

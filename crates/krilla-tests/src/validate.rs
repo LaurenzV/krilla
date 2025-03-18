@@ -1,16 +1,16 @@
-use krilla::configure::ValidationError;
-use krilla::error::KrillaError;
-use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
+use krilla::configure::ValidationError;
 use krilla::embed::EmbedError;
+use krilla::error::KrillaError;
 use krilla::geom::{Point, Rect, Size};
 use krilla::metadata::Metadata;
 use krilla::outline::Outline;
+use krilla::page::Page;
+use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagTree,
 };
-use krilla::page::Page;
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla_macros::snapshot;

@@ -109,11 +109,11 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod chunk_container;
 mod document;
+mod graphics;
 mod interactive;
 mod interchange;
-mod graphics;
-mod chunk_container;
 mod resource;
 mod serialize;
 mod util;
@@ -124,16 +124,16 @@ pub(crate) mod data;
 pub mod configure;
 pub mod error;
 pub mod geom;
+pub mod num;
 pub mod page;
 pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod text;
-pub mod num;
 
+pub use data::*;
 pub use document::*;
 pub use graphics::*;
-pub use data::*;
 pub use interactive::*;
 pub use interchange::*;
 pub use serialize::SerializeSettings;

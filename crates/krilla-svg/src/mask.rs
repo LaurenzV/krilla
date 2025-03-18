@@ -1,9 +1,9 @@
 //! Mask conversion
 
+use krilla::geom::Rect;
 use krilla::mask::Mask;
 use krilla::paint::FillRule;
 use krilla::surface::Surface;
-use krilla::geom::Rect;
 
 use crate::util::{convert_mask_type, RectExt};
 use crate::{group, ProcessContext};

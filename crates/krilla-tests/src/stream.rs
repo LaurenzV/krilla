@@ -1,6 +1,6 @@
 use krilla::blend::BlendMode;
-use krilla::page::Page;
 use krilla::geom::Transform;
+use krilla::page::Page;
 use krilla_macros::snapshot;
 
 use crate::{blue_fill, red_fill};

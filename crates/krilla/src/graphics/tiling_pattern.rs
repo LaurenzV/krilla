@@ -7,6 +7,8 @@ use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 
 use crate::chunk_container::ChunkContainerFn;
+use crate::geom::Transform;
+use crate::num::NormalizedF32;
 use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::stream::StreamBuilder;
@@ -14,8 +16,6 @@ use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::HashExt;
 use crate::util::TransformExt;
 use crate::{resource, Cacheable};
-use crate::geom::Transform;
-use crate::num::NormalizedF32;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {

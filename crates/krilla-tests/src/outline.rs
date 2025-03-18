@@ -1,8 +1,8 @@
-use krilla::{Document};
 use krilla::destination::XyzDestination;
-use krilla::outline::{Outline, OutlineNode};
 use krilla::geom::Point;
+use krilla::outline::{Outline, OutlineNode};
 use krilla::page::PageSettings;
+use krilla::Document;
 use krilla_macros::snapshot;
 
 use crate::{blue_fill, green_fill, rect_to_path, red_fill};

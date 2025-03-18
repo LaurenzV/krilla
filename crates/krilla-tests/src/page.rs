@@ -1,10 +1,11 @@
 use std::num::NonZeroUsize;
 
+use krilla::geom::Rect;
 use krilla::page::{NumberingStyle, PageLabel, PageSettings};
-use krilla::{Document};
+use krilla::Document;
 use krilla_macros::{snapshot, visreg};
 use tiny_skia_path::PathBuilder;
-use krilla::geom::Rect;
+
 use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
 
 fn media_box_impl(d: &mut Document, media_box: Rect) {

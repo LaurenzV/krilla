@@ -1,12 +1,12 @@
-use krilla::error::KrillaError;
-use krilla::paint::Fill;
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
-use krilla::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
-use krilla::surface::Surface;
-use krilla::text::{Font, TextDirection};
-use krilla::{Document};
+use krilla::error::KrillaError;
 use krilla::geom::{Point, Rect, Size, Transform};
+use krilla::paint::Fill;
+use krilla::surface::Surface;
+use krilla::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
+use krilla::text::{Font, TextDirection};
+use krilla::Document;
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
 

@@ -2,7 +2,9 @@
 
 use krilla::blend::BlendMode;
 use krilla::color::{luma, rgb};
+use krilla::geom::Rect;
 use krilla::mask::MaskType;
+use krilla::num::NormalizedF32;
 use krilla::paint::{
     Fill, FillRule, LineCap, LineJoin, LinearGradient, Paint, Pattern, RadialGradient,
     SpreadMethod, Stop, Stroke, StrokeDash,
@@ -11,8 +13,7 @@ use krilla::path::{Path, PathBuilder};
 use krilla::stream::StreamBuilder;
 use tiny_skia::PathSegment;
 use usvg::tiny_skia_path::Transform;
-use krilla::geom::Rect;
-use krilla::num::NormalizedF32;
+
 use crate::{group, ProcessContext};
 
 /// Convert a usvg `SpreadMethod` into a krilla `SpreadMethod`.
