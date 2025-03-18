@@ -1,24 +1,25 @@
 //! A basic example of a PDF file created with krilla.
 
 use std::path;
-use krilla::color::rgb;
-use krilla::text::Font;
-use krilla::geom::{Point, PathBuilder};
-use krilla::paint::{SpreadMethod, LinearGradient, Stop, FillRule};
-use krilla::text::TextDirection;
-use krilla::paint::Fill;
-use krilla::Document;
-use krilla::page::PageSettings;
 use std::path::PathBuf;
+
+use krilla::color::rgb;
+use krilla::geom::{PathBuilder, Point};
 use krilla::num::NormalizedF32;
+use krilla::page::PageSettings;
+use krilla::paint::Fill;
+use krilla::paint::{FillRule, LinearGradient, SpreadMethod, Stop};
+use krilla::text::Font;
+use krilla::text::TextDirection;
+use krilla::Document;
 
 fn main() {
     // Create a new document.
     let mut document = Document::new();
     // Load a font.
     let font = {
-        let path =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/NotoSans-Regular.ttf");
         let data = std::fs::read(&path).unwrap();
         Font::new(data.into(), 0, true).unwrap()
     };
@@ -34,7 +35,7 @@ fn main() {
         14.0,
         "This text has font size 14!",
         false,
-        TextDirection::Auto
+        TextDirection::Auto,
     );
 
     surface.set_fill(Fill {
@@ -49,7 +50,7 @@ fn main() {
         16.0,
         "This text has font size 16!",
         false,
-        TextDirection::Auto
+        TextDirection::Auto,
     );
 
     // Finish the page.
@@ -97,7 +98,7 @@ fn main() {
     surface.set_fill(Fill {
         paint: lg.into(),
         rule: FillRule::EvenOdd,
-        opacity: NormalizedF32::ONE
+        opacity: NormalizedF32::ONE,
     });
 
     // Fill the path.
