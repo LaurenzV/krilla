@@ -126,7 +126,6 @@ pub mod error;
 pub mod geom;
 pub mod num;
 pub mod page;
-pub mod path;
 pub mod stream;
 pub mod surface;
 pub mod text;

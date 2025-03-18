@@ -6,6 +6,7 @@
 //! showing text or images and drawing paths.
 
 use crate::content::ContentBuilder;
+use crate::geom::Path;
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::geom::{Point, Transform};
@@ -17,7 +18,6 @@ use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
-use crate::path::Path;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::text::{draw_glyph, Glyph};

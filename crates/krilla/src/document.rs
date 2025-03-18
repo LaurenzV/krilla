@@ -12,7 +12,7 @@
 //! state is passed back to the original document, which you can then use to add even
 //! more pages.
 //!
-//! [`Page`]: crate::page::Page
+//! [`Page`]: Page
 
 use crate::error::KrillaResult;
 use crate::interchange::embed::EmbeddedFile;
