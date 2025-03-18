@@ -149,7 +149,7 @@ impl ColrBuilder {
         }
     }
 
-    fn stops(&self, stops: &[ColorStop]) -> Option<Vec<Stop<rgb::Color>>> {
+    fn stops(&self, stops: &[ColorStop]) -> Option<Vec<Stop>> {
         let mut converted_stops = vec![];
 
         for stop in stops {
@@ -157,7 +157,7 @@ impl ColrBuilder {
 
             converted_stops.push(Stop {
                 offset: NormalizedF32::new(stop.offset)?,
-                color,
+                color: color.into(),
                 opacity: alpha,
             })
         }

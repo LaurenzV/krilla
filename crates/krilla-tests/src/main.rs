@@ -18,7 +18,7 @@ use krilla::graphics::color::{cmyk, luma, rgb};
 use krilla::graphics::icc::ICCProfile;
 use krilla::graphics::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::graphics::mask::{Mask, MaskType};
-use krilla::graphics::paint::{Fill, Stop, Stops, Stroke};
+use krilla::graphics::paint::{Fill, Stop, Stroke};
 use krilla::interactive::action::LinkAction;
 use krilla::interactive::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::path::{Path, PathBuilder};
@@ -696,67 +696,67 @@ pub fn all_glyphs_to_pdf(
     builder.finish();
 }
 
-pub fn stops_with_1_solid() -> Stops {
+pub fn stops_with_1_solid() -> Vec<Stop> {
     vec![Stop {
         offset: NormalizedF32::new(0.5).unwrap(),
-        color: rgb::Color::new(255, 0, 0),
+        color: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::ONE,
     }]
     .into()
 }
 
-pub fn stops_with_2_solid_1() -> Stops {
+pub fn stops_with_2_solid_1() -> Vec<Stop> {
     vec![
         Stop {
             offset: NormalizedF32::new(0.2).unwrap(),
-            color: rgb::Color::new(255, 0, 0),
+            color: rgb::Color::new(255, 0, 0).into(),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(255, 255, 0),
+            color: rgb::Color::new(255, 255, 0).into(),
             opacity: NormalizedF32::ONE,
         },
     ]
     .into()
 }
 
-pub fn stops_with_3_solid_1() -> Stops {
+pub fn stops_with_3_solid_1() -> Vec<Stop> {
     vec![
         Stop {
             offset: NormalizedF32::new(0.1).unwrap(),
-            color: rgb::Color::new(255, 0, 0),
+            color: rgb::Color::new(255, 0, 0).into(),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.3).unwrap(),
-            color: rgb::Color::new(255, 255, 0),
+            color: rgb::Color::new(255, 255, 0).into(),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.8).unwrap(),
-            color: rgb::Color::new(0, 255, 255),
+            color: rgb::Color::new(0, 255, 255).into(),
             opacity: NormalizedF32::ONE,
         },
     ]
     .into()
 }
 
-pub fn stops_with_3_luma() -> Stops {
+pub fn stops_with_3_luma() -> Vec<Stop> {
     vec![
         Stop {
             offset: NormalizedF32::new(0.0).unwrap(),
-            color: luma::Color::new(0),
+            color: luma::Color::new(0).into(),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(0.3).unwrap(),
-            color: luma::Color::new(128),
+            color: luma::Color::new(128).into(),
             opacity: NormalizedF32::ONE,
         },
         Stop {
             offset: NormalizedF32::new(1.0).unwrap(),
-            color: luma::Color::new(255),
+            color: luma::Color::new(255).into(),
             opacity: NormalizedF32::ONE,
         },
     ]

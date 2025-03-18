@@ -25,10 +25,10 @@ pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> Sprea
 }
 
 /// Convert a usvg `Stop` into a krilla `Stop`.
-pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
+pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop {
     Stop {
         offset: NormalizedF32::new(stop.offset().get()).unwrap(),
-        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
+        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
 }

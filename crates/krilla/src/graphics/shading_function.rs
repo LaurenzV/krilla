@@ -13,8 +13,8 @@ use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::graphics::color::luma;
 use crate::graphics::color::Color;
-use crate::graphics::paint::SpreadMethod;
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
+use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::util::{set_colorspace, RectExt};
@@ -25,13 +25,6 @@ use crate::{NormalizedF32, Rect, Transform};
 pub(crate) enum GradientType {
     Sweep,
     Linear,
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub(crate) struct Stop {
-    pub(crate) offset: NormalizedF32,
-    pub(crate) color: Color,
-    pub(crate) opacity: NormalizedF32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -147,7 +140,7 @@ impl GradientPropertiesExt for LinearGradient {
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
                     coords: vec![self.x1, self.y1, self.x2, self.y2],
                     shading_type: FunctionShadingType::Axial,
-                    stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                    stops: self.stops,
                     anti_alias: self.anti_alias,
                 }),
                 self.transform,
@@ -163,7 +156,7 @@ impl GradientPropertiesExt for LinearGradient {
                     max,
                     cx: 0.0,
                     cy: 0.0,
-                    stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                    stops: self.stops,
                     domain: get_expanded_bbox(bbox, self.transform.pre_concat(ts)),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
@@ -188,7 +181,7 @@ impl GradientPropertiesExt for SweepGradient {
                 max,
                 cx: self.cx,
                 cy: self.cy,
-                stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                stops: self.stops,
                 domain: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
@@ -206,7 +199,7 @@ impl GradientPropertiesExt for RadialGradient {
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
                 coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
                 shading_type: FunctionShadingType::Radial,
-                stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                stops: self.stops,
                 anti_alias: self.anti_alias,
             }),
             self.transform,
