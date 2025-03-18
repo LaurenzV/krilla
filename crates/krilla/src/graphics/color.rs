@@ -141,10 +141,8 @@ pub mod luma {
 
 /// CMYK colors.
 pub mod cmyk {
-    use crate::configure::ValidationError;
     use crate::graphics::color::ColorSpace;
     use crate::graphics::icc::ICCBasedColorSpace;
-    use crate::serialize::SerializeContext;
     use crate::SerializeSettings;
 
     /// A CMYK color.
