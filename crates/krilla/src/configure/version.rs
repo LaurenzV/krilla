@@ -3,6 +3,7 @@ use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
 use crate::graphics::icc::{ICCMetadata, ICCProfile};
+#[cfg(feature = "raster-images")]
 use crate::image::BitsPerComponent;
 
 /// The version of a PDF document.
@@ -72,6 +73,7 @@ impl PdfVersion {
         }
     }
 
+    #[cfg(feature = "raster-images")]
     pub(crate) fn supports_bit_depth(&self, bits_per_component: BitsPerComponent) -> bool {
         match bits_per_component {
             BitsPerComponent::Eight => true,

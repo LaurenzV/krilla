@@ -27,5 +27,6 @@ pub enum KrillaError {
     Image(Image),
     /// A sixteen bit image was used, even though it isn't
     /// supported by the used PDF version (only available in PDF 1.5+).
+    #[cfg(feature = "raster-images")]
     SixteenBitImage(Image, Option<Location>),
 }
