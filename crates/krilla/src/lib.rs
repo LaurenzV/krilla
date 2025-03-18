@@ -110,7 +110,6 @@ std::fs::write("../../target/example.pdf", &pdf).unwrap();
 #![forbid(unsafe_code)]
 
 mod chunk_container;
-mod document;
 mod graphics;
 mod interactive;
 mod interchange;
@@ -122,6 +121,7 @@ pub(crate) mod content;
 pub(crate) mod data;
 
 pub mod configure;
+pub mod document;
 pub mod error;
 pub mod geom;
 pub mod num;
