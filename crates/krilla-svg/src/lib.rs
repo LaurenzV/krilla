@@ -2,8 +2,9 @@
 An extension to krilla that allows rendering SVG files to a PDF file.
 
 It is based on [usvg](https://github.com/linebender/resvg) and passes nearly the whole
-resvg test suite. See the [examples] directory for an example on how to use this crate
-in combination with krilla to convert SVG files to PDF.
+resvg test suite. See the [examples]( https://github.com/LaurenzV/krilla/tree/main/crates/krilla-svg/examples)
+directory for an example on how to use this crate in combination with krilla to convert SVG files
+to PDF.
 */
 
 #![deny(missing_docs)]
@@ -79,16 +80,12 @@ impl SurfaceExt for Surface<'_> {
     }
 }
 
-/// A struct that stores some information that is needed globally when processing an SVG.
 struct ProcessContext {
-    /// A map from font IDs to `Font` objects.
     fonts: HashMap<fontdb::ID, Font>,
-    /// A number of settings that can be used to configure the behavior for converting the SVG.
     svg_settings: SvgSettings,
 }
 
 impl ProcessContext {
-    /// Create a new `ProcessContext`.
     fn new(fonts: HashMap<fontdb::ID, Font>, svg_settings: SvgSettings) -> Self {
         Self {
             fonts,
@@ -161,7 +158,6 @@ pub fn render_svg_glyph(
     Some(())
 }
 
-/// Get the `PorcessContext` from a `Group`.
 fn get_context_from_group(
     tree_fontdb: &mut Database,
     svg_settings: SvgSettings,
@@ -175,7 +171,6 @@ fn get_context_from_group(
     ProcessContext::new(db, svg_settings)
 }
 
-/// Get the `PorcessContext` from a `Node`.
 fn get_context_from_node(
     tree_fontdb: &mut Database,
     svg_settings: SvgSettings,
