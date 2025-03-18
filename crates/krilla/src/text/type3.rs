@@ -21,7 +21,7 @@ use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::text::outline::glyph_path;
 use crate::text::GlyphId;
 use crate::text::{self, Font};
-use crate::util::{NameExt};
+use crate::util::NameExt;
 
 pub(crate) type Gid = u8;
 

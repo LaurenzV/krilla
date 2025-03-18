@@ -1,7 +1,7 @@
 //! Exporting with a specific PDF conformance level.
 //!
 //! PDF defines a number of additional conformance levelx that restrict the features of PDF that
-//! can be used to a specific subset. 
+//! can be used to a specific subset.
 //!
 //! You can use a [`Validator`] by creating a corresponding [`Configuration`]
 //! you want to build the document with. There are three important aspects that play into this:

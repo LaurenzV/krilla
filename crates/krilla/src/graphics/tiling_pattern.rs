@@ -9,11 +9,11 @@ use pdf_writer::{Chunk, Finish, Ref};
 use crate::chunk_container::ChunkContainerFn;
 use crate::geom::Transform;
 use crate::num::NormalizedF32;
+use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::resource;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {

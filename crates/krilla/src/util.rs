@@ -137,7 +137,6 @@ where
     }
 }
 
-
 pub(crate) trait SipHashable {
     fn sip_hash(&self) -> u128;
 }

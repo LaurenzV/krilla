@@ -6,9 +6,9 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 use crate::chunk_container::ChunkContainerFn;
 use crate::geom::Transform;
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
+use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::resource;
 
 #[derive(Debug, PartialEq)]
 struct Repr {

@@ -10,8 +10,8 @@ use pdf_writer::writers;
 use pdf_writer::{Dict, Finish, Ref};
 
 use crate::configure::PdfVersion;
-use crate::util::NameExt;
 use crate::serialize::Cacheable;
+use crate::util::NameExt;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;

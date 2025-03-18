@@ -6,11 +6,11 @@ use crate::chunk_container::ChunkContainerFn;
 use crate::geom::{Rect, Transform};
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::graphics::xobject::XObject;
+use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::resource;
 
 /// A mask. Can be a luminance mask or an alpha mask.
 #[derive(PartialEq, Eq, Debug, Hash)]

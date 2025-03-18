@@ -37,7 +37,7 @@
 //! sgrey and srgb color spaces (for luma and rgb colors, respectively). If a CMYK profile
 //! was provided to the serialize settings, this will be used for CMYK colors. Otherwise,
 //! it will fall back to device CMYK.
-//! 
+//!
 //! [`SerializeSettings`]: crate::SerializeSettings
 
 use std::fmt::Debug;

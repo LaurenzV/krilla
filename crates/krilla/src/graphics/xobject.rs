@@ -6,11 +6,11 @@ use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
 use crate::graphics::color::{rgb, DEVICE_RGB};
+use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{NameExt};
-use crate::resource;
+use crate::util::NameExt;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub(crate) struct XObject {

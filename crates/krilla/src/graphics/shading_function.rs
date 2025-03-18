@@ -15,10 +15,10 @@ use crate::graphics::color::Color;
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::num::NormalizedF32;
+use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::{set_colorspace};
-use crate::resource;
+use crate::util::set_colorspace;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {

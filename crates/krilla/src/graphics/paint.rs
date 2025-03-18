@@ -2,7 +2,9 @@
 
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
+
 use crate::geom::Transform;
 use crate::graphics::color::{cmyk, luma, rgb, Color};
 use crate::num::NormalizedF32;
@@ -24,7 +26,7 @@ pub struct LinearGradient {
     /// The spread method of the linear gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
-    /// 
+    ///
     /// Note that all stops need to be in the same color space.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
@@ -69,7 +71,7 @@ pub struct RadialGradient {
     /// for radial gradients, and will fall back to `Pad`.
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
-    /// 
+    ///
     /// Note that all stops need to be in the same color space.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
@@ -111,7 +113,7 @@ pub struct SweepGradient {
     /// The spread method of the sweep gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
-    /// 
+    ///
     /// Note that all stops need to be in the same color space.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.

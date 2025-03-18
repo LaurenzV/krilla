@@ -2,8 +2,6 @@
 
 use std::hash::{Hash, Hasher};
 
-
-
 /// A point.
 #[allow(missing_docs)]
 #[derive(Copy, Clone, PartialEq, Default, Debug)]
@@ -235,7 +233,7 @@ impl Transform {
     pub(crate) fn from_tsp(ts: tiny_skia_path::Transform) -> Self {
         Self(ts)
     }
-    
+
     pub(crate) fn to_pdf_transform(&self) -> [f32; 6] {
         [
             self.0.sx, self.0.ky, self.0.kx, self.0.sy, self.0.tx, self.0.ty,
