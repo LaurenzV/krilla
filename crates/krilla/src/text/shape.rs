@@ -3,7 +3,7 @@ use rustybuzz::{Direction, UnicodeBuffer};
 use crate::text::Font;
 use crate::text::{GlyphId, KrillaGlyph};
 
-/// Shape some text with a single font.
+/// Naively shape some text with a single font.
 pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> Vec<KrillaGlyph> {
     let data = font.font_data();
     let rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();

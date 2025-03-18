@@ -1,5 +1,3 @@
-//! Collecting chunks during PDF creation.
-
 use std::collections::HashMap;
 
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
@@ -46,8 +44,7 @@ impl ChunkContainer {
     pub(crate) fn new() -> Self {
         Self::default()
     }
-
-    // TODO: Split up into multiple methods?
+    
     pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();

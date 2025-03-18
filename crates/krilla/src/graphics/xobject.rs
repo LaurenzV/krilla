@@ -1,5 +1,3 @@
-//! XObjects.
-
 use std::ops::DerefMut;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};

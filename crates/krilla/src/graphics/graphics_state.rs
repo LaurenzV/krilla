@@ -1,5 +1,3 @@
-//! External graphics states.
-
 use std::hash::Hash;
 use std::sync::Arc;
 

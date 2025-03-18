@@ -1,5 +1,3 @@
-//! Type 3 fonts.
-
 use std::collections::{BTreeMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;

@@ -1,5 +1,3 @@
-//! Drawing COLR-based glyphs to a surface.
-
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;

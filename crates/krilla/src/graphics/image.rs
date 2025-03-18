@@ -6,6 +6,7 @@
 //! - JPG
 //! - GIF
 //! - WEBP
+//! - Custom image formats via [`CustomImage`]
 
 // TODO: CLean up and update docs
 use std::fmt::{Debug, Formatter};
@@ -29,7 +30,7 @@ use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};
 use crate::Data;
 
-/// The number of buits per color component.
+/// The number of bits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum BitsPerComponent {
     /// Eight bits per component.
@@ -126,7 +127,7 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
     fn bits_per_component(&self) -> BitsPerComponent;
     /// Return the dimensions of the image.
     fn size(&self) -> (u32, u32);
-    /// Return the ICC profile of the image, is available.
+    /// Return the ICC profile of the image, if available.
     fn icc_profile(&self) -> Option<&[u8]>;
     /// Return the color space of the image.
     fn color_space(&self) -> ImageColorspace;
@@ -185,16 +186,6 @@ impl Eq for ImageRepr {}
 /// This type is cheap to hash and clone, but expensive to create.
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Image(Arc<ImageRepr>);
-
-fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<GenericICCProfile> {
-    let wrapper = match color_space {
-        ImageColorspace::Rgb => GenericICCProfile::Rgb(ICCProfile::new(data)?),
-        ImageColorspace::Luma => GenericICCProfile::Luma(ICCProfile::new(data)?),
-        ImageColorspace::Cmyk => GenericICCProfile::Cmyk(ICCProfile::new(data)?),
-    };
-
-    Some(wrapper)
-}
 
 impl Image {
     /// Create a new bitmap image from a `.png` file.
@@ -300,7 +291,7 @@ impl Image {
         })))
     }
 
-    /// TODO: add docs
+    /// Create a new RGB image from raw RGBA pixels.
     pub fn from_rgba8(data: Vec<u8>, width: u32, height: u32) -> Self {
         let hash = data.sip_hash();
         let metadata = ImageMetadata {
@@ -748,4 +739,14 @@ fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, 
     };
 
     (encoded_image, encoded_mask, BitsPerComponent::Sixteen)
+}
+
+fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<GenericICCProfile> {
+    let wrapper = match color_space {
+        ImageColorspace::Rgb => GenericICCProfile::Rgb(ICCProfile::new(data)?),
+        ImageColorspace::Luma => GenericICCProfile::Luma(ICCProfile::new(data)?),
+        ImageColorspace::Cmyk => GenericICCProfile::Cmyk(ICCProfile::new(data)?),
+    };
+
+    Some(wrapper)
 }

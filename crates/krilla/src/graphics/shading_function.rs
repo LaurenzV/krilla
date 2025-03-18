@@ -1,5 +1,3 @@
-//! Shading functions.
-
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -297,9 +295,6 @@ fn serialize_axial_radial_shading(
     let cs = if use_opacities {
         luma::Color::color_space(sc.serialize_settings().no_device_cs)
     } else {
-        // Note: This means for example if the user provides a linear RGB stop as the first
-        // and sRGB as the remaining ones, the whole gradient will
-        // use linear RGB.
         radial_axial_gradient.stops[0].color.color_space(sc)
     };
 
@@ -837,5 +832,3 @@ fn serialize_exponential(
     exp.finish();
     root_ref
 }
-
-// No tests because we test directly via shading pattern.

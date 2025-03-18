@@ -1,5 +1,3 @@
-//! Rendering graphics objects into a PDF file.
-
 pub mod blend;
 pub mod color;
 pub(crate) mod graphics_state;

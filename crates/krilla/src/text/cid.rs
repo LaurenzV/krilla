@@ -1,5 +1,3 @@
-//! CID fonts.
-
 use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::ops::DerefMut;

@@ -1,11 +1,10 @@
 //! Exporting with a specific PDF conformance level.
 //!
-//! PDF defines a number of additional conformance level that restrict the features of PDF that
-//! can be used to a specific subset. Currently, krilla only supports some PDF/A conformance levels,
-//! although more are planned for the future.
+//! PDF defines a number of additional conformance levelx that restrict the features of PDF that
+//! can be used to a specific subset. 
 //!
 //! You can use a [`Validator`] by creating a corresponding [`Configuration`]
-//! you create the document with. There are three important aspects that play into this:
+//! you want to build the document with. There are three important aspects that play into this:
 //! - krilla will internally write the file in a way that conforms to the given standard, i.e.
 //!   by settings appropriate metadata. This happens under-the-hood and is completely abstracted
 //!   away from the user.
@@ -14,7 +13,7 @@
 //!   and when calling `document.finish()`, in case there is at least one violation, krilla will
 //!   return them as an error, instead of returning the finished document. See [`ValidationError`].
 //! - Finally, some standards have requirements that cannot possibly be validated by krilla, as
-//!   they are semantic in nature. It is upon your, as a user of that library, to ensure that those
+//!   they are semantic in nature. It is upon you, as a user of that library, to ensure that those
 //!   requirements are fulfilled.
 //!   You can find them under **Requirements** for each [`Validator`].
 //!
@@ -32,12 +31,12 @@ use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
 
-/// An error that occurred during validation
+/// An error that occurred during validation/
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValidationError {
     /// There was a string that was longer than the maximum allowed length (32767).
     ///
-    /// Can for example occur if someone set a title or an author that is longer than
+    /// Can for example occur if you set a title or an author that is longer than
     /// the given length.
     TooLongString,
     /// There was a name that was longer than the maximum allowed length (127).

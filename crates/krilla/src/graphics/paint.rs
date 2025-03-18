@@ -25,6 +25,8 @@ pub struct LinearGradient {
     /// The spread method of the linear gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
+    /// 
+    /// Note that all stops need to be in the same color space.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -33,7 +35,7 @@ pub struct LinearGradient {
 impl Eq for LinearGradient {}
 
 impl Hash for LinearGradient {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.x1.to_bits().hash(state);
         self.y1.to_bits().hash(state);
         self.x2.to_bits().hash(state);
@@ -68,6 +70,8 @@ pub struct RadialGradient {
     /// for radial gradients, and will fall back to `Pad`.
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
+    /// 
+    /// Note that all stops need to be in the same color space.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -108,6 +112,8 @@ pub struct SweepGradient {
     /// The spread method of the sweep gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
+    /// 
+    /// Note that all stops need to be in the same color space.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -144,7 +150,7 @@ pub struct Pattern {
 impl Eq for Pattern {}
 
 impl Hash for Pattern {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.stream.hash(state);
         self.transform.hash(state);
         self.width.to_bits().hash(state);
@@ -295,7 +301,7 @@ pub struct StrokeDash {
 impl Eq for StrokeDash {}
 
 impl Hash for StrokeDash {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         for el in &self.array {
             el.to_bits().hash(state);
         }

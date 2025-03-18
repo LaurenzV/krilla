@@ -1,5 +1,3 @@
-//! Drawing SVG-based glyphs on a surface.
-
 use skrifa::raw::TableProvider;
 
 use crate::graphics::color::rgb;

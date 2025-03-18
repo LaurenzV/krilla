@@ -1,5 +1,3 @@
-//! Drawing outline-based glyphs to a surface.
-
 use skrifa::outline::{DrawSettings, OutlinePen};
 use skrifa::MetadataProvider;
 

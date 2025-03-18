@@ -1,5 +1,3 @@
-//! Iterators for grouping glyphs into sub-runs for easier processing.
-
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
 use std::rc::Rc;

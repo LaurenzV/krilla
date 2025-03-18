@@ -1,14 +1,14 @@
 //! Text and font support.
 //!
 //! krilla has extensive support for OpenType fonts. It supports CFF-based as well
-//! as glyf-based OpenType fonts. In addition to that, krilla also supports
+//! as TTF-based OpenType fonts. In addition to that, krilla also supports
 //! all major tables used in color fonts, including the `SVG`, `COLR`, `sbix` and
 //! `CBDT`/`EBDT` (only PNG) tables, something that, to the best of my knowledge, no other
 //! Rust crates provides.
 //!
 //! Even better is the fact that you do not need to take care of choosing the right
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
-//! an appropriate index and variation coordinates.
+//! an appropriate index.
 
 use std::fmt::Debug;
 use std::hash::Hash;
