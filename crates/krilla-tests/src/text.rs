@@ -6,7 +6,10 @@ use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
 use krilla::Data;
 use krilla_macros::{snapshot, visreg};
 
-use crate::{blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI};
+use crate::{
+    blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN,
+    LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
+};
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
     LinearGradient {
@@ -306,9 +309,9 @@ fn text_small_caps(page: &mut Page) {
             y_offset: 0.0,
             y_advance: 0.0,
             location: None,
-        }
+        },
     ];
-    
+
     let mut surface = page.surface();
     surface.fill_glyphs(
         Point::from_xy(0.0, 50.0),
@@ -316,7 +319,7 @@ fn text_small_caps(page: &mut Page) {
         Font::new(LIBERTINUS_SERIF.clone(), 0, true).unwrap(),
         "Tt",
         12.0,
-        false
+        false,
     );
 }
 

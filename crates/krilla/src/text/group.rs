@@ -1,6 +1,7 @@
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
 use std::rc::Rc;
+
 use crate::text::type3::CoveredGlyph;
 use crate::text::Glyph;
 use crate::text::{FontContainer, FontIdentifier, PaintMode};
@@ -220,7 +221,7 @@ where
             prev_range = next.text_range().clone();
             count += 1;
         }
-        
+
         // If we only had one glyph to begin with (and never entered the for loop), then
         // it should be spanned if its codepoint is incompatible.
         if count == 1 {
