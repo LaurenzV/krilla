@@ -1,5 +1,3 @@
-//! Clip path conversion
-
 use krilla::geom::{Path, PathBuilder};
 use krilla::mask::{Mask, MaskType};
 use krilla::paint::FillRule;

@@ -1,5 +1,3 @@
-//! Utilities for SVG conversion.
-
 use krilla::blend::BlendMode;
 use krilla::color::{luma, rgb};
 use krilla::geom::{Path, PathBuilder, Rect};

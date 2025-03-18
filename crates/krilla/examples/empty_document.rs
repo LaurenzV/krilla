@@ -2,6 +2,7 @@
 //! with a single empty page.
 
 use std::path;
+
 use krilla::page::PageSettings;
 use krilla::Document;
 

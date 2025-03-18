@@ -9,7 +9,7 @@
 use std::path;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use once_cell::sync::Lazy;
+
 use krilla::color::rgb;
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
@@ -17,12 +17,12 @@ use krilla::page::PageSettings;
 use krilla::paint::{Fill, LinearGradient, SpreadMethod, Stop, Stroke};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
+use once_cell::sync::Lazy;
 
 pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
     Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
 
-pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| WORKSPACE_PATH.join("assets"));
+pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 
 fn main() {
     // The usual page setup.
@@ -91,7 +91,8 @@ fn main() {
     );
 
     let noto_arabic_font = Font::new(
-        Arc::new(std::fs::read(ASSETS_PATH.join("fonts/NotoSansArabic-Regular.ttf")).unwrap()).into(),
+        Arc::new(std::fs::read(ASSETS_PATH.join("fonts/NotoSansArabic-Regular.ttf")).unwrap())
+            .into(),
         0,
         true,
     )

@@ -1,5 +1,3 @@
-//! Path conversion
-
 use krilla::surface::Surface;
 use usvg::PaintOrder;
 

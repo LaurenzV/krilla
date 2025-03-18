@@ -3,6 +3,7 @@
 //! when defining patterns or mask.
 
 use std::path;
+
 use krilla::color::rgb;
 use krilla::geom::{Path, PathBuilder, Rect, Transform};
 use krilla::page::PageSettings;

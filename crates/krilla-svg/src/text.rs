@@ -1,5 +1,3 @@
-//! Text conversion
-
 use krilla::color::rgb;
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;

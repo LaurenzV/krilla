@@ -1,5 +1,3 @@
-//! Filter conversion
-
 use krilla::geom::Size;
 use krilla::image::Image;
 use krilla::surface::Surface;
