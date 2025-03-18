@@ -25,10 +25,10 @@ pub(crate) fn convert_spread_method(spread_method: &usvg::SpreadMethod) -> Sprea
 }
 
 /// Convert a usvg `Stop` into a krilla `Stop`.
-pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop<rgb::Color> {
+pub(crate) fn convert_stop(stop: &usvg::Stop) -> Stop {
     Stop {
         offset: NormalizedF32::new(stop.offset().get()).unwrap(),
-        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue),
+        color: rgb::Color::new(stop.color().red, stop.color().green, stop.color().blue).into(),
         opacity: NormalizedF32::new(stop.opacity().get()).unwrap(),
     }
 }
@@ -60,12 +60,7 @@ pub(crate) fn convert_paint(
             y2: lg.y2(),
             transform: additional_transform.pre_concat(lg.transform()).to_krilla(),
             spread_method: convert_spread_method(&lg.spread_method()),
-            stops: lg
-                .stops()
-                .iter()
-                .map(convert_stop)
-                .collect::<Vec<_>>()
-                .into(),
+            stops: lg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
             anti_alias: false,
         }
         .into(),
@@ -78,12 +73,7 @@ pub(crate) fn convert_paint(
             fr: 0.0,
             transform: additional_transform.pre_concat(rg.transform()).to_krilla(),
             spread_method: convert_spread_method(&rg.spread_method()),
-            stops: rg
-                .stops()
-                .iter()
-                .map(convert_stop)
-                .collect::<Vec<_>>()
-                .into(),
+            stops: rg.stops().iter().map(convert_stop).collect::<Vec<_>>(),
             anti_alias: false,
         }
         .into(),

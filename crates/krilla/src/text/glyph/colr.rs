@@ -149,7 +149,7 @@ impl ColrBuilder {
         }
     }
 
-    fn stops(&self, stops: &[ColorStop]) -> Option<Vec<Stop<rgb::Color>>> {
+    fn stops(&self, stops: &[ColorStop]) -> Option<Vec<Stop>> {
         let mut converted_stops = vec![];
 
         for stop in stops {
@@ -157,7 +157,7 @@ impl ColrBuilder {
 
             converted_stops.push(Stop {
                 offset: NormalizedF32::new(stop.offset)?,
-                color,
+                color: color.into(),
                 opacity: alpha,
             })
         }
@@ -315,7 +315,7 @@ impl ColorPainter for ColrBuilder {
                     y1: p0.y,
                     x2: p1.x,
                     y2: p1.y,
-                    stops: stops.into(),
+                    stops,
                     spread_method: extend.to_spread_method(),
                     transform,
                     anti_alias: false,
@@ -355,7 +355,7 @@ impl ColorPainter for ColrBuilder {
                     cx: c1.x,
                     cy: c1.y,
                     cr: r1,
-                    stops: stops.into(),
+                    stops,
                     spread_method: extend.to_spread_method(),
                     transform,
                     anti_alias: false,
@@ -392,7 +392,7 @@ impl ColorPainter for ColrBuilder {
                     cy: c0.y,
                     start_angle,
                     end_angle,
-                    stops: stops.into(),
+                    stops,
                     spread_method: extend.to_spread_method(),
                     transform,
                     anti_alias: false,

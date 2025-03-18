@@ -13,8 +13,8 @@ use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::graphics::color::luma;
 use crate::graphics::color::Color;
-use crate::graphics::paint::SpreadMethod;
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
+use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::resource::Resourceable;
 use crate::serialize::SerializeContext;
 use crate::util::{set_colorspace, RectExt};
@@ -25,13 +25,6 @@ use crate::{NormalizedF32, Rect, Transform};
 pub(crate) enum GradientType {
     Sweep,
     Linear,
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub(crate) struct Stop {
-    pub(crate) offset: NormalizedF32,
-    pub(crate) color: Color,
-    pub(crate) opacity: NormalizedF32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -147,7 +140,7 @@ impl GradientPropertiesExt for LinearGradient {
                 GradientProperties::RadialAxialGradient(RadialAxialGradient {
                     coords: vec![self.x1, self.y1, self.x2, self.y2],
                     shading_type: FunctionShadingType::Axial,
-                    stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                    stops: self.stops,
                     anti_alias: self.anti_alias,
                 }),
                 self.transform,
@@ -163,7 +156,7 @@ impl GradientPropertiesExt for LinearGradient {
                     max,
                     cx: 0.0,
                     cy: 0.0,
-                    stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                    stops: self.stops,
                     domain: get_expanded_bbox(bbox, self.transform.pre_concat(ts)),
                     spread_method: self.spread_method,
                     gradient_type: GradientType::Linear,
@@ -188,7 +181,7 @@ impl GradientPropertiesExt for SweepGradient {
                 max,
                 cx: self.cx,
                 cy: self.cy,
-                stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                stops: self.stops,
                 domain: get_expanded_bbox(bbox, transform),
                 spread_method: self.spread_method,
                 gradient_type: GradientType::Sweep,
@@ -206,7 +199,7 @@ impl GradientPropertiesExt for RadialGradient {
             GradientProperties::RadialAxialGradient(RadialAxialGradient {
                 coords: vec![self.fx, self.fy, self.fr, self.cx, self.cy, self.cr],
                 shading_type: FunctionShadingType::Radial,
-                stops: self.stops.0.into_iter().collect::<Vec<Stop>>(),
+                stops: self.stops,
                 anti_alias: self.anti_alias,
             }),
             self.transform,
@@ -701,7 +694,11 @@ fn encode_stops_impl<'a>(
             }
 
             // Sanity check that both stops have the same number of components.
-            debug_assert_eq!(c0.len(), c1.len());
+            assert_eq!(
+                c0.len(),
+                c1.len(),
+                "cannot create gradient with stops from different color spaces"
+            );
 
             // Normalize the x coordinate to be between 0 and 1.
             code.extend([Real(min), Sub, Real(max), Real(min), Sub, Div]);
@@ -795,7 +792,7 @@ fn serialize_stitching(
                 second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
             )
         };
-        debug_assert!(c0_components.len() == c1_components.len());
+
         count = c0_components.len();
 
         let exp_ref = serialize_exponential(c0_components, c1_components, chunk, sc);
@@ -816,20 +813,24 @@ fn serialize_stitching(
 }
 
 fn serialize_exponential(
-    first_comps: Vec<f32>,
-    second_comps: Vec<f32>,
+    c0: Vec<f32>,
+    c1: Vec<f32>,
     chunk: &mut Chunk,
     sc: &mut SerializeContext,
 ) -> Ref {
     let root_ref = sc.new_ref();
-    debug_assert_eq!(first_comps.len(), second_comps.len());
-    let num_components = first_comps.len();
+    assert_eq!(
+        c0.len(),
+        c1.len(),
+        "cannot create gradient with stops from different color spaces"
+    );
+    let num_components = c0.len();
 
     let mut exp = chunk.exponential_function(root_ref);
 
     exp.range([0.0, 1.0].repeat(num_components));
-    exp.c0(first_comps);
-    exp.c1(second_comps);
+    exp.c0(c0);
+    exp.c1(c1);
     exp.domain([0.0, 1.0]);
     exp.n(1.0);
     exp.finish();

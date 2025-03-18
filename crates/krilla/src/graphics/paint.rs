@@ -8,47 +8,6 @@ use crate::stream::Stream;
 use crate::util::HashExt;
 use crate::{NormalizedF32, Transform};
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) enum InnerStops {
-    Luma(Vec<Stop<luma::Color>>),
-    Rgb(Vec<Stop<rgb::Color>>),
-    Cmyk(Vec<Stop<cmyk::Color>>),
-}
-
-impl InnerStops {
-    pub(crate) fn into_iter(
-        self,
-    ) -> Box<dyn Iterator<Item = crate::graphics::shading_function::Stop>> {
-        match self {
-            InnerStops::Rgb(r) => Box::new(r.into_iter().map(|c| c.into())),
-            InnerStops::Cmyk(c) => Box::new(c.into_iter().map(|c| c.into())),
-            InnerStops::Luma(l) => Box::new(l.into_iter().map(|c| c.into())),
-        }
-    }
-}
-
-/// The color stops of a gradient.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct Stops(pub(crate) InnerStops);
-
-impl From<Vec<Stop<luma::Color>>> for Stops {
-    fn from(value: Vec<Stop<luma::Color>>) -> Self {
-        Stops(InnerStops::Luma(value))
-    }
-}
-
-impl From<Vec<Stop<rgb::Color>>> for Stops {
-    fn from(value: Vec<Stop<rgb::Color>>) -> Self {
-        Stops(InnerStops::Rgb(value))
-    }
-}
-
-impl From<Vec<Stop<cmyk::Color>>> for Stops {
-    fn from(value: Vec<Stop<cmyk::Color>>) -> Self {
-        Stops(InnerStops::Cmyk(value))
-    }
-}
-
 /// A linear gradient.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LinearGradient {
@@ -65,7 +24,7 @@ pub struct LinearGradient {
     /// The spread method of the linear gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
-    pub stops: Stops,
+    pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
 }
@@ -108,7 +67,7 @@ pub struct RadialGradient {
     /// for radial gradients, and will fall back to `Pad`.
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
-    pub stops: Stops,
+    pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
 }
@@ -116,7 +75,7 @@ pub struct RadialGradient {
 impl Eq for RadialGradient {}
 
 impl Hash for RadialGradient {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.fx.to_bits().hash(state);
         self.fy.to_bits().hash(state);
         self.fr.to_bits().hash(state);
@@ -148,7 +107,7 @@ pub struct SweepGradient {
     /// The spread method of the sweep gradient.
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
-    pub stops: Stops,
+    pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
 }
@@ -156,7 +115,7 @@ pub struct SweepGradient {
 impl Eq for SweepGradient {}
 
 impl Hash for SweepGradient {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.cx.to_bits().hash(state);
         self.cy.to_bits().hash(state);
         self.start_angle.to_bits().hash(state);
@@ -240,6 +199,12 @@ impl From<cmyk::Color> for Paint {
     }
 }
 
+impl From<Color> for Paint {
+    fn from(value: Color) -> Self {
+        Paint(InnerPaint::Color(value))
+    }
+}
+
 impl From<LinearGradient> for Paint {
     fn from(value: LinearGradient) -> Self {
         Paint(InnerPaint::LinearGradient(value))
@@ -284,29 +249,13 @@ impl Default for SpreadMethod {
 /// A color stop in a gradient.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 #[allow(private_bounds)]
-pub struct Stop<C>
-where
-    C: Into<Color>,
-{
+pub struct Stop {
     /// The normalized offset of the stop.
     pub offset: NormalizedF32,
     /// The color of the stop.
-    pub color: C,
+    pub color: Color,
     /// The opacity of the stop.
     pub opacity: NormalizedF32,
-}
-
-impl<C> From<Stop<C>> for crate::graphics::shading_function::Stop
-where
-    C: Into<Color>,
-{
-    fn from(val: Stop<C>) -> Self {
-        crate::graphics::shading_function::Stop {
-            offset: val.offset,
-            opacity: val.opacity,
-            color: val.color.into(),
-        }
-    }
 }
 
 /// A line cap.
