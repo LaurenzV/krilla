@@ -1,7 +1,7 @@
 //! This example shows how to use parley to create advanced layouted text.
 
 use std::collections::HashMap;
-
+use std::path;
 use krilla::color::rgb;
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
@@ -155,5 +155,10 @@ fn main() {
     page.finish();
 
     let pdf = document.finish().unwrap();
-    std::fs::write("../../../../target/parley.pdf", &pdf).unwrap();
+
+    let path = path::absolute("parley.pdf").unwrap();
+    eprintln!("Saved PDF to '{}'", path.display());
+
+    // Write the PDF to a file.
+    std::fs::write(path, &pdf).unwrap();
 }

@@ -6,8 +6,10 @@
 //! the font must contain all necessary glyphs, otherwise the `.notdef` glyph will be emitted
 //! instead of font fallback.
 
-use std::sync::Arc;
-
+use std::path;
+use std::path::PathBuf;
+use std::sync::{Arc, LazyLock};
+use once_cell::sync::Lazy;
 use krilla::color::rgb;
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
@@ -16,6 +18,12 @@ use krilla::paint::{Fill, LinearGradient, SpreadMethod, Stop, Stroke};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
 
+pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
+    Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+
+pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| WORKSPACE_PATH.join("assets"));
+
 fn main() {
     // The usual page setup.
     let mut document = Document::new();
@@ -23,7 +31,7 @@ fn main() {
     let mut surface = page.surface();
 
     let noto_font = Font::new(
-        Arc::new(std::fs::read("../../assets/fonts/NotoSans-Regular.ttf").unwrap()).into(),
+        Arc::new(std::fs::read(ASSETS_PATH.join("fonts/NotoSans-Regular.ttf")).unwrap()).into(),
         0,
         true,
     )
@@ -83,7 +91,7 @@ fn main() {
     );
 
     let noto_arabic_font = Font::new(
-        Arc::new(std::fs::read("../../assets/fonts/NotoSansArabic-Regular.ttf").unwrap()).into(),
+        Arc::new(std::fs::read(ASSETS_PATH.join("fonts/NotoSansArabic-Regular.ttf")).unwrap()).into(),
         0,
         true,
     )
@@ -105,5 +113,9 @@ fn main() {
     page.finish();
     let pdf = document.finish().unwrap();
 
-    std::fs::write("../../target/simple_text.pdf", &pdf).unwrap();
+    let path = path::absolute("simple_text.pdf").unwrap();
+    eprintln!("Saved PDF to '{}'", path.display());
+
+    // Write the PDF to a file.
+    std::fs::write(path, &pdf).unwrap();
 }

@@ -810,6 +810,7 @@ dependencies = [
  "miniz_oxide 0.8.0",
  "once_cell",
  "oxipng",
+ "parley",
  "paste",
  "pdf-writer",
  "rayon",
@@ -1104,14 +1105,6 @@ dependencies = [
  "peniko",
  "skrifa 0.19.3",
  "swash",
-]
-
-[[package]]
-name = "parley"
-version = "0.3.0"
-dependencies = [
- "krilla",
- "parley 0.1.0",
 ]
 
 [[package]]

@@ -2,6 +2,7 @@
 //! define graphics content on a separate context than the main page surface. This is necessary
 //! when defining patterns or mask.
 
+use std::path;
 use krilla::color::rgb;
 use krilla::geom::{Path, PathBuilder, Rect, Transform};
 use krilla::page::PageSettings;
@@ -74,7 +75,12 @@ fn main() {
     page.finish();
 
     let pdf = document.finish().unwrap();
-    std::fs::write("../../target/stream_builder.pdf", &pdf).unwrap();
+
+    let path = path::absolute("stream_builder.pdf").unwrap();
+    eprintln!("Saved PDF to '{}'", path.display());
+
+    // Write the PDF to a file.
+    std::fs::write(path, &pdf).unwrap();
 }
 
 // A simple convenience function that allow us to generate rectangle paths.

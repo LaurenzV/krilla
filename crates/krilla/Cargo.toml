@@ -53,3 +53,4 @@ oxipng = { workspace = true }
 paste = { workspace = true }
 sitro = { workspace = true }
 fontdb = { workspace = true }
+parley = { workspace = true }
