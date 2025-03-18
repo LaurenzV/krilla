@@ -1,7 +1,6 @@
 use std::cell::{RefCell, RefMut};
 use std::ops::Range;
 use std::rc::Rc;
-
 use crate::text::type3::CoveredGlyph;
 use crate::text::Glyph;
 use crate::text::{FontContainer, FontIdentifier, PaintMode};
@@ -112,7 +111,7 @@ where
             let codepoints = pdf_font.get_codepoints(pdf_glyph);
             // Check if the glyph has already been assigned codepoints that don't match the
             // one we are seeing right now.
-            let incompatible_codepoint = codepoints.is_some_and(|text| codepoints != Some(text));
+            let incompatible_codepoint = codepoints.is_some_and(|c| c != text);
 
             // Only set the codepoint if there isn't a previous, different mapping.
             //
@@ -220,6 +219,12 @@ where
 
             prev_range = next.text_range().clone();
             count += 1;
+        }
+        
+        // If we only had one glyph to begin with (and never entered the for loop), then
+        // it should be spanned if its codepoint is incompatible.
+        if count == 1 {
+            use_span = Some(first_incompatible);
         }
 
         let (head, tail) = self.slice.split_at(count);
