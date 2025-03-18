@@ -374,7 +374,13 @@ impl Image {
             let cs = match self.color_space() {
                 ImageColorspace::Rgb => rgb::color_space(sc.serialize_settings().no_device_cs),
                 ImageColorspace::Luma => luma::color_space(sc.serialize_settings().no_device_cs),
-                ImageColorspace::Cmyk => cmyk::color_space(&sc.serialize_settings()),
+                ImageColorspace::Cmyk => match cmyk::color_space(&sc.serialize_settings()) {
+                    None => {
+                        sc.register_validation_error(ValidationError::MissingCMYKProfile);
+                        crate::color::ColorSpace::DeviceCmyk
+                    }
+                    Some(cs) => cs,
+                },
             };
 
             sc.register_colorspace(cs)

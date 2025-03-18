@@ -17,9 +17,9 @@ use krilla_macros::snapshot;
 
 use crate::embed::{embedded_file_impl, file_1};
 use crate::{
-    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_png_image, rect_to_path,
-    red_fill, settings_13, settings_15, settings_19, settings_23, settings_24, settings_7,
-    settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image,
+    rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_23, settings_24,
+    settings_7, settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -716,5 +716,28 @@ fn validate_pdf_a1_b_ttc(d: &mut Document) {
         "文",
         false,
         TextDirection::Auto,
+    );
+}
+
+#[test]
+fn validate_pdf_a1_b_cmyk_image_without_icc_profile() {
+    let mut document = Document::new_with(settings_19());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let image = load_jpg_image("cmyk.jpg");
+    let size = image.size();
+    surface.draw_image(
+        image.clone(),
+        Size::from_wh(size.0 as f32, size.1 as f32).unwrap(),
+    );
+
+    surface.finish();
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::MissingCMYKProfile
+        ]))
     );
 }
