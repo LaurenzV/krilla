@@ -698,6 +698,7 @@ fn validate_pdf_a4_f_with_embedded_file(d: &mut Document) {
 }
 
 // See https://github.com/LaurenzV/krilla/issues/162
+#[cfg(target_os = "macos")]
 #[snapshot(document, settings_19)]
 fn validate_pdf_a1_b_ttc(d: &mut Document) {
     let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")

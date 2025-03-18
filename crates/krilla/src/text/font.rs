@@ -38,7 +38,6 @@ impl Font {
     /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(data: Data, index: u32, allow_color: bool) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref(), index, allow_color)?;
-        eprintln!("{:?}", index);
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
