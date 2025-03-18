@@ -2,12 +2,6 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Ref};
-
-use crate::chunk_container::ChunkContainerFn;
-use crate::serialize::SerializeContext;
-use crate::util::SipHashable;
-
 /// A type that holds some bytes.
 #[derive(Clone)]
 pub struct Data(pub(crate) Arc<dyn AsRef<[u8]> + Send + Sync>);
@@ -46,10 +40,4 @@ impl Debug for Data {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Data {{..}}")
     }
-}
-
-// TODO: Move
-pub(crate) trait Cacheable: SipHashable {
-    fn chunk_container(&self) -> ChunkContainerFn;
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
 }

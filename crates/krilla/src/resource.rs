@@ -11,7 +11,7 @@ use pdf_writer::{Dict, Finish, Ref};
 
 use crate::configure::PdfVersion;
 use crate::util::NameExt;
-use crate::Cacheable;
+use crate::serialize::Cacheable;
 
 pub(crate) trait Resource {
     fn new(ref_: Ref) -> Self;

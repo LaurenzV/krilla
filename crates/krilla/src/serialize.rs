@@ -11,7 +11,7 @@ use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use skrifa::raw::TableProvider;
 
-use crate::chunk_container::ChunkContainer;
+use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Size;
@@ -34,7 +34,7 @@ use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::SipHashable;
-use crate::{resource, Cacheable};
+use crate::resource;
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -863,4 +863,9 @@ impl GlobalObjects {
         assert!(self.tag_tree.is_taken());
         assert!(self.embedded_files.is_taken());
     }
+}
+
+pub(crate) trait Cacheable: SipHashable {
+    fn chunk_container(&self) -> ChunkContainerFn;
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
 }

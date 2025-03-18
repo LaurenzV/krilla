@@ -8,10 +8,10 @@ use pdf_writer::{Chunk, Finish, Name, Ref};
 
 use crate::chunk_container::ChunkContainerFn;
 use crate::resource::Resourceable;
-use crate::serialize::SerializeContext;
+use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::Prehashed;
-use crate::{resource, Cacheable};
+use crate::resource;
 
 /// An ICC profile.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]

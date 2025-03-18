@@ -16,9 +16,9 @@ use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::num::NormalizedF32;
 use crate::resource::Resourceable;
-use crate::serialize::SerializeContext;
+use crate::serialize::{Cacheable, SerializeContext};
 use crate::util::{set_colorspace, RectExt};
-use crate::{resource, Cacheable};
+use crate::resource;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
