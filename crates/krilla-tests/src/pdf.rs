@@ -1,10 +1,12 @@
+use krilla::error::KrillaError;
+use krilla::geom::Size;
 use krilla::page::Page;
 use krilla::Document;
 use krilla_macros::snapshot;
 
 use crate::metadata::metadata_impl;
 use crate::text::simple_text_impl;
-use crate::{rect_to_path, red_fill, NOTO_SANS};
+use crate::{load_png_image, rect_to_path, red_fill, settings_16, NOTO_SANS};
 
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
@@ -37,4 +39,25 @@ fn pdf_14_icc_srgb(page: &mut Page) {
 fn pdf_14_icc_sgray(page: &mut Page) {
     let mut surface = page.surface();
     surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+}
+
+#[test]
+fn pdf_14_no_sixteen_bit_images() {
+    let mut document = Document::new_with(settings_16());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let image = load_png_image("luma16.png");
+    let size = image.size();
+    surface.draw_image(
+        image.clone(),
+        Size::from_wh(size.0 as f32, size.1 as f32).unwrap(),
+    );
+
+    surface.finish();
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::SixteenBitImage(image.clone(), None))
+    );
 }

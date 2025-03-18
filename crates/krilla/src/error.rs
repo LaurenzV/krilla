@@ -6,6 +6,7 @@
 use crate::configure::ValidationError;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
+use crate::surface::Location;
 use crate::text::Font;
 
 /// A wrapper type for krilla errors.
@@ -24,4 +25,7 @@ pub enum KrillaError {
     /// An image couldn't be processed properly.
     #[cfg(feature = "raster-images")]
     Image(Image),
+    /// A sixteen bit image was used, even though it isn't
+    /// supported by the used PDF version (only available in PDF 1.5+).
+    SixteenBitImage(Image, Option<Location>),
 }
