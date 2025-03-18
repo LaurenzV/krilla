@@ -8,7 +8,6 @@
 //! - WEBP
 //! - Custom image formats via [`CustomImage`]
 
-// TODO: CLean up and update docs
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
@@ -368,13 +367,9 @@ impl Image {
 
         let cs = {
             let cs = match self.color_space() {
-                ImageColorspace::Rgb => {
-                    rgb::Color::rgb_color_space(sc.serialize_settings().no_device_cs)
-                }
-                ImageColorspace::Luma => {
-                    luma::Color::color_space(sc.serialize_settings().no_device_cs)
-                }
-                ImageColorspace::Cmyk => cmyk::Color::color_space(&sc.serialize_settings()),
+                ImageColorspace::Rgb => rgb::color_space(sc.serialize_settings().no_device_cs),
+                ImageColorspace::Luma => luma::color_space(sc.serialize_settings().no_device_cs),
+                ImageColorspace::Cmyk => cmyk::color_space(&sc.serialize_settings()),
             };
 
             sc.register_colorspace(cs)

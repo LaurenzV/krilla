@@ -12,7 +12,6 @@ exclude = ["src/tests"]
 
 
 [features]
-# TODO: Remove simple-text?
 default = ["raster-images", "simple-text"]
 
 # Enable global caching of certain objects

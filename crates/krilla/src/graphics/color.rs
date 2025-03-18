@@ -77,9 +77,9 @@ impl Color {
     pub(crate) fn color_space(&self, sc: &mut SerializeContext) -> ColorSpace {
         match self {
             Color::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
-            Color::Luma(_) => luma::Color::color_space(sc.serialize_settings().no_device_cs),
+            Color::Luma(_) => luma::color_space(sc.serialize_settings().no_device_cs),
             Color::Cmyk(_) => {
-                let color_space = cmyk::Color::color_space(&sc.serialize_settings());
+                let color_space = cmyk::color_space(&sc.serialize_settings());
                 if color_space == ColorSpace::DeviceCmyk {
                     sc.register_validation_error(ValidationError::MissingCMYKProfile);
                 }
@@ -116,14 +116,6 @@ pub mod luma {
         pub(crate) fn to_pdf_color(self) -> f32 {
             self.0 as f32 / 255.0
         }
-
-        pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
-            if no_device_cs {
-                ColorSpace::Luma
-            } else {
-                ColorSpace::DeviceGray
-            }
-        }
     }
 
     impl From<Color> for super::Color {
@@ -135,6 +127,14 @@ pub mod luma {
     impl Default for Color {
         fn default() -> Self {
             Color::new(0)
+        }
+    }
+
+    pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
+        if no_device_cs {
+            ColorSpace::Luma
+        } else {
+            ColorSpace::DeviceGray
         }
     }
 }
@@ -163,17 +163,6 @@ pub mod cmyk {
                 self.3 as f32 / 255.0,
             ]
         }
-
-        pub(crate) fn color_space(ss: &SerializeSettings) -> ColorSpace {
-            if ss.no_device_cs {
-                ss.clone()
-                    .cmyk_profile
-                    .map(|p| ColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())))
-                    .unwrap_or(ColorSpace::DeviceCmyk)
-            } else {
-                ColorSpace::DeviceCmyk
-            }
-        }
     }
 
     impl From<Color> for super::Color {
@@ -185,6 +174,17 @@ pub mod cmyk {
     impl Default for Color {
         fn default() -> Self {
             Color::new(0, 0, 0, 255)
+        }
+    }
+
+    pub(crate) fn color_space(ss: &SerializeSettings) -> ColorSpace {
+        if ss.no_device_cs {
+            ss.clone()
+                .cmyk_profile
+                .map(|p| ColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())))
+                .unwrap_or(ColorSpace::DeviceCmyk)
+        } else {
+            ColorSpace::DeviceCmyk
         }
     }
 }
@@ -248,22 +248,21 @@ pub mod rgb {
         }
 
         pub(crate) fn color_space(&self, no_device_cs: bool) -> ColorSpace {
-            Color::rgb_color_space(no_device_cs)
-        }
-
-        // TODO: Rename
-        pub(crate) fn rgb_color_space(no_device_cs: bool) -> ColorSpace {
-            if no_device_cs {
-                ColorSpace::Srgb
-            } else {
-                ColorSpace::DeviceRgb
-            }
+            color_space(no_device_cs)
         }
     }
 
     impl From<Color> for super::Color {
         fn from(val: Color) -> Self {
             super::Color::Rgb(val)
+        }
+    }
+
+    pub(crate) fn color_space(no_device_cs: bool) -> ColorSpace {
+        if no_device_cs {
+            ColorSpace::Srgb
+        } else {
+            ColorSpace::DeviceRgb
         }
     }
 }
