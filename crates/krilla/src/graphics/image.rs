@@ -14,6 +14,7 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
+use zune_jpeg::zune_core::bit_depth::BitDepth;
 use zune_jpeg::zune_core::result::DecodingResult;
 use zune_jpeg::JpegDecoder;
 use zune_png::zune_core::colorspace::ColorSpace;
@@ -136,6 +137,7 @@ struct ImageMetadata {
     size: (u32, u32),
     color_space: ImageColorspace,
     has_alpha: bool,
+    bits_per_component: BitsPerComponent,
     icc: Option<GenericICCProfile>,
 }
 
@@ -257,6 +259,7 @@ impl Image {
             size: image.size(),
             color_space: image.color_space(),
             has_alpha: image.alpha_channel().is_some(),
+            bits_per_component: image.bits_per_component(),
             icc: image
                 .icc_profile()
                 .and_then(|d| get_icc_profile_type(d, image.color_space())),
@@ -296,6 +299,7 @@ impl Image {
         let metadata = ImageMetadata {
             has_alpha: true,
             size: (width, height),
+            bits_per_component: BitsPerComponent::Eight,
             color_space: ImageColorspace::Rgb,
             icc: None,
         };
@@ -339,6 +343,7 @@ impl Image {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
             sc.new_ref()
         });
+
         let icc_ref = self.icc().and_then(|ic| {
             if sc
                 .serialize_settings()
@@ -375,7 +380,18 @@ impl Image {
             sc.register_colorspace(cs)
         };
 
+        let supports_bit_depth = sc
+            .serialize_settings()
+            .configuration
+            .version()
+            .supports_bit_depth(self.0.metadata.bits_per_component);
+        let location = sc.location;
+
         Deferred::new(move || {
+            if !supports_bit_depth {
+                return Err(KrillaError::SixteenBitImage(self.clone(), location));
+            }
+
             let mut chunk = Chunk::new();
 
             let repr = self
@@ -464,6 +480,11 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
         (info.width as u32, info.height as u32)
     };
     let color_space = decoder.get_colorspace()?;
+    let bits_per_component = match decoder.get_depth()? {
+        BitDepth::Eight => BitsPerComponent::Eight,
+        BitDepth::Sixteen => BitsPerComponent::Sixteen,
+        _ => unreachable!(),
+    };
     let image_color_space = color_space.try_into().ok()?;
     let icc = decoder
         .get_info()?
@@ -474,6 +495,7 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
     Some(ImageMetadata {
         has_alpha: color_space.has_alpha(),
         size,
+        bits_per_component,
         color_space: image_color_space,
         icc,
     })
@@ -519,6 +541,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
     Some(ImageMetadata {
         has_alpha: false,
         size,
+        bits_per_component: BitsPerComponent::Eight,
         color_space: image_color_space,
         icc,
     })
@@ -571,6 +594,7 @@ fn gif_metadata(data: &[u8]) -> Option<ImageMetadata> {
     Some(ImageMetadata {
         // We always decode GIFs using RGBA, see `decode_gif`
         has_alpha: true,
+        bits_per_component: BitsPerComponent::Eight,
         size: (size.width as u32, size.height as u32),
         color_space: ImageColorspace::Rgb,
         icc: None,
@@ -588,6 +612,7 @@ fn webp_metadata(data: &[u8]) -> Option<ImageMetadata> {
 
     Some(ImageMetadata {
         has_alpha: decoder.has_alpha(),
+        bits_per_component: BitsPerComponent::Eight,
         size,
         color_space,
         icc,

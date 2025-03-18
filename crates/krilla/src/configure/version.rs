@@ -3,6 +3,8 @@ use pdf_writer::Pdf;
 use xmp_writer::XmpWriter;
 
 use crate::graphics::icc::{ICCMetadata, ICCProfile};
+#[cfg(feature = "raster-images")]
+use crate::image::BitsPerComponent;
 
 /// The version of a PDF document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -68,6 +70,14 @@ impl PdfVersion {
             PdfVersion::Pdf16 => metadata.major <= 4 && metadata.minor <= 1,
             PdfVersion::Pdf17 => metadata.major <= 4 && metadata.minor <= 2,
             PdfVersion::Pdf20 => metadata.major <= 4 && metadata.minor <= 2,
+        }
+    }
+
+    #[cfg(feature = "raster-images")]
+    pub(crate) fn supports_bit_depth(&self, bits_per_component: BitsPerComponent) -> bool {
+        match bits_per_component {
+            BitsPerComponent::Eight => true,
+            BitsPerComponent::Sixteen => *self >= PdfVersion::Pdf15,
         }
     }
 
