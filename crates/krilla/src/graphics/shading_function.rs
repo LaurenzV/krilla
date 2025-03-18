@@ -263,7 +263,7 @@ fn serialize_postscript_shading(
     let function_ref =
         select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
     let cs = if use_opacities {
-        luma::Color::color_space(sc.serialize_settings().no_device_cs)
+        luma::color_space(sc.serialize_settings().no_device_cs)
     } else {
         post_script_gradient.stops[0].color.color_space(sc)
     };
@@ -293,7 +293,7 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        luma::Color::color_space(sc.serialize_settings().no_device_cs)
+        luma::color_space(sc.serialize_settings().no_device_cs)
     } else {
         radial_axial_gradient.stops[0].color.color_space(sc)
     };

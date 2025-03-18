@@ -86,11 +86,7 @@ impl ChunkContainer {
             chunk.renumber_into(&mut pdf, |old| remapper[&old]);
         })?;
 
-        // TODO: Replace with `is_none_or` once MSRV allows to.
-        let missing_title = match self.metadata.as_ref() {
-            None => true,
-            Some(m) => m.title.is_none(),
-        };
+        let missing_title = self.metadata.as_ref().is_none_or(|m| m.title.is_none());
 
         if missing_title {
             sc.register_validation_error(ValidationError::NoDocumentTitle);
