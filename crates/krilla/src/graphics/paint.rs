@@ -199,6 +199,12 @@ impl From<cmyk::Color> for Paint {
     }
 }
 
+impl From<Color> for Paint {
+    fn from(value: Color) -> Self {
+        Paint(InnerPaint::Color(value))
+    }
+}
+
 impl From<LinearGradient> for Paint {
     fn from(value: LinearGradient) -> Self {
         Paint(InnerPaint::LinearGradient(value))

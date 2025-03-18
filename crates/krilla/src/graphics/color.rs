@@ -52,7 +52,7 @@ pub(crate) const DEVICE_GRAY: &str = "DeviceGray";
 /// The PDF name for the device CMYK color space.
 pub(crate) const DEVICE_CMYK: &str = "DeviceCMYK";
 
-/// A wrapper enum that can hold colors from different color spaces.
+/// A wrapper enum for storing colors from different color spaces.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Color {
     /// An RGB-based color.
