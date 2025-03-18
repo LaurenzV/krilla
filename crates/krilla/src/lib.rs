@@ -133,7 +133,7 @@ fn main() {
 ```
 [krilla]: https://github.com/LaurenzV/krilla
 [pdf-writer]: https://github.com/typst/pdf-writer
-[examples]: https://github.com/LaurenzV/krilla/tree/main/examples
+[examples]: https://github.com/LaurenzV/krilla/tree/main/crates/krilla/examples
 */
 
 #![deny(missing_docs)]
