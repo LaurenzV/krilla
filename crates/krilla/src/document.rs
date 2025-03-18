@@ -34,14 +34,14 @@ impl Default for Document {
 }
 
 impl Document {
-    /// Create a new document with default settings.
+    /// Create a new document with default serialize settings.
     pub fn new() -> Self {
         Self {
             serializer_context: SerializeContext::new(SerializeSettings::default()),
         }
     }
 
-    /// Create a new document with specific serialize settings.
+    /// Create a new document with custom serialize settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
         Self {
             serializer_context: SerializeContext::new(serialize_settings),

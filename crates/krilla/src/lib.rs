@@ -21,6 +21,7 @@ with a gradient fill.
 For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
+use std::path;
 use krilla::color::rgb;
 use krilla::text::Font;
 use krilla::geom::{Point, PathBuilder};
@@ -127,7 +128,11 @@ surface.finish();
 page.finish();
 
 let pdf = document.finish().unwrap();
-std::fs::write("../../target/example.pdf", &pdf).unwrap();
+let path = path::absolute("basic.pdf").unwrap();
+eprintln!("Saved PDF to '{}'", path.display());
+
+// Write the PDF to a file.
+std::fs::write(path, &pdf).unwrap();
 ```
 [krilla]: https://github.com/LaurenzV/krilla
 [pdf-writer]: https://github.com/typst/pdf-writer

@@ -127,14 +127,26 @@ Consult the documentation to see all features that are available in krilla.
 For more examples, feel free to take a look at the [examples](https://github.com/LaurenzV/krilla/tree/main/examples) directory of the GitHub repository.
 
 ```rs
+use std::path;
+use krilla::color::rgb;
+use krilla::text::Font;
+use krilla::geom::{Point, PathBuilder};
+use krilla::paint::{SpreadMethod, LinearGradient, Stop, FillRule};
+use krilla::text::TextDirection;
+use krilla::paint::Fill;
+use krilla::Document;
+use krilla::page::PageSettings;
+use std::path::PathBuf;
+use krilla::num::NormalizedF32;
+
 // Create a new document.
 let mut document = Document::new();
 // Load a font.
-let mut font = {
+let font = {
     let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts/NotoSans-Regular.ttf");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
     let data = std::fs::read(&path).unwrap();
-    Font::new(Arc::new(data), 0, vec![], None).unwrap()
+    Font::new(data.into(), 0, true).unwrap()
 };
 
 // Add a new page with dimensions 200x200.
@@ -144,54 +156,89 @@ let mut surface = page.surface();
 // Draw some text.
 surface.fill_text(
     Point::from_xy(0.0, 25.0),
-    Fill::default(),
     font.clone(),
     14.0,
-    &[],
     "This text has font size 14!",
     false,
-    None
+    TextDirection::Auto
 );
+
+surface.set_fill(Fill {
+    paint: rgb::Color::new(255, 0, 0).into(),
+    opacity: NormalizedF32::new(0.5).unwrap(),
+    rule: Default::default(),
+});
 // Draw some more text, in a different color with an opacity and bigger font size.
 surface.fill_text(
     Point::from_xy(0.0, 50.0),
-    Fill {
-        paint: rgb::Color::new(255, 0, 0).into(),
-        opacity: NormalizedF32::new(0.5).unwrap(),
-        rule: Default::default(),
-    },
     font.clone(),
     16.0,
-    &[],
     "This text has font size 16!",
     false,
-    None
+    TextDirection::Auto
 );
 
 // Finish the page.
 surface.finish();
 page.finish();
 
-// Load an SVG.
-let svg_tree = {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
-    let data = std::fs::read(&path).unwrap();
-    usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap()
+// Start a new page.
+let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+// Create the triangle.
+let triangle = {
+    let mut pb = PathBuilder::new();
+    pb.move_to(100.0, 20.0);
+    pb.line_to(160.0, 160.0);
+    pb.line_to(40.0, 160.0);
+    pb.close();
+
+    pb.finish().unwrap()
 };
 
-// Start a new page, with the same dimensions as the SVG.
-let svg_size = svg_tree.size();
-let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
+// Create the linear gradient.
+let lg = LinearGradient {
+    x1: 60.0,
+    y1: 0.0,
+    x2: 140.0,
+    y2: 0.0,
+    transform: Default::default(),
+    spread_method: SpreadMethod::Repeat,
+    stops: vec![
+        Stop {
+            offset: NormalizedF32::new(0.2).unwrap(),
+            color: rgb::Color::new(255, 0, 0).into(),
+            opacity: NormalizedF32::ONE,
+        },
+        Stop {
+            offset: NormalizedF32::new(0.8).unwrap(),
+            color: rgb::Color::new(255, 255, 0).into(),
+            opacity: NormalizedF32::ONE,
+        },
+    ],
+    anti_alias: false,
+};
 let mut surface = page.surface();
-// Draw the SVG.
-surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());
+
+// Set the fill.
+surface.set_fill(Fill {
+    paint: lg.into(),
+    rule: FillRule::EvenOdd,
+    opacity: NormalizedF32::ONE
+});
+
+// Fill the path.
+surface.fill_path(&triangle);
 
 // Finish up and write the resulting PDF.
 surface.finish();
 page.finish();
+
 let pdf = document.finish().unwrap();
-std::fs::write("target/example.pdf", &pdf).unwrap();
+let path = path::absolute("basic.pdf").unwrap();
+eprintln!("Saved PDF to '{}'", path.display());
+
+// Write the PDF to a file.
+std::fs::write(path, &pdf).unwrap();
 ```
 
 # Safety
