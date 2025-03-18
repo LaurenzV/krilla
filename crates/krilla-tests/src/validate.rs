@@ -696,3 +696,25 @@ fn validate_pdf_a3_with_embedded_file(d: &mut Document) {
 fn validate_pdf_a4_f_with_embedded_file(d: &mut Document) {
     embedded_file_impl(d)
 }
+
+// See https://github.com/LaurenzV/krilla/issues/162
+#[cfg(target_os = "macos")]
+#[snapshot(document, settings_19)]
+fn validate_pdf_a1_b_ttc(d: &mut Document) {
+    let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
+        .unwrap()
+        .into();
+    let font = Font::new(font_data.clone(), 3, true).unwrap();
+
+    let mut page = d.start_page();
+    let mut surface = page.surface();
+
+    surface.fill_text(
+        Point::from_xy(0.0, 75.0),
+        font.clone(),
+        20.0,
+        "文",
+        false,
+        TextDirection::Auto,
+    );
+}

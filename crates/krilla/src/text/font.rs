@@ -47,7 +47,7 @@ impl Font {
             Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
                 data.0.clone(),
                 |data| {
-                    let font_ref = FontRef::from_index(data.as_ref(), 0).unwrap();
+                    let font_ref = FontRef::from_index(data.as_ref(), font_info.index).unwrap();
                     FontRefYoke {
                         font_ref: font_ref.clone(),
                         glyph_metrics: font_ref
