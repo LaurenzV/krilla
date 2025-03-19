@@ -384,10 +384,11 @@ pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
 /// Converts a datetime to an xmp-writer datetime.
 fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
     let timezone = match (datetime.utc_offset_hour, datetime.utc_offset_minute) {
-        (Some(h), m) => {
-            Some(Timezone::Local { hour: h, minute: m as i8 })
-        }
-        _ => Some(Timezone::Utc)
+        (Some(h), m) => Some(Timezone::Local {
+            hour: h,
+            minute: m as i8,
+        }),
+        _ => Some(Timezone::Utc),
     };
 
     // We always assume a full date with all fields because for some reason
