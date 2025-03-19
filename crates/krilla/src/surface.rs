@@ -19,6 +19,7 @@ use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
+use crate::tagging::SpanTag;
 use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
@@ -149,6 +150,27 @@ impl<'a> Surface<'a> {
         } else {
             Identifier::dummy()
         }
+    }
+
+    /// A temporary hacky method to support alt text in Typst. Will be removed in the future.
+    #[doc(hidden)]
+    pub fn start_alt_text(&mut self, text: &str) {
+        let tag = ContentTag::Span(SpanTag {
+            lang: None,
+            alt_text: Some(text),
+            expanded: None,
+            actual_text: None,
+        });
+
+        self.bd
+            .get_mut()
+            .start_marked_content_with_properties(self.sc, None, tag);
+    }
+
+    /// A temporary hacky method to support alt text in Typst. Will be removed in the future.
+    #[doc(hidden)]
+    pub fn end_alt_text(&mut self) {
+        self.bd.get_mut().end_marked_content();
     }
 
     /// End the current tagged section.
