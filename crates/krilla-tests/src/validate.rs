@@ -4,7 +4,7 @@ use krilla::configure::ValidationError;
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::geom::{Point, Rect, Size};
-use krilla::metadata::Metadata;
+use krilla::metadata::{DateTime, Metadata};
 use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
@@ -18,8 +18,8 @@ use krilla_macros::snapshot;
 use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image,
-    rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_23, settings_24,
-    settings_7, settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+    metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_23,
+    settings_24, settings_7, settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -74,7 +74,9 @@ pub fn validate_pdf_a_q_nesting_28() {
 #[test]
 pub fn validate_pdf_a_string_length() {
     let mut document = pdfa_document();
-    let metadata = Metadata::new().creator("A".repeat(32768));
+    let metadata = Metadata::new()
+        .creator("A".repeat(32768))
+        .creation_date(DateTime::new(2021));
     document.set_metadata(metadata);
     assert_eq!(
         document.finish(),
@@ -295,6 +297,9 @@ fn validate_pdf_full_example(document: &mut Document) {
 
     surface.finish();
     page.finish();
+
+    let metadata = metadata_1();
+    document.set_metadata(metadata);
 }
 
 pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
@@ -333,7 +338,7 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     tag_tree.push(id2);
     document.set_tag_tree(tag_tree);
 
-    let metadata = Metadata::new().language("en".to_string());
+    let metadata = metadata_1();
     document.set_metadata(metadata);
 }
 
@@ -376,7 +381,7 @@ fn validate_pdfu_invalid_codepoint() {
 #[test]
 fn validate_pdfa_private_unicode_codepoint() {
     let mut document = Document::new_with(settings_13());
-    let metadata = Metadata::new().language("en".to_string());
+    let metadata = metadata_1();
     document.set_metadata(metadata);
     document.set_tag_tree(TagTree::new());
     let font_data = NOTO_SANS.clone();
@@ -591,7 +596,7 @@ fn pdf_version_14_tagged(document: &mut Document) {
 #[test]
 fn validate_pdf_a1_no_transparency() {
     let mut document = Document::new_with(settings_19());
-    let metadata = Metadata::new().language("en".to_string());
+    let metadata = metadata_1();
     document.set_metadata(metadata);
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -611,7 +616,7 @@ fn validate_pdf_a1_no_transparency() {
 #[test]
 fn validate_pdf_a1_no_image_transparency() {
     let mut document = Document::new_with(settings_19());
-    let metadata = Metadata::new().language("en".to_string());
+    let metadata = metadata_1();
     document.set_metadata(metadata);
 
     let image = load_png_image("rgba8.png");
@@ -661,7 +666,7 @@ fn validate_pdf_a1_limits() {
 #[test]
 fn validate_pdf_a3_a_no_tag_tree() {
     let mut document = Document::new_with(settings_24());
-    document.set_metadata(Metadata::new().language("en".to_string()));
+    document.set_metadata(metadata_1());
 
     assert_eq!(
         document.finish(),

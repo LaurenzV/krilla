@@ -6,10 +6,11 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use pdf_writer::{Pdf, Ref, TextStr};
+use pdf_writer::{Finish, Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Configuration, PdfVersion};
+use crate::configure::{Configuration, PdfVersion, ValidationError};
+use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]
@@ -121,7 +122,12 @@ impl Metadata {
             || self.subject.is_some()
     }
 
-    pub(crate) fn serialize_xmp_metadata(&self, xmp: &mut XmpWriter) {
+    pub(crate) fn serialize_xmp_metadata(
+        &self,
+        xmp: &mut XmpWriter,
+        sc: &mut SerializeContext,
+        instance_id: &str,
+    ) {
         if let Some(title) = &self.title {
             xmp.title([(None, title.as_str())]);
         }
@@ -168,9 +174,52 @@ impl Metadata {
             xmp.language([LangId(lang)]);
         }
 
-        if let Some(date_time) = self.creation_date {
-            xmp.modify_date(xmp_date(date_time));
-            xmp.create_date(xmp_date(date_time));
+        if let Some(date) = self.creation_date.map(|d| xmp_date(d)) {
+            xmp.modify_date(date);
+            xmp.create_date(date);
+
+            if sc
+                .serialize_settings()
+                .validator()
+                .requires_file_provenance_information()
+            {
+                let mut history = xmp.history();
+                let mut saved = history.add_event();
+
+                saved
+                    .action(xmp_writer::ResourceEventAction::Saved)
+                    .when(date);
+
+                if !sc
+                    .serialize_settings()
+                    .validator()
+                    .prohibits_instance_id_in_xmp_metadata()
+                {
+                    saved.instance_id(&format!("{instance_id}_source"));
+                }
+
+                saved.finish();
+
+                let mut converted = history.add_event();
+
+                converted
+                    .action(xmp_writer::ResourceEventAction::Converted)
+                    .when(date);
+
+                if let Some(creator) = &self.creator {
+                    converted.software_agent(&creator);
+                }
+
+                if !sc
+                    .serialize_settings()
+                    .validator()
+                    .prohibits_instance_id_in_xmp_metadata()
+                {
+                    converted.instance_id(&format!("{instance_id}_source"));
+                }
+            }
+        } else {
+            sc.register_validation_error(ValidationError::MissingDocumentDate);
         }
     }
 

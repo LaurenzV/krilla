@@ -453,7 +453,7 @@ impl Validator {
                     EmbedError::MissingMimeType => false,
                 },
                 ValidationError::MissingTagging => true,
-                ValidationError::MissingDocumentDate => true,
+                ValidationError::MissingDocumentDate => false,
             },
         }
     }
@@ -631,6 +631,28 @@ impl Validator {
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
             Validator::A4 | Validator::A4F | Validator::A4E => true,
+            Validator::UA1 => false,
+        }
+    }
+
+    pub(crate) fn requires_file_provenance_information(&self) -> bool {
+        match self {
+            Validator::None => false,
+            Validator::A1_A | Validator::A1_B => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
+            Validator::UA1 => false,
+        }
+    }
+
+    pub(crate) fn prohibits_instance_id_in_xmp_metadata(&self) -> bool {
+        match self {
+            Validator::None => false,
+            Validator::A1_A | Validator::A1_B => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
+            Validator::A4 | Validator::A4F | Validator::A4E => false,
             Validator::UA1 => false,
         }
     }
