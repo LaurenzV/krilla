@@ -369,58 +369,36 @@ impl DateTime {
 
 /// Converts a datetime to a pdf-writer date.
 pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
-    let mut pdf_date = pdf_writer::Date::new(date_time.year);
-
-    if let Some(month) = date_time.month {
-        pdf_date = pdf_date.month(month);
-    }
-
-    if let Some(day) = date_time.day {
-        pdf_date = pdf_date.day(day);
-    }
-
-    if let Some(h) = date_time.hour {
-        pdf_date = pdf_date.hour(h);
-    }
-
-    if let Some(m) = date_time.minute {
-        pdf_date = pdf_date.minute(m);
-    }
-
-    if let Some(s) = date_time.second {
-        pdf_date = pdf_date.second(s);
-    }
-
-    if let Some(oh) = date_time.utc_offset_hour {
-        pdf_date = pdf_date.utc_offset_hour(oh);
-    }
-
-    pdf_date = pdf_date.utc_offset_minute(date_time.utc_offset_minute);
-
-    pdf_date
+    // We always assume a full date with all fields because for some reason
+    // Acrobat doesn't like PDF/A1 files without everything set.
+    pdf_writer::Date::new(date_time.year)
+        .month(date_time.month.unwrap_or(1))
+        .day(date_time.day.unwrap_or(1))
+        .hour(date_time.hour.unwrap_or(0))
+        .minute(date_time.minute.unwrap_or(0))
+        .second(date_time.second.unwrap_or(0))
+        .utc_offset_hour(date_time.utc_offset_hour.unwrap_or(0))
+        .utc_offset_minute(date_time.utc_offset_minute)
 }
 
 /// Converts a datetime to an xmp-writer datetime.
 fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
     let timezone = match (datetime.utc_offset_hour, datetime.utc_offset_minute) {
-        (None, _) => Some(Timezone::Utc),
-        (Some(0), 0) => Some(Timezone::Utc),
         (Some(h), m) => {
-            if let Ok(minute) = i8::try_from(m) {
-                Some(Timezone::Local { hour: h, minute })
-            } else {
-                None
-            }
+            Some(Timezone::Local { hour: h, minute: m as i8 })
         }
+        _ => Some(Timezone::Utc)
     };
 
+    // We always assume a full date with all fields because for some reason
+    // Acrobat doesn't like PDF/A1 files without everything set.
     xmp_writer::DateTime {
         year: datetime.year,
-        month: datetime.month,
-        day: datetime.day,
-        hour: datetime.hour,
-        minute: datetime.minute,
-        second: datetime.second,
+        month: Some(datetime.month.unwrap_or(1)),
+        day: Some(datetime.day.unwrap_or(1)),
+        hour: Some(datetime.hour.unwrap_or(0)),
+        minute: Some(datetime.minute.unwrap_or(0)),
+        second: Some(datetime.second.unwrap_or(0)),
         timezone,
     }
 }
