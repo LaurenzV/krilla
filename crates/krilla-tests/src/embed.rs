@@ -76,7 +76,7 @@ fn embedded_file_multiple(d: &mut Document) {
 
 pub(crate) fn embedded_file_impl(d: &mut Document) {
     let metadata = Metadata::new()
-        .modification_date(DateTime::new(2001))
+        .creation_date(DateTime::new(2001))
         .language("en".to_string());
     d.set_metadata(metadata);
     let f1 = file_1();

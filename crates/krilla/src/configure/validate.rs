@@ -108,6 +108,10 @@ pub enum ValidationError {
     MissingDocumentOutline,
     /// An annotation is missing an alt text.
     MissingAnnotationAltText,
+    /// The date of the document is missing.
+    // We need this because for some standards we need to add the
+    // xmp:History attribute.
+    MissingDocumentDate,
     /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
     Transparency(Option<Location>),
     /// The PDF contains an image with `interpolate` set to `true`.
@@ -310,6 +314,7 @@ impl Validator {
                     EmbedError::MissingMimeType => false,
                 },
                 ValidationError::MissingTagging => *self == Validator::A1_A,
+                ValidationError::MissingDocumentDate => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -346,6 +351,7 @@ impl Validator {
                     EmbedError::MissingMimeType => false,
                 },
                 ValidationError::MissingTagging => *self == Validator::A2_A,
+                ValidationError::MissingDocumentDate => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -377,6 +383,7 @@ impl Validator {
                     EmbedError::MissingMimeType => true,
                 },
                 ValidationError::MissingTagging => *self == Validator::A3_A,
+                ValidationError::MissingDocumentDate => true,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
                 ValidationError::TooLongString => false,
@@ -414,6 +421,7 @@ impl Validator {
                 },
                 // Only recommended, not required.
                 ValidationError::MissingTagging => false,
+                ValidationError::MissingDocumentDate => true,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -445,6 +453,7 @@ impl Validator {
                     EmbedError::MissingMimeType => false,
                 },
                 ValidationError::MissingTagging => true,
+                ValidationError::MissingDocumentDate => true,
             },
         }
     }
@@ -492,6 +501,7 @@ impl Validator {
     }
 
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
+        // TODO: Also needed for PDF/UA?
         if self.is_pdf_a() {
             let mut extension_schemas = xmp.extension_schemas();
             extension_schemas

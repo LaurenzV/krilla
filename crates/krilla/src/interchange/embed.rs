@@ -83,10 +83,7 @@ impl Cacheable for EmbeddedFile {
         let mut params = embedded_file_stream.params();
         params.size(self.data.as_ref().len() as i32);
 
-        if let Some(date_time) = sc
-            .metadata()
-            .and_then(|m| m.modification_date.or(m.creation_date))
-        {
+        if let Some(date_time) = sc.metadata().and_then(|m| m.creation_date) {
             let date = pdf_date(date_time);
             params.modification_date(date);
         } else {

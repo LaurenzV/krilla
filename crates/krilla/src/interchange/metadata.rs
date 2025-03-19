@@ -22,7 +22,6 @@ pub struct Metadata {
     pub(crate) authors: Option<Vec<String>>,
     pub(crate) document_id: Option<String>,
     pub(crate) language: Option<String>,
-    pub(crate) modification_date: Option<DateTime>,
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
 }
@@ -106,12 +105,6 @@ impl Metadata {
         self
     }
 
-    /// The modification date of the document.
-    pub fn modification_date(mut self, modification_date: DateTime) -> Self {
-        self.modification_date = Some(modification_date);
-        self
-    }
-
     /// The main text direction of the document.
     pub fn text_direction(mut self, text_direction: TextDirection) -> Self {
         self.text_direction = Some(text_direction);
@@ -124,7 +117,6 @@ impl Metadata {
             || self.keywords.is_some()
             || self.authors.is_some()
             || self.creator.is_some()
-            || self.modification_date.is_some()
             || self.creation_date.is_some()
             || self.subject.is_some()
     }
@@ -176,11 +168,8 @@ impl Metadata {
             xmp.language([LangId(lang)]);
         }
 
-        if let Some(date_time) = self.modification_date {
-            xmp.modify_date(xmp_date(date_time));
-        }
-
         if let Some(date_time) = self.creation_date {
+            xmp.modify_date(xmp_date(date_time));
             xmp.create_date(xmp_date(date_time));
         }
     }
@@ -229,11 +218,8 @@ impl Metadata {
                 }
             }
 
-            if let Some(date_time) = self.modification_date {
-                document_info.modified_date(pdf_date(date_time));
-            }
-
             if let Some(date_time) = self.creation_date {
+                document_info.modified_date(pdf_date(date_time));
                 document_info.creation_date(pdf_date(date_time));
             }
         }
