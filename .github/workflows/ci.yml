@@ -189,7 +189,7 @@ jobs:
           | xargs /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
         
       - name: Run veraPDF tests  
-        run: find store -name "validation*.pdf" 
+        run: find store -name "validate*.pdf" 
           | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
 
   checks:
