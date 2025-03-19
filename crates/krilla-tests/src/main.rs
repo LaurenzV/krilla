@@ -20,6 +20,7 @@ use krilla::geom::{Path, PathBuilder, Point, Transform};
 use krilla::icc::ICCProfile;
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::mask::{Mask, MaskType};
+use krilla::metadata::{DateTime, Metadata};
 use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stop, Stroke};
@@ -1035,6 +1036,12 @@ pub fn settings_28() -> SerializeSettings {
         configuration: Configuration::new_with_validator(Validator::A4E),
         ..settings_1()
     }
+}
+
+pub fn metadata_1() -> Metadata {
+    Metadata::new()
+        .language("en".to_string())
+        .creation_date(DateTime::new(2001))
 }
 
 fn main() {

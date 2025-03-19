@@ -5,7 +5,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
 use krilla_macros::snapshot;
 
-use crate::Document;
+use crate::{metadata_1, Document};
 use crate::{settings_13, settings_23, ASSETS_PATH};
 
 pub(crate) fn file_1() -> EmbeddedFile {
@@ -75,9 +75,7 @@ fn embedded_file_multiple(d: &mut Document) {
 }
 
 pub(crate) fn embedded_file_impl(d: &mut Document) {
-    let metadata = Metadata::new()
-        .modification_date(DateTime::new(2001))
-        .language("en".to_string());
+    let metadata = metadata_1();
     d.set_metadata(metadata);
     let f1 = file_1();
     d.embed_file(f1);
@@ -103,7 +101,7 @@ fn embedded_file_duplicate() {
 #[test]
 fn embedded_file_pdf_a2() {
     let mut d = Document::new_with(settings_13());
-    let metadata = Metadata::new().language("en".to_string());
+    let metadata = metadata_1();
     d.set_metadata(metadata);
     d.set_tag_tree(TagTree::new());
 

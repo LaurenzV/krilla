@@ -6,10 +6,11 @@
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 
-use pdf_writer::{Pdf, Ref, TextStr};
+use pdf_writer::{Finish, Pdf, Ref, TextStr};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Configuration, PdfVersion};
+use crate::configure::{Configuration, PdfVersion, ValidationError};
+use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone)]
@@ -22,7 +23,6 @@ pub struct Metadata {
     pub(crate) authors: Option<Vec<String>>,
     pub(crate) document_id: Option<String>,
     pub(crate) language: Option<String>,
-    pub(crate) modification_date: Option<DateTime>,
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
 }
@@ -106,12 +106,6 @@ impl Metadata {
         self
     }
 
-    /// The modification date of the document.
-    pub fn modification_date(mut self, modification_date: DateTime) -> Self {
-        self.modification_date = Some(modification_date);
-        self
-    }
-
     /// The main text direction of the document.
     pub fn text_direction(mut self, text_direction: TextDirection) -> Self {
         self.text_direction = Some(text_direction);
@@ -124,12 +118,16 @@ impl Metadata {
             || self.keywords.is_some()
             || self.authors.is_some()
             || self.creator.is_some()
-            || self.modification_date.is_some()
             || self.creation_date.is_some()
             || self.subject.is_some()
     }
 
-    pub(crate) fn serialize_xmp_metadata(&self, xmp: &mut XmpWriter) {
+    pub(crate) fn serialize_xmp_metadata(
+        &self,
+        xmp: &mut XmpWriter,
+        sc: &mut SerializeContext,
+        instance_id: &str,
+    ) {
         if let Some(title) = &self.title {
             xmp.title([(None, title.as_str())]);
         }
@@ -176,12 +174,52 @@ impl Metadata {
             xmp.language([LangId(lang)]);
         }
 
-        if let Some(date_time) = self.modification_date {
-            xmp.modify_date(xmp_date(date_time));
-        }
+        if let Some(date) = self.creation_date.map(xmp_date) {
+            xmp.modify_date(date);
+            xmp.create_date(date);
 
-        if let Some(date_time) = self.creation_date {
-            xmp.create_date(xmp_date(date_time));
+            if sc
+                .serialize_settings()
+                .validator()
+                .requires_file_provenance_information()
+            {
+                let mut history = xmp.history();
+                let mut saved = history.add_event();
+
+                saved
+                    .action(xmp_writer::ResourceEventAction::Saved)
+                    .when(date);
+
+                if !sc
+                    .serialize_settings()
+                    .validator()
+                    .prohibits_instance_id_in_xmp_metadata()
+                {
+                    saved.instance_id(&format!("{instance_id}_source"));
+                }
+
+                saved.finish();
+
+                let mut converted = history.add_event();
+
+                converted
+                    .action(xmp_writer::ResourceEventAction::Converted)
+                    .when(date);
+
+                if let Some(creator) = &self.creator {
+                    converted.software_agent(creator);
+                }
+
+                if !sc
+                    .serialize_settings()
+                    .validator()
+                    .prohibits_instance_id_in_xmp_metadata()
+                {
+                    converted.instance_id(&format!("{instance_id}_source"));
+                }
+            }
+        } else {
+            sc.register_validation_error(ValidationError::MissingDocumentDate);
         }
     }
 
@@ -229,11 +267,8 @@ impl Metadata {
                 }
             }
 
-            if let Some(date_time) = self.modification_date {
-                document_info.modified_date(pdf_date(date_time));
-            }
-
             if let Some(date_time) = self.creation_date {
+                document_info.modified_date(pdf_date(date_time));
                 document_info.creation_date(pdf_date(date_time));
             }
         }
@@ -334,58 +369,37 @@ impl DateTime {
 
 /// Converts a datetime to a pdf-writer date.
 pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
-    let mut pdf_date = pdf_writer::Date::new(date_time.year);
-
-    if let Some(month) = date_time.month {
-        pdf_date = pdf_date.month(month);
-    }
-
-    if let Some(day) = date_time.day {
-        pdf_date = pdf_date.day(day);
-    }
-
-    if let Some(h) = date_time.hour {
-        pdf_date = pdf_date.hour(h);
-    }
-
-    if let Some(m) = date_time.minute {
-        pdf_date = pdf_date.minute(m);
-    }
-
-    if let Some(s) = date_time.second {
-        pdf_date = pdf_date.second(s);
-    }
-
-    if let Some(oh) = date_time.utc_offset_hour {
-        pdf_date = pdf_date.utc_offset_hour(oh);
-    }
-
-    pdf_date = pdf_date.utc_offset_minute(date_time.utc_offset_minute);
-
-    pdf_date
+    // We always assume a full date with all fields because for some reason
+    // Acrobat doesn't like PDF/A1 files without everything set.
+    pdf_writer::Date::new(date_time.year)
+        .month(date_time.month.unwrap_or(1))
+        .day(date_time.day.unwrap_or(1))
+        .hour(date_time.hour.unwrap_or(0))
+        .minute(date_time.minute.unwrap_or(0))
+        .second(date_time.second.unwrap_or(0))
+        .utc_offset_hour(date_time.utc_offset_hour.unwrap_or(0))
+        .utc_offset_minute(date_time.utc_offset_minute)
 }
 
 /// Converts a datetime to an xmp-writer datetime.
 fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
     let timezone = match (datetime.utc_offset_hour, datetime.utc_offset_minute) {
-        (None, _) => Some(Timezone::Utc),
-        (Some(0), 0) => Some(Timezone::Utc),
-        (Some(h), m) => {
-            if let Ok(minute) = i8::try_from(m) {
-                Some(Timezone::Local { hour: h, minute })
-            } else {
-                None
-            }
-        }
+        (Some(h), m) => Some(Timezone::Local {
+            hour: h,
+            minute: m as i8,
+        }),
+        _ => Some(Timezone::Utc),
     };
 
+    // We always assume a full date with all fields because for some reason
+    // Acrobat doesn't like PDF/A1 files without everything set.
     xmp_writer::DateTime {
         year: datetime.year,
-        month: datetime.month,
-        day: datetime.day,
-        hour: datetime.hour,
-        minute: datetime.minute,
-        second: datetime.second,
+        month: Some(datetime.month.unwrap_or(1)),
+        day: Some(datetime.day.unwrap_or(1)),
+        hour: Some(datetime.hour.unwrap_or(0)),
+        minute: Some(datetime.minute.unwrap_or(0)),
+        second: Some(datetime.second.unwrap_or(0)),
         timezone,
     }
 }

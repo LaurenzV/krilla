@@ -101,13 +101,6 @@ impl ChunkContainer {
             );
         }
 
-        let mut xmp = XmpWriter::new();
-        if let Some(metadata) = &self.metadata {
-            metadata.serialize_xmp_metadata(&mut xmp);
-        }
-
-        sc.serialize_settings().validator().write_xmp(&mut xmp);
-
         let instance_id = hash_base64(pdf.as_bytes());
 
         let document_id = if let Some(metadata) = &self.metadata {
@@ -125,6 +118,13 @@ impl ChunkContainer {
         } else {
             instance_id.clone()
         };
+
+        let mut xmp = XmpWriter::new();
+        if let Some(metadata) = &self.metadata {
+            metadata.serialize_xmp_metadata(&mut xmp, sc, &instance_id);
+        }
+
+        sc.serialize_settings().validator().write_xmp(&mut xmp);
 
         xmp.num_pages(self.pages.len() as u32);
         xmp.format("application/pdf");
