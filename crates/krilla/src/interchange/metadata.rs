@@ -174,7 +174,7 @@ impl Metadata {
             xmp.language([LangId(lang)]);
         }
 
-        if let Some(date) = self.creation_date.map(|d| xmp_date(d)) {
+        if let Some(date) = self.creation_date.map(xmp_date) {
             xmp.modify_date(date);
             xmp.create_date(date);
 
@@ -207,7 +207,7 @@ impl Metadata {
                     .when(date);
 
                 if let Some(creator) = &self.creator {
-                    converted.software_agent(&creator);
+                    converted.software_agent(creator);
                 }
 
                 if !sc
