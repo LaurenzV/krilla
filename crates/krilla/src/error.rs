@@ -24,7 +24,7 @@ pub enum KrillaError {
     Validation(Vec<ValidationError>),
     /// An image couldn't be processed properly.
     #[cfg(feature = "raster-images")]
-    Image(Image),
+    Image(Image, Option<Location>),
     /// A sixteen bit image was used, even though it isn't
     /// supported by the used PDF version (only available in PDF 1.5+).
     #[cfg(feature = "raster-images")]
