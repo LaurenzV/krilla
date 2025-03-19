@@ -45,7 +45,7 @@ fn tagging_simple_impl(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
     let id = surface.start_tagged(ContentTag::Span(SpanTag {
-        lang: "en",
+        lang: Some("en"),
         alt_text: Some("an alt text"),
         expanded: Some("expanded"),
         actual_text: Some("actual text"),

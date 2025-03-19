@@ -228,7 +228,9 @@ impl ContentTag<'_> {
                 expanded,
                 actual_text,
             }) => {
-                properties.pair(Name(b"Lang"), TextStr(lang));
+                if let Some(lang) = lang {
+                    properties.pair(Name(b"Lang"), TextStr(lang));
+                }
 
                 if let Some(alt) = alt_text {
                     if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
@@ -255,7 +257,7 @@ impl ContentTag<'_> {
 #[derive(Clone, Copy, Debug)]
 pub struct SpanTag<'a> {
     /// The language of the text.
-    pub lang: Lang<'a>,
+    pub lang: Option<Lang<'a>>,
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub alt_text: Option<Alt<'a>>,
@@ -272,7 +274,7 @@ impl SpanTag<'_> {
     /// An empty span tag.
     pub fn empty() -> Self {
         Self {
-            lang: "",
+            lang: None,
             alt_text: None,
             expanded: None,
             actual_text: None,

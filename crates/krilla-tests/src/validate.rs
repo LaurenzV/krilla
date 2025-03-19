@@ -310,7 +310,7 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     let font = Font::new(font_data, 0, true).unwrap();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag {
-        lang: "",
+        lang: None,
         alt_text: Some("Alt"),
         expanded: Some("Expanded"),
         actual_text: Some("ActualText"),
