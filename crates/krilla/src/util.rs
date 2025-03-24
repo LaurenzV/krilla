@@ -196,7 +196,6 @@ mod deferred {
     /// A value that is lazily executed on another thread.
     ///
     /// Execution will be started in the background and can be waited on.
-
     pub(crate) struct Deferred<T>(std::sync::Arc<once_cell::sync::OnceCell<T>>);
 
     #[cfg(feature = "rayon")]
