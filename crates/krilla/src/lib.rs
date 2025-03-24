@@ -21,7 +21,8 @@ with a gradient fill.
 For more examples, feel free to take a look at the [examples] directory of the GitHub repository.
 
 ```
-use std::path;
+use std::path::{self, PathBuf};
+
 use krilla::color::rgb;
 use krilla::text::Font;
 use krilla::geom::{Point, PathBuilder};
@@ -30,7 +31,6 @@ use krilla::text::TextDirection;
 use krilla::paint::Fill;
 use krilla::Document;
 use krilla::page::PageSettings;
-use std::path::PathBuf;
 use krilla::num::NormalizedF32;
 
 // Create a new document.
