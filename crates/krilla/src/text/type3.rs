@@ -7,8 +7,7 @@ use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
-use crate::cmap_inner;
-use crate::configure::{PdfVersion, ValidationError};
+use crate::configure::PdfVersion;
 use crate::geom::Path;
 use crate::geom::{Rect, Transform};
 use crate::graphics::paint::Fill;
@@ -17,6 +16,7 @@ use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
+use crate::text::cid::write_cmap_entry;
 use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::text::outline::glyph_path;
 use crate::text::GlyphId;
@@ -386,7 +386,7 @@ impl Type3Font {
             for g in 0..self.glyphs.len() {
                 let g = u8::try_from(g).unwrap();
                 let entry = self.cmap_entries.get(&g);
-                cmap_inner!(&self, entry, sc, &mut cmap, g);
+                write_cmap_entry(&self.font, entry, sc, &mut cmap, g);
             }
 
             cmap
