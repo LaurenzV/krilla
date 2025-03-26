@@ -67,6 +67,14 @@ impl ImageColorspace {
             ImageColorspace::Cmyk => 4,
         }
     }
+
+    fn matches_icc_profile(&self, profile: &GenericICCProfile) -> bool {
+        match self {
+            ImageColorspace::Rgb => matches!(profile, GenericICCProfile::Rgb(_)),
+            ImageColorspace::Luma => matches!(profile, GenericICCProfile::Luma(_)),
+            ImageColorspace::Cmyk => matches!(profile, GenericICCProfile::Cmyk(_)),
+        }
+    }
 }
 
 impl TryFrom<ColorSpace> for ImageColorspace {
@@ -349,6 +357,7 @@ impl Image {
                 .serialize_settings()
                 .pdf_version()
                 .supports_icc(ic.metadata())
+                && self.color_space().matches_icc_profile(&ic)
             {
                 let ref_ = match ic {
                     GenericICCProfile::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
