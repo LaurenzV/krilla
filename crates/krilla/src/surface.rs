@@ -407,9 +407,9 @@ impl<'a> Surface<'a> {
     pub(crate) fn paint_mode(&self) -> Option<PaintMode> {
         match (&self.fill, &self.stroke) {
             (None, None) => None,
-            (Some(f), None) => Some(PaintMode::Fill(&f)),
-            (None, Some(s)) => Some(PaintMode::Stroke(&s)),
-            (Some(f), Some(s)) => Some(PaintMode::FillStroke(&f, &s)),
+            (Some(f), None) => Some(PaintMode::Fill(f)),
+            (None, Some(s)) => Some(PaintMode::Stroke(s)),
+            (Some(f), Some(s)) => Some(PaintMode::FillStroke(f, s)),
         }
     }
 }

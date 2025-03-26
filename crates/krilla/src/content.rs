@@ -189,7 +189,7 @@ impl ContentBuilder {
             },
             |sb, sc| {
                 let fill_rule = fill.rule;
-                sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), &fill, sc);
+                sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
                 sb.content_draw_path(path.segments());
 
                 match fill_rule {
@@ -207,7 +207,7 @@ impl ContentBuilder {
         }
 
         let stroke_bbox =
-            calculate_stroke_bbox(&stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
+            calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
 
         let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
         let stroke_opacity = stroke.opacity;
@@ -269,7 +269,7 @@ impl ContentBuilder {
         let fill_action = |sb: &mut ContentBuilder, sc: &mut SerializeContext, fill: &Fill| {
             let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
             sb.expand_bbox(bbox);
-            sb.content_set_fill_properties(bbox, &fill, sc)
+            sb.content_set_fill_properties(bbox, fill, sc)
         };
 
         let stroke_action =
@@ -277,7 +277,7 @@ impl ContentBuilder {
                 // TODO: Bbox should also account for stroke.
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
                 sb.expand_bbox(bbox);
-                sb.content_set_stroke_properties(bbox, &stroke, sc);
+                sb.content_set_stroke_properties(bbox, stroke, sc);
             };
 
         let set_fill_opacity = |sb: &mut ContentBuilder, fill: &Fill| {
@@ -303,8 +303,8 @@ impl ContentBuilder {
 
         match (fill, stroke) {
             (Some(f), Some(s)) => {
-                set_fill_opacity(self, &f);
-                set_stroke_opacity(self, &s);
+                set_fill_opacity(self, f);
+                set_stroke_opacity(self, s);
 
                 self.fill_stroke_glyph_run(
                     x,
@@ -312,18 +312,18 @@ impl ContentBuilder {
                     sc,
                     TextRenderingMode::FillStroke,
                     |sb, sc| {
-                        fill_action(sb, sc, &f);
-                        stroke_action(sb, sc, &s);
+                        fill_action(sb, sc, f);
+                        stroke_action(sb, sc, s);
                     },
                     glyphs,
                     font.clone(),
-                    PaintMode::FillStroke(&f, &s),
+                    PaintMode::FillStroke(f, s),
                     text,
                     font_size,
                 );
             }
             (Some(f), None) => {
-                set_fill_opacity(self, &f);
+                set_fill_opacity(self, f);
 
                 self.fill_stroke_glyph_run(
                     x,
@@ -331,17 +331,17 @@ impl ContentBuilder {
                     sc,
                     TextRenderingMode::Fill,
                     |sb, sc| {
-                        fill_action(sb, sc, &f);
+                        fill_action(sb, sc, f);
                     },
                     glyphs,
                     font.clone(),
-                    PaintMode::Fill(&f),
+                    PaintMode::Fill(f),
                     text,
                     font_size,
                 );
             }
             (None, Some(s)) => {
-                set_stroke_opacity(self, &s);
+                set_stroke_opacity(self, s);
 
                 self.fill_stroke_glyph_run(
                     x,
@@ -349,11 +349,11 @@ impl ContentBuilder {
                     sc,
                     TextRenderingMode::Stroke,
                     |sb, sc| {
-                        stroke_action(sb, sc, &s);
+                        stroke_action(sb, sc, s);
                     },
                     glyphs,
                     font.clone(),
-                    PaintMode::Stroke(&s),
+                    PaintMode::Stroke(s),
                     text,
                     font_size,
                 );

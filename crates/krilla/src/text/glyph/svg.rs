@@ -1,6 +1,5 @@
 use skrifa::raw::TableProvider;
 
-use crate::graphics::color::rgb;
 use crate::surface::Surface;
 use crate::text::GlyphId;
 use crate::text::{Font, PaintMode};
@@ -20,7 +19,7 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
             PaintMode::Stroke(s) => s.paint.as_rgb(),
             PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
         })
-        .unwrap_or(rgb::Color::black());
+        .unwrap_or_default();
 
     let fn_ = surface.sc.serialize_settings().render_svg_glyph_fn;
     fn_(svg_data, context_color, glyph, surface)?;

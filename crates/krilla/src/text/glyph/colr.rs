@@ -33,7 +33,7 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
             PaintMode::Stroke(s) => s.paint.as_rgb(),
             PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
         })
-        .unwrap_or(rgb::Color::black());
+        .unwrap_or_default();
 
     let colr_glyphs = font.font_ref().color_glyphs();
     let colr_glyph = colr_glyphs.get(glyph.to_skrifa())?;
