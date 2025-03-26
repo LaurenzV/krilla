@@ -489,8 +489,8 @@ impl PageLabel {
             label.prefix(TextStr(prefix));
         }
 
-        if let Some(offset) = self.offset {
-            label.offset(i32::try_from(offset.get()).unwrap());
+        if let Some(offset) = self.offset.and_then(|o| i32::try_from(o.get()).ok()) {
+            label.offset(offset);
         }
 
         label.finish();
