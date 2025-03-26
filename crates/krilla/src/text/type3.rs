@@ -161,11 +161,23 @@ impl Type3Font {
                     let mut stream_surface = StreamBuilder::new(sc);
                     let mut surface = stream_surface.surface();
 
+                    match glyph.paint_mode.as_ref() {
+                        PaintMode::Fill(f) => {
+                            surface.set_fill(Some(f.clone()));
+                        }
+                        PaintMode::Stroke(s) => {
+                            surface.set_stroke(Some(s.clone()));
+                        }
+                        PaintMode::FillStroke(f, s) => {
+                            surface.set_fill(Some(f.clone()));
+                            surface.set_stroke(Some(s.clone()));
+                        }
+                    }
+
                     // In case this returns `None`, the surface is guaranteed to be empty.
                     let drawn_color_glyph = text::draw_color_glyph(
                         self.font.clone(),
                         glyph.glyph_id,
-                        glyph.paint_mode.as_ref(),
                         Transform::default(),
                         &mut surface,
                     );

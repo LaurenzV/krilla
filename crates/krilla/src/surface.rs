@@ -123,17 +123,15 @@ impl<'a> Surface<'a> {
             (None, None) => {
                 self.bd
                     .get_mut()
-                    .fill_path(&path.0, Fill::default(), self.sc);
+                    .fill_path(&path.0, &Fill::default(), self.sc);
             }
             _ => {
                 if let Some(fill) = &self.fill {
-                    self.bd.get_mut().fill_path(&path.0, fill.clone(), self.sc);
+                    self.bd.get_mut().fill_path(&path.0, fill, self.sc);
                 }
 
                 if let Some(stroke) = &self.stroke {
-                    self.bd
-                        .get_mut()
-                        .stroke_path(&path.0, stroke.clone(), self.sc);
+                    self.bd.get_mut().stroke_path(&path.0, stroke, self.sc);
                 }
             }
         }
@@ -207,14 +205,7 @@ impl<'a> Surface<'a> {
         }
     }
 
-    fn outline_glyphs(
-        &mut self,
-        glyphs: &[impl Glyph],
-        start: Point,
-        font: Font,
-        font_size: f32,
-        paint_mode: PaintMode,
-    ) {
+    fn outline_glyphs(&mut self, glyphs: &[impl Glyph], start: Point, font: Font, font_size: f32) {
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
@@ -229,7 +220,6 @@ impl<'a> Surface<'a> {
             draw_glyph(
                 font.clone(),
                 glyph.glyph_id(),
-                paint_mode,
                 Transform::from_tsp(base_transform),
                 self,
             );
@@ -253,38 +243,13 @@ impl<'a> Surface<'a> {
         outlined: bool,
     ) {
         if outlined {
-            match (self.fill.clone(), self.stroke.clone()) {
-                (None, None) => {
-                    self.outline_glyphs(
-                        glyphs,
-                        start,
-                        font,
-                        font_size,
-                        PaintMode::Fill(&Fill::default()),
-                    );
-                }
-                (Some(f), None) => {
-                    self.outline_glyphs(glyphs, start, font, font_size, PaintMode::Fill(&f));
-                }
-                (None, Some(s)) => {
-                    self.outline_glyphs(glyphs, start, font, font_size, PaintMode::Stroke(&s));
-                }
-                (Some(f), Some(s)) => {
-                    self.outline_glyphs(
-                        glyphs,
-                        start,
-                        font,
-                        font_size,
-                        PaintMode::FillStroke(&f, &s),
-                    );
-                }
-            }
+            self.outline_glyphs(glyphs, start, font, font_size);
         } else {
             self.bd.get_mut().draw_glyphs(
                 start,
                 self.sc,
-                self.fill.clone(),
-                self.stroke.clone(),
+                self.fill.as_ref(),
+                self.stroke.as_ref(),
                 glyphs,
                 font,
                 text,
@@ -437,6 +402,15 @@ impl<'a> Surface<'a> {
     /// Return the current transformation matrix of the surface.
     pub fn cur_transform(&self) -> Transform {
         self.bd.get().cur_transform()
+    }
+
+    pub(crate) fn paint_mode(&self) -> Option<PaintMode> {
+        match (&self.fill, &self.stroke) {
+            (None, None) => None,
+            (Some(f), None) => Some(PaintMode::Fill(&f)),
+            (None, Some(s)) => Some(PaintMode::Stroke(&s)),
+            (Some(f), Some(s)) => Some(PaintMode::FillStroke(&f, &s)),
+        }
     }
 }
 

@@ -3,7 +3,6 @@ use std::ops::Range;
 use crate::geom::Transform;
 use crate::surface::Surface;
 use crate::text::Font;
-use crate::text::PaintMode;
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;
@@ -35,15 +34,14 @@ impl GlyphId {
 pub(crate) fn draw_color_glyph(
     font: Font,
     glyph: GlyphId,
-    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
     surface.push_transform(&base_transform);
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
 
-    let drawn = colr::draw_glyph(font.clone(), glyph, paint_mode, surface)
-        .or_else(|| svg::draw_glyph(font.clone(), glyph, surface, paint_mode))
+    let drawn = colr::draw_glyph(font.clone(), glyph, surface)
+        .or_else(|| svg::draw_glyph(font.clone(), glyph, surface))
         .or_else(|| {
             #[cfg(feature = "raster-images")]
             let res = bitmap::draw_glyph(font.clone(), glyph, surface);
@@ -64,12 +62,11 @@ pub(crate) fn draw_color_glyph(
 pub(crate) fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
-    draw_color_glyph(font.clone(), glyph, paint_mode, base_transform, surface)
-        .or_else(|| outline::draw_glyph(font, glyph, paint_mode, base_transform, surface))
+    draw_color_glyph(font.clone(), glyph, base_transform, surface)
+        .or_else(|| outline::draw_glyph(font, glyph, base_transform, surface))
 }
 
 /// A glyph with certain properties.

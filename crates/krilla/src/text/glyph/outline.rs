@@ -4,8 +4,8 @@ use skrifa::MetadataProvider;
 use crate::geom::Path;
 use crate::geom::Transform;
 use crate::surface::Surface;
+use crate::text::Font;
 use crate::text::GlyphId;
-use crate::text::{Font, PaintMode};
 
 pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<tiny_skia_path::Path> {
     let outline_glyphs = font.font_ref().outline_glyphs();
@@ -27,34 +27,12 @@ pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<tiny_skia_path::P
 pub(crate) fn draw_glyph(
     font: Font,
     glyph: GlyphId,
-    paint_mode: PaintMode,
     base_transform: Transform,
     surface: &mut Surface,
 ) -> Option<()> {
     let path = Path(glyph_path(font, glyph).and_then(|p| p.transform(base_transform.to_tsp()))?);
 
-    let old_fill = surface.get_fill().cloned();
-    let old_stroke = surface.get_stroke().cloned();
-
-    match paint_mode {
-        PaintMode::Fill(f) => {
-            surface.set_fill(Some(f.clone()));
-            surface.set_stroke(None);
-        }
-        PaintMode::Stroke(s) => {
-            surface.set_fill(None);
-            surface.set_stroke(Some(s.clone()));
-        }
-        PaintMode::FillStroke(f, s) => {
-            surface.set_fill(Some(f.clone()));
-            surface.set_stroke(Some(s.clone()));
-        }
-    }
-
     surface.draw_path(&path);
-
-    surface.set_fill(old_fill);
-    surface.set_stroke(old_stroke);
 
     Some(())
 }

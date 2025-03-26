@@ -169,7 +169,7 @@ impl ContentBuilder {
         }
     }
 
-    pub(crate) fn fill_path(&mut self, path: &Path, fill: Fill, sc: &mut SerializeContext) {
+    pub(crate) fn fill_path(&mut self, path: &Path, fill: &Fill, sc: &mut SerializeContext) {
         if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
             return;
         }
@@ -201,7 +201,7 @@ impl ContentBuilder {
         );
     }
 
-    pub(crate) fn stroke_path(&mut self, path: &Path, stroke: Stroke, sc: &mut SerializeContext) {
+    pub(crate) fn stroke_path(&mut self, path: &Path, stroke: &Stroke, sc: &mut SerializeContext) {
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
@@ -256,8 +256,8 @@ impl ContentBuilder {
         &mut self,
         start: Point,
         sc: &mut SerializeContext,
-        mut fill: Option<Fill>,
-        stroke: Option<Stroke>,
+        fill: Option<&Fill>,
+        stroke: Option<&Stroke>,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -277,7 +277,7 @@ impl ContentBuilder {
                 // TODO: Bbox should also account for stroke.
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
                 sb.expand_bbox(bbox);
-                sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
+                sb.content_set_stroke_properties(bbox, &stroke, sc);
             };
 
         let set_fill_opacity = |sb: &mut ContentBuilder, fill: &Fill| {
@@ -300,10 +300,6 @@ impl ContentBuilder {
                 sb.set_fill_opacity(stroke.opacity);
             }
         };
-
-        if fill.is_none() && stroke.is_none() {
-            fill = Some(Fill::default());
-        }
 
         match (fill, stroke) {
             (Some(f), Some(s)) => {
@@ -362,8 +358,25 @@ impl ContentBuilder {
                     font_size,
                 );
             }
-            // We replace this case with a black fill.
-            _ => unreachable!(),
+            (None, None) => {
+                let fill = Fill::default();
+                set_fill_opacity(self, &fill);
+
+                self.fill_stroke_glyph_run(
+                    x,
+                    y,
+                    sc,
+                    TextRenderingMode::Fill,
+                    |sb, sc| {
+                        fill_action(sb, sc, &fill);
+                    },
+                    glyphs,
+                    font.clone(),
+                    PaintMode::Fill(&fill),
+                    text,
+                    font_size,
+                );
+            }
         }
 
         self.graphics_states.restore_state();
@@ -837,7 +850,7 @@ impl ContentBuilder {
     fn content_set_stroke_properties(
         &mut self,
         bounds: Rect,
-        stroke: Stroke,
+        stroke: &Stroke,
         serializer_context: &mut SerializeContext,
     ) {
         fn set_pattern_fn(content: &mut Content, color_space: String) {
