@@ -22,6 +22,7 @@ mod bitmap {
 
 mod colr {
     use krilla::geom::Point;
+    use krilla::paint::Stroke;
     use krilla::surface::Surface;
     use krilla::text::TextDirection;
     use krilla::text::{Font, GlyphId};
@@ -56,7 +57,7 @@ mod colr {
         .collect::<Vec<_>>()
         .join(" ");
 
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0., 30.0),
             font.clone(),
             15.0,
@@ -65,8 +66,8 @@ mod colr {
             TextDirection::Auto,
         );
 
-        surface.set_fill(purple_fill(1.0));
-        surface.fill_text(
+        surface.set_fill(Some(purple_fill(1.0)));
+        surface.draw_text(
             Point::from_xy(0., 50.0),
             font.clone(),
             15.0,
@@ -75,7 +76,7 @@ mod colr {
             TextDirection::Auto,
         );
 
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0., 70.0),
             font.clone(),
             15.0,
@@ -84,7 +85,9 @@ mod colr {
             TextDirection::Auto,
         );
 
-        surface.stroke_text(
+        surface.set_fill(None);
+        surface.set_stroke(Some(Stroke::default()));
+        surface.draw_text(
             Point::from_xy(0., 130.0),
             font.clone(),
             15.0,
@@ -95,8 +98,8 @@ mod colr {
 
         // Since it a COLR glyph, it will still be filled, but the color should be taken from
         // the stroke.
-        surface.set_stroke(blue_stroke(1.0));
-        surface.stroke_text(
+        surface.set_stroke(Some(blue_stroke(1.0)));
+        surface.draw_text(
             Point::from_xy(0., 150.0),
             font.clone(),
             15.0,
@@ -105,7 +108,7 @@ mod colr {
             TextDirection::Auto,
         );
 
-        surface.stroke_text(
+        surface.draw_text(
             Point::from_xy(0., 170.0),
             font.clone(),
             15.0,
@@ -150,8 +153,8 @@ mod svg {
         let font_data = SVG_EXTRA.clone();
         let font = Font::new(font_data, 0, true).unwrap();
 
-        surface.set_fill(purple_fill(1.0));
-        surface.fill_text(
+        surface.set_fill(Some(purple_fill(1.0)));
+        surface.draw_text(
             Point::from_xy(0., 30.0),
             font.clone(),
             30.0,
@@ -160,8 +163,8 @@ mod svg {
             TextDirection::Auto,
         );
 
-        surface.set_fill(red_fill(1.0));
-        surface.fill_text(
+        surface.set_fill(Some(red_fill(1.0)));
+        surface.draw_text(
             Point::from_xy(30., 30.0),
             font.clone(),
             30.0,
@@ -183,7 +186,7 @@ mod cid {
     #[visreg(all)]
     fn font_ttf_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font,
             32.0,
@@ -196,7 +199,7 @@ mod cid {
     #[visreg(all)]
     fn font_cff_simple_text(surface: &mut Surface) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font,
             32.0,
@@ -209,7 +212,7 @@ mod cid {
     #[visreg(all)]
     fn font_arabic_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font,
             32.0,
@@ -229,7 +232,7 @@ mod cid {
         let font_2 = Font::new(font_data.clone(), 3, true).unwrap();
         let font_3 = Font::new(font_data, 6, true).unwrap();
 
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 75.0),
             font_1.clone(),
             20.0,
@@ -237,7 +240,7 @@ mod cid {
             false,
             TextDirection::Auto,
         );
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font_2.clone(),
             20.0,
@@ -245,7 +248,7 @@ mod cid {
             false,
             TextDirection::Auto,
         );
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 125.0),
             font_3.clone(),
             20.0,
@@ -269,7 +272,7 @@ mod type3 {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 25.0),
             font.clone(),
             25.0,
@@ -284,7 +287,7 @@ mod type3 {
         let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
         let mut surface = page.surface();
 
-        surface.fill_text(
+        surface.draw_text(
             Point::from_xy(0.0, 25.0),
             font.clone(),
             25.0,

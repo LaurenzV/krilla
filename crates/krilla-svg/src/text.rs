@@ -62,30 +62,15 @@ pub(crate) fn render(
                 .as_ref()
                 .map(|s| convert_stroke(s, surface.stream_builder(), process_context, inverted));
 
-            let fill_op = |s: &mut Surface, fill: Fill, font: Font, embed_text: bool| {
+            let draw_op = |s: &mut Surface,
+                           fill: Option<Fill>,
+                           stroke: Option<Stroke>,
+                           font: Font,
+                           embed_text: bool| {
                 s.set_fill(fill);
-                s.fill_glyphs(
-                    Point::from_xy(0.0, 0.0),
-                    &[KrillaGlyph::new(
-                        GlyphId::new(glyph.id.0 as u32),
-                        // Don't care about those, since we render only one glyph.
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0..glyph.text.len(),
-                        None,
-                    )],
-                    font,
-                    &glyph.text,
-                    span.font_size.get(),
-                    !embed_text,
-                );
-            };
-
-            let stroke_op = |s: &mut Surface, stroke: Stroke, font: Font, embed_text: bool| {
                 s.set_stroke(stroke);
-                s.stroke_glyphs(
+
+                s.draw_glyphs(
                     Point::from_xy(0.0, 0.0),
                     &[KrillaGlyph::new(
                         GlyphId::new(glyph.id.0 as u32),
@@ -106,46 +91,43 @@ pub(crate) fn render(
 
             surface.push_transform(&transform.to_krilla());
 
-            match (fill, stroke) {
-                (Some(fill), Some(stroke)) => match span.paint_order {
-                    // We always outline strokes in this case,
-                    // so that text won't be selected two times.
-                    PaintOrder::FillAndStroke => {
-                        fill_op(
-                            surface,
-                            fill,
-                            font.clone(),
-                            process_context.svg_settings.embed_text,
-                        );
-                        stroke_op(surface, stroke, font, false);
-                    }
-                    PaintOrder::StrokeAndFill => {
-                        stroke_op(surface, stroke, font.clone(), false);
-                        fill_op(surface, fill, font, process_context.svg_settings.embed_text);
-                    }
-                },
-                (Some(fill), None) => {
-                    fill_op(surface, fill, font, process_context.svg_settings.embed_text);
-                }
-                (None, Some(stroke)) => {
-                    stroke_op(
-                        surface,
-                        stroke,
-                        font,
-                        process_context.svg_settings.embed_text,
-                    );
-                }
+            if fill.is_none() && stroke.is_none() {
                 // Emulate invisible glyph by drawing it with an opacity of zero.
-                (None, None) => fill_op(
+                draw_op(
                     surface,
-                    Fill {
+                    Some(Fill {
                         paint: rgb::Color::new(0, 0, 0).into(),
                         opacity: NormalizedF32::ZERO,
                         rule: Default::default(),
-                    },
+                    }),
+                    None,
                     font,
                     process_context.svg_settings.embed_text,
-                ),
+                )
+            } else {
+                match span.paint_order {
+                    PaintOrder::FillAndStroke => {
+                        draw_op(
+                            surface,
+                            fill,
+                            stroke,
+                            font.clone(),
+                            process_context.svg_settings.embed_text,
+                        );
+                    }
+                    PaintOrder::StrokeAndFill => {
+                        // We always outline in this case, so that text won't be embedded twice.
+                        draw_op(surface, None, stroke, font.clone(), false);
+
+                        draw_op(
+                            surface,
+                            fill,
+                            None,
+                            font.clone(),
+                            process_context.svg_settings.embed_text,
+                        );
+                    }
+                }
             }
 
             surface.pop();

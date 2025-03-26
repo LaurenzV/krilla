@@ -121,8 +121,8 @@ fn validate_pdf_a_postscript() {
 
     let mut surface = page.surface();
 
-    surface.set_fill(fill);
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
+    surface.set_fill(Some(fill));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
 
     surface.finish();
     page.finish();
@@ -147,8 +147,8 @@ fn cmyk_document_impl(document: &mut Document) {
 
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
     let fill = cmyk_fill(1.0);
-    surface.set_fill(fill);
-    surface.fill_path(&path);
+    surface.set_fill(Some(fill));
+    surface.draw_path(&path);
 
     surface.finish();
     page.finish();
@@ -184,7 +184,7 @@ fn validate_pdf_a_notdef_glyph() {
     let font_data = NOTO_SANS.clone();
     let font = Font::new(font_data, 0, true).unwrap();
 
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font.clone(),
         20.0,
@@ -214,10 +214,10 @@ fn validate_pdfa2u_text_with_location() {
     let (text, glyphs) = dummy_text_with_spans();
 
     surface.set_location(2);
-    surface.set_fill(red_fill(0.1));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(red_fill(0.1)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
-    surface.fill_glyphs(
+    surface.draw_glyphs(
         Point::from_xy(0.0, 100.0),
         &glyphs,
         font.clone(),
@@ -243,23 +243,23 @@ fn validate_pdfa1b_transparency_with_location() {
     let mut surface = page.surface();
 
     surface.set_location(2);
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(3);
-    surface.set_fill(green_fill(1.0));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(4);
-    surface.set_fill(green_fill(0.9));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(green_fill(0.9)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(5);
-    surface.set_fill(green_fill(1.0));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(6);
-    surface.set_fill(blue_fill(0.8));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(blue_fill(0.8)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     surface.set_location(7);
-    surface.set_fill(blue_fill(0.9));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    surface.set_fill(Some(blue_fill(0.9)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
     surface.finish();
     page.finish();
@@ -283,7 +283,7 @@ fn validate_pdf_full_example(document: &mut Document) {
     let font_data = NOTO_SANS.clone();
     let font = Font::new(font_data, 0, true).unwrap();
 
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         20.0,
@@ -292,8 +292,8 @@ fn validate_pdf_full_example(document: &mut Document) {
         TextDirection::Auto,
     );
 
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
 
     surface.finish();
     page.finish();
@@ -315,7 +315,7 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
         expanded: Some("Expanded"),
         actual_text: Some("ActualText"),
     }));
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         20.0,
@@ -326,8 +326,8 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     surface.end_tagged();
 
     let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
     surface.end_tagged();
 
     surface.finish();
@@ -351,7 +351,7 @@ fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
         KrillaGlyph::new(GlyphId::new(2), 2048.0, 0.0, 0.0, 0.0, 1..4, None),
     ];
 
-    surface.fill_glyphs(
+    surface.draw_glyphs(
         Point::from_xy(0.0, 100.0),
         &glyphs,
         font.clone(),
@@ -460,7 +460,7 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     let font = Font::new(font_data, 0, true).unwrap();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         20.0,
@@ -508,7 +508,7 @@ fn validate_pdf_ua1_missing_requirements() {
     let font = Font::new(font_data, 0, true).unwrap();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         20.0,
@@ -555,13 +555,13 @@ fn validate_pdf_ua1_attributes(document: &mut Document) {
     let mut surface = page.surface();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.end_tagged();
 
     let id2 = surface.start_tagged(ContentTag::Other);
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.end_tagged();
 
     surface.finish();
@@ -600,8 +600,8 @@ fn validate_pdf_a1_no_transparency() {
     document.set_metadata(metadata);
     let mut page = document.start_page();
     let mut surface = page.surface();
-    surface.set_fill(red_fill(0.5));
-    surface.fill_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
+    surface.set_fill(Some(red_fill(0.5)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
     surface.finish();
     page.finish();
 
@@ -714,7 +714,7 @@ fn validate_pdf_a1_b_ttc(d: &mut Document) {
     let mut page = d.start_page();
     let mut surface = page.surface();
 
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 75.0),
         font.clone(),
         20.0,

@@ -252,11 +252,12 @@ impl ContentBuilder {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn fill_glyphs(
+    pub(crate) fn draw_glyphs(
         &mut self,
         start: Point,
         sc: &mut SerializeContext,
-        fill: Fill,
+        mut fill: Option<Fill>,
+        stroke: Option<Stroke>,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -265,86 +266,105 @@ impl ContentBuilder {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&fill.paint.0, &InnerPaint::Pattern(_)) {
-            self.set_fill_opacity(fill.opacity);
-        }
+        let fill_action = |sb: &mut ContentBuilder, sc: &mut SerializeContext, fill: &Fill| {
+            let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
+            sb.expand_bbox(bbox);
+            sb.content_set_fill_properties(bbox, &fill, sc)
+        };
 
-        self.fill_stroke_glyph_run(
-            x,
-            y,
-            sc,
-            TextRenderingMode::Fill,
-            |sb, sc| {
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
-                sb.expand_bbox(bbox);
-                sb.content_set_fill_properties(bbox, &fill, sc)
-            },
-            glyphs,
-            font.clone(),
-            PaintMode::Fill(&fill),
-            text,
-            font_size,
-        );
-
-        self.graphics_states.restore_state();
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn stroke_glyphs(
-        &mut self,
-        start: Point,
-        sc: &mut SerializeContext,
-        stroke: Stroke,
-        glyphs: &[impl Glyph],
-        font: Font,
-        text: &str,
-        font_size: f32,
-    ) {
-        let (x, y) = (start.x, start.y);
-        self.graphics_states.save_state();
-
-        // PDF viewers don't show patterns with fill/stroke opacities consistently.
-        // Because of this, the opacity is accounted for in the pattern itself.
-        if !matches!(&stroke.paint.0, &InnerPaint::Pattern(_)) {
-            self.set_stroke_opacity(stroke.opacity);
-
-            // See the comment below regarding why we also set the fill opacity.
-            self.set_fill_opacity(stroke.opacity);
-        }
-
-        self.fill_stroke_glyph_run(
-            x,
-            y,
-            sc,
-            TextRenderingMode::Stroke,
-            |sb, sc| {
+        let stroke_action =
+            |sb: &mut ContentBuilder, sc: &mut SerializeContext, stroke: &Stroke| {
                 // TODO: Bbox should also account for stroke.
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
                 sb.expand_bbox(bbox);
                 sb.content_set_stroke_properties(bbox, stroke.clone(), sc);
+            };
 
-                // If we are rendering a Type3 glyph, then we actually need to set the fill
-                // color instead of the stroke color, because the Type3 glyphs contains the
-                // outlined stroke that needs to be filled. Because of this, we simply set both,
-                // fill and stroke color, when stroking some text.
-                sb.content_set_fill_properties(
-                    bbox,
-                    &Fill {
-                        paint: stroke.paint.clone(),
-                        opacity: stroke.opacity,
-                        rule: Default::default(),
-                    },
+        let set_fill_opacity = |sb: &mut ContentBuilder, fill: &Fill| {
+            // PDF viewers don't show patterns with fill/stroke opacities consistently.
+            // Because of this, the opacity is accounted for in the pattern itself.
+            if !matches!(&fill.paint.0, &InnerPaint::Pattern(_)) {
+                sb.set_fill_opacity(fill.opacity);
+            }
+        };
+
+        let set_stroke_opacity = |sb: &mut ContentBuilder, stroke: &Stroke| {
+            // PDF viewers don't show patterns with fill/stroke opacities consistently.
+            // Because of this, the opacity is accounted for in the pattern itself.
+            if !matches!(&stroke.paint.0, &InnerPaint::Pattern(_)) {
+                // PDF viewers don't show patterns with fill/stroke opacities consistently.
+                // Because of this, the opacity is accounted for in the pattern itself.
+                sb.set_stroke_opacity(stroke.opacity);
+
+                // See the comment in `stroke-action` for why we also set the fill opacity.
+                sb.set_fill_opacity(stroke.opacity);
+            }
+        };
+
+        if fill.is_none() && stroke.is_none() {
+            fill = Some(Fill::default());
+        }
+
+        match (fill, stroke) {
+            (Some(f), Some(s)) => {
+                set_fill_opacity(self, &f);
+                set_stroke_opacity(self, &s);
+
+                self.fill_stroke_glyph_run(
+                    x,
+                    y,
                     sc,
-                )
-            },
-            glyphs,
-            font.clone(),
-            PaintMode::Stroke(&stroke),
-            text,
-            font_size,
-        );
+                    TextRenderingMode::FillStroke,
+                    |sb, sc| {
+                        fill_action(sb, sc, &f);
+                        stroke_action(sb, sc, &s);
+                    },
+                    glyphs,
+                    font.clone(),
+                    PaintMode::FillStroke(&f, &s),
+                    text,
+                    font_size,
+                );
+            }
+            (Some(f), None) => {
+                set_fill_opacity(self, &f);
+
+                self.fill_stroke_glyph_run(
+                    x,
+                    y,
+                    sc,
+                    TextRenderingMode::Fill,
+                    |sb, sc| {
+                        fill_action(sb, sc, &f);
+                    },
+                    glyphs,
+                    font.clone(),
+                    PaintMode::Fill(&f),
+                    text,
+                    font_size,
+                );
+            }
+            (None, Some(s)) => {
+                set_stroke_opacity(self, &s);
+
+                self.fill_stroke_glyph_run(
+                    x,
+                    y,
+                    sc,
+                    TextRenderingMode::Stroke,
+                    |sb, sc| {
+                        stroke_action(sb, sc, &s);
+                    },
+                    glyphs,
+                    font.clone(),
+                    PaintMode::Stroke(&s),
+                    text,
+                    font_size,
+                );
+            }
+            // We replace this case with a black fill.
+            _ => unreachable!(),
+        }
 
         self.graphics_states.restore_state();
     }
@@ -501,6 +521,9 @@ impl ContentBuilder {
 
                         if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
                             sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
+                        } else if fill_render_mode == TextRenderingMode::FillStroke {
+                            sb.content
+                                .set_text_rendering_mode(TextRenderingMode::FillStroke);
                         } else {
                             sb.content
                                 .set_text_rendering_mode(TextRenderingMode::Stroke);

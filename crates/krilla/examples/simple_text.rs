@@ -59,14 +59,14 @@ fn main() {
         anti_alias: true,
     };
 
-    surface.set_fill(Fill {
+    surface.set_fill(Some(Fill {
         paint: gradient.into(),
         opacity: NormalizedF32::new(0.5).unwrap(),
         rule: Default::default(),
-    });
+    }));
 
     // Let's first write some red-colored text with some English text.
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 25.0),
         noto_font.clone(),
         25.0,
@@ -75,12 +75,13 @@ fn main() {
         TextDirection::Auto,
     );
 
-    surface.set_stroke(Stroke {
+    surface.set_fill(None);
+    surface.set_stroke(Some(Stroke {
         paint: rgb::Color::new(0, 255, 0).into(),
         ..Default::default()
-    });
+    }));
     // Instead of applying fills, we can also apply strokes!
-    surface.stroke_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         noto_font.clone(),
         25.0,
@@ -97,10 +98,10 @@ fn main() {
     )
     .unwrap();
 
-    surface.set_fill(Fill::default());
+    surface.set_fill(None);
     // As mentioned above, complex scripts are supported, you just can't mix them in
     // one run.
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 75.0),
         noto_arabic_font.clone(),
         25.0,

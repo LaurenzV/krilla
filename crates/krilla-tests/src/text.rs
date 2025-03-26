@@ -26,8 +26,8 @@ fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
 
 fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-    surface.set_fill(red_fill(0.5));
-    surface.fill_text(
+    surface.set_fill(Some(red_fill(0.5)));
+    surface.draw_text(
         Point::from_xy(0.0, 80.0),
         font.clone(),
         20.0,
@@ -36,8 +36,8 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         TextDirection::Auto,
     );
 
-    surface.set_fill(blue_fill(0.8));
-    surface.fill_text(
+    surface.set_fill(Some(blue_fill(0.8)));
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font.clone(),
         20.0,
@@ -51,8 +51,8 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         ..Default::default()
     };
 
-    surface.set_fill(grad_fill);
-    surface.fill_text(
+    surface.set_fill(Some(grad_fill));
+    surface.draw_text(
         Point::from_xy(0.0, 120.0),
         font.clone(),
         20.0,
@@ -63,8 +63,8 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
 
     let noto_font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
 
-    surface.set_fill(blue_fill(0.8));
-    surface.fill_text(
+    surface.set_fill(Some(blue_fill(0.8)));
+    surface.draw_text(
         Point::from_xy(0.0, 140.0),
         noto_font.clone(),
         20.0,
@@ -78,8 +78,8 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         ..Default::default()
     };
 
-    surface.set_fill(grad_fill);
-    surface.fill_text(
+    surface.set_fill(Some(grad_fill));
+    surface.draw_text(
         Point::from_xy(0.0, 160.0),
         font,
         20.0,
@@ -96,8 +96,8 @@ fn text_outlined_with_fill(surface: &mut Surface) {
 
 fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-    surface.set_stroke(red_stroke(0.5, 1.0));
-    surface.stroke_text(
+    surface.set_stroke(Some(red_stroke(0.5, 1.0)));
+    surface.draw_text(
         Point::from_xy(0.0, 80.0),
         font.clone(),
         20.0,
@@ -106,8 +106,8 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         TextDirection::Auto,
     );
 
-    surface.set_stroke(blue_stroke(0.8));
-    surface.stroke_text(
+    surface.set_stroke(Some(blue_stroke(0.8)));
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font.clone(),
         20.0,
@@ -121,8 +121,8 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         ..Default::default()
     };
 
-    surface.set_stroke(grad_stroke);
-    surface.stroke_text(
+    surface.set_stroke(Some(grad_stroke));
+    surface.draw_text(
         Point::from_xy(0.0, 120.0),
         font,
         20.0,
@@ -133,8 +133,8 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
 
     let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
 
-    surface.set_stroke(blue_stroke(0.8));
-    surface.stroke_text(
+    surface.set_stroke(Some(blue_stroke(0.8)));
+    surface.draw_text(
         Point::from_xy(0.0, 140.0),
         font,
         20.0,
@@ -152,7 +152,7 @@ fn text_outlined_with_stroke(surface: &mut Surface) {
 #[visreg]
 fn text_zalgo(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         32.0,
@@ -165,7 +165,7 @@ fn text_zalgo(surface: &mut Surface) {
 #[visreg]
 fn text_direction_ltr(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         20.0,
@@ -178,7 +178,7 @@ fn text_direction_ltr(surface: &mut Surface) {
 #[visreg]
 fn text_direction_rtl(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         20.0,
@@ -191,7 +191,7 @@ fn text_direction_rtl(surface: &mut Surface) {
 #[visreg]
 fn text_direction_ttb(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(100.0, 0.0),
         font,
         20.0,
@@ -204,7 +204,7 @@ fn text_direction_ttb(surface: &mut Surface) {
 #[visreg]
 fn text_direction_btt(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(100.0, 0.0),
         font,
         20.0,
@@ -216,7 +216,7 @@ fn text_direction_btt(surface: &mut Surface) {
 
 pub(crate) fn simple_text_impl(page: &mut Page, font_data: Data) {
     let mut surface = page.surface();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(font_data, 0, true).unwrap(),
         16.0,
@@ -239,7 +239,7 @@ fn text_simple_ttf(page: &mut Page) {
 #[snapshot]
 fn text_complex(page: &mut Page) {
     let mut surface = page.surface();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         16.0,
@@ -252,7 +252,7 @@ fn text_complex(page: &mut Page) {
 #[snapshot]
 fn text_complex_2(page: &mut Page) {
     let mut surface = page.surface();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         16.0,
@@ -265,7 +265,7 @@ fn text_complex_2(page: &mut Page) {
 #[snapshot]
 fn text_complex_3(page: &mut Page) {
     let mut surface = page.surface();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         12.0,
@@ -278,7 +278,7 @@ fn text_complex_3(page: &mut Page) {
 #[snapshot]
 fn text_complex_4(page: &mut Page) {
     let mut surface = page.surface();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
         10.0,
@@ -313,7 +313,7 @@ fn text_small_caps(page: &mut Page) {
     ];
 
     let mut surface = page.surface();
-    surface.fill_glyphs(
+    surface.draw_glyphs(
         Point::from_xy(0.0, 50.0),
         &glyphs,
         Font::new(LIBERTINUS_SERIF.clone(), 0, true).unwrap(),
@@ -326,7 +326,7 @@ fn text_small_caps(page: &mut Page) {
 #[visreg]
 fn text_zalgo_outlined(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
         32.0,
@@ -339,7 +339,7 @@ fn text_zalgo_outlined(surface: &mut Surface) {
 #[snapshot]
 fn text_fill(page: &mut Page) {
     let mut surface = page.surface();
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
         16.0,
@@ -352,7 +352,8 @@ fn text_fill(page: &mut Page) {
 #[snapshot]
 fn text_stroke(page: &mut Page) {
     let mut surface = page.surface();
-    surface.stroke_text(
+    surface.set_stroke(Some(Stroke::default()));
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
         16.0,

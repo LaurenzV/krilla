@@ -31,14 +31,14 @@ fn pdf_20_simple_text(page: &mut Page) {
 #[snapshot(settings_18)]
 fn pdf_14_icc_srgb(page: &mut Page) {
     let mut surface = page.surface();
-    surface.set_fill(red_fill(1.0));
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
 }
 
 #[snapshot(settings_18)]
 fn pdf_14_icc_sgray(page: &mut Page) {
     let mut surface = page.surface();
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+    surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
 }
 
 #[test]

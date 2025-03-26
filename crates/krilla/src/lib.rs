@@ -48,7 +48,7 @@ let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
 // Get the surface of the page.
 let mut surface = page.surface();
 // Draw some text.
-surface.fill_text(
+surface.draw_text(
     Point::from_xy(0.0, 25.0),
     font.clone(),
     14.0,
@@ -57,13 +57,13 @@ surface.fill_text(
     TextDirection::Auto
 );
 
-surface.set_fill(Fill {
+surface.set_fill(Some(Fill {
     paint: rgb::Color::new(255, 0, 0).into(),
     opacity: NormalizedF32::new(0.5).unwrap(),
     rule: Default::default(),
-});
+}));
 // Draw some more text, in a different color with an opacity and bigger font size.
-surface.fill_text(
+surface.draw_text(
     Point::from_xy(0.0, 50.0),
     font.clone(),
     16.0,
@@ -114,14 +114,14 @@ let lg = LinearGradient {
 let mut surface = page.surface();
 
 // Set the fill.
-surface.set_fill(Fill {
+surface.set_fill(Some(Fill {
     paint: lg.into(),
     rule: FillRule::EvenOdd,
     opacity: NormalizedF32::ONE
-});
+}));
 
 // Fill the path.
-surface.fill_path(&triangle);
+surface.draw_path(&triangle);
 
 // Finish up and write the resulting PDF.
 surface.finish();

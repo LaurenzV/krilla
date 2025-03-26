@@ -36,6 +36,7 @@ impl PaintMode<'_> {
         match self {
             PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
             PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),
+            PaintMode::FillStroke(f, s) => OwnedPaintMode::FillStroke((*f).clone(), (*s).clone()),
         }
     }
 }
@@ -46,6 +47,7 @@ impl PaintMode<'_> {
 pub(crate) enum PaintMode<'a> {
     Fill(&'a Fill),
     Stroke(&'a Stroke),
+    FillStroke(&'a Fill, &'a Stroke),
 }
 
 /// A unique CID identifier.
@@ -71,6 +73,7 @@ pub(crate) enum FontIdentifier {
 pub(crate) enum OwnedPaintMode {
     Fill(Fill),
     Stroke(Stroke),
+    FillStroke(Fill, Stroke),
 }
 
 impl From<Fill> for OwnedPaintMode {
@@ -90,6 +93,7 @@ impl OwnedPaintMode {
         match self {
             OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
             OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
+            OwnedPaintMode::FillStroke(f, s) => PaintMode::FillStroke(f, s),
         }
     }
 }

@@ -29,7 +29,7 @@ fn main() {
     // Get the surface of the page.
     let mut surface = page.surface();
     // Draw some text.
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 25.0),
         font.clone(),
         14.0,
@@ -38,13 +38,13 @@ fn main() {
         TextDirection::Auto,
     );
 
-    surface.set_fill(Fill {
+    surface.set_fill(Some(Fill {
         paint: rgb::Color::new(255, 0, 0).into(),
         opacity: NormalizedF32::new(0.5).unwrap(),
         rule: Default::default(),
-    });
+    }));
     // Draw some more text, in a different color with an opacity and bigger font size.
-    surface.fill_text(
+    surface.draw_text(
         Point::from_xy(0.0, 50.0),
         font.clone(),
         16.0,
@@ -95,14 +95,14 @@ fn main() {
     let mut surface = page.surface();
 
     // Set the fill.
-    surface.set_fill(Fill {
+    surface.set_fill(Some(Fill {
         paint: lg.into(),
         rule: FillRule::EvenOdd,
         opacity: NormalizedF32::ONE,
-    });
+    }));
 
     // Fill the path.
-    surface.fill_path(&triangle);
+    surface.draw_path(&triangle);
 
     // Finish up and write the resulting PDF.
     surface.finish();

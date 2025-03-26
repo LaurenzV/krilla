@@ -33,16 +33,28 @@ pub(crate) fn draw_glyph(
 ) -> Option<()> {
     let path = Path(glyph_path(font, glyph).and_then(|p| p.transform(base_transform.to_tsp()))?);
 
+    let old_fill = surface.get_fill().cloned();
+    let old_stroke = surface.get_stroke().cloned();
+
     match paint_mode {
         PaintMode::Fill(f) => {
-            surface.set_fill(f.clone());
-            surface.fill_path(&path)
+            surface.set_fill(Some(f.clone()));
+            surface.set_stroke(None);
         }
         PaintMode::Stroke(s) => {
-            surface.set_stroke(s.clone());
-            surface.stroke_path(&path);
+            surface.set_fill(None);
+            surface.set_stroke(Some(s.clone()));
+        }
+        PaintMode::FillStroke(f, s) => {
+            surface.set_fill(Some(f.clone()));
+            surface.set_stroke(Some(s.clone()));
         }
     }
+
+    surface.draw_path(&path);
+
+    surface.set_fill(old_fill);
+    surface.set_stroke(old_stroke);
 
     Some(())
 }

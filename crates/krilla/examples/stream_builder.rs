@@ -23,19 +23,19 @@ fn main() {
     let mut stream_builder = surface.stream_builder();
     let mut pattern_surface = stream_builder.surface();
 
-    pattern_surface.set_fill(Fill {
+    pattern_surface.set_fill(Some(Fill {
         paint: rgb::Color::new(255, 0, 0).into(),
         ..Default::default()
-    });
+    }));
     // Draw the top-left rectangle.
-    pattern_surface.fill_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    pattern_surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
-    pattern_surface.set_fill(Fill {
+    pattern_surface.set_fill(Some(Fill {
         paint: rgb::Color::new(0, 0, 255).into(),
         ..Default::default()
-    });
+    }));
     // Draw the bottom-right rectangle.
-    pattern_surface.fill_path(&rect_to_path(10.0, 10.0, 20.0, 20.0));
+    pattern_surface.draw_path(&rect_to_path(10.0, 10.0, 20.0, 20.0));
     pattern_surface.finish();
 
     // Get the pattern stream
@@ -55,19 +55,20 @@ fn main() {
 
     let rect_path = rect_to_path(30.0, 30.0, 170.0, 170.0);
 
-    surface.set_fill(Fill {
+    surface.set_fill(Some(Fill {
         paint: pattern.into(),
         ..Default::default()
-    });
+    }));
     // Draw the rectangle.
-    surface.fill_path(&rect_path);
+    surface.draw_path(&rect_path);
 
-    surface.set_stroke(Stroke {
+    surface.set_fill(None);
+    surface.set_stroke(Some(Stroke {
         paint: rgb::Color::black().into(),
         ..Default::default()
-    });
+    }));
     // Let's also add a stroke, makes it look a bit nicer.
-    surface.stroke_path(&rect_path);
+    surface.draw_path(&rect_path);
 
     // Don't forget to pop! Each `push_` method must have a corresponding pop.
     surface.pop();

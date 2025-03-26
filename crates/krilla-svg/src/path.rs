@@ -1,5 +1,5 @@
 use krilla::surface::Surface;
-use usvg::PaintOrder;
+use usvg::{Fill, PaintOrder, Stroke};
 
 use crate::util::{convert_fill, convert_stroke, PathExt};
 use crate::ProcessContext;
@@ -16,48 +16,42 @@ pub(crate) fn render(
 
     match path.paint_order() {
         PaintOrder::FillAndStroke => {
-            fill_path(path, surface, process_context);
-            stroke_path(path, surface, process_context);
+            draw_path(path, path.fill(), path.stroke(), surface, process_context);
         }
         PaintOrder::StrokeAndFill => {
-            stroke_path(path, surface, process_context);
-            fill_path(path, surface, process_context);
+            draw_path(path, None, path.stroke(), surface, process_context);
+            draw_path(path, path.fill(), None, surface, process_context);
         }
     }
 }
 
-/// Render a filled path into a surface.
-pub(crate) fn fill_path(
+/// Render a filled and/or stroked path into a surface.
+pub(crate) fn draw_path(
     path: &usvg::Path,
+    fill: Option<&Fill>,
+    stroke: Option<&Stroke>,
     surface: &mut Surface,
     process_context: &mut ProcessContext,
 ) {
-    if let Some(fill) = path.fill() {
-        let fill = convert_fill(
-            fill,
+    let fill = fill.map(|f| {
+        convert_fill(
+            f,
             surface.stream_builder(),
             process_context,
-            usvg::tiny_skia_path::Transform::identity(),
-        );
-        surface.set_fill(fill);
-        surface.fill_path(&path.to_krilla());
-    }
-}
+            usvg::Transform::identity(),
+        )
+    });
+    surface.set_fill(fill);
 
-/// Render a stroked path into a surface.
-pub(crate) fn stroke_path(
-    path: &usvg::Path,
-    surface: &mut Surface,
-    process_context: &mut ProcessContext,
-) {
-    if let Some(stroke) = path.stroke() {
-        let stroke = convert_stroke(
-            stroke,
+    let stroke = stroke.map(|s| {
+        convert_stroke(
+            s,
             surface.stream_builder(),
             process_context,
-            usvg::tiny_skia_path::Transform::identity(),
-        );
-        surface.set_stroke(stroke);
-        surface.stroke_path(&path.to_krilla());
-    }
+            usvg::Transform::identity(),
+        )
+    });
+    surface.set_stroke(stroke);
+
+    surface.draw_path(&path.to_krilla());
 }

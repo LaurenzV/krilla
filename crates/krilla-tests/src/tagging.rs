@@ -21,7 +21,7 @@ impl SurfaceTaggingExt for Surface<'_> {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0, true).unwrap();
 
-        self.fill_text(
+        self.draw_text(
             Point::from_xy(0.0, y),
             font,
             20.0,
@@ -159,13 +159,12 @@ fn tagging_multiple_content_tags(document: &mut Document) {
     surface.fill_text_(50.0, "a header artifact");
     surface.end_tagged();
     let id3 = surface.start_tagged(ContentTag::Other);
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+    surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
     surface.end_tagged();
 
     let id4 = surface.start_tagged(ContentTag::Other);
     let tree = sample_svg();
     surface.push_transform(&Transform::from_translate(100.0, 100.0));
-    surface.set_fill(Fill::default());
     surface.draw_svg(
         &tree,
         Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
@@ -183,7 +182,6 @@ fn tagging_multiple_content_tags(document: &mut Document) {
     surface.end_tagged();
 
     let id6 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Other));
-    surface.set_fill(Fill::default());
     surface.fill_text_(75.0, "a different type of artifact");
     surface.end_tagged();
 
@@ -268,13 +266,13 @@ fn tagging_two_footnotes(document: &mut Document) {
     let mut surface = page.surface();
 
     let id1 = surface.start_tagged(ContentTag::Other);
-    surface.set_fill(green_fill(1.0));
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
     surface.end_tagged();
 
     let id2 = surface.start_tagged(ContentTag::Other);
-    surface.set_fill(green_fill(1.0));
-    surface.fill_path(&rect_to_path(100.0, 100.0, 150.0, 150.0));
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(100.0, 100.0, 150.0, 150.0));
     surface.end_tagged();
 
     surface.finish();
@@ -300,8 +298,8 @@ fn tagging_page_identifer_appears_twice() {
     let mut surface = page.surface();
 
     let id1 = surface.start_tagged(ContentTag::Other);
-    surface.set_fill(green_fill(1.0));
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
     surface.end_tagged();
 
     surface.finish();
@@ -356,8 +354,8 @@ fn tagging_missing_identifier_in_tree() {
     let mut surface = page.surface();
 
     let _ = surface.start_tagged(ContentTag::Other);
-    surface.set_fill(green_fill(1.0));
-    surface.fill_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
     surface.end_tagged();
 
     surface.finish();

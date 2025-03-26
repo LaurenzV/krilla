@@ -34,6 +34,7 @@ pub(crate) fn draw_glyph(
     let context_color = match paint_mode {
         PaintMode::Fill(f) => f.paint.as_rgb(),
         PaintMode::Stroke(s) => s.paint.as_rgb(),
+        PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
     }
     .unwrap_or(rgb::Color::black());
 
@@ -72,8 +73,16 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
                     surface.push_clip_path(&crate::geom::Path(path), &FillRule::NonZero);
                 }
 
-                surface.set_fill(*fill);
-                surface.fill_path(&crate::geom::Path(filled[0].clone()));
+                let old_fill = surface.get_fill().cloned();
+                let old_stroke = surface.get_stroke().cloned();
+
+                surface.set_fill(Some(*fill));
+                surface.set_stroke(None);
+
+                surface.draw_path(&crate::geom::Path(filled[0].clone()));
+
+                surface.set_fill(old_fill);
+                surface.set_stroke(old_stroke);
 
                 for _ in 0..num_clips {
                     surface.pop();

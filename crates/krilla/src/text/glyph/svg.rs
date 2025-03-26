@@ -21,6 +21,7 @@ pub(crate) fn draw_glyph(
     let context_color = match paint_mode {
         PaintMode::Fill(f) => f.paint.as_rgb(),
         PaintMode::Stroke(s) => s.paint.as_rgb(),
+        PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
     }
     .unwrap_or(rgb::Color::black());
 

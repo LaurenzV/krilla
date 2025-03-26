@@ -15,8 +15,8 @@ fn outline_simple(d: &mut Document) {
         let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
         let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
         let mut surface = page.surface();
-        surface.set_fill(fill);
-        surface.fill_path(&path);
+        surface.set_fill(Some(fill));
+        surface.draw_path(&path);
         surface.finish();
         page.finish();
     }

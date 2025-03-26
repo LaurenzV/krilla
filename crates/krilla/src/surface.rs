@@ -60,8 +60,8 @@ pub type Location = u64;
 /// [`Page::surface`]: crate::page::Page::surface
 pub struct Surface<'a> {
     pub(crate) sc: &'a mut SerializeContext,
-    fill: Fill,
-    stroke: Stroke,
+    fill: Option<Fill>,
+    stroke: Option<Stroke>,
     bd: Builders,
     push_instructions: Vec<PushInstruction>,
     page_identifier: Option<PageTagIdentifier>,
@@ -79,8 +79,8 @@ impl<'a> Surface<'a> {
             sc,
             bd: Builders::new(root_builder),
             page_identifier,
-            fill: Fill::default(),
-            stroke: Stroke::default(),
+            fill: None,
+            stroke: None,
             push_instructions: vec![],
             finish_fn,
         }
@@ -91,28 +91,52 @@ impl<'a> Surface<'a> {
         StreamBuilder::new(self.sc)
     }
 
-    /// Set the fill that should be used for filling operations.
-    pub fn set_fill(&mut self, fill: Fill) {
+    /// Set the fill that should be used for the next drawing operation.
+    ///
+    /// You can set it to `None` if you want to disable filling (though
+    /// if there is no active stroke, than krilla will choose to fill
+    /// with black by default).
+    pub fn set_fill(&mut self, fill: Option<Fill>) {
         self.fill = fill;
     }
 
-    /// Set the stroke that should be used for stroking operations.
-    pub fn set_stroke(&mut self, stroke: Stroke) {
+    /// Get the currently active fill.
+    pub fn get_fill(&mut self) -> Option<&Fill> {
+        self.fill.as_ref()
+    }
+
+    /// Set the stroke that should be used for drawing operations.
+    ///
+    /// You can set it to `None` if you want to disable stroking.
+    pub fn set_stroke(&mut self, stroke: Option<Stroke>) {
         self.stroke = stroke;
     }
 
-    /// Fill a path.
-    pub fn fill_path(&mut self, path: &Path) {
-        self.bd
-            .get_mut()
-            .fill_path(&path.0, self.fill.clone(), self.sc);
+    /// Get the currently active stroke.
+    pub fn get_stroke(&mut self) -> Option<&Stroke> {
+        self.stroke.as_ref()
     }
 
-    /// Stroke a path.
-    pub fn stroke_path(&mut self, path: &Path) {
-        self.bd
-            .get_mut()
-            .stroke_path(&path.0, self.stroke.clone(), self.sc)
+    /// Draw a path using the currently active fill and/or stroke.
+    pub fn draw_path(&mut self, path: &Path) {
+        match (&self.fill, &self.stroke) {
+            (None, None) => {
+                self.bd
+                    .get_mut()
+                    .fill_path(&path.0, Fill::default(), self.sc);
+            }
+            _ => {
+                if let Some(fill) = &self.fill {
+                    self.bd.get_mut().fill_path(&path.0, fill.clone(), self.sc);
+                }
+
+                if let Some(stroke) = &self.stroke {
+                    self.bd
+                        .get_mut()
+                        .stroke_path(&path.0, stroke.clone(), self.sc);
+                }
+            }
+        }
     }
 
     /// Start a new tagged content section.
@@ -214,12 +238,12 @@ impl<'a> Surface<'a> {
         }
     }
 
-    /// Draw a sequence of glyphs using the current fill.
+    /// Draw a sequence of glyphs using the currently active fill and/or stroke.
     ///
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
-    pub fn fill_glyphs(
+    pub fn draw_glyphs(
         &mut self,
         start: Point,
         glyphs: &[impl Glyph],
@@ -229,18 +253,38 @@ impl<'a> Surface<'a> {
         outlined: bool,
     ) {
         if outlined {
-            self.outline_glyphs(
-                glyphs,
-                start,
-                font,
-                font_size,
-                PaintMode::Fill(&self.fill.clone()),
-            );
+            match (self.fill.clone(), self.stroke.clone()) {
+                (None, None) => {
+                    self.outline_glyphs(
+                        glyphs,
+                        start,
+                        font,
+                        font_size,
+                        PaintMode::Fill(&Fill::default()),
+                    );
+                }
+                (Some(f), None) => {
+                    self.outline_glyphs(glyphs, start, font, font_size, PaintMode::Fill(&f));
+                }
+                (None, Some(s)) => {
+                    self.outline_glyphs(glyphs, start, font, font_size, PaintMode::Stroke(&s));
+                }
+                (Some(f), Some(s)) => {
+                    self.outline_glyphs(
+                        glyphs,
+                        start,
+                        font,
+                        font_size,
+                        PaintMode::FillStroke(&f, &s),
+                    );
+                }
+            }
         } else {
-            self.bd.get_mut().fill_glyphs(
+            self.bd.get_mut().draw_glyphs(
                 start,
                 self.sc,
                 self.fill.clone(),
+                self.stroke.clone(),
                 glyphs,
                 font,
                 text,
@@ -249,7 +293,7 @@ impl<'a> Surface<'a> {
         }
     }
 
-    /// Draw some text using the current fill.
+    /// Draw some text using the currently active fill and/or stroke.
     ///
     /// This is a high-level method which allows you to just provide some text, which will
     /// then be rendered into a single line. However, this approach has restrictions:
@@ -262,7 +306,7 @@ impl<'a> Surface<'a> {
     /// If you need more advanced control over how your text looks,
     /// you can use the `fill_glyphs` method.
     #[cfg(feature = "simple-text")]
-    pub fn fill_text(
+    pub fn draw_text(
         &mut self,
         start: Point,
         font: Font,
@@ -273,65 +317,7 @@ impl<'a> Surface<'a> {
     ) {
         let glyphs = naive_shape(text, font.clone(), direction);
 
-        self.fill_glyphs(start, &glyphs, font, text, font_size, outlined);
-    }
-
-    /// Draw a sequence of glyphs using the current stroke.
-    pub fn stroke_glyphs(
-        &mut self,
-        start: Point,
-        glyphs: &[impl Glyph],
-        font: Font,
-        text: &str,
-        font_size: f32,
-        outlined: bool,
-    ) {
-        if outlined {
-            self.outline_glyphs(
-                glyphs,
-                start,
-                font,
-                font_size,
-                PaintMode::Stroke(&self.stroke.clone()),
-            );
-        } else {
-            self.bd.get_mut().stroke_glyphs(
-                start,
-                self.sc,
-                self.stroke.clone(),
-                glyphs,
-                font,
-                text,
-                font_size,
-            );
-        }
-    }
-
-    /// Draw some text with a stroke.
-    ///
-    /// This is a high-level method which allows you to just provide some text, which will
-    /// then be rendered into a single line. However, this approach has restrictions:
-    ///
-    /// - It will not perform BIDI resolution and only supports a single script, meaning that you
-    ///   must ensure that your text does not contain multiple scripts.
-    /// - It will only use the single font you provided to draw the text, no font fallback will
-    ///   be performed.
-    ///
-    /// If you need more advanced control over how your text looks,
-    /// you can use the `stroke_glyphs` method.
-    #[cfg(feature = "simple-text")]
-    pub fn stroke_text(
-        &mut self,
-        start: Point,
-        font: Font,
-        font_size: f32,
-        text: &str,
-        outlined: bool,
-        direction: TextDirection,
-    ) {
-        let glyphs = naive_shape(text, font.clone(), direction);
-
-        self.stroke_glyphs(start, &glyphs, font, text, font_size, outlined);
+        self.draw_glyphs(start, &glyphs, font, text, font_size, outlined);
     }
 
     /// Set the location that should be assumed for subsequent operations.

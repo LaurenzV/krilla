@@ -61,6 +61,9 @@ pub trait SurfaceExt {
 
 impl SurfaceExt for Surface<'_> {
     fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()> {
+        let old_fill = self.get_fill().cloned();
+        let old_stroke = self.get_stroke().cloned();
+
         let transform = Transform::from_scale(
             size.width() / tree.size().width(),
             size.height() / tree.size().height(),
@@ -75,6 +78,9 @@ impl SurfaceExt for Surface<'_> {
         render_tree(tree, svg_settings, self);
         self.pop();
         self.pop();
+
+        self.set_fill(old_fill);
+        self.set_stroke(old_stroke);
 
         Some(())
     }

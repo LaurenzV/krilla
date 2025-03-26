@@ -200,10 +200,19 @@ impl Type3Font {
                                         rule: Default::default(),
                                     },
                                 ),
+                                OwnedPaintMode::FillStroke(f, _) => (p, f.clone()),
                             })
                         {
-                            surface.set_fill(fill);
-                            surface.fill_path(&Path(path));
+                            let old_fill = surface.get_fill().cloned();
+                            let old_stroke = surface.get_stroke().cloned();
+
+                            surface.set_fill(Some(fill));
+                            surface.set_stroke(None);
+
+                            surface.draw_path(&Path(path));
+
+                            surface.set_fill(old_fill);
+                            surface.set_stroke(old_stroke);
                         }
                     };
 
