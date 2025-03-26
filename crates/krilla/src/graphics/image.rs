@@ -229,10 +229,15 @@ impl Image {
 
     /// Create a new bitmap image from a `.jpg` file with custom ICC profile.
     #[doc(hidden)]
-    pub fn from_jpeg_with_icc(data: Data, icc_profile: Option<Data>, interpolate: bool) -> Option<Image> {
+    pub fn from_jpeg_with_icc(
+        data: Data,
+        icc_profile: Option<Data>,
+        interpolate: bool,
+    ) -> Option<Image> {
         let hash = data.as_ref().sip_hash();
         let mut metadata = jpeg_metadata(data.as_ref())?;
-        let icc_profile = icc_profile.and_then(|d| get_icc_profile_type(d.as_ref(), metadata.color_space));
+        let icc_profile =
+            icc_profile.and_then(|d| get_icc_profile_type(d.as_ref(), metadata.color_space));
         metadata.icc = icc_profile;
 
         Some(Self(Arc::new(ImageRepr {
