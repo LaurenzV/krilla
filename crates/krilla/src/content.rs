@@ -81,7 +81,7 @@ impl ContentBuilder {
         sc.register_limits(buf.limits());
 
         Stream::new(
-            buf.to_bytes(),
+            buf.to_vec(),
             self.bbox
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
             self.validation_errors.into_iter().collect(),
