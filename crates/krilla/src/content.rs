@@ -186,19 +186,23 @@ impl ContentBuilder {
             }
         };
 
+        let fill_op = |sb: &mut ContentBuilder, sc: &mut SerializeContext, fill: &Fill| {
+            let fill_rule = fill.rule;
+            sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
+            sb.content_draw_path(path.segments());
+
+            match fill_rule {
+                FillRule::NonZero => sb.content.fill_nonzero(),
+                FillRule::EvenOdd => sb.content.fill_even_odd(),
+            };
+        };
+
         self.apply_isolated_op(
             |sb, _| {
                 fill_prep(sb, fill);
             },
             |sb, sc| {
-                let fill_rule = fill.rule;
-                sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
-                sb.content_draw_path(path.segments());
-
-                match fill_rule {
-                    FillRule::NonZero => sb.content.fill_nonzero(),
-                    FillRule::EvenOdd => sb.content.fill_even_odd(),
-                };
+                fill_op(sb, sc, fill);
             },
             sc,
         );
@@ -211,7 +215,7 @@ impl ContentBuilder {
 
         let stroke_bbox =
             calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
-        
+
         let stroke_prep = |sb: &mut ContentBuilder, stroke: &Stroke| {
             let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
             let stroke_opacity = stroke.opacity;
@@ -223,14 +227,18 @@ impl ContentBuilder {
             }
         };
 
+        let stroke_op = |sb: &mut ContentBuilder, sc: &mut SerializeContext, stroke: &Stroke| {
+            sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
+            sb.content_draw_path(path.segments());
+            sb.content.stroke();
+        };
+
         self.apply_isolated_op(
             |sb, _| {
                 stroke_prep(sb, stroke);
             },
             |sb, sc| {
-                sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
-                sb.content_draw_path(path.segments());
-                sb.content.stroke();
+                stroke_op(sb, sc, stroke);
             },
             sc,
         );
