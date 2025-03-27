@@ -129,6 +129,14 @@ fn image(page: &mut Page) {
     surface.draw_image(image, size);
 }
 
+#[snapshot]
+fn image_luma(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_png_image("luma8.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
 #[snapshot(document)]
 fn image_deduplicate(document: &mut Document) {
     let size = load_png_image("luma8.png").size();
