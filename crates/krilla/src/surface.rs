@@ -520,26 +520,24 @@ impl<'a> Surface<'a> {
         // 2) We have a linear gradient with opacities in at least one stop, because then we need
         // to invoke a soft mask, in which case the fill/stroke would both be affected by this.
 
-        let check_paint = |paint: &Paint| {
-            match &paint.0 {
-                InnerPaint::Color(_) => false,
-                InnerPaint::LinearGradient(l) => l.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
-                InnerPaint::RadialGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
-                InnerPaint::SweepGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
-                InnerPaint::Pattern(_) => false,
+        let check_paint = |paint: &Paint| match &paint.0 {
+            InnerPaint::Color(_) => false,
+            InnerPaint::LinearGradient(l) => {
+                l.stops.iter().any(|s| s.opacity != NormalizedF32::ONE)
             }
+            InnerPaint::RadialGradient(r) => {
+                r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE)
+            }
+            InnerPaint::SweepGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
+            InnerPaint::Pattern(_) => false,
         };
-        
-        let complex_stroke = self.stroke.as_ref().is_some_and(|s| {
-            s.opacity != NormalizedF32::ONE || check_paint(&s.paint)
-        });
 
-        let complex_fill = self
-            .fill
+        let complex_stroke = self
+            .stroke
             .as_ref()
-            .is_some_and(|f| {
-                check_paint(&f.paint)
-        });
+            .is_some_and(|s| s.opacity != NormalizedF32::ONE || check_paint(&s.paint));
+
+        let complex_fill = self.fill.as_ref().is_some_and(|f| check_paint(&f.paint));
 
         complex_fill || complex_stroke
     }
