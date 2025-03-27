@@ -696,35 +696,25 @@ fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, Bi
     let color_channel = match cs {
         ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
-            let data = data
-                .iter()
-                .enumerate()
-                .flat_map(|(index, val)| {
-                    if index % 4 == 3 {
-                        alphas.push(*val);
-                        None
-                    } else {
-                        Some(*val)
-                    }
-                })
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
+            let mut buf = Vec::with_capacity(data.len() * 3 / 4);
+            data
+                .chunks_exact(4)
+                .for_each(|data| {
+                    buf.extend_from_slice(&data[0..3]);
+                    alphas.push(data[3]);
+                });
+            deflate_encode(&buf)
         }
         ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
-            let data = data
-                .iter()
-                .enumerate()
-                .flat_map(|(index, val)| {
-                    if index % 2 == 1 {
-                        alphas.push(*val);
-                        None
-                    } else {
-                        Some(*val)
-                    }
-                })
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
+            let mut buf = Vec::with_capacity(data.len() /  2);
+            data
+                .chunks_exact(2)
+                .for_each(|data| {
+                    buf.push(data[0]);
+                    alphas.push(data[1]);
+                });
+            deflate_encode(&buf)
         }
         // PNG/WEBP/GIF only support those three, so should be enough?
         _ => unimplemented!(),
@@ -749,7 +739,7 @@ fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, B
     let encoded_image = match cs {
         ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
-            let mut buf = Vec::with_capacity(data.len() * 6 / 8);
+            let mut buf = Vec::with_capacity(data.len() * 3 / 4);
             data
                 .chunks_exact(8)
                 .for_each(|data| {
@@ -760,7 +750,7 @@ fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, B
         }
         ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
-            let mut buf = Vec::with_capacity(data.len() / cs.num_components());
+            let mut buf = Vec::with_capacity(data.len() / 2);
             data
                 .chunks_exact(4)
                 .for_each(|data| {
