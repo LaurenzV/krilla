@@ -54,4 +54,3 @@ fn outline_with_empty_title(d: &mut Document) {
 
     d.set_outline(outline);
 }
-
