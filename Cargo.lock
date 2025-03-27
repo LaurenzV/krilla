@@ -813,6 +813,7 @@ dependencies = [
  "parley",
  "paste",
  "pdf-writer",
+ "png",
  "rayon",
  "rustybuzz",
  "siphasher",
@@ -823,7 +824,6 @@ dependencies = [
  "xmp-writer",
  "yoke",
  "zune-jpeg",
- "zune-png",
 ]
 
 [[package]]
@@ -845,11 +845,11 @@ dependencies = [
  "krilla",
  "krilla-macros",
  "once_cell",
+ "png",
  "resvg",
  "sitro",
  "tiny-skia",
  "usvg",
- "zune-png",
 ]
 
 [[package]]
@@ -1142,9 +1142,9 @@ checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
 
 [[package]]
 name = "png"
-version = "0.17.14"
+version = "0.17.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52f9d46a34a05a6a57566bc2bfae066ef07585a6e3fa30fbbdff5936380623f0"
+checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
 dependencies = [
  "bitflags 1.3.2",
  "crc32fast",
@@ -2167,14 +2167,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16099418600b4d8f028622f73ff6e3deaabdff330fb9a2a131dea781ee8b0768"
 dependencies = [
  "zune-core",
-]
-
-[[package]]
-name = "zune-png"
-version = "0.4.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d29c085769c6f29effea890f093120ac019375fdc789d2a496ba8ba96c77509"
-dependencies = [
- "zune-core",
- "zune-inflate",
 ]
