@@ -15,10 +15,8 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
 
     let bitmap_strikes = BitmapStrikes::new(font.font_ref());
 
-    let bitmap_glyph = bitmap_strikes
-        .iter()
-        .filter_map(|s| s.get(glyph.to_skrifa()))
-        .last()?;
+    let bitmap_glyph =
+        bitmap_strikes.glyph_for_size(skrifa::instance::Size::unscaled(), glyph.to_skrifa())?;
     let upem = metrics.units_per_em as f32;
 
     match bitmap_glyph.data {
