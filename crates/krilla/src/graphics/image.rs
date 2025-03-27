@@ -14,11 +14,9 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use zune_jpeg::zune_core::bit_depth::BitDepth;
-use zune_jpeg::zune_core::result::DecodingResult;
+use png::{BitDepth, ColorType, Transformations};
+use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
-use zune_png::zune_core::colorspace::ColorSpace;
-use zune_png::PngDecoder;
 
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
@@ -507,29 +505,36 @@ impl Image {
     }
 }
 
-fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
-    let mut decoder = PngDecoder::new(data);
-    decoder.decode_headers().ok()?;
+const PNG_TRANSFORMATIONS: Transformations = Transformations::EXPAND;
 
-    let size = {
-        let info = decoder.get_info()?;
-        (info.width as u32, info.height as u32)
-    };
-    let color_space = decoder.get_colorspace()?;
-    let bits_per_component = match decoder.get_depth()? {
-        BitDepth::Eight => BitsPerComponent::Eight,
+fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
+    let mut decoder = png::Decoder::new(data);
+    decoder.set_transformations(PNG_TRANSFORMATIONS);
+    let reader = decoder.read_info().unwrap();
+    let info = reader.info();
+
+    let size = (info.width, info.height);
+    let (color_type, bit_depth) = reader.output_color_type();
+    let bits_per_component = match bit_depth {
+        // We will normalize to 8 when decoding.
+        BitDepth::One | BitDepth::Two | BitDepth::Four | BitDepth::Eight => BitsPerComponent::Eight,
         BitDepth::Sixteen => BitsPerComponent::Sixteen,
-        _ => unreachable!(),
     };
-    let image_color_space = color_space.try_into().ok()?;
-    let icc = decoder
-        .get_info()?
+
+    let (image_color_space, has_alpha) = match color_type {
+        ColorType::Grayscale => (ImageColorspace::Luma, false),
+        ColorType::GrayscaleAlpha => (ImageColorspace::Luma, true),
+        ColorType::Rgb => (ImageColorspace::Rgb, false),
+        ColorType::Rgba => (ImageColorspace::Rgb, true),
+        _ => return None,
+    };
+    let icc = info
         .icc_profile
         .as_ref()
-        .and_then(|d| get_icc_profile_type(d, image_color_space));
+        .and_then(|i| get_icc_profile_type(i, image_color_space));
 
     Some(ImageMetadata {
-        has_alpha: color_space.has_alpha(),
+        has_alpha,
         size,
         bits_per_component,
         color_space: image_color_space,
@@ -538,16 +543,24 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
 }
 
 fn decode_png(data: &[u8]) -> Option<Repr> {
-    let mut decoder = PngDecoder::new(data);
-    decoder.decode_headers().ok()?;
+    let mut decoder = png::Decoder::new(data);
+    decoder.set_transformations(PNG_TRANSFORMATIONS);
+    let mut reader = decoder.read_info().unwrap();
+    let mut img_data = vec![0; reader.output_buffer_size()];
+    let _ = reader.next_frame(&mut img_data).unwrap();
+    let (color_type, bit_depth) = reader.output_color_type();
 
-    let color_space = decoder.get_colorspace()?;
+    let color_space = match color_type {
+        ColorType::Rgb => ColorSpace::RGB,
+        ColorType::Rgba => ColorSpace::RGBA,
+        ColorType::Grayscale => ColorSpace::Luma,
+        ColorType::GrayscaleAlpha => ColorSpace::LumaA,
+        _ => unreachable!(),
+    };
 
-    let decoded = decoder.decode().ok()?;
-
-    let (color_channel, alpha_channel, bits_per_component) = match decoded {
-        DecodingResult::U8(u8) => handle_u8_image(&u8, color_space),
-        DecodingResult::U16(u16) => handle_u16_image(&u16, color_space),
+    let (color_channel, alpha_channel, bits_per_component) = match bit_depth {
+        BitDepth::Eight => handle_u8_image(&img_data, color_space),
+        BitDepth::Sixteen => handle_u16_image(&img_data, color_space),
         _ => return None,
     };
 
@@ -686,35 +699,21 @@ fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, Bi
     let color_channel = match cs {
         ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
-            let data = data
-                .iter()
-                .enumerate()
-                .flat_map(|(index, val)| {
-                    if index % 4 == 3 {
-                        alphas.push(*val);
-                        None
-                    } else {
-                        Some(*val)
-                    }
-                })
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
+            let mut buf = Vec::with_capacity(data.len() * 3 / 4);
+            data.chunks_exact(4).for_each(|data| {
+                buf.extend_from_slice(&data[0..3]);
+                alphas.push(data[3]);
+            });
+            deflate_encode(&buf)
         }
         ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
-            let data = data
-                .iter()
-                .enumerate()
-                .flat_map(|(index, val)| {
-                    if index % 2 == 1 {
-                        alphas.push(*val);
-                        None
-                    } else {
-                        Some(*val)
-                    }
-                })
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
+            let mut buf = Vec::with_capacity(data.len() / 2);
+            data.chunks_exact(2).for_each(|data| {
+                buf.push(data[0]);
+                alphas.push(data[1]);
+            });
+            deflate_encode(&buf)
         }
         // PNG/WEBP/GIF only support those three, so should be enough?
         _ => unimplemented!(),
@@ -729,60 +728,31 @@ fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, Bi
     (color_channel, alpha_channel, BitsPerComponent::Eight)
 }
 
-fn handle_u16_image(data: &[u16], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
+fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
     let mut alphas = if cs.has_alpha() {
-        // * 2 because we are going from u16 to u8
-        Vec::with_capacity(2 * data.len() / cs.num_components())
+        Vec::with_capacity(data.len() / cs.num_components())
     } else {
         Vec::new()
     };
 
     let encoded_image = match cs {
-        ColorSpace::RGB => {
-            let data = data
-                .iter()
-                .flat_map(|b| b.to_be_bytes())
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
-        }
+        ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
-            let data = data
-                .iter()
-                .enumerate()
-                .flat_map(|(index, val)| {
-                    if index % 4 == 3 {
-                        alphas.extend(val.to_be_bytes());
-                        None
-                    } else {
-                        Some(*val)
-                    }
-                })
-                .flat_map(|n| n.to_be_bytes())
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
+            let mut buf = Vec::with_capacity(data.len() * 3 / 4);
+            data.chunks_exact(8).for_each(|data| {
+                buf.extend_from_slice(&data[0..6]);
+                alphas.extend_from_slice(&data[6..]);
+            });
+            deflate_encode(&buf)
         }
-        ColorSpace::Luma => {
-            let data = data
-                .iter()
-                .flat_map(|b| b.to_be_bytes())
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
-        }
+        ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
-            let data = data
-                .iter()
-                .enumerate()
-                .flat_map(|(index, val)| {
-                    if index % 2 == 1 {
-                        alphas.extend(val.to_be_bytes());
-                        None
-                    } else {
-                        Some(*val)
-                    }
-                })
-                .flat_map(|n| n.to_be_bytes())
-                .collect::<Vec<_>>();
-            deflate_encode(&data)
+            let mut buf = Vec::with_capacity(data.len() / 2);
+            data.chunks_exact(4).for_each(|data| {
+                buf.extend_from_slice(&data[0..2]);
+                alphas.extend_from_slice(&data[2..]);
+            });
+            deflate_encode(&buf)
         }
         // PNG/WEBP/GIF only support those three, so should be enough?
         _ => unimplemented!(),

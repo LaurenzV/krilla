@@ -48,5 +48,5 @@ tiny-skia-path = "0.11.4"
 usvg = "0.45.0"
 xmp-writer = { git = "https://github.com/LaurenzV/xmp-writer", rev = "a1cbb887" }
 yoke = { version = "0.8.0", features = ["derive"] }
-zune-png = "0.4.10"
+png = "0.17.16"
 zune-jpeg = "0.4.13"

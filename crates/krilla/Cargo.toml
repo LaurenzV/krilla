@@ -21,7 +21,7 @@ default = ["raster-images", "simple-text"]
 # Allow for rendering simple text without having to shape it yourself.
 "simple-text" = ["dep:rustybuzz"]
 # Allow for adding raster images to your document.
-"raster-images" = ["dep:zune-png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
+"raster-images" = ["dep:png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
 
 [dependencies]
 base64 = { workspace = true }
@@ -42,7 +42,7 @@ skrifa = { workspace = true }
 tiny-skia-path = { workspace = true }
 xmp-writer = { workspace = true }
 yoke = { workspace = true }
-zune-png = { workspace = true, optional = true }
+png = { workspace = true, optional = true }
 zune-jpeg = { workspace = true, optional = true }
 
 [dev-dependencies]

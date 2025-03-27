@@ -8,7 +8,7 @@ readme.workspace = true
 license.workspace = true
 
 [dependencies]
-zune-png = { workspace = true }
+png = { workspace = true }
 krilla = { workspace = true, features = ["raster-images"] }
 usvg = { workspace = true }
 tiny-skia = { workspace = true }
