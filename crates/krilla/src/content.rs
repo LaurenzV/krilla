@@ -174,7 +174,7 @@ impl ContentBuilder {
             return;
         }
 
-        let fill_prep = |sb: &mut ContentBuilder, _: &mut SerializeContext| {
+        let fill_prep = |sb: &mut ContentBuilder, fill: &Fill| {
             let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
             let fill_opacity = fill.opacity;
             sb.expand_bbox(Rect::from_tsp(path.bounds()));
@@ -187,7 +187,9 @@ impl ContentBuilder {
         };
 
         self.apply_isolated_op(
-            fill_prep,
+            |sb, _| {
+                fill_prep(sb, fill);
+            },
             |sb, sc| {
                 let fill_rule = fill.rule;
                 sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
@@ -210,7 +212,7 @@ impl ContentBuilder {
         let stroke_bbox =
             calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
         
-        let stroke_prep = |sb: &mut ContentBuilder, _: &mut SerializeContext| {
+        let stroke_prep = |sb: &mut ContentBuilder, stroke: &Stroke| {
             let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
             let stroke_opacity = stroke.opacity;
             sb.expand_bbox(stroke_bbox);
@@ -222,7 +224,9 @@ impl ContentBuilder {
         };
 
         self.apply_isolated_op(
-            stroke_prep,
+            |sb, _| {
+                stroke_prep(sb, stroke);
+            },
             |sb, sc| {
                 sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
                 sb.content_draw_path(path.segments());
