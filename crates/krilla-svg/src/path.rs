@@ -1,5 +1,5 @@
 use krilla::surface::Surface;
-use usvg::{Fill, PaintOrder, Stroke};
+use usvg::{Fill, Paint, PaintOrder, Stroke};
 
 use crate::util::{convert_fill, convert_stroke, PathExt};
 use crate::ProcessContext;
@@ -18,8 +18,7 @@ pub(crate) fn render(
         PaintOrder::FillAndStroke => {
             // Using the native text capabilities for filling + stroking leads to mismatch
             // in some PDF viewers, so we draw them separately instead.
-            draw_path(path, path.fill(), None, surface, process_context);
-            draw_path(path, None, path.stroke(), surface, process_context);
+            draw_path(path, path.fill(), path.stroke(), surface, process_context);
         }
         PaintOrder::StrokeAndFill => {
             draw_path(path, None, path.stroke(), surface, process_context);

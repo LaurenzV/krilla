@@ -17,9 +17,11 @@ use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
+use crate::paint::{InnerPaint, Paint};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
+use crate::tagging::Tag::P;
 use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
@@ -120,9 +122,21 @@ impl<'a> Surface<'a> {
     /// Draw a path using the currently active fill and/or stroke.
     pub fn draw_path(&mut self, path: &Path) {
         if self.fill.is_some() || self.stroke.is_some() {
-            self.bd
-                .get_mut()
-                .draw_path(&path.0, self.fill.as_ref(), self.stroke.as_ref(), self.sc);
+            if self.has_complex_fill_or_stroke() {
+                self.bd
+                    .get_mut()
+                    .draw_path(&path.0, self.fill.as_ref(), None, self.sc);
+                self.bd
+                    .get_mut()
+                    .draw_path(&path.0, None, self.stroke.as_ref(), self.sc);
+            } else {
+                self.bd.get_mut().draw_path(
+                    &path.0,
+                    self.fill.as_ref(),
+                    self.stroke.as_ref(),
+                    self.sc,
+                );
+            }
         } else {
             // Draw with black by default.
             self.bd
@@ -419,6 +433,27 @@ impl<'a> Surface<'a> {
             (None, Some(s)) => Some(PaintMode::Stroke(s)),
             (Some(f), Some(s)) => Some(PaintMode::FillStroke(f, s)),
         }
+    }
+
+    fn has_complex_fill_or_stroke(&self) -> bool {
+        // Thing can go wrong and yield inconsistent results in different PDF viewers
+        // for some fill/stroke combinations. In the case of solid colors on strokes, different
+        // PDF viewers draw them differently. In the case of complex paints, if they have an
+        // opacity we need to draw a mask, in which case the mask will apply to the fill AND
+        // the stroke. Because of this, in case the fill or stroke is complex, we fill and stroke
+        // glyphs and path in two separate steps instead of in one go.
+
+        let complex_stroke = self.stroke.as_ref().is_some_and(|s| match s.paint.0 {
+            InnerPaint::Color(_) => s.opacity != NormalizedF32::ONE,
+            _ => true,
+        });
+
+        let complex_fill = self.fill.as_ref().is_some_and(|f| match f.paint.0 {
+            InnerPaint::Color(_) => false,
+            _ => true,
+        });
+
+        complex_fill || complex_stroke
     }
 }
 
