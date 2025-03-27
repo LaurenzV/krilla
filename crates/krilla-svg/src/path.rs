@@ -16,8 +16,6 @@ pub(crate) fn render(
 
     match path.paint_order() {
         PaintOrder::FillAndStroke => {
-            // Using the native text capabilities for filling + stroking leads to mismatch
-            // in some PDF viewers, so we draw them separately instead.
             draw_path(path, path.fill(), path.stroke(), surface, process_context);
         }
         PaintOrder::StrokeAndFill => {
