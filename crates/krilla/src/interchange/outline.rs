@@ -179,9 +179,7 @@ impl OutlineNode {
             true,
         )?;
 
-        if !self.text.is_empty() {
-            outline_entry.title(TextStr(&self.text));
-        }
+        outline_entry.title(TextStr(&self.text));
 
         let dest_ref = sc.register_xyz_destination(self.destination.clone());
         outline_entry.pair(Name(b"Dest"), dest_ref);
