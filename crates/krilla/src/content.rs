@@ -174,11 +174,12 @@ impl ContentBuilder {
             return;
         }
 
-        let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
-        let fill_opacity = fill.opacity;
+        
 
         self.apply_isolated_op(
             |sb, _| {
+                let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
+                let fill_opacity = fill.opacity;
                 sb.expand_bbox(Rect::from_tsp(path.bounds()));
 
                 // PDF viewers don't show patterns with fill/stroke opacities consistently.
@@ -209,11 +210,10 @@ impl ContentBuilder {
         let stroke_bbox =
             calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
 
-        let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
-        let stroke_opacity = stroke.opacity;
-
         self.apply_isolated_op(
             |sb, _| {
+                let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
+                let stroke_opacity = stroke.opacity;
                 sb.expand_bbox(stroke_bbox);
 
                 // See comment in `set_fill_properties`
