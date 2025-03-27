@@ -16,7 +16,10 @@ pub(crate) fn render(
 
     match path.paint_order() {
         PaintOrder::FillAndStroke => {
-            draw_path(path, path.fill(), path.stroke(), surface, process_context);
+            // Using the native text capabilities for filling + stroking leads to mismatch
+            // in some PDF viewers, so we draw them separately instead.
+            draw_path(path, path.fill(), None, surface, process_context);
+            draw_path(path, None, path.stroke(), surface, process_context);
         }
         PaintOrder::StrokeAndFill => {
             draw_path(path, None, path.stroke(), surface, process_context);
@@ -41,7 +44,6 @@ pub(crate) fn draw_path(
             usvg::Transform::identity(),
         )
     });
-    surface.set_fill(fill);
 
     let stroke = stroke.map(|s| {
         convert_stroke(
@@ -51,7 +53,12 @@ pub(crate) fn draw_path(
             usvg::Transform::identity(),
         )
     });
-    surface.set_stroke(stroke);
 
-    surface.draw_path(&path.to_krilla());
+    // Otherwise krilla will fill with black by default.
+    if fill.is_some() || stroke.is_some() {
+        surface.set_fill(fill);
+        surface.set_stroke(stroke);
+
+        surface.draw_path(&path.to_krilla());
+    }
 }

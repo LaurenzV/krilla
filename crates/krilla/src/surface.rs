@@ -119,21 +119,15 @@ impl<'a> Surface<'a> {
 
     /// Draw a path using the currently active fill and/or stroke.
     pub fn draw_path(&mut self, path: &Path) {
-        match (&self.fill, &self.stroke) {
-            (None, None) => {
-                self.bd
-                    .get_mut()
-                    .fill_path(&path.0, &Fill::default(), self.sc);
-            }
-            _ => {
-                if let Some(fill) = &self.fill {
-                    self.bd.get_mut().fill_path(&path.0, fill, self.sc);
-                }
-
-                if let Some(stroke) = &self.stroke {
-                    self.bd.get_mut().stroke_path(&path.0, stroke, self.sc);
-                }
-            }
+        if self.fill.is_some() || self.stroke.is_some() {
+            self.bd
+                .get_mut()
+                .draw_path(&path.0, self.fill.as_ref(), self.stroke.as_ref(), self.sc);
+        } else {
+            // Draw with black by default.
+            self.bd
+                .get_mut()
+                .draw_path(&path.0, Some(&Fill::default()), None, self.sc);
         }
     }
 
@@ -245,16 +239,30 @@ impl<'a> Surface<'a> {
         if outlined {
             self.outline_glyphs(glyphs, start, font, font_size);
         } else {
-            self.bd.get_mut().draw_glyphs(
-                start,
-                self.sc,
-                self.fill.as_ref(),
-                self.stroke.as_ref(),
-                glyphs,
-                font,
-                text,
-                font_size,
-            );
+            if self.fill.is_some() || self.stroke.is_some() {
+                self.bd.get_mut().draw_glyphs(
+                    start,
+                    self.sc,
+                    self.fill.as_ref(),
+                    self.stroke.as_ref(),
+                    glyphs,
+                    font,
+                    text,
+                    font_size,
+                );
+            } else {
+                // Draw with black by default.
+                self.bd.get_mut().draw_glyphs(
+                    start,
+                    self.sc,
+                    Some(&Fill::default()),
+                    None,
+                    glyphs,
+                    font,
+                    text,
+                    font_size,
+                );
+            }
         }
     }
 
