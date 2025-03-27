@@ -25,9 +25,10 @@
 //! [`Mask`]: crate::graphics::mask::Mask
 
 use std::borrow::Cow;
-use std::fmt::Write;
 use std::ops::DerefMut;
 
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
 use pdf_writer::{Array, Dict, Name};
 
 use crate::configure::ValidationError;
@@ -300,11 +301,17 @@ fn deflate_encode_memoized(data: &[u8]) -> Vec<u8> {
 }
 
 pub(crate) fn deflate_encode(data: &[u8]) -> Vec<u8> {
+    use std::io::Write;
+
     const COMPRESSION_LEVEL: u8 = 6;
-    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
+    let mut e = ZlibEncoder::new(Vec::new(), Compression::new(COMPRESSION_LEVEL as u32));
+    e.write_all(data).unwrap();
+    e.finish().unwrap()
 }
 
 fn hex_encode(data: &[u8]) -> Vec<u8> {
+    use std::fmt::Write;
+
     const COLUMNS: usize = 35;
     let len = data.len();
     let capacity = 2 * len + len / COLUMNS;
