@@ -174,20 +174,20 @@ impl ContentBuilder {
             return;
         }
 
-        
+        let fill_prep = |sb: &mut ContentBuilder, _: &mut SerializeContext| {
+            let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
+            let fill_opacity = fill.opacity;
+            sb.expand_bbox(Rect::from_tsp(path.bounds()));
+
+            // PDF viewers don't show patterns with fill/stroke opacities consistently.
+            // Because of this, the opacity is accounted for in the pattern itself.
+            if !has_pattern {
+                sb.set_fill_opacity(fill_opacity);
+            }
+        };
 
         self.apply_isolated_op(
-            |sb, _| {
-                let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
-                let fill_opacity = fill.opacity;
-                sb.expand_bbox(Rect::from_tsp(path.bounds()));
-
-                // PDF viewers don't show patterns with fill/stroke opacities consistently.
-                // Because of this, the opacity is accounted for in the pattern itself.
-                if !has_pattern {
-                    sb.set_fill_opacity(fill_opacity);
-                }
-            },
+            fill_prep,
             |sb, sc| {
                 let fill_rule = fill.rule;
                 sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
@@ -209,18 +209,20 @@ impl ContentBuilder {
 
         let stroke_bbox =
             calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
+        
+        let stroke_prep = |sb: &mut ContentBuilder, _: &mut SerializeContext| {
+            let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
+            let stroke_opacity = stroke.opacity;
+            sb.expand_bbox(stroke_bbox);
+
+            // See comment in `set_fill_properties`
+            if !is_pattern {
+                sb.set_stroke_opacity(stroke_opacity);
+            }
+        };
 
         self.apply_isolated_op(
-            |sb, _| {
-                let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
-                let stroke_opacity = stroke.opacity;
-                sb.expand_bbox(stroke_bbox);
-
-                // See comment in `set_fill_properties`
-                if !is_pattern {
-                    sb.set_stroke_opacity(stroke_opacity);
-                }
-            },
+            stroke_prep,
             |sb, sc| {
                 sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
                 sb.content_draw_path(path.segments());
