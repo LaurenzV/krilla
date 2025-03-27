@@ -41,3 +41,17 @@ fn outline_simple(d: &mut Document) {
 
     d.set_outline(outline);
 }
+#[snapshot(document)]
+fn outline_with_empty_title(d: &mut Document) {
+    let mut outline = Outline::new();
+
+    let child = OutlineNode::new(
+        "".to_string(),
+        XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+    );
+
+    outline.push_child(child);
+
+    d.set_outline(outline);
+}
+
