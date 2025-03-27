@@ -283,7 +283,7 @@ impl Image {
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T, interpolate: bool) -> Option<Image> {
-        let hash = image.sip_hash();
+        let hash = (image.clone(), interpolate).sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
             color_space: image.color_space(),
