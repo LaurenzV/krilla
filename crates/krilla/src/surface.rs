@@ -352,9 +352,7 @@ impl<'a> Surface<'a> {
                     );
                 }
             }
-            if self.fill.is_some() || self.stroke.is_some() {
-            } else {
-            }
+            if self.fill.is_some() || self.stroke.is_some() {}
         }
     }
 
@@ -527,10 +525,10 @@ impl<'a> Surface<'a> {
             _ => true,
         });
 
-        let complex_fill = self.fill.as_ref().is_some_and(|f| match f.paint.0 {
-            InnerPaint::Color(_) => false,
-            _ => true,
-        });
+        let complex_fill = self
+            .fill
+            .as_ref()
+            .is_some_and(|f| !matches!(f.paint.0, InnerPaint::Color(_)));
 
         complex_fill || complex_stroke
     }

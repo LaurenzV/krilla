@@ -266,10 +266,10 @@ impl ContentBuilder {
             (Some(fill), None) => {
                 self.apply_isolated_op(
                     |sb, _| {
-                        fill_prep(sb, &fill);
+                        fill_prep(sb, fill);
                     },
                     |sb, sc| {
-                        fill_op(sb, sc, &fill);
+                        fill_op(sb, sc, fill);
                     },
                     sc,
                 );
