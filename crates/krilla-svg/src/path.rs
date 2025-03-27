@@ -1,5 +1,5 @@
 use krilla::surface::Surface;
-use usvg::{Fill, Paint, PaintOrder, Stroke};
+use usvg::{Fill, PaintOrder, Stroke};
 
 use crate::util::{convert_fill, convert_stroke, PathExt};
 use crate::ProcessContext;

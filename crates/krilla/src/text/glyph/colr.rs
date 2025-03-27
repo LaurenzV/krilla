@@ -19,21 +19,24 @@ use crate::text::GlyphId;
 use crate::text::{Font, PaintMode};
 
 /// Draw a COLR-based glyph on a surface.
-pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
+pub(crate) fn draw_glyph(
+    font: Font,
+    paint_mode: PaintMode,
+    glyph: GlyphId,
+    surface: &mut Surface,
+) -> Option<()> {
     // Drawing COLR glyphs is a bit tricky, because it's possible that an error
     // occurs while we are drawing, in which case we cannot revert it anymore since
     // we already drew the instructions onto the surface. Because of this, we first
     // convert the glyph into a more accessible bytecode representation and only
     // if that succeeds do we iterate over the bytecode to draw onto the canvas.
 
-    let context_color = surface
-        .paint_mode()
-        .and_then(|paint_mode| match paint_mode {
-            PaintMode::Fill(f) => f.paint.as_rgb(),
-            PaintMode::Stroke(s) => s.paint.as_rgb(),
-            PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
-        })
-        .unwrap_or_default();
+    let context_color = match paint_mode {
+        PaintMode::Fill(f) => f.paint.as_rgb(),
+        PaintMode::Stroke(s) => s.paint.as_rgb(),
+        PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
+    }
+    .unwrap_or_default();
 
     let colr_glyphs = font.font_ref().color_glyphs();
     let colr_glyph = colr_glyphs.get(glyph.to_skrifa())?;
