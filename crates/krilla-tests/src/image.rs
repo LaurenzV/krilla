@@ -122,7 +122,7 @@ fn image_resized(surface: &mut Surface) {
 }
 
 #[snapshot]
-fn image(page: &mut Page) {
+fn image_rgb8(page: &mut Page) {
     let mut surface = page.surface();
     let image = load_png_image("rgb8.png");
     let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
@@ -130,9 +130,25 @@ fn image(page: &mut Page) {
 }
 
 #[snapshot]
-fn image_luma(page: &mut Page) {
+fn image_luma8(page: &mut Page) {
     let mut surface = page.surface();
     let image = load_png_image("luma8.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
+#[snapshot]
+fn image_rgba16(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_png_image("rgba16.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
+#[snapshot]
+fn image_luma16(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_png_image("luma16.png");
     let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
     surface.draw_image(image, size);
 }

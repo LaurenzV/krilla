@@ -14,7 +14,7 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
-use png::{BitDepth, ColorType};
+use png::{BitDepth, ColorType, Transformations};
 use zune_jpeg::JpegDecoder;
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use crate::configure::ValidationError;
@@ -504,9 +504,11 @@ impl Image {
     }
 }
 
+const PNG_TRANSFORMATIONS: Transformations = Transformations::EXPAND;
+
 fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
     let mut decoder = png::Decoder::new(data);
-    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    decoder.set_transformations(PNG_TRANSFORMATIONS);
     let reader = decoder.read_info().unwrap();
     let info = reader.info();
 
@@ -538,7 +540,7 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
 
 fn decode_png(data: &[u8]) -> Option<Repr> {
     let mut decoder = png::Decoder::new(data);
-    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder.read_info().unwrap();
     let mut img_data = vec![0; reader.output_buffer_size()];
     let _ = reader.next_frame(&mut img_data).unwrap();
@@ -747,14 +749,14 @@ fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, B
     let encoded_image = match cs {
         ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
-            let mut buf = Vec::with_capacity(data.len() * (3 / cs.num_components()));
+            let mut buf = Vec::with_capacity(data.len() * 6 / 8);
             data
                 .chunks_exact(8)
                 .for_each(|data| {
                     buf.extend_from_slice(&data[0..6]);
                     alphas.extend_from_slice(&data[6..]);
                 });
-            deflate_encode(&data)
+            deflate_encode(&buf)
         }
         ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
@@ -765,7 +767,7 @@ fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, B
                     buf.extend_from_slice(&data[0..2]);
                     alphas.extend_from_slice(&data[2..]);
                 });
-            deflate_encode(&data)
+            deflate_encode(&buf)
         }
         // PNG/WEBP/GIF only support those three, so should be enough?
         _ => unimplemented!(),
