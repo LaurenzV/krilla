@@ -169,65 +169,140 @@ impl ContentBuilder {
         }
     }
 
-    pub(crate) fn fill_path(&mut self, path: &Path, fill: &Fill, sc: &mut SerializeContext) {
-        if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
+    pub(crate) fn draw_path(
+        &mut self,
+        path: &Path,
+        mut fill: Option<&Fill>,
+        stroke: Option<&Stroke>,
+        sc: &mut SerializeContext,
+    ) {
+        if fill.is_none() && stroke.is_none() {
             return;
         }
 
-        let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
-        let fill_opacity = fill.opacity;
-
-        self.apply_isolated_op(
-            |sb, _| {
-                sb.expand_bbox(Rect::from_tsp(path.bounds()));
-
-                // PDF viewers don't show patterns with fill/stroke opacities consistently.
-                // Because of this, the opacity is accounted for in the pattern itself.
-                if !has_pattern {
-                    sb.set_fill_opacity(fill_opacity);
-                }
-            },
-            |sb, sc| {
-                let fill_rule = fill.rule;
-                sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
-                sb.content_draw_path(path.segments());
-
-                match fill_rule {
-                    FillRule::NonZero => sb.content.fill_nonzero(),
-                    FillRule::EvenOdd => sb.content.fill_even_odd(),
-                };
-            },
-            sc,
-        );
-    }
-
-    pub(crate) fn stroke_path(&mut self, path: &Path, stroke: &Stroke, sc: &mut SerializeContext) {
+        // Zero-size geometry, don't draw.
         if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
             return;
         }
 
-        let stroke_bbox =
-            calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()));
+        let dont_fill = path.bounds().width() == 0.0 || path.bounds().height() == 0.0;
 
-        let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
-        let stroke_opacity = stroke.opacity;
-
-        self.apply_isolated_op(
-            |sb, _| {
-                sb.expand_bbox(stroke_bbox);
-
-                // See comment in `set_fill_properties`
-                if !is_pattern {
-                    sb.set_stroke_opacity(stroke_opacity);
+        if dont_fill {
+            match stroke.is_some() {
+                // Some PDF viewers have bugs where they slightly fill zero-sized lines, so
+                // don't draw them in the first place.
+                false => return,
+                // Don't fill, but we still want to draw the stroke, so don't return.
+                true => {
+                    fill = None;
                 }
-            },
-            |sb, sc| {
-                sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
-                sb.content_draw_path(path.segments());
-                sb.content.stroke();
-            },
-            sc,
-        );
+            }
+        }
+
+        let stroke_bbox = |stroke: &Stroke| {
+            calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()))
+        };
+
+        let fill_prep = |sb: &mut ContentBuilder, fill: &Fill| {
+            let has_pattern = matches!(fill.paint.0, InnerPaint::Pattern(_));
+            let fill_opacity = fill.opacity;
+            sb.expand_bbox(Rect::from_tsp(path.bounds()));
+
+            // PDF viewers don't show patterns with fill/stroke opacities consistently.
+            // Because of this, the opacity is accounted for in the pattern itself.
+            if !has_pattern {
+                sb.set_fill_opacity(fill_opacity);
+            }
+        };
+
+        let stroke_prep = |sb: &mut ContentBuilder, stroke: &Stroke, stroke_bbox: Rect| {
+            let is_pattern = matches!(stroke.paint.0, InnerPaint::Pattern(_));
+            let stroke_opacity = stroke.opacity;
+            sb.expand_bbox(stroke_bbox);
+
+            // See comment in `set_fill_properties`
+            if !is_pattern {
+                sb.set_stroke_opacity(stroke_opacity);
+            }
+        };
+
+        let fill_op = |sb: &mut ContentBuilder, sc: &mut SerializeContext, fill: &Fill| {
+            let fill_rule = fill.rule;
+            sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
+            sb.content_draw_path(path.segments());
+
+            match fill_rule {
+                FillRule::NonZero => sb.content.fill_nonzero(),
+                FillRule::EvenOdd => sb.content.fill_even_odd(),
+            };
+        };
+
+        let stroke_op = |sb: &mut ContentBuilder,
+                         sc: &mut SerializeContext,
+                         stroke: &Stroke,
+                         stroke_bbox: Rect| {
+            sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
+            sb.content_draw_path(path.segments());
+            sb.content.stroke();
+        };
+
+        let fill_stroke_op = |sb: &mut ContentBuilder,
+                              sc: &mut SerializeContext,
+                              fill: &Fill,
+                              stroke: &Stroke,
+                              stroke_bbox: Rect| {
+            let fill_rule = fill.rule;
+            sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc);
+            sb.content_set_stroke_properties(stroke_bbox, stroke, sc);
+            sb.content_draw_path(path.segments());
+
+            match fill_rule {
+                FillRule::NonZero => sb.content.fill_nonzero_and_stroke(),
+                FillRule::EvenOdd => sb.content.fill_even_odd_and_stroke(),
+            };
+        };
+
+        match (fill, stroke) {
+            (Some(fill), None) => {
+                self.apply_isolated_op(
+                    |sb, _| {
+                        fill_prep(sb, fill);
+                    },
+                    |sb, sc| {
+                        fill_op(sb, sc, fill);
+                    },
+                    sc,
+                );
+            }
+            (None, Some(stroke)) => {
+                let stroke_bbox = stroke_bbox(stroke);
+
+                self.apply_isolated_op(
+                    |sb, _| {
+                        stroke_prep(sb, stroke, stroke_bbox);
+                    },
+                    |sb, sc| {
+                        stroke_op(sb, sc, stroke, stroke_bbox);
+                    },
+                    sc,
+                );
+            }
+            (Some(fill), Some(stroke)) => {
+                let stroke_bbox = stroke_bbox(stroke);
+
+                self.apply_isolated_op(
+                    |sb, _| {
+                        fill_prep(sb, fill);
+                        stroke_prep(sb, stroke, stroke_bbox);
+                    },
+                    |sb, sc| {
+                        fill_stroke_op(sb, sc, fill, stroke, stroke_bbox);
+                    },
+                    sc,
+                );
+            }
+            (None, None) => unreachable!(),
+        }
     }
 
     pub(crate) fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
@@ -263,6 +338,10 @@ impl ContentBuilder {
         text: &str,
         font_size: f32,
     ) {
+        if fill.is_none() && stroke.is_none() {
+            return;
+        }
+
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
@@ -358,25 +437,7 @@ impl ContentBuilder {
                     font_size,
                 );
             }
-            (None, None) => {
-                let fill = Fill::default();
-                set_fill_opacity(self, &fill);
-
-                self.fill_stroke_glyph_run(
-                    x,
-                    y,
-                    sc,
-                    TextRenderingMode::Fill,
-                    |sb, sc| {
-                        fill_action(sb, sc, &fill);
-                    },
-                    glyphs,
-                    font.clone(),
-                    PaintMode::Fill(&fill),
-                    text,
-                    font_size,
-                );
-            }
+            (None, None) => unreachable!(),
         }
 
         self.graphics_states.restore_state();

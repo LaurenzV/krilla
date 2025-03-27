@@ -17,6 +17,7 @@ use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
+use crate::paint::{InnerPaint, Paint};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
@@ -119,21 +120,27 @@ impl<'a> Surface<'a> {
 
     /// Draw a path using the currently active fill and/or stroke.
     pub fn draw_path(&mut self, path: &Path) {
-        match (&self.fill, &self.stroke) {
-            (None, None) => {
+        if self.fill.is_some() || self.stroke.is_some() {
+            if self.has_complex_fill_or_stroke() {
                 self.bd
                     .get_mut()
-                    .fill_path(&path.0, &Fill::default(), self.sc);
+                    .draw_path(&path.0, self.fill.as_ref(), None, self.sc);
+                self.bd
+                    .get_mut()
+                    .draw_path(&path.0, None, self.stroke.as_ref(), self.sc);
+            } else {
+                self.bd.get_mut().draw_path(
+                    &path.0,
+                    self.fill.as_ref(),
+                    self.stroke.as_ref(),
+                    self.sc,
+                );
             }
-            _ => {
-                if let Some(fill) = &self.fill {
-                    self.bd.get_mut().fill_path(&path.0, fill, self.sc);
-                }
-
-                if let Some(stroke) = &self.stroke {
-                    self.bd.get_mut().stroke_path(&path.0, stroke, self.sc);
-                }
-            }
+        } else {
+            // Draw with black by default.
+            self.bd
+                .get_mut()
+                .draw_path(&path.0, Some(&Fill::default()), None, self.sc);
         }
     }
 
@@ -205,7 +212,14 @@ impl<'a> Surface<'a> {
         }
     }
 
-    fn outline_glyphs(&mut self, glyphs: &[impl Glyph], start: Point, font: Font, font_size: f32) {
+    fn outline_glyphs(
+        &mut self,
+        glyphs: &[impl Glyph],
+        paint_mode: PaintMode,
+        start: Point,
+        font: Font,
+        font_size: f32,
+    ) {
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
@@ -219,6 +233,7 @@ impl<'a> Surface<'a> {
             ));
             draw_glyph(
                 font.clone(),
+                paint_mode,
                 glyph.glyph_id(),
                 Transform::from_tsp(base_transform),
                 self,
@@ -243,18 +258,101 @@ impl<'a> Surface<'a> {
         outlined: bool,
     ) {
         if outlined {
-            self.outline_glyphs(glyphs, start, font, font_size);
+            if let Some(paint_mode) = self.paint_mode() {
+                self.outline_glyphs(
+                    glyphs,
+                    paint_mode.to_owned().as_ref(),
+                    start,
+                    font,
+                    font_size,
+                );
+            } else {
+                // Draw with black by default.
+                self.outline_glyphs(
+                    glyphs,
+                    PaintMode::Fill(&Fill::default()),
+                    start,
+                    font,
+                    font_size,
+                );
+            }
         } else {
-            self.bd.get_mut().draw_glyphs(
-                start,
-                self.sc,
-                self.fill.as_ref(),
-                self.stroke.as_ref(),
-                glyphs,
-                font,
-                text,
-                font_size,
-            );
+            match (self.fill.as_ref(), self.stroke.as_ref()) {
+                (Some(f), Some(s)) => {
+                    if self.has_complex_fill_or_stroke() {
+                        // We need to draw fill and stroke separately. In order to avoid embedding
+                        // text twice, we fill the text as normal text and then stroke it as a path.
+                        self.bd.get_mut().draw_glyphs(
+                            start,
+                            self.sc,
+                            Some(f),
+                            None,
+                            glyphs,
+                            font.clone(),
+                            text,
+                            font_size,
+                        );
+
+                        let stroke = s.clone();
+                        self.outline_glyphs(
+                            glyphs,
+                            PaintMode::Stroke(&stroke),
+                            start,
+                            font,
+                            font_size,
+                        );
+                    } else {
+                        self.bd.get_mut().draw_glyphs(
+                            start,
+                            self.sc,
+                            Some(f),
+                            Some(s),
+                            glyphs,
+                            font,
+                            text,
+                            font_size,
+                        );
+                    }
+                }
+                (None, Some(s)) => {
+                    self.bd.get_mut().draw_glyphs(
+                        start,
+                        self.sc,
+                        None,
+                        Some(s),
+                        glyphs,
+                        font,
+                        text,
+                        font_size,
+                    );
+                }
+                (Some(f), None) => {
+                    self.bd.get_mut().draw_glyphs(
+                        start,
+                        self.sc,
+                        Some(f),
+                        None,
+                        glyphs,
+                        font,
+                        text,
+                        font_size,
+                    );
+                }
+                (None, None) => {
+                    // Draw with black by default.
+                    self.bd.get_mut().draw_glyphs(
+                        start,
+                        self.sc,
+                        Some(&Fill::default()),
+                        None,
+                        glyphs,
+                        font,
+                        text,
+                        font_size,
+                    );
+                }
+            }
+            if self.fill.is_some() || self.stroke.is_some() {}
         }
     }
 
@@ -404,13 +502,44 @@ impl<'a> Surface<'a> {
         self.bd.get().cur_transform()
     }
 
-    pub(crate) fn paint_mode(&self) -> Option<PaintMode> {
+    fn paint_mode(&self) -> Option<PaintMode> {
         match (&self.fill, &self.stroke) {
             (None, None) => None,
             (Some(f), None) => Some(PaintMode::Fill(f)),
             (None, Some(s)) => Some(PaintMode::Stroke(s)),
             (Some(f), Some(s)) => Some(PaintMode::FillStroke(f, s)),
         }
+    }
+
+    fn has_complex_fill_or_stroke(&self) -> bool {
+        // Things can go wrong and yield inconsistent results in different PDF viewers
+        // for some fill/stroke combinations. So in some cases, we need to fill and stroke
+        // separately.
+        // 1) We have an opacity on the stroke, because they render inconsistently across different
+        // viewers.
+        // 2) We have a linear gradient with opacities in at least one stop, because then we need
+        // to invoke a soft mask, in which case the fill/stroke would both be affected by this.
+
+        let check_paint = |paint: &Paint| match &paint.0 {
+            InnerPaint::Color(_) => false,
+            InnerPaint::LinearGradient(l) => {
+                l.stops.iter().any(|s| s.opacity != NormalizedF32::ONE)
+            }
+            InnerPaint::RadialGradient(r) => {
+                r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE)
+            }
+            InnerPaint::SweepGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
+            InnerPaint::Pattern(_) => false,
+        };
+
+        let complex_stroke = self
+            .stroke
+            .as_ref()
+            .is_some_and(|s| s.opacity != NormalizedF32::ONE || check_paint(&s.paint));
+
+        let complex_fill = self.fill.as_ref().is_some_and(|f| check_paint(&f.paint));
+
+        complex_fill || complex_stroke
     }
 }
 
