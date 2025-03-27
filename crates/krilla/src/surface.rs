@@ -17,7 +17,7 @@ use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
-use crate::paint::InnerPaint;
+use crate::paint::{InnerPaint, Paint};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
@@ -513,22 +513,33 @@ impl<'a> Surface<'a> {
 
     fn has_complex_fill_or_stroke(&self) -> bool {
         // Things can go wrong and yield inconsistent results in different PDF viewers
-        // for some fill/stroke combinations. In the case of solid colors on strokes with opacity,
-        // different PDF viewers draw them differently. In the case of complex paints on either fill
-        // or stroke, if they have an opacity we need to apply a mask in the content stream,
-        // in which case the mask will apply to the fill AND the stroke, which is not intended.
-        // Because of this, in case the fill or stroke is complex, we fill and stroke
-        // glyphs and path in two separate steps instead of in one go.
+        // for some fill/stroke combinations. So in some cases, we need to fill and stroke
+        // separately.
+        // 1) We have an opacity on the stroke, because they render inconsistently across different
+        // viewers.
+        // 2) We have a linear gradient with opacities in at least one stop, because then we need
+        // to invoke a soft mask, in which case the fill/stroke would both be affected by this.
 
-        let complex_stroke = self.stroke.as_ref().is_some_and(|s| match s.paint.0 {
-            InnerPaint::Color(_) => s.opacity != NormalizedF32::ONE,
-            _ => true,
+        let check_paint = |paint: &Paint| {
+            match &paint.0 {
+                InnerPaint::Color(_) => false,
+                InnerPaint::LinearGradient(l) => l.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
+                InnerPaint::RadialGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
+                InnerPaint::SweepGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
+                InnerPaint::Pattern(_) => false,
+            }
+        };
+        
+        let complex_stroke = self.stroke.as_ref().is_some_and(|s| {
+            s.opacity != NormalizedF32::ONE || check_paint(&s.paint)
         });
 
         let complex_fill = self
             .fill
             .as_ref()
-            .is_some_and(|f| !matches!(f.paint.0, InnerPaint::Color(_)));
+            .is_some_and(|f| {
+                check_paint(&f.paint)
+        });
 
         complex_fill || complex_stroke
     }
