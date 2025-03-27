@@ -15,8 +15,9 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 use png::{BitDepth, ColorType, Transformations};
-use zune_jpeg::JpegDecoder;
 use zune_jpeg::zune_core::colorspace::ColorSpace;
+use zune_jpeg::JpegDecoder;
+
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::graphics::color::DEVICE_GRAY;
@@ -517,9 +518,9 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
     let bits_per_component = match bit_depth {
         // We will normalize to 8 when decoding.
         BitDepth::One | BitDepth::Two | BitDepth::Four | BitDepth::Eight => BitsPerComponent::Eight,
-        BitDepth::Sixteen => BitsPerComponent::Sixteen
+        BitDepth::Sixteen => BitsPerComponent::Sixteen,
     };
-    
+
     let (image_color_space, has_alpha) = match color_type {
         ColorType::Grayscale => (ImageColorspace::Luma, false),
         ColorType::GrayscaleAlpha => (ImageColorspace::Luma, true),
@@ -527,7 +528,10 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
         ColorType::Rgba => (ImageColorspace::Rgb, true),
         _ => return None,
     };
-    let icc = info.icc_profile.as_ref().and_then(|i| get_icc_profile_type(i, image_color_space));
+    let icc = info
+        .icc_profile
+        .as_ref()
+        .and_then(|i| get_icc_profile_type(i, image_color_space));
 
     Some(ImageMetadata {
         has_alpha,
@@ -553,13 +557,12 @@ fn decode_png(data: &[u8]) -> Option<Repr> {
         ColorType::GrayscaleAlpha => ColorSpace::LumaA,
         _ => unreachable!(),
     };
-    
+
     let (color_channel, alpha_channel, bits_per_component) = match bit_depth {
         BitDepth::Eight => handle_u8_image(&img_data, color_space),
         BitDepth::Sixteen => handle_u16_image(&img_data, color_space),
         _ => return None,
     };
-
 
     Some(Repr::Sampled(SampledRepr {
         color_channel,
@@ -697,23 +700,19 @@ fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, Bi
         ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
             let mut buf = Vec::with_capacity(data.len() * 3 / 4);
-            data
-                .chunks_exact(4)
-                .for_each(|data| {
-                    buf.extend_from_slice(&data[0..3]);
-                    alphas.push(data[3]);
-                });
+            data.chunks_exact(4).for_each(|data| {
+                buf.extend_from_slice(&data[0..3]);
+                alphas.push(data[3]);
+            });
             deflate_encode(&buf)
         }
         ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
-            let mut buf = Vec::with_capacity(data.len() /  2);
-            data
-                .chunks_exact(2)
-                .for_each(|data| {
-                    buf.push(data[0]);
-                    alphas.push(data[1]);
-                });
+            let mut buf = Vec::with_capacity(data.len() / 2);
+            data.chunks_exact(2).for_each(|data| {
+                buf.push(data[0]);
+                alphas.push(data[1]);
+            });
             deflate_encode(&buf)
         }
         // PNG/WEBP/GIF only support those three, so should be enough?
@@ -740,23 +739,19 @@ fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, B
         ColorSpace::RGB => deflate_encode(data),
         ColorSpace::RGBA => {
             let mut buf = Vec::with_capacity(data.len() * 3 / 4);
-            data
-                .chunks_exact(8)
-                .for_each(|data| {
-                    buf.extend_from_slice(&data[0..6]);
-                    alphas.extend_from_slice(&data[6..]);
-                });
+            data.chunks_exact(8).for_each(|data| {
+                buf.extend_from_slice(&data[0..6]);
+                alphas.extend_from_slice(&data[6..]);
+            });
             deflate_encode(&buf)
         }
         ColorSpace::Luma => deflate_encode(data),
         ColorSpace::LumaA => {
             let mut buf = Vec::with_capacity(data.len() / 2);
-            data
-                .chunks_exact(4)
-                .for_each(|data| {
-                    buf.extend_from_slice(&data[0..2]);
-                    alphas.extend_from_slice(&data[2..]);
-                });
+            data.chunks_exact(4).for_each(|data| {
+                buf.extend_from_slice(&data[0..2]);
+                alphas.extend_from_slice(&data[2..]);
+            });
             deflate_encode(&buf)
         }
         // PNG/WEBP/GIF only support those three, so should be enough?
