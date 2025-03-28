@@ -586,10 +586,10 @@ impl ContentBuilder {
         text: &str,
         font_size: f32,
     ) {
-        if glyphs.len() == 0 {
+        if glyphs.is_empty() {
             return;
         }
-        
+
         self.apply_isolated_op(
             |_, _| {},
             |sb, sc| {
