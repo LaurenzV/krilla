@@ -27,11 +27,11 @@ default = ["raster-images", "simple-text"]
 base64 = { workspace = true }
 bumpalo = { workspace = true }
 comemo = { workspace = true, optional = true }
+flate2 = { workspace = true }
 float-cmp = { workspace = true }
 gif = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
 imagesize = { workspace = true, optional = true }
-miniz_oxide = { workspace = true }
 once_cell = { workspace = true }
 pdf-writer = { workspace = true }
 rayon = { workspace = true, optional = true }

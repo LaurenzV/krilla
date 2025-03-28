@@ -17,7 +17,7 @@ base64 = "0.22.1"
 bumpalo = "3.16.0"
 comemo = "0.4.0"
 difference = "2.0.0"
-flate2 = "1.0.30"
+flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
 float-cmp = "0.10.0"
 fontdb = "0.23.0"
 gif = "0.13.1"
@@ -27,7 +27,6 @@ image-webp = "0.2.1"
 krilla = { path = "crates/krilla" }
 krilla-svg = { path = "crates/krilla-svg" }
 krilla-macros = { path = "crates/krilla-macros" }
-miniz_oxide = "0.8.0"
 once_cell = "1.19.0"
 oxipng = "9.1.2"
 parley = { git = "https://github.com/linebender/parley", rev = "14070d5" }
