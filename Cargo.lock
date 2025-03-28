@@ -814,6 +814,7 @@ dependencies = [
  "flate2",
  "float-cmp 0.10.0",
  "fontdb",
+ "fxhash",
  "gif",
  "image 0.25.2",
  "image-webp",

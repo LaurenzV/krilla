@@ -178,6 +178,7 @@ pub(crate) enum PDFGlyph {
 
 impl PDFGlyph {
     /// Encode the glyph into a content stream.
+    #[inline(always)]
     pub(crate) fn encode_into(&self, slice: &mut Vec<u8>) {
         match self {
             PDFGlyph::Type3(cg) => slice.push(*cg),

@@ -1,7 +1,8 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 
+use fxhash::FxHashMap;
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
@@ -69,7 +70,7 @@ pub(crate) struct Type3Font {
     font: Font,
     glyphs: Vec<OwnedCoveredGlyph>,
     widths: Vec<f32>,
-    cmap_entries: BTreeMap<Gid, (String, Option<Location>)>,
+    cmap_entries: FxHashMap<Gid, (String, Option<Location>)>,
     glyph_set: HashSet<OwnedCoveredGlyph>,
     index: usize,
 }
@@ -79,7 +80,7 @@ impl Type3Font {
         Self {
             font,
             glyphs: Vec::new(),
-            cmap_entries: BTreeMap::new(),
+            cmap_entries: FxHashMap::default(),
             widths: Vec::new(),
             glyph_set: HashSet::new(),
             index,

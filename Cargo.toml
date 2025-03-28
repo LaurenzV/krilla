@@ -19,6 +19,7 @@ comemo = "0.4.0"
 difference = "2.0.0"
 flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
 float-cmp = "0.10.0"
+fxhash = "0.2.1"
 fontdb = "0.23.0"
 gif = "0.13.1"
 image = { version = "0.25.1", default-features = false }

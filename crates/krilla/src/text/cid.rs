@@ -1,7 +1,7 @@
-use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::ops::DerefMut;
 
+use fxhash::FxHashMap;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
@@ -89,7 +89,7 @@ pub(crate) fn write_cmap_entry<G>(
 }
 
 /// A CID-keyed font.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct CIDFont {
     /// The _actual_ underlying OTF font of the CID-keyed font.
     font: Font,
@@ -101,7 +101,7 @@ pub(crate) struct CIDFont {
     /// 9.7.4.2 for more information on how glyphs are indexed in a CID-keyed font.
     glyph_remapper: GlyphRemapper,
     /// A mapping from CIDs to their string in the original text.
-    cmap_entries: BTreeMap<u16, (String, Option<Location>)>,
+    cmap_entries: FxHashMap<u16, (String, Option<Location>)>,
     /// The widths of the glyphs, _indexed by their CID_.
     widths: Vec<f32>,
 }
@@ -115,7 +115,7 @@ impl CIDFont {
 
         Self {
             glyph_remapper: GlyphRemapper::new(),
-            cmap_entries: BTreeMap::new(),
+            cmap_entries: FxHashMap::default(),
             widths,
             font,
         }

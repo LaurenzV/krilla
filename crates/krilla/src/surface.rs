@@ -424,7 +424,7 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Mask(Box::new(mask)));
         self.bd
             .sub_builders
-            .push(ContentBuilder::new(Transform::identity()));
+            .push(ContentBuilder::new(Transform::identity(), true));
     }
 
     /// Push a new opacity, meaning that each subsequent graphics object will be
@@ -439,7 +439,7 @@ impl<'a> Surface<'a> {
         if opacity != NormalizedF32::ONE {
             self.bd
                 .sub_builders
-                .push(ContentBuilder::new(Transform::identity()));
+                .push(ContentBuilder::new(Transform::identity(), true));
         }
     }
 
@@ -448,7 +448,7 @@ impl<'a> Surface<'a> {
         self.push_instructions.push(PushInstruction::Isolated);
         self.bd
             .sub_builders
-            .push(ContentBuilder::new(Transform::identity()));
+            .push(ContentBuilder::new(Transform::identity(), true));
     }
 
     /// Pop the last `push` instruction.
@@ -547,7 +547,7 @@ impl Drop for Surface<'_> {
     fn drop(&mut self) {
         let root_builder = std::mem::replace(
             &mut self.bd.root_builder,
-            ContentBuilder::new(Transform::identity()),
+            ContentBuilder::new(Transform::identity(), false),
         );
         let num_mcids = match self.page_identifier {
             Some(pi) => pi.mcid,

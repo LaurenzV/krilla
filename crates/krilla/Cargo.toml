@@ -29,6 +29,7 @@ bumpalo = { workspace = true }
 comemo = { workspace = true, optional = true }
 flate2 = { workspace = true }
 float-cmp = { workspace = true }
+fxhash =  { workspace = true }
 gif = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
 imagesize = { workspace = true, optional = true }
