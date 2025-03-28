@@ -89,7 +89,7 @@ pub(crate) fn write_cmap_entry<G>(
 }
 
 /// A CID-keyed font.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct CIDFont {
     /// The _actual_ underlying OTF font of the CID-keyed font.
     font: Font,
