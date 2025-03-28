@@ -32,7 +32,7 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
+use crate::text::group::{get_glyph_run_props, GlyphGroup, GlyphGrouper, GlyphRunProps, GlyphSpan, GlyphSpanner};
 use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
@@ -593,6 +593,7 @@ impl ContentBuilder {
                 sb.content.begin_text();
 
                 let font_container = sc.register_font_container(font.clone());
+                
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.

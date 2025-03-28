@@ -382,14 +382,12 @@ pub(crate) struct GlyphRunProps {
     pub(crate) do_glyph_grouping: bool,
 }
 
-pub fn get_glyph_run_properties(
+pub fn get_glyph_run_props(
     glyphs: &[impl Glyph],
     text: &str,
     paint_mode: PaintMode,
-    mut font_container: RefMut<FontContainer>,
+    font_container: &mut FontContainer,
 ) -> GlyphRunProps {
-    use std::borrow::BorrowMut;
-
     if glyphs.is_empty() {
         return GlyphRunProps {
             do_text_span: false,
@@ -402,7 +400,7 @@ pub fn get_glyph_run_properties(
     // can only happen for Type3 fonts, not CID fonts), or if a glyph has a different y/x offset.
     // Note that it's of course possible that we always use the same Type3 font, but we need to
     // be conservative here.
-    let mut do_glyph_grouping = matches!(*font_container, FontContainer::Type3(_));
+    let mut do_glyph_grouping = matches!(font_container, FontContainer::Type3(_));
 
     let mut check_single = |glyph, do_text_span: &mut bool| {
         check_glyph_group_prop(glyph, &mut do_glyph_grouping);
@@ -418,7 +416,7 @@ pub fn get_glyph_run_properties(
                 glyph,
                 text,
                 paint_mode,
-                font_container.borrow_mut(),
+                font_container,
                 do_text_span,
             );
         }
