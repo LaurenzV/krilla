@@ -32,7 +32,7 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{GlyphGroup, GlyphGrouper, TextSpan, TextSpanner};
+use crate::text::group::{GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
 use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
@@ -596,7 +596,7 @@ impl ContentBuilder {
 
                 // Separate into distinct glyph runs that either are encoded using actual text, or are
                 // not.
-                let spanned = TextSpanner::new(
+                let spanned = GlyphSpanner::new(
                     glyphs,
                     text,
                     sc.serialize_settings()
@@ -631,7 +631,7 @@ impl ContentBuilder {
         &mut self,
         cur_x: &mut f32,
         cur_y: &mut f32,
-        fragment: TextSpan<'_, impl Glyph>,
+        fragment: GlyphSpan<'_, impl Glyph>,
         sc: &mut SerializeContext,
         fill_render_mode: TextRenderingMode,
         font_container: Rc<RefCell<FontContainer>>,

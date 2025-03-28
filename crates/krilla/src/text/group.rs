@@ -6,7 +6,7 @@ use crate::text::type3::CoveredGlyph;
 use crate::text::{FontContainer, FontIdentifier, PaintMode};
 use crate::text::{Glyph, PdfFont};
 
-pub(crate) enum TextSpan<'a, T>
+pub(crate) enum GlyphSpan<'a, T>
 where
     T: Glyph,
 {
@@ -14,21 +14,21 @@ where
     Spanned(&'a [T], &'a str),
 }
 
-impl<T> TextSpan<'_, T>
+impl<T> GlyphSpan<'_, T>
 where
     T: Glyph,
 {
     pub(crate) fn glyphs(&self) -> &[T] {
         match self {
-            TextSpan::Unspanned(glyphs) => glyphs,
-            TextSpan::Spanned(glyphs, _) => glyphs,
+            GlyphSpan::Unspanned(glyphs) => glyphs,
+            GlyphSpan::Spanned(glyphs, _) => glyphs,
         }
     }
 
     pub(crate) fn actual_text(&self) -> Option<&str> {
         match self {
-            TextSpan::Unspanned(_) => None,
-            TextSpan::Spanned(_, text) => Some(text),
+            GlyphSpan::Unspanned(_) => None,
+            GlyphSpan::Spanned(_, text) => Some(text),
         }
     }
 }
@@ -50,7 +50,7 @@ where
 /// This is the task of the `TextSpanner`. Given a sequence of glyphs, it segments the
 /// sequence into subruns of glyphs that either do need to be wrapped in an actual text
 /// attribute, or not.
-pub(crate) struct TextSpanner<'a, T>
+pub(crate) struct GlyphSpanner<'a, T>
 where
     T: Glyph,
 {
@@ -61,7 +61,7 @@ where
     text: &'a str,
 }
 
-impl<'a, T> TextSpanner<'a, T>
+impl<'a, T> GlyphSpanner<'a, T>
 where
     T: Glyph,
 {
@@ -82,11 +82,11 @@ where
     }
 }
 
-impl<'a, T> Iterator for TextSpanner<'a, T>
+impl<'a, T> Iterator for GlyphSpanner<'a, T>
 where
     T: Glyph,
 {
-    type Item = TextSpan<'a, T>;
+    type Item = GlyphSpan<'a, T>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -233,8 +233,8 @@ where
         self.slice = tail;
 
         let fragment = match use_span.unwrap_or(false) {
-            true => TextSpan::Spanned(head, &self.text[first_range]),
-            false => TextSpan::Unspanned(head),
+            true => GlyphSpan::Spanned(head, &self.text[first_range]),
+            false => GlyphSpan::Unspanned(head),
         };
 
         Some(fragment)
