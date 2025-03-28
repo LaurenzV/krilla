@@ -43,6 +43,11 @@ pub(crate) struct ContentBuilder {
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
+    // Calculating the bbox of text is expensive, so we should avoid doing it if not needed.
+    // The only time we really need it is if we are currently inside of an XObject, where we
+    // need to provide a bbox of all its contents. If we are on the main page stream, we only
+    // need it if automatic size detection is enabled.
+    bbox_important: bool,
     pub(crate) active_marked_content: bool,
 }
 
@@ -55,12 +60,13 @@ enum ContentColorSpace {
 }
 
 impl ContentBuilder {
-    pub(crate) fn new(root_transform: Transform) -> Self {
+    pub(crate) fn new(root_transform: Transform, bbox_important: bool) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             validation_errors: HashSet::new(),
             content: Content::new(),
             root_transform,
+            bbox_important,
             graphics_states: GraphicsStates::new(),
             bbox: None,
             active_marked_content: false,
@@ -199,8 +205,15 @@ impl ContentBuilder {
             }
         }
 
+        let bbox_important = self.bbox_important;
+        let calculate_bbox = |is_solid: bool| bbox_important || !is_solid;
+
         let stroke_bbox = |stroke: &Stroke| {
-            calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()))
+            if calculate_bbox(matches!(&stroke.paint.0, InnerPaint::Color(_))) {
+                calculate_stroke_bbox(stroke, path).unwrap_or(Rect::from_tsp(path.bounds()))
+            } else {
+                Rect::from_tsp(path.bounds())
+            }
         };
 
         let fill_prep = |sb: &mut ContentBuilder, fill: &Fill| {
@@ -345,17 +358,34 @@ impl ContentBuilder {
         let (x, y) = (start.x, start.y);
         self.graphics_states.save_state();
 
+        // Calculating the glyphs bbox is very expensive but not always necessary, so omit
+        // if not needed.
+        let bbox_important = self.bbox_important;
+        let calculate_bbox = |is_solid: bool| bbox_important || !is_solid;
+
         let fill_action = |sb: &mut ContentBuilder, sc: &mut SerializeContext, fill: &Fill| {
-            let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
-            sb.expand_bbox(bbox);
+            let bbox = if calculate_bbox(matches!(&fill.paint.0, InnerPaint::Color(_))) {
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
+                sb.expand_bbox(bbox);
+                bbox
+            } else {
+                Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()
+            };
+
             sb.content_set_fill_properties(bbox, fill, sc)
         };
 
         let stroke_action =
             |sb: &mut ContentBuilder, sc: &mut SerializeContext, stroke: &Stroke| {
-                // TODO: Bbox should also account for stroke.
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
-                sb.expand_bbox(bbox);
+                let bbox = if calculate_bbox(matches!(&stroke.paint.0, InnerPaint::Color(_))) {
+                    // TODO: Bbox should also account for stroke.
+                    let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
+                    sb.expand_bbox(bbox);
+                    bbox
+                } else {
+                    Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()
+                };
+
                 sb.content_set_stroke_properties(bbox, stroke, sc);
             };
 
@@ -1021,9 +1051,6 @@ impl ContentBuilder {
 
 // Note that this isn't a 100% accurate calculation, it can overestimate (and in a few cases
 // even underestimate), but it should be good enough for the majority of the cases.
-// The bbox is mostly needed for automatic size detection and postscript gradient, so it's
-// not too critical if it doesn't work in edge cases. What matters most is that the performance
-// is good, since this code is on the hot path in text-intensive PDFs.
 // TODO: Improve this so that `zalgo_text` test case shows up fully in the reference image.
 fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font) -> Rect {
     let font_bbox = font.bbox();

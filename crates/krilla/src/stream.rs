@@ -108,7 +108,7 @@ impl<'a> StreamBuilder<'a> {
 
         Surface::new(
             self.sc,
-            ContentBuilder::new(Transform::identity()),
+            ContentBuilder::new(Transform::identity(), true),
             None,
             finish_fn,
         )
