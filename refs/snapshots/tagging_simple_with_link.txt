@@ -65,7 +65,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /EGEBGV+NotoSans-Regular
+  /BaseFont /YZNZOV+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [8 0 R]
   /ToUnicode 11 0 R
@@ -76,7 +76,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType2
-  /BaseFont /EGEBGV+NotoSans-Regular
+  /BaseFont /YZNZOV+NotoSans-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -102,7 +102,7 @@ endobj
 10 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /EGEBGV+NotoSans-Regular
+  /FontName /YZNZOV+NotoSans-Regular
   /Flags 131076
   /FontBBox [-621 -394 2179 953]
   /ItalicAngle 0
@@ -288,7 +288,7 @@ trailer
 <<
   /Size 17
   /Root 16 0 R
-  /ID [(p5Bu6Yqt/eWKKKiNocTeYg==) (p5Bu6Yqt/eWKKKiNocTeYg==)]
+  /ID [(RdXehi9HT5fkw9uNenhk7g==) (RdXehi9HT5fkw9uNenhk7g==)]
 >>
 startxref
 4988

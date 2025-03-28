@@ -13,7 +13,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /WBARKY+NotoSans-Regular
+  /BaseFont /LFGDYF+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [3 0 R]
   /ToUnicode 6 0 R
@@ -24,7 +24,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType2
-  /BaseFont /WBARKY+NotoSans-Regular
+  /BaseFont /LFGDYF+NotoSans-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -50,7 +50,7 @@ endobj
 5 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /WBARKY+NotoSans-Regular
+  /FontName /LFGDYF+NotoSans-Regular
   /Flags 131076
   /FontBBox [-621 -394 2179 953]
   /ItalicAngle 0
@@ -199,7 +199,7 @@ trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(lWn66O0mTtRyomaTGeFtEw==) (lWn66O0mTtRyomaTGeFtEw==)]
+  /ID [(2XB05VP+AjuEROvivrAILg==) (2XB05VP+AjuEROvivrAILg==)]
 >>
 startxref
 3883

@@ -13,7 +13,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /BKNRUN+NotoSansDevanagari-Regular
+  /BaseFont /HQGATO+NotoSansDevanagari-Regular
   /Encoding /Identity-H
   /DescendantFonts [3 0 R]
   /ToUnicode 6 0 R
@@ -24,7 +24,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType2
-  /BaseFont /BKNRUN+NotoSansDevanagari-Regular
+  /BaseFont /HQGATO+NotoSansDevanagari-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -50,7 +50,7 @@ endobj
 5 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /BKNRUN+NotoSansDevanagari-Regular
+  /FontName /HQGATO+NotoSansDevanagari-Regular
   /Flags 131076
   /FontBBox [-585 -530 989 817]
   /ItalicAngle 0
@@ -455,7 +455,7 @@ trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(sMcjj06/tmCCHs+KJUNhYw==) (sMcjj06/tmCCHs+KJUNhYw==)]
+  /ID [(xaKaKOH4zJ9k7DEKsbTyMA==) (xaKaKOH4zJ9k7DEKsbTyMA==)]
 >>
 startxref
 10958
