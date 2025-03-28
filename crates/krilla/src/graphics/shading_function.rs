@@ -18,7 +18,7 @@ use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::set_colorspace;
+use crate::util::{set_colorspace, Deferred};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
@@ -229,7 +229,7 @@ impl Cacheable for ShadingFunction {
         |cc| &mut cc.shading_functions
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -242,7 +242,7 @@ impl Cacheable for ShadingFunction {
             }
         }
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 

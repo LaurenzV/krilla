@@ -11,7 +11,7 @@ use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::Prehashed;
+use crate::util::{Deferred, Prehashed};
 
 /// An ICC profile.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -46,7 +46,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         |cc| &mut cc.icc_profiles
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
             .finish(&sc.serialize_settings());
@@ -56,7 +56,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 
@@ -82,7 +82,7 @@ impl Cacheable for GenericICCProfile {
         |cc| &mut cc.icc_profiles
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         match self {
             GenericICCProfile::Luma(l) => l.serialize(sc, root_ref),
             GenericICCProfile::Rgb(r) => r.serialize(sc, root_ref),
@@ -99,7 +99,7 @@ impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
         |cc| &mut cc.color_spaces
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let icc_ref = sc.register_cacheable(self.0.clone());
 
         let mut chunk = Chunk::new();
@@ -109,7 +109,7 @@ impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
         array.item(icc_ref);
         array.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 

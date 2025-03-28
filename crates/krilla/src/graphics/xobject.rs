@@ -11,7 +11,7 @@ use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{NameExt, Prehashed};
+use crate::util::{Deferred, NameExt, Prehashed};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
@@ -53,7 +53,7 @@ impl Cacheable for XObject {
         |cc| &mut cc.x_objects
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
 
         for validation_error in &self.0.stream.validation_errors {
@@ -107,7 +107,7 @@ impl Cacheable for XObject {
 
         x_object.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 
