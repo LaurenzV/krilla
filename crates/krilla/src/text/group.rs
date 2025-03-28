@@ -427,7 +427,7 @@ pub fn get_glyph_run_props(
     }
 
     // Since windows checks groups of two, we need to manually check the last glyph
-    check_single(&glyphs.last().unwrap(), &mut do_text_span);
+    check_single(glyphs.last().unwrap(), &mut do_text_span);
 
     GlyphRunProps {
         do_text_span,
@@ -460,9 +460,7 @@ fn check_text_span_prop(
         // If there already exists an entry, then the codepoints are invalid, and we will have to
         // use a text span.
         *do_text_span = true;
-    } else {
-        if codepoints.is_none() {
-            pdf_font.set_codepoints(pdf_glyph, text.to_string(), glyph.location());
-        }
+    } else if codepoints.is_none() {
+        pdf_font.set_codepoints(pdf_glyph, text.to_string(), glyph.location());
     }
 }
