@@ -1,6 +1,8 @@
 //! A low-level abstraction over a single content stream.
 
+use std::cell::RefCell;
 use std::collections::HashSet;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use float_cmp::approx_eq;
@@ -30,9 +32,9 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{GlyphGrouper, TextSpanner};
+use crate::text::group::{GlyphGroup, GlyphGrouper, TextSpanner};
 use crate::text::type3::CoveredGlyph;
-use crate::text::{Font, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
+use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
 use crate::util::{calculate_stroke_bbox, NameExt};
 
@@ -618,34 +620,17 @@ impl ContentBuilder {
                         GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
 
                     for glyph_group in segmented {
-                        let borrowed = font_container.borrow();
-                        let pdf_font = borrowed
-                            .get_from_identifier(glyph_group.font_identifier.clone())
-                            .unwrap();
-
-                        if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
-                            sb.content.set_text_rendering_mode(TextRenderingMode::Fill);
-                        } else if fill_render_mode == TextRenderingMode::FillStroke {
-                            sb.content
-                                .set_text_rendering_mode(TextRenderingMode::FillStroke);
-                        } else {
-                            sb.content
-                                .set_text_rendering_mode(TextRenderingMode::Stroke);
-                        }
-
-                        sb.encode_consecutive_glyph_run(
-                            sc,
+                        sb.fill_stroke_glyph_group(
                             &mut cur_x,
-                            cur_y - glyph_group.y_offset * font_size,
-                            glyph_group.font_identifier,
-                            pdf_font,
-                            font_size,
+                            &mut cur_y,
+                            glyph_group,
+                            sc,
+                            fill_render_mode,
+                            font_container.clone(),
                             paint_mode,
-                            glyph_group.glyphs,
                             text,
-                        );
-
-                        cur_y -= glyph_group.y_advance * font_size;
+                            font_size,
+                        )
                     }
 
                     if fragment.actual_text().is_some() {
@@ -657,6 +642,50 @@ impl ContentBuilder {
             },
             sc,
         )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn fill_stroke_glyph_group(
+        &mut self,
+        cur_x: &mut f32,
+        cur_y: &mut f32,
+        glyph_group: GlyphGroup<'_, impl Glyph>,
+        sc: &mut SerializeContext,
+        fill_render_mode: TextRenderingMode,
+        font_container: Rc<RefCell<FontContainer>>,
+        paint_mode: PaintMode,
+        text: &str,
+        font_size: f32,
+    ) {
+        let borrowed = font_container.borrow();
+        let pdf_font = borrowed
+            .get_from_identifier(glyph_group.font_identifier.clone())
+            .unwrap();
+
+        if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
+            self.content
+                .set_text_rendering_mode(TextRenderingMode::Fill);
+        } else if fill_render_mode == TextRenderingMode::FillStroke {
+            self.content
+                .set_text_rendering_mode(TextRenderingMode::FillStroke);
+        } else {
+            self.content
+                .set_text_rendering_mode(TextRenderingMode::Stroke);
+        }
+
+        self.encode_consecutive_glyph_run(
+            sc,
+            cur_x,
+            *cur_y - glyph_group.y_offset * font_size,
+            glyph_group.font_identifier,
+            pdf_font,
+            font_size,
+            paint_mode,
+            glyph_group.glyphs,
+            text,
+        );
+
+        *cur_y -= glyph_group.y_advance * font_size;
     }
 
     pub(crate) fn draw_xobject(
