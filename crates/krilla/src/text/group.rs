@@ -130,6 +130,7 @@ where
             // that don't support `ActualText`.
             if !incompatible_codepoint
                 && (previous_range != Some(range.clone()) || forbid_invalid_codepoints)
+                && codepoints != Some(text)
             {
                 pdf_font.set_codepoints(pdf_glyph, text.to_string(), g.location());
             }
