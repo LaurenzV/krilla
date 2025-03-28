@@ -3,8 +3,8 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use crate::text::type3::CoveredGlyph;
+use crate::text::Glyph;
 use crate::text::{FontContainer, FontIdentifier, PaintMode};
-use crate::text::{Glyph, PdfFont};
 
 pub(crate) enum GlyphSpan<'a, T>
 where
@@ -318,12 +318,12 @@ where
             let first = get_glyph_props(
                 iter.next()?,
                 self.paint_mode,
-                self.font_container.borrow_mut(),
+                &mut self.font_container.borrow_mut(),
             );
 
             for next in iter {
                 let temp_glyph =
-                    get_glyph_props(next, self.paint_mode, self.font_container.borrow_mut());
+                    get_glyph_props(next, self.paint_mode, &mut self.font_container.borrow_mut());
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier
@@ -358,7 +358,7 @@ pub(crate) struct GlyphProps {
 pub(crate) fn get_glyph_props<U>(
     g: &U,
     paint_mode: PaintMode,
-    font_container: RefMut<FontContainer>,
+    font_container: &mut FontContainer,
 ) -> GlyphProps
 where
     U: Glyph,
@@ -412,13 +412,7 @@ pub fn get_glyph_run_props(
         // The only reason we keep going and don't early abort is in order to fully
         // check the `do_glyph_grouping` property.
         if !*do_text_span {
-            check_text_span_prop(
-                glyph,
-                text,
-                paint_mode,
-                font_container,
-                do_text_span,
-            );
+            check_text_span_prop(glyph, text, paint_mode, font_container, do_text_span);
         }
     };
 
