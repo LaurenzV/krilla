@@ -12,6 +12,7 @@ use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
+use crate::util::Deferred;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
@@ -109,7 +110,7 @@ impl Cacheable for ExtGState {
         |cc| &mut cc.ext_g_states
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
@@ -145,7 +146,7 @@ impl Cacheable for ExtGState {
 
         ext_st.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 

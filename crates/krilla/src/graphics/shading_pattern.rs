@@ -9,6 +9,7 @@ use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
+use crate::util::Deferred;
 
 #[derive(Debug, PartialEq)]
 struct Repr {
@@ -43,7 +44,7 @@ impl Cacheable for ShadingPattern {
         |cc| &mut cc.patterns
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
 
         let shading_ref = sc.register_cacheable(self.0.shading_function.clone());
@@ -53,7 +54,7 @@ impl Cacheable for ShadingPattern {
 
         shading_pattern.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 

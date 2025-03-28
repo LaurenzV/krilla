@@ -32,7 +32,7 @@ use crate::text::cid::CIDFont;
 use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
-use crate::util::SipHashable;
+use crate::util::{Deferred, SipHashable};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -868,5 +868,5 @@ impl GlobalObjects {
 
 pub(crate) trait Cacheable: SipHashable {
     fn chunk_container(&self) -> ChunkContainerFn;
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk;
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk>;
 }

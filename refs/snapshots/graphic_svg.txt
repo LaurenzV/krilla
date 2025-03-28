@@ -1,0 +1,344 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [17 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /ExtGState
+  /SMask 5 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+  /CA 0.5
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /ExtGState
+  /SMask 6 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Mask
+  /S /Luminosity
+  /G 7 0 R
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /Mask
+  /S /Luminosity
+  /G 9 0 R
+>>
+endobj
+
+7 0 obj
+<<
+  /Length 31
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Shading <<
+      /s0 13 0 R
+    >>
+  >>
+  /BBox [20 20 180 180]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /CS /DeviceRGB
+  >>
+>>
+stream
+q
+160 0 0 160 20 20 cm
+/s0 sh
+Q
+endstream
+endobj
+
+8 0 obj
+<<
+  /Length 56
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [0 0 200 200]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /I true
+  >>
+>>
+stream
+q
+0 0.5019608 0 rg
+0 0 m
+200 0 l
+200 200 l
+0 200 l
+h
+f
+Q
+endstream
+endobj
+
+9 0 obj
+<<
+  /Length 144
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ExtGState <<
+      /g0 2 0 R
+    >>
+    /Pattern <<
+      /p0 16 0 R
+    >>
+  >>
+  /BBox [20 20 180 180]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /CS /DeviceRGB
+  >>
+>>
+stream
+q
+-20 -20 m
+220.00002 -20 l
+220.00002 220.00002 l
+-20 220.00002 l
+h
+W
+n
+q
+/g0 gs
+/Pattern cs
+/p0 scn
+20 20 m
+180 20 l
+180 180 l
+20 180 l
+h
+f
+Q
+Q
+endstream
+endobj
+
+10 0 obj
+<<
+  /Length 17
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ExtGState <<
+      /g0 3 0 R
+    >>
+    /XObject <<
+      /x0 8 0 R
+    >>
+  >>
+  /BBox [0 0 200 200]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /CS /DeviceRGB
+  >>
+>>
+stream
+q
+/g0 gs
+/x0 Do
+Q
+endstream
+endobj
+
+11 0 obj
+<<
+  /Length 145
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ExtGState <<
+      /g0 4 0 R
+    >>
+    /XObject <<
+      /x0 10 0 R
+    >>
+  >>
+  /BBox [0 0 100 100]
+>>
+stream
+q
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+W
+n
+q
+0.5 0 0 0.5 0 0 cm
+/g0 gs
+/x0 Do
+Q
+q
+0.5 0 0 0.5 0 0 cm
+0 G
+4 M
+1 1 m
+199 1 l
+199 199 l
+1 199 l
+h
+S
+Q
+Q
+endstream
+endobj
+
+12 0 obj
+<<
+  /FunctionType 2
+  /Range [0 1]
+  /C0 [0]
+  /C1 [1]
+  /Domain [0 1]
+  /N 1
+>>
+endobj
+
+13 0 obj
+<<
+  /ShadingType 2
+  /ColorSpace /DeviceGray
+  /AntiAlias false
+  /Function 12 0 R
+  /Coords [0 0 1 0]
+  /Extend [true true]
+>>
+endobj
+
+14 0 obj
+<<
+  /FunctionType 2
+  /Range [0 1 0 1 0 1]
+  /C0 [1 1 1]
+  /C1 [0 0 0]
+  /Domain [0 1]
+  /N 1
+>>
+endobj
+
+15 0 obj
+<<
+  /ShadingType 2
+  /ColorSpace /DeviceRGB
+  /AntiAlias false
+  /Function 14 0 R
+  /Coords [0 0 1 0]
+  /Extend [true true]
+>>
+endobj
+
+16 0 obj
+<<
+  /Type /Pattern
+  /PatternType 2
+  /Shading 15 0 R
+  /Matrix [160 0 0 160 20 20]
+>>
+endobj
+
+17 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /XObject <<
+      /x0 11 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 18 0 R
+>>
+endobj
+
+18 0 obj
+<<
+  /Length 59
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/x0 Do
+Q
+q
+1 0 0 -1 100 100 cm
+/x0 Do
+Q
+endstream
+endobj
+
+19 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 20
+0000000000 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000137 00000 n
+0000000198 00000 n
+0000000254 00000 n
+0000000318 00000 n
+0000000382 00000 n
+0000000701 00000 n
+0000000996 00000 n
+0000001470 00000 n
+0000001814 00000 n
+0000002214 00000 n
+0000002313 00000 n
+0000002459 00000 n
+0000002574 00000 n
+0000002719 00000 n
+0000002824 00000 n
+0000003025 00000 n
+0000003138 00000 n
+trailer
+<<
+  /Size 20
+  /Root 19 0 R
+  /ID [(miVX+V6T7lTdM+X/n+p4cg==) (miVX+V6T7lTdM+X/n+p4cg==)]
+>>
+startxref
+3193
+%%EOF

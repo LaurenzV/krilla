@@ -14,6 +14,7 @@ use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStreamBuilder, Stream};
+use crate::util::Deferred;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {
@@ -76,7 +77,7 @@ impl Cacheable for TilingPattern {
         |cc| &mut cc.patterns
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
 
         for validation_error in self.stream.validation_errors {
@@ -107,7 +108,7 @@ impl Cacheable for TilingPattern {
 
         tiling_pattern.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 

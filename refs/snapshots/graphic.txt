@@ -1,0 +1,105 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [4 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 51
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ExtGState <<
+      /g0 2 0 R
+    >>
+  >>
+  /BBox [0 0 20 20]
+>>
+stream
+q
+/g0 gs
+1 0 0 rg
+0 0 m
+20 0 l
+20 20 l
+0 20 l
+h
+f
+Q
+endstream
+endobj
+
+4 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /XObject <<
+      /x0 3 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 88
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+/x0 Do
+Q
+q
+1 0 0 -1 20 180 cm
+/x0 Do
+Q
+q
+1 0 0 -1 40 160 cm
+/x0 Do
+Q
+endstream
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000131 00000 n
+0000000393 00000 n
+0000000591 00000 n
+0000000732 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(ieRU2uhaeBDrnf0o389jaQ==) (ieRU2uhaeBDrnf0o389jaQ==)]
+>>
+startxref
+786
+%%EOF

@@ -9,7 +9,9 @@ use crate::interchange::metadata::Metadata;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 
-pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<Chunk>;
+type DChunk = Deferred<Chunk>;
+
+pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<DChunk>;
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
@@ -25,17 +27,17 @@ pub(crate) struct ChunkContainer {
     pub(crate) page_labels: Vec<Chunk>,
     pub(crate) annotations: Vec<Chunk>,
     pub(crate) fonts: Vec<Chunk>,
-    pub(crate) color_spaces: Vec<Chunk>,
-    pub(crate) icc_profiles: Vec<Chunk>,
+    pub(crate) color_spaces: Vec<DChunk>,
+    pub(crate) icc_profiles: Vec<DChunk>,
     pub(crate) destinations: Vec<Chunk>,
-    pub(crate) ext_g_states: Vec<Chunk>,
-    pub(crate) masks: Vec<Chunk>,
-    pub(crate) x_objects: Vec<Chunk>,
-    pub(crate) shading_functions: Vec<Chunk>,
-    pub(crate) patterns: Vec<Chunk>,
-    pub(crate) pages: Vec<Deferred<Chunk>>,
+    pub(crate) ext_g_states: Vec<DChunk>,
+    pub(crate) masks: Vec<DChunk>,
+    pub(crate) x_objects: Vec<DChunk>,
+    pub(crate) shading_functions: Vec<DChunk>,
+    pub(crate) patterns: Vec<DChunk>,
+    pub(crate) pages: Vec<DChunk>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
-    pub(crate) embedded_files: Vec<Chunk>,
+    pub(crate) embedded_files: Vec<DChunk>,
 
     pub(crate) metadata: Option<Metadata>,
 }

@@ -136,6 +136,9 @@ impl Hash for SweepGradient {
 }
 
 /// A pattern.
+///
+/// IMPORTANT: Note that you must only use a mask in the document that you created it with!
+/// If you use it in a different document, you will end up with an invalid PDF file.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Pattern {
     /// The stream of the pattern.

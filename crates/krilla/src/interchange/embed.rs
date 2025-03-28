@@ -10,7 +10,7 @@ use crate::interchange::metadata::pdf_date;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
-use crate::util::NameExt;
+use crate::util::{Deferred, NameExt};
 use crate::Data;
 
 /// An error while embedding the file.
@@ -52,7 +52,7 @@ impl Cacheable for EmbeddedFile {
         |cc| &mut cc.embedded_files
     }
 
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         sc.register_validation_error(ValidationError::EmbeddedFile(
             EmbedError::Existence,
             self.location,
@@ -131,7 +131,7 @@ impl Cacheable for EmbeddedFile {
 
         file_spec.finish();
 
-        chunk
+        Deferred::new(|| chunk)
     }
 }
 
