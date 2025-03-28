@@ -3,8 +3,8 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use crate::text::type3::CoveredGlyph;
-use crate::text::Glyph;
 use crate::text::{FontContainer, FontIdentifier, PaintMode};
+use crate::text::{Glyph, PdfFont};
 
 pub(crate) enum TextSpan<'a, T>
 where
@@ -247,9 +247,9 @@ where
 {
     pub(crate) font_identifier: FontIdentifier,
     pub(crate) glyphs: &'a [T],
-    // This will be stored in normalized form.
+    // This will be stored in normalized form (i.e. at a font size of 1).
     pub(crate) y_offset: f32,
-    // This will be stored in normalized form.
+    // This will be stored in normalized form (i.e. at a font size of 1).
     pub(crate) y_advance: f32,
 }
 
@@ -257,17 +257,12 @@ impl<'a, T> GlyphGroup<'a, T>
 where
     T: Glyph,
 {
-    pub fn new(
-        font_identifier: FontIdentifier,
-        glyphs: &'a [T],
-        y_offset: f32,
-        y_advance: f32,
-    ) -> Self {
+    pub fn from_props(glyphs: &'a [T], props: GlyphProps) -> Self {
         GlyphGroup {
-            font_identifier,
+            font_identifier: props.font_identifier,
             glyphs,
-            y_offset,
-            y_advance,
+            y_offset: props.y_offset,
+            y_advance: props.y_advance,
         }
     }
 }
@@ -317,43 +312,18 @@ where
         // Guarantees: All glyphs in `head` have the font identifier that is given in
         // `props`, the same size and the same y offset.
         let (head, tail, props) = {
-            struct GlyphProps {
-                font_identifier: FontIdentifier,
-                y_offset: f32,
-                y_advance: f32,
-            }
-
-            fn func<U>(
-                g: &U,
-                paint_mode: PaintMode,
-                font_container: RefMut<FontContainer>,
-            ) -> GlyphProps
-            where
-                U: Glyph,
-            {
-                // Safe because we've already added all glyphs in the text spanner.
-                let font_identifier = font_container
-                    .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode))
-                    .unwrap();
-
-                GlyphProps {
-                    font_identifier,
-                    y_offset: g.y_offset(1.0),
-                    y_advance: g.y_advance(1.0),
-                }
-            }
-
             let mut count = 1;
 
             let mut iter = self.slice.iter();
-            let first = func(
+            let first = get_glyph_props(
                 iter.next()?,
                 self.paint_mode,
                 self.font_container.borrow_mut(),
             );
 
             for next in iter {
-                let temp_glyph = func(next, self.paint_mode, self.font_container.borrow_mut());
+                let temp_glyph =
+                    get_glyph_props(next, self.paint_mode, self.font_container.borrow_mut());
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier
@@ -373,9 +343,134 @@ where
 
         self.slice = tail;
 
-        let glyph_group =
-            GlyphGroup::new(props.font_identifier, head, props.y_offset, props.y_advance);
+        let glyph_group = GlyphGroup::from_props(head, props);
 
         Some(glyph_group)
+    }
+}
+
+pub(crate) struct GlyphProps {
+    font_identifier: FontIdentifier,
+    y_offset: f32,
+    y_advance: f32,
+}
+
+pub(crate) fn get_glyph_props<U>(
+    g: &U,
+    paint_mode: PaintMode,
+    font_container: RefMut<FontContainer>,
+) -> GlyphProps
+where
+    U: Glyph,
+{
+    // Safe because we've already added all glyphs in the text spanner.
+    let font_identifier = font_container
+        .font_identifier(CoveredGlyph::new(g.glyph_id(), paint_mode))
+        .unwrap();
+
+    GlyphProps {
+        font_identifier,
+        y_offset: g.y_offset(1.0),
+        y_advance: g.y_advance(1.0),
+    }
+}
+
+pub(crate) struct GlyphRunProps {
+    // The glyph run might need text spanning.
+    pub(crate) do_text_span: bool,
+    // The glyph run might need glyph grouping.
+    pub(crate) do_glyph_grouping: bool,
+}
+
+pub fn get_glyph_run_properties(
+    glyphs: &[impl Glyph],
+    text: &str,
+    paint_mode: PaintMode,
+    mut font_container: RefMut<FontContainer>,
+) -> GlyphRunProps {
+    use std::borrow::BorrowMut;
+
+    if glyphs.is_empty() {
+        return GlyphRunProps {
+            do_text_span: false,
+            do_glyph_grouping: false,
+        };
+    }
+
+    let mut do_text_span = false;
+    // We _might_ need to group glyphs either if they are mapped to different PDF fonts (which
+    // can only happen for Type3 fonts, not CID fonts), or if a glyph has a different y/x offset.
+    // Note that it's of course possible that we always use the same Type3 font, but we need to
+    // be conservative here.
+    let mut do_glyph_grouping = matches!(*font_container, FontContainer::Type3(_));
+
+    let mut check_single = |glyph, do_text_span: &mut bool| {
+        check_glyph_group_prop(glyph, &mut do_glyph_grouping);
+
+        // As soon as we know that the glyph run requires a text span, we do not insert any codepoints
+        // anymore, because otherwise we might unnecessarily pollute the cmap with entries that
+        // wouldn't be necessary. The text spanner will then iterate over the all glyphs again
+        // and thus take care of inserting cmap entries for any remaining glyphs we ignore now.
+        // The only reason we keep going and don't early abort is in order to fully
+        // check the `do_glyph_grouping` property.
+        if !*do_text_span {
+            check_text_span_prop(
+                glyph,
+                text,
+                paint_mode,
+                font_container.borrow_mut(),
+                do_text_span,
+            );
+        }
+    };
+
+    for glyphs in glyphs.windows(2) {
+        let prev = &glyphs[0];
+        let next = &glyphs[1];
+
+        // If two glyphs are part of the same cluster, we definitely need a text span.
+        do_text_span |= prev.text_range() == next.text_range();
+
+        check_single(prev, &mut do_text_span);
+    }
+
+    // Since windows checks groups of two, we need to manually check the last glyph
+    check_single(&glyphs.last().unwrap(), &mut do_text_span);
+
+    GlyphRunProps {
+        do_text_span,
+        do_glyph_grouping,
+    }
+}
+
+fn check_glyph_group_prop(glyph: &impl Glyph, do_glyph_grouping: &mut bool) {
+    *do_glyph_grouping |= glyph.y_advance(1.0) != 0.0 || glyph.y_offset(1.0) != 0.0;
+}
+
+fn check_text_span_prop(
+    glyph: &impl Glyph,
+    text: &str,
+    paint_mode: PaintMode,
+    font_container: &mut FontContainer,
+    do_text_span: &mut bool,
+) {
+    let (identifier, pdf_glyph) =
+        font_container.add_glyph(CoveredGlyph::new(glyph.glyph_id(), paint_mode));
+    let pdf_font = font_container
+        .get_from_identifier_mut(identifier.clone())
+        .unwrap();
+
+    let range = glyph.text_range().clone();
+    let text = &text[range.clone()];
+    let codepoints = pdf_font.get_codepoints(pdf_glyph);
+
+    if codepoints.is_some_and(|t| t != text) {
+        // If there already exists an entry, then the codepoints are invalid, and we will have to
+        // use a text span.
+        *do_text_span = true;
+    } else {
+        if codepoints.is_none() {
+            pdf_font.set_codepoints(pdf_glyph, text.to_string(), glyph.location());
+        }
     }
 }
