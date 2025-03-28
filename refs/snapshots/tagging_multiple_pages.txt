@@ -114,7 +114,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /WSZUMN+NotoSans-Regular
+  /BaseFont /RNWRFL+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [14 0 R]
   /ToUnicode 17 0 R
@@ -125,7 +125,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType2
-  /BaseFont /WSZUMN+NotoSans-Regular
+  /BaseFont /RNWRFL+NotoSans-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -151,7 +151,7 @@ endobj
 16 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /WSZUMN+NotoSans-Regular
+  /FontName /RNWRFL+NotoSans-Regular
   /Flags 131076
   /FontBBox [-621 -394 2179 953]
   /ItalicAngle 0
@@ -456,7 +456,7 @@ trailer
 <<
   /Size 26
   /Root 25 0 R
-  /ID [(fgXjl76byKykRXcLOL47CQ==) (fgXjl76byKykRXcLOL47CQ==)]
+  /ID [(rEYiZsW8hrfTMSp2t8rIVA==) (rEYiZsW8hrfTMSp2t8rIVA==)]
 >>
 startxref
 7977

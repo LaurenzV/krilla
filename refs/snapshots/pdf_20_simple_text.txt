@@ -13,7 +13,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /MXXGTL+NotoSans-Regular
+  /BaseFont /SZOCGE+NotoSans-Regular
   /Encoding /Identity-H
   /DescendantFonts [3 0 R]
   /ToUnicode 5 0 R
@@ -24,7 +24,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType2
-  /BaseFont /MXXGTL+NotoSans-Regular
+  /BaseFont /SZOCGE+NotoSans-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -40,7 +40,7 @@ endobj
 4 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /MXXGTL+NotoSans-Regular
+  /FontName /SZOCGE+NotoSans-Regular
   /Flags 131076
   /FontBBox [-621 -394 2179 953]
   /ItalicAngle 0
@@ -198,7 +198,7 @@ trailer
 <<
   /Size 10
   /Root 9 0 R
-  /ID [(F/maIgx36dlfVs+x/Oce2A==) (F/maIgx36dlfVs+x/Oce2A==)]
+  /ID [(tbmw7f1Yv616CCk3Pk8MDA==) (tbmw7f1Yv616CCk3Pk8MDA==)]
 >>
 startxref
 4386

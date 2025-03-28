@@ -13,7 +13,7 @@ endobj
 <<
   /Type /Font
   /Subtype /Type0
-  /BaseFont /ADFBMA+LibertinusSerif-Regular-Identity-H
+  /BaseFont /MIOMYS+LibertinusSerif-Regular-Identity-H
   /Encoding /Identity-H
   /DescendantFonts [3 0 R]
   /ToUnicode 6 0 R
@@ -24,7 +24,7 @@ endobj
 <<
   /Type /Font
   /Subtype /CIDFontType0
-  /BaseFont /ADFBMA+LibertinusSerif-Regular
+  /BaseFont /MIOMYS+LibertinusSerif-Regular
   /CIDSystemInfo <<
     /Registry (Adobe)
     /Ordering (Identity)
@@ -49,7 +49,7 @@ endobj
 5 0 obj
 <<
   /Type /FontDescriptor
-  /FontName /ADFBMA+LibertinusSerif-Regular
+  /FontName /MIOMYS+LibertinusSerif-Regular
   /Flags 131078
   /FontBBox [-6275 -256 -104 869]
   /ItalicAngle 0
@@ -192,7 +192,7 @@ trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(OAbWjIqkX+JoyCx5SV+Mnw==) (OAbWjIqkX+JoyCx5SV+Mnw==)]
+  /ID [(fcPWFb6h+tgIxCSBjUuEQg==) (fcPWFb6h+tgIxCSBjUuEQg==)]
 >>
 startxref
 3109

@@ -133,8 +133,7 @@ impl CIDFont {
 
     #[inline]
     pub(crate) fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
-        self.glyph_remapper
-            .get(u16::try_from(glyph_id.to_u32()).unwrap())
+        self.glyph_remapper.get(glyph_id.to_u32() as u16)
     }
 
     /// Add a new glyph (if it has not already been added) and return its CID.

@@ -663,6 +663,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "gif"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1592,7 +1601,10 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "subsetter"
 version = "0.2.0"
-source = "git+https://github.com/typst/subsetter?rev=172416a#172416a806246e6e9010d400d5690ca7a026e53d"
+source = "git+https://github.com/typst/subsetter?rev=460fdb6#460fdb66d6e0138b721b1ca9882faf15ce003246"
+dependencies = [
+ "fxhash",
+]
 
 [[package]]
 name = "svgtypes"
