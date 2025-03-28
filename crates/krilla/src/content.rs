@@ -32,7 +32,7 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{GlyphGroup, GlyphGrouper, TextSpanner};
+use crate::text::group::{GlyphGroup, GlyphGrouper, TextSpan, TextSpanner};
 use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
@@ -607,41 +607,66 @@ impl ContentBuilder {
                 );
 
                 for fragment in spanned {
-                    if let Some(text) = fragment.actual_text() {
-                        let mut actual_text = sb
-                            .content
-                            .begin_marked_content_with_properties(Name(b"Span"));
-                        actual_text.properties().actual_text(TextStr(text));
-                    }
-
-                    // Segment into glyph runs that can be encoded in one go using a PDF
-                    // text showing operator (i.e. no y shift, same Type3 font, etc.)
-                    let segmented =
-                        GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
-
-                    for glyph_group in segmented {
-                        sb.fill_stroke_glyph_group(
-                            &mut cur_x,
-                            &mut cur_y,
-                            glyph_group,
-                            sc,
-                            fill_render_mode,
-                            font_container.clone(),
-                            paint_mode,
-                            text,
-                            font_size,
-                        )
-                    }
-
-                    if fragment.actual_text().is_some() {
-                        sb.content.end_marked_content();
-                    }
+                    sb.fill_stroke_glyph_span(
+                        &mut cur_x,
+                        &mut cur_y,
+                        fragment,
+                        sc,
+                        fill_render_mode,
+                        font_container.clone(),
+                        paint_mode,
+                        text,
+                        font_size,
+                    )
                 }
 
                 sb.content.end_text();
             },
             sc,
         )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn fill_stroke_glyph_span(
+        &mut self,
+        cur_x: &mut f32,
+        cur_y: &mut f32,
+        fragment: TextSpan<'_, impl Glyph>,
+        sc: &mut SerializeContext,
+        fill_render_mode: TextRenderingMode,
+        font_container: Rc<RefCell<FontContainer>>,
+        paint_mode: PaintMode,
+        text: &str,
+        font_size: f32,
+    ) {
+        if let Some(text) = fragment.actual_text() {
+            let mut actual_text = self
+                .content
+                .begin_marked_content_with_properties(Name(b"Span"));
+            actual_text.properties().actual_text(TextStr(text));
+        }
+
+        // Segment into glyph runs that can be encoded in one go using a PDF
+        // text showing operator (i.e. no y shift, same Type3 font, etc.)
+        let segmented = GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
+
+        for glyph_group in segmented {
+            self.fill_stroke_glyph_group(
+                cur_x,
+                cur_y,
+                glyph_group,
+                sc,
+                fill_render_mode,
+                font_container.clone(),
+                paint_mode,
+                text,
+                font_size,
+            )
+        }
+
+        if fragment.actual_text().is_some() {
+            self.content.end_marked_content();
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
