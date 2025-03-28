@@ -13,6 +13,10 @@ use crate::stream::Stream;
 use crate::stream::StreamBuilder;
 
 /// A mask. Can be a luminance mask or an alpha mask.
+/// 
+/// IMPORTANT: Note that you must only use a mask in the document that you created it with!
+/// If you use it in a different document, you will end up with an invalid PDF file.
+// TODO: Maybe we can enfore the above somehow?
 #[derive(PartialEq, Eq, Debug, Hash)]
 pub struct Mask {
     /// The stream of the mask.
