@@ -9,7 +9,9 @@ use crate::geom::Path;
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::geom::{Point, Transform};
+use crate::graphic::Graphic;
 use crate::graphics::blend::BlendMode;
+use crate::graphics::graphics_state::ExtGState;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
@@ -481,6 +483,16 @@ impl<'a> Surface<'a> {
     /// Draw a new bitmap image.
     pub fn draw_image(&mut self, image: Image, size: Size) {
         self.bd.get_mut().draw_image(image, size, self.sc);
+    }
+
+    /// Draw a new graphic.
+    ///
+    /// Drawing the same graphic multiple times is very cheap in terms of
+    /// file size.
+    pub fn draw_graphic(&mut self, graphic: Graphic) {
+        self.bd
+            .get_mut()
+            .draw_xobject(self.sc, graphic.x_object, &ExtGState::new())
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {

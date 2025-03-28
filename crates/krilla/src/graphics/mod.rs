@@ -1,5 +1,6 @@
 pub mod blend;
 pub mod color;
+pub mod graphic;
 pub(crate) mod graphics_state;
 pub mod icc;
 #[cfg(feature = "raster-images")]
