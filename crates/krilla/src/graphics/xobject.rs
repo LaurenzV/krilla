@@ -60,54 +60,67 @@ impl Cacheable for XObject {
             sc.register_validation_error(validation_error.clone());
         }
 
-        let x_object_stream = FilterStreamBuilder::new_from_content_stream(
-            &self.0.stream.content,
-            &sc.serialize_settings(),
-        )
-        .finish(&sc.serialize_settings());
-        let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
-        x_object_stream.write_filters(x_object.deref_mut().deref_mut());
-
-        self.0
-            .stream
-            .resource_dictionary
-            .to_pdf_resources(&mut x_object, sc.serialize_settings().pdf_version());
-        x_object.bbox(
-            self.0
-                .custom_bbox
-                .unwrap_or(self.0.stream.bbox)
-                .to_pdf_rect(),
-        );
-
         if self.0.isolated || self.0.transparency_group_color_space {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
-
-            let mut group = x_object.group();
-            let transparency = group.transparency();
-
-            if self.0.isolated {
-                transparency.isolated(self.0.isolated);
-            }
-
-            if self.0.transparency_group_color_space {
-                let cs = rgb::color_space(sc.serialize_settings().no_device_cs);
-                let pdf_cs = transparency.insert(Name(b"CS"));
-
-                match sc.register_colorspace(cs) {
-                    MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
-                    // Can only be SRGB
-                    MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
-                    _ => unreachable!(),
-                }
-            }
-
-            transparency.finish();
-            group.finish();
         }
 
-        x_object.finish();
+        let serialize_settings = sc.serialize_settings();
 
-        Deferred::new(|| chunk)
+        let transparency_group_cs = if self.0.transparency_group_color_space {
+            Some(sc.register_colorspace(rgb::color_space(serialize_settings.no_device_cs)))
+        } else {
+            None
+        };
+
+        Deferred::new(move || {
+            let x_object_stream = FilterStreamBuilder::new_from_content_stream(
+                &self.0.stream.content,
+                &serialize_settings,
+            )
+            .finish(&serialize_settings);
+            let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
+            x_object_stream.write_filters(x_object.deref_mut().deref_mut());
+
+            self.0
+                .stream
+                .resource_dictionary
+                .to_pdf_resources(&mut x_object, serialize_settings.pdf_version());
+            x_object.bbox(
+                self.0
+                    .custom_bbox
+                    .unwrap_or(self.0.stream.bbox)
+                    .to_pdf_rect(),
+            );
+
+            if self.0.isolated || self.0.transparency_group_color_space {
+                let mut group = x_object.group();
+                let transparency = group.transparency();
+
+                if self.0.isolated {
+                    transparency.isolated(self.0.isolated);
+                }
+
+                if let Some(transparency_group_cs) = transparency_group_cs {
+                    let pdf_cs = transparency.insert(Name(b"CS"));
+
+                    match transparency_group_cs {
+                        MaybeDeviceColorSpace::DeviceRgb => {
+                            pdf_cs.primitive(DEVICE_RGB.to_pdf_name())
+                        }
+                        // Can only be SRGB
+                        MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+
+                transparency.finish();
+                group.finish();
+            }
+
+            x_object.finish();
+
+            chunk
+        })
     }
 }
 
