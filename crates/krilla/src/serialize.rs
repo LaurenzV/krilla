@@ -341,14 +341,14 @@ impl SerializeContext {
             // Deduplicate errors, while still preserving order.
             let mut errors = vec![];
             let mut seen = HashSet::new();
-            
+
             for error in self.validation_errors {
                 if !seen.contains(&error) {
                     seen.insert(error.clone());
                     errors.push(error);
                 }
             }
-            
+
             return Err(KrillaError::Validation(errors));
         }
 

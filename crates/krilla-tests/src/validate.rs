@@ -753,7 +753,7 @@ fn validate_deduplicate_errors() {
     let mut document = Document::new_with(settings_19());
     let mut page = document.start_page();
     let mut surface = page.surface();
-    
+
     surface.set_fill(Some(red_fill(0.5)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
     surface.set_location(2);
@@ -764,6 +764,12 @@ fn validate_deduplicate_errors() {
     surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
     surface.finish();
     page.finish();
-    
-    assert_eq!(document.finish(), Err(KrillaError::Validation(vec![ValidationError::Transparency(None), ValidationError::Transparency(Some(2))])));
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::Transparency(None),
+            ValidationError::Transparency(Some(2))
+        ]))
+    );
 }
