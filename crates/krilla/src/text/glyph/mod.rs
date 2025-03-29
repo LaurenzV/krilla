@@ -3,7 +3,7 @@ use std::ops::Range;
 use crate::color::rgb;
 use crate::geom::Transform;
 use crate::surface::Surface;
-use crate::text::{Font, PaintMode};
+use crate::text::Font;
 
 #[cfg(feature = "raster-images")]
 pub(crate) mod bitmap;

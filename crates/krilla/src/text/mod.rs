@@ -34,25 +34,6 @@ pub use shape::TextDirection;
 
 pub(crate) const PDF_UNITS_PER_EM: f32 = 1000.0;
 
-impl PaintMode<'_> {
-    pub(crate) fn to_owned(self) -> OwnedPaintMode {
-        match self {
-            PaintMode::Fill(f) => OwnedPaintMode::Fill((*f).clone()),
-            PaintMode::Stroke(s) => OwnedPaintMode::Stroke((*s).clone()),
-            PaintMode::FillStroke(f, s) => OwnedPaintMode::FillStroke((*f).clone(), (*s).clone()),
-        }
-    }
-}
-
-/// A wrapper enum for fills/strokes. We use that to keep track whether a Type3 font contains
-/// filled or stroked outlines of a glyph.
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum PaintMode<'a> {
-    Fill(&'a Fill),
-    Stroke(&'a Stroke),
-    FillStroke(&'a Fill, &'a Stroke),
-}
-
 /// A unique CID identifier.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CIDIdentifier(pub Font);
@@ -76,7 +57,6 @@ pub(crate) enum FontIdentifier {
 pub(crate) enum OwnedPaintMode {
     Fill(Fill),
     Stroke(Stroke),
-    FillStroke(Fill, Stroke),
 }
 
 impl From<Fill> for OwnedPaintMode {

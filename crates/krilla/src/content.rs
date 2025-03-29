@@ -35,7 +35,7 @@ use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::text::group::{use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
 use crate::text::type3::ColoredGlyph;
-use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
+use crate::text::{Font, FontContainer, FontIdentifier, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
 use crate::util::{calculate_stroke_bbox, NameExt};
 

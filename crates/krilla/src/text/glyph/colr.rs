@@ -15,8 +15,8 @@ use crate::graphics::paint::{
 use crate::num::NormalizedF32;
 use crate::surface::Surface;
 use crate::text::outline::OutlineBuilder;
+use crate::text::Font;
 use crate::text::GlyphId;
-use crate::text::{Font, PaintMode};
 
 pub(crate) fn has_colr_data(font: &Font, glyph: GlyphId) -> bool {
     font.font_ref()

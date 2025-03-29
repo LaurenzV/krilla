@@ -2,8 +2,8 @@ use skrifa::raw::TableProvider;
 
 use crate::color::rgb;
 use crate::surface::Surface;
+use crate::text::Font;
 use crate::text::GlyphId;
-use crate::text::{Font, PaintMode};
 
 pub(crate) fn has_svg_data(font: &Font, glyph: GlyphId) -> bool {
     font.font_ref()

@@ -7,7 +7,7 @@ use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
-use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use super::{FontIdentifier, Type3Identifier};
 use crate::color::rgb;
 use crate::configure::PdfVersion;
 use crate::geom::Path;
@@ -474,10 +474,9 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 #[cfg(test)]
 mod tests {
     use crate::color::rgb;
-    use crate::graphics::paint::Fill;
     use crate::text::type3::{ColoredGlyph, Type3FontMapper};
     use crate::text::GlyphId;
-    use crate::text::{Font, OwnedPaintMode};
+    use crate::text::Font;
     use crate::util::test_utils::NOTO_COLOR_EMOJI_COLR;
 
     #[test]

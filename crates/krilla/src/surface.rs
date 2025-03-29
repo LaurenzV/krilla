@@ -24,10 +24,10 @@ use crate::paint::{InnerPaint, Paint};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
+use crate::text::Font;
 use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
-use crate::text::{Font, PaintMode};
 
 /// Can be used to associate render operations with a unique identifier.
 /// This is useful if you want to backtrack a validation error to a specific

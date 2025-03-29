@@ -5,7 +5,7 @@ use std::rc::Rc;
 use crate::color::rgb;
 use crate::text::type3::ColoredGlyph;
 use crate::text::Glyph;
-use crate::text::{FontContainer, FontIdentifier, PaintMode};
+use crate::text::{FontContainer, FontIdentifier};
 
 pub(crate) enum GlyphSpan<'a, T>
 where
