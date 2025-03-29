@@ -247,9 +247,7 @@ pub(crate) mod test_utils {
 
     use once_cell::sync::Lazy;
 
-    use crate::configure::Configuration;
     use crate::Data;
-    use crate::SerializeSettings;
 
     pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
         Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));

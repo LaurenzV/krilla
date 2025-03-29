@@ -175,18 +175,16 @@ impl FontContainer {
         {
             // We already know whether this glyph uses a CID or Type3 glyph.
             e.clone()
+        } else if should_outline(&self.font, glyph.glyph_id) {
+            let cid = self.cid_font.add_glyph(glyph.glyph_id);
+            let res = (self.cid_font.identifier(), PDFGlyph::Cid(cid));
+            self.cid_cache.insert(glyph.glyph_id.to_u32(), res.clone());
+            res
         } else {
-            if should_outline(&self.font, glyph.glyph_id) {
-                let cid = self.cid_font.add_glyph(glyph.glyph_id);
-                let res = (self.cid_font.identifier(), PDFGlyph::Cid(cid));
-                self.cid_cache.insert(glyph.glyph_id.to_u32(), res.clone());
-                res
-            } else {
-                let (identifier, gid) = self.type3_mapper.add_glyph(glyph.to_owned());
-                let res = (identifier, PDFGlyph::Type3(gid));
-                self.type3_cache.insert(glyph.to_owned(), res.clone());
-                res
-            }
+            let (identifier, gid) = self.type3_mapper.add_glyph(glyph.to_owned());
+            let res = (identifier, PDFGlyph::Type3(gid));
+            self.type3_cache.insert(glyph.to_owned(), res.clone());
+            res
         }
     }
 }
