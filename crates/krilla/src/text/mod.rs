@@ -16,7 +16,6 @@ use std::hash::Hash;
 
 use fxhash::FxHashMap;
 
-use crate::graphics::paint::{Fill, Stroke};
 use crate::text::cid::CIDFont;
 use crate::text::type3::{ColoredGlyph, Type3Font, Type3FontMapper, Type3ID};
 pub(crate) mod cid;
@@ -50,25 +49,6 @@ pub(crate) struct Type3Identifier(pub Font, pub Type3ID);
 pub(crate) enum FontIdentifier {
     Cid(CIDIdentifier),
     Type3(Type3Identifier),
-}
-
-/// The owned version of `PaintMode`.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) enum OwnedPaintMode {
-    Fill(Fill),
-    Stroke(Stroke),
-}
-
-impl From<Fill> for OwnedPaintMode {
-    fn from(value: Fill) -> Self {
-        Self::Fill(value)
-    }
-}
-
-impl From<Stroke> for OwnedPaintMode {
-    fn from(value: Stroke) -> Self {
-        Self::Stroke(value)
-    }
 }
 
 /// A container that holds all PDF fonts belonging to an OTF font.
