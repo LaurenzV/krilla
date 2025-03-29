@@ -50,19 +50,10 @@ impl<'a> CoveredGlyph<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct OwnedCoveredGlyph {
     glyph_id: GlyphId,
     paint_mode: OwnedPaintMode,
-}
-
-impl Eq for OwnedCoveredGlyph {}
-
-impl Hash for OwnedCoveredGlyph {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.glyph_id.hash(state);
-        self.paint_mode.hash(state);
-    }
 }
 
 #[derive(Debug)]
@@ -509,7 +500,7 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 mod tests {
     use crate::graphics::paint::Fill;
     use crate::serialize::SerializeContext;
-    use crate::text::type3::OwnedCoveredGlyph;
+    use crate::text::type3::{OwnedCoveredGlyph, Type3FontMapper};
     use crate::text::GlyphId;
     use crate::text::{Font, FontContainer, OwnedPaintMode};
     use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
@@ -525,36 +516,29 @@ mod tests {
 
     #[test]
     fn type3_more_than_256_glyphs() {
-        let mut sc = SerializeContext::new(settings_1());
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
-        let container = sc.register_font_container(font.clone());
-        let mut font_container = container.borrow_mut();
+        let mut t3 = Type3FontMapper::new(font.clone());
 
-        match &mut *font_container {
-            FontContainer::Type3(t3) => {
-                for i in 2..258 {
-                    t3.add_glyph(OwnedCoveredGlyph::new(
-                        GlyphId::new(i),
-                        Fill::default().into(),
-                    ));
-                }
-
-                assert_eq!(t3.fonts.len(), 1);
-                assert_eq!(
-                    t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
-                        GlyphId::new(20),
-                        Fill::default().into(),
-                    )),
-                    18
-                );
-
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(512),
-                    Fill::default().into(),
-                ));
-                assert_eq!(t3.fonts.len(), 2);
-            }
-            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
+        for i in 2..258 {
+            t3.add_glyph(OwnedCoveredGlyph::new(
+                GlyphId::new(i),
+                Fill::default().into(),
+            ));
         }
+
+        assert_eq!(t3.fonts.len(), 1);
+        assert_eq!(
+            t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
+                GlyphId::new(20),
+                Fill::default().into(),
+            )),
+            18
+        );
+
+        t3.add_glyph(OwnedCoveredGlyph::new(
+            GlyphId::new(512),
+            Fill::default().into(),
+        ));
+        assert_eq!(t3.fonts.len(), 2);
     }
 }

@@ -10,12 +10,17 @@
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index.
 
+use std::cell::LazyCell;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use fxhash::FxHashMap;
+use once_cell::sync::OnceCell;
+
 use crate::graphics::paint::{Fill, Stroke};
 use crate::text::cid::CIDFont;
-use crate::text::type3::{CoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
+use crate::text::type3::{CoveredGlyph, OwnedCoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
 pub(crate) mod cid;
 pub(crate) mod font;
 pub(crate) mod glyph;
@@ -98,25 +103,63 @@ impl OwnedPaintMode {
     }
 }
 
-enum ContainerType {
-    Type3(Type3FontMapper),
-    CIDFont(CIDFont),
-}
-
 /// A container that holds all PDF fonts belonging to an OTF font.
-#[derive(Debug)]
-pub(crate) enum FontContainer {
-    Type3(Type3FontMapper),
-    CIDFont(CIDFont),
+pub(crate) struct FontContainer {
+    font: Font,
+    type3_mapper: OnceCell<Type3FontMapper>,
+    cid_font: OnceCell<CIDFont>,
+    cid_cache: FxHashMap<u32, (FontIdentifier, PDFGlyph)>,
+    type3_cache: HashMap<OwnedCoveredGlyph, (FontIdentifier, PDFGlyph)>,
 }
 
 impl FontContainer {
+    pub(crate) fn new(font: Font) -> Self {
+        Self {
+            font: font.clone(),
+            type3_mapper: OnceCell::new(),
+            cid_font: OnceCell::new(),
+            cid_cache: Default::default(),
+            type3_cache: Default::default(),
+        }
+    }
+
+    pub(crate) fn get_type3_mapper(&self) -> Option<&Type3FontMapper> {
+        self.type3_mapper.get()
+    }
+
+    pub(crate) fn get_cid_font(&self) -> Option<&CIDFont> {
+        self.cid_font.get()
+    }
+
+    fn type3_mapper(&self) -> &Type3FontMapper {
+        self.type3_mapper
+            .get_or_init(|| Type3FontMapper::new(self.font.clone()))
+    }
+
+    fn type3_mapper_mut(&mut self) -> &mut Type3FontMapper {
+        // TODO: Replace with `get_mut_or_init` once possible.
+        let _ = self.type3_mapper();
+        self.type3_mapper.get_mut().unwrap()
+    }
+
+    fn cid_font(&self) -> &CIDFont {
+        self.cid_font
+            .get_or_init(|| CIDFont::new(self.font.clone()))
+    }
+
+    fn cid_font_mut(&mut self) -> &mut CIDFont {
+        // TODO: Replace with `get_mut_or_init` once possible.
+        let _ = self.cid_font();
+        self.cid_font.get_mut().unwrap()
+    }
+
     #[inline]
     pub(crate) fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
-        match self {
-            FontContainer::Type3(t3) => t3.id_from_glyph(&glyph.to_owned()),
-            FontContainer::CIDFont(cid) => cid.get_cid(glyph.glyph_id).map(|_| cid.identifier()),
-        }
+        let (id, _) = self
+            .cid_cache
+            .get(&glyph.glyph_id.to_u32())
+            .or_else(|| self.type3_cache.get(&glyph.to_owned()))?;
+        Some(id.clone())
     }
 
     #[inline]
@@ -124,21 +167,12 @@ impl FontContainer {
         &mut self,
         font_identifier: FontIdentifier,
     ) -> Option<&mut dyn PdfFont> {
-        match self {
-            FontContainer::Type3(t3) => {
-                if let Some(t3_font) = t3.font_mut_from_id(font_identifier) {
-                    Some(t3_font)
-                } else {
-                    None
-                }
-            }
-            FontContainer::CIDFont(cid) => {
-                if cid.identifier() == font_identifier {
-                    Some(cid)
-                } else {
-                    None
-                }
-            }
+        if self.cid_font().identifier() == font_identifier {
+            Some(self.cid_font_mut())
+        } else {
+            // If the identifier doesn't match either of CID or Type3, this will
+            // return `None`.
+            Some(self.type3_mapper_mut().font_mut_from_id(font_identifier)?)
         }
     }
 
@@ -147,34 +181,35 @@ impl FontContainer {
         &self,
         font_identifier: FontIdentifier,
     ) -> Option<&dyn PdfFont> {
-        match self {
-            FontContainer::Type3(t3) => {
-                if let Some(t3_font) = t3.font_from_id(font_identifier) {
-                    Some(t3_font)
-                } else {
-                    None
-                }
-            }
-            FontContainer::CIDFont(cid) => {
-                if cid.identifier() == font_identifier {
-                    Some(cid)
-                } else {
-                    None
-                }
-            }
+        if self.cid_font().identifier() == font_identifier {
+            Some(self.cid_font())
+        } else {
+            // If the identifier doesn't match either of CID or Type3, this will
+            // return `None`.
+            Some(self.type3_mapper().font_from_id(font_identifier)?)
         }
     }
 
     #[inline]
     pub(crate) fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
-        match self {
-            FontContainer::Type3(t3) => {
-                let (identifier, gid) = t3.add_glyph(glyph.to_owned());
-                (identifier, PDFGlyph::Type3(gid))
-            }
-            FontContainer::CIDFont(cid_font) => {
-                let cid = cid_font.add_glyph(glyph.glyph_id);
-                (cid_font.identifier(), PDFGlyph::Cid(cid))
+        if let Some(e) = self
+            .cid_cache
+            .get(&glyph.glyph_id.to_u32())
+            .or_else(|| self.type3_cache.get(&glyph.to_owned()))
+        {
+            // We already know whether this glyph uses a CID or Type3 glyph.
+            e.clone()
+        } else {
+            if should_outline(&self.font, glyph.glyph_id) {
+                let cid = self.cid_font_mut().add_glyph(glyph.glyph_id);
+                let res = (self.cid_font().identifier(), PDFGlyph::Cid(cid));
+                self.cid_cache.insert(glyph.glyph_id.to_u32(), res.clone());
+                res
+            } else {
+                let (identifier, gid) = self.type3_mapper_mut().add_glyph(glyph.to_owned());
+                let res = (identifier, PDFGlyph::Type3(gid));
+                self.type3_cache.insert(glyph.to_owned(), res.clone());
+                res
             }
         }
     }

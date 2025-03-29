@@ -400,11 +400,10 @@ pub fn get_glyph_run_props(
     // can only happen for Type3 fonts, not CID fonts), or if a glyph has a different y/x offset.
     // Note that it's of course possible that we always use the same Type3 font, but we need to
     // be conservative here.
-    let mut do_glyph_grouping = matches!(font_container, FontContainer::Type3(_));
+    // TODO: remove
+    let mut do_glyph_grouping = true;
 
     let mut check_single = |glyph, do_text_span: &mut bool| {
-        check_glyph_group_prop(glyph, &mut do_glyph_grouping);
-
         // As soon as we know that the glyph run requires a text span, we do not insert any codepoints
         // anymore, because otherwise we might unnecessarily pollute the cmap with entries that
         // wouldn't be necessary. The text spanner will then iterate over the all glyphs again
@@ -433,10 +432,6 @@ pub fn get_glyph_run_props(
         do_text_span,
         do_glyph_grouping,
     }
-}
-
-fn check_glyph_group_prop(glyph: &impl Glyph, do_glyph_grouping: &mut bool) {
-    *do_glyph_grouping |= glyph.y_advance(1.0) != 0.0 || glyph.y_offset(1.0) != 0.0;
 }
 
 fn check_text_span_prop(

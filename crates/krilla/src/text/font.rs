@@ -84,10 +84,6 @@ impl Font {
         self.0.font_info.ascent.get()
     }
 
-    pub(crate) fn allow_color(&self) -> bool {
-        self.0.font_info.allow_color
-    }
-
     pub(crate) fn weight(&self) -> f32 {
         self.0.font_info.weight.get()
     }
@@ -164,7 +160,6 @@ pub(crate) struct FontInfo {
     global_bbox: Rect,
     postscript_name: Option<String>,
     ascent: FiniteF32,
-    allow_color: bool,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
     is_monospaced: bool,
@@ -242,7 +237,6 @@ impl FontInfo {
             data_len,
             checksum,
             location,
-            allow_color,
             units_per_em,
             postscript_name,
             ascent,
