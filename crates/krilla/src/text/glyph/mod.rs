@@ -62,7 +62,10 @@ pub(crate) fn draw_color_glyph(
 pub(crate) fn should_outline(font: &Font, glyph: GlyphId) -> bool {
     let has_svg = svg::has_svg_data(font, glyph);
     let has_colr = colr::has_colr_data(font, glyph);
+    #[cfg(feature = "raster-images")]
     let has_bitmap = bitmap::has_bitmap_data(font, glyph);
+    #[cfg(not(feature = "raster-images"))]
+    let has_bitmap = false;
     font.font_info().can_be_cid_font() && !has_svg && !has_colr && !has_bitmap
 }
 
