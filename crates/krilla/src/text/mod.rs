@@ -106,8 +106,8 @@ impl OwnedPaintMode {
 /// A container that holds all PDF fonts belonging to an OTF font.
 pub(crate) struct FontContainer {
     font: Font,
-    type3_mapper: OnceCell<Type3FontMapper>,
-    cid_font: OnceCell<CIDFont>,
+    type3_mapper: Type3FontMapper,
+    cid_font: CIDFont,
     cid_cache: FxHashMap<u32, (FontIdentifier, PDFGlyph)>,
     type3_cache: HashMap<OwnedCoveredGlyph, (FontIdentifier, PDFGlyph)>,
 }
@@ -116,41 +116,19 @@ impl FontContainer {
     pub(crate) fn new(font: Font) -> Self {
         Self {
             font: font.clone(),
-            type3_mapper: OnceCell::new(),
-            cid_font: OnceCell::new(),
+            type3_mapper: Type3FontMapper::new(font.clone()),
+            cid_font: CIDFont::new(font.clone()),
             cid_cache: Default::default(),
             type3_cache: Default::default(),
         }
     }
 
-    pub(crate) fn get_type3_mapper(&self) -> Option<&Type3FontMapper> {
-        self.type3_mapper.get()
+    pub(crate) fn type3_mapper(&self) -> &Type3FontMapper {
+        &self.type3_mapper
     }
 
-    pub(crate) fn get_cid_font(&self) -> Option<&CIDFont> {
-        self.cid_font.get()
-    }
-
-    fn type3_mapper(&self) -> &Type3FontMapper {
-        self.type3_mapper
-            .get_or_init(|| Type3FontMapper::new(self.font.clone()))
-    }
-
-    fn type3_mapper_mut(&mut self) -> &mut Type3FontMapper {
-        // TODO: Replace with `get_mut_or_init` once possible.
-        let _ = self.type3_mapper();
-        self.type3_mapper.get_mut().unwrap()
-    }
-
-    fn cid_font(&self) -> &CIDFont {
-        self.cid_font
-            .get_or_init(|| CIDFont::new(self.font.clone()))
-    }
-
-    fn cid_font_mut(&mut self) -> &mut CIDFont {
-        // TODO: Replace with `get_mut_or_init` once possible.
-        let _ = self.cid_font();
-        self.cid_font.get_mut().unwrap()
+    pub(crate) fn cid_font(&self) -> &CIDFont {
+        &self.cid_font
     }
 
     #[inline]
@@ -167,12 +145,12 @@ impl FontContainer {
         &mut self,
         font_identifier: FontIdentifier,
     ) -> Option<&mut dyn PdfFont> {
-        if self.cid_font().identifier() == font_identifier {
-            Some(self.cid_font_mut())
+        if self.cid_font.identifier() == font_identifier {
+            Some(&mut self.cid_font)
         } else {
             // If the identifier doesn't match either of CID or Type3, this will
             // return `None`.
-            Some(self.type3_mapper_mut().font_mut_from_id(font_identifier)?)
+            Some(self.type3_mapper.font_mut_from_id(font_identifier)?)
         }
     }
 
@@ -181,12 +159,12 @@ impl FontContainer {
         &self,
         font_identifier: FontIdentifier,
     ) -> Option<&dyn PdfFont> {
-        if self.cid_font().identifier() == font_identifier {
-            Some(self.cid_font())
+        if self.cid_font.identifier() == font_identifier {
+            Some(&self.cid_font)
         } else {
             // If the identifier doesn't match either of CID or Type3, this will
             // return `None`.
-            Some(self.type3_mapper().font_from_id(font_identifier)?)
+            Some(self.type3_mapper.font_from_id(font_identifier)?)
         }
     }
 
@@ -201,12 +179,12 @@ impl FontContainer {
             e.clone()
         } else {
             if should_outline(&self.font, glyph.glyph_id) {
-                let cid = self.cid_font_mut().add_glyph(glyph.glyph_id);
-                let res = (self.cid_font().identifier(), PDFGlyph::Cid(cid));
+                let cid = self.cid_font.add_glyph(glyph.glyph_id);
+                let res = (self.cid_font.identifier(), PDFGlyph::Cid(cid));
                 self.cid_cache.insert(glyph.glyph_id.to_u32(), res.clone());
                 res
             } else {
-                let (identifier, gid) = self.type3_mapper_mut().add_glyph(glyph.to_owned());
+                let (identifier, gid) = self.type3_mapper.add_glyph(glyph.to_owned());
                 let res = (identifier, PDFGlyph::Type3(gid));
                 self.type3_cache.insert(glyph.to_owned(), res.clone());
                 res

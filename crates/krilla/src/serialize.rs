@@ -571,17 +571,19 @@ impl SerializeContext {
     fn serialize_fonts(&mut self) -> KrillaResult<()> {
         let fonts = self.global_objects.font_map.take();
         for font_container in fonts.values() {
-            if let Some(font_mapper) = font_container.borrow().get_type3_mapper() {
-                for t3_font in font_mapper.fonts() {
+            let borrowed = font_container.borrow();
+
+            if !borrowed.type3_mapper().is_empty() {
+                for t3_font in borrowed.type3_mapper().fonts() {
                     let f = self.register_font_identifier(t3_font.identifier());
                     let chunk = t3_font.serialize(self, f.get_ref());
                     self.chunk_container.fonts.push(chunk);
                 }
             }
 
-            if let Some(cid_font) = font_container.borrow().get_cid_font() {
-                let f = self.register_font_identifier(cid_font.identifier());
-                let chunk = cid_font.serialize(self, f.get_ref())?;
+            if !borrowed.cid_font().is_empty() {
+                let f = self.register_font_identifier(borrowed.cid_font().identifier());
+                let chunk = borrowed.cid_font().serialize(self, f.get_ref())?;
                 self.chunk_container.fonts.push(chunk);
             }
         }

@@ -445,6 +445,10 @@ impl Type3FontMapper {
         self.fonts.get_mut(pos)
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.fonts.is_empty()
+    }
+
     pub(crate) fn fonts(&self) -> &[Type3Font] {
         &self.fonts
     }
