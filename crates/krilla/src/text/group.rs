@@ -375,24 +375,14 @@ where
     }
 }
 
-pub(crate) struct GlyphRunProps {
-    // The glyph run might need text spanning.
-    pub(crate) do_text_span: bool,
-    // The glyph run might need glyph grouping.
-    pub(crate) do_glyph_grouping: bool,
-}
-
-pub fn get_glyph_run_props(
+pub fn use_text_spanner(
     glyphs: &[impl Glyph],
     text: &str,
     paint_mode: PaintMode,
     font_container: &mut FontContainer,
-) -> GlyphRunProps {
+) -> bool {
     if glyphs.is_empty() {
-        return GlyphRunProps {
-            do_text_span: false,
-            do_glyph_grouping: false,
-        };
+        return false;
     }
 
     let mut do_text_span = false;
@@ -400,8 +390,6 @@ pub fn get_glyph_run_props(
     // can only happen for Type3 fonts, not CID fonts), or if a glyph has a different y/x offset.
     // Note that it's of course possible that we always use the same Type3 font, but we need to
     // be conservative here.
-    // TODO: remove
-    let mut do_glyph_grouping = true;
 
     let mut check_single = |glyph, do_text_span: &mut bool| {
         // As soon as we know that the glyph run requires a text span, we do not insert any codepoints
@@ -428,10 +416,7 @@ pub fn get_glyph_run_props(
     // Since windows checks groups of two, we need to manually check the last glyph
     check_single(glyphs.last().unwrap(), &mut do_text_span);
 
-    GlyphRunProps {
-        do_text_span,
-        do_glyph_grouping,
-    }
+    do_text_span
 }
 
 fn check_text_span_prop(
