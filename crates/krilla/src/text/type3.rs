@@ -8,6 +8,7 @@ use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
 use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use crate::color::rgb;
 use crate::configure::PdfVersion;
 use crate::geom::Path;
 use crate::geom::{Rect, Transform};
@@ -26,43 +27,30 @@ use crate::util::NameExt;
 
 pub(crate) type Gid = u8;
 
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct CoveredGlyph<'a> {
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub(crate) struct ColoredGlyph {
     pub(crate) glyph_id: GlyphId,
-    pub(crate) paint_mode: PaintMode<'a>,
+    // Some formats like COLR and SVG allow drawing the same glyph
+    // with a different context color, so we need to store that as well.
+    pub(crate) context_color: rgb::Color,
 }
 
-impl CoveredGlyph<'_> {
-    pub(crate) fn to_owned(self) -> OwnedCoveredGlyph {
-        OwnedCoveredGlyph {
-            glyph_id: self.glyph_id,
-            paint_mode: self.paint_mode.to_owned(),
-        }
-    }
-}
-
-impl<'a> CoveredGlyph<'a> {
-    pub(crate) fn new(glyph_id: GlyphId, paint_mode: PaintMode<'a>) -> CoveredGlyph<'a> {
+impl ColoredGlyph {
+    pub(crate) fn new(glyph_id: GlyphId, context_color: rgb::Color) -> ColoredGlyph {
         Self {
             glyph_id,
-            paint_mode,
+            context_color,
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct OwnedCoveredGlyph {
-    glyph_id: GlyphId,
-    paint_mode: OwnedPaintMode,
 }
 
 #[derive(Debug)]
 pub(crate) struct Type3Font {
     font: Font,
-    glyphs: Vec<OwnedCoveredGlyph>,
+    glyphs: Vec<ColoredGlyph>,
     widths: Vec<f32>,
     cmap_entries: FxHashMap<Gid, (String, Option<Location>)>,
-    glyph_set: HashSet<OwnedCoveredGlyph>,
+    glyph_set: HashSet<ColoredGlyph>,
     index: usize,
 }
 
@@ -92,12 +80,12 @@ impl Type3Font {
     }
 
     #[inline]
-    pub(crate) fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
+    pub(crate) fn covers(&self, glyph: &ColoredGlyph) -> bool {
         self.glyph_set.contains(glyph)
     }
 
     #[inline]
-    pub(crate) fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
+    pub(crate) fn get_gid(&self, glyph: &ColoredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
             .position(|g| g == glyph)
@@ -105,7 +93,7 @@ impl Type3Font {
     }
 
     #[inline]
-    pub(crate) fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
+    pub(crate) fn add_glyph(&mut self, glyph: ColoredGlyph) -> u8 {
         if let Some(pos) = self.get_gid(&glyph) {
             pos
         } else {
@@ -156,7 +144,7 @@ impl Type3Font {
                 // In case this returns `None`, the surface is guaranteed to be empty.
                 let drawn_color_glyph = text::draw_color_glyph(
                     self.font.clone(),
-                    glyph.paint_mode.as_ref(),
+                    glyph.context_color,
                     glyph.glyph_id,
                     Transform::default(),
                     &mut surface,
@@ -400,7 +388,7 @@ impl Type3FontMapper {
 impl Type3FontMapper {
     /// Given a requested glyph coverage, find the corresponding font identifier of the
     /// font that contains it.
-    pub(crate) fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
+    pub(crate) fn id_from_glyph(&self, glyph: &ColoredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
             .position(|f| f.covers(glyph))
@@ -436,7 +424,7 @@ impl Type3FontMapper {
         &self.fonts
     }
 
-    pub(crate) fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> (FontIdentifier, Gid) {
+    pub(crate) fn add_glyph(&mut self, glyph: ColoredGlyph) -> (FontIdentifier, Gid) {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
         if let Some(id) = self.id_from_glyph(&glyph) {
@@ -485,20 +473,12 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::rgb;
     use crate::graphics::paint::Fill;
-    use crate::text::type3::{OwnedCoveredGlyph, Type3FontMapper};
+    use crate::text::type3::{ColoredGlyph, Type3FontMapper};
     use crate::text::GlyphId;
     use crate::text::{Font, OwnedPaintMode};
     use crate::util::test_utils::NOTO_COLOR_EMOJI_COLR;
-
-    impl OwnedCoveredGlyph {
-        pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {
-            Self {
-                glyph_id,
-                paint_mode,
-            }
-        }
-    }
 
     #[test]
     fn type3_more_than_256_glyphs() {
@@ -506,25 +486,16 @@ mod tests {
         let mut t3 = Type3FontMapper::new(font.clone());
 
         for i in 2..258 {
-            t3.add_glyph(OwnedCoveredGlyph::new(
-                GlyphId::new(i),
-                Fill::default().into(),
-            ));
+            t3.add_glyph(ColoredGlyph::new(GlyphId::new(i), rgb::Color::black()));
         }
 
         assert_eq!(t3.fonts.len(), 1);
         assert_eq!(
-            t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
-                GlyphId::new(20),
-                Fill::default().into(),
-            )),
+            t3.fonts[0].add_glyph(ColoredGlyph::new(GlyphId::new(20), rgb::Color::black())),
             18
         );
 
-        t3.add_glyph(OwnedCoveredGlyph::new(
-            GlyphId::new(512),
-            Fill::default().into(),
-        ));
+        t3.add_glyph(ColoredGlyph::new(GlyphId::new(512), rgb::Color::black()));
         assert_eq!(t3.fonts.len(), 2);
     }
 }

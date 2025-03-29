@@ -18,7 +18,7 @@ use fxhash::FxHashMap;
 
 use crate::graphics::paint::{Fill, Stroke};
 use crate::text::cid::CIDFont;
-use crate::text::type3::{CoveredGlyph, OwnedCoveredGlyph, Type3Font, Type3FontMapper, Type3ID};
+use crate::text::type3::{ColoredGlyph, Type3Font, Type3FontMapper, Type3ID};
 pub(crate) mod cid;
 pub(crate) mod font;
 pub(crate) mod glyph;
@@ -91,23 +91,13 @@ impl From<Stroke> for OwnedPaintMode {
     }
 }
 
-impl OwnedPaintMode {
-    pub(crate) fn as_ref(&self) -> PaintMode {
-        match self {
-            OwnedPaintMode::Fill(f) => PaintMode::Fill(f),
-            OwnedPaintMode::Stroke(s) => PaintMode::Stroke(s),
-            OwnedPaintMode::FillStroke(f, s) => PaintMode::FillStroke(f, s),
-        }
-    }
-}
-
 /// A container that holds all PDF fonts belonging to an OTF font.
 pub(crate) struct FontContainer {
     font: Font,
     type3_mapper: Type3FontMapper,
     cid_font: CIDFont,
     cid_cache: FxHashMap<u32, (FontIdentifier, PDFGlyph)>,
-    type3_cache: HashMap<OwnedCoveredGlyph, (FontIdentifier, PDFGlyph)>,
+    type3_cache: HashMap<ColoredGlyph, (FontIdentifier, PDFGlyph)>,
 }
 
 impl FontContainer {
@@ -130,7 +120,7 @@ impl FontContainer {
     }
 
     #[inline]
-    pub(crate) fn font_identifier(&self, glyph: CoveredGlyph) -> Option<FontIdentifier> {
+    pub(crate) fn font_identifier(&self, glyph: ColoredGlyph) -> Option<FontIdentifier> {
         let (id, _) = self
             .cid_cache
             .get(&glyph.glyph_id.to_u32())
@@ -167,7 +157,7 @@ impl FontContainer {
     }
 
     #[inline]
-    pub(crate) fn add_glyph(&mut self, glyph: CoveredGlyph) -> (FontIdentifier, PDFGlyph) {
+    pub(crate) fn add_glyph(&mut self, glyph: ColoredGlyph) -> (FontIdentifier, PDFGlyph) {
         if let Some(e) = self
             .cid_cache
             .get(&glyph.glyph_id.to_u32())
@@ -199,7 +189,7 @@ pub(crate) trait PdfFont {
         text: String,
         location: Option<crate::surface::Location>,
     );
-    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph>;
+    fn get_gid(&self, glyph: ColoredGlyph) -> Option<PDFGlyph>;
     fn force_fill(&self) -> bool;
 }
 
@@ -233,7 +223,7 @@ impl PdfFont for Type3Font {
         }
     }
 
-    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+    fn get_gid(&self, glyph: ColoredGlyph) -> Option<PDFGlyph> {
         self.get_gid(&glyph.to_owned()).map(PDFGlyph::Type3)
     }
 
@@ -272,7 +262,7 @@ impl PdfFont for CIDFont {
         }
     }
 
-    fn get_gid(&self, glyph: CoveredGlyph) -> Option<PDFGlyph> {
+    fn get_gid(&self, glyph: ColoredGlyph) -> Option<PDFGlyph> {
         self.get_cid(glyph.glyph_id).map(PDFGlyph::Cid)
     }
 
