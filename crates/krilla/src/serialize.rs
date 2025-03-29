@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -338,9 +338,18 @@ impl SerializeContext {
         self.check_limits();
 
         if !self.validation_errors.is_empty() {
-            // Deduplicate errors with no span.
-            self.validation_errors.dedup();
-            return Err(KrillaError::Validation(self.validation_errors));
+            // Deduplicate errors, while still preserving order.
+            let mut errors = vec![];
+            let mut seen = HashSet::new();
+            
+            for error in self.validation_errors {
+                if !seen.contains(&error) {
+                    seen.insert(error.clone());
+                    errors.push(error);
+                }
+            }
+            
+            return Err(KrillaError::Validation(errors));
         }
 
         // Just a sanity check that we've actually processed all items.
