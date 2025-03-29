@@ -600,13 +600,12 @@ pub fn all_glyphs_to_pdf(
     font_data: Data,
     glyphs: Option<Vec<(GlyphId, String)>>,
     color_cycling: bool,
-    allow_color: bool,
     d: &mut Document,
 ) {
     use krilla::geom::Transform;
     use krilla::text::KrillaGlyph;
 
-    let font = Font::new(font_data.clone(), 0, allow_color).unwrap();
+    let font = Font::new(font_data.clone(), 0).unwrap();
     let font_ref = FontRef::from_index(font_data.as_ref(), 0).unwrap();
 
     let glyphs = glyphs.unwrap_or_else(|| {

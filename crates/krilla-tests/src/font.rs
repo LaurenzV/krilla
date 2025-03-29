@@ -7,7 +7,7 @@ mod bitmap {
     #[visreg(document, all)]
     fn font_noto_color_emoji_cbdt(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_CBDT.clone();
-        all_glyphs_to_pdf(font_data, None, false, true, document);
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 
     #[cfg(target_os = "macos")]
@@ -16,7 +16,7 @@ mod bitmap {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Apple Color Emoji.ttc")
             .unwrap()
             .into();
-        all_glyphs_to_pdf(font_data, None, false, true, document);
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 }
 
@@ -41,13 +41,13 @@ mod colr {
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
 
-        all_glyphs_to_pdf(font_data, Some(glyphs), false, true, document);
+        all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
     }
 
     #[visreg]
     fn font_colr_context_color(surface: &mut Surface) {
         let font_data = COLR_TEST_GLYPHS.clone();
-        let font = Font::new(font_data, 0, true).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         let text = [
             0xf0b00, 0xf0b01, 0xf0b02, 0xf0b03, 0xf0b04, 0xf0b05, 0xf0b06, 0xf0b07,
@@ -123,7 +123,7 @@ mod colr {
     #[visreg(document, pdfium, mupdf, pdfbox, ghostscript, poppler, quartz)]
     fn font_noto_color_emoji_colr(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_COLR.clone();
-        all_glyphs_to_pdf(font_data, None, false, true, document);
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 }
 
@@ -139,19 +139,13 @@ mod svg {
     #[visreg(document, all)]
     fn font_twitter_color_emoji(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
-        all_glyphs_to_pdf(font_data, None, false, true, document);
-    }
-
-    #[visreg(document)]
-    fn font_twitter_color_emoji_no_color(document: &mut Document) {
-        let font_data = TWITTER_COLOR_EMOJI.clone();
-        all_glyphs_to_pdf(font_data, None, false, false, document);
+        all_glyphs_to_pdf(font_data, None, false, document);
     }
 
     #[visreg]
     fn font_svg_extra(surface: &mut Surface) {
         let font_data = SVG_EXTRA.clone();
-        let font = Font::new(font_data, 0, true).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         surface.set_fill(Some(purple_fill(1.0)));
         surface.draw_text(
@@ -185,7 +179,7 @@ mod cid {
 
     #[visreg(all)]
     fn font_ttf_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+        let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
         surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font,
@@ -198,7 +192,7 @@ mod cid {
 
     #[visreg(all)]
     fn font_cff_simple_text(surface: &mut Surface) {
-        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0, true).unwrap();
+        let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
         surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font,
@@ -211,7 +205,7 @@ mod cid {
 
     #[visreg(all)]
     fn font_arabic_simple_text(surface: &mut Surface) {
-        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0, true).unwrap();
+        let font = Font::new(NOTO_SANS_ARABIC.clone(), 0).unwrap();
         surface.draw_text(
             Point::from_xy(0.0, 100.0),
             font,
@@ -223,14 +217,14 @@ mod cid {
     }
 
     #[cfg(target_os = "macos")]
-    #[visreg(macos)]
+    #[visreg]
     fn font_ttc(surface: &mut Surface) {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
             .unwrap()
             .into();
-        let font_1 = Font::new(font_data.clone(), 0, true).unwrap();
-        let font_2 = Font::new(font_data.clone(), 3, true).unwrap();
-        let font_3 = Font::new(font_data, 6, true).unwrap();
+        let font_1 = Font::new(font_data.clone(), 0).unwrap();
+        let font_2 = Font::new(font_data.clone(), 3).unwrap();
+        let font_3 = Font::new(font_data, 6).unwrap();
 
         surface.draw_text(
             Point::from_xy(0.0, 75.0),
@@ -269,7 +263,7 @@ mod type3 {
 
     #[snapshot(settings_1)]
     fn font_type3_color_glyphs(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
         let mut surface = page.surface();
 
         surface.draw_text(
@@ -284,7 +278,7 @@ mod type3 {
 
     #[snapshot(settings_17)]
     fn font_type3_pdf_14(page: &mut Page) {
-        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0, true).unwrap();
+        let font = Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap();
         let mut surface = page.surface();
 
         surface.draw_text(

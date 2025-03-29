@@ -36,8 +36,8 @@ impl Font {
     /// `glyf`/`CFF` tables of the font. If you don't know what this means, just set it to `true`.
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
-    pub fn new(data: Data, index: u32, allow_color: bool) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref(), index, allow_color)?;
+    pub fn new(data: Data, index: u32) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref(), index)?;
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
@@ -188,7 +188,7 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();

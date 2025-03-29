@@ -520,7 +520,7 @@ mod tests {
 
     #[test]
     fn type3_more_than_256_glyphs() {
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
         let mut t3 = Type3FontMapper::new(font.clone());
 
         for i in 2..258 {

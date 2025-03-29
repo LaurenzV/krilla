@@ -33,7 +33,6 @@ fn main() {
     let noto_font = Font::new(
         Arc::new(std::fs::read(ASSETS_PATH.join("fonts/NotoSans-Regular.ttf")).unwrap()).into(),
         0,
-        true,
     )
     .unwrap();
 
@@ -94,7 +93,6 @@ fn main() {
         Arc::new(std::fs::read(ASSETS_PATH.join("fonts/NotoSansArabic-Regular.ttf")).unwrap())
             .into(),
         0,
-        true,
     )
     .unwrap();
 
