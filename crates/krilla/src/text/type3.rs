@@ -99,8 +99,8 @@ impl Type3Font {
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyph_set.insert(glyph.clone());
-            self.glyphs.push(glyph.clone());
+            self.glyph_set.insert(glyph);
+            self.glyphs.push(glyph);
             self.widths
                 .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
