@@ -10,6 +10,7 @@ use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
 use tiny_skia_path::{Path, PathSegment};
 
+use crate::color::rgb;
 use crate::configure::ValidationError;
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
@@ -33,8 +34,8 @@ use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
 use crate::text::group::{use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
-use crate::text::type3::CoveredGlyph;
-use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
+use crate::text::type3::ColoredGlyph;
+use crate::text::{Font, FontContainer, FontIdentifier, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
 use crate::util::{calculate_stroke_bbox, NameExt};
 
@@ -348,6 +349,7 @@ impl ContentBuilder {
         sc: &mut SerializeContext,
         fill: Option<&Fill>,
         stroke: Option<&Stroke>,
+        context_color: rgb::Color,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -428,7 +430,7 @@ impl ContentBuilder {
                     },
                     glyphs,
                     font.clone(),
-                    PaintMode::FillStroke(f, s),
+                    context_color,
                     text,
                     font_size,
                 );
@@ -446,7 +448,7 @@ impl ContentBuilder {
                     },
                     glyphs,
                     font.clone(),
-                    PaintMode::Fill(f),
+                    context_color,
                     text,
                     font_size,
                 );
@@ -464,7 +466,7 @@ impl ContentBuilder {
                     },
                     glyphs,
                     font.clone(),
-                    PaintMode::Stroke(s),
+                    context_color,
                     text,
                     font_size,
                 );
@@ -487,7 +489,7 @@ impl ContentBuilder {
         font_identifier: FontIdentifier,
         pdf_font: &dyn PdfFont,
         size: f32,
-        paint_mode: PaintMode,
+        context_color: rgb::Color,
         glyphs: &[impl Glyph],
         text: &str,
     ) {
@@ -522,7 +524,7 @@ impl ContentBuilder {
             }
 
             let pdf_glyph = pdf_font
-                .get_gid(CoveredGlyph::new(glyph.glyph_id(), paint_mode))
+                .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
                 .unwrap();
 
             let scale = |val| val * pdf_font.units_per_em();
@@ -579,7 +581,7 @@ impl ContentBuilder {
         action: impl FnOnce(&mut ContentBuilder, &mut SerializeContext),
         glyphs: &[impl Glyph],
         font: Font,
-        paint_mode: PaintMode,
+        context_color: rgb::Color,
         text: &str,
         font_size: f32,
     ) {
@@ -597,8 +599,12 @@ impl ContentBuilder {
                 sb.content.begin_text();
 
                 let font_container = sc.register_font_container(font.clone());
-                let do_text_span =
-                    use_text_spanner(glyphs, text, paint_mode, &mut font_container.borrow_mut());
+                let do_text_span = use_text_spanner(
+                    glyphs,
+                    text,
+                    context_color,
+                    &mut font_container.borrow_mut(),
+                );
 
                 if do_text_span {
                     // Separate into distinct glyph runs that either are encoded using actual text, or are
@@ -609,7 +615,7 @@ impl ContentBuilder {
                         sc.serialize_settings()
                             .validator()
                             .requires_codepoint_mappings(),
-                        paint_mode,
+                        context_color,
                         font_container.clone(),
                     );
 
@@ -621,7 +627,7 @@ impl ContentBuilder {
                             sc,
                             fill_render_mode,
                             font_container.clone(),
-                            paint_mode,
+                            context_color,
                             text,
                             font_size,
                         )
@@ -636,7 +642,7 @@ impl ContentBuilder {
                         sc,
                         fill_render_mode,
                         font_container.clone(),
-                        paint_mode,
+                        context_color,
                         text,
                         font_size,
                     )
@@ -657,7 +663,7 @@ impl ContentBuilder {
         sc: &mut SerializeContext,
         fill_render_mode: TextRenderingMode,
         font_container: Rc<RefCell<FontContainer>>,
-        paint_mode: PaintMode,
+        context_color: rgb::Color,
         text: &str,
         font_size: f32,
     ) {
@@ -670,7 +676,7 @@ impl ContentBuilder {
 
         // Segment into glyph runs that can be encoded in one go using a PDF
         // text showing operator (i.e. no y shift, same Type3 font, etc.)
-        let segmented = GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
+        let segmented = GlyphGrouper::new(font_container.clone(), context_color, fragment.glyphs());
 
         for glyph_group in segmented {
             self.fill_stroke_glyph_group(
@@ -680,7 +686,7 @@ impl ContentBuilder {
                 sc,
                 fill_render_mode,
                 font_container.clone(),
-                paint_mode,
+                context_color,
                 text,
                 font_size,
             )
@@ -700,7 +706,7 @@ impl ContentBuilder {
         sc: &mut SerializeContext,
         fill_render_mode: TextRenderingMode,
         font_container: Rc<RefCell<FontContainer>>,
-        paint_mode: PaintMode,
+        context_color: rgb::Color,
         text: &str,
         font_size: f32,
     ) {
@@ -727,7 +733,7 @@ impl ContentBuilder {
             glyph_group.font_identifier,
             pdf_font,
             font_size,
-            paint_mode,
+            context_color,
             glyph_group.glyphs,
             text,
         );

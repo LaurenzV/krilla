@@ -1,8 +1,9 @@
 use skrifa::raw::TableProvider;
 
+use crate::color::rgb;
 use crate::surface::Surface;
+use crate::text::Font;
 use crate::text::GlyphId;
-use crate::text::{Font, PaintMode};
 
 pub(crate) fn has_svg_data(font: &Font, glyph: GlyphId) -> bool {
     font.font_ref()
@@ -14,7 +15,7 @@ pub(crate) fn has_svg_data(font: &Font, glyph: GlyphId) -> bool {
 /// Draw an SVG-based glyph on a surface.
 pub(crate) fn draw_glyph(
     font: Font,
-    paint_mode: PaintMode,
+    context_color: rgb::Color,
     glyph: GlyphId,
     surface: &mut Surface,
 ) -> Option<()> {
@@ -23,13 +24,6 @@ pub(crate) fn draw_glyph(
         .svg()
         .and_then(|svg_table| svg_table.glyph_data(glyph.to_skrifa()))
         .ok()??;
-
-    let context_color = match paint_mode {
-        PaintMode::Fill(f) => f.paint.as_rgb(),
-        PaintMode::Stroke(s) => s.paint.as_rgb(),
-        PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
-    }
-    .unwrap_or_default();
 
     let fn_ = surface.sc.serialize_settings().render_svg_glyph_fn;
     fn_(svg_data, context_color, glyph, surface)?;
