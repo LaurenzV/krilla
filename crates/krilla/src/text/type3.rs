@@ -145,93 +145,76 @@ impl Type3Font {
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
-        let glyph_streams =
-            self.glyphs
-                .iter()
-                .enumerate()
-                .map(|(index, glyph)| {
-                    let mut stream_surface = StreamBuilder::new(sc);
-                    let mut surface = stream_surface.surface();
+        let glyph_streams = self
+            .glyphs
+            .iter()
+            .enumerate()
+            .map(|(index, glyph)| {
+                let mut stream_surface = StreamBuilder::new(sc);
+                let mut surface = stream_surface.surface();
 
-                    // In case this returns `None`, the surface is guaranteed to be empty.
-                    let drawn_color_glyph = text::draw_color_glyph(
-                        self.font.clone(),
-                        glyph.paint_mode.as_ref(),
-                        glyph.glyph_id,
-                        Transform::default(),
-                        &mut surface,
-                    );
+                // In case this returns `None`, the surface is guaranteed to be empty.
+                let drawn_color_glyph = text::draw_color_glyph(
+                    self.font.clone(),
+                    glyph.paint_mode.as_ref(),
+                    glyph.glyph_id,
+                    Transform::default(),
+                    &mut surface,
+                );
 
-                    if drawn_color_glyph.is_none() {
-                        // If this code path is reached, it means we tried to create a Type3
-                        // font from a font that does not have any (valid) color table. This
-                        // should be avoided because non-color fonts should always be embedded
-                        // as TrueType/CFF fonts. The problem is that while PDF has support for
-                        // so-called "shape-glyphs" that should allow you to create Type3 fonts
-                        // based just on the outline, they have very bad viewer support. For
-                        // example, filled glyphs with gradients become broken in some viewers,
-                        // and stroking does not work at all consistently. So this code path
-                        // should never be reached, but it can for example be reached if someone
-                        // tries to write a glyph in a COLR font that doesn't have a corresponding
-                        // COLR glyph. As a last resort solution, we try to fill the glyph
-                        // outline in the corresponding color, but note that stroking will not
-                        // be supported at all.
+                if drawn_color_glyph.is_none() {
+                    // If this code path is reached, either we are dealing with a glyph that has no outline
+                    // (like .notdef), or it means we tried to create a Type3
+                    // font from a font that does not have any (valid) color/bitmap/svg table.
+                    // Therefore, as a last resort we draw the outline glyph as a black glyph.
+                    // PDF does have the concept of shape glyphs which take the color or where
+                    // they are drawn from.
+                    // The problem with those is that they seemingly have very bad viewer support. For
+                    // example, filled glyphs with gradients become broken in some viewers,
+                    // and stroking does not work at all consistently. Because of this,
+                    // we don't bother trying to implement it for now.
 
-                        // If this is the case (i.e. no color glyph was drawn, either because no table
-                        // exists or an error occurred, the surface is guaranteed to be empty.
-                        // So we can just safely draw the outline glyph instead without having to
-                        // worry about the surface being "dirty".
-                        if let Some((path, fill)) = glyph_path(self.font.clone(), glyph.glyph_id)
-                            .map(|p| match &glyph.paint_mode {
-                                OwnedPaintMode::Fill(f) => (p, f.clone()),
-                                OwnedPaintMode::Stroke(s) => (
-                                    p,
-                                    Fill {
-                                        paint: s.paint.clone(),
-                                        opacity: s.opacity,
-                                        rule: Default::default(),
-                                    },
-                                ),
-                                OwnedPaintMode::FillStroke(f, _) => (p, f.clone()),
-                            })
-                        {
-                            surface.set_fill(Some(fill));
-                            surface.set_stroke(None);
-                            surface.draw_path(&Path(path));
-                        }
-                    };
-
-                    surface.finish();
-                    let stream = stream_surface.finish();
-                    let mut content = Content::new();
-
-                    // I considered writing into the stream directly instead of creating an XObject
-                    // and showing that, but it seems like many viewers don't like that, and emojis
-                    // look messed up. Using XObjects seems like the best choice here.
-                    content.start_color_glyph(self.widths[index]);
-                    let x_object = XObject::new(stream, false, false, None);
-                    if !x_object.is_empty() {
-                        font_bbox.expand(&x_object.bbox());
-                        let x_name =
-                            rd_builder.register_resource(sc.register_resourceable(x_object));
-                        content.x_object(x_name.to_pdf_name());
+                    // If this is the case (i.e. no color glyph was drawn, either because no table
+                    // exists or an error occurred, the surface is guaranteed to be empty.
+                    // So we can just safely draw the outline glyph instead without having to
+                    // worry about the surface being "dirty".
+                    if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id) {
+                        surface.set_fill(Some(Fill::default()));
+                        surface.set_stroke(None);
+                        surface.draw_path(&Path(path));
                     }
+                };
 
-                    let stream = content.finish();
+                surface.finish();
+                let stream = stream_surface.finish();
+                let mut content = Content::new();
 
-                    let font_stream = FilterStreamBuilder::new_from_content_stream(
-                        stream.as_slice(),
-                        &sc.serialize_settings(),
-                    )
-                    .finish(&sc.serialize_settings());
+                // I considered writing into the stream directly instead of creating an XObject
+                // and showing that, but it seems like many viewers don't like that, and emojis
+                // look messed up. Using XObjects seems like the best choice here.
+                content.start_color_glyph(self.widths[index]);
+                let x_object = XObject::new(stream, false, false, None);
+                if !x_object.is_empty() {
+                    font_bbox.expand(&x_object.bbox());
+                    let x_name = rd_builder.register_resource(sc.register_resourceable(x_object));
+                    content.x_object(x_name.to_pdf_name());
+                }
 
-                    let stream_ref = sc.new_ref();
-                    let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
-                    font_stream.write_filters(stream.deref_mut());
+                let stream = content.finish();
 
-                    stream_ref
-                })
-                .collect::<Vec<Ref>>();
+                let font_stream = FilterStreamBuilder::new_from_content_stream(
+                    stream.as_slice(),
+                    &sc.serialize_settings(),
+                )
+                .finish(&sc.serialize_settings());
+
+                let stream_ref = sc.new_ref();
+                let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
+                font_stream.write_filters(stream.deref_mut());
+
+                stream_ref
+            })
+            .collect::<Vec<Ref>>();
 
         let resource_dictionary = rd_builder.finish();
 
