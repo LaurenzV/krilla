@@ -7,7 +7,6 @@ use std::sync::Arc;
 use pdf_writer::types::StructRole;
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
-use skrifa::raw::TableProvider;
 
 use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
@@ -28,8 +27,6 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
-use crate::text::cid::CIDFont;
-use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::{Deferred, SipHashable};
@@ -308,35 +305,7 @@ impl SerializeContext {
                 self.font_cache
                     .insert(font.font_info().clone(), font.clone());
 
-                // Right now, we decide whether to embed a font as a Type3 font
-                // solely based on whether one of these tables exist (or if
-                // the settings tell us to force it). This is not the most "efficient"
-                // method, because it is possible a font has a `COLR` table, but
-                // there are still some glyphs which are not in COLR but in `glyf`
-                // or `CFF`. In this case, we would still choose a Type3 font for
-                // the outlines, even though they could be embedded as a CID font.
-                // For now, we make the simplifying assumption that a font is either mapped
-                // to a series of Type3 fonts or to a single CID font, but not a mix of both.
-                let font_ref = font.font_ref();
-                let use_type3 = if !font.allow_color() {
-                    false
-                } else {
-                    font_ref.svg().is_ok()
-                        || font_ref.colr().is_ok()
-                        || font_ref.sbix().is_ok()
-                        || font_ref.cbdt().is_ok()
-                        || font_ref.ebdt().is_ok()
-                };
-
-                if use_type3 {
-                    Rc::new(RefCell::new(FontContainer::Type3(Type3FontMapper::new(
-                        font.clone(),
-                    ))))
-                } else {
-                    Rc::new(RefCell::new(FontContainer::CIDFont(CIDFont::new(
-                        font.clone(),
-                    ))))
-                }
+                Rc::new(RefCell::new(FontContainer::new(font.clone())))
             })
             .clone()
     }
@@ -599,19 +568,20 @@ impl SerializeContext {
     fn serialize_fonts(&mut self) -> KrillaResult<()> {
         let fonts = self.global_objects.font_map.take();
         for font_container in fonts.values() {
-            match &*font_container.borrow() {
-                FontContainer::Type3(font_mapper) => {
-                    for t3_font in font_mapper.fonts() {
-                        let f = self.register_font_identifier(t3_font.identifier());
-                        let chunk = t3_font.serialize(self, f.get_ref());
-                        self.chunk_container.fonts.push(chunk);
-                    }
-                }
-                FontContainer::CIDFont(cid_font) => {
-                    let f = self.register_font_identifier(cid_font.identifier());
-                    let chunk = cid_font.serialize(self, f.get_ref())?;
+            let borrowed = font_container.borrow();
+
+            if !borrowed.type3_mapper().is_empty() {
+                for t3_font in borrowed.type3_mapper().fonts() {
+                    let f = self.register_font_identifier(t3_font.identifier());
+                    let chunk = t3_font.serialize(self, f.get_ref());
                     self.chunk_container.fonts.push(chunk);
                 }
+            }
+
+            if !borrowed.cid_font().is_empty() {
+                let f = self.register_font_identifier(borrowed.cid_font().identifier());
+                let chunk = borrowed.cid_font().serialize(self, f.get_ref())?;
+                self.chunk_container.fonts.push(chunk);
             }
         }
 

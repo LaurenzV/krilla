@@ -4,6 +4,13 @@ use crate::surface::Surface;
 use crate::text::GlyphId;
 use crate::text::{Font, PaintMode};
 
+pub(crate) fn has_svg_data(font: &Font, glyph: GlyphId) -> bool {
+    font.font_ref()
+        .svg()
+        .map(|svg_table| svg_table.glyph_data(glyph.to_skrifa()).is_ok())
+        .is_ok()
+}
+
 /// Draw an SVG-based glyph on a surface.
 pub(crate) fn draw_glyph(
     font: Font,

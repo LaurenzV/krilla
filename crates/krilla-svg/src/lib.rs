@@ -232,7 +232,7 @@ fn convert_fontdb(db: &mut Database, ids: Option<Vec<fontdb::ID>>) -> HashMap<fo
         // cheaper, and then check whether we already have a corresponding font object in the cache.
         // If not, we still need to construct it.
         if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-            if let Some(font) = Font::new(font_data.into(), index, true) {
+            if let Some(font) = Font::new(font_data.into(), index) {
                 map.insert(id, font);
             }
         }

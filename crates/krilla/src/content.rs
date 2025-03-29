@@ -32,10 +32,7 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{
-    get_glyph_props, get_glyph_run_props, GlyphGroup, GlyphGrouper, GlyphRunProps, GlyphSpan,
-    GlyphSpanner,
-};
+use crate::text::group::{use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
 use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};
@@ -600,10 +597,10 @@ impl ContentBuilder {
                 sb.content.begin_text();
 
                 let font_container = sc.register_font_container(font.clone());
-                let glyph_run_props =
-                    get_glyph_run_props(glyphs, text, paint_mode, &mut font_container.borrow_mut());
+                let do_text_span =
+                    use_text_spanner(glyphs, text, paint_mode, &mut font_container.borrow_mut());
 
-                if glyph_run_props.do_text_span {
+                if do_text_span {
                     // Separate into distinct glyph runs that either are encoded using actual text, or are
                     // not.
                     let spanned = GlyphSpanner::new(
@@ -621,7 +618,6 @@ impl ContentBuilder {
                             &mut cur_x,
                             &mut cur_y,
                             fragment,
-                            &glyph_run_props,
                             sc,
                             fill_render_mode,
                             font_container.clone(),
@@ -637,7 +633,6 @@ impl ContentBuilder {
                         &mut cur_x,
                         &mut cur_y,
                         glyph_span,
-                        &glyph_run_props,
                         sc,
                         fill_render_mode,
                         font_container.clone(),
@@ -659,7 +654,6 @@ impl ContentBuilder {
         cur_x: &mut f32,
         cur_y: &mut f32,
         fragment: GlyphSpan<'_, impl Glyph>,
-        glyph_run_props: &GlyphRunProps,
         sc: &mut SerializeContext,
         fill_render_mode: TextRenderingMode,
         font_container: Rc<RefCell<FontContainer>>,
@@ -674,32 +668,11 @@ impl ContentBuilder {
             actual_text.properties().actual_text(TextStr(text));
         }
 
-        if glyph_run_props.do_glyph_grouping {
-            // Segment into glyph runs that can be encoded in one go using a PDF
-            // text showing operator (i.e. no y shift, same Type3 font, etc.)
-            let segmented =
-                GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
+        // Segment into glyph runs that can be encoded in one go using a PDF
+        // text showing operator (i.e. no y shift, same Type3 font, etc.)
+        let segmented = GlyphGrouper::new(font_container.clone(), paint_mode, fragment.glyphs());
 
-            for glyph_group in segmented {
-                self.fill_stroke_glyph_group(
-                    cur_x,
-                    cur_y,
-                    glyph_group,
-                    sc,
-                    fill_render_mode,
-                    font_container.clone(),
-                    paint_mode,
-                    text,
-                    font_size,
-                )
-            }
-        } else {
-            let glyphs = fragment.glyphs();
-            // Every glyph is guaranteed to have the same props.
-            let glyph_props =
-                get_glyph_props(&glyphs[0], paint_mode, &mut font_container.borrow_mut());
-            let glyph_group = GlyphGroup::from_props(glyphs, glyph_props);
-
+        for glyph_group in segmented {
             self.fill_stroke_glyph_group(
                 cur_x,
                 cur_y,

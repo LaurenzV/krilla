@@ -19,7 +19,7 @@ pub trait SurfaceTaggingExt {
 impl SurfaceTaggingExt for Surface<'_> {
     fn fill_text_(&mut self, y: f32, content: &str) {
         let font_data = NOTO_SANS.clone();
-        let font = Font::new(font_data, 0, true).unwrap();
+        let font = Font::new(font_data, 0).unwrap();
 
         self.draw_text(
             Point::from_xy(0.0, y),

@@ -18,6 +18,13 @@ use crate::text::outline::OutlineBuilder;
 use crate::text::GlyphId;
 use crate::text::{Font, PaintMode};
 
+pub(crate) fn has_colr_data(font: &Font, glyph: GlyphId) -> bool {
+    font.font_ref()
+        .color_glyphs()
+        .get(glyph.to_skrifa())
+        .is_some()
+}
+
 /// Draw a COLR-based glyph on a surface.
 pub(crate) fn draw_glyph(
     font: Font,
