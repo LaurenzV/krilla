@@ -498,13 +498,11 @@ impl<'a> Surface<'a> {
     }
 
     fn context_color(&self) -> rgb::Color {
-        if let Some(c) = self.fill.as_ref().and_then(|f| f.paint.as_rgb()) {
-            c
-        } else if let Some(c) = self.stroke.as_ref().and_then(|s| s.paint.as_rgb()) {
-            c
-        } else {
-            rgb::Color::black()
-        }
+        self.fill
+            .as_ref()
+            .and_then(|f| f.paint.as_rgb())
+            .or_else(|| self.stroke.as_ref().and_then(|s| s.paint.as_rgb()))
+            .unwrap_or(rgb::Color::black())
     }
 
     fn has_complex_fill_or_stroke(&self) -> bool {
