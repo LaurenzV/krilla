@@ -747,3 +747,29 @@ fn validate_pdf_a1_b_cmyk_image_without_icc_profile() {
         ]))
     );
 }
+
+#[test]
+fn validate_deduplicate_errors() {
+    let mut document = Document::new_with(settings_19());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    surface.set_fill(Some(red_fill(0.5)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+    surface.set_location(2);
+    surface.set_fill(Some(red_fill(0.4)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+    surface.reset_location();
+    surface.set_fill(Some(red_fill(0.3)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+    surface.finish();
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::Transparency(None),
+            ValidationError::Transparency(Some(2))
+        ]))
+    );
+}
