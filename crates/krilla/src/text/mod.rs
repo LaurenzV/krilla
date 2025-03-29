@@ -98,6 +98,11 @@ impl OwnedPaintMode {
     }
 }
 
+enum ContainerType {
+    Type3(Type3FontMapper),
+    CIDFont(CIDFont),
+}
+
 /// A container that holds all PDF fonts belonging to an OTF font.
 #[derive(Debug)]
 pub(crate) enum FontContainer {

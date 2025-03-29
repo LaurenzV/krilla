@@ -1,5 +1,7 @@
 use std::ops::Range;
 
+use skrifa::raw::TableProvider;
+
 use crate::geom::Transform;
 use crate::surface::Surface;
 use crate::text::{Font, PaintMode};
@@ -57,6 +59,13 @@ pub(crate) fn draw_color_glyph(
     surface.pop();
 
     drawn
+}
+
+pub(crate) fn should_outline(font: Font, glyph: GlyphId) -> bool {
+    let has_svg = svg::has_svg_data(&font, glyph);
+    let has_colr = colr::has_colr_data(&font, glyph);
+    let has_bitmap = bitmap::has_bitmap_data(&font, glyph);
+    font.font_info().can_be_cid_font() && !has_svg && !has_colr && !has_bitmap
 }
 
 /// Draw a color glyph or outline glyph to a surface.

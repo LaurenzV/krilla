@@ -170,6 +170,8 @@ pub(crate) struct FontInfo {
     is_monospaced: bool,
     italic_angle: FiniteF32,
     weight: FiniteF32,
+    has_glyf: bool,
+    has_cff: bool,
     stretch: FiniteF32,
 }
 
@@ -232,6 +234,9 @@ impl FontInfo {
             }
         };
 
+        let has_glyf = font_ref.glyf().is_ok();
+        let has_cff = font_ref.cff().is_ok();
+
         Some(FontInfo {
             index,
             data_len,
@@ -242,6 +247,8 @@ impl FontInfo {
             postscript_name,
             ascent,
             cap_height,
+            has_glyf,
+            has_cff,
             descent,
             is_monospaced,
             weight,
@@ -249,6 +256,10 @@ impl FontInfo {
             italic_angle,
             global_bbox,
         })
+    }
+
+    pub(crate) fn can_be_cid_font(&self) -> bool {
+        self.has_cff || self.has_glyf
     }
 }
 
