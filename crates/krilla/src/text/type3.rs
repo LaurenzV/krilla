@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::ops::DerefMut;
 
 use fxhash::FxHashMap;
@@ -503,11 +503,10 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 #[cfg(test)]
 mod tests {
     use crate::graphics::paint::Fill;
-    use crate::serialize::SerializeContext;
     use crate::text::type3::{OwnedCoveredGlyph, Type3FontMapper};
     use crate::text::GlyphId;
-    use crate::text::{Font, FontContainer, OwnedPaintMode};
-    use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
+    use crate::text::{Font, OwnedPaintMode};
+    use crate::util::test_utils::NOTO_COLOR_EMOJI_COLR;
 
     impl OwnedCoveredGlyph {
         pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {

@@ -7,7 +7,6 @@ use std::sync::Arc;
 use pdf_writer::types::StructRole;
 use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
 use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
-use skrifa::raw::TableProvider;
 
 use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
@@ -28,8 +27,6 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
-use crate::text::cid::CIDFont;
-use crate::text::type3::Type3FontMapper;
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::{Deferred, SipHashable};

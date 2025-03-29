@@ -10,13 +10,11 @@
 //! table for drawing glyphs: All you need to do is to provide the [`Font`] object with
 //! an appropriate index.
 
-use std::cell::LazyCell;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
 use fxhash::FxHashMap;
-use once_cell::sync::OnceCell;
 
 use crate::graphics::paint::{Fill, Stroke};
 use crate::text::cid::CIDFont;

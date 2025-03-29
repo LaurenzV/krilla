@@ -6,7 +6,11 @@ use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
 use krilla::Data;
 use krilla_macros::{snapshot, visreg};
 
-use crate::{blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, TWITTER_COLOR_EMOJI};
+use crate::{
+    blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN,
+    LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
+    TWITTER_COLOR_EMOJI,
+};
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
     LinearGradient {

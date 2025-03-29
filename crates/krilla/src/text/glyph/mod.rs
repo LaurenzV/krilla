@@ -1,7 +1,5 @@
 use std::ops::Range;
 
-use skrifa::raw::TableProvider;
-
 use crate::geom::Transform;
 use crate::surface::Surface;
 use crate::text::{Font, PaintMode};

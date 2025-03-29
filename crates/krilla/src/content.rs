@@ -32,9 +32,7 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{
-    get_glyph_props, use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner,
-};
+use crate::text::group::{use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
 use crate::text::type3::CoveredGlyph;
 use crate::text::{Font, FontContainer, FontIdentifier, PaintMode, PdfFont, PDF_UNITS_PER_EM};
 use crate::text::{Glyph, GlyphId};

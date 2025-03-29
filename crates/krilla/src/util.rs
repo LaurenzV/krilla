@@ -270,17 +270,4 @@ pub(crate) mod test_utils {
         NOTO_COLOR_EMOJI_COLR,
         FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf")
     );
-
-    pub fn settings_1() -> SerializeSettings {
-        SerializeSettings {
-            ascii_compatible: true,
-            compress_content_streams: false,
-            no_device_cs: false,
-            xmp_metadata: false,
-            cmyk_profile: None,
-            enable_tagging: true,
-            configuration: Configuration::new(),
-            render_svg_glyph_fn: |_, _, _, _| None,
-        }
-    }
 }
