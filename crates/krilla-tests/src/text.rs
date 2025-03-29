@@ -6,10 +6,7 @@ use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
 use krilla::Data;
 use krilla_macros::{snapshot, visreg};
 
-use crate::{
-    blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN,
-    LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
-};
+use crate::{blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, TWITTER_COLOR_EMOJI};
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
     LinearGradient {
@@ -363,18 +360,22 @@ fn text_stroke(page: &mut Page) {
     );
 }
 
-// // This would be nicer as a snapshot test, but since it's a system font
-// // we can't include it in the repository.
-// #[cfg(target_os = "macos")]
-// fn text_mixed_ttf_ebdt_font(surface: &mut Surface) {
-//     let data = std::fs::read("/System/Library/Fonts/Supplemental/PTSans.ttc").unwrap();
-//     let font = Font::new(data.into(), 0).unwrap();
-//     surface.draw_text(
-//         Point::from_xy(0.0, 100.0),
-//         font,
-//         32.0,
-//         "Hi!",
-//         false,
-//         TextDirection::Auto,
-//     );
-// }
+// This would be nicer as a snapshot test, but since it's a system font
+// we can't include it in the repository.
+// The point of the test is to check that fonts that do have a bitmap table
+// will still embed a CID font for glyphs that don't have an entry in the
+// bitmap table instead of falling back to a Type3 font.
+#[cfg(target_os = "macos")]
+#[visreg]
+fn text_mixed_ttf_ebdt_font(surface: &mut Surface) {
+    let data = std::fs::read("/System/Library/Fonts/Supplemental/PTSans.ttc").unwrap();
+    let font = Font::new(data.into(), 0).unwrap();
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        32.0,
+        "Hi!",
+        false,
+        TextDirection::Auto,
+    );
+}

@@ -1,0 +1,246 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [8 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Length 6
+>>
+stream
+0 0 d0
+endstream
+endobj
+
+3 0 obj
+<<
+  /Length 16
+>>
+stream
+2048 0 d0
+/x0 Do
+endstream
+endobj
+
+4 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /TwitterColorEmojiSVGinOT
+  /Flags 131076
+  /FontBBox [0 -402.84998 2048 1645.15]
+  /ItalicAngle 0
+  /Ascent 1645.15
+  /Descent -402.84998
+  /FontFamily (TwitterColorEmojiSVGinOT)
+  /FontStretch /Normal
+  /FontWeight 400
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Font
+  /Subtype /Type3
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /XObject <<
+      /x0 7 0 R
+    >>
+  >>
+  /Name /TwitterColorEmojiSVGinOT
+  /FontBBox [0 -402.84998 2048 1645.15]
+  /ToUnicode 6 0 R
+  /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
+  /FirstChar 0
+  /LastChar 1
+  /Widths [0 2048]
+  /FontDescriptor 4 0 R
+  /CharProcs <<
+    /g0 2 0 R
+    /g1 3 0 R
+  >>
+  /Encoding <<
+    /Type /Encoding
+    /Differences [0 /g0 /g1]
+  >>
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 629
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<00> <FF>
+endcodespacerange
+2 beginbfchar
+<00> <0048>
+<01> <D83DDE04>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+7 0 obj
+<<
+  /Length 1331
+  /Type /XObject
+  /Subtype /Form
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /BBox [0 -402.84998 2048 1645.15]
+>>
+stream
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+1 0.8 0.3019608 rg
+36 18 m
+36 27.941 27.941 36 18 36 c
+8.06 36 0 27.941 0 18 c
+0 8.06 8.06 0 18 0 c
+27.941 0 36 8.06 36 18 c
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+0.4 0.27058825 0 rg
+28.457 17.797 m
+28.397 17.662 26.958 14.5 24 14.5 c
+21.043 14.5 19.603 17.662 19.543 17.797 c
+19.455908 18.004154 19.516787 18.243946 19.692148 18.384468 c
+19.86751 18.524988 20.114805 18.532145 20.298 18.402 c
+20.31 18.393 21.56 17.5 24 17.5 c
+26.426 17.5 27.674 18.381 27.702 18.401 c
+27.883791 18.540237 28.137102 18.537561 28.315912 18.394514 c
+28.49472 18.251467 28.552937 18.004921 28.457 17.797 c
+h
+16.457 17.797 m
+16.397 17.662 14.958 14.5 12 14.5 c
+9.043 14.5 7.603 17.662 7.543 17.797 c
+7.4490223 18.004564 7.507576 18.249424 7.685288 18.392017 c
+7.863 18.53461 8.11473 18.53872 8.297 18.402 c
+8.31 18.393 9.559 17.5 12 17.5 c
+14.426 17.5 15.674 18.381 15.702 18.401 c
+15.883791 18.540237 16.137102 18.537561 16.315912 18.394514 c
+16.49472 18.251467 16.552937 18.004921 16.457 17.797 c
+h
+18 22 m
+14.377 22 11.973 21.578 9 21 c
+8.321 20.869 7 21 7 23 c
+7 27 11.595 32 18 32 c
+24.404 32 29 27 29 23 c
+29 21 27.679 20.868 27 21 c
+24.027 21.578 21.623 22 18 22 c
+h
+f
+Q
+q
+56.88889 0 0 -56.88889 0 1645.15 cm
+1 g
+9 23 m
+9 23 12 24 18 24 c
+24 24 27 23 27 23 c
+27 23 25 27 18 27 c
+11 27 9 23 9 23 c
+h
+f
+Q
+endstream
+endobj
+
+8 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 5 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 9 0 R
+>>
+endobj
+
+9 0 obj
+<<
+  /Length 80
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+0 g
+BT
+0 Tr
+/f0 32 Tf
+1 0 0 -1 0 100 Tm
+[(\000\001)] TJ
+ET
+Q
+endstream
+endobj
+
+10 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 11
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000138 00000 n
+0000000207 00000 n
+0000000486 00000 n
+0000000977 00000 n
+0000001685 00000 n
+0000003204 00000 n
+0000003399 00000 n
+0000003532 00000 n
+trailer
+<<
+  /Size 11
+  /Root 10 0 R
+  /ID [(XqVYX6rNyjbCbl94XdKQfQ==) (XqVYX6rNyjbCbl94XdKQfQ==)]
+>>
+startxref
+3587
+%%EOF

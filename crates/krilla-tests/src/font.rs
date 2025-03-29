@@ -290,4 +290,18 @@ mod type3 {
             TextDirection::Auto,
         );
     }
+
+    #[snapshot]
+    fn font_type3_with_not_def(page: &mut Page) {
+        let mut surface = page.surface();
+
+        surface.draw_text(
+            Point::from_xy(0.0, 100.0),
+            Font::new(TWITTER_COLOR_EMOJI.clone(), 0).unwrap(),
+            32.0,
+            "H😄",
+            false,
+            TextDirection::Auto,
+        );
+    }
 }
