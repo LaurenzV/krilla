@@ -475,8 +475,8 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 mod tests {
     use crate::color::rgb;
     use crate::text::type3::{ColoredGlyph, Type3FontMapper};
-    use crate::text::GlyphId;
     use crate::text::Font;
+    use crate::text::GlyphId;
     use crate::util::test_utils::NOTO_COLOR_EMOJI_COLR;
 
     #[test]
