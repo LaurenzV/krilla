@@ -703,8 +703,9 @@ fn validate_pdf_a4_f_with_embedded_file(d: &mut Document) {
 }
 
 // See https://github.com/LaurenzV/krilla/issues/162
+// Can't include this test because it would requires us to embed the font in the snapshot.
 #[cfg(target_os = "macos")]
-#[snapshot(document, settings_19)]
+#[ignore]
 fn validate_pdf_a1_b_ttc(d: &mut Document) {
     let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
         .unwrap()
