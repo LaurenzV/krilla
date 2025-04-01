@@ -121,8 +121,8 @@ impl CIDFont {
         }
     }
 
-    pub(crate) fn font(&self) -> Font {
-        self.font.clone()
+    pub(crate) fn font(&self) -> &Font {
+        &self.font
     }
 
     // Note that this refers to the units per em in PDF (which is always 1000), and not the

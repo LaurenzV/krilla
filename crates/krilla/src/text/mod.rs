@@ -173,6 +173,13 @@ impl FontContainer {
             }
         }
     }
+
+    pub(crate) fn font(&self) -> &Font {
+        match self {
+            FontContainer::Type3(t) => t.font(),
+            FontContainer::CIDFont(c) => c.font(),
+        }
+    }
 }
 
 pub(crate) trait PdfFont {
@@ -234,7 +241,7 @@ impl PdfFont for CIDFont {
     }
 
     fn font(&self) -> Font {
-        CIDFont::font(self)
+        CIDFont::font(self).clone()
     }
 
     #[track_caller]
