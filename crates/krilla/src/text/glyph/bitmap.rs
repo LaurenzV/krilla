@@ -3,9 +3,19 @@ use skrifa::MetadataProvider;
 use crate::geom::{Size, Transform};
 use crate::graphics::image::Image;
 use crate::surface::Surface;
-use crate::text::bitmap::utils::{BitmapData, BitmapFormat, BitmapStrikes, Origin};
+use crate::text::bitmap::utils::{BitmapData, BitmapFormat, BitmapGlyph, BitmapStrikes, Origin};
 use crate::text::Font;
 use crate::text::GlyphId;
+
+pub(crate) fn has_bitmap_data(font: &Font, glyph: GlyphId) -> bool {
+    // We only support PNG.
+    get_bitmap_glyph(font, glyph).is_some_and(|b| matches!(b.data, BitmapData::Png(_)))
+}
+
+pub(crate) fn get_bitmap_glyph(font: &Font, glyph: GlyphId) -> Option<BitmapGlyph> {
+    let bitmap_strikes = BitmapStrikes::new(font.font_ref());
+    bitmap_strikes.glyph_for_size(skrifa::instance::Size::unscaled(), glyph.to_skrifa())
+}
 
 /// Draw a bitmap-based glyph on a surface.
 pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
@@ -14,9 +24,9 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
         .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
 
     let bitmap_strikes = BitmapStrikes::new(font.font_ref());
-
     let bitmap_glyph =
         bitmap_strikes.glyph_for_size(skrifa::instance::Size::unscaled(), glyph.to_skrifa())?;
+
     let upem = metrics.units_per_em as f32;
 
     match bitmap_glyph.data {

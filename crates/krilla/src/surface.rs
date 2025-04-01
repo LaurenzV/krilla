@@ -4,6 +4,7 @@
 //! represents a drawing area on which you can define the contents of your page. This includes
 //! operations such as applying linear transformations, showing text or images and drawing paths.
 
+use crate::color::rgb;
 use crate::content::ContentBuilder;
 use crate::geom::Path;
 #[cfg(feature = "raster-images")]
@@ -23,10 +24,10 @@ use crate::paint::{InnerPaint, Paint};
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
+use crate::text::Font;
 use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
-use crate::text::{Font, PaintMode};
 
 /// Can be used to associate render operations with a unique identifier.
 /// This is useful if you want to backtrack a validation error to a specific
@@ -217,7 +218,7 @@ impl<'a> Surface<'a> {
     fn outline_glyphs(
         &mut self,
         glyphs: &[impl Glyph],
-        paint_mode: PaintMode,
+        context_color: rgb::Color,
         start: Point,
         font: Font,
         font_size: f32,
@@ -235,7 +236,7 @@ impl<'a> Surface<'a> {
             ));
             draw_glyph(
                 font.clone(),
-                paint_mode,
+                context_color,
                 glyph.glyph_id(),
                 Transform::from_tsp(base_transform),
                 self,
@@ -259,25 +260,9 @@ impl<'a> Surface<'a> {
         font_size: f32,
         outlined: bool,
     ) {
+        let context_color = self.context_color();
         if outlined {
-            if let Some(paint_mode) = self.paint_mode() {
-                self.outline_glyphs(
-                    glyphs,
-                    paint_mode.to_owned().as_ref(),
-                    start,
-                    font,
-                    font_size,
-                );
-            } else {
-                // Draw with black by default.
-                self.outline_glyphs(
-                    glyphs,
-                    PaintMode::Fill(&Fill::default()),
-                    start,
-                    font,
-                    font_size,
-                );
-            }
+            self.outline_glyphs(glyphs, context_color, start, font, font_size);
         } else {
             match (self.fill.as_ref(), self.stroke.as_ref()) {
                 (Some(f), Some(s)) => {
@@ -289,26 +274,21 @@ impl<'a> Surface<'a> {
                             self.sc,
                             Some(f),
                             None,
+                            context_color,
                             glyphs,
                             font.clone(),
                             text,
                             font_size,
                         );
 
-                        let stroke = s.clone();
-                        self.outline_glyphs(
-                            glyphs,
-                            PaintMode::Stroke(&stroke),
-                            start,
-                            font,
-                            font_size,
-                        );
+                        self.outline_glyphs(glyphs, context_color, start, font, font_size);
                     } else {
                         self.bd.get_mut().draw_glyphs(
                             start,
                             self.sc,
                             Some(f),
                             Some(s),
+                            context_color,
                             glyphs,
                             font,
                             text,
@@ -322,6 +302,7 @@ impl<'a> Surface<'a> {
                         self.sc,
                         None,
                         Some(s),
+                        context_color,
                         glyphs,
                         font,
                         text,
@@ -334,6 +315,7 @@ impl<'a> Surface<'a> {
                         self.sc,
                         Some(f),
                         None,
+                        context_color,
                         glyphs,
                         font,
                         text,
@@ -347,6 +329,7 @@ impl<'a> Surface<'a> {
                         self.sc,
                         Some(&Fill::default()),
                         None,
+                        context_color,
                         glyphs,
                         font,
                         text,
@@ -514,13 +497,12 @@ impl<'a> Surface<'a> {
         self.bd.get().cur_transform()
     }
 
-    fn paint_mode(&self) -> Option<PaintMode> {
-        match (&self.fill, &self.stroke) {
-            (None, None) => None,
-            (Some(f), None) => Some(PaintMode::Fill(f)),
-            (None, Some(s)) => Some(PaintMode::Stroke(s)),
-            (Some(f), Some(s)) => Some(PaintMode::FillStroke(f, s)),
-        }
+    fn context_color(&self) -> rgb::Color {
+        self.fill
+            .as_ref()
+            .and_then(|f| f.paint.as_rgb())
+            .or_else(|| self.stroke.as_ref().and_then(|s| s.paint.as_rgb()))
+            .unwrap_or_default()
     }
 
     fn has_complex_fill_or_stroke(&self) -> bool {

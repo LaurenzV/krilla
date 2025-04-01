@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::ops::DerefMut;
 
 use fxhash::FxHashMap;
@@ -7,7 +7,8 @@ use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 
-use super::{FontIdentifier, OwnedPaintMode, PaintMode, Type3Identifier};
+use super::{FontIdentifier, Type3Identifier};
+use crate::color::rgb;
 use crate::configure::PdfVersion;
 use crate::geom::Path;
 use crate::geom::{Rect, Transform};
@@ -26,52 +27,30 @@ use crate::util::NameExt;
 
 pub(crate) type Gid = u8;
 
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct CoveredGlyph<'a> {
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub(crate) struct ColoredGlyph {
     pub(crate) glyph_id: GlyphId,
-    pub(crate) paint_mode: PaintMode<'a>,
+    // Some formats like COLR and SVG allow drawing the same glyph
+    // with a different context color, so we need to store that as well.
+    pub(crate) context_color: rgb::Color,
 }
 
-impl CoveredGlyph<'_> {
-    pub(crate) fn to_owned(self) -> OwnedCoveredGlyph {
-        OwnedCoveredGlyph {
-            glyph_id: self.glyph_id,
-            paint_mode: self.paint_mode.to_owned(),
-        }
-    }
-}
-
-impl<'a> CoveredGlyph<'a> {
-    pub(crate) fn new(glyph_id: GlyphId, paint_mode: PaintMode<'a>) -> CoveredGlyph<'a> {
+impl ColoredGlyph {
+    pub(crate) fn new(glyph_id: GlyphId, context_color: rgb::Color) -> ColoredGlyph {
         Self {
             glyph_id,
-            paint_mode,
+            context_color,
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct OwnedCoveredGlyph {
-    glyph_id: GlyphId,
-    paint_mode: OwnedPaintMode,
-}
-
-impl Eq for OwnedCoveredGlyph {}
-
-impl Hash for OwnedCoveredGlyph {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.glyph_id.hash(state);
-        self.paint_mode.hash(state);
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct Type3Font {
     font: Font,
-    glyphs: Vec<OwnedCoveredGlyph>,
+    glyphs: Vec<ColoredGlyph>,
     widths: Vec<f32>,
     cmap_entries: FxHashMap<Gid, (String, Option<Location>)>,
-    glyph_set: HashSet<OwnedCoveredGlyph>,
+    glyph_set: HashSet<ColoredGlyph>,
     index: usize,
 }
 
@@ -101,12 +80,12 @@ impl Type3Font {
     }
 
     #[inline]
-    pub(crate) fn covers(&self, glyph: &OwnedCoveredGlyph) -> bool {
+    pub(crate) fn covers(&self, glyph: &ColoredGlyph) -> bool {
         self.glyph_set.contains(glyph)
     }
 
     #[inline]
-    pub(crate) fn get_gid(&self, glyph: &OwnedCoveredGlyph) -> Option<u8> {
+    pub(crate) fn get_gid(&self, glyph: &ColoredGlyph) -> Option<u8> {
         self.glyphs
             .iter()
             .position(|g| g == glyph)
@@ -114,14 +93,14 @@ impl Type3Font {
     }
 
     #[inline]
-    pub(crate) fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> u8 {
+    pub(crate) fn add_glyph(&mut self, glyph: ColoredGlyph) -> u8 {
         if let Some(pos) = self.get_gid(&glyph) {
             pos
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyph_set.insert(glyph.clone());
-            self.glyphs.push(glyph.clone());
+            self.glyph_set.insert(glyph);
+            self.glyphs.push(glyph);
             self.widths
                 .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
@@ -154,93 +133,76 @@ impl Type3Font {
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
 
-        let glyph_streams =
-            self.glyphs
-                .iter()
-                .enumerate()
-                .map(|(index, glyph)| {
-                    let mut stream_surface = StreamBuilder::new(sc);
-                    let mut surface = stream_surface.surface();
+        let glyph_streams = self
+            .glyphs
+            .iter()
+            .enumerate()
+            .map(|(index, glyph)| {
+                let mut stream_surface = StreamBuilder::new(sc);
+                let mut surface = stream_surface.surface();
 
-                    // In case this returns `None`, the surface is guaranteed to be empty.
-                    let drawn_color_glyph = text::draw_color_glyph(
-                        self.font.clone(),
-                        glyph.paint_mode.as_ref(),
-                        glyph.glyph_id,
-                        Transform::default(),
-                        &mut surface,
-                    );
+                // In case this returns `None`, the surface is guaranteed to be empty.
+                let drawn_color_glyph = text::draw_color_glyph(
+                    self.font.clone(),
+                    glyph.context_color,
+                    glyph.glyph_id,
+                    Transform::default(),
+                    &mut surface,
+                );
 
-                    if drawn_color_glyph.is_none() {
-                        // If this code path is reached, it means we tried to create a Type3
-                        // font from a font that does not have any (valid) color table. This
-                        // should be avoided because non-color fonts should always be embedded
-                        // as TrueType/CFF fonts. The problem is that while PDF has support for
-                        // so-called "shape-glyphs" that should allow you to create Type3 fonts
-                        // based just on the outline, they have very bad viewer support. For
-                        // example, filled glyphs with gradients become broken in some viewers,
-                        // and stroking does not work at all consistently. So this code path
-                        // should never be reached, but it can for example be reached if someone
-                        // tries to write a glyph in a COLR font that doesn't have a corresponding
-                        // COLR glyph. As a last resort solution, we try to fill the glyph
-                        // outline in the corresponding color, but note that stroking will not
-                        // be supported at all.
+                if drawn_color_glyph.is_none() {
+                    // If this code path is reached, either we are dealing with a glyph that has no outline
+                    // (like .notdef), or it means we tried to create a Type3
+                    // font from a font that does not have any (valid) color/bitmap/svg table.
+                    // Therefore, as a last resort we draw the outline glyph as a black glyph.
+                    // PDF does have the concept of shape glyphs which take the color or where
+                    // they are drawn from.
+                    // The problem with those is that they seemingly have very bad viewer support. For
+                    // example, filled glyphs with gradients become broken in some viewers,
+                    // and stroking does not work at all consistently. Because of this,
+                    // we don't bother trying to implement it for now.
 
-                        // If this is the case (i.e. no color glyph was drawn, either because no table
-                        // exists or an error occurred, the surface is guaranteed to be empty.
-                        // So we can just safely draw the outline glyph instead without having to
-                        // worry about the surface being "dirty".
-                        if let Some((path, fill)) = glyph_path(self.font.clone(), glyph.glyph_id)
-                            .map(|p| match &glyph.paint_mode {
-                                OwnedPaintMode::Fill(f) => (p, f.clone()),
-                                OwnedPaintMode::Stroke(s) => (
-                                    p,
-                                    Fill {
-                                        paint: s.paint.clone(),
-                                        opacity: s.opacity,
-                                        rule: Default::default(),
-                                    },
-                                ),
-                                OwnedPaintMode::FillStroke(f, _) => (p, f.clone()),
-                            })
-                        {
-                            surface.set_fill(Some(fill));
-                            surface.set_stroke(None);
-                            surface.draw_path(&Path(path));
-                        }
-                    };
-
-                    surface.finish();
-                    let stream = stream_surface.finish();
-                    let mut content = Content::new();
-
-                    // I considered writing into the stream directly instead of creating an XObject
-                    // and showing that, but it seems like many viewers don't like that, and emojis
-                    // look messed up. Using XObjects seems like the best choice here.
-                    content.start_color_glyph(self.widths[index]);
-                    let x_object = XObject::new(stream, false, false, None);
-                    if !x_object.is_empty() {
-                        font_bbox.expand(&x_object.bbox());
-                        let x_name =
-                            rd_builder.register_resource(sc.register_resourceable(x_object));
-                        content.x_object(x_name.to_pdf_name());
+                    // If this is the case (i.e. no color glyph was drawn, either because no table
+                    // exists or an error occurred, the surface is guaranteed to be empty.
+                    // So we can just safely draw the outline glyph instead without having to
+                    // worry about the surface being "dirty".
+                    if let Some(path) = glyph_path(self.font.clone(), glyph.glyph_id) {
+                        surface.set_fill(Some(Fill::default()));
+                        surface.set_stroke(None);
+                        surface.draw_path(&Path(path));
                     }
+                };
 
-                    let stream = content.finish();
+                surface.finish();
+                let stream = stream_surface.finish();
+                let mut content = Content::new();
 
-                    let font_stream = FilterStreamBuilder::new_from_content_stream(
-                        stream.as_slice(),
-                        &sc.serialize_settings(),
-                    )
-                    .finish(&sc.serialize_settings());
+                // I considered writing into the stream directly instead of creating an XObject
+                // and showing that, but it seems like many viewers don't like that, and emojis
+                // look messed up. Using XObjects seems like the best choice here.
+                content.start_color_glyph(self.widths[index]);
+                let x_object = XObject::new(stream, false, false, None);
+                if !x_object.is_empty() {
+                    font_bbox.expand(&x_object.bbox());
+                    let x_name = rd_builder.register_resource(sc.register_resourceable(x_object));
+                    content.x_object(x_name.to_pdf_name());
+                }
 
-                    let stream_ref = sc.new_ref();
-                    let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
-                    font_stream.write_filters(stream.deref_mut());
+                let stream = content.finish();
 
-                    stream_ref
-                })
-                .collect::<Vec<Ref>>();
+                let font_stream = FilterStreamBuilder::new_from_content_stream(
+                    stream.as_slice(),
+                    &sc.serialize_settings(),
+                )
+                .finish(&sc.serialize_settings());
+
+                let stream_ref = sc.new_ref();
+                let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
+                font_stream.write_filters(stream.deref_mut());
+
+                stream_ref
+            })
+            .collect::<Vec<Ref>>();
 
         let resource_dictionary = rd_builder.finish();
 
@@ -430,7 +392,7 @@ impl Type3FontMapper {
 impl Type3FontMapper {
     /// Given a requested glyph coverage, find the corresponding font identifier of the
     /// font that contains it.
-    pub(crate) fn id_from_glyph(&self, glyph: &OwnedCoveredGlyph) -> Option<FontIdentifier> {
+    pub(crate) fn id_from_glyph(&self, glyph: &ColoredGlyph) -> Option<FontIdentifier> {
         self.fonts
             .iter()
             .position(|f| f.covers(glyph))
@@ -458,11 +420,15 @@ impl Type3FontMapper {
         self.fonts.get_mut(pos)
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.fonts.is_empty()
+    }
+
     pub(crate) fn fonts(&self) -> &[Type3Font] {
         &self.fonts
     }
 
-    pub(crate) fn add_glyph(&mut self, glyph: OwnedCoveredGlyph) -> (FontIdentifier, Gid) {
+    pub(crate) fn add_glyph(&mut self, glyph: ColoredGlyph) -> (FontIdentifier, Gid) {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
         if let Some(id) = self.id_from_glyph(&glyph) {
@@ -511,54 +477,28 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::graphics::paint::Fill;
-    use crate::serialize::SerializeContext;
-    use crate::text::type3::OwnedCoveredGlyph;
+    use crate::color::rgb;
+    use crate::text::type3::{ColoredGlyph, Type3FontMapper};
+    use crate::text::Font;
     use crate::text::GlyphId;
-    use crate::text::{Font, FontContainer, OwnedPaintMode};
-    use crate::util::test_utils::{settings_1, NOTO_COLOR_EMOJI_COLR};
-
-    impl OwnedCoveredGlyph {
-        pub fn new(glyph_id: GlyphId, paint_mode: OwnedPaintMode) -> Self {
-            Self {
-                glyph_id,
-                paint_mode,
-            }
-        }
-    }
+    use crate::util::test_utils::NOTO_COLOR_EMOJI_COLR;
 
     #[test]
     fn type3_more_than_256_glyphs() {
-        let mut sc = SerializeContext::new(settings_1());
-        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
-        let container = sc.register_font_container(font.clone());
-        let mut font_container = container.borrow_mut();
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
+        let mut t3 = Type3FontMapper::new(font.clone());
 
-        match &mut *font_container {
-            FontContainer::Type3(t3) => {
-                for i in 2..258 {
-                    t3.add_glyph(OwnedCoveredGlyph::new(
-                        GlyphId::new(i),
-                        Fill::default().into(),
-                    ));
-                }
-
-                assert_eq!(t3.fonts.len(), 1);
-                assert_eq!(
-                    t3.fonts[0].add_glyph(OwnedCoveredGlyph::new(
-                        GlyphId::new(20),
-                        Fill::default().into(),
-                    )),
-                    18
-                );
-
-                t3.add_glyph(OwnedCoveredGlyph::new(
-                    GlyphId::new(512),
-                    Fill::default().into(),
-                ));
-                assert_eq!(t3.fonts.len(), 2);
-            }
-            FontContainer::CIDFont(_) => panic!("expected type 3 font"),
+        for i in 2..258 {
+            t3.add_glyph(ColoredGlyph::new(GlyphId::new(i), rgb::Color::black()));
         }
+
+        assert_eq!(t3.fonts.len(), 1);
+        assert_eq!(
+            t3.fonts[0].add_glyph(ColoredGlyph::new(GlyphId::new(20), rgb::Color::black())),
+            18
+        );
+
+        t3.add_glyph(ColoredGlyph::new(GlyphId::new(512), rgb::Color::black()));
+        assert_eq!(t3.fonts.len(), 2);
     }
 }

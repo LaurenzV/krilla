@@ -104,6 +104,7 @@ pub(crate) struct CIDFont {
     cmap_entries: FxHashMap<u16, (String, Option<Location>)>,
     /// The widths of the glyphs, _indexed by their CID_.
     widths: Vec<f32>,
+    is_empty: bool,
 }
 
 impl CIDFont {
@@ -118,11 +119,16 @@ impl CIDFont {
             cmap_entries: FxHashMap::default(),
             widths,
             font,
+            is_empty: true,
         }
     }
 
-    pub(crate) fn font(&self) -> &Font {
-        &self.font
+    pub(crate) fn is_empty(&self) -> bool {
+        self.is_empty
+    }
+
+    pub(crate) fn font(&self) -> Font {
+        self.font.clone()
     }
 
     // Note that this refers to the units per em in PDF (which is always 1000), and not the
@@ -139,6 +145,8 @@ impl CIDFont {
     /// Add a new glyph (if it has not already been added) and return its CID.
     #[inline]
     pub(crate) fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
+        self.is_empty = false;
+
         let new_id = self
             .glyph_remapper
             .remap(u16::try_from(glyph_id.to_u32()).unwrap());

@@ -36,8 +36,8 @@ impl Font {
     /// `glyf`/`CFF` tables of the font. If you don't know what this means, just set it to `true`.
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
-    pub fn new(data: Data, index: u32, allow_color: bool) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref(), index, allow_color)?;
+    pub fn new(data: Data, index: u32) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref(), index)?;
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
@@ -82,10 +82,6 @@ impl Font {
 
     pub(crate) fn ascent(&self) -> f32 {
         self.0.font_info.ascent.get()
-    }
-
-    pub(crate) fn allow_color(&self) -> bool {
-        self.0.font_info.allow_color
     }
 
     pub(crate) fn weight(&self) -> f32 {
@@ -164,12 +160,14 @@ pub(crate) struct FontInfo {
     global_bbox: Rect,
     postscript_name: Option<String>,
     ascent: FiniteF32,
-    allow_color: bool,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
     is_monospaced: bool,
     italic_angle: FiniteF32,
     weight: FiniteF32,
+    has_glyf: bool,
+    has_cff: bool,
+    has_cff2: bool,
     stretch: FiniteF32,
 }
 
@@ -191,7 +189,7 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, allow_color: bool) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
@@ -232,16 +230,22 @@ impl FontInfo {
             }
         };
 
+        let has_glyf = font_ref.glyf().is_ok();
+        let has_cff = font_ref.cff().is_ok();
+        let has_cff2 = font_ref.cff2().is_ok();
+
         Some(FontInfo {
             index,
             data_len,
             checksum,
             location,
-            allow_color,
             units_per_em,
             postscript_name,
             ascent,
             cap_height,
+            has_glyf,
+            has_cff,
+            has_cff2,
             descent,
             is_monospaced,
             weight,
@@ -249,6 +253,10 @@ impl FontInfo {
             italic_angle,
             global_bbox,
         })
+    }
+
+    pub(crate) fn can_be_cid_font(&self) -> bool {
+        self.has_cff || self.has_glyf || self.has_cff2
     }
 }
 

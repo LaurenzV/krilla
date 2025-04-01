@@ -182,7 +182,7 @@ fn validate_pdf_a_notdef_glyph() {
     let mut surface = page.surface();
 
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
 
     surface.draw_text(
         Point::from_xy(0.0, 100.0),
@@ -210,7 +210,7 @@ fn validate_pdfa2u_text_with_location() {
     let mut surface = page.surface();
 
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
     let (text, glyphs) = dummy_text_with_spans();
 
     surface.set_location(2);
@@ -281,7 +281,7 @@ fn validate_pdf_full_example(document: &mut Document) {
     let mut surface = page.surface();
 
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
 
     surface.draw_text(
         Point::from_xy(0.0, 100.0),
@@ -307,7 +307,7 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     let mut surface = page.surface();
 
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag {
         lang: None,
@@ -367,7 +367,7 @@ fn invalid_codepoint_impl(document: &mut Document, font: Font, text: &str) {
 fn validate_pdfu_invalid_codepoint() {
     let mut document = Document::new_with(settings_9());
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
     invalid_codepoint_impl(&mut document, font.clone(), "A\u{FEFF}B");
 
     assert_eq!(
@@ -385,7 +385,7 @@ fn validate_pdfa_private_unicode_codepoint() {
     document.set_metadata(metadata);
     document.set_tag_tree(TagTree::new());
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
     invalid_codepoint_impl(&mut document, font.clone(), "A\u{E022}B");
 
     assert_eq!(
@@ -457,7 +457,7 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut surface = page.surface();
 
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.draw_text(
@@ -505,7 +505,7 @@ fn validate_pdf_ua1_missing_requirements() {
     let mut surface = page.surface();
 
     let font_data = NOTO_SANS.clone();
-    let font = Font::new(font_data, 0, true).unwrap();
+    let font = Font::new(font_data, 0).unwrap();
 
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.draw_text(
@@ -703,13 +703,14 @@ fn validate_pdf_a4_f_with_embedded_file(d: &mut Document) {
 }
 
 // See https://github.com/LaurenzV/krilla/issues/162
+// Can't include this test because it would requires us to embed the font in the snapshot.
 #[cfg(target_os = "macos")]
-#[snapshot(document, settings_19)]
+#[ignore]
 fn validate_pdf_a1_b_ttc(d: &mut Document) {
     let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
         .unwrap()
         .into();
-    let font = Font::new(font_data.clone(), 3, true).unwrap();
+    let font = Font::new(font_data.clone(), 3).unwrap();
 
     let mut page = d.start_page();
     let mut surface = page.surface();
@@ -743,6 +744,32 @@ fn validate_pdf_a1_b_cmyk_image_without_icc_profile() {
         document.finish(),
         Err(KrillaError::Validation(vec![
             ValidationError::MissingCMYKProfile
+        ]))
+    );
+}
+
+#[test]
+fn validate_deduplicate_errors() {
+    let mut document = Document::new_with(settings_19());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    surface.set_fill(Some(red_fill(0.5)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+    surface.set_location(2);
+    surface.set_fill(Some(red_fill(0.4)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+    surface.reset_location();
+    surface.set_fill(Some(red_fill(0.3)));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+    surface.finish();
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::Transparency(None),
+            ValidationError::Transparency(Some(2))
         ]))
     );
 }

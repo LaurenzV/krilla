@@ -9,6 +9,7 @@ use krilla_macros::{snapshot, visreg};
 use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN,
     LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
+    TWITTER_COLOR_EMOJI,
 };
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
@@ -25,7 +26,7 @@ fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
 }
 
 fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
-    let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.set_fill(Some(red_fill(0.5)));
     surface.draw_text(
         Point::from_xy(0.0, 80.0),
@@ -61,7 +62,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
         TextDirection::Auto,
     );
 
-    let noto_font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
+    let noto_font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
 
     surface.set_fill(Some(blue_fill(0.8)));
     surface.draw_text(
@@ -95,7 +96,7 @@ fn text_outlined_with_fill(surface: &mut Surface) {
 }
 
 fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
-    let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.set_stroke(Some(red_stroke(0.5, 1.0)));
     surface.draw_text(
         Point::from_xy(0.0, 80.0),
@@ -131,7 +132,7 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
         TextDirection::Auto,
     );
 
-    let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
 
     surface.set_stroke(Some(blue_stroke(0.8)));
     surface.draw_text(
@@ -151,7 +152,7 @@ fn text_outlined_with_stroke(surface: &mut Surface) {
 
 #[visreg]
 fn text_zalgo(surface: &mut Surface) {
-    let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -164,7 +165,7 @@ fn text_zalgo(surface: &mut Surface) {
 
 #[visreg]
 fn text_direction_ltr(surface: &mut Surface) {
-    let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -177,7 +178,7 @@ fn text_direction_ltr(surface: &mut Surface) {
 
 #[visreg]
 fn text_direction_rtl(surface: &mut Surface) {
-    let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -190,7 +191,7 @@ fn text_direction_rtl(surface: &mut Surface) {
 
 #[visreg]
 fn text_direction_ttb(surface: &mut Surface) {
-    let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
         Point::from_xy(100.0, 0.0),
         font,
@@ -203,7 +204,7 @@ fn text_direction_ttb(surface: &mut Surface) {
 
 #[visreg]
 fn text_direction_btt(surface: &mut Surface) {
-    let font = Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
         Point::from_xy(100.0, 0.0),
         font,
@@ -218,7 +219,7 @@ pub(crate) fn simple_text_impl(page: &mut Page, font_data: Data) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(font_data, 0, true).unwrap(),
+        Font::new(font_data, 0).unwrap(),
         16.0,
         "A line of text.",
         false,
@@ -241,7 +242,7 @@ fn text_complex(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0).unwrap(),
         16.0,
         "यह कुछ जटिल पाठ है.",
         false,
@@ -254,7 +255,7 @@ fn text_complex_2(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0).unwrap(),
         16.0,
         "यु॒धा नर॑ ऋ॒ष्वा",
         false,
@@ -267,7 +268,7 @@ fn text_complex_3(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0).unwrap(),
         12.0,
         "आ रु॒क्मैरा यु॒धा नर॑ ऋ॒ष्वा ऋ॒ष्टीर॑सृक्षत ।",
         false,
@@ -280,7 +281,7 @@ fn text_complex_4(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS_DEVANAGARI.clone(), 0).unwrap(),
         10.0,
         "अन्वे॑नाँ॒ अह॑ वि॒द्युतो॑ म॒रुतो॒ जज्झ॑तीरव भनर॑र्त॒ त्मना॑ दि॒वः ॥",
         false,
@@ -316,7 +317,7 @@ fn text_small_caps(page: &mut Page) {
     surface.draw_glyphs(
         Point::from_xy(0.0, 50.0),
         &glyphs,
-        Font::new(LIBERTINUS_SERIF.clone(), 0, true).unwrap(),
+        Font::new(LIBERTINUS_SERIF.clone(), 0).unwrap(),
         "Tt",
         12.0,
         false,
@@ -325,7 +326,7 @@ fn text_small_caps(page: &mut Page) {
 
 #[visreg]
 fn text_zalgo_outlined(surface: &mut Surface) {
-    let font = Font::new(NOTO_SANS.clone(), 0, true).unwrap();
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.draw_text(
         Point::from_xy(0.0, 100.0),
         font,
@@ -341,7 +342,7 @@ fn text_fill(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS.clone(), 0).unwrap(),
         16.0,
         "hi there",
         false,
@@ -378,9 +379,29 @@ fn text_stroke(page: &mut Page) {
     surface.set_stroke(Some(Stroke::default()));
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS.clone(), 0).unwrap(),
         16.0,
         "hi there",
+        false,
+        TextDirection::Auto,
+    );
+}
+
+// This would be nicer as a snapshot test, but since it's a system font
+// we can't include it in the repository.
+// The point of the test is to check that fonts that do have a bitmap table
+// will still embed a CID font for glyphs that don't have an entry in the
+// bitmap table instead of falling back to a Type3 font.
+#[cfg(target_os = "macos")]
+#[visreg]
+fn text_mixed_ttf_ebdt_font(surface: &mut Surface) {
+    let data = std::fs::read("/System/Library/Fonts/Supplemental/PTSans.ttc").unwrap();
+    let font = Font::new(data.into(), 0).unwrap();
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        32.0,
+        "Hi!",
         false,
         TextDirection::Auto,
     );

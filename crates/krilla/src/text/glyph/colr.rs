@@ -15,13 +15,20 @@ use crate::graphics::paint::{
 use crate::num::NormalizedF32;
 use crate::surface::Surface;
 use crate::text::outline::OutlineBuilder;
+use crate::text::Font;
 use crate::text::GlyphId;
-use crate::text::{Font, PaintMode};
+
+pub(crate) fn has_colr_data(font: &Font, glyph: GlyphId) -> bool {
+    font.font_ref()
+        .color_glyphs()
+        .get(glyph.to_skrifa())
+        .is_some()
+}
 
 /// Draw a COLR-based glyph on a surface.
 pub(crate) fn draw_glyph(
     font: Font,
-    paint_mode: PaintMode,
+    context_color: rgb::Color,
     glyph: GlyphId,
     surface: &mut Surface,
 ) -> Option<()> {
@@ -30,13 +37,6 @@ pub(crate) fn draw_glyph(
     // we already drew the instructions onto the surface. Because of this, we first
     // convert the glyph into a more accessible bytecode representation and only
     // if that succeeds do we iterate over the bytecode to draw onto the canvas.
-
-    let context_color = match paint_mode {
-        PaintMode::Fill(f) => f.paint.as_rgb(),
-        PaintMode::Stroke(s) => s.paint.as_rgb(),
-        PaintMode::FillStroke(f, _) => f.paint.as_rgb(),
-    }
-    .unwrap_or_default();
 
     let colr_glyphs = font.font_ref().color_glyphs();
     let colr_glyph = colr_glyphs.get(glyph.to_skrifa())?;
