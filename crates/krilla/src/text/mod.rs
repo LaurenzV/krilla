@@ -137,6 +137,10 @@ impl FontContainer {
             res
         }
     }
+
+    pub(crate) fn font(&self) -> &Font {
+        &self.font
+    }
 }
 
 pub(crate) trait PdfFont {
