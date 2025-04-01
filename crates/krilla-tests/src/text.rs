@@ -3,7 +3,7 @@ use krilla::page::Page;
 use krilla::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::surface::Surface;
 use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
-use krilla::Data;
+use krilla::{Data, Document};
 use krilla_macros::{snapshot, visreg};
 
 use crate::{
@@ -350,29 +350,6 @@ fn text_fill(page: &mut Page) {
     );
 }
 
-// See https://github.com/typst/typst/pull/5420#issuecomment-2768899483.
-// Make sure snapshot is stable.
-#[snapshot]
-fn text_two_fonts(page: &mut Page) {
-    let mut surface = page.surface();
-    surface.draw_text(
-        Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS.clone(), 0).unwrap(),
-        16.0,
-        "hi there",
-        false,
-        TextDirection::Auto,
-    );
-    surface.draw_text(
-        Point::from_xy(0.0, 20.0),
-        Font::new(NOTO_SANS_CJK.clone(), 0).unwrap(),
-        16.0,
-        "你好",
-        false,
-        TextDirection::Auto,
-    );
-}
-
 #[snapshot]
 fn text_stroke(page: &mut Page) {
     let mut surface = page.surface();
@@ -405,4 +382,42 @@ fn text_mixed_ttf_ebdt_font(surface: &mut Surface) {
         false,
         TextDirection::Auto,
     );
+}
+
+// See https://github.com/typst/typst/pull/5420#issuecomment-2768899483.
+// Make sure snapshot is stable.
+#[test]
+fn text_two_fonts_reproducibility() {
+    let render_single = || {
+        let mut document = Document::new();
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        surface.draw_text(
+            Point::from_xy(0.0, 50.0),
+            Font::new(NOTO_SANS.clone(), 0).unwrap(),
+            16.0,
+            "hi there",
+            false,
+            TextDirection::Auto,
+        );
+        surface.draw_text(
+            Point::from_xy(0.0, 20.0),
+            Font::new(NOTO_SANS_CJK.clone(), 0).unwrap(),
+            16.0,
+            "你好",
+            false,
+            TextDirection::Auto,
+        );
+
+        surface.finish();
+        page.finish();
+        document.finish().unwrap()
+    };
+
+    let expected = render_single();
+
+    for _ in 0..10 {
+        assert_eq!(expected, render_single());
+    }
 }
