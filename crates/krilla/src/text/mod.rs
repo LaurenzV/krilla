@@ -202,7 +202,7 @@ impl PdfFont for CIDFont {
     }
 
     fn font(&self) -> Font {
-        CIDFont::font(self).clone()
+        CIDFont::font(self)
     }
 
     #[track_caller]
