@@ -139,10 +139,7 @@ impl FontContainer {
     }
 
     pub(crate) fn font(&self) -> &Font {
-        match self {
-            FontContainer::Type3(t) => t.font(),
-            FontContainer::CIDFont(c) => c.font(),
-        }
+        &self.font
     }
 }
 

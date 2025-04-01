@@ -578,7 +578,7 @@ impl SerializeContext {
         let fonts = self.global_objects.font_map.take();
         let mut sorted = fonts.values().collect::<Vec<_>>();
         sorted.sort_by_key(|e| e.borrow().font().sip_hash());
-        for font_container in sorted  {
+        for font_container in sorted {
             let borrowed = font_container.borrow();
 
             if !borrowed.type3_mapper().is_empty() {

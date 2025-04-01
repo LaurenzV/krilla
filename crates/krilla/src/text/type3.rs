@@ -383,10 +383,6 @@ impl Type3FontMapper {
             fonts: Vec::new(),
         }
     }
-
-    pub(crate) fn font(&self) -> &Font {
-        &self.font
-    }
 }
 
 impl Type3FontMapper {

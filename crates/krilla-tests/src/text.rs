@@ -357,7 +357,7 @@ fn text_two_fonts(page: &mut Page) {
     let mut surface = page.surface();
     surface.draw_text(
         Point::from_xy(0.0, 50.0),
-        Font::new(NOTO_SANS.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS.clone(), 0).unwrap(),
         16.0,
         "hi there",
         false,
@@ -365,7 +365,7 @@ fn text_two_fonts(page: &mut Page) {
     );
     surface.draw_text(
         Point::from_xy(0.0, 20.0),
-        Font::new(NOTO_SANS_CJK.clone(), 0, true).unwrap(),
+        Font::new(NOTO_SANS_CJK.clone(), 0).unwrap(),
         16.0,
         "你好",
         false,
