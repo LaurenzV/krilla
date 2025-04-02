@@ -33,7 +33,7 @@ In addition to that, the library also supports the following PDF features:
 - Annotations, links, (named) destinations.
 - Adding document metadata.
 - Creating accessible PDFs via tagged PDF (experimental!).
-- Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0) 
+- Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0) .
 - Support for validated some validated export modes (PDF/A1, PDF/A2, PDF/A3, PDF/A4, PDF/UA1).
 
 ## Scope
@@ -123,24 +123,12 @@ we add two small pieces of text, and on the second page we draw a triangle with 
 For more examples, feel free to take a look at the [examples](https://github.com/LaurenzV/krilla/tree/main/crates/krilla/examples) directory of the GitHub repository.
 
 ```rs
-use std::path;
-use krilla::color::rgb;
-use krilla::text::Font;
-use krilla::geom::{Point, PathBuilder};
-use krilla::paint::{SpreadMethod, LinearGradient, Stop, FillRule};
-use krilla::text::TextDirection;
-use krilla::paint::Fill;
-use krilla::Document;
-use krilla::page::PageSettings;
-use std::path::PathBuf;
-use krilla::num::NormalizedF32;
-
 // Create a new document.
 let mut document = Document::new();
 // Load a font.
 let font = {
-    let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/NotoSans-Regular.ttf");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../assets/fonts/NotoSans-Regular.ttf");
     let data = std::fs::read(&path).unwrap();
     Font::new(data.into(), 0).unwrap()
 };
@@ -150,28 +138,28 @@ let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
 // Get the surface of the page.
 let mut surface = page.surface();
 // Draw some text.
-surface.fill_text(
+surface.draw_text(
     Point::from_xy(0.0, 25.0),
     font.clone(),
     14.0,
     "This text has font size 14!",
     false,
-    TextDirection::Auto
+    TextDirection::Auto,
 );
 
-surface.set_fill(Fill {
+surface.set_fill(Some(Fill {
     paint: rgb::Color::new(255, 0, 0).into(),
     opacity: NormalizedF32::new(0.5).unwrap(),
     rule: Default::default(),
-});
+}));
 // Draw some more text, in a different color with an opacity and bigger font size.
-surface.fill_text(
+surface.draw_text(
     Point::from_xy(0.0, 50.0),
     font.clone(),
     16.0,
     "This text has font size 16!",
     false,
-    TextDirection::Auto
+    TextDirection::Auto,
 );
 
 // Finish the page.
@@ -216,14 +204,14 @@ let lg = LinearGradient {
 let mut surface = page.surface();
 
 // Set the fill.
-surface.set_fill(Fill {
+surface.set_fill(Some(Fill {
     paint: lg.into(),
     rule: FillRule::EvenOdd,
-    opacity: NormalizedF32::ONE
-});
+    opacity: NormalizedF32::ONE,
+}));
 
 // Fill the path.
-surface.fill_path(&triangle);
+surface.draw_path(&triangle);
 
 // Finish up and write the resulting PDF.
 surface.finish();
