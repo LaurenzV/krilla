@@ -24,8 +24,8 @@ gif = "0.13.1"
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.13.0"
 image-webp = "0.2.1"
-krilla = { path = "crates/krilla" }
-krilla-svg = { path = "crates/krilla-svg" }
+krilla = { path = "crates/krilla", version = "0.4.0" }
+krilla-svg = { path = "crates/krilla-svg", version = "0.1.0" }
 krilla-macros = { path = "crates/krilla-macros" }
 once_cell = "1.19.0"
 oxipng = "9.1.2"
