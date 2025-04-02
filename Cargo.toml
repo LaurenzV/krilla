@@ -32,7 +32,7 @@ once_cell = "1.19.0"
 oxipng = "9.1.2"
 parley = { git = "https://github.com/linebender/parley", rev = "14070d5" }
 paste = "1.0.15"
-pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "0d513b9" }
+pdf-writer = "0.13.0"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 rayon = "1.10.0"
@@ -40,13 +40,13 @@ resvg = "0.45.0"
 rustybuzz = "0.20.1"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "664be71b" }
-skrifa = "0.28.1"
-subsetter = { git = "https://github.com/typst/subsetter", rev = "460fdb6" }
+skrifa = "0.30.0"
+subsetter = "0.2.1"
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
 tiny-skia-path = "0.11.4"
 usvg = "0.45.0"
-xmp-writer = { git = "https://github.com/LaurenzV/xmp-writer", rev = "a1cbb887" }
+xmp-writer = "0.3.2"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.17.16"
 zune-jpeg = "0.4.13"
