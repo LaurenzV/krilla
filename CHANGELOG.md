@@ -28,7 +28,7 @@
 - Merge `PdfVersion` and `PdfStandard` into a `Configuration` struct.
 - Fills and strokes are now optionall encoded as 1 instead of separately.
 - SVG rendering has been extracted into an external `krilla-svg` crate.
-- the public API has been overhauled a lot.
+- The public API has been overhauled a lot.
 - Gradient stops don't take generics anymore.
 
 ### Fixed

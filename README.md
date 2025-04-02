@@ -33,7 +33,7 @@ In addition to that, the library also supports the following PDF features:
 - Annotations, links, (named) destinations.
 - Adding document metadata.
 - Creating accessible PDFs via tagged PDF (experimental!).
-- Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0) .
+- Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0).
 - Support for validated some validated export modes (PDF/A1, PDF/A2, PDF/A3, PDF/A4, PDF/UA1).
 
 ## Scope
