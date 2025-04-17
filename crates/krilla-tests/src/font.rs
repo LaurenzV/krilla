@@ -252,19 +252,19 @@ mod cid {
             TextDirection::Auto,
         );
     }
-    
+
     // See https://github.com/typst/typst/issues/6185. On the one hand, we were not using
     // the typographic ascender/descender if available, and on the other hand we were
     // calculating the font bbox wrongly.
     #[snapshot]
     fn font_wrong_metrics(page: &mut Page) {
         let mut surface = page.surface();
-        
+
         let font_data: crate::Data = std::fs::read(FONT_PATH.join("NotoSerifSC_subset1.ttf"))
             .unwrap()
             .into();
         let font = Font::new(font_data.clone(), 0).unwrap();
-        
+
         surface.draw_text(
             Point::from_xy(0.0, 25.0),
             font.clone(),
