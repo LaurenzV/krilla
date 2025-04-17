@@ -52,7 +52,7 @@ endobj
   /Type /FontDescriptor
   /FontName /MCRVYS+NotoSansDevanagari-Regular
   /Flags 131076
-  /FontBBox [-585 -530 989 817]
+  /FontBBox [-585 -530 1574 1347]
   /ItalicAngle 0
   /Ascent 896
   /Descent -408
@@ -273,17 +273,17 @@ xref
 0000000251 00000 n
 0000000635 00000 n
 0000000749 00000 n
-0000001003 00000 n
-0000001854 00000 n
-0000005735 00000 n
-0000005930 00000 n
-0000006766 00000 n
+0000001005 00000 n
+0000001856 00000 n
+0000005737 00000 n
+0000005932 00000 n
+0000006768 00000 n
 trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(oilcAh+ldInYugXM7eNMag==) (oilcAh+ldInYugXM7eNMag==)]
+  /ID [(2TkjWL6RFGkslR8M1Jx2bQ==) (2TkjWL6RFGkslR8M1Jx2bQ==)]
 >>
 startxref
-6821
+6823
 %%EOF

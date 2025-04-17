@@ -51,7 +51,7 @@ endobj
   /Type /FontDescriptor
   /FontName /MIOMYS+LibertinusSerif-Regular
   /Flags 131078
-  /FontBBox [-6275 -256 -104 869]
+  /FontBBox [-6275 -256 6171 1125]
   /ItalicAngle 0
   /Ascent 894
   /Descent -246
@@ -183,17 +183,17 @@ xref
 0000000259 00000 n
 0000000509 00000 n
 0000000621 00000 n
-0000000874 00000 n
-0000001572 00000 n
-0000002632 00000 n
-0000002827 00000 n
-0000003054 00000 n
+0000000875 00000 n
+0000001573 00000 n
+0000002633 00000 n
+0000002828 00000 n
+0000003055 00000 n
 trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(fcPWFb6h+tgIxCSBjUuEQg==) (fcPWFb6h+tgIxCSBjUuEQg==)]
+  /ID [(VDCF6c6g2MZX8iZKemoQTg==) (VDCF6c6g2MZX8iZKemoQTg==)]
 >>
 startxref
-3109
+3110
 %%EOF
