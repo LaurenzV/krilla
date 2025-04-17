@@ -129,6 +129,8 @@ lazy_font!(TWITTER_COLOR_EMOJI, FONT_PATH.join("TwitterColorEmoji.subset.ttf"));
 lazy_font!(SVG_EXTRA, FONT_PATH.join("SVG_extra.ttf"));
 #[rustfmt::skip]
 lazy_font!(LIBERTINUS_SERIF, FONT_PATH.join("LibertinusSerif-Regular.otf"));
+#[rustfmt::skip]
+lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
 
 #[derive(Clone)]
 struct TestImage {
