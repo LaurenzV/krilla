@@ -12,6 +12,7 @@ use subsetter::GlyphRemapper;
 use super::{CIDIdentifier, FontIdentifier, PDF_UNITS_PER_EM};
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
+use crate::geom::Rect;
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
@@ -313,7 +314,17 @@ impl CIDFont {
         flags.insert(FontFlags::SYMBOLIC);
         flags.insert(FontFlags::SMALL_CAP);
 
-        let bbox = self.font.bbox().to_pdf_rect();
+        let bbox = {
+            let fb = self.font.bbox();
+            Rect::from_ltrb(
+                to_pdf_units(fb.left()),
+                to_pdf_units(fb.top()),
+                to_pdf_units(fb.right()),
+                to_pdf_units(fb.bottom()),
+            )
+            .unwrap()
+        }
+        .to_pdf_rect();
 
         let italic_angle = self.font.italic_angle();
         let ascender = to_pdf_units(self.font.ascent());
