@@ -171,11 +171,12 @@ mod svg {
 
 mod cid {
     use krilla::geom::Point;
+    use krilla::page::Page;
     use krilla::surface::Surface;
     use krilla::text::{Font, TextDirection};
-    use krilla_macros::visreg;
+    use krilla_macros::{snapshot, visreg};
 
-    use crate::{LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::{ASSETS_PATH, FONT_PATH, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC};
 
     #[visreg(all)]
     fn font_ttf_simple_text(surface: &mut Surface) {
@@ -247,6 +248,28 @@ mod cid {
             font_3.clone(),
             20.0,
             "这是一段测试文字。",
+            false,
+            TextDirection::Auto,
+        );
+    }
+    
+    // See https://github.com/typst/typst/issues/6185. On the one hand, we were not using
+    // the typographic ascender/descender if available, and on the other hand we were
+    // calculating the font bbox wrongly.
+    #[snapshot]
+    fn font_wrong_metrics(page: &mut Page) {
+        let mut surface = page.surface();
+        
+        let font_data: crate::Data = std::fs::read(FONT_PATH.join("NotoSerifSC_subset1.ttf"))
+            .unwrap()
+            .into();
+        let font = Font::new(font_data.clone(), 0).unwrap();
+        
+        surface.draw_text(
+            Point::from_xy(0.0, 25.0),
+            font.clone(),
+            25.0,
+            "智",
             false,
             TextDirection::Auto,
         );
