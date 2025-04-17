@@ -196,17 +196,27 @@ impl FontInfo {
 
         let location = Location::default();
         let metrics = font_ref.metrics(Size::unscaled(), &location);
-        let ascent = FiniteF32::new(metrics.ascent)?;
-        let descent = FiniteF32::new(metrics.descent)?;
+        let os_2 = font_ref.os2().ok();
+        let ascent = FiniteF32::new(
+            os_2.as_ref()
+                .map(|s| s.s_typo_ascender() as f32)
+                .unwrap_or(metrics.ascent),
+        )?;
+        let descent = FiniteF32::new(
+            os_2.as_ref()
+                .map(|s| s.s_typo_descender() as f32)
+                .unwrap_or(metrics.descent),
+        )?;
         let is_monospaced = metrics.is_monospace;
         let cap_height = metrics.cap_height.map(|n| FiniteF32::new(n).unwrap());
         let italic_angle = FiniteF32::new(metrics.italic_angle).unwrap();
         let weight = FiniteF32::new(font_ref.attributes().weight.value())?;
         let stretch = FiniteF32::new(font_ref.attributes().stretch.ratio())?;
         let units_per_em = metrics.units_per_em;
+
         let global_bbox = metrics
             .bounds
-            .and_then(|b| Rect::from_xywh(b.x_min, b.y_min, b.x_max, b.y_max))
+            .and_then(|b| Rect::from_ltrb(b.x_min, b.y_min, b.x_max, b.y_max))
             .unwrap_or(Rect::from_xywh(
                 0.0,
                 0.0,
