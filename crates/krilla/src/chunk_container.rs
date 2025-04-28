@@ -206,7 +206,7 @@ impl ChunkContainer {
                 .serialize_settings()
                 .validator()
                 .requires_display_doc_title();
-            let text_direction = self.metadata.and_then(|m| m.text_direction);
+            let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
 
             if write_doc_title || text_direction.is_some() {
                 let mut vp = catalog.viewer_preferences();
@@ -218,6 +218,11 @@ impl ChunkContainer {
                 if let Some(dir) = text_direction {
                     vp.direction(dir.to_pdf());
                 }
+            }
+
+            let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
+            if let Some(layout) = page_layout {
+                catalog.page_layout(layout.to_pdf());
             }
 
             if let Some(ol) = &self.outline {
