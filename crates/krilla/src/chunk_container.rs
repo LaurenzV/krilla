@@ -6,6 +6,7 @@ use xmp_writer::{RenditionClass, XmpWriter};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
+use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 
@@ -222,7 +223,12 @@ impl ChunkContainer {
 
             let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
             if let Some(layout) = page_layout {
-                catalog.page_layout(layout.to_pdf());
+                // TwoPageLeft and TwoPageRight are only available PDF 1.5+
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
+                    || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
+                {
+                    catalog.page_layout(layout.to_pdf());
+                }
             }
 
             if let Some(ol) = &self.outline {
