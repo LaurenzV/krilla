@@ -43,6 +43,7 @@ endobj
   /ViewerPreferences <<
     /Direction /L2R
   >>
+  /PageLayout /TwoColumnRight
 >>
 endobj
 
@@ -62,5 +63,5 @@ trailer
   /ID [(F1CF232GUzEL/FGeYRuxqw==) (MwwFglmw0BSz8PWEY/ZfSg==)]
 >>
 startxref
-461
+491
 %%EOF

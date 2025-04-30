@@ -1,4 +1,4 @@
-use krilla::metadata::{DateTime, Metadata, TextDirection};
+use krilla::metadata::{DateTime, Metadata, PageLayout, TextDirection};
 use krilla::Document;
 use krilla_macros::snapshot;
 
@@ -24,7 +24,8 @@ pub(crate) fn metadata_impl(document: &mut Document) {
         ])
         .title("An awesome title".to_string())
         .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()])
-        .text_direction(TextDirection::LeftToRight);
+        .text_direction(TextDirection::LeftToRight)
+        .page_layout(PageLayout::TwoColumnRight);
     document.set_metadata(metadata);
 }
 

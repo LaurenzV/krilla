@@ -25,6 +25,7 @@ pub struct Metadata {
     pub(crate) language: Option<String>,
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
+    pub(crate) page_layout: Option<PageLayout>,
 }
 
 impl Metadata {
@@ -109,6 +110,12 @@ impl Metadata {
     /// The main text direction of the document.
     pub fn text_direction(mut self, text_direction: TextDirection) -> Self {
         self.text_direction = Some(text_direction);
+        self
+    }
+
+    /// How the viewer should lay out the pages.
+    pub fn page_layout(mut self, page_layout: PageLayout) -> Self {
+        self.page_layout = Some(page_layout);
         self
     }
 
@@ -417,6 +424,40 @@ impl TextDirection {
         match self {
             TextDirection::LeftToRight => pdf_writer::types::Direction::L2R,
             TextDirection::RightToLeft => pdf_writer::types::Direction::R2L,
+        }
+    }
+}
+
+/// How the viewer should lay out the pages.
+#[derive(Copy, Clone, Debug)]
+pub enum PageLayout {
+    /// Only a single page at a time.
+    SinglePage,
+    /// A single, continuously scrolling column of pages.
+    OneColumn,
+    /// Two continuously scrolling columns of pages, laid out with odd-numbered
+    /// pages on the left.
+    TwoColumnLeft,
+    /// Two continuously scrolling columns of pages, laid out with odd-numbered
+    /// pages on the right (like in a left-bound book).
+    TwoColumnRight,
+    /// Only two pages are visible at a time, laid out with odd-numbered pages
+    /// on the left. PDF 1.5+.
+    TwoPageLeft,
+    /// Only two pages are visible at a time, laid out with odd-numbered pages
+    /// on the right (like in a left-bound book). PDF 1.5+.
+    TwoPageRight,
+}
+
+impl PageLayout {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::PageLayout {
+        match self {
+            PageLayout::SinglePage => pdf_writer::types::PageLayout::SinglePage,
+            PageLayout::OneColumn => pdf_writer::types::PageLayout::OneColumn,
+            PageLayout::TwoColumnLeft => pdf_writer::types::PageLayout::TwoColumnLeft,
+            PageLayout::TwoColumnRight => pdf_writer::types::PageLayout::TwoColumnRight,
+            PageLayout::TwoPageLeft => pdf_writer::types::PageLayout::TwoPageLeft,
+            PageLayout::TwoPageRight => pdf_writer::types::PageLayout::TwoPageRight,
         }
     }
 }

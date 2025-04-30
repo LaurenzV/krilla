@@ -6,6 +6,7 @@ use xmp_writer::{RenditionClass, XmpWriter};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
+use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
 use crate::util::{hash_base64, Deferred};
 
@@ -206,7 +207,7 @@ impl ChunkContainer {
                 .serialize_settings()
                 .validator()
                 .requires_display_doc_title();
-            let text_direction = self.metadata.and_then(|m| m.text_direction);
+            let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
 
             if write_doc_title || text_direction.is_some() {
                 let mut vp = catalog.viewer_preferences();
@@ -217,6 +218,16 @@ impl ChunkContainer {
 
                 if let Some(dir) = text_direction {
                     vp.direction(dir.to_pdf());
+                }
+            }
+
+            let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
+            if let Some(layout) = page_layout {
+                // TwoPageLeft and TwoPageRight are only available PDF 1.5+
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
+                    || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
+                {
+                    catalog.page_layout(layout.to_pdf());
                 }
             }
 
