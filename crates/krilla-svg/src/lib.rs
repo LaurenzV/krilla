@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use fontdb::Database;
 use krilla::color::rgb;
-use krilla::geom::{Rect, Size, Transform};
+use krilla::geom::{Point, Rect, Size, Transform};
 use krilla::paint::FillRule;
 use krilla::surface::Surface;
 use krilla::text::Font;
@@ -57,20 +57,39 @@ impl Default for SvgSettings {
 pub trait SurfaceExt {
     /// Draw a `usvg` tree onto a surface with the given size and settings.
     fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()>;
+
+    /// Draw a `usvg` tree onto a surface with the given size and settings, at a specified position.
+    fn draw_svg_with_position(
+        &mut self,
+        tree: &Tree,
+        size: Size,
+        svg_settings: SvgSettings,
+        position: Point,
+    ) -> Option<()>;
 }
 
 impl SurfaceExt for Surface<'_> {
     fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()> {
-        let old_fill = self.get_fill().cloned();
-        let old_stroke = self.get_stroke().cloned();
+        self.draw_svg_with_position(tree, size, svg_settings, Point::from_xy(0.0, 0.0))
+    }
 
-        let transform = Transform::from_scale(
-            size.width() / tree.size().width(),
-            size.height() / tree.size().height(),
-        );
+    fn draw_svg_with_position(
+        &mut self,
+        tree: &Tree,
+        size: Size,
+        svg_settings: SvgSettings,
+        position: Point,
+    ) -> Option<()> {
+        let old_fill = self.get_fill().cloned();
+        let old_stroke = self.get_stroke().cloned();    
+        let sx = size.width() / tree.size().width();
+        let sy = size.height() / tree.size().height();
+        let tx = position.x;
+        let ty = position.y;
+        let transform = Transform::from_row(sx, 0.0, 0.0, sy, tx, ty);
         self.push_transform(&transform);
         self.push_clip_path(
-            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
+            &Rect::from_xywh(0.0, 0.0, size.width(), size.height())
                 .unwrap()
                 .to_clip_path(),
             &FillRule::NonZero,
