@@ -89,7 +89,7 @@ impl SurfaceExt for Surface<'_> {
         let transform = Transform::from_row(sx, 0.0, 0.0, sy, tx, ty);
         self.push_transform(&transform);
         self.push_clip_path(
-            &Rect::from_xywh(0.0, 0.0, size.width(), size.height())
+            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
                 .unwrap()
                 .to_clip_path(),
             &FillRule::NonZero,
