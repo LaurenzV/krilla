@@ -41,8 +41,8 @@ pub struct EmbeddedFile {
     /// The raw data of the embedded file.
     pub data: Data,
     /// Whether the embedded file should be compressed (recommended to turn off if the
-    /// original file already has compression). If [`None`] the file will be compressed
-    /// and if no sufficient improvements were noted, the uncompressed file is embedded.
+    /// original file already has compression). If `None`, krilla will use its own logic
+    /// for determining whether to compress the file or not.
     pub compress: Option<bool>,
     /// The location of the embedded file.
     pub location: Option<Location>,
