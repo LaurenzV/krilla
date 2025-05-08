@@ -16,7 +16,7 @@ pub(crate) fn file_1() -> EmbeddedFile {
         description: Some("The description of the file.".to_string()),
         association_kind: AssociationKind::Supplement,
         data: data.into(),
-        compress: false,
+        compress: Some(false),
         location: None,
     }
 }
@@ -30,7 +30,7 @@ fn file_2() -> EmbeddedFile {
         description: Some("A nice SVG image!".to_string()),
         association_kind: AssociationKind::Supplement,
         data: data.into(),
-        compress: false,
+        compress: Some(false),
         location: None,
     }
 }
@@ -44,7 +44,21 @@ fn file_3() -> EmbeddedFile {
         description: Some("A nice picture.".to_string()),
         association_kind: AssociationKind::Unspecified,
         data: data.into(),
-        compress: false,
+        compress: Some(false),
+        location: None,
+    }
+}
+
+fn file_4() -> EmbeddedFile {
+    let data = std::fs::read(ASSETS_PATH.join("images/rgb8.gif")).unwrap();
+
+    EmbeddedFile {
+        path: "rgb8.gif".to_string(),
+        mime_type: Some("image/gif".to_string()),
+        description: Some("A nice jif.".to_string()),
+        association_kind: AssociationKind::Unspecified,
+        data: data.into(),
+        compress: Some(false),
         location: None,
     }
 }
@@ -58,7 +72,23 @@ fn embedded_file(d: &mut Document) {
 #[snapshot(document)]
 fn embedded_file_with_compression(d: &mut Document) {
     let mut file = file_1();
-    file.compress = true;
+    file.compress = Some(true);
+
+    d.embed_file(file);
+}
+
+#[snapshot(document)]
+fn embedded_file_with_auto_compression_success(d: &mut Document) {
+    let mut file = file_1();
+    file.compress = None;
+
+    d.embed_file(file);
+}
+
+#[snapshot(document)]
+fn embedded_file_with_auto_compression_fail(d: &mut Document) {
+    let mut file = file_4();
+    file.compress = None;
 
     d.embed_file(file);
 }
