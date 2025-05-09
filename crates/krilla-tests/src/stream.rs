@@ -1,9 +1,9 @@
 use krilla::blend::BlendMode;
-use krilla::geom::Transform;
+use krilla::geom::{Size, Transform};
 use krilla::page::Page;
 use krilla_macros::snapshot;
 
-use crate::{blue_fill, red_fill};
+use crate::{blue_fill, load_png_image, red_fill};
 use crate::{green_fill, rect_to_path};
 
 #[snapshot(settings_2)]
@@ -49,4 +49,17 @@ fn stream_reused_graphics_state(page: &mut Page) {
     surface.pop();
     surface.set_fill(Some(green_fill(0.5)));
     surface.draw_path(&path1);
+}
+
+// Make sure page streams and images are flate encoded with default settings.
+#[snapshot(settings_29)]
+fn stream_compress_by_default(page: &mut Page) {
+    let mut surface = page.surface();
+    let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
+    surface.set_fill(Some(green_fill(0.5)));
+    surface.draw_path(&path1);
+
+    let image = load_png_image("luma8.png");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
 }

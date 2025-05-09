@@ -1040,6 +1040,10 @@ pub fn settings_28() -> SerializeSettings {
     }
 }
 
+pub fn settings_29() -> SerializeSettings {
+    SerializeSettings::default()
+}
+
 pub fn metadata_1() -> Metadata {
     Metadata::new()
         .language("en".to_string())
