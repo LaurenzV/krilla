@@ -153,8 +153,8 @@ jobs:
           
       - name: Get pdfbox
         run: |
-          curl -LO https://dlcdn.apache.org/pdfbox/3.0.4/pdfbox-app-3.0.4.jar
-          mv pdfbox-app-3.0.4.jar pdfbox.jar
+          curl -LO https://dlcdn.apache.org/pdfbox/3.0.5/pdfbox-app-3.0.5.jar
+          mv pdfbox-app-3.0.5.jar pdfbox.jar
 
       - name: Clone sitro
         run: |

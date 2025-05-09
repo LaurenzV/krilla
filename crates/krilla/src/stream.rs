@@ -233,6 +233,17 @@ impl<'a> FilterStreamBuilder<'a> {
         filter_stream
     }
 
+    pub(crate) fn new_auto_compressed(content: &'a [u8]) -> Self {
+        let filter_stream = Self::new_from_binary_data(content);
+
+        const MAX_COMPRESSED_SIZE: usize = 75;
+        if 100 * filter_stream.content.len() / content.len() > MAX_COMPRESSED_SIZE {
+            return Self::empty(content);
+        }
+
+        filter_stream
+    }
+
     pub(crate) fn new_from_uncompressed(content: &'a [u8]) -> Self {
         Self::empty(content)
     }

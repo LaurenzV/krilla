@@ -41,8 +41,9 @@ pub struct EmbeddedFile {
     /// The raw data of the embedded file.
     pub data: Data,
     /// Whether the embedded file should be compressed (recommended to turn off if the
-    /// original file already has compression).
-    pub compress: bool,
+    /// original file already has compression). If `None`, krilla will use its own logic
+    /// for determining whether to compress the file or not.
+    pub compress: Option<bool>,
     /// The location of the embedded file.
     pub location: Option<Location>,
 }
@@ -61,10 +62,10 @@ impl Cacheable for EmbeddedFile {
         let mut chunk = Chunk::new();
         let stream_ref = sc.new_ref();
 
-        let file_stream = if self.compress {
-            FilterStreamBuilder::new_from_binary_data(self.data.as_ref())
-        } else {
-            FilterStreamBuilder::new_from_uncompressed(self.data.as_ref())
+        let file_stream = match self.compress {
+            Some(true) => FilterStreamBuilder::new_from_binary_data(self.data.as_ref()),
+            Some(false) => FilterStreamBuilder::new_from_uncompressed(self.data.as_ref()),
+            None => FilterStreamBuilder::new_auto_compressed(self.data.as_ref()),
         }
         .finish(&sc.serialize_settings());
 
