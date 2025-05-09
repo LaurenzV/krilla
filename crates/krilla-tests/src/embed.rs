@@ -55,7 +55,7 @@ fn file_4() -> EmbeddedFile {
     EmbeddedFile {
         path: "rgb8.gif".to_string(),
         mime_type: Some("image/gif".to_string()),
-        description: Some("A nice jif.".to_string()),
+        description: Some("A nice gif.".to_string()),
         association_kind: AssociationKind::Unspecified,
         data: data.into(),
         compress: Some(false),
