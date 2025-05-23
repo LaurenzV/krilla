@@ -175,7 +175,7 @@ pub enum ContentTag<'a> {
     Artifact(ArtifactType),
     /// A content tag that wraps some text with specific properties.
     ///
-    /// Spans should not be too long. At most, they should contain a single like of text, but they
+    /// Spans should not be too long. At most, they should contain a single line of text, but they
     /// can obviously be shorter, if text within a single line contains text with different styles
     /// or different languages.
     Span(SpanTag<'a>),
