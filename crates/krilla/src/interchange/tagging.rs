@@ -704,6 +704,11 @@ impl TagGroup {
         }
     }
 
+    /// Create a new tag group with a specific tag and a list of children.
+    pub fn with_children(tag: Tag, children: Vec<Node>) -> Self {
+        Self { tag, children }
+    }
+
     /// Append a new child to the tag group.
     pub fn push(&mut self, child: impl Into<Node>) {
         self.children.push(child.into())
@@ -787,6 +792,12 @@ impl TagGroup {
 #[derive(Default)]
 pub struct TagTree {
     children: Vec<Node>,
+}
+
+impl From<Vec<Node>> for TagTree {
+    fn from(children: Vec<Node>) -> Self {
+        Self { children }
+    }
 }
 
 impl TagTree {
