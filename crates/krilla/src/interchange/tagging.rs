@@ -130,6 +130,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
+use crate::util::attributes::{LazyAttributes, LazyTableAttributes};
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -491,21 +492,21 @@ pub enum TagKind {
     Lbl,
     /// Description of the list item.
     LBody,
-    /// A table.
+    /// A table, with an optional summary describing the purpose and structure.
     ///
     /// **Best practice**: Should consist of an optional table header row,
     /// one or more table body elements and an optional table footer. Can have
     /// caption as the first or last child.
-    Table,
+    Table(Option<String>),
     /// A table row.
     ///
     /// **Best practice**: May contain table headers cells and table data cells.
     TR,
     /// A table header cell.
     // Table header scope is only required for PDF/UA, but we include it always for simplicity.
-    TH(TableHeaderScope),
+    TH(TableHeaderCell),
     /// A table data cell.
-    TD,
+    TD(TableDataCell),
     /// A table header row group.
     THead,
     /// A table data row group.
@@ -543,11 +544,11 @@ pub enum TagKind {
     /// and all other subsequent children should be content identifiers associated with that
     /// annotation.
     Annot,
-    /// Item of graphical content, with some optional alt text.
+    /// Item of graphical content.
     ///
     /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
     Figure,
-    /// A mathematical formula, with some optional alt text.
+    /// A mathematical formula.
     ///
     /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
     Formula,
@@ -590,10 +591,10 @@ impl TagKind {
             Self::LI => struct_elem.kind(StructRole::LI),
             Self::Lbl => struct_elem.kind(StructRole::Lbl),
             Self::LBody => struct_elem.kind(StructRole::LBody),
-            Self::Table => struct_elem.kind(StructRole::Table),
+            Self::Table(_) => struct_elem.kind(StructRole::Table),
             Self::TR => struct_elem.kind(StructRole::TR),
             Self::TH(_) => struct_elem.kind(StructRole::TH),
-            Self::TD => struct_elem.kind(StructRole::TD),
+            Self::TD(_) => struct_elem.kind(StructRole::TD),
             Self::THead => struct_elem.kind(StructRole::THead),
             Self::TBody => struct_elem.kind(StructRole::TBody),
             Self::TFoot => struct_elem.kind(StructRole::TFoot),
@@ -637,10 +638,10 @@ impl TagKind {
             Self::LI => PdfVersion::Pdf14,
             Self::Lbl => PdfVersion::Pdf14,
             Self::LBody => PdfVersion::Pdf14,
-            Self::Table => PdfVersion::Pdf14,
+            Self::Table(_) => PdfVersion::Pdf14,
             Self::TR => PdfVersion::Pdf14,
             Self::TH(_) => PdfVersion::Pdf14,
-            Self::TD => PdfVersion::Pdf14,
+            Self::TD(_) => PdfVersion::Pdf14,
             Self::THead => PdfVersion::Pdf15,
             Self::TBody => PdfVersion::Pdf15,
             Self::TFoot => PdfVersion::Pdf15,
@@ -824,9 +825,41 @@ impl TagGroup {
                     .list()
                     .list_numbering(ln.to_pdf());
             }
-            TagKind::TH(ths) => {
+            TagKind::TH(ref cell) => {
+                let mut attributes = LazyAttributes::new(&mut struct_elem);
+                let mut table_attributes = LazyTableAttributes::new(&mut attributes);
+
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    struct_elem.attributes().push().table().scope(ths.to_pdf());
+                    table_attributes.get().scope(cell.scope.to_pdf());
+                }
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
+                    if let Some(_) = cell.headers.header_ids() {
+                        // TODO: write parents
+                        // table_attributes.get().headers().items(ids);
+                    }
+                }
+                if let Some(n) = cell.span.row_span() {
+                    table_attributes.get().row_span(n);
+                }
+                if let Some(n) = cell.span.col_span() {
+                    table_attributes.get().col_span(n);
+                }
+            }
+            TagKind::TD(ref cell) => {
+                let mut attributes = LazyAttributes::new(&mut struct_elem);
+                let mut table_attributes = LazyTableAttributes::new(&mut attributes);
+
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
+                    if let Some(_) = cell.headers.header_ids() {
+                        // TODO: write parents
+                        // table_attributes.get().headers().items(ids);
+                    }
+                }
+                if let Some(n) = cell.span.row_span() {
+                    table_attributes.get().row_span(n);
+                }
+                if let Some(n) = cell.span.col_span() {
+                    table_attributes.get().col_span(n);
                 }
             }
             TagKind::Note => {
@@ -1073,6 +1106,71 @@ impl ListNumbering {
     }
 }
 
+/// A table header cell.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TableHeaderCell {
+    /// The scope of the table header.
+    pub scope: TableHeaderScope,
+    /// A list of parent headers.
+    pub headers: TableHeaderRefs,
+    /// The column/row span of the table.
+    pub span: TableCellSpan,
+}
+
+impl TableHeaderCell {
+    /// Create a new table header cell.
+    pub const fn new(scope: TableHeaderScope) -> Self {
+        Self {
+            scope,
+            headers: TableHeaderRefs::NONE,
+            span: TableCellSpan::ONE,
+        }
+    }
+
+    /// Sets [`TableHeaderCell::headers`].
+    pub fn with_headers(mut self, headers: TableHeaderRefs) -> Self {
+        self.headers = headers;
+        self
+    }
+
+    /// Sets [`TableHeaderCell::span`].
+    pub fn with_span(mut self, span: TableCellSpan) -> Self {
+        self.span = span;
+        self
+    }
+}
+
+/// A table data cell.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TableDataCell {
+    /// A list of associated headers.
+    pub headers: TableHeaderRefs,
+    /// The column/row span of the table.
+    pub span: TableCellSpan,
+}
+
+impl TableDataCell {
+    /// Create a new table data cell.
+    pub const fn new() -> Self {
+        Self {
+            headers: TableHeaderRefs::NONE,
+            span: TableCellSpan::ONE,
+        }
+    }
+
+    /// Sets [`TableDataCell::headers`].
+    pub fn with_headers(mut self, headers: TableHeaderRefs) -> Self {
+        self.headers = headers;
+        self
+    }
+
+    /// Sets [`TableDataCell::span`].
+    pub fn with_span(mut self, span: TableCellSpan) -> Self {
+        self.span = span;
+        self
+    }
+}
+
 /// The scope of a table header cell.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum TableHeaderScope {
@@ -1091,5 +1189,70 @@ impl TableHeaderScope {
             TableHeaderScope::Column => pdf_writer::types::TableHeaderScope::Column,
             TableHeaderScope::Both => pdf_writer::types::TableHeaderScope::Both,
         }
+    }
+}
+
+/// A list of headers associated with a table cell.
+/// Table data cells (`TD`) may specify a list of table headers (`TH`),
+/// which can also specify a list of parent header cells (`TH`), and so on.
+/// To determine the the list of associated headers this list is recursively
+/// evaluated.
+///
+/// This allows specifying header hierarchies inside tables.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct TableHeaderRefs {
+    // TODO
+}
+
+impl TableHeaderRefs {
+    /// An empty reference list.
+    pub const NONE: Self = Self {};
+
+    fn header_ids(&self) -> Option<i32> {
+        // TODO
+        None
+    }
+}
+
+/// The span of a table cell.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct TableCellSpan {
+    /// The number of spanned rows inside the enclosing table.
+    pub rows: i32,
+    /// The number of spanned cells inside the enclosing table.
+    pub cols: i32,
+}
+
+impl Default for TableCellSpan {
+    fn default() -> Self {
+        Self::ONE
+    }
+}
+
+impl TableCellSpan {
+    /// A table cell that spans only one row and column.
+    pub const ONE: Self = Self::new(1, 1);
+
+    /// Create a new table cell span.
+    pub const fn new(rows: i32, cols: i32) -> Self {
+        Self { rows, cols }
+    }
+
+    /// Create a new table cell span that spans a number of rows.
+    pub const fn row(rows: i32) -> Self {
+        Self { rows, cols: 1 }
+    }
+
+    /// Create a new table cell span that spans a number of columns.
+    pub const fn col(cols: i32) -> Self {
+        Self { rows: 1, cols }
+    }
+
+    fn row_span(self) -> Option<i32> {
+        (self.rows != 1).then_some(self.rows)
+    }
+
+    fn col_span(self) -> Option<i32> {
+        (self.cols != 1).then_some(self.cols)
     }
 }

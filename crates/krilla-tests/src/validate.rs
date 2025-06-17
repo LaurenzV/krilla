@@ -9,8 +9,8 @@ use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{
-    ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagKind,
-    TagTree,
+    ArtifactType, ContentTag, ListNumbering, SpanTag, TableCellSpan, TableHeaderCell,
+    TableHeaderRefs, TableHeaderScope, Tag, TagGroup, TagKind, TagTree,
 };
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
@@ -573,7 +573,7 @@ fn validate_pdf_ua1_attributes(document: &mut Document) {
     let mut group1 = TagGroup::new(TagKind::L(ListNumbering::Circle));
     group1.push(id1);
 
-    let mut group2 = TagGroup::new(TagKind::TH(TableHeaderScope::Row));
+    let mut group2 = TagGroup::new(TagKind::TH(TableHeaderCell::new(TableHeaderScope::Row)));
     group2.push(id2);
 
     tag_tree.push(group1);
