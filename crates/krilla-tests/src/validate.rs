@@ -9,7 +9,8 @@ use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{
-    ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagTree,
+    ArtifactType, ContentTag, ListNumbering, SpanTag, TableHeaderScope, Tag, TagGroup, TagKind,
+    TagTree,
 };
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
@@ -532,7 +533,7 @@ fn validate_pdf_ua1_missing_requirements() {
     page.finish();
 
     let mut tag_tree = TagTree::new();
-    let mut tag_group = TagGroup::new(Tag::Formula(None));
+    let mut tag_group = TagGroup::new(TagKind::Formula);
     tag_group.push(id1);
     tag_group.push(annot);
     tag_tree.push(tag_group);
@@ -569,10 +570,10 @@ fn validate_pdf_ua1_attributes(document: &mut Document) {
 
     let mut tag_tree = TagTree::new();
 
-    let mut group1 = TagGroup::new(Tag::L(ListNumbering::Circle));
+    let mut group1 = TagGroup::new(TagKind::L(ListNumbering::Circle));
     group1.push(id1);
 
-    let mut group2 = TagGroup::new(Tag::TH(TableHeaderScope::Row));
+    let mut group2 = TagGroup::new(TagKind::TH(TableHeaderScope::Row));
     group2.push(id2);
 
     tag_tree.push(group1);

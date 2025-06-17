@@ -6,7 +6,9 @@ use krilla::error::KrillaError;
 use krilla::geom::{Point, Rect, Size, Transform};
 use krilla::paint::Fill;
 use krilla::surface::Surface;
-use krilla::tagging::{ArtifactType, ContentTag, SpanTag, Tag, TagGroup, TagTree};
+use krilla::tagging::{
+    ArtifactType, ContentTag, SpanTag, Tag, TagBuilder, TagGroup, TagKind, TagTree,
+};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
 use krilla_macros::snapshot;
@@ -42,7 +44,7 @@ fn tagging_empty(document: &mut Document) {
 
 fn tagging_simple_impl(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut par = TagGroup::new(Tag::P);
+    let mut par = TagGroup::new(TagKind::P);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -66,8 +68,8 @@ fn tagging_simple_impl(document: &mut Document) {
 
 fn tagging_simple_with_link_impl(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut par = TagGroup::new(Tag::P);
-    let mut link = TagGroup::new(Tag::Link);
+    let mut par = TagGroup::new(TagKind::P);
+    let mut link = TagGroup::new(TagKind::Link);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -125,7 +127,7 @@ pub(crate) fn sample_svg() -> usvg::Tree {
 fn tagging_image_with_alt(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut image_group =
-        TagGroup::new(Tag::Figure(Some("This is the alternate text.".to_string())));
+        TagGroup::new(TagKind::Figure.with_alt_text("This is the alternate text.".to_string()));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -203,13 +205,13 @@ fn tagging_multiple_content_tags(document: &mut Document) {
 #[snapshot(document)]
 fn tagging_multiple_pages(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut par_1 = TagGroup::new(Tag::P);
-    let mut par_2 = TagGroup::new(Tag::P);
-    let mut heading_1 = TagGroup::new(Tag::Hn(
+    let mut par_1 = TagGroup::new(TagKind::P);
+    let mut par_2 = TagGroup::new(TagKind::P);
+    let mut heading_1 = TagGroup::new(TagKind::Hn(
         NonZeroU32::new(1).unwrap(),
         Some("first heading".to_string()),
     ));
-    let mut heading_2 = TagGroup::new(Tag::Hn(
+    let mut heading_2 = TagGroup::new(TagKind::Hn(
         NonZeroU32::new(1).unwrap(),
         Some("second heading".to_string()),
     ));
@@ -251,10 +253,10 @@ fn tagging_multiple_pages(document: &mut Document) {
     heading_2.push(h2);
     par_2.push(p3);
 
-    let mut sect1 = TagGroup::new(Tag::Section);
+    let mut sect1 = TagGroup::new(TagKind::Section);
     sect1.push(heading_1);
     sect1.push(par_1);
-    let mut sect2 = TagGroup::new(Tag::Section);
+    let mut sect2 = TagGroup::new(TagKind::Section);
     sect2.push(heading_2);
     sect2.push(par_2);
 
@@ -287,10 +289,10 @@ fn tagging_heading_level_7_and_8(document: &mut Document) {
         surface.end_tagged();
 
         let level = NonZeroU32::new(level).unwrap();
-        let mut heading = TagGroup::new(Tag::Hn(level, Some(name.to_string())));
+        let mut heading = TagGroup::new(TagKind::Hn(level, Some(name.to_string())));
         heading.push(hn);
 
-        let mut sect = TagGroup::new(Tag::Section);
+        let mut sect = TagGroup::new(TagKind::Section);
         sect.push(heading);
 
         sect
@@ -324,8 +326,8 @@ fn tagging_heading_level_7_and_8(document: &mut Document) {
 #[snapshot(document)]
 fn tagging_two_footnotes(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut fn_group_1 = TagGroup::new(Tag::Note);
-    let mut fn_group_2 = TagGroup::new(Tag::Note);
+    let mut fn_group_1 = TagGroup::new(TagKind::Note);
+    let mut fn_group_2 = TagGroup::new(TagKind::Note);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -356,8 +358,8 @@ fn tagging_two_footnotes(document: &mut Document) {
 fn tagging_page_identifer_appears_twice() {
     let mut document = Document::new();
     let mut tag_tree = TagTree::new();
-    let mut fn_group_1 = TagGroup::new(Tag::P);
-    let mut fn_group_2 = TagGroup::new(Tag::P);
+    let mut fn_group_1 = TagGroup::new(TagKind::P);
+    let mut fn_group_2 = TagGroup::new(TagKind::P);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -385,8 +387,8 @@ fn tagging_page_identifer_appears_twice() {
 fn tagging_annotation_identifer_appears_twice() {
     let mut document = Document::new();
     let mut tag_tree = TagTree::new();
-    let mut fn_group_1 = TagGroup::new(Tag::P);
-    let mut fn_group_2 = TagGroup::new(Tag::P);
+    let mut fn_group_1 = TagGroup::new(TagKind::P);
+    let mut fn_group_2 = TagGroup::new(TagKind::P);
 
     let mut page = document.start_page();
     let link_id = page.add_tagged_annotation(
