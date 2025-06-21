@@ -173,77 +173,41 @@ pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {
     }
 }
 
-pub mod attributes {
-    use pdf_writer::writers::{Attributes, StructElement, TableAttributes};
-    use pdf_writer::TypedArray;
-
-    pub struct LazyAttributes<'a: 'b, 'b> {
-        elem: Option<&'b mut StructElement<'a>>,
-        attrs: Option<TypedArray<'b, Attributes<'b>>>,
+pub(crate) mod lazy {
+    /// Lazily initialize a value with a consuming function.
+    /// This allows producing a value from a mutable reference.
+    pub struct LazyInit<U, I, F> {
+        inner: Option<Repr<U, I>>,
+        f: F,
     }
 
-    impl<'a: 'b, 'b> LazyAttributes<'a, 'b> {
-        pub fn new(struct_elem: &'b mut StructElement<'a>) -> Self {
-            Self {
-                elem: Some(struct_elem),
-                attrs: None,
-            }
-        }
-
-        pub fn get(&mut self) -> &mut TypedArray<'b, Attributes<'b>> {
-            self.attrs.get_or_insert_with(|| {
-                let elem = self
-                    .elem
-                    .take()
-                    .expect("either attrs or elem to be present");
-                elem.attributes()
-            })
-        }
+    enum Repr<U, I> {
+        Uninit(U),
+        Init(I),
     }
 
-    // Using DerefMut would be nice, but that would require a Deref impl, which
-    // is not possible because the lazy initialization requires mutable access.
-    pub trait GetAttributes<'b> {
-        fn get_attrs(&mut self) -> &mut TypedArray<'b, Attributes<'b>>;
-    }
-
-    impl<'a: 'b, 'b> GetAttributes<'b> for TypedArray<'b, Attributes<'b>> {
-        fn get_attrs(&mut self) -> &mut TypedArray<'b, Attributes<'b>> {
-            self
-        }
-    }
-
-    impl<'a: 'b, 'b> GetAttributes<'b> for LazyAttributes<'a, 'b> {
-        fn get_attrs(&mut self) -> &mut TypedArray<'b, Attributes<'b>> {
-            self.get()
-        }
-    }
-
-    pub struct LazyTableAttributes<'c, T> {
-        attrs: Option<&'c mut T>,
-        table: Option<TableAttributes<'c>>,
-    }
-
-    impl<'a: 'b, 'b: 'c, 'c, T> LazyTableAttributes<'c, T>
+    impl<U, I, F> LazyInit<U, I, F>
     where
-        T: GetAttributes<'b>,
-        T: 'a + 'b,
+        F: Fn(U) -> I,
     {
-        pub fn new(attributes: &'c mut T) -> Self {
+        pub fn new(uninit: U, f: F) -> Self {
             Self {
-                attrs: Some(attributes),
-                table: None,
+                inner: Some(Repr::Uninit(uninit)),
+                f,
             }
         }
 
-        pub fn get(&mut self) -> &mut TableAttributes<'c> {
-            self.table.get_or_insert_with(|| {
-                let attrs = self
-                    .attrs
-                    .take()
-                    .expect("either table or attrs to be present");
-                attrs.get_attrs().push().table()
-            })
+        // Using DerefMut would be nice, but that would require a Deref impl,
+        // which is not possible because initialization requires mutable access.
+        pub fn get(&mut self) -> &mut I {
+            let init = match self.inner.take().expect("inner to be present") {
+                Repr::Uninit(uninit) => (self.f)(uninit),
+                Repr::Init(init) => init,
+            };
+            match self.inner.insert(Repr::Init(init)) {
+                Repr::Uninit(_) => unreachable!(),
+                Repr::Init(init) => init,
+            }
         }
     }
 }

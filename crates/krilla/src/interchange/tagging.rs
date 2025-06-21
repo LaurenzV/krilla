@@ -130,7 +130,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
-use crate::util::attributes::{LazyAttributes, LazyTableAttributes};
+use crate::util::lazy::LazyInit;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -826,8 +826,10 @@ impl TagGroup {
                     .list_numbering(ln.to_pdf());
             }
             TagKind::TH(ref cell) => {
-                let mut attributes = LazyAttributes::new(&mut struct_elem);
-                let mut table_attributes = LazyTableAttributes::new(&mut attributes);
+                // Laziliy initialize the table attributes, to avoid an empty list.
+                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
+                let mut table_attributes =
+                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                     table_attributes.get().scope(cell.scope.to_pdf());
@@ -846,8 +848,10 @@ impl TagGroup {
                 }
             }
             TagKind::TD(ref cell) => {
-                let mut attributes = LazyAttributes::new(&mut struct_elem);
-                let mut table_attributes = LazyTableAttributes::new(&mut attributes);
+                // Laziliy initialize the table attributes, to avoid an empty list.
+                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
+                let mut table_attributes =
+                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                     if let Some(_) = cell.headers.header_ids() {
