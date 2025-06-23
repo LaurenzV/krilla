@@ -180,7 +180,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          path: ./assets/diffs
+          path: ./diffs
           
       - name: Run Arlington PDF tests
         # We are excluding one file because of https://github.com/pdf-association/arlington-pdf-model/issues/132     
