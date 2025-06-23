@@ -376,6 +376,9 @@ impl Identifier {
 pub struct Tag {
     /// The structure element type.
     pub kind: TagKind,
+    /// The identifier of this tag.
+    /// Used in [`TableHeaderRefs`].
+    pub id: Option<TagId>,
     /// The language of this tag.
     pub lang: Option<String>,
     /// An optional alternate text that describes the text (for example, if the text consists
@@ -401,6 +404,7 @@ impl Tag {
     pub fn new(kind: TagKind) -> Self {
         Self {
             kind,
+            id: None,
             lang: None,
             alt_text: None,
             expanded: None,
@@ -443,7 +447,7 @@ pub trait TagBuilder: Into<Tag> {
 impl<T: Into<Tag>> TagBuilder for T {}
 
 /// A structure element type.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TagKind {
     /// A part of a document that may contain multiple articles or sections.
     Part,
@@ -689,7 +693,7 @@ impl Node {
         &self,
         sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree: &mut BTreeMap<String, Ref>,
+        id_tree: &mut BTreeMap<TagId, Ref>,
         parent: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
@@ -760,7 +764,7 @@ impl TagGroup {
         &self,
         sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree: &mut BTreeMap<String, Ref>,
+        id_tree: &mut BTreeMap<TagId, Ref>,
         parent_ref: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
@@ -786,6 +790,22 @@ impl TagGroup {
         let mut struct_elem = chunk.struct_element(elem_ref);
         self.tag.kind.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent_ref);
+
+        if let Some(id) = self.tag.id.clone() {
+            if id_tree.contains_key(&id) {
+                sc.register_validation_error(ValidationError::DuplicateTagId(id));
+            } else {
+                struct_elem.id(Str(id.as_bytes()));
+                id_tree.insert(id, elem_ref);
+            }
+        } else if TagKind::Note == self.tag.kind {
+            // Explicitly don't use `TagId::from_vec`
+            let id = TagId(format!("Note {}", note_id).into_bytes());
+            struct_elem.id(Str(id.as_bytes()));
+            id_tree.insert(id, elem_ref);
+
+            *note_id += 1;
+        }
 
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf14 {
             if let Some(lang) = &self.tag.lang {
@@ -835,9 +855,9 @@ impl TagGroup {
                     table_attributes.get().scope(cell.scope.to_pdf());
                 }
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    if let Some(_) = cell.headers.header_ids() {
-                        // TODO: write parents
-                        // table_attributes.get().headers().items(ids);
+                    if let Some(ids) = cell.headers.header_ids() {
+                        let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
+                        table_attributes.get().headers().items(id_strs);
                     }
                 }
                 if let Some(n) = cell.span.row_span() {
@@ -854,9 +874,9 @@ impl TagGroup {
                     LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    if let Some(_) = cell.headers.header_ids() {
-                        // TODO: write parents
-                        // table_attributes.get().headers().items(ids);
+                    if let Some(ids) = cell.headers.header_ids() {
+                        let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
+                        table_attributes.get().headers().items(id_strs);
                     }
                 }
                 if let Some(n) = cell.span.row_span() {
@@ -865,12 +885,6 @@ impl TagGroup {
                 if let Some(n) = cell.span.col_span() {
                     table_attributes.get().col_span(n);
                 }
-            }
-            TagKind::Note => {
-                let id = format!("Note {}", note_id);
-                *note_id += 1;
-                id_tree.insert(id.clone(), elem_ref);
-                struct_elem.id(Str(id.as_bytes()));
             }
             _ => {}
         }
@@ -886,6 +900,36 @@ impl TagGroup {
         struct_elems.push(chunk);
 
         Ok(Reference::Ref(elem_ref))
+    }
+
+    fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
+        match &self.tag.kind {
+            TagKind::TH(cell) => {
+                if let Some(ids) = cell.headers.header_ids() {
+                    for id in ids.iter() {
+                        if !id_tree.contains_key(&id) {
+                            sc.register_validation_error(ValidationError::UnknownTagId(id.clone()));
+                        }
+                    }
+                }
+            }
+            TagKind::TD(cell) => {
+                if let Some(ids) = cell.headers.header_ids() {
+                    for id in ids.iter() {
+                        if !id_tree.contains_key(&id) {
+                            sc.register_validation_error(ValidationError::UnknownTagId(id.clone()));
+                        }
+                    }
+                }
+            }
+            _ => (),
+        }
+
+        for child in self.children.iter() {
+            if let Node::Group(group) = child {
+                group.validate(sc, id_tree)
+            }
+        }
     }
 }
 
@@ -916,7 +960,7 @@ impl TagTree {
         &self,
         sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
-        id_tree_map: &mut BTreeMap<String, Ref>,
+        id_tree_map: &mut BTreeMap<TagId, Ref>,
         struct_tree_ref: Ref,
     ) -> KrillaResult<(Ref, Vec<Chunk>)> {
         let root_ref = sc.new_ref();
@@ -964,6 +1008,14 @@ impl TagTree {
         struct_elems = struct_elems.into_iter().rev().collect::<Vec<_>>();
 
         Ok((root_ref, struct_elems))
+    }
+
+    pub(crate) fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
+        for child in self.children.iter() {
+            if let Node::Group(group) = child {
+                group.validate(sc, id_tree)
+            }
+        }
     }
 }
 
@@ -1205,16 +1257,35 @@ impl TableHeaderScope {
 /// This allows specifying header hierarchies inside tables.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TableHeaderRefs {
-    // TODO
+    ids: Vec<TagId>,
 }
 
 impl TableHeaderRefs {
     /// An empty reference list.
-    pub const NONE: Self = Self {};
+    pub const NONE: Self = Self { ids: Vec::new() };
 
-    fn header_ids(&self) -> Option<i32> {
-        // TODO
-        None
+    fn header_ids(&self) -> Option<&[TagId]> {
+        (!self.ids.is_empty()).then_some(&self.ids)
+    }
+}
+
+/// An identifier of a [`Tag`].
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+// TODO: Use inline optimized byte string?
+pub struct TagId(Vec<u8>);
+
+impl TagId {
+    /// Create an identifier from bytes.
+    pub fn from_vec(mut bytes: Vec<u8>) -> Self {
+        // HACK: Disambiguate ids provided by the user from ids automatically
+        // assigned to notes by prefixing them with a `U`.
+        bytes.insert(0, b'U');
+        Self(bytes)
+    }
+
+    /// Returns the identifier as a byte slice.
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_slice()
     }
 }
 
