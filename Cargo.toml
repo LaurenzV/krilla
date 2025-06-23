@@ -39,7 +39,7 @@ resvg = "0.45.0"
 rustybuzz = "0.20.1"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "fb804b3" }
-skrifa = { git = "https://github.com/googlefonts/fontations", rev = "3b15121"}
+skrifa = "0.32.0"
 subsetter = "0.2.1"
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
