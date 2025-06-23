@@ -126,8 +126,9 @@ pub(crate) fn sample_svg() -> usvg::Tree {
 #[snapshot(document)]
 fn tagging_image_with_alt(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut image_group =
-        TagGroup::new(TagKind::Figure.with_alt_text("This is the alternate text.".to_string()));
+    let mut image_group = TagGroup::new(
+        TagKind::Figure.with_alt_text(Some("This is the alternate text.".to_string())),
+    );
 
     let mut page = document.start_page();
     let mut surface = page.surface();

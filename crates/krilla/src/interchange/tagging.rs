@@ -420,44 +420,44 @@ impl Tag {
 /// Builder methods for a [`Tag`].
 pub trait TagBuilder: Into<Tag> {
     /// Sets [`Tag::id`].
-    fn with_id(self, id: TagId) -> Tag {
+    fn with_id(self, id: Option<TagId>) -> Tag {
         let mut tag = self.into();
-        tag.id = Some(id);
+        tag.id = id;
         tag
     }
 
     /// Sets [`Tag::lang`].
-    fn with_lang(self, lang: String) -> Tag {
+    fn with_lang(self, lang: Option<String>) -> Tag {
         let mut tag = self.into();
-        tag.lang = Some(lang);
+        tag.lang = lang;
         tag
     }
 
     /// Sets [`Tag::alt_text`].
-    fn with_alt_text(self, alt_text: String) -> Tag {
+    fn with_alt_text(self, alt_text: Option<String>) -> Tag {
         let mut tag = self.into();
-        tag.alt_text = Some(alt_text);
+        tag.alt_text = alt_text;
         tag
     }
 
     /// Sets [`Tag::expanded`].
-    fn with_expanded(self, expanded: String) -> Tag {
+    fn with_expanded(self, expanded: Option<String>) -> Tag {
         let mut tag = self.into();
-        tag.expanded = Some(expanded);
+        tag.expanded = expanded;
         tag
     }
 
     /// Sets [`Tag::actual_text`].
-    fn with_actual_text(self, actual_text: String) -> Tag {
+    fn with_actual_text(self, actual_text: Option<String>) -> Tag {
         let mut tag = self.into();
-        tag.actual_text = Some(actual_text);
+        tag.actual_text = actual_text;
         tag
     }
 
     /// Sets [`Tag::location`].
-    fn with_location(self, location: Location) -> Tag {
+    fn with_location(self, location: Option<Location>) -> Tag {
         let mut tag = self.into();
-        tag.location = Some(location);
+        tag.location = location;
         tag
     }
 }
