@@ -130,6 +130,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
+use crate::surface::Location;
 use crate::util::lazy::LazyInit;
 
 /// A type of artifact.
@@ -391,6 +392,8 @@ pub struct Tag {
     /// some curves that artistically write some word. This should be the exact
     /// replacment text of the word.
     pub actual_text: Option<String>,
+    /// The location of the tag.
+    pub location: Option<Location>,
 }
 
 impl From<TagKind> for Tag {
@@ -409,12 +412,20 @@ impl Tag {
             alt_text: None,
             expanded: None,
             actual_text: None,
+            location: None,
         }
     }
 }
 
 /// Builder methods for a [`Tag`].
 pub trait TagBuilder: Into<Tag> {
+    /// Sets [`Tag::id`].
+    fn with_id(self, id: TagId) -> Tag {
+        let mut tag = self.into();
+        tag.id = Some(id);
+        tag
+    }
+
     /// Sets [`Tag::lang`].
     fn with_lang(self, lang: String) -> Tag {
         let mut tag = self.into();
@@ -440,6 +451,13 @@ pub trait TagBuilder: Into<Tag> {
     fn with_actual_text(self, actual_text: String) -> Tag {
         let mut tag = self.into();
         tag.actual_text = Some(actual_text);
+        tag
+    }
+
+    /// Sets [`Tag::location`].
+    fn with_location(self, location: Location) -> Tag {
+        let mut tag = self.into();
+        tag.location = Some(location);
         tag
     }
 }
@@ -793,7 +811,10 @@ impl TagGroup {
 
         if let Some(id) = self.tag.id.clone() {
             if id_tree.contains_key(&id) {
-                sc.register_validation_error(ValidationError::DuplicateTagId(id));
+                sc.register_validation_error(ValidationError::DuplicateTagId(
+                    id,
+                    self.tag.location,
+                ));
             } else {
                 struct_elem.id(Str(id.as_bytes()));
                 id_tree.insert(id, elem_ref);
@@ -908,7 +929,10 @@ impl TagGroup {
                 if let Some(ids) = cell.headers.header_ids() {
                     for id in ids.iter() {
                         if !id_tree.contains_key(&id) {
-                            sc.register_validation_error(ValidationError::UnknownTagId(id.clone()));
+                            sc.register_validation_error(ValidationError::UnknownHeaderTagId(
+                                id.clone(),
+                                self.tag.location,
+                            ));
                         }
                     }
                 }
@@ -917,7 +941,10 @@ impl TagGroup {
                 if let Some(ids) = cell.headers.header_ids() {
                     for id in ids.iter() {
                         if !id_tree.contains_key(&id) {
-                            sc.register_validation_error(ValidationError::UnknownTagId(id.clone()));
+                            sc.register_validation_error(ValidationError::UnknownHeaderTagId(
+                                id.clone(),
+                                self.tag.location,
+                            ));
                         }
                     }
                 }
