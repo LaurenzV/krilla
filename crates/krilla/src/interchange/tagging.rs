@@ -273,7 +273,7 @@ pub struct SpanTag<'a> {
     pub actual_text: Option<ActualText<'a>>,
 }
 
-impl SpanTag<'_> {
+impl<'a> SpanTag<'a> {
     /// An empty span tag.
     pub fn empty() -> Self {
         Self {
@@ -282,6 +282,30 @@ impl SpanTag<'_> {
             expanded: None,
             actual_text: None,
         }
+    }
+
+    /// Sets [`SpanTag::lang`].
+    pub fn with_lang(mut self, lang: Option<&'a str>) -> Self {
+        self.lang = lang;
+        self
+    }
+
+    /// Sets [`SpanTag::alt_text`].
+    pub fn with_alt_text(mut self, alt_text: Option<&'a str>) -> Self {
+        self.alt_text = alt_text;
+        self
+    }
+
+    /// Sets [`SpanTag::expanded`].
+    pub fn with_expanded(mut self, expanded: Option<&'a str>) -> Self {
+        self.expanded = expanded;
+        self
+    }
+
+    /// Sets [`SpanTag::actual_text`].
+    pub fn with_actual_text(mut self, actual_text: Option<&'a str>) -> Self {
+        self.actual_text = actual_text;
+        self
     }
 }
 
