@@ -1,7 +1,8 @@
 use std::any::Any;
 use std::fmt;
-use std::fmt::Debug;
+use std::fmt::{Debug, Write as _};
 use std::hash::{Hash, Hasher};
+use std::num::NonZeroU32;
 use std::ops::Deref;
 
 use base64::Engine;
@@ -171,6 +172,42 @@ pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {
         MaybeDeviceColorSpace::DeviceCMYK => pdf_cs.primitive(DEVICE_CMYK.to_pdf_name()),
         MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
     }
+}
+
+struct FixedBufWriter<'a> {
+    buf: &'a mut [u8],
+    offset: usize,
+}
+
+impl<'a> FixedBufWriter<'a> {
+    fn new(buf: &'a mut [u8]) -> Self {
+        Self { buf, offset: 0 }
+    }
+
+    fn into_slice(self) -> &'a mut [u8] {
+        let Self { buf, offset } = self;
+        &mut buf[..offset]
+    }
+}
+
+impl fmt::Write for FixedBufWriter<'_> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let remainder = &mut self.buf[self.offset..];
+        if remainder.len() < s.len() {
+            return Err(fmt::Error);
+        }
+        remainder[..s.len()].copy_from_slice(s.as_bytes());
+        self.offset += s.len();
+        Ok(())
+    }
+}
+
+pub(crate) const HEADING_ROLE_BUF_SIZE: usize = "H".len() + u32::MAX.ilog10() as usize + 1;
+
+pub(crate) fn fmt_heading_role(buf: &mut [u8; HEADING_ROLE_BUF_SIZE], n: NonZeroU32) -> &[u8] {
+    let mut writer = FixedBufWriter::new(buf);
+    _ = write!(writer, "H{n}");
+    writer.into_slice()
 }
 
 #[cfg(not(feature = "rayon"))]

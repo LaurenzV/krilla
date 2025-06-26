@@ -1,5 +1,6 @@
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::num::NonZeroU32;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -24,12 +25,12 @@ use crate::interchange::tagging::{
     AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
 };
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
-use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
 use crate::util::{Deferred, SipHashable};
+use crate::{resource, util};
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -652,6 +653,11 @@ impl SerializeContext {
             role_map.insert(Name(b"Datetime"), StructRole::Span);
             role_map.insert(Name(b"Terms"), StructRole::Part);
             role_map.insert(Name(b"Title"), StructRole::H1);
+            for &n in self.global_objects.custom_heading_roles.iter() {
+                let mut buf = [0; util::HEADING_ROLE_BUF_SIZE];
+                let name = util::fmt_heading_role(&mut buf, n);
+                role_map.insert(Name(name), StructRole::P);
+            }
             role_map.finish();
             tree.insert(Name(b"K")).array().item(document_ref);
 
@@ -832,6 +838,9 @@ pub(crate) struct GlobalObjects {
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
+
+    /// A list of custom headings numbers used in the document.
+    pub(crate) custom_heading_roles: BTreeSet<NonZeroU32>,
 }
 
 impl GlobalObjects {
