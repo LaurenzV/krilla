@@ -130,7 +130,6 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
-use crate::util;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -543,9 +542,8 @@ impl Tag {
                     if pdf_version < PdfVersion::Pdf20 {
                         sc.global_objects.custom_heading_roles.insert(*level);
                     }
-                    let mut buf = [0; util::HEADING_ROLE_BUF_SIZE];
-                    let name = util::fmt_heading_role(&mut buf, *level);
-                    struct_elem.custom_kind(Name(name))
+                    let name = format!("H{level}");
+                    struct_elem.custom_kind(Name(name.as_bytes()))
                 }
             };
         }
