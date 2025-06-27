@@ -1,5 +1,6 @@
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::num::NonZeroU32;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -652,6 +653,10 @@ impl SerializeContext {
             role_map.insert(Name(b"Datetime"), StructRole::Span);
             role_map.insert(Name(b"Terms"), StructRole::Part);
             role_map.insert(Name(b"Title"), StructRole::H1);
+            for level in self.global_objects.custom_heading_roles.iter() {
+                let name = format!("H{level}");
+                role_map.insert(Name(name.as_bytes()), StructRole::P);
+            }
             role_map.finish();
             tree.insert(Name(b"K")).array().item(document_ref);
 
@@ -832,6 +837,9 @@ pub(crate) struct GlobalObjects {
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
+
+    /// A list of custom headings numbers used in the document.
+    pub(crate) custom_heading_roles: BTreeSet<NonZeroU32>,
 }
 
 impl GlobalObjects {

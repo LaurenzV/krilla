@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
@@ -203,8 +205,14 @@ fn tagging_multiple_pages(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut par_1 = TagGroup::new(Tag::P);
     let mut par_2 = TagGroup::new(Tag::P);
-    let mut heading_1 = TagGroup::new(Tag::H1(Some("first heading".to_string())));
-    let mut heading_2 = TagGroup::new(Tag::H1(Some("second heading".to_string())));
+    let mut heading_1 = TagGroup::new(Tag::Hn(
+        NonZeroU32::new(1).unwrap(),
+        Some("first heading".to_string()),
+    ));
+    let mut heading_2 = TagGroup::new(Tag::Hn(
+        NonZeroU32::new(1).unwrap(),
+        Some("second heading".to_string()),
+    ));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -252,6 +260,63 @@ fn tagging_multiple_pages(document: &mut Document) {
 
     tag_tree.push(sect1);
     tag_tree.push(sect2);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
+fn tagging_heading_level_7_and_8_pdf_17(document: &mut Document) {
+    tagging_heading_level_7_and_8(document);
+}
+
+#[snapshot(document, settings_25)]
+fn tagging_heading_level_7_and_8_pdf_20(document: &mut Document) {
+    tagging_heading_level_7_and_8(document);
+}
+
+fn tagging_heading_level_7_and_8(document: &mut Document) {
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    let mut offset = 25.0;
+
+    let mut new_heading = |level, name| {
+        let hn = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        surface.fill_text_(offset, name);
+        offset += 25.0;
+        surface.end_tagged();
+
+        let level = NonZeroU32::new(level).unwrap();
+        let mut heading = TagGroup::new(Tag::Hn(level, Some(name.to_string())));
+        heading.push(hn);
+
+        let mut sect = TagGroup::new(Tag::Section);
+        sect.push(heading);
+
+        sect
+    };
+
+    let mut sect_1 = new_heading(1, "first heading");
+    let mut sect_2 = new_heading(2, "second heading");
+    let mut sect_3 = new_heading(3, "third heading");
+    let mut sect_4 = new_heading(4, "fourth heading");
+    let mut sect_5 = new_heading(5, "fifth heading");
+    let mut sect_6 = new_heading(6, "sixth heading");
+    let mut sect_7 = new_heading(7, "senventh heading");
+    let sect_8 = new_heading(8, "eigth heading");
+
+    surface.finish();
+    page.finish();
+
+    sect_7.push(sect_8);
+    sect_6.push(sect_7);
+    sect_5.push(sect_6);
+    sect_4.push(sect_5);
+    sect_3.push(sect_4);
+    sect_2.push(sect_3);
+    sect_1.push(sect_2);
+
+    tag_tree.push(sect_1);
 
     document.set_tag_tree(tag_tree);
 }

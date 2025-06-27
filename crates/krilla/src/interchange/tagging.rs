@@ -121,6 +121,7 @@
 
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
+use std::num::NonZeroU32;
 
 use pdf_writer::types::{ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
@@ -401,30 +402,10 @@ pub enum Tag {
     Index,
     /// A paragraph.
     P,
-    /// First-level heading, including an optional title of the heading.
+    /// Heading level `n`, including an optional title of the heading.
     ///
     /// The title is required for some export modes, like for example PDF/UA.
-    H1(Option<String>),
-    /// Second-level heading, including an optional title of the heading.
-    ///
-    /// The title is required for some export modes, like for example PDF/UA.
-    H2(Option<String>),
-    /// Third-level heading, including an optional title of the heading.
-    ///
-    /// The title is required for some export modes, like for example PDF/UA.
-    H3(Option<String>),
-    /// Fourth-level heading, including an optional title of the heading.
-    ///
-    /// The title is required for some export modes, like for example PDF/UA.
-    H4(Option<String>),
-    /// Fifth-level heading, including an optional title of the heading.
-    ///
-    /// The title is required for some export modes, like for example PDF/UA.
-    H5(Option<String>),
-    /// Sixth-level heading, including an optional title of the heading.
-    ///
-    /// The title is required for some export modes, like for example PDF/UA.
-    H6(Option<String>),
+    Hn(NonZeroU32, Option<String>),
     /// A list.
     ///
     /// **Best practice**: Should consist of an optional caption followed by
@@ -509,7 +490,8 @@ pub enum Tag {
 }
 
 impl Tag {
-    pub(crate) fn write_kind(&self, struct_elem: &mut StructElement, pdf_version: PdfVersion) {
+    pub(crate) fn write_kind(&self, struct_elem: &mut StructElement, sc: &mut SerializeContext) {
+        let pdf_version = sc.serialize_settings().pdf_version();
         if self.minimum_version() > pdf_version {
             // Fall back to P in case the tag is not supported with the current
             // PDF version
@@ -525,12 +507,12 @@ impl Tag {
                 Tag::TOCI => struct_elem.kind(StructRole::TOCI),
                 Tag::Index => struct_elem.kind(StructRole::Index),
                 Tag::P => struct_elem.kind(StructRole::P),
-                Tag::H1(_) => struct_elem.kind(StructRole::H1),
-                Tag::H2(_) => struct_elem.kind(StructRole::H2),
-                Tag::H3(_) => struct_elem.kind(StructRole::H3),
-                Tag::H4(_) => struct_elem.kind(StructRole::H4),
-                Tag::H5(_) => struct_elem.kind(StructRole::H5),
-                Tag::H6(_) => struct_elem.kind(StructRole::H6),
+                Tag::Hn(n, _) if n.get() == 1 => struct_elem.kind(StructRole::H1),
+                Tag::Hn(n, _) if n.get() == 2 => struct_elem.kind(StructRole::H2),
+                Tag::Hn(n, _) if n.get() == 3 => struct_elem.kind(StructRole::H3),
+                Tag::Hn(n, _) if n.get() == 4 => struct_elem.kind(StructRole::H4),
+                Tag::Hn(n, _) if n.get() == 5 => struct_elem.kind(StructRole::H5),
+                Tag::Hn(n, _) if n.get() == 6 => struct_elem.kind(StructRole::H6),
                 Tag::L(_) => struct_elem.kind(StructRole::L),
                 Tag::LI => struct_elem.kind(StructRole::LI),
                 Tag::Lbl => struct_elem.kind(StructRole::Lbl),
@@ -555,6 +537,14 @@ impl Tag {
                 Tag::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
                 Tag::Terms => struct_elem.custom_kind(Name(b"Terms")),
                 Tag::Title => struct_elem.custom_kind(Name(b"Title")),
+                Tag::Hn(level, _) => {
+                    // Dynamically register custom headings `Hn` with `n >= 7`
+                    if pdf_version < PdfVersion::Pdf20 {
+                        sc.global_objects.custom_heading_roles.insert(*level);
+                    }
+                    let name = format!("H{level}");
+                    struct_elem.custom_kind(Name(name.as_bytes()))
+                }
             };
         }
     }
@@ -582,12 +572,7 @@ impl Tag {
             Tag::TOCI => PdfVersion::Pdf14,
             Tag::Index => PdfVersion::Pdf14,
             Tag::P => PdfVersion::Pdf14,
-            Tag::H1(_) => PdfVersion::Pdf14,
-            Tag::H2(_) => PdfVersion::Pdf14,
-            Tag::H3(_) => PdfVersion::Pdf14,
-            Tag::H4(_) => PdfVersion::Pdf14,
-            Tag::H5(_) => PdfVersion::Pdf14,
-            Tag::H6(_) => PdfVersion::Pdf14,
+            Tag::Hn(_, _) => PdfVersion::Pdf14,
             Tag::L(_) => PdfVersion::Pdf14,
             Tag::LI => PdfVersion::Pdf14,
             Tag::Lbl => PdfVersion::Pdf14,
@@ -616,21 +601,13 @@ impl Tag {
 
     pub(crate) fn title(&self) -> Option<&str> {
         match self {
-            Tag::H1(s) => s.as_deref(),
-            Tag::H2(s) => s.as_deref(),
-            Tag::H3(s) => s.as_deref(),
-            Tag::H4(s) => s.as_deref(),
-            Tag::H5(s) => s.as_deref(),
-            Tag::H6(s) => s.as_deref(),
+            Tag::Hn(_, s) => s.as_deref(),
             _ => None,
         }
     }
 
     pub(crate) fn can_have_title(&self) -> bool {
-        matches!(
-            self,
-            Tag::H1(_) | Tag::H2(_) | Tag::H3(_) | Tag::H4(_) | Tag::H5(_) | Tag::H6(_)
-        )
+        matches!(self, Tag::Hn(_, _))
     }
 }
 
@@ -736,8 +713,7 @@ impl TagGroup {
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(root_ref);
-        self.tag
-            .write_kind(&mut struct_elem, sc.serialize_settings().pdf_version());
+        self.tag.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent);
 
         if let Some(alt) = self.tag.alt() {
