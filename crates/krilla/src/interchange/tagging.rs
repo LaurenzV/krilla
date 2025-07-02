@@ -121,11 +121,13 @@
 
 use std::cmp::PartialEq;
 use std::collections::{BTreeMap, HashMap};
+use std::io::Write as _;
 use std::num::NonZeroU32;
 
 use pdf_writer::types::{ArtifactSubtype, StructRole};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
+use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
@@ -844,8 +846,10 @@ impl TagGroup {
                 id_tree.insert(id, elem_ref);
             }
         } else if TagKind::Note == self.tag.kind {
-            // Explicitly don't use `TagId::from_vec`
-            let id = TagId(format!("Note {}", note_id).into_bytes());
+            // Explicitly don't use `TagId::from_bytes` to disambiguate note IDs
+            // from user provided IDs.
+            let mut id = TagId(SmallVec::new());
+            _ = write!(&mut id.0, "Note {}", note_id);
             struct_elem.id(Str(id.as_bytes()));
             id_tree.insert(id, elem_ref);
 
@@ -1219,7 +1223,7 @@ pub struct TableHeaderCell {
     /// The scope of the table header.
     pub scope: TableHeaderScope,
     /// A list of parent headers.
-    pub headers: TableHeaderRefs,
+    pub headers: TableCellHeaders,
     /// The column/row span of the table.
     pub span: TableCellSpan,
 }
@@ -1229,13 +1233,13 @@ impl TableHeaderCell {
     pub const fn new(scope: TableHeaderScope) -> Self {
         Self {
             scope,
-            headers: TableHeaderRefs::NONE,
+            headers: TableCellHeaders::NONE,
             span: TableCellSpan::ONE,
         }
     }
 
     /// Sets [`TableHeaderCell::headers`].
-    pub fn with_headers(mut self, headers: TableHeaderRefs) -> Self {
+    pub fn with_headers(mut self, headers: TableCellHeaders) -> Self {
         self.headers = headers;
         self
     }
@@ -1251,7 +1255,7 @@ impl TableHeaderCell {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TableDataCell {
     /// A list of associated headers.
-    pub headers: TableHeaderRefs,
+    pub headers: TableCellHeaders,
     /// The column/row span of the table.
     pub span: TableCellSpan,
 }
@@ -1260,13 +1264,13 @@ impl TableDataCell {
     /// Create a new table data cell.
     pub const fn new() -> Self {
         Self {
-            headers: TableHeaderRefs::NONE,
+            headers: TableCellHeaders::NONE,
             span: TableCellSpan::ONE,
         }
     }
 
     /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: TableHeaderRefs) -> Self {
+    pub fn with_headers(mut self, headers: TableCellHeaders) -> Self {
         self.headers = headers;
         self
     }
@@ -1307,13 +1311,16 @@ impl TableHeaderScope {
 ///
 /// This allows specifying header hierarchies inside tables.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TableHeaderRefs {
-    ids: Vec<TagId>,
+pub struct TableCellHeaders {
+    /// The list of header IDs.
+    pub ids: SmallVec<[TagId; 1]>,
 }
 
-impl TableHeaderRefs {
+impl TableCellHeaders {
     /// An empty reference list.
-    pub const NONE: Self = Self { ids: Vec::new() };
+    pub const NONE: Self = Self {
+        ids: SmallVec::new_const(),
+    };
 
     fn header_ids(&self) -> Option<&[TagId]> {
         (!self.ids.is_empty()).then_some(&self.ids)
@@ -1322,16 +1329,16 @@ impl TableHeaderRefs {
 
 /// An identifier of a [`Tag`].
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-// TODO: Use inline optimized byte string?
-pub struct TagId(Vec<u8>);
+pub struct TagId(SmallVec<[u8; 16]>);
 
 impl TagId {
     /// Create an identifier from bytes.
-    pub fn from_vec(mut bytes: Vec<u8>) -> Self {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let mut inner = SmallVec::from_slice(bytes);
         // HACK: Disambiguate ids provided by the user from ids automatically
         // assigned to notes by prefixing them with a `U`.
-        bytes.insert(0, b'U');
-        Self(bytes)
+        inner.insert(0, b'U');
+        Self(inner)
     }
 
     /// Returns the identifier as a byte slice.

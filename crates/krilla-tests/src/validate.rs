@@ -10,7 +10,7 @@ use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, SpanTag, TableCellSpan, TableHeaderCell,
-    TableHeaderRefs, TableHeaderScope, Tag, TagGroup, TagKind, TagTree,
+    TableHeaderScope, Tag, TagGroup, TagKind, TagTree,
 };
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
