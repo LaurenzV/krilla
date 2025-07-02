@@ -906,10 +906,10 @@ impl TagGroup {
                     }
                 }
                 if let Some(n) = cell.span.row_span() {
-                    table_attributes.get().row_span(n);
+                    table_attributes.get().row_span(n.get() as i32);
                 }
                 if let Some(n) = cell.span.col_span() {
-                    table_attributes.get().col_span(n);
+                    table_attributes.get().col_span(n.get() as i32);
                 }
             }
             TagKind::TD(ref cell) => {
@@ -925,10 +925,10 @@ impl TagGroup {
                     }
                 }
                 if let Some(n) = cell.span.row_span() {
-                    table_attributes.get().row_span(n);
+                    table_attributes.get().row_span(n.get() as i32);
                 }
                 if let Some(n) = cell.span.col_span() {
-                    table_attributes.get().col_span(n);
+                    table_attributes.get().col_span(n.get() as i32);
                 }
             }
             _ => {}
@@ -1344,9 +1344,9 @@ impl TagId {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct TableCellSpan {
     /// The number of spanned rows inside the enclosing table.
-    pub rows: i32,
+    pub rows: NonZeroU32,
     /// The number of spanned cells inside the enclosing table.
-    pub cols: i32,
+    pub cols: NonZeroU32,
 }
 
 impl Default for TableCellSpan {
@@ -1357,28 +1357,34 @@ impl Default for TableCellSpan {
 
 impl TableCellSpan {
     /// A table cell that spans only one row and column.
-    pub const ONE: Self = Self::new(1, 1);
+    pub const ONE: Self = Self::new(NonZeroU32::MIN, NonZeroU32::MIN);
 
     /// Create a new table cell span.
-    pub const fn new(rows: i32, cols: i32) -> Self {
+    pub const fn new(rows: NonZeroU32, cols: NonZeroU32) -> Self {
         Self { rows, cols }
     }
 
     /// Create a new table cell span that spans a number of rows.
-    pub const fn row(rows: i32) -> Self {
-        Self { rows, cols: 1 }
+    pub const fn row(rows: NonZeroU32) -> Self {
+        Self {
+            rows,
+            cols: NonZeroU32::MIN,
+        }
     }
 
     /// Create a new table cell span that spans a number of columns.
-    pub const fn col(cols: i32) -> Self {
-        Self { rows: 1, cols }
+    pub const fn col(cols: NonZeroU32) -> Self {
+        Self {
+            rows: NonZeroU32::MIN,
+            cols,
+        }
     }
 
-    fn row_span(self) -> Option<i32> {
-        (self.rows != 1).then_some(self.rows)
+    fn row_span(self) -> Option<NonZeroU32> {
+        (self.rows != NonZeroU32::MIN).then_some(self.rows)
     }
 
-    fn col_span(self) -> Option<i32> {
-        (self.cols != 1).then_some(self.cols)
+    fn col_span(self) -> Option<NonZeroU32> {
+        (self.cols != NonZeroU32::MIN).then_some(self.cols)
     }
 }
