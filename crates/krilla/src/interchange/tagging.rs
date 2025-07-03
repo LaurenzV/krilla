@@ -120,6 +120,7 @@
 //! [`Document`]: crate::Document
 
 use std::cmp::PartialEq;
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write as _;
 use std::num::NonZeroU32;
@@ -835,15 +836,18 @@ impl TagGroup {
         self.tag.kind.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent_ref);
 
-        if let Some(id) = self.tag.id.clone() {
-            if id_tree.contains_key(&id) {
-                sc.register_validation_error(ValidationError::DuplicateTagId(
-                    id,
-                    self.tag.location,
-                ));
-            } else {
-                struct_elem.id(Str(id.as_bytes()));
-                id_tree.insert(id, elem_ref);
+        if let Some(id) = &self.tag.id {
+            match id_tree.entry(id.clone()) {
+                Entry::Vacant(vacant) => {
+                    struct_elem.id(Str(id.as_bytes()));
+                    vacant.insert(elem_ref);
+                }
+                Entry::Occupied(_) => {
+                    sc.register_validation_error(ValidationError::DuplicateTagId(
+                        id.clone(),
+                        self.tag.location,
+                    ));
+                }
             }
         } else if TagKind::Note == self.tag.kind {
             // Explicitly don't use `TagId::from_bytes` to disambiguate note IDs
@@ -956,7 +960,7 @@ impl TagGroup {
             TagKind::TH(cell) => {
                 if let Some(ids) = cell.headers.header_ids() {
                     for id in ids.iter() {
-                        if !id_tree.contains_key(&id) {
+                        if !id_tree.contains_key(id) {
                             sc.register_validation_error(ValidationError::UnknownHeaderTagId(
                                 id.clone(),
                                 self.tag.location,
@@ -968,7 +972,7 @@ impl TagGroup {
             TagKind::TD(cell) => {
                 if let Some(ids) = cell.headers.header_ids() {
                     for id in ids.iter() {
-                        if !id_tree.contains_key(&id) {
+                        if !id_tree.contains_key(id) {
                             sc.register_validation_error(ValidationError::UnknownHeaderTagId(
                                 id.clone(),
                                 self.tag.location,
@@ -1252,7 +1256,7 @@ impl TableHeaderCell {
 }
 
 /// A table data cell.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub struct TableDataCell {
     /// A list of associated headers.
     pub headers: TableCellHeaders,
@@ -1310,7 +1314,7 @@ impl TableHeaderScope {
 /// evaluated.
 ///
 /// This allows specifying header hierarchies inside tables.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub struct TableCellHeaders {
     /// The list of header IDs.
     pub ids: SmallVec<[TagId; 1]>,
