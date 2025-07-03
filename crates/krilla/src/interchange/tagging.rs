@@ -405,7 +405,7 @@ pub struct Tag {
     /// The structure element type.
     pub kind: TagKind,
     /// The identifier of this tag.
-    /// Used in [`TableHeaderRefs`].
+    /// Used in [`TableCellHeaders`].
     pub id: Option<TagId>,
     /// The language of this tag.
     pub lang: Option<String>,

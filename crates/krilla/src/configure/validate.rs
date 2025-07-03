@@ -125,9 +125,9 @@ pub enum ValidationError {
     ///
     /// [`Tag::id`]: crate::interchange::tagging::Tag::id
     DuplicateTagId(TagId, Option<Location>),
-    /// An id of [`TableHeaderRefs`] was not found in the [`TagTree`].
+    /// An id of [`TableCellHeaders`] was not found in the [`TagTree`].
     ///
-    /// [`TableHeaderRefs`]: crate::interchange::tagging::TableHeaderRefs
+    /// [`TableCellHeaders`]: crate::interchange::tagging::TableCellHeaders
     /// [`TagTree`]: crate::interchange::tagging::TagTree
     UnknownHeaderTagId(TagId, Option<Location>),
 }
