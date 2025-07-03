@@ -1332,9 +1332,19 @@ impl TableCellHeaders {
 pub struct TagId(SmallVec<[u8; 16]>);
 
 impl TagId {
-    /// Create an identifier from bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        let mut inner = SmallVec::from_slice(bytes);
+    /// Create an identifier from a byte slice.
+    pub fn from_slice(bytes: &[u8]) -> Self {
+        let mut inner = SmallVec::with_capacity(bytes.len() + 1);
+        // HACK: Disambiguate ids provided by the user from ids automatically
+        // assigned to notes by prefixing them with a `U`.
+        inner.push(b'U');
+        inner.extend_from_slice(bytes);
+        Self(inner)
+    }
+
+    /// Create an identifier from a byte vec.
+    pub fn from_vec(bytes: Vec<u8>) -> Self {
+        let mut inner = SmallVec::from_vec(bytes);
         // HACK: Disambiguate ids provided by the user from ids automatically
         // assigned to notes by prefixing them with a `U`.
         inner.insert(0, b'U');
