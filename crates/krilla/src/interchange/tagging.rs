@@ -405,7 +405,6 @@ pub struct Tag {
     /// The structure element type.
     pub kind: TagKind,
     /// The identifier of this tag.
-    /// Used in [`TableCellHeaders`].
     pub id: Option<TagId>,
     /// The language of this tag.
     pub lang: Option<String>,
@@ -939,7 +938,7 @@ impl TagGroup {
                 if let Some(ids) = data.headers.header_ids() {
                     for id in ids.iter() {
                         if !id_tree.contains_key(id) {
-                            sc.register_validation_error(ValidationError::UnknownHeaderTagId(
+                            sc.register_validation_error(ValidationError::UnknownTagId(
                                 id.clone(),
                                 self.tag.location,
                             ));
@@ -1225,7 +1224,7 @@ impl TableHeaderCell {
     }
 
     /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: TableCellHeaders) -> Self {
+    pub fn with_headers(mut self, headers: TagIdRefs) -> Self {
         self.data.headers = headers;
         self
     }
@@ -1240,8 +1239,14 @@ impl TableHeaderCell {
 /// A table data cell.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub struct TableDataCell {
-    /// A list of associated headers.
-    pub headers: TableCellHeaders,
+    /// A list of headers associated with a table cell.
+    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
+    /// which can also specify a list of parent header cells (`TH`), and so on.
+    /// To determine the the list of associated headers this list is recursively
+    /// evaluated.
+    ///
+    /// This allows specifying header hierarchies inside tables.
+    pub headers: TagIdRefs,
     /// The column/row span of the table.
     pub span: TableCellSpan,
 }
@@ -1250,13 +1255,13 @@ impl TableDataCell {
     /// Create a new table data cell.
     pub const fn new() -> Self {
         Self {
-            headers: TableCellHeaders::NONE,
+            headers: TagIdRefs::NONE,
             span: TableCellSpan::ONE,
         }
     }
 
     /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: TableCellHeaders) -> Self {
+    pub fn with_headers(mut self, headers: TagIdRefs) -> Self {
         self.headers = headers;
         self
     }
@@ -1289,20 +1294,14 @@ impl TableHeaderScope {
     }
 }
 
-/// A list of headers associated with a table cell.
-/// Table data cells (`TD`) may specify a list of table headers (`TH`),
-/// which can also specify a list of parent header cells (`TH`), and so on.
-/// To determine the the list of associated headers this list is recursively
-/// evaluated.
-///
-/// This allows specifying header hierarchies inside tables.
+/// A list of referenced [`Tag::id`]s.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
-pub struct TableCellHeaders {
-    /// The list of header IDs.
+pub struct TagIdRefs {
+    /// The list of IDs.
     pub ids: SmallVec<[TagId; 1]>,
 }
 
-impl TableCellHeaders {
+impl TagIdRefs {
     /// An empty reference list.
     pub const NONE: Self = Self {
         ids: SmallVec::new_const(),

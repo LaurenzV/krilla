@@ -125,11 +125,11 @@ pub enum ValidationError {
     ///
     /// [`Tag::id`]: crate::interchange::tagging::Tag::id
     DuplicateTagId(TagId, Option<Location>),
-    /// An id of [`TableCellHeaders`] was not found in the [`TagTree`].
+    /// An id of [`TagIdRefs`] was not found in the [`TagTree`].
     ///
-    /// [`TableCellHeaders`]: crate::interchange::tagging::TableCellHeaders
+    /// [`TagIdRefs`]: crate::interchange::tagging::TagIdRefs
     /// [`TagTree`]: crate::interchange::tagging::TagTree
-    UnknownHeaderTagId(TagId, Option<Location>),
+    UnknownTagId(TagId, Option<Location>),
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -326,7 +326,7 @@ impl Validator {
                 ValidationError::MissingTagging => *self == Validator::A1_A,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownHeaderTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -365,7 +365,7 @@ impl Validator {
                 ValidationError::MissingTagging => *self == Validator::A2_A,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownHeaderTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -399,7 +399,7 @@ impl Validator {
                 ValidationError::MissingTagging => *self == Validator::A3_A,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownHeaderTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
                 ValidationError::TooLongString => false,
@@ -439,7 +439,7 @@ impl Validator {
                 ValidationError::MissingTagging => false,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownHeaderTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -473,7 +473,7 @@ impl Validator {
                 ValidationError::MissingTagging => true,
                 ValidationError::MissingDocumentDate => false,
                 ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownHeaderTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
         }
     }
