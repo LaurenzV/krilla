@@ -899,7 +899,7 @@ impl TagGroup {
                     .list_numbering(ln.to_pdf());
             }
             TagKind::TH(ref cell) => {
-                // Laziliy initialize the table attributes, to avoid an empty list.
+                // Lazily initialize the table attributes, to avoid an empty list.
                 let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
                 let mut table_attributes =
                     LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
@@ -910,7 +910,7 @@ impl TagGroup {
                 serialize_table_cell_attributes(sc, &mut table_attributes, &cell.data);
             }
             TagKind::TD(ref cell) => {
-                // Laziliy initialize the table attributes, to avoid an empty list.
+                // Lazily initialize the table attributes, to avoid an empty list.
                 let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
                 let mut table_attributes =
                     LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
