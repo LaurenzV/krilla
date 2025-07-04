@@ -126,7 +126,7 @@ use std::io::Write as _;
 use std::num::NonZeroU32;
 
 use pdf_writer::types::{ArtifactSubtype, StructRole};
-use pdf_writer::writers::{PropertyList, StructElement};
+use pdf_writer::writers::{PropertyList, StructElement, TableAttributes};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
@@ -134,7 +134,7 @@ use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
-use crate::util::lazy::LazyInit;
+use crate::util::lazy::{LazyGet, LazyInit};
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -907,18 +907,7 @@ impl TagGroup {
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                     table_attributes.get().scope(cell.scope.to_pdf());
                 }
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    if let Some(ids) = cell.headers.header_ids() {
-                        let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
-                        table_attributes.get().headers().items(id_strs);
-                    }
-                }
-                if let Some(n) = cell.span.row_span() {
-                    table_attributes.get().row_span(n.get() as i32);
-                }
-                if let Some(n) = cell.span.col_span() {
-                    table_attributes.get().col_span(n.get() as i32);
-                }
+                serialize_table_cell_attributes(sc, &mut table_attributes, &cell.data);
             }
             TagKind::TD(ref cell) => {
                 // Laziliy initialize the table attributes, to avoid an empty list.
@@ -926,18 +915,7 @@ impl TagGroup {
                 let mut table_attributes =
                     LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
 
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    if let Some(ids) = cell.headers.header_ids() {
-                        let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
-                        table_attributes.get().headers().items(id_strs);
-                    }
-                }
-                if let Some(n) = cell.span.row_span() {
-                    table_attributes.get().row_span(n.get() as i32);
-                }
-                if let Some(n) = cell.span.col_span() {
-                    table_attributes.get().col_span(n.get() as i32);
-                }
+                serialize_table_cell_attributes(sc, &mut table_attributes, cell);
             }
             _ => {}
         }
@@ -957,20 +935,8 @@ impl TagGroup {
 
     fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
         match &self.tag.kind {
-            TagKind::TH(cell) => {
-                if let Some(ids) = cell.headers.header_ids() {
-                    for id in ids.iter() {
-                        if !id_tree.contains_key(id) {
-                            sc.register_validation_error(ValidationError::UnknownHeaderTagId(
-                                id.clone(),
-                                self.tag.location,
-                            ));
-                        }
-                    }
-                }
-            }
-            TagKind::TD(cell) => {
-                if let Some(ids) = cell.headers.header_ids() {
+            TagKind::TH(TableHeaderCell { data, .. }) | TagKind::TD(data) => {
+                if let Some(ids) = data.headers.header_ids() {
                     for id in ids.iter() {
                         if !id_tree.contains_key(id) {
                             sc.register_validation_error(ValidationError::UnknownHeaderTagId(
@@ -989,6 +955,25 @@ impl TagGroup {
                 group.validate(sc, id_tree)
             }
         }
+    }
+}
+
+fn serialize_table_cell_attributes<'a: 'b, 'b>(
+    sc: &mut SerializeContext,
+    mut table_attributes: impl LazyGet<TableAttributes<'a>>,
+    cell: &TableDataCell,
+) {
+    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
+        if let Some(ids) = cell.headers.header_ids() {
+            let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
+            table_attributes.lazy_get().headers().items(id_strs);
+        }
+    }
+    if let Some(n) = cell.span.row_span() {
+        table_attributes.lazy_get().row_span(n.get() as i32);
+    }
+    if let Some(n) = cell.span.col_span() {
+        table_attributes.lazy_get().col_span(n.get() as i32);
     }
 }
 
@@ -1226,10 +1211,8 @@ impl ListNumbering {
 pub struct TableHeaderCell {
     /// The scope of the table header.
     pub scope: TableHeaderScope,
-    /// A list of parent headers.
-    pub headers: TableCellHeaders,
-    /// The column/row span of the table.
-    pub span: TableCellSpan,
+    /// Attributes shared with `TD`.
+    pub data: TableDataCell,
 }
 
 impl TableHeaderCell {
@@ -1237,20 +1220,19 @@ impl TableHeaderCell {
     pub const fn new(scope: TableHeaderScope) -> Self {
         Self {
             scope,
-            headers: TableCellHeaders::NONE,
-            span: TableCellSpan::ONE,
+            data: TableDataCell::new(),
         }
     }
 
-    /// Sets [`TableHeaderCell::headers`].
+    /// Sets [`TableDataCell::headers`].
     pub fn with_headers(mut self, headers: TableCellHeaders) -> Self {
-        self.headers = headers;
+        self.data.headers = headers;
         self
     }
 
-    /// Sets [`TableHeaderCell::span`].
+    /// Sets [`TableDataCell::span`].
     pub fn with_span(mut self, span: TableCellSpan) -> Self {
-        self.span = span;
+        self.data.span = span;
         self
     }
 }

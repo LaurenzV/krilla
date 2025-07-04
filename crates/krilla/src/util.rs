@@ -210,6 +210,26 @@ pub(crate) mod lazy {
             }
         }
     }
+
+    /// Helper trait to avoid spelling out the generic bounds of [`LazyInit`].
+    pub trait LazyGet<T> {
+        fn lazy_get(&mut self) -> &mut T;
+    }
+
+    impl<T> LazyGet<T> for &mut T {
+        fn lazy_get(&mut self) -> &mut T {
+            self
+        }
+    }
+
+    impl<U, I, F> LazyGet<I> for &mut LazyInit<U, I, F>
+    where
+        F: Fn(U) -> I,
+    {
+        fn lazy_get(&mut self) -> &mut I {
+            self.get()
+        }
+    }
 }
 
 #[cfg(not(feature = "rayon"))]
