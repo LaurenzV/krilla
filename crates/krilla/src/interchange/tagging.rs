@@ -1336,6 +1336,12 @@ impl TagId {
         Self(inner)
     }
 
+    /// Create an identifier from a byte vec.
+    pub fn from_smallvec(mut bytes: SmallVec<[u8; 16]>) -> Self {
+        bytes.insert(0, b'U');
+        Self(bytes)
+    }
+
     /// Returns the identifier as a byte slice.
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_slice()
