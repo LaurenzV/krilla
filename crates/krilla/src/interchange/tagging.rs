@@ -344,7 +344,7 @@ impl PageTagIdentifier {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub(crate) struct AnnotationIdentifier {
     pub(crate) page_index: usize,
     pub(crate) annot_index: usize,
@@ -377,7 +377,7 @@ pub(crate) enum IdentifierType {
     AnnotationIdentifier(AnnotationIdentifier),
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum IdentifierInner {
     Real(IdentifierType),
     Dummy,
@@ -386,7 +386,7 @@ pub(crate) enum IdentifierInner {
 /// An identifier for an annotation or certain parts of page content.
 ///
 /// Need to be used as a leaf node in a tag tree.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Identifier(pub(crate) IdentifierInner);
 
 impl Identifier {
@@ -400,7 +400,7 @@ impl Identifier {
 }
 
 /// A tag for group nodes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Tag {
     /// The structure element type.
     pub kind: TagKind,
@@ -725,6 +725,7 @@ impl TagKind {
 }
 
 /// A node in a tag tree.
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Node {
     /// A group node.
     Group(TagGroup),
@@ -778,6 +779,7 @@ pub(crate) enum Reference {
 }
 
 /// A tag group.
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TagGroup {
     /// The tag of the tag group.
     tag: Tag,
