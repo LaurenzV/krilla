@@ -696,25 +696,31 @@ impl TagGroup {
         sc: &mut SerializeContext,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree: &mut BTreeMap<String, Ref>,
-        parent: Ref,
+        parent_ref: Ref,
         note_id: &mut u32,
         struct_elems: &mut Vec<Chunk>,
     ) -> KrillaResult<Reference> {
-        let root_ref = sc.new_ref();
+        let elem_ref = sc.new_ref();
         let mut children_refs = vec![];
 
         for child in &self.children {
-            let serialized =
-                child.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems)?;
+            let serialized = child.serialize(
+                sc,
+                parent_tree_map,
+                id_tree,
+                elem_ref,
+                note_id,
+                struct_elems,
+            )?;
             if let Some(ref_) = serialized {
                 children_refs.push(ref_);
             }
         }
 
         let mut chunk = Chunk::new();
-        let mut struct_elem = chunk.struct_element(root_ref);
+        let mut struct_elem = chunk.struct_element(elem_ref);
         self.tag.write_kind(&mut struct_elem, sc);
-        struct_elem.parent(parent);
+        struct_elem.parent(parent_ref);
 
         if let Some(alt) = self.tag.alt() {
             struct_elem.alt(TextStr(alt));
@@ -744,7 +750,7 @@ impl TagGroup {
             Tag::Note => {
                 let id = format!("Note {}", note_id);
                 *note_id += 1;
-                id_tree.insert(id.clone(), root_ref);
+                id_tree.insert(id.clone(), elem_ref);
                 struct_elem.id(Str(id.as_bytes()));
             }
             _ => {}
@@ -752,7 +758,7 @@ impl TagGroup {
 
         serialize_children(
             sc,
-            root_ref,
+            elem_ref,
             children_refs,
             parent_tree_map,
             &mut struct_elem,
@@ -760,7 +766,7 @@ impl TagGroup {
         struct_elem.finish();
         struct_elems.push(chunk);
 
-        Ok(Reference::Ref(root_ref))
+        Ok(Reference::Ref(elem_ref))
     }
 }
 
@@ -844,7 +850,7 @@ impl TagTree {
 
 fn serialize_children(
     sc: &mut SerializeContext,
-    root_ref: Ref,
+    parent_ref: Ref,
     children_refs: Vec<Reference>,
     parent_tree_map: &mut HashMap<IdentifierType, Ref>,
     struct_elem: &mut StructElement,
@@ -880,7 +886,7 @@ fn serialize_children(
                         panic!("the identifier {:?} appears twice in the tag tree", pi);
                     }
 
-                    parent_tree_map.insert(pi.into(), root_ref);
+                    parent_tree_map.insert(pi.into(), parent_ref);
 
                     if struct_page_ref == Some(page_ref) {
                         struct_children.marked_content_id(pi.mcid);
