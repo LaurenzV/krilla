@@ -668,14 +668,14 @@ impl SerializeContext {
 
                 for (index, struct_parent) in struct_parents.iter().enumerate() {
                     match *struct_parent {
-                        StructParentElement::Page(index, num_mcids) => {
+                        StructParentElement::Page(page_index, num_mcids) => {
                             let mut list_chunk = Chunk::new();
                             let list_ref = self.new_ref();
 
                             let mut refs = list_chunk.indirect(list_ref).array();
 
                             for mcid in 0..num_mcids {
-                                let rci = PageTagIdentifier::new(index, mcid);
+                                let rci = PageTagIdentifier::new(page_index, mcid);
                                 refs.item(parent_tree_map.get(&rci.into()).unwrap_or_else(|| {
                                     panic!(
                                         "page tag identifier {:?} doesn't appear in the tag tree",
