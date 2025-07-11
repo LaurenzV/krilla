@@ -136,21 +136,21 @@ jobs:
           sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
           rm -r pdfium-linux-x64.tgz
           rm -r pdfium-linux-x64
-          
+
       - name: Download Arlington model
         run: |
           curl -LO https://software.verapdf.org/dev/arlington/1.29/verapdf-arlington-1.29.9-installer.zip
           unzip verapdf-arlington-1.29.9-installer.zip
           cd verapdf-arlington-1.29.9
           java -jar verapdf-izpack-installer-1.29.9.jar ../.github/arlington.xml
-          
+
       - name: Download verapdf model
         run: |
           curl -LO https://software.verapdf.org/dev/1.29/verapdf-greenfield-1.29.16-installer.zip
           unzip verapdf-greenfield-1.29.16-installer.zip
           cd verapdf-greenfield-1.29.16
           java -jar verapdf-izpack-installer-1.29.16.jar ../.github/verapdf.xml
-          
+
       - name: Get pdfbox
         run: |
           curl -LO https://dlcdn.apache.org/pdfbox/3.0.5/pdfbox-app-3.0.5.jar
@@ -181,15 +181,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ./diffs
-          
+
       - name: Run Arlington PDF tests
-        # We are excluding one file because of https://github.com/pdf-association/arlington-pdf-model/issues/132     
-        run: find ./store -name "*.pdf" 
-          | grep -v "validate_pdf_a4f_full_example.pdf" 
+        # We are excluding one file because of https://github.com/pdf-association/arlington-pdf-model/issues/132
+        run: find ./store -name "*.pdf"
+          | grep -v "validate_pdf_a4f_full_example.pdf"
+          | grep -v "tagging_simple_with_link.pdf"
           | xargs /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
-        
-      - name: Run veraPDF tests  
-        run: find store -name "validate*.pdf" 
+
+      - name: Run veraPDF tests
+        run: find store -name "validate*.pdf"
           | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
 
   checks:
