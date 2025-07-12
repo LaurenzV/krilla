@@ -8,7 +8,7 @@ use std::sync::Arc;
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
 use pdf_writer::{Content, Finish, Name, Str, TextStr};
-use tiny_skia_path::{Path, PathSegment};
+use tiny_skia_path::{Path, PathSegment, PathVerb};
 
 use crate::color::rgb;
 use crate::configure::ValidationError;
@@ -194,7 +194,9 @@ impl ContentBuilder {
             return;
         }
 
-        let dont_fill = path.bounds().width() == 0.0 || path.bounds().height() == 0.0;
+        // See issue 199.
+        let is_line = path.verbs().len() == 2 && path.verbs()[0] == PathVerb::Move && path.verbs()[1] == PathVerb::Line;
+        let dont_fill = path.bounds().width() == 0.0 || path.bounds().height() == 0.0 || is_line;
 
         if dont_fill {
             match stroke.is_some() {
