@@ -394,12 +394,12 @@ impl ColorPainter for ColrBuilder {
                     self.error = true;
                     return;
                 };
-                
+
                 // krilla sweep gradients go in a different direction than COLR, so we need
                 // to invert y-axis.
-                
+
                 transform = transform.pre_concat(Transform::from_scale(1.0, -1.0));
-                
+
                 let sweep = SweepGradient {
                     cx: c0.x,
                     cy: -c0.y,
