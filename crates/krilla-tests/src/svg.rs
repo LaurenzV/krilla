@@ -69,6 +69,18 @@ fn svg_should_be_clipped(surface: &mut Surface) {
 }
 
 #[visreg]
+fn issue_199(surface: &mut Surface) {
+    let data = std::fs::read(SVGS_PATH.join("issue199.svg")).unwrap();
+    let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
+}
+
+#[visreg]
 fn svg_with_filter(surface: &mut Surface) {
     let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
     let tree = usvg::Tree::from_data(
