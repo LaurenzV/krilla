@@ -40,6 +40,7 @@ rustybuzz = { workspace = true, optional = true }
 siphasher = { workspace = true }
 subsetter = { workspace = true }
 skrifa = { workspace = true }
+smallvec = { workspace = true }
 tiny-skia-path = { workspace = true }
 xmp-writer = { workspace = true }
 yoke = { workspace = true }
