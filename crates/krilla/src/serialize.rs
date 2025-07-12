@@ -684,6 +684,11 @@ impl SerializeContext {
                             tree_nums.insert(index as i32, list_ref);
                         }
                         StructParentElement::Annotation(ai) => {
+                            // Write a reference to the parent structure element.
+                            // From the PDF 1.7 spec (14.7.5.4 Finding structure elements from content items):
+                            // > For an object identified as a content item by means of an object reference
+                            // > (see 14.7.5.3, "PDF objects as content items"), the value shall be an
+                            // > indirect reference to the parent structure element.
                             let page_annotations = &self.page_infos[ai.page_index].annotations;
                             let parent_ref =
                                 *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
