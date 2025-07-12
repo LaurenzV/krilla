@@ -21,9 +21,7 @@ use crate::interactive::destination::{NamedDestination, XyzDestination};
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
-use crate::interchange::tagging::{
-    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
-};
+use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
@@ -151,7 +149,7 @@ enum StructParentElement {
     Page(usize, i32),
     /// The index of the page where the annotation is present, as well as the index of the
     /// annotation within that one page.
-    Annotation(usize, usize),
+    Annotation(AnnotationIdentifier),
 }
 
 #[derive(Debug)]
@@ -392,22 +390,28 @@ impl SerializeContext {
         }
     }
 
-    pub(crate) fn register_annotation_parent(
-        &mut self,
-        page_index: usize,
-        annotation_index: usize,
-    ) -> Option<i32> {
+    /// Register the struct parent integer in the parent tree.
+    /// The annotation parent must be later set using [`Self::set_annotation_parent`].
+    pub(crate) fn register_annotation_parent(&mut self, ai: AnnotationIdentifier) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
             let id = self.global_objects.struct_parents.len();
             self.global_objects
                 .struct_parents
-                .push(StructParentElement::Annotation(
-                    page_index,
-                    annotation_index,
-                ));
+                .push(StructParentElement::Annotation(ai));
             Some(i32::try_from(id).unwrap())
         } else {
             None
+        }
+    }
+
+    /// Set the annotations parent ref. This should be the parent structure element
+    /// in the tag tree. E.g. a link annotations struct parent should point to a
+    /// `Link` structure element.
+    pub(crate) fn set_annotation_parent(&mut self, ai: AnnotationIdentifier, parent_ref: Ref) {
+        if self.serialize_settings.enable_tagging {
+            self.global_objects
+                .annotation_struct_parents
+                .insert(ai, parent_ref);
         }
     }
 
@@ -633,7 +637,6 @@ impl SerializeContext {
 
     fn serialize_tag_tree(&mut self) -> KrillaResult<()> {
         let tag_tree = self.global_objects.tag_tree.take();
-        let struct_parents = self.global_objects.struct_parents.take();
         if let Some(root) = &tag_tree {
             let mut parent_tree_map = HashMap::new();
             let mut id_tree_map = BTreeMap::new();
@@ -662,6 +665,7 @@ impl SerializeContext {
 
             let mut sub_chunks = vec![];
 
+            let struct_parents = self.global_objects.struct_parents.take();
             if !struct_parents.is_empty() {
                 let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
                 let mut tree_nums = parent_tree.nums();
@@ -689,12 +693,9 @@ impl SerializeContext {
                             sub_chunks.push(list_chunk);
                             tree_nums.insert(index as i32, list_ref);
                         }
-                        StructParentElement::Annotation(page_index, annot_index) => {
-                            let it = IdentifierType::AnnotationIdentifier(
-                                AnnotationIdentifier::new(page_index, annot_index),
-                            );
-                            let ref_ = parent_tree_map.get(&it).unwrap();
-                            tree_nums.insert(index as i32, *ref_);
+                        StructParentElement::Annotation(ai) => {
+                            let ref_ = self.global_objects.annotation_struct_parents[&ai];
+                            tree_nums.insert(index as i32, ref_);
                         }
                     }
                 }
@@ -723,6 +724,7 @@ impl SerializeContext {
 
             self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
         } else {
+            self.global_objects.struct_parents.take();
             self.register_validation_error(ValidationError::MissingTagging);
         }
 
@@ -830,6 +832,9 @@ pub(crate) struct GlobalObjects {
     pages: MaybeTaken<Vec<(Ref, InternalPage)>>,
     /// Stores the struct parent elements.
     struct_parents: MaybeTaken<Vec<StructParentElement>>,
+    /// The struct parents of annotations. This maps from the annotation id
+    /// to the parent structure element in the tag tree.
+    annotation_struct_parents: HashMap<AnnotationIdentifier, Ref>,
     /// Stores the document outline.
     outline: MaybeTaken<Option<Outline>>,
     /// Stores the tag tree.

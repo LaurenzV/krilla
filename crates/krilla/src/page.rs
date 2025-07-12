@@ -17,6 +17,7 @@ use crate::resource::ResourceDictionary;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
+use crate::tagging::AnnotationIdentifier;
 use crate::util::Deferred;
 
 #[derive(Clone, Debug)]
@@ -213,9 +214,8 @@ impl<'a> Page<'a> {
     /// Add a tagged annotation to the page.
     pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
         let annot_index = self.annotations.len();
-        let struct_parent = self
-            .sc
-            .register_annotation_parent(self.page_index, annot_index);
+        let ai = AnnotationIdentifier::new(self.page_index, annot_index);
+        let struct_parent = self.sc.register_annotation_parent(ai);
         annotation.struct_parent = struct_parent;
         self.add_annotation(annotation);
 

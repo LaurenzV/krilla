@@ -910,6 +910,7 @@ fn serialize_children(
                                     ai.annot_index + 1,
                                     ai.page_index + 1,
                                     page_info.annotations.len()));
+                    sc.set_annotation_parent(ai, parent_ref);
 
                     if parent_tree_map.contains_key(&ai.into()) {
                         panic!("identifier {:?} appears twice in the tag tree", ai);
