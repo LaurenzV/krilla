@@ -1,5 +1,6 @@
 //! Working with pages of a PDF document.
 
+use std::cell::OnceCell;
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
@@ -378,7 +379,7 @@ impl InternalPage {
                     self.page_settings.surface_size().height(),
                 )?;
                 chunk.extend(&a);
-                annotation_refs.push(annot_ref);
+                annotation_refs.push((annot_ref, OnceCell::new()));
             }
         }
 
@@ -433,7 +434,7 @@ impl InternalPage {
         page.contents(self.stream_ref);
 
         if !annotation_refs.is_empty() {
-            page.annotations(annotation_refs.iter().copied());
+            page.annotations(annotation_refs.iter().map(|(r, _)| *r));
         }
 
         // Populate the refs for each annotation in page infos.

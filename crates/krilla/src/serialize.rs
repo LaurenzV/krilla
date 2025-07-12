@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{OnceCell, RefCell};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::{Deref, DerefMut};
@@ -136,12 +136,13 @@ pub(crate) struct PageInfo {
     /// The page size, necessary so that we can convert from PDF coordinates to
     /// krilla coordinates.
     pub(crate) surface_size: Size,
-    /// The refs of the annotations that are used by that page.
+    /// The refs of the annotations that are used by that page, and optionally
+    /// a ref to their struct parent in the tag tree.
     ///
     /// Note that this will be empty be default when adding a new `PageInfo` to
     /// `page_infos` in `SerializeContext`, and only once we actually serialize
     /// the page will the annotations be populated.
-    pub(crate) annotations: Vec<Ref>,
+    pub(crate) annotations: Vec<(Ref, OnceCell<Ref>)>,
 }
 
 enum StructParentElement {
@@ -404,17 +405,6 @@ impl SerializeContext {
         }
     }
 
-    /// Set the annotations parent ref. This should be the parent structure element
-    /// in the tag tree. E.g. a link annotations struct parent should point to a
-    /// `Link` structure element.
-    pub(crate) fn set_annotation_parent(&mut self, ai: AnnotationIdentifier, parent_ref: Ref) {
-        if self.serialize_settings.enable_tagging {
-            self.global_objects
-                .annotation_struct_parents
-                .insert(ai, parent_ref);
-        }
-    }
-
     pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) {
         let dest_ref = self.register_xyz_destination((*nd.xyz_dest).clone());
         self.global_objects.named_destinations.insert(nd, dest_ref);
@@ -637,6 +627,7 @@ impl SerializeContext {
 
     fn serialize_tag_tree(&mut self) -> KrillaResult<()> {
         let tag_tree = self.global_objects.tag_tree.take();
+        let struct_parents = self.global_objects.struct_parents.take();
         if let Some(root) = &tag_tree {
             let mut parent_tree_map = HashMap::new();
             let mut id_tree_map = BTreeMap::new();
@@ -665,7 +656,6 @@ impl SerializeContext {
 
             let mut sub_chunks = vec![];
 
-            let struct_parents = self.global_objects.struct_parents.take();
             if !struct_parents.is_empty() {
                 let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
                 let mut tree_nums = parent_tree.nums();
@@ -694,8 +684,12 @@ impl SerializeContext {
                             tree_nums.insert(index as i32, list_ref);
                         }
                         StructParentElement::Annotation(ai) => {
-                            let ref_ = self.global_objects.annotation_struct_parents[&ai];
-                            tree_nums.insert(index as i32, ref_);
+                            let page_annotations = &self.page_infos[ai.page_index].annotations;
+                            let parent_ref =
+                                *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
+                                    panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
+                                });
+                            tree_nums.insert(index as i32, parent_ref);
                         }
                     }
                 }
@@ -724,7 +718,6 @@ impl SerializeContext {
 
             self.chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
         } else {
-            self.global_objects.struct_parents.take();
             self.register_validation_error(ValidationError::MissingTagging);
         }
 
@@ -832,9 +825,6 @@ pub(crate) struct GlobalObjects {
     pages: MaybeTaken<Vec<(Ref, InternalPage)>>,
     /// Stores the struct parent elements.
     struct_parents: MaybeTaken<Vec<StructParentElement>>,
-    /// The struct parents of annotations. This maps from the annotation id
-    /// to the parent structure element in the tag tree.
-    annotation_struct_parents: HashMap<AnnotationIdentifier, Ref>,
     /// Stores the document outline.
     outline: MaybeTaken<Option<Outline>>,
     /// Stores the tag tree.
