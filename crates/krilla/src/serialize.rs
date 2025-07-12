@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{OnceCell, RefCell};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::{Deref, DerefMut};
@@ -21,9 +21,7 @@ use crate::interactive::destination::{NamedDestination, XyzDestination};
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
-use crate::interchange::tagging::{
-    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree,
-};
+use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
@@ -138,12 +136,13 @@ pub(crate) struct PageInfo {
     /// The page size, necessary so that we can convert from PDF coordinates to
     /// krilla coordinates.
     pub(crate) surface_size: Size,
-    /// The refs of the annotations that are used by that page.
+    /// The refs of the annotations that are used by that page, and optionally
+    /// a ref to their struct parent in the tag tree.
     ///
     /// Note that this will be empty be default when adding a new `PageInfo` to
     /// `page_infos` in `SerializeContext`, and only once we actually serialize
     /// the page will the annotations be populated.
-    pub(crate) annotations: Vec<Ref>,
+    pub(crate) annotations: Vec<(Ref, OnceCell<Ref>)>,
 }
 
 enum StructParentElement {
@@ -151,7 +150,7 @@ enum StructParentElement {
     Page(usize, i32),
     /// The index of the page where the annotation is present, as well as the index of the
     /// annotation within that one page.
-    Annotation(usize, usize),
+    Annotation(AnnotationIdentifier),
 }
 
 #[derive(Debug)]
@@ -392,19 +391,14 @@ impl SerializeContext {
         }
     }
 
-    pub(crate) fn register_annotation_parent(
-        &mut self,
-        page_index: usize,
-        annotation_index: usize,
-    ) -> Option<i32> {
+    /// Register the struct parent integer in the parent tree.
+    /// The annotation parent must be later set using [`Self::set_annotation_parent`].
+    pub(crate) fn register_annotation_parent(&mut self, ai: AnnotationIdentifier) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
             let id = self.global_objects.struct_parents.len();
             self.global_objects
                 .struct_parents
-                .push(StructParentElement::Annotation(
-                    page_index,
-                    annotation_index,
-                ));
+                .push(StructParentElement::Annotation(ai));
             Some(i32::try_from(id).unwrap())
         } else {
             None
@@ -689,12 +683,18 @@ impl SerializeContext {
                             sub_chunks.push(list_chunk);
                             tree_nums.insert(index as i32, list_ref);
                         }
-                        StructParentElement::Annotation(page_index, annot_index) => {
-                            let it = IdentifierType::AnnotationIdentifier(
-                                AnnotationIdentifier::new(page_index, annot_index),
-                            );
-                            let ref_ = parent_tree_map.get(&it).unwrap();
-                            tree_nums.insert(index as i32, *ref_);
+                        StructParentElement::Annotation(ai) => {
+                            // Write a reference to the parent structure element.
+                            // From the PDF 1.7 spec (14.7.5.4 Finding structure elements from content items):
+                            // > For an object identified as a content item by means of an object reference
+                            // > (see 14.7.5.3, "PDF objects as content items"), the value shall be an
+                            // > indirect reference to the parent structure element.
+                            let page_annotations = &self.page_infos[ai.page_index].annotations;
+                            let parent_ref =
+                                *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
+                                    panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
+                                });
+                            tree_nums.insert(index as i32, parent_ref);
                         }
                     }
                 }

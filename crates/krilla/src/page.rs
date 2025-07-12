@@ -1,5 +1,6 @@
 //! Working with pages of a PDF document.
 
+use std::cell::OnceCell;
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;
 
@@ -17,6 +18,7 @@ use crate::resource::ResourceDictionary;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
+use crate::tagging::AnnotationIdentifier;
 use crate::util::Deferred;
 
 #[derive(Clone, Debug)]
@@ -213,9 +215,8 @@ impl<'a> Page<'a> {
     /// Add a tagged annotation to the page.
     pub fn add_tagged_annotation(&mut self, mut annotation: Annotation) -> Identifier {
         let annot_index = self.annotations.len();
-        let struct_parent = self
-            .sc
-            .register_annotation_parent(self.page_index, annot_index);
+        let ai = AnnotationIdentifier::new(self.page_index, annot_index);
+        let struct_parent = self.sc.register_annotation_parent(ai);
         annotation.struct_parent = struct_parent;
         self.add_annotation(annotation);
 
@@ -378,7 +379,7 @@ impl InternalPage {
                     self.page_settings.surface_size().height(),
                 )?;
                 chunk.extend(&a);
-                annotation_refs.push(annot_ref);
+                annotation_refs.push((annot_ref, OnceCell::new()));
             }
         }
 
@@ -433,7 +434,7 @@ impl InternalPage {
         page.contents(self.stream_ref);
 
         if !annotation_refs.is_empty() {
-            page.annotations(annotation_refs.iter().copied());
+            page.annotations(annotation_refs.iter().map(|(r, _)| *r));
         }
 
         // Populate the refs for each annotation in page infos.
