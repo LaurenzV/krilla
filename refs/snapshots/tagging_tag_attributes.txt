@@ -1,0 +1,124 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [5 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /StructTreeRoot
+  /RoleMap <<
+    /Datetime /Span
+    /Terms /Part
+    /Title /H1
+  >>
+  /K [3 0 R]
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 2 0 R
+  /K [4 0 R]
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /StructElem
+  /S /Figure
+  /P 3 0 R
+  /Lang (en)
+  /Alt (The NASA logo)
+  /E (National Aeronautics and Space Administration)
+  /ActualText (NASA)
+  /K []
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 1000 400]
+  /Parent 1 0 R
+  /Contents 6 0 R
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 262
+>>
+stream
+/Artifact BMC
+q
+1 0 0 -1 0 400 cm
+1 0 0 RG
+7 w
+100 300 m
+100 100 l
+250 300 l
+250 100 l
+300 300 m
+375 100 l
+450 300 l
+337.5 200 m
+412.5 200 l
+650 100 m
+500 100 l
+500 200 l
+650 200 l
+650 300 l
+500 300 l
+700 300 m
+775 100 l
+850 300 l
+737.5 200 m
+812.5 200 l
+S
+Q
+EMC
+endstream
+endobj
+
+7 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /StructTreeRoot 2 0 R
+  /MarkInfo <<
+    /Marked true
+    /Suspects false
+  >>
+>>
+endobj
+
+xref
+0 8
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000210 00000 n
+0000000291 00000 n
+0000000475 00000 n
+0000000635 00000 n
+0000000951 00000 n
+trailer
+<<
+  /Size 8
+  /Root 7 0 R
+  /ID [(Wj+IU+UsaoO+MDx0hFjbww==) (Wj+IU+UsaoO+MDx0hFjbww==)]
+>>
+startxref
+1086
+%%EOF

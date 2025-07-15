@@ -3,8 +3,9 @@ use std::num::NonZeroU32;
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
-use krilla::geom::{Point, Rect, Size, Transform};
-use krilla::paint::Fill;
+use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
+use krilla::page::PageSettings;
+use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
 use krilla::tagging::{
     ArtifactType, ContentTag, Node, SpanTag, TableCellSpan, TableDataCell, TableHeaderCell,
@@ -15,7 +16,7 @@ use krilla::Document;
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
 
-use crate::{green_fill, load_png_image, rect_to_path, NOTO_SANS, SVGS_PATH};
+use crate::{green_fill, load_png_image, rect_to_path, red_stroke, NOTO_SANS, SVGS_PATH};
 
 pub trait SurfaceTaggingExt {
     fn fill_text_(&mut self, y: f32, content: &str);
@@ -431,6 +432,64 @@ fn tagging_table_header_and_footer(document: &mut Document) {
     table.push(footer);
 
     tag_tree.push(table);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
+fn tagging_tag_attributes(document: &mut Document) {
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page_with(PageSettings::new(1000.0, 400.0));
+    let mut surface = page.surface();
+
+    let logo_path = {
+        let mut builder = PathBuilder::new();
+        // N
+        builder.move_to(100.0, 300.0);
+        builder.line_to(100.0, 100.0);
+        builder.line_to(250.0, 300.0);
+        builder.line_to(250.0, 100.0);
+
+        // A
+        builder.move_to(300.0, 300.0);
+        builder.line_to(375.0, 100.0);
+        builder.line_to(450.0, 300.0);
+        builder.move_to(337.5, 200.0);
+        builder.line_to(412.5, 200.0);
+
+        // S
+        builder.move_to(650.0, 100.0);
+        builder.line_to(500.0, 100.0);
+        builder.line_to(500.0, 200.0);
+        builder.line_to(650.0, 200.0);
+        builder.line_to(650.0, 300.0);
+        builder.line_to(500.0, 300.0);
+
+        // A
+        builder.move_to(700.0, 300.0);
+        builder.line_to(775.0, 100.0);
+        builder.line_to(850.0, 300.0);
+        builder.move_to(737.5, 200.0);
+        builder.line_to(812.5, 200.0);
+
+        builder.finish().unwrap()
+    };
+    let logo = surface.start_tagged(ContentTag::Artifact(ArtifactType::Other));
+    surface.set_fill(None);
+    surface.set_stroke(Some(red_stroke(1.0, 7.0)));
+    surface.draw_path(&logo_path);
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let figure = TagKind::Figure
+        .with_actual_text(Some("NASA".into()))
+        .with_alt_text(Some("The NASA logo".into()))
+        .with_expanded(Some("National Aeronautics and Space Administration".into()))
+        .with_lang(Some("en".into()));
+
+    tag_tree.push(TagGroup::with_children(figure, vec![Node::Leaf(logo)]));
 
     document.set_tag_tree(tag_tree);
 }
