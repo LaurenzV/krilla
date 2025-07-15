@@ -797,8 +797,11 @@ impl TagGroup {
     }
 
     /// Create a new tag group with a specific tag and a list of children.
-    pub fn with_children(tag: Tag, children: Vec<Node>) -> Self {
-        Self { tag, children }
+    pub fn with_children(tag: impl Into<Tag>, children: Vec<Node>) -> Self {
+        Self {
+            tag: tag.into(),
+            children,
+        }
     }
 
     /// Append a new child to the tag group.
@@ -937,7 +940,7 @@ impl TagGroup {
     fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
         match &self.tag.kind {
             TagKind::TH(TableHeaderCell { data, .. }) | TagKind::TD(data) => {
-                if let Some(ids) = data.headers.header_ids() {
+                if let Some(ids) = data.headers.tag_ids() {
                     for id in ids.iter() {
                         if !id_tree.contains_key(id) {
                             sc.register_validation_error(ValidationError::UnknownTagId(
@@ -965,7 +968,7 @@ fn serialize_table_cell_attributes<'a: 'b, 'b>(
     cell: &TableDataCell,
 ) {
     if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-        if let Some(ids) = cell.headers.header_ids() {
+        if let Some(ids) = cell.headers.tag_ids() {
             let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
             table_attributes.lazy_get().headers().items(id_strs);
         }
@@ -1303,13 +1306,20 @@ pub struct TagIdRefs {
     pub ids: SmallVec<[TagId; 1]>,
 }
 
+impl<I: IntoIterator<Item = TagId>> From<I> for TagIdRefs {
+    fn from(iter: I) -> Self {
+        let ids = SmallVec::from_iter(iter);
+        Self { ids }
+    }
+}
+
 impl TagIdRefs {
     /// An empty reference list.
     pub const NONE: Self = Self {
         ids: SmallVec::new_const(),
     };
 
-    fn header_ids(&self) -> Option<&[TagId]> {
+    fn tag_ids(&self) -> Option<&[TagId]> {
         (!self.ids.is_empty()).then_some(&self.ids)
     }
 }
