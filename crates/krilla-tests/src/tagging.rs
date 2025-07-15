@@ -7,7 +7,8 @@ use krilla::geom::{Point, Rect, Size, Transform};
 use krilla::paint::Fill;
 use krilla::surface::Surface;
 use krilla::tagging::{
-    ArtifactType, ContentTag, SpanTag, Tag, TagBuilder, TagGroup, TagKind, TagTree,
+    ArtifactType, ContentTag, Node, SpanTag, TableCellSpan, TableDataCell, TableHeaderCell,
+    TableHeaderScope, Tag, TagBuilder, TagGroup, TagId, TagIdRefs, TagKind, TagTree,
 };
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
@@ -269,15 +270,15 @@ fn tagging_multiple_pages(document: &mut Document) {
 
 #[snapshot(document)]
 fn tagging_heading_level_7_and_8_pdf_17(document: &mut Document) {
-    tagging_heading_level_7_and_8(document);
+    tagging_heading_level_7_and_8_impl(document);
 }
 
 #[snapshot(document, settings_25)]
 fn tagging_heading_level_7_and_8_pdf_20(document: &mut Document) {
-    tagging_heading_level_7_and_8(document);
+    tagging_heading_level_7_and_8_impl(document);
 }
 
-fn tagging_heading_level_7_and_8(document: &mut Document) {
+fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -350,6 +351,86 @@ fn tagging_two_footnotes(document: &mut Document) {
     fn_group_2.push(id2);
     tag_tree.push(fn_group_1);
     tag_tree.push(fn_group_2);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
+fn tagging_table_header_and_footer(document: &mut Document) {
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let header_id = |x: usize| TagId::from_vec(format!("Header {x}").into_bytes());
+    let cell_text = |surface: &mut Surface, x: usize, y: usize, content: &str| {
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0).unwrap();
+
+        surface.draw_text(
+            Point::from_xy(x as f32 * 200.0, y as f32 * 100.0 + 50.0),
+            font,
+            20.0,
+            content,
+            false,
+            TextDirection::Auto,
+        );
+    };
+
+    let header = {
+        let mut row = TagGroup::new(TagKind::TR);
+        for x in 0..3 {
+            let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+            cell_text(&mut surface, x, 0, &format!("heading {}", x + 1));
+            surface.end_tagged();
+
+            let tag = TagKind::TH(TableHeaderCell::new(TableHeaderScope::Column))
+                .with_id(Some(header_id(x)));
+            row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
+        }
+        TagGroup::with_children(TagKind::THead, vec![Node::Group(row)])
+    };
+
+    let mut body = TagGroup::new(TagKind::TBody);
+    for y in 1..4 {
+        let mut row = TagGroup::new(TagKind::TR);
+        for x in 0..3 {
+            let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+            cell_text(&mut surface, x, y, &format!("body {} {}", x + 1, y + 1));
+            surface.end_tagged();
+
+            let headers = TagIdRefs::from([header_id(x)]);
+            let tag = TagKind::TD(TableDataCell::new().with_headers(headers));
+            row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
+        }
+        body.push(row);
+    }
+
+    let footer = {
+        let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+        cell_text(&mut surface, 1, 4, "footer");
+        surface.end_tagged();
+
+        let cell = TableDataCell::new()
+            .with_span(TableCellSpan {
+                rows: NonZeroU32::new(2).unwrap(),
+                cols: NonZeroU32::new(3).unwrap(),
+            })
+            .with_headers(TagIdRefs::from((0..3).map(|x| header_id(x))));
+        let cell = TagGroup::with_children(TagKind::TD(cell), vec![Node::Leaf(text)]);
+
+        let row = TagGroup::with_children(TagKind::TR, vec![Node::Group(cell)]);
+        TagGroup::with_children(TagKind::TFoot, vec![Node::Group(row)])
+    };
+
+    surface.finish();
+    page.finish();
+
+    let mut table = TagGroup::new(TagKind::Table(Some("table summary".into())));
+    table.push(header);
+    table.push(body);
+    table.push(footer);
+
+    tag_tree.push(table);
 
     document.set_tag_tree(tag_tree);
 }
