@@ -416,7 +416,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
                 rows: NonZeroU32::new(2).unwrap(),
                 cols: NonZeroU32::new(3).unwrap(),
             })
-            .with_headers(TagIdRefs::from((0..3).map(|x| header_id(x))));
+            .with_headers(TagIdRefs::from((0..3).map(header_id)));
         let cell = TagGroup::with_children(TagKind::TD(cell), vec![Node::Leaf(text)]);
 
         let row = TagGroup::with_children(TagKind::TR, vec![Node::Group(cell)]);
