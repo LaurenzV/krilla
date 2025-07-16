@@ -1,0 +1,145 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [2 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Page
+  /MediaBox [0 0 200 200]
+  /CropBox [0 0 200 200]
+  /Rotate 0
+  /Parent 1 0 R
+  /Contents 3 0 R
+  /Resources <<
+    /ExtGState <<
+      /g0 5 0 R
+    >>
+    /XObject <<
+      /x0 4 0 R
+    >>
+  >>
+>>
+endobj
+
+3 0 obj
+<<
+  /Length 95
+  /Filter /FlateDecode
+>>
+stream
+xœmŠ!€0ı¾b?@zG0çIPˆÁ­h!†ç“$bwf“mö"¬ğö”Çœog¬ØÑ ôİ9ü°Õ„éD¸„ãøwpÂÀJe…šQY^š¹}ÌXoÍ¥ó
+endstream
+endobj
+
+4 0 obj
+<<
+  /Length 55
+  /BBox [0 0 200 200]
+  /Group <<
+    /CS /DeviceRGB
+    /S /Transparency
+    /Type /Group
+  >>
+  /Resources <<>>
+  /Subtype /Form
+  /Type /XObject
+>>
+stream
+q
+0 .5019608 0 rg
+0 0 m
+200 0 l
+200 200 l
+0 200 l
+h
+f
+Q
+endstream
+endobj
+
+5 0 obj
+<<
+  /SMask 6 0 R
+  /Type /ExtGState
+>>
+endobj
+
+6 0 obj
+<<
+  /G 7 0 R
+  /S /Alpha
+  /Type /Mask
+>>
+endobj
+
+7 0 obj
+<<
+  /Length 114
+  /BBox [35 50 175 130]
+  /Group <<
+    /CS /DeviceRGB
+    /S /Transparency
+    /Type /Group
+  >>
+  /Resources <<>>
+  /Subtype /Form
+  /Type /XObject
+>>
+stream
+q
+0 g
+75 50 m
+100 130 l
+35 80 l
+115 80 l
+50 130 l
+h
+f*
+Q
+q
+0 g
+135 50 m
+160 130 l
+95 80 l
+175 80 l
+110 130 l
+h
+f
+Q
+endstream
+endobj
+
+8 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 9
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000314 00000 n
+0000000485 00000 n
+0000000741 00000 n
+0000000797 00000 n
+0000000856 00000 n
+0000001174 00000 n
+trailer
+<<
+  /Size 9
+  /Root 8 0 R
+  /ID [(YX9AA5C8oVvjeJ/BR74j2A==) (YX9AA5C8oVvjeJ/BR74j2A==)]
+>>
+startxref
+1228
+%%EOF

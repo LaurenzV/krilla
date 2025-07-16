@@ -319,12 +319,15 @@ impl Visit for EmbeddedPdfChunk {
         // Since we are calling `visit` twice, we also cache the renumbered chunk.
         
         let renumbered = self.new_chunk.get_or_init(|| {
+            std::fs::write("original.txt", self.original_chunk.as_bytes()).unwrap();
             let mut remapper = self.root_ref_mappings.clone();
             
             self.original_chunk.renumber(|old| {
                 *remapper.entry(old).or_insert_with(|| sc.new_ref())
             })
         });
+
+        std::fs::write("new.txt", self.original_chunk.as_bytes()).unwrap();
 
         renumbered.visit(sc, f)
     }

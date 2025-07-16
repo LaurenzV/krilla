@@ -67,3 +67,17 @@ fn pdf_embedded_simple(document: &mut Document) {
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
     document.embed_pdf_pages(&pdf, &[0]);
 }
+
+#[snapshot(document)]
+fn pdf_embedded_repeated_page(document: &mut Document) {
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    document.embed_pdf_pages(&pdf, &[0, 0, 0]);
+}
+
+#[snapshot(document)]
+fn pdf_embedded_multiple(document: &mut Document) {
+    let pdf1 = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
+    document.embed_pdf_pages(&pdf1, &[0]);
+    document.embed_pdf_pages(&pdf2, &[0]);
+}

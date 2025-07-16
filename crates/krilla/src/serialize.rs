@@ -52,9 +52,8 @@ pub struct SerializeSettings {
     /// Note that this only on a best-effort basis. For example, XMP metadata always
     /// contains a binary marker. In addition to that, some validators,
     /// like PDF/A, require that the file header be a binary marker, meaning
-    /// that the header itself will not be ASCII-compatible.
-    ///
-    /// Binary streams will always be hex encoded and thus are ascii compatible, though.
+    /// that the header itself will not be ASCII-compatible. Finally, embedded PDFs will
+    /// be embedded as is and not re-encoded with ASCII-compatible encoding.
     pub ascii_compatible: bool,
     /// Whether the PDF should include XMP metadata.
     ///

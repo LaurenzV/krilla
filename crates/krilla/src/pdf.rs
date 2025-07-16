@@ -106,6 +106,7 @@ impl PdfSerializerContext {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
+                let new_page_tree_ref = new_ref.bump();
 
                 // TODO: Don't just return an `Option` in hayro.
                 let data: PdfData = doc.0.deref().0.clone();
@@ -119,7 +120,7 @@ impl PdfSerializerContext {
                 let extracted = hayro_write::extract(
                     &pdf,
                     Box::new(|| new_ref.bump()),
-                    page_tree_ref,
+                    new_page_tree_ref,
                     &info.queries,
                 );
                 let result = convert_extraction_result(extracted, &doc, first_location.as_ref())?;
@@ -127,6 +128,8 @@ impl PdfSerializerContext {
                 debug_assert_eq!(info.query_refs.len(), result.root_refs.len());
 
                 let mut root_ref_mappings = HashMap::new();
+                
+                root_ref_mappings.insert(new_page_tree_ref, page_tree_ref);
 
                 for ((should_ref, extraction_result), location) in info
                     .query_refs
