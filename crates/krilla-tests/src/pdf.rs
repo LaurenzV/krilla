@@ -1,7 +1,10 @@
+use std::sync::Arc;
+use image::load_from_memory;
 use krilla::error::KrillaError;
 use krilla::geom::Size;
 use krilla::page::Page;
 use krilla::Document;
+use krilla::pdf::{PdfDocument, PdfError};
 use krilla_macros::{snapshot, visreg};
 
 use crate::metadata::metadata_impl;
@@ -80,6 +83,27 @@ fn pdf_embedded_multiple(document: &mut Document) {
     let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
     document.embed_pdf_pages(&pdf1, &[0]);
     document.embed_pdf_pages(&pdf2, &[0]);
+}
+
+#[test]
+fn pdf_embedded_out_of_bounds() {
+    let mut document = Document::new();
+    
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    document.set_location(1);
+    document.embed_pdf_pages(&pdf, &[1]);
+    
+    assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::InvalidPage(1), Some(1))))
+}
+
+#[test]
+fn pdf_embedded_invalid() {
+    let mut document = Document::new();
+
+    let pdf =PdfDocument::new(Arc::new(b"invalid pdf".to_vec()).into());
+    document.embed_pdf_pages(&pdf, &[0]);
+
+    assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::LoadFailed, None)))
 }
 
 #[test]

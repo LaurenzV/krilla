@@ -22,6 +22,7 @@ use crate::interchange::tagging::TagTree;
 use crate::page::{Page, PageSettings};
 use crate::pdf::PdfDocument;
 use crate::serialize::{SerializeContext, SerializeSettings};
+use crate::surface::Location;
 
 /// A PDF document.
 pub struct Document {
@@ -63,6 +64,11 @@ impl Document {
     pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page {
         let page_index = self.serializer_context.page_infos().iter().len();
         Page::new(&mut self.serializer_context, page_index, page_settings)
+    }
+
+    /// Set the location that should be assumed for subsequent operations.
+    pub fn set_location(&mut self, location: Location) {
+        self.serializer_context.set_location(location);
     }
 
     /// Set the outline of the document.
