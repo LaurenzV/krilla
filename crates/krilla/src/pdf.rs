@@ -38,14 +38,18 @@ impl PdfDocument {
 
 #[derive(Default, Debug)]
 pub(crate) struct PdfDocumentInfo {
+    counter: u64,
     query_refs: Vec<Ref>,
     queries: Vec<ExtractionQuery>,
     locations: Vec<Option<Location>>,
 }
 
 impl PdfDocumentInfo {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(counter: u64) -> Self {
+        Self {
+            counter,
+            ..Self::default()
+        }
     }
 }
 
@@ -53,12 +57,14 @@ impl PdfDocumentInfo {
 pub(crate) struct PdfSerializerContext {
     // TODO: Ensure reproducible output when writing.
     infos: HashMap<PdfDocument, PdfDocumentInfo>,
+    counter: u64
 }
 
 impl PdfSerializerContext {
     pub(crate) fn new() -> Self {
         Self {
             infos: HashMap::new(),
+            counter: 0,
         }
     }
 
@@ -69,14 +75,23 @@ impl PdfSerializerContext {
         ref_: Ref,
         location: Option<Location>,
     ) {
-        let info = self
-            .infos
-            .entry(document.clone())
-            .or_insert(PdfDocumentInfo::new());
+        let info = self.get_info(document);
 
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_page(page_index));
         info.locations.push(location);
+    }
+    
+    fn get_info(&mut self, document: &PdfDocument) -> &mut PdfDocumentInfo {
+        self
+            .infos
+            .entry(document.clone())
+            .or_insert_with(|| {
+                let info = PdfDocumentInfo::new(self.counter);
+                self.counter += 1;
+
+                info
+            })
     }
 
     pub(crate) fn add_xobject(
@@ -86,10 +101,7 @@ impl PdfSerializerContext {
         ref_: Ref,
         location: Option<Location>,
     ) {
-        let info = self
-            .infos
-            .entry(document.clone())
-            .or_insert(PdfDocumentInfo::new());
+        let info = self.get_info(document);
 
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_xobject(page_index));
@@ -101,7 +113,11 @@ impl PdfSerializerContext {
         page_tree_parent_ref: Ref,
         container: &mut ChunkContainer,
     ) -> KrillaResult<()> {
-        for (doc, info) in self.infos {
+        let mut entries = self.infos.into_iter().collect::<Vec<_>>();
+        // Make sure we always process them in the same order.
+        entries.sort_by(|d1, d2| d1.1.counter.cmp(&d2.1.counter));
+        
+        for (doc, info) in entries {
             let deferred_chunk = Deferred::new(move || {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
