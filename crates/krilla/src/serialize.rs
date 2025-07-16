@@ -208,7 +208,7 @@ impl SerializeContext {
         serialize_settings.no_device_cs |= serialize_settings.validator().requires_no_device_cs();
         serialize_settings.enable_tagging |= serialize_settings.validator().requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validator().xmp_metadata();
-        
+
         let mut cur_ref = Ref::new(1);
         let page_tree_ref = cur_ref.bump();
 
