@@ -174,7 +174,7 @@ pub(crate) struct SerializeContext {
     /// we can cache the font.
     pub(crate) font_cache: HashMap<Arc<FontInfo>, Font>,
     /// The ref of the page tree.
-    page_tree_ref: Option<Ref>,
+    page_tree_ref: Ref,
     /// All global objects, such as PDF fonts, that are populated over time.
     pub(crate) global_objects: GlobalObjects,
     /// Information for each page written so far, index by the page index.
@@ -209,13 +209,16 @@ impl SerializeContext {
         serialize_settings.enable_tagging |= serialize_settings.validator().requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validator().xmp_metadata();
 
+        let mut cur_ref = Ref::new(1);
+        let page_tree_ref = cur_ref.bump();
+
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
             global_objects: GlobalObjects::default(),
-            cur_ref: Ref::new(1),
+            cur_ref,
             chunk_container: ChunkContainer::new(),
-            page_tree_ref: None,
+            page_tree_ref,
             page_infos: vec![],
             location: None,
             validation_errors: vec![],
@@ -292,9 +295,7 @@ impl SerializeContext {
     }
 
     pub(crate) fn page_tree_ref(&mut self) -> Ref {
-        *self
-            .page_tree_ref
-            .get_or_insert_with(|| self.cur_ref.bump())
+        self.page_tree_ref
     }
 
     pub(crate) fn register_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
@@ -605,14 +606,12 @@ impl SerializeContext {
     }
 
     fn serialize_page_tree(&mut self) {
-        if let Some(page_tree_ref) = self.page_tree_ref {
-            let mut page_tree_chunk = Chunk::new();
-            page_tree_chunk
-                .pages(page_tree_ref)
-                .count(self.page_infos.len() as i32)
-                .kids(self.page_infos.iter().map(|i| i.ref_));
-            self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
-        }
+        let mut page_tree_chunk = Chunk::new();
+        page_tree_chunk
+            .pages(self.page_tree_ref)
+            .count(self.page_infos.len() as i32)
+            .kids(self.page_infos.iter().map(|i| i.ref_));
+        self.chunk_container.page_tree = Some((self.page_tree_ref, page_tree_chunk));
     }
 
     fn serialize_xyz_destinations(&mut self) -> KrillaResult<()> {
