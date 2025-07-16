@@ -1,5 +1,6 @@
 //! Including other PDF files.
 
+// TODO: Prohibit PDFs with validated export.
 use std::cell::OnceCell;
 use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
 use crate::error::{KrillaError, KrillaResult};

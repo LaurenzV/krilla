@@ -42,6 +42,7 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
+use krilla::pdf::PdfDocument;
 
 mod annotation;
 mod destination;
@@ -368,6 +369,10 @@ pub fn load_custom_image(name: &str) -> Image {
         false,
     )
     .unwrap()
+}
+
+pub fn load_pdf(name: &str) -> PdfDocument {
+    PdfDocument::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap()).into())
 }
 
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {

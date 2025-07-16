@@ -2,11 +2,11 @@ use krilla::error::KrillaError;
 use krilla::geom::Size;
 use krilla::page::Page;
 use krilla::Document;
-use krilla_macros::snapshot;
+use krilla_macros::{snapshot, visreg};
 
 use crate::metadata::metadata_impl;
 use crate::text::simple_text_impl;
-use crate::{load_png_image, rect_to_path, red_fill, settings_16, NOTO_SANS};
+use crate::{load_pdf, load_png_image, rect_to_path, red_fill, settings_16, NOTO_SANS};
 
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
@@ -60,4 +60,10 @@ fn pdf_14_no_sixteen_bit_images() {
         document.finish(),
         Err(KrillaError::SixteenBitImage(image.clone(), None))
     );
+}
+
+#[snapshot(document)]
+fn pdf_embedded_simple(document: &mut Document) {
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
 }

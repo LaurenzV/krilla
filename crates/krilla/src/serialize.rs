@@ -615,9 +615,9 @@ impl SerializeContext {
     fn serialize_embedded_pdfs(&mut self) -> KrillaResult<()> {
         let pdf_ctx = self.global_objects.pdf_ctx.take();
 
-        if let Some(page_tree_ref) = self.page_tree_ref {
-            pdf_ctx.serialize(page_tree_ref, &mut self.chunk_container)?;
-        }
+        // TODO: Remove option from page tree ref?
+        let page_tree_ref = self.page_tree_ref();
+        pdf_ctx.serialize(page_tree_ref, &mut self.chunk_container)?;
 
         Ok(())
     }
