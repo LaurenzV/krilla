@@ -20,6 +20,7 @@ use crate::{green_fill, load_png_image, rect_to_path, red_stroke, NOTO_SANS, SVG
 
 pub trait SurfaceTaggingExt {
     fn fill_text_(&mut self, y: f32, content: &str);
+    fn outline_text_(&mut self, y: f32, content: &str);
 }
 
 impl SurfaceTaggingExt for Surface<'_> {
@@ -33,6 +34,20 @@ impl SurfaceTaggingExt for Surface<'_> {
             20.0,
             content,
             false,
+            TextDirection::Auto,
+        );
+    }
+
+    fn outline_text_(&mut self, y: f32, content: &str) {
+        let font_data = NOTO_SANS.clone();
+        let font = Font::new(font_data, 0).unwrap();
+
+        self.draw_text(
+            Point::from_xy(0.0, y),
+            font,
+            20.0,
+            content,
+            true,
             TextDirection::Auto,
         );
     }
@@ -441,45 +456,11 @@ fn tagging_table_header_and_footer(document: &mut Document) {
 #[snapshot(document)]
 fn tagging_tag_attributes(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut page = document.start_page_with(PageSettings::new(1000.0, 400.0));
+    let mut page = document.start_page();
     let mut surface = page.surface();
 
-    let logo_path = {
-        let mut builder = PathBuilder::new();
-        // N
-        builder.move_to(100.0, 300.0);
-        builder.line_to(100.0, 100.0);
-        builder.line_to(250.0, 300.0);
-        builder.line_to(250.0, 100.0);
-
-        // A
-        builder.move_to(300.0, 300.0);
-        builder.line_to(375.0, 100.0);
-        builder.line_to(450.0, 300.0);
-        builder.move_to(337.5, 200.0);
-        builder.line_to(412.5, 200.0);
-
-        // S
-        builder.move_to(650.0, 100.0);
-        builder.line_to(500.0, 100.0);
-        builder.line_to(500.0, 200.0);
-        builder.line_to(650.0, 200.0);
-        builder.line_to(650.0, 300.0);
-        builder.line_to(500.0, 300.0);
-
-        // A
-        builder.move_to(700.0, 300.0);
-        builder.line_to(775.0, 100.0);
-        builder.line_to(850.0, 300.0);
-        builder.move_to(737.5, 200.0);
-        builder.line_to(812.5, 200.0);
-
-        builder.finish().unwrap()
-    };
     let logo = surface.start_tagged(ContentTag::Artifact(ArtifactType::Other));
-    surface.set_fill(None);
-    surface.set_stroke(Some(red_stroke(1.0, 7.0)));
-    surface.draw_path(&logo_path);
+    surface.outline_text_(100.0, "NASA");
     surface.end_tagged();
 
     surface.finish();
