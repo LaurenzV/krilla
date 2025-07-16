@@ -216,7 +216,7 @@ pub(crate) struct SerializeContext {
     /// The current ref in use. All serializers should use the `new_ref` method (which indirectly
     /// is based on this field) to generate a new Ref, instead of creating one manually with
     /// `Ref::new`.
-    cur_ref: Ref,
+    pub(crate) cur_ref: Ref,
     /// Collect all chunks that are generated as part of the PDF writing process.
     chunk_container: ChunkContainer,
     /// All validation errors that are collected as part of the export process.
@@ -231,8 +231,6 @@ pub(crate) struct SerializeContext {
     limits: Limits,
     /// The current location, if set.
     pub(crate) location: Option<Location>,
-    #[cfg(feature = "pdf")]
-    pub(crate) pdf_ctx: PdfSerializerContext,
 }
 
 impl SerializeContext {
@@ -254,8 +252,6 @@ impl SerializeContext {
             validation_errors: vec![],
             serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
-            #[cfg(feature = "pdf")]
-            pdf_ctx: PdfSerializerContext::new(),
         }
     }
 
@@ -330,7 +326,8 @@ impl SerializeContext {
     pub(crate) fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
         for page_idx in page_indices {
             let page_ref = self.new_ref();
-            self.pdf_ctx
+            self.global_objects
+                .pdf_ctx
                 .add_page(pdf, *page_idx, page_ref, self.location);
             self.page_infos.push(PageInfo::Pdf { ref_: page_ref });
         }
@@ -367,6 +364,7 @@ impl SerializeContext {
         self.serialize_fonts()?;
         self.serialize_pages()?;
         self.serialize_page_tree();
+        self.serialize_embedded_pdfs()?;
         self.serialize_xyz_destinations()?;
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
@@ -609,6 +607,16 @@ impl SerializeContext {
             self.chunk_container.outline = Some((outline_ref, chunk));
         } else {
             self.register_validation_error(ValidationError::MissingDocumentOutline);
+        }
+
+        Ok(())
+    }
+
+    fn serialize_embedded_pdfs(&mut self) -> KrillaResult<()> {
+        let pdf_ctx = self.global_objects.pdf_ctx.take();
+
+        if let Some(page_tree_ref) = self.page_tree_ref {
+            pdf_ctx.serialize(page_tree_ref, &mut self.chunk_container)?;
         }
 
         Ok(())
@@ -884,9 +892,11 @@ pub(crate) struct GlobalObjects {
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
-
     /// A list of custom headings numbers used in the document.
     pub(crate) custom_heading_roles: BTreeSet<NonZeroU32>,
+    /// The context tracking all of the pdfs and their pages that have been inserted.
+    #[cfg(feature = "pdf")]
+    pub(crate) pdf_ctx: MaybeTaken<PdfSerializerContext>,
 }
 
 impl GlobalObjects {
@@ -899,6 +909,8 @@ impl GlobalObjects {
         assert!(self.outline.is_taken());
         assert!(self.tag_tree.is_taken());
         assert!(self.embedded_files.is_taken());
+        #[cfg(feature = "pdf")]
+        assert!(self.pdf_ctx.is_taken());
     }
 }
 

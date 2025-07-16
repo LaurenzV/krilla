@@ -39,6 +39,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) pages: Vec<DChunk>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
     pub(crate) embedded_files: Vec<DChunk>,
+    pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -290,6 +291,11 @@ impl ChunkContainer {
     }
 }
 
+pub(crate) struct EmbeddedPdfChunk {
+    pub(crate) chunk: Chunk,
+    pub(crate) root_ref_mappings: HashMap<Ref, Ref>,
+}
+
 /// Visits all chunks in a type.
 trait Visit {
     fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()>;
@@ -317,6 +323,7 @@ impl Visit for ChunkContainer {
         self.pages.visit(f)?;
         self.images.visit(f)?;
         self.embedded_files.visit(f)?;
+        // self.embedded_pdfs.visit(f)?;
         Ok(())
     }
 }

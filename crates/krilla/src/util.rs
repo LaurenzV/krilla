@@ -4,17 +4,17 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-use base64::Engine;
-pub(crate) use deferred::*;
-use pdf_writer::{Dict, Name};
-use siphasher::sip128::{Hasher128, SipHasher13};
-use tiny_skia_path::Path;
-
 use crate::geom::Rect;
 use crate::graphics::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::graphics::paint::Stroke;
 use crate::resource::Resource;
 use crate::serialize::MaybeDeviceColorSpace;
+use crate::Data;
+use base64::Engine;
+pub(crate) use deferred::*;
+use pdf_writer::{Dict, Name};
+use siphasher::sip128::{Hasher128, SipHasher13};
+use tiny_skia_path::Path;
 
 pub(crate) trait NameExt {
     fn to_pdf_name(&self) -> Name;
