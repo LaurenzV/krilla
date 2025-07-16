@@ -420,7 +420,9 @@ fn tagging_table_header_and_footer(document: &mut Document) {
         let cell = TagGroup::with_children(TagKind::TD(cell), vec![Node::Leaf(text)]);
 
         let row = TagGroup::with_children(TagKind::TR, vec![Node::Group(cell)]);
-        TagGroup::with_children(TagKind::TFoot, vec![Node::Group(row)])
+        // Empty row to ensure proper table structure because of the rowspan.
+        let empty_row = TagGroup::new(TagKind::TR);
+        TagGroup::with_children(TagKind::TFoot, vec![row.into(), empty_row.into()])
     };
 
     surface.finish();
