@@ -9,7 +9,7 @@ use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
 use krilla::tagging::{
     ArtifactType, ContentTag, Node, SpanTag, TableCellSpan, TableDataCell, TableHeaderCell,
-    TableHeaderScope, Tag, TagBuilder, TagGroup, TagId, TagIdRefs, TagKind, TagTree,
+    TableHeaderScope, Tag, TagBuilder, TagGroup, TagId, TagKind, TagTree,
 };
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
@@ -377,7 +377,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
-    let header_id = |x: usize| TagId::from_vec(format!("Header {x}").into_bytes());
+    let header_id = |x: usize| TagId::from(format!("Header {x}").into_bytes());
     let cell_text = |surface: &mut Surface, x: usize, y: usize, content: &str| {
         let font_data = NOTO_SANS.clone();
         let font = Font::new(font_data, 0).unwrap();
@@ -414,7 +414,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
             cell_text(&mut surface, x, y, &format!("body {} {}", x + 1, y + 1));
             surface.end_tagged();
 
-            let headers = TagIdRefs::from([header_id(x)]);
+            let headers = [header_id(x)];
             let tag = TagKind::TD(TableDataCell::new().with_headers(headers));
             row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
         }
@@ -431,7 +431,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
                 rows: NonZeroU32::new(2).unwrap(),
                 cols: NonZeroU32::new(3).unwrap(),
             })
-            .with_headers(TagIdRefs::from((0..3).map(header_id)));
+            .with_headers((0..3).map(header_id));
         let cell = TagGroup::with_children(TagKind::TD(cell), vec![Node::Leaf(text)]);
 
         let row = TagGroup::with_children(TagKind::TR, vec![Node::Group(cell)]);

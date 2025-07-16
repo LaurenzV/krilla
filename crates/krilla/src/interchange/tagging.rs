@@ -950,14 +950,12 @@ impl TagGroup {
     fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
         match &self.tag.kind {
             TagKind::TH(TableHeaderCell { data, .. }) | TagKind::TD(data) => {
-                if let Some(ids) = data.headers.tag_ids() {
-                    for id in ids.iter() {
-                        if !id_tree.contains_key(id) {
-                            sc.register_validation_error(ValidationError::UnknownTagId(
-                                id.clone(),
-                                self.tag.location,
-                            ));
-                        }
+                for id in data.headers.iter() {
+                    if !id_tree.contains_key(id) {
+                        sc.register_validation_error(ValidationError::UnknownTagId(
+                            id.clone(),
+                            self.tag.location,
+                        ));
                     }
                 }
             }
@@ -977,11 +975,9 @@ fn serialize_table_cell_attributes<'a: 'b, 'b>(
     mut table_attributes: impl LazyGet<TableAttributes<'a>>,
     cell: &TableDataCell,
 ) {
-    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-        if let Some(ids) = cell.headers.tag_ids() {
-            let id_strs = ids.iter().map(|id| Str(id.as_bytes()));
-            table_attributes.lazy_get().headers().items(id_strs);
-        }
+    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 && !cell.headers.is_empty() {
+        let id_strs = cell.headers.iter().map(|id| Str(id.as_bytes()));
+        table_attributes.lazy_get().headers().items(id_strs);
     }
     if let Some(n) = cell.span.row_span() {
         table_attributes.lazy_get().row_span(n.get() as i32);
@@ -1239,8 +1235,8 @@ impl TableHeaderCell {
     }
 
     /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: TagIdRefs) -> Self {
-        self.data.headers = headers;
+    pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
+        self.data.headers = headers.into_iter().collect();
         self
     }
 
@@ -1261,7 +1257,7 @@ pub struct TableDataCell {
     /// evaluated.
     ///
     /// This allows specifying header hierarchies inside tables.
-    pub headers: TagIdRefs,
+    pub headers: SmallVec<[TagId; 1]>,
     /// The column/row span of the table.
     pub span: TableCellSpan,
 }
@@ -1270,14 +1266,14 @@ impl TableDataCell {
     /// Create a new table data cell.
     pub const fn new() -> Self {
         Self {
-            headers: TagIdRefs::NONE,
+            headers: SmallVec::new_const(),
             span: TableCellSpan::ONE,
         }
     }
 
     /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: TagIdRefs) -> Self {
-        self.headers = headers;
+    pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
+        self.headers = headers.into_iter().collect();
         self
     }
 
@@ -1309,61 +1305,20 @@ impl TableHeaderScope {
     }
 }
 
-/// A list of referenced [`Tag::id`]s.
-#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
-pub struct TagIdRefs {
-    /// The list of IDs.
-    pub ids: SmallVec<[TagId; 1]>,
-}
-
-impl<I: IntoIterator<Item = TagId>> From<I> for TagIdRefs {
-    fn from(iter: I) -> Self {
-        let ids = SmallVec::from_iter(iter);
-        Self { ids }
-    }
-}
-
-impl TagIdRefs {
-    /// An empty reference list.
-    pub const NONE: Self = Self {
-        ids: SmallVec::new_const(),
-    };
-
-    fn tag_ids(&self) -> Option<&[TagId]> {
-        (!self.ids.is_empty()).then_some(&self.ids)
-    }
-}
-
 /// An identifier of a [`Tag`].
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct TagId(SmallVec<[u8; 16]>);
 
+impl<I: IntoIterator<Item = u8>> From<I> for TagId {
+    fn from(value: I) -> Self {
+        // Disambiguate ids provided by the user from ids automatically assigned
+        // to notes by prefixing them with a `U`.
+        let bytes = std::iter::once(b'U').chain(value).collect();
+        TagId(bytes)
+    }
+}
+
 impl TagId {
-    /// Create an identifier from a byte slice.
-    pub fn from_slice(bytes: &[u8]) -> Self {
-        let mut inner = SmallVec::with_capacity(bytes.len() + 1);
-        // HACK: Disambiguate ids provided by the user from ids automatically
-        // assigned to notes by prefixing them with a `U`.
-        inner.push(b'U');
-        inner.extend_from_slice(bytes);
-        Self(inner)
-    }
-
-    /// Create an identifier from a byte vec.
-    pub fn from_vec(bytes: Vec<u8>) -> Self {
-        let mut inner = SmallVec::from_vec(bytes);
-        // HACK: Disambiguate ids provided by the user from ids automatically
-        // assigned to notes by prefixing them with a `U`.
-        inner.insert(0, b'U');
-        Self(inner)
-    }
-
-    /// Create an identifier from a byte vec.
-    pub fn from_smallvec(mut bytes: SmallVec<[u8; 16]>) -> Self {
-        bytes.insert(0, b'U');
-        Self(bytes)
-    }
-
     /// Returns the identifier as a byte slice.
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_slice()
