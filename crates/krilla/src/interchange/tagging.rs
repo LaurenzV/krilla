@@ -1250,14 +1250,7 @@ impl TableHeaderCell {
 /// A table data cell.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub struct TableDataCell {
-    /// A list of headers associated with a table cell.
-    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
-    /// which can also specify a list of parent header cells (`TH`), and so on.
-    /// To determine the list of associated headers this list is recursively
-    /// evaluated.
-    ///
-    /// This allows specifying header hierarchies inside tables.
-    pub headers: SmallVec<[TagId; 1]>,
+    headers: SmallVec<[TagId; 1]>,
     /// The column/row span of the table.
     pub span: TableCellSpan,
 }
@@ -1269,6 +1262,17 @@ impl TableDataCell {
             headers: SmallVec::new_const(),
             span: TableCellSpan::ONE,
         }
+    }
+
+    /// A list of headers associated with a table cell.
+    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
+    /// which can also specify a list of parent header cells (`TH`), and so on.
+    /// To determine the list of associated headers this list is recursively
+    /// evaluated.
+    ///
+    /// This allows specifying header hierarchies inside tables.
+    pub fn headers(&self) -> &[TagId] {
+        &self.headers
     }
 
     /// Sets [`TableDataCell::headers`].
