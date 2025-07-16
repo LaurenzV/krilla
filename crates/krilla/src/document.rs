@@ -20,6 +20,7 @@ use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
 use crate::page::{Page, PageSettings};
+use crate::pdf::PdfDocument;
 use crate::serialize::{SerializeContext, SerializeSettings};
 
 /// A PDF document.
@@ -77,6 +78,12 @@ impl Document {
     /// Set the tag tree of the document.
     pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
         self.serializer_context.set_tag_tree(tag_tree);
+    }
+
+    /// Embed the pages (starting with page index 0 for the first page) from the given
+    /// PDF document.
+    pub fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
+        self.serializer_context.embed_pdf_pages(pdf, page_indices);
     }
 
     /// Embed a new file in the PDF document.

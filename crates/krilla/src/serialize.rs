@@ -23,6 +23,9 @@ use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
+use crate::pdf::PdfDocument;
+#[cfg(feature = "pdf")]
+use crate::pdf::PdfSerializerContext;
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
@@ -147,9 +150,7 @@ pub(crate) enum PageInfo {
         annotations: Vec<(Ref, OnceCell<Ref>)>,
     },
     /// A page embedded from an external PDF file.
-    Pdf {
-        ref_: Ref
-    }
+    Pdf { ref_: Ref },
 }
 
 impl PageInfo {
@@ -163,14 +164,14 @@ impl PageInfo {
     pub(crate) fn annotations(&self) -> &[(Ref, OnceCell<Ref>)] {
         match self {
             PageInfo::Krilla { annotations, .. } => annotations,
-            PageInfo::Pdf { .. } => &[]
+            PageInfo::Pdf { .. } => &[],
         }
     }
 
     pub(crate) fn annotations_mut(&mut self) -> &mut [(Ref, OnceCell<Ref>)] {
         match self {
             PageInfo::Krilla { annotations, .. } => annotations,
-            PageInfo::Pdf { .. } => &mut []
+            PageInfo::Pdf { .. } => &mut [],
         }
     }
 }
@@ -230,6 +231,8 @@ pub(crate) struct SerializeContext {
     limits: Limits,
     /// The current location, if set.
     pub(crate) location: Option<Location>,
+    #[cfg(feature = "pdf")]
+    pub(crate) pdf_ctx: PdfSerializerContext,
 }
 
 impl SerializeContext {
@@ -251,6 +254,8 @@ impl SerializeContext {
             validation_errors: vec![],
             serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
+            #[cfg(feature = "pdf")]
+            pdf_ctx: PdfSerializerContext::new(),
         }
     }
 
@@ -319,6 +324,16 @@ impl SerializeContext {
 
     pub(crate) fn serialize_settings(&self) -> Arc<SerializeSettings> {
         self.serialize_settings.clone()
+    }
+
+    #[cfg(feature = "pdf")]
+    pub(crate) fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
+        for page_idx in page_indices {
+            let page_ref = self.new_ref();
+            self.pdf_ctx
+                .add_page(pdf, *page_idx, page_ref, self.location);
+            self.page_infos.push(PageInfo::Pdf { ref_: page_ref });
+        }
     }
 
     pub(crate) fn page_tree_ref(&mut self) -> Ref {
