@@ -106,6 +106,8 @@ fn pdf_embedded_invalid() {
     assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::LoadFailed, None)))
 }
 
+// TODO: CHeck that PDF version is compatible
+
 #[test]
 fn pdf_embedded_consistency() {
     let mut last = None;
