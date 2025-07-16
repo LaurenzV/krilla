@@ -1,5 +1,6 @@
 //! Including other PDF files.
 
+use std::cell::OnceCell;
 use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
@@ -10,7 +11,7 @@ use hayro_write::{ExtractionError, ExtractionQuery, PdfData};
 use pdf_writer::{Chunk, Ref};
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -122,13 +123,6 @@ impl PdfSerializerContext {
                 );
                 let result = convert_extraction_result(extracted, &doc, first_location.as_ref())?;
 
-                // Now, we have a chunk that contains everything we need to fully embed the PDF, including
-                // the pages we wanted to extract into, as well as all their dependencies. The
-                // problem is: during the document creation, we already assigned references to the
-                // pages (stored in `SerializerContex::page_infos`), but `hayro_write` created new references
-                // for those (stored in `result.root_refs`). Because of this, when renumbering the chunks
-                // in the chunk container, we need to make sure to correctly reassociate these references.
-
                 debug_assert_eq!(info.query_refs.len(), result.root_refs.len());
 
                 let mut root_ref_mappings = HashMap::new();
@@ -150,7 +144,8 @@ impl PdfSerializerContext {
 
                 Ok(EmbeddedPdfChunk {
                     root_ref_mappings,
-                    chunk: result.chunk,
+                    original_chunk: result.chunk,
+                    new_chunk: OnceLock::new()
                 })
             });
 
