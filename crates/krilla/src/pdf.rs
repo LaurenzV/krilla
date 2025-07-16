@@ -1,7 +1,6 @@
 //! Including other PDF files.
 
 // TODO: Prohibit PDFs with validated export.
-use std::cell::OnceCell;
 use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
@@ -10,6 +9,7 @@ use crate::util::{Deferred, Prehashed};
 use crate::{Data, Document};
 use hayro_write::{ExtractionError, ExtractionQuery, PdfData};
 use pdf_writer::{Chunk, Ref};
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
@@ -98,7 +98,7 @@ impl PdfSerializerContext {
 
     pub(crate) fn serialize(
         self,
-        page_tree_ref: Ref,
+        page_tree_parent_ref: Ref,
         container: &mut ChunkContainer,
     ) -> KrillaResult<()> {
         for (doc, info) in self.infos {
@@ -106,7 +106,6 @@ impl PdfSerializerContext {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
-                let new_page_tree_ref = new_ref.bump();
 
                 // TODO: Don't just return an `Option` in hayro.
                 let data: PdfData = doc.0.deref().0.clone();
@@ -117,19 +116,15 @@ impl PdfSerializerContext {
                     first_location,
                 ))?;
 
-                let extracted = hayro_write::extract(
-                    &pdf,
-                    Box::new(|| new_ref.bump()),
-                    new_page_tree_ref,
-                    &info.queries,
-                );
+                let extracted =
+                    hayro_write::extract(&pdf, Box::new(|| new_ref.bump()), &info.queries);
                 let result = convert_extraction_result(extracted, &doc, first_location.as_ref())?;
 
                 debug_assert_eq!(info.query_refs.len(), result.root_refs.len());
 
                 let mut root_ref_mappings = HashMap::new();
-                
-                root_ref_mappings.insert(new_page_tree_ref, page_tree_ref);
+
+                root_ref_mappings.insert(result.page_tree_parent_ref, page_tree_parent_ref);
 
                 for ((should_ref, extraction_result), location) in info
                     .query_refs
@@ -149,7 +144,7 @@ impl PdfSerializerContext {
                 Ok(EmbeddedPdfChunk {
                     root_ref_mappings,
                     original_chunk: result.chunk,
-                    new_chunk: OnceLock::new()
+                    new_chunk: OnceLock::new(),
                 })
             });
 

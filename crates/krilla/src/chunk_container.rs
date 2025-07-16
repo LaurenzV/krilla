@@ -1,7 +1,7 @@
+use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::sync::OnceLock;
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
 use xmp_writer::{RenditionClass, XmpWriter};
 
 use crate::configure::{PdfVersion, ValidationError};
@@ -309,22 +309,21 @@ impl Visit for EmbeddedPdfChunk {
         // the pages we wanted to extract into, as well as all their dependencies. The
         // problem is: during the document creation, we already assigned references to the
         // pages (stored in `SerializerContex::page_infos`), but `hayro_write` created new references
-        // for those (stored in `result.root_refs`). 
-        
+        // for those (stored in `result.root_refs`).
+
         // Because of this, embedded PDF chunks will be renumbered twice: First, we preprocess the
         // chunk such that page/XObjects are reassigned their original references from the serialize
         // context, and all other objects are assigned new, unique references provided by the
         // serialize context. Then, we renumber them once again by treating them like any other chunk.
-        
+
         // Since we are calling `visit` twice, we also cache the renumbered chunk.
-        
+
         let renumbered = self.new_chunk.get_or_init(|| {
             std::fs::write("original.txt", self.original_chunk.as_bytes()).unwrap();
             let mut remapper = self.root_ref_mappings.clone();
-            
-            self.original_chunk.renumber(|old| {
-                *remapper.entry(old).or_insert_with(|| sc.new_ref())
-            })
+
+            self.original_chunk
+                .renumber(|old| *remapper.entry(old).or_insert_with(|| sc.new_ref()))
         });
 
         std::fs::write("new.txt", self.original_chunk.as_bytes()).unwrap();

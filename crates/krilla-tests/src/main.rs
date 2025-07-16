@@ -24,6 +24,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stop, Stroke};
+use krilla::pdf::PdfDocument;
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
@@ -42,7 +43,6 @@ use sitro::{
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
-use krilla::pdf::PdfDocument;
 
 mod annotation;
 mod destination;
