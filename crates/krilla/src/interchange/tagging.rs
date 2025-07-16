@@ -402,7 +402,7 @@ impl Identifier {
 /// A tag for group nodes.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Tag {
-    /// The structure element type.
+    /// The tag kind.
     pub kind: TagKind,
     /// The identifier of this tag.
     pub id: Option<TagId>,
@@ -415,8 +415,8 @@ pub struct Tag {
     /// abbreviation should be provided here.
     pub expanded: Option<String>,
     /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically write some word. This should be the exact
-    /// replacment text of the word.
+    /// some curves that artistically represent some word. This should be the exact
+    /// replacement text of the word.
     pub actual_text: Option<String>,
     /// The location of the tag.
     pub location: Option<Location>,
@@ -490,7 +490,7 @@ pub trait TagBuilder: Into<Tag> {
 
 impl<T: Into<Tag>> TagBuilder for T {}
 
-/// A structure element type.
+/// A tag kind.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TagKind {
     /// A part of a document that may contain multiple articles or sections.
@@ -661,6 +661,8 @@ impl TagKind {
             Self::Title => struct_elem.custom_kind(Name(b"Title")),
             Self::Hn(level, _) => {
                 // Dynamically register custom headings `Hn` with `n >= 7`
+                // Starting from PDF 2.0 arbitrary heading levels are supported,
+                // so the custom role mapping is redundant.
                 if pdf_version < PdfVersion::Pdf20 {
                     sc.global_objects.custom_heading_roles.insert(*level);
                 }
@@ -1247,7 +1249,7 @@ pub struct TableDataCell {
     /// A list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
-    /// To determine the the list of associated headers this list is recursively
+    /// To determine the list of associated headers this list is recursively
     /// evaluated.
     ///
     /// This allows specifying header hierarchies inside tables.
