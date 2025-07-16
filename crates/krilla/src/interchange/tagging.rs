@@ -443,7 +443,15 @@ impl Tag {
     }
 }
 
-/// Builder methods for a [`Tag`].
+/// Fluent builder methods to create a [`Tag`].
+///
+/// # Example
+/// ```
+/// use krilla::tagging::{Tag, TagBuilder, TagKind};
+/// let tag: Tag = TagKind::P
+///     .with_actual_text(Some("My paragraph".into()))
+///     .with_lang(Some("en".into()));
+/// ```
 pub trait TagBuilder: Into<Tag> {
     /// Sets [`Tag::id`].
     fn with_id(self, id: Option<TagId>) -> Tag {
