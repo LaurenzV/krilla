@@ -28,6 +28,7 @@ use xmp_writer::XmpWriter;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
+use crate::tagging::TagId;
 use crate::text::Font;
 use crate::text::GlyphId;
 
@@ -120,6 +121,14 @@ pub enum ValidationError {
     EmbeddedFile(EmbedError, Option<Location>),
     /// The PDF contains no tagging.
     MissingTagging,
+    /// A duplicate [`Tag::id`] was provided.
+    ///
+    /// [`Tag::id`]: crate::interchange::tagging::Tag::id
+    DuplicateTagId(TagId, Option<Location>),
+    /// A [`TagId`] was not found in the [`TagTree`].
+    ///
+    /// [`TagTree`]: crate::interchange::tagging::TagTree
+    UnknownTagId(TagId, Option<Location>),
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -315,6 +324,8 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A1_A,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::DuplicateTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -352,6 +363,8 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A2_A,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::DuplicateTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -384,6 +397,8 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A3_A,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::DuplicateTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
                 ValidationError::TooLongString => false,
@@ -422,6 +437,8 @@ impl Validator {
                 // Only recommended, not required.
                 ValidationError::MissingTagging => false,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::DuplicateTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -454,6 +471,8 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => true,
                 ValidationError::MissingDocumentDate => false,
+                ValidationError::DuplicateTagId(_, _) => true,
+                ValidationError::UnknownTagId(_, _) => true,
             },
         }
     }
