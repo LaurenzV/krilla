@@ -708,6 +708,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "hayro-syntax"
+version = "0.0.1"
+dependencies = [
+ "flate2",
+ "kurbo",
+ "log",
+ "rustc-hash 2.1.1",
+ "smallvec",
+ "zune-jpeg 0.5.0-rc5",
+]
+
+[[package]]
+name = "hayro-write"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "hayro-syntax",
+ "lazy_static",
+ "log",
+ "pdf-writer",
+]
+
+[[package]]
 name = "icu_locid"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -816,6 +839,7 @@ dependencies = [
  "fontdb",
  "fxhash",
  "gif",
+ "hayro-write",
  "image 0.25.2",
  "image-webp",
  "imagesize 0.13.0",
@@ -835,7 +859,7 @@ dependencies = [
  "tiny-skia-path",
  "xmp-writer",
  "yoke",
- "zune-jpeg",
+ "zune-jpeg 0.4.13",
 ]
 
 [[package]]
@@ -1089,7 +1113,7 @@ dependencies = [
  "log",
  "rayon",
  "rgb",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustc_version",
  "zopfli",
 ]
@@ -1362,7 +1386,7 @@ dependencies = [
  "svgtypes",
  "tiny-skia",
  "usvg",
- "zune-jpeg",
+ "zune-jpeg 0.4.13",
 ]
 
 [[package]]
@@ -1397,6 +1421,12 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "rustc-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
 name = "rustc_version"
@@ -2185,6 +2215,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f423a2c17029964870cfaabb1f13dfab7d092a62a29a89264f4d36990ca414a"
 
 [[package]]
+name = "zune-core"
+version = "0.5.0-rc2"
+source = "git+https://github.com/etemesi254/zune-image?rev=ac43af3#ac43af36e7125c120d64392c3eee52528c24b5c4"
+
+[[package]]
 name = "zune-inflate"
 version = "0.2.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2199,5 +2234,13 @@ version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16099418600b4d8f028622f73ff6e3deaabdff330fb9a2a131dea781ee8b0768"
 dependencies = [
- "zune-core",
+ "zune-core 0.4.12",
+]
+
+[[package]]
+name = "zune-jpeg"
+version = "0.5.0-rc5"
+source = "git+https://github.com/etemesi254/zune-image?rev=ac43af3#ac43af36e7125c120d64392c3eee52528c24b5c4"
+dependencies = [
+ "zune-core 0.5.0-rc2",
 ]

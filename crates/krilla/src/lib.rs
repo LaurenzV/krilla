@@ -162,6 +162,8 @@ pub mod page;
 pub mod stream;
 pub mod surface;
 pub mod text;
+#[cfg(feature = "pdf")]
+pub mod pdf;
 
 pub use data::*;
 pub use document::*;
