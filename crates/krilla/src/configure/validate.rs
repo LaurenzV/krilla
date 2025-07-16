@@ -125,9 +125,8 @@ pub enum ValidationError {
     ///
     /// [`Tag::id`]: crate::interchange::tagging::Tag::id
     DuplicateTagId(TagId, Option<Location>),
-    /// An id of [`TagIdRefs`] was not found in the [`TagTree`].
+    /// A [`TagId`] was not found in the [`TagTree`].
     ///
-    /// [`TagIdRefs`]: crate::interchange::tagging::TagIdRefs
     /// [`TagTree`]: crate::interchange::tagging::TagTree
     UnknownTagId(TagId, Option<Location>),
 }
