@@ -146,24 +146,31 @@ pub(crate) enum PageInfo {
         /// the page will the annotations be populated.
         annotations: Vec<(Ref, OnceCell<Ref>)>,
     },
+    /// A page embedded from an external PDF file.
+    Pdf {
+        ref_: Ref
+    }
 }
 
 impl PageInfo {
     pub(crate) fn ref_(&self) -> Ref {
         match self {
             PageInfo::Krilla { ref_, .. } => *ref_,
+            PageInfo::Pdf { ref_ } => *ref_,
         }
     }
 
     pub(crate) fn annotations(&self) -> &[(Ref, OnceCell<Ref>)] {
         match self {
             PageInfo::Krilla { annotations, .. } => annotations,
+            PageInfo::Pdf { .. } => &[]
         }
     }
 
     pub(crate) fn annotations_mut(&mut self) -> &mut [(Ref, OnceCell<Ref>)] {
         match self {
             PageInfo::Krilla { annotations, .. } => annotations,
+            PageInfo::Pdf { .. } => &mut []
         }
     }
 }
