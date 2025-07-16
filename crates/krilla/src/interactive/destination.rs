@@ -13,7 +13,7 @@ use tiny_skia_path::Transform;
 
 use crate::error::KrillaResult;
 use crate::geom::Point;
-use crate::serialize::SerializeContext;
+use crate::serialize::{PageInfo, SerializeContext};
 
 /// The type of destination.
 #[derive(Hash)]
@@ -131,8 +131,14 @@ impl XyzDestination {
                 sc.page_infos().len()
             )
         });
-        let page_ref = page_info.ref_;
-        let page_size = page_info.surface_size.height();
+        let PageInfo::Krilla {
+            ref_, surface_size, ..
+        } = page_info
+        else {
+            unreachable!()
+        };
+        let page_ref = *ref_;
+        let page_size = surface_size.height();
 
         let mut mapped_point = self.0.point.to_tsp();
         // Convert to PDF coordinates

@@ -130,19 +130,42 @@ impl Default for SerializeSettings {
     }
 }
 
-pub(crate) struct PageInfo {
-    /// The reference of the page in the chunk.
-    pub(crate) ref_: Ref,
-    /// The page size, necessary so that we can convert from PDF coordinates to
-    /// krilla coordinates.
-    pub(crate) surface_size: Size,
-    /// The refs of the annotations that are used by that page, and optionally
-    /// a ref to their struct parent in the tag tree.
-    ///
-    /// Note that this will be empty be default when adding a new `PageInfo` to
-    /// `page_infos` in `SerializeContext`, and only once we actually serialize
-    /// the page will the annotations be populated.
-    pub(crate) annotations: Vec<(Ref, OnceCell<Ref>)>,
+pub(crate) enum PageInfo {
+    /// A page built with krilla.
+    Krilla {
+        /// The reference of the page in the chunk.
+        ref_: Ref,
+        /// The page size, necessary so that we can convert from PDF coordinates to
+        /// krilla coordinates.
+        surface_size: Size,
+        /// The refs of the annotations that are used by that page, and optionally
+        /// a ref to their struct parent in the tag tree.
+        ///
+        /// Note that this will be empty be default when adding a new `PageInfo` to
+        /// `page_infos` in `SerializeContext`, and only once we actually serialize
+        /// the page will the annotations be populated.
+        annotations: Vec<(Ref, OnceCell<Ref>)>,
+    },
+}
+
+impl PageInfo {
+    pub(crate) fn ref_(&self) -> Ref {
+        match self {
+            PageInfo::Krilla { ref_, .. } => *ref_,
+        }
+    }
+
+    pub(crate) fn annotations(&self) -> &[(Ref, OnceCell<Ref>)] {
+        match self {
+            PageInfo::Krilla { annotations, .. } => annotations,
+        }
+    }
+
+    pub(crate) fn annotations_mut(&mut self) -> &mut [(Ref, OnceCell<Ref>)] {
+        match self {
+            PageInfo::Krilla { annotations, .. } => annotations,
+        }
+    }
 }
 
 enum StructParentElement {
@@ -412,7 +435,7 @@ impl SerializeContext {
 
     pub(crate) fn register_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
-        self.page_infos.push(PageInfo {
+        self.page_infos.push(PageInfo::Krilla {
             ref_,
             surface_size: page.page_settings.surface_size(),
             // Will be populated when the page is serialized.
@@ -610,7 +633,7 @@ impl SerializeContext {
             page_tree_chunk
                 .pages(page_tree_ref)
                 .count(self.page_infos.len() as i32)
-                .kids(self.page_infos.iter().map(|i| i.ref_));
+                .kids(self.page_infos.iter().map(|i| i.ref_()));
             self.chunk_container.page_tree = Some((page_tree_ref, page_tree_chunk));
         }
     }
@@ -691,7 +714,7 @@ impl SerializeContext {
                             // > For an object identified as a content item by means of an object reference
                             // > (see 14.7.5.3, "PDF objects as content items"), the value shall be an
                             // > indirect reference to the parent structure element.
-                            let page_annotations = &self.page_infos[ai.page_index].annotations;
+                            let page_annotations = &self.page_infos[ai.page_index].annotations();
                             let parent_ref =
                                 *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
                                     panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
