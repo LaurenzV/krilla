@@ -68,6 +68,10 @@ impl PdfDocument {
             }
         ))))
     }
+    
+    pub(crate) fn dimensions(&self) -> &[(f32, f32)] {
+        &self.0.render_dimensions
+    }
 }
 
 #[derive(Default, Debug)]

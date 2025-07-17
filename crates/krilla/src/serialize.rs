@@ -335,6 +335,16 @@ impl SerializeContext {
         }
     }
 
+    #[cfg(feature = "pdf")]
+    pub(crate) fn embed_pdf_page_as_xobject(&mut self, pdf: &PdfDocument, page_idx: usize) -> Ref {
+        let xobj_ref = self.new_ref();
+        self.global_objects
+            .pdf_ctx
+            .add_xobject(pdf, page_idx, xobj_ref, self.location);
+
+        xobj_ref
+    }
+
     pub(crate) fn page_tree_ref(&mut self) -> Ref {
         self.page_tree_ref
     }

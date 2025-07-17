@@ -6,7 +6,7 @@
 
 use crate::color::rgb;
 use crate::content::ContentBuilder;
-use crate::geom::Path;
+use crate::geom::{Path, Rect};
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::geom::{Point, Transform};
@@ -21,6 +21,7 @@ use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::paint::{InnerPaint, Paint};
+use crate::pdf::PdfDocument;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
@@ -412,6 +413,21 @@ impl<'a> Surface<'a> {
             .push(ContentBuilder::new(Transform::identity(), true));
     }
 
+    /// Embed a single PDF page with the given dimensions.
+    pub fn draw_pdf_page(&mut self, pdf: &PdfDocument, size: Size, page_idx: usize) {
+        let obj_ref = self.sc.embed_pdf_page_as_xobject(pdf, page_idx);
+        // If the user provided an invalid page index, we will detect this later on anyway, so
+        // just use dummy dimensions here.
+        let (page_width, page_height) = pdf.dimensions().get(page_idx).copied().unwrap_or((1.0, 1.0));
+        let transform = Transform::from_scale(
+            size.width() / page_width,
+            size.height() / page_height,
+        );
+        self.push_transform(&transform);
+        self.bd.get_mut().draw_xobject_by_reference(self.sc, obj_ref);
+        self.pop();
+    }
+    
     /// Push a new opacity, meaning that each subsequent graphics object will be
     /// rendered with a base opacity.
     ///
