@@ -3,7 +3,8 @@ use image::load_from_memory;
 use krilla::error::KrillaError;
 use krilla::geom::Size;
 use krilla::page::Page;
-use krilla::Document;
+use krilla::{Document, SerializeSettings};
+use krilla::configure::PdfVersion;
 use krilla::pdf::{PdfDocument, PdfError};
 use krilla_macros::{snapshot, visreg};
 
@@ -97,7 +98,7 @@ fn pdf_embedded_out_of_bounds() {
 }
 
 #[test]
-fn pdf_embedded_invalid() {
+fn pdf_embedded_invalid_pdf() {
     let mut document = Document::new();
 
     let pdf =PdfDocument::new(Arc::new(b"invalid pdf".to_vec()).into());
@@ -106,7 +107,15 @@ fn pdf_embedded_invalid() {
     assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::LoadFailed, None)))
 }
 
-// TODO: CHeck that PDF version is compatible
+#[test]
+fn pdf_embedded_version_mismatch() {
+    let mut document = Document::new_with(crate::settings_17());
+
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
+
+    assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::VersionMismatch(PdfVersion::Pdf17), None)))
+}
 
 #[test]
 fn pdf_embedded_consistency() {

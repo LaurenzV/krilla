@@ -217,7 +217,7 @@ pub(crate) struct SerializeContext {
     /// `Ref::new`.
     pub(crate) cur_ref: Ref,
     /// Collect all chunks that are generated as part of the PDF writing process.
-    chunk_container: ChunkContainer,
+    pub(crate) chunk_container: ChunkContainer,
     /// All validation errors that are collected as part of the export process.
     validation_errors: Vec<ValidationError>,
     /// Settings used for serialization.
@@ -614,12 +614,8 @@ impl SerializeContext {
 
     fn serialize_embedded_pdfs(&mut self) -> KrillaResult<()> {
         let pdf_ctx = self.global_objects.pdf_ctx.take();
-
-        // TODO: Remove option from page tree ref?
-        let page_tree_ref = self.page_tree_ref();
-        pdf_ctx.serialize(page_tree_ref, &mut self.chunk_container)?;
-
-        Ok(())
+        
+        pdf_ctx.serialize(self)
     }
 
     fn serialize_fonts(&mut self) -> KrillaResult<()> {

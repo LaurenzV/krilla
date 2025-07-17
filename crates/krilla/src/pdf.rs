@@ -9,10 +9,10 @@ use crate::util::{Deferred, Prehashed};
 use crate::{Data, Document};
 use hayro_write::{ExtractionError, ExtractionQuery, PdfData};
 use pdf_writer::{Chunk, Ref};
-use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
+use crate::configure::PdfVersion;
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -23,6 +23,12 @@ pub enum PdfError {
     LoadFailed,
     /// A page was requested that doesn't exist.
     InvalidPage(usize),
+    /// The PDF version of the embedded PDF is not compatible with the version of the PDF
+    /// produced by krilla. This happens if the version of the krilla document is lower than
+    /// the one of the embedded PDF.
+    /// 
+    /// The argument indicates the version of the embedded PDF document.
+    VersionMismatch(PdfVersion),
 }
 
 /// An external PDF document.
@@ -110,9 +116,12 @@ impl PdfSerializerContext {
 
     pub(crate) fn serialize(
         self,
-        page_tree_parent_ref: Ref,
-        container: &mut ChunkContainer,
+        sc: &mut SerializeContext,
     ) -> KrillaResult<()> {
+        let page_tree_parent_ref = sc.page_tree_ref();
+        let krilla_version = sc.serialize_settings().configuration.version();
+        let container = &mut sc.chunk_container;
+        
         let mut entries = self.infos.into_iter().collect::<Vec<_>>();
         // Make sure we always process them in the same order.
         entries.sort_by(|d1, d2| d1.1.counter.cmp(&d2.1.counter));
@@ -131,6 +140,12 @@ impl PdfSerializerContext {
                     PdfError::LoadFailed,
                     first_location,
                 ))?;
+                
+                let pdf_version = convert_pdf_version(pdf.version());
+                
+                if krilla_version < pdf_version {
+                    return Err(KrillaError::Pdf(doc.clone(), PdfError::VersionMismatch(pdf_version), first_location))
+                }
 
                 let extracted =
                     hayro_write::extract(&pdf, Box::new(|| new_ref.bump()), &info.queries);
@@ -168,6 +183,25 @@ impl PdfSerializerContext {
         }
 
         Ok(())
+    }
+}
+
+fn convert_pdf_version(version: hayro_write::PdfVersion) -> PdfVersion {
+    match version {
+        // Those are obviously not right, but we don't support versions lower than 1.4 in krilla.
+        // Since we only need this conversion to detect version mismatches (in which case the
+        // version of the embedded PDF has to be higher than 1.4), this hack is sufficient for our
+        // purposes.
+        hayro_write::PdfVersion::Pdf10 => PdfVersion::Pdf14,
+        hayro_write::PdfVersion::Pdf11 => PdfVersion::Pdf14,
+        hayro_write::PdfVersion::Pdf12 => PdfVersion::Pdf14,
+        hayro_write::PdfVersion::Pdf13 => PdfVersion::Pdf14,
+        
+        hayro_write::PdfVersion::Pdf14 => PdfVersion::Pdf14,
+        hayro_write::PdfVersion::Pdf15 => PdfVersion::Pdf15,
+        hayro_write::PdfVersion::Pdf16 => PdfVersion::Pdf16,
+        hayro_write::PdfVersion::Pdf17 => PdfVersion::Pdf17,
+        hayro_write::PdfVersion::Pdf20 => PdfVersion::Pdf20,
     }
 }
 
