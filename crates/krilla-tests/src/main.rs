@@ -463,8 +463,10 @@ pub fn check_render(
     } else {
         format!("_{}", renderer.name())
     };
+    
+    let mut messages = vec![];
 
-    let check_single = |name: String, page: &RenderedPage| {
+    let mut check_single = |name: String, page: &RenderedPage| {
         let ref_path = refs_path.join(format!("{}.png", name));
 
         if !ref_path.exists() {
@@ -475,7 +477,9 @@ pub fn check_render(
                 &oxipng::Options::max_compression(),
             )
             .unwrap();
-            panic!("new reference image was created");
+            
+            messages.push("new reference image was created".to_string());
+            return;
         }
 
         let reference = load_from_memory(&std::fs::read(&ref_path).unwrap())
@@ -503,13 +507,14 @@ pub fn check_render(
                     &oxipng::Options::max_compression(),
                 )
                 .unwrap();
-                panic!("test was replaced");
+                messages.push("test was replaced".to_string());
+                return;
             }
+            
+            messages.push(format!("pixel diff was {}, while threshold is {}",
+                                  pixel_diff, threshold));
 
-            panic!(
-                "pixel diff was {}, while threshold is {}",
-                pixel_diff, threshold
-            );
+            return;
         }
 
         if pixel_diff != 0 {
@@ -529,6 +534,11 @@ pub fn check_render(
         for (index, page) in document.iter().enumerate() {
             check_single(format!("{}{}_{}", name, renderer_suffix, index), page);
         }
+    }
+    
+    if !messages.is_empty() {
+        let final_message = messages.join("\n");
+        panic!("{final_message}");
     }
 }
 

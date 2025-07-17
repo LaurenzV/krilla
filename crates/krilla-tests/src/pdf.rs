@@ -191,22 +191,22 @@ fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
     }
 }
 
-// #[visreg(document)]
-// fn pdf_embedded_simple(document: &mut Document) {
-//     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
-//     document.embed_pdf_pages(&pdf, &[0]);
-// }
-//
-// #[visreg(document)]
-// fn pdf_embedded_multiple(document: &mut Document) {
-//     let pdf1 = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
-//     let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
-//     document.embed_pdf_pages(&pdf1, &[0]);
-//     document.embed_pdf_pages(&pdf2, &[0]);
-// }
-//
-// #[visreg(document)]
-// fn pdf_embedded_multi_page_document(document: &mut Document) {
-//     let pdf = load_pdf("standard_fonts.pdf");
-//     document.embed_pdf_pages(&pdf, &[0, 2, 3, 5, 7]);
-// }
+#[visreg(document)]
+fn pdf_embedded_simple(document: &mut Document) {
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
+}
+
+#[visreg(document)]
+fn pdf_embedded_multiple(document: &mut Document) {
+    let pdf1 = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
+    document.embed_pdf_pages(&pdf1, &[0]);
+    document.embed_pdf_pages(&pdf2, &[0]);
+}
+
+#[visreg(document)]
+fn pdf_embedded_multi_page_document(document: &mut Document) {
+    let pdf = load_pdf("standard_fonts.pdf");
+    document.embed_pdf_pages(&pdf, &[0, 2, 3, 5, 7]);
+}
