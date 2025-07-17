@@ -770,11 +770,13 @@ impl ContentBuilder {
     pub(crate) fn draw_xobject_by_reference(
         &mut self,
         sc: &mut SerializeContext,
+        bbox: Rect,
         x_object: Ref,
     ) {
         // TODO: Consider bbox of XObject somehow?
         self.apply_isolated_op(
-            |_, _| {
+            |sb, _| {
+                sb.expand_bbox(bbox);
             },
             move |sb, sc| {
                 let x_object_name = sb

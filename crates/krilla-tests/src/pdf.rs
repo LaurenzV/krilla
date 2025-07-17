@@ -7,7 +7,7 @@ use krilla::pdf::{PdfDocument, PdfError};
 use krilla::{Document, SerializeSettings};
 use krilla_macros::{snapshot, visreg};
 use std::sync::Arc;
-
+use krilla::surface::Surface;
 use crate::metadata::metadata_impl;
 use crate::text::simple_text_impl;
 use crate::{load_pdf, load_png_image, rect_to_path, red_fill, settings_16, NOTO_SANS};
@@ -156,6 +156,12 @@ fn pdf_embedded_consistency() {
             last = Some(finished);
         }
     }
+}
+
+#[visreg]
+fn pdf_embedded_as_xobject_basic(surface: &mut Surface) {
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
 }
 
 // #[visreg(document)]

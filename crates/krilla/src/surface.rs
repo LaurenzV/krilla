@@ -423,8 +423,14 @@ impl<'a> Surface<'a> {
             size.width() / page_width,
             size.height() / page_height,
         );
+        // We applied a transform to invert the y-axis initially, but since the embedded PDF also uses
+        // a y-up coordinate system, we need to "invert" this.
+        self.push_transform(&Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_height));
         self.push_transform(&transform);
-        self.bd.get_mut().draw_xobject_by_reference(self.sc, obj_ref);
+        
+        self.bd.get_mut().draw_xobject_by_reference(self.sc, Rect::from_xywh(0.0, 0.0, page_width, page_height).unwrap(), obj_ref);
+        
+        self.pop();
         self.pop();
     }
     
