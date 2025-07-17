@@ -639,7 +639,7 @@ impl SerializeContext {
             )?;
             self.chunk_container.struct_elements = struct_elems;
 
-            root.validate(self, &id_tree_map);
+            root.validate(&id_tree_map)?;
 
             let mut chunk = Chunk::new();
             let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
