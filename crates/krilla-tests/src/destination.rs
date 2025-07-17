@@ -21,7 +21,6 @@ fn destination_named(d: &mut Document) {
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Destination(dest1.clone().into()),
         )
         .into(),
@@ -29,7 +28,6 @@ fn destination_named(d: &mut Document) {
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Destination(dest2.clone().into()),
         )
         .into(),
@@ -47,7 +45,6 @@ fn destination_named(d: &mut Document) {
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Destination(dest1.clone().into()),
         )
         .into(),

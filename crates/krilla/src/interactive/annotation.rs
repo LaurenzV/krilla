@@ -6,12 +6,14 @@
 //! that are supported are "link annotations", which allow you associate a certain region of
 //! the page with a link.
 
+use core::f32;
+
 use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
-use crate::geom::{Point, Rect};
+use crate::geom::{Quadrilateral, Rect};
 use crate::interactive::action::Action;
 use crate::interactive::destination::Destination;
 use crate::page::page_root_transform;
@@ -112,7 +114,7 @@ pub enum Target {
 /// A link annotation.
 pub struct LinkAnnotation {
     pub(crate) rect: Rect,
-    pub(crate) quad_points: Option<Vec<Point>>,
+    pub(crate) quad_points: Option<Vec<Quadrilateral>>,
     pub(crate) target: Target,
 }
 
@@ -121,14 +123,50 @@ impl LinkAnnotation {
     ///
     /// `rect`: The bounding box of the link annotation that it should cover on the page.
     /// `target`: The target of the link annotation.
-    /// `quad_points`: An array of 4xn points, where each 4 points define the quadrilateral
-    /// where the link annotation should be activated. This is useful if you for example have
-    /// a link annotation that is broken to one or multiple lines. Note that the points
-    /// have to be within the bounds defined by `rect`!
-    pub fn new(rect: Rect, quad_points: Option<Vec<Point>>, target: Target) -> Self {
+    pub fn new(rect: Rect, target: Target) -> Self {
         Self {
             rect,
-            quad_points,
+            quad_points: None,
+            target,
+        }
+    }
+
+    /// Create a new link annotation.
+    ///
+    /// `target`: The target of the link annotation.
+    /// `quad_points`: An array of quadrilaterals that define where the link
+    /// annotation should be activated. This is useful if you for example have
+    /// a link annotation that is broken to one or multiple lines.
+    pub fn new_with_quad_points(quad_points: Vec<Quadrilateral>, target: Target) -> Self {
+        assert!(!quad_points.is_empty());
+
+        let mut min_x = f32::INFINITY;
+        let mut min_y = f32::INFINITY;
+        let mut max_x = f32::NEG_INFINITY;
+        let mut max_y = f32::NEG_INFINITY;
+
+        for point in quad_points.iter().flat_map(|q| q.0) {
+            min_x = min_x.min(point.x);
+            min_y = min_y.min(point.y);
+            max_x = max_x.max(point.x);
+            max_y = max_y.max(point.y);
+        }
+
+        // Expand the bounding box by a little. There is a bug in adobe acrobat
+        // that sometimes prevents the quadpoints from being used if the quad
+        // points lie exactly on the bounding rectangle.
+        const EPSILON: f32 = 0.001;
+        let rect = Rect::from_ltrb(
+            min_x - EPSILON,
+            min_y - EPSILON,
+            max_x + EPSILON,
+            max_y + EPSILON,
+        )
+        .unwrap();
+
+        Self {
+            rect,
+            quad_points: Some(quad_points),
             target,
         }
     }
@@ -150,7 +188,7 @@ impl LinkAnnotation {
 
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16 {
             self.quad_points.as_ref().map(|p| {
-                annotation.quad_points(p.iter().flat_map(|p| {
+                annotation.quad_points(p.iter().flat_map(|q| q.0).flat_map(|p| {
                     let mut p = p.to_tsp();
                     page_root_transform(page_height).to_tsp().map_point(&mut p);
                     [p.x, p.y]

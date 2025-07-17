@@ -92,7 +92,6 @@ fn validate_pdf_a_annotation(page: &mut Page) {
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         )
         .into(),
@@ -476,7 +475,6 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     let annotation = page.add_tagged_annotation(Annotation::new_link(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         ),
         Some("A link to youtube".to_string()),
@@ -524,7 +522,6 @@ fn validate_pdf_ua1_missing_requirements() {
     let annot = page.add_tagged_annotation(Annotation::new_link(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         ),
         None,
