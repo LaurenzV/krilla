@@ -131,7 +131,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
 use crate::util::lazy::{LazyGet, LazyInit};
@@ -857,10 +857,7 @@ impl TagGroup {
                     vacant.insert(elem_ref);
                 }
                 Entry::Occupied(_) => {
-                    sc.register_validation_error(ValidationError::DuplicateTagId(
-                        id.clone(),
-                        self.tag.location,
-                    ));
+                    return Err(KrillaError::DuplicateTagId(id.clone(), self.tag.location));
                 }
             }
         } else if TagKind::Note == self.tag.kind {
@@ -947,15 +944,12 @@ impl TagGroup {
         Ok(Reference::Ref(elem_ref))
     }
 
-    fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
+    fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
         match &self.tag.kind {
             TagKind::TH(TableHeaderCell { data, .. }) | TagKind::TD(data) => {
                 for id in data.headers.iter() {
                     if !id_tree.contains_key(id) {
-                        sc.register_validation_error(ValidationError::UnknownTagId(
-                            id.clone(),
-                            self.tag.location,
-                        ));
+                        return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location));
                     }
                 }
             }
@@ -964,9 +958,10 @@ impl TagGroup {
 
         for child in self.children.iter() {
             if let Node::Group(group) = child {
-                group.validate(sc, id_tree)
+                group.validate(id_tree)?;
             }
         }
+        Ok(())
     }
 }
 
@@ -1064,12 +1059,13 @@ impl TagTree {
         Ok((root_ref, struct_elems))
     }
 
-    pub(crate) fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
+    pub(crate) fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
         for child in self.children.iter() {
             if let Node::Group(group) = child {
-                group.validate(sc, id_tree)
+                group.validate(id_tree)?;
             }
         }
+        Ok(())
     }
 }
 
