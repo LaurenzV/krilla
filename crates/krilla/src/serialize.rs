@@ -614,7 +614,7 @@ impl SerializeContext {
 
     fn serialize_embedded_pdfs(&mut self) -> KrillaResult<()> {
         let pdf_ctx = self.global_objects.pdf_ctx.take();
-        
+
         pdf_ctx.serialize(self)
     }
 

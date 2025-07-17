@@ -1,12 +1,12 @@
-use std::sync::Arc;
 use image::load_from_memory;
+use krilla::configure::{PdfVersion, ValidationError};
 use krilla::error::KrillaError;
 use krilla::geom::Size;
 use krilla::page::Page;
-use krilla::{Document, SerializeSettings};
-use krilla::configure::PdfVersion;
 use krilla::pdf::{PdfDocument, PdfError};
+use krilla::{Document, SerializeSettings};
 use krilla_macros::{snapshot, visreg};
+use std::sync::Arc;
 
 use crate::metadata::metadata_impl;
 use crate::text::simple_text_impl;
@@ -89,22 +89,32 @@ fn pdf_embedded_multiple(document: &mut Document) {
 #[test]
 fn pdf_embedded_out_of_bounds() {
     let mut document = Document::new();
-    
+
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
     document.set_location(1);
     document.embed_pdf_pages(&pdf, &[1]);
-    
-    assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::InvalidPage(1), Some(1))))
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Pdf(
+            pdf.clone(),
+            PdfError::InvalidPage(1),
+            Some(1)
+        ))
+    )
 }
 
 #[test]
 fn pdf_embedded_invalid_pdf() {
     let mut document = Document::new();
 
-    let pdf =PdfDocument::new(Arc::new(b"invalid pdf".to_vec()).into());
+    let pdf = PdfDocument::new(Arc::new(b"invalid pdf".to_vec()).into());
     document.embed_pdf_pages(&pdf, &[0]);
 
-    assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::LoadFailed, None)))
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Pdf(pdf.clone(), PdfError::LoadFailed, None))
+    )
 }
 
 #[test]
@@ -114,7 +124,31 @@ fn pdf_embedded_version_mismatch() {
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
     document.embed_pdf_pages(&pdf, &[0]);
 
-    assert_eq!(document.finish(), Err(KrillaError::Pdf(pdf.clone(), PdfError::VersionMismatch(PdfVersion::Pdf17), None)))
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Pdf(
+            pdf.clone(),
+            PdfError::VersionMismatch(PdfVersion::Pdf17),
+            None
+        ))
+    )
+}
+
+#[test]
+fn pdf_embedded_validated_export() {
+    // While it is in principle possible to support embedded PDFs in validated export if the
+    // embedded PDF also conforms, for now we outright reject it.
+    let mut document = Document::new_with(crate::settings_23());
+
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![ValidationError::EmbeddedPDF(
+            None
+        )]))
+    )
 }
 
 #[test]
@@ -126,16 +160,15 @@ fn pdf_embedded_consistency() {
         let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
         document.embed_pdf_pages(&pdf1, &[0]);
         document.embed_pdf_pages(&pdf2, &[0]);
-        
+
         let finished = document.finish().unwrap();
-        
+
         if let Some(last) = &last {
             assert_eq!(&finished, last);
-        }   else {
+        } else {
             last = Some(finished);
         }
     }
-    
 }
 
 // #[visreg(document)]
@@ -143,7 +176,7 @@ fn pdf_embedded_consistency() {
 //     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
 //     document.embed_pdf_pages(&pdf, &[0]);
 // }
-// 
+//
 // #[visreg(document)]
 // fn pdf_embedded_multiple(document: &mut Document) {
 //     let pdf1 = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
@@ -151,7 +184,7 @@ fn pdf_embedded_consistency() {
 //     document.embed_pdf_pages(&pdf1, &[0]);
 //     document.embed_pdf_pages(&pdf2, &[0]);
 // }
-// 
+//
 // #[visreg(document)]
 // fn pdf_embedded_multi_page_document(document: &mut Document) {
 //     let pdf = load_pdf("standard_fonts.pdf");

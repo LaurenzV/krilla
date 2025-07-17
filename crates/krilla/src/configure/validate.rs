@@ -129,6 +129,11 @@ pub enum ValidationError {
     ///
     /// [`TagTree`]: crate::interchange::tagging::TagTree
     UnknownTagId(TagId, Option<Location>),
+    /// THe PDF contains another embedded PDF.
+    ///
+    /// This is currently forbidden in validated export because we cannot manually verify
+    /// whether the file actually fulfills all the criteria for the export mode.
+    EmbeddedPDF(Option<Location>),
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -326,6 +331,7 @@ impl Validator {
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
                 ValidationError::UnknownTagId(_, _) => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -365,6 +371,7 @@ impl Validator {
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
                 ValidationError::UnknownTagId(_, _) => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -399,6 +406,7 @@ impl Validator {
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
                 ValidationError::UnknownTagId(_, _) => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
                 ValidationError::TooLongString => false,
@@ -439,6 +447,7 @@ impl Validator {
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::DuplicateTagId(_, _) => true,
                 ValidationError::UnknownTagId(_, _) => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -473,6 +482,7 @@ impl Validator {
                 ValidationError::MissingDocumentDate => false,
                 ValidationError::DuplicateTagId(_, _) => true,
                 ValidationError::UnknownTagId(_, _) => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
         }
     }

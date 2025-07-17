@@ -2,6 +2,7 @@
 
 // TODO: Prohibit PDFs with validated export.
 use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
+use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
@@ -12,7 +13,6 @@ use pdf_writer::{Chunk, Ref};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
-use crate::configure::PdfVersion;
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -26,7 +26,7 @@ pub enum PdfError {
     /// The PDF version of the embedded PDF is not compatible with the version of the PDF
     /// produced by krilla. This happens if the version of the krilla document is lower than
     /// the one of the embedded PDF.
-    /// 
+    ///
     /// The argument indicates the version of the embedded PDF document.
     VersionMismatch(PdfVersion),
 }
@@ -63,7 +63,7 @@ impl PdfDocumentInfo {
 pub(crate) struct PdfSerializerContext {
     // TODO: Ensure reproducible output when writing.
     infos: HashMap<PdfDocument, PdfDocumentInfo>,
-    counter: u64
+    counter: u64,
 }
 
 impl PdfSerializerContext {
@@ -87,17 +87,14 @@ impl PdfSerializerContext {
         info.queries.push(ExtractionQuery::new_page(page_index));
         info.locations.push(location);
     }
-    
-    fn get_info(&mut self, document: &PdfDocument) -> &mut PdfDocumentInfo {
-        self
-            .infos
-            .entry(document.clone())
-            .or_insert_with(|| {
-                let info = PdfDocumentInfo::new(self.counter);
-                self.counter += 1;
 
-                info
-            })
+    fn get_info(&mut self, document: &PdfDocument) -> &mut PdfDocumentInfo {
+        self.infos.entry(document.clone()).or_insert_with(|| {
+            let info = PdfDocumentInfo::new(self.counter);
+            self.counter += 1;
+
+            info
+        })
     }
 
     pub(crate) fn add_xobject(
@@ -114,19 +111,21 @@ impl PdfSerializerContext {
         info.locations.push(location);
     }
 
-    pub(crate) fn serialize(
-        self,
-        sc: &mut SerializeContext,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(self, sc: &mut SerializeContext) -> KrillaResult<()> {
         let page_tree_parent_ref = sc.page_tree_ref();
         let krilla_version = sc.serialize_settings().configuration.version();
-        let container = &mut sc.chunk_container;
-        
+
         let mut entries = self.infos.into_iter().collect::<Vec<_>>();
         // Make sure we always process them in the same order.
         entries.sort_by(|d1, d2| d1.1.counter.cmp(&d2.1.counter));
-        
+
         for (doc, info) in entries {
+            for location in info.locations.iter() {
+                sc.register_validation_error(ValidationError::EmbeddedPDF(location.clone()))
+            }
+
+            let container = &mut sc.chunk_container;
+
             let deferred_chunk = Deferred::new(move || {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
@@ -140,11 +139,15 @@ impl PdfSerializerContext {
                     PdfError::LoadFailed,
                     first_location,
                 ))?;
-                
+
                 let pdf_version = convert_pdf_version(pdf.version());
-                
+
                 if krilla_version < pdf_version {
-                    return Err(KrillaError::Pdf(doc.clone(), PdfError::VersionMismatch(pdf_version), first_location))
+                    return Err(KrillaError::Pdf(
+                        doc.clone(),
+                        PdfError::VersionMismatch(pdf_version),
+                        first_location,
+                    ));
                 }
 
                 let extracted =
@@ -196,7 +199,7 @@ fn convert_pdf_version(version: hayro_write::PdfVersion) -> PdfVersion {
         hayro_write::PdfVersion::Pdf11 => PdfVersion::Pdf14,
         hayro_write::PdfVersion::Pdf12 => PdfVersion::Pdf14,
         hayro_write::PdfVersion::Pdf13 => PdfVersion::Pdf14,
-        
+
         hayro_write::PdfVersion::Pdf14 => PdfVersion::Pdf14,
         hayro_write::PdfVersion::Pdf15 => PdfVersion::Pdf15,
         hayro_write::PdfVersion::Pdf16 => PdfVersion::Pdf16,

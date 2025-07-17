@@ -325,7 +325,6 @@ impl Visit for EmbeddedPdfChunk {
                 .renumber(|old| *remapper.entry(old).or_insert_with(|| sc.new_ref()))
         });
 
-
         renumbered.visit(sc, f)
     }
 }
