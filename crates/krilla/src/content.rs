@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Name, Str, TextStr};
+use pdf_writer::{Content, Finish, Name, Ref, Str, TextStr};
 use tiny_skia_path::{Path, PathSegment, PathVerb};
 
 use crate::color::rgb;
@@ -761,6 +761,25 @@ impl ContentBuilder {
                 let x_object_name = sb
                     .rd_builder
                     .register_resource(sc.register_resourceable(x_object));
+                sb.content.x_object(x_object_name.to_pdf_name());
+            },
+            sc,
+        );
+    }
+
+    pub(crate) fn draw_xobject_by_reference(
+        &mut self,
+        sc: &mut SerializeContext,
+        x_object: Ref,
+    ) {
+        // TODO: Consider bbox of XObject somehow?
+        self.apply_isolated_op(
+            |_, _| {
+            },
+            move |sb, sc| {
+                let x_object_name = sb
+                    .rd_builder
+                    .register_resource(resource::XObject::new(x_object));
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
