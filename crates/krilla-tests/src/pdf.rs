@@ -105,19 +105,6 @@ fn pdf_embedded_out_of_bounds() {
 }
 
 #[test]
-fn pdf_embedded_invalid_pdf() {
-    let mut document = Document::new();
-
-    let pdf = PdfDocument::new(Arc::new(b"invalid pdf".to_vec()).into());
-    document.embed_pdf_pages(&pdf, &[0]);
-
-    assert_eq!(
-        document.finish(),
-        Err(KrillaError::Pdf(pdf.clone(), PdfError::LoadFailed, None))
-    )
-}
-
-#[test]
 fn pdf_embedded_version_mismatch() {
     let mut document = Document::new_with(crate::settings_17());
 

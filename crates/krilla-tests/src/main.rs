@@ -372,7 +372,7 @@ pub fn load_custom_image(name: &str) -> Image {
 }
 
 pub fn load_pdf(name: &str) -> PdfDocument {
-    PdfDocument::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap()).into())
+    PdfDocument::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap()).into()).unwrap()
 }
 
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {

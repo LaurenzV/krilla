@@ -11,8 +11,10 @@ use crate::{Data, Document};
 use hayro_write::{ExtractionError, ExtractionQuery, PdfData};
 use pdf_writer::{Chunk, Ref};
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
+use tiny_skia_path::FiniteF32;
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -31,14 +33,40 @@ pub enum PdfError {
     VersionMismatch(PdfVersion),
 }
 
+#[derive(Debug)]
+struct PdfDocumentRepr {
+    data: Data,
+    render_dimensions: Vec<(f32, f32)>,
+}
+
+impl Hash for PdfDocumentRepr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // The render dimensions are derived from the data, so we only need to hash the
+        // actual data.
+        self.data.0.as_ref().as_ref().hash(state);
+    }
+}
+
 /// An external PDF document.
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
-pub struct PdfDocument(Arc<Prehashed<Data>>);
+pub struct PdfDocument(Arc<Prehashed<PdfDocumentRepr>>);
 
 impl PdfDocument {
     /// Load a new PDF document from the given data.
-    pub fn new(data: Data) -> Self {
-        Self(Arc::new(Prehashed::new(data)))
+    pub fn new(data: Data) -> Result<PdfDocument, PdfError> {
+        let pdf = hayro_write::Pdf::new(data.clone().0).ok_or(PdfError::LoadFailed)?;
+        let pages = pdf.pages().ok_or(PdfError::LoadFailed)?;
+        
+        let render_dimensions = pages.get().iter().map(|p| {
+            p.render_dimensions()
+        }).collect();
+        
+        Ok(Self(Arc::new(Prehashed::new(
+            PdfDocumentRepr {
+                data,
+                render_dimensions,
+            }
+        ))))
     }
 }
 
@@ -132,7 +160,7 @@ impl PdfSerializerContext {
                 let mut new_ref = Ref::new(1);
 
                 // TODO: Don't just return an `Option` in hayro.
-                let data: PdfData = doc.0.deref().0.clone();
+                let data: PdfData = doc.0.data.0.clone();
                 let first_location = info.locations.iter().flat_map(|l| l).next().cloned();
                 let pdf = hayro_write::Pdf::new(data).ok_or(KrillaError::Pdf(
                     doc.clone(),
