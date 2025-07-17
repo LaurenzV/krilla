@@ -192,6 +192,48 @@ fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
 }
 
 #[visreg(document)]
+fn pdf_embedded_as_xobject_multiple(document: &mut Document) {
+    let pdf1 = load_pdf("standard_fonts.pdf");
+    let pdf2 = load_pdf("pdftc_100k_1894.pdf");
+    let pdf3 = load_pdf("page_media_box_bottom_right.pdf");
+    
+    let mut page1 = document.start_page_with(PageSettings::new(600.0,800.0));
+    let mut surface = page1.surface();
+    
+    surface.push_transform(&Transform::from_translate(10.0, 15.0));
+    surface.draw_pdf_page(&pdf1, Size::from_wh(200.0, 282.8).unwrap(), 0);
+    surface.pop();
+
+    surface.push_transform(&Transform::from_translate(350.0, 15.0));
+    surface.draw_pdf_page(&pdf1, Size::from_wh(250.0, 353.0).unwrap(), 3);
+    surface.pop();
+
+    surface.push_transform(&Transform::from_translate(200.0, 400.0));
+    surface.draw_pdf_page(&pdf3, Size::from_wh(250.0, 300.0).unwrap(), 0);
+    surface.pop();
+    
+    surface.finish();
+    page1.finish();
+
+    let mut page2 = document.start_page_with(PageSettings::new(500.0,500.0));
+    let mut surface = page2.surface();
+
+    surface.draw_pdf_page(&pdf2, Size::from_wh(250.0, 250.8).unwrap(), 3);
+
+    surface.push_transform(&Transform::from_translate(250.0, 0.0));
+    surface.draw_pdf_page(&pdf2, Size::from_wh(250.0, 250.8).unwrap(), 8);
+    surface.pop();
+
+    surface.push_transform(&Transform::from_translate(0.0, 250.0));
+    surface.draw_pdf_page(&pdf2, Size::from_wh(250.0, 250.8).unwrap(), 9);
+    surface.pop();
+
+    surface.push_transform(&Transform::from_translate(250.0, 250.0));
+    surface.draw_pdf_page(&pdf2, Size::from_wh(250.0, 250.8).unwrap(), 10);
+    surface.pop();
+}
+
+#[visreg(document)]
 fn pdf_embedded_simple(document: &mut Document) {
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
     document.embed_pdf_pages(&pdf, &[0]);
