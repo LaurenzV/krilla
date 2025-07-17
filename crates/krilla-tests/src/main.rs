@@ -466,7 +466,7 @@ pub fn check_render(
     
     let mut messages = vec![];
 
-    let mut check_single = |name: String, page: &RenderedPage| {
+    let mut check_single = |name: String, page: &RenderedPage, index: usize| {
         let ref_path = refs_path.join(format!("{}.png", name));
 
         if !ref_path.exists() {
@@ -485,7 +485,7 @@ pub fn check_render(
         let reference = load_from_memory(&std::fs::read(&ref_path).unwrap())
             .unwrap()
             .into_rgba8();
-        let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
+        let actual = load_from_memory(&document[index]).unwrap().into_rgba8();
 
         let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
@@ -529,10 +529,10 @@ pub fn check_render(
     if document.is_empty() {
         panic!("empty document");
     } else if document.len() == 1 {
-        check_single(format!("{}{}", name, renderer_suffix), &document[0]);
+        check_single(format!("{}{}", name, renderer_suffix), &document[0], 0);
     } else {
         for (index, page) in document.iter().enumerate() {
-            check_single(format!("{}{}_{}", name, renderer_suffix, index), page);
+            check_single(format!("{}{}_{}", name, renderer_suffix, index), page, index);
         }
     }
     
