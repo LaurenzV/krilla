@@ -121,11 +121,23 @@ pub struct LinkAnnotation {
 impl LinkAnnotation {
     /// Create a new link annotation.
     ///
+    /// `rect`: The bounding box of the link annotation that it should cover on the page.
+    /// `target`: The target of the link annotation.
+    pub fn new(rect: Rect, target: Target) -> Self {
+        Self {
+            rect,
+            quad_points: None,
+            target,
+        }
+    }
+
+    /// Create a new link annotation.
+    ///
     /// `target`: The target of the link annotation.
     /// `quad_points`: An array of quadrilaterals that define where the link
     /// annotation should be activated. This is useful if you for example have
     /// a link annotation that is broken to one or multiple lines.
-    pub fn new(quad_points: Vec<Quadrilateral>, target: Target) -> Self {
+    pub fn new_with_quad_points(quad_points: Vec<Quadrilateral>, target: Target) -> Self {
         assert!(!quad_points.is_empty());
 
         let mut min_x = f32::INFINITY;
@@ -155,18 +167,6 @@ impl LinkAnnotation {
         Self {
             rect,
             quad_points: Some(quad_points),
-            target,
-        }
-    }
-
-    /// Create a new link annotation.
-    ///
-    /// `rect`: The bounding box of the link annotation that it should cover on the page.
-    /// `target`: The target of the link annotation.
-    pub fn new_rect(rect: Rect, target: Target) -> Self {
-        Self {
-            rect,
-            quad_points: None,
             target,
         }
     }

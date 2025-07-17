@@ -19,14 +19,14 @@ fn destination_named(d: &mut Document) {
 
     let mut page = d.start_page();
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
             Target::Destination(dest1.clone().into()),
         )
         .into(),
     );
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(100.0, 100.0, 100.0, 100.0).unwrap(),
             Target::Destination(dest2.clone().into()),
         )
@@ -43,7 +43,7 @@ fn destination_named(d: &mut Document) {
 
     let mut page = d.start_page();
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
             Target::Destination(dest1.clone().into()),
         )

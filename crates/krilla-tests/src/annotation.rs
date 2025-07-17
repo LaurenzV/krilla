@@ -11,7 +11,7 @@ use crate::{LinkAnnotation, Target};
 #[snapshot]
 fn annotation_to_link(page: &mut Page) {
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         )
@@ -30,7 +30,7 @@ fn annotation_with_quad_points(page: &mut Page) {
     surface.finish();
 
     page.add_annotation(
-        LinkAnnotation::new(
+        LinkAnnotation::new_with_quad_points(
             vec![
                 Quadrilateral([
                     Point::from_xy(0.0, 50.0),
@@ -52,7 +52,7 @@ fn annotation_to_invalid_destination() {
     let mut d = Document::new_with(settings_1());
     let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Destination(XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into()),
         )
@@ -67,7 +67,7 @@ fn annotation_to_invalid_destination() {
 fn annotation_to_destination(d: &mut Document) {
     let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
             Target::Destination(XyzDestination::new(1, Point::from_xy(100.0, 100.0)).into()),
         )
@@ -82,7 +82,7 @@ fn annotation_to_destination(d: &mut Document) {
 
     let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),
             Target::Destination(XyzDestination::new(0, Point::from_xy(0.0, 0.0)).into()),
         )

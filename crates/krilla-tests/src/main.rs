@@ -767,7 +767,7 @@ pub fn stops_with_3_luma() -> Vec<Stop> {
 }
 
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
-    LinkAnnotation::new_rect(
+    LinkAnnotation::new(
         krilla::geom::Rect::from_xywh(x, y, w, h).unwrap(),
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )

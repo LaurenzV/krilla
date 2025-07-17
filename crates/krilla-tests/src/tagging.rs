@@ -97,7 +97,7 @@ fn tagging_simple_with_link_impl(document: &mut Document) {
     surface.finish();
 
     let link_id = page.add_tagged_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
             Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
         )
@@ -515,7 +515,7 @@ fn tagging_annotation_identifer_appears_twice() {
 
     let mut page = document.start_page();
     let link_id = page.add_tagged_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
             Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
         )

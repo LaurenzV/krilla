@@ -90,7 +90,7 @@ pub fn validate_pdf_a_string_length() {
 #[snapshot(settings_7)]
 fn validate_pdf_a_annotation(page: &mut Page) {
     page.add_annotation(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         )
@@ -473,7 +473,7 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     surface.finish();
 
     let annotation = page.add_tagged_annotation(Annotation::new_link(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         ),
@@ -520,7 +520,7 @@ fn validate_pdf_ua1_missing_requirements() {
     surface.finish();
 
     let annot = page.add_tagged_annotation(Annotation::new_link(
-        LinkAnnotation::new_rect(
+        LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         ),
