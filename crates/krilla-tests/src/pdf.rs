@@ -166,6 +166,13 @@ fn pdf_embedded_as_xobject_basic(surface: &mut Surface) {
     surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
 }
 
+#[snapshot]
+fn pdf_embedded_as_xobject_basic(page: &mut Page) {
+    let mut surface = page.surface();
+    let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
+}
+
 #[visreg(document)]
 fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
     let mut page = document.start_page_with(PageSettings::new(600.0,600.0));
