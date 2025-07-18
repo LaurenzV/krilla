@@ -880,7 +880,7 @@ impl TagGroup {
         if let Some(alt) = &self.tag.alt_text {
             struct_elem.alt(TextStr(alt));
         } else if self.tag.kind.should_have_alt() {
-            sc.register_validation_error(ValidationError::MissingAltText);
+            sc.register_validation_error(ValidationError::MissingAltText(self.tag.location));
         }
 
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
