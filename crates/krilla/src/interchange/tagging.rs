@@ -901,7 +901,7 @@ impl TagGroup {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
 
-        match self.tag.kind {
+        match &self.tag.kind {
             TagKind::L(ln) => {
                 struct_elem
                     .attributes()
@@ -909,7 +909,19 @@ impl TagGroup {
                     .list()
                     .list_numbering(ln.to_pdf());
             }
-            TagKind::TH(ref cell) => {
+            TagKind::Table(summary) => {
+                // Lazily initialize the table attributes, to avoid an empty list.
+                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
+                let mut table_attributes =
+                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
+
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
+                    if let Some(summary) = summary {
+                        table_attributes.get().summary(TextStr(summary));
+                    }
+                }
+            }
+            TagKind::TH(cell) => {
                 // Lazily initialize the table attributes, to avoid an empty list.
                 let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
                 let mut table_attributes =
@@ -920,7 +932,7 @@ impl TagGroup {
                 }
                 serialize_table_cell_attributes(sc, &mut table_attributes, &cell.data);
             }
-            TagKind::TD(ref cell) => {
+            TagKind::TD(cell) => {
                 // Lazily initialize the table attributes, to avoid an empty list.
                 let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
                 let mut table_attributes =
