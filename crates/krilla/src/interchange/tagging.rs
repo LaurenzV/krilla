@@ -902,7 +902,7 @@ impl TagGroup {
         }
 
         match &self.tag.kind {
-            &TagKind::L(ln) => {
+            TagKind::L(ln) => {
                 struct_elem
                     .attributes()
                     .push()
