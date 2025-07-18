@@ -18,12 +18,14 @@ use crate::interactive::action::Action;
 use crate::interactive::destination::Destination;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
+use crate::surface::Location;
 
 /// An annotation.
 pub struct Annotation {
     pub(crate) annotation_type: AnnotationType,
     pub(crate) alt: Option<String>,
     pub(crate) struct_parent: Option<i32>,
+    pub(crate) location: Option<Location>,
 }
 
 impl Annotation {
@@ -36,7 +38,14 @@ impl Annotation {
             annotation_type: AnnotationType::Link(annotation),
             alt: alt_text,
             struct_parent: None,
+            location: None,
         }
+    }
+
+    /// Sets the location of the annotation.
+    pub fn with_location(mut self, location: Option<Location>) -> Self {
+        self.location = location;
+        self
     }
 }
 
@@ -46,6 +55,7 @@ impl From<LinkAnnotation> for Annotation {
             annotation_type: AnnotationType::Link(value),
             alt: None,
             struct_parent: None,
+            location: None,
         }
     }
 }
@@ -75,7 +85,7 @@ impl Annotation {
         if let Some(alt_text) = &self.alt {
             annotation.contents(TextStr(alt_text));
         } else {
-            sc.register_validation_error(ValidationError::MissingAnnotationAltText);
+            sc.register_validation_error(ValidationError::MissingAnnotationAltText(self.location));
         }
 
         annotation.finish();
