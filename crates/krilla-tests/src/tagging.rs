@@ -7,10 +7,8 @@ use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::tagging::{
-    ArtifactType, ContentTag, Node, SpanTag, TableCellSpan, TableDataCell, TableHeaderCell,
-    TableHeaderScope, Tag, TagBuilder, TagGroup, TagId, TagKind, TagTree,
-};
+use krilla::tagging::tag::{ListNumbering, TableCellSpan, TableHeaderScope, Tag, TagId};
+use krilla::tagging::{ArtifactType, ContentTag, Node, SpanTag, TagGroup, TagTree};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
 use krilla_macros::snapshot;
@@ -61,7 +59,7 @@ fn tagging_empty(document: &mut Document) {
 
 fn tagging_simple_impl(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut par = TagGroup::new(TagKind::P);
+    let mut par = TagGroup::new(Tag::P);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -85,8 +83,8 @@ fn tagging_simple_impl(document: &mut Document) {
 
 fn tagging_simple_with_link_impl(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut par = TagGroup::new(TagKind::P);
-    let mut link = TagGroup::new(TagKind::Link);
+    let mut par = TagGroup::new(Tag::P);
+    let mut link = TagGroup::new(Tag::Link);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -142,9 +140,8 @@ pub(crate) fn sample_svg() -> usvg::Tree {
 #[snapshot(document)]
 fn tagging_image_with_alt(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut image_group = TagGroup::new(
-        TagKind::Figure.with_alt_text(Some("This is the alternate text.".to_string())),
-    );
+    let mut image_group =
+        TagGroup::new(Tag::Figure.with_alt_text("This is the alternate text.".to_string()));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -222,16 +219,12 @@ fn tagging_multiple_content_tags(document: &mut Document) {
 #[snapshot(document)]
 fn tagging_multiple_pages(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut par_1 = TagGroup::new(TagKind::P);
-    let mut par_2 = TagGroup::new(TagKind::P);
-    let mut heading_1 = TagGroup::new(TagKind::Hn(
-        NonZeroU32::new(1).unwrap(),
-        Some("first heading".to_string()),
-    ));
-    let mut heading_2 = TagGroup::new(TagKind::Hn(
-        NonZeroU32::new(1).unwrap(),
-        Some("second heading".to_string()),
-    ));
+    let mut par_1 = TagGroup::new(Tag::P);
+    let mut par_2 = TagGroup::new(Tag::P);
+    let mut heading_1 =
+        TagGroup::new(Tag::Hn(NonZeroU32::new(1).unwrap()).with_title("first heading".into()));
+    let mut heading_2 =
+        TagGroup::new(Tag::Hn(NonZeroU32::new(1).unwrap()).with_title("second heading".into()));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -270,10 +263,10 @@ fn tagging_multiple_pages(document: &mut Document) {
     heading_2.push(h2);
     par_2.push(p3);
 
-    let mut sect1 = TagGroup::new(TagKind::Section);
+    let mut sect1 = TagGroup::new(Tag::Section);
     sect1.push(heading_1);
     sect1.push(par_1);
-    let mut sect2 = TagGroup::new(TagKind::Section);
+    let mut sect2 = TagGroup::new(Tag::Section);
     sect2.push(heading_2);
     sect2.push(par_2);
 
@@ -306,10 +299,10 @@ fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
         surface.end_tagged();
 
         let level = NonZeroU32::new(level).unwrap();
-        let mut heading = TagGroup::new(TagKind::Hn(level, Some(name.to_string())));
+        let mut heading = TagGroup::new(Tag::Hn(level).with_title(name.into()));
         heading.push(hn);
 
-        let mut sect = TagGroup::new(TagKind::Section);
+        let mut sect = TagGroup::new(Tag::Section);
         sect.push(heading);
 
         sect
@@ -343,8 +336,8 @@ fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
 #[snapshot(document)]
 fn tagging_two_footnotes(document: &mut Document) {
     let mut tag_tree = TagTree::new();
-    let mut fn_group_1 = TagGroup::new(TagKind::Note);
-    let mut fn_group_2 = TagGroup::new(TagKind::Note);
+    let mut fn_group_1 = TagGroup::new(Tag::Note);
+    let mut fn_group_2 = TagGroup::new(Tag::Note);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -392,29 +385,28 @@ fn tagging_table_header_and_footer(document: &mut Document) {
     };
 
     let header = {
-        let mut row = TagGroup::new(TagKind::TR);
+        let mut row = TagGroup::new(Tag::TR);
         for x in 0..3 {
             let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
             cell_text(&mut surface, x, 0, &format!("heading {}", x + 1));
             surface.end_tagged();
 
-            let tag = TagKind::TH(TableHeaderCell::new(TableHeaderScope::Column))
-                .with_id(Some(header_id(x)));
+            let tag = Tag::TH(TableHeaderScope::Column).with_id(header_id(x));
             row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
         }
-        TagGroup::with_children(TagKind::THead, vec![Node::Group(row)])
+        TagGroup::with_children(Tag::THead, vec![Node::Group(row)])
     };
 
-    let mut body = TagGroup::new(TagKind::TBody);
+    let mut body = TagGroup::new(Tag::TBody);
     for y in 1..4 {
-        let mut row = TagGroup::new(TagKind::TR);
+        let mut row = TagGroup::new(Tag::TR);
         for x in 0..3 {
             let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
             cell_text(&mut surface, x, y, &format!("body {} {}", x + 1, y + 1));
             surface.end_tagged();
 
             let headers = [header_id(x)];
-            let tag = TagKind::TD(TableDataCell::new().with_headers(headers));
+            let tag = Tag::TD.with_headers(headers);
             row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
         }
         body.push(row);
@@ -425,24 +417,24 @@ fn tagging_table_header_and_footer(document: &mut Document) {
         cell_text(&mut surface, 1, 4, "footer");
         surface.end_tagged();
 
-        let cell = TableDataCell::new()
+        let cell = Tag::TD
             .with_span(TableCellSpan {
                 rows: NonZeroU32::new(2).unwrap(),
                 cols: NonZeroU32::new(3).unwrap(),
             })
             .with_headers((0..3).map(header_id));
-        let cell = TagGroup::with_children(TagKind::TD(cell), vec![Node::Leaf(text)]);
+        let cell = TagGroup::with_children(cell, vec![Node::Leaf(text)]);
 
-        let row = TagGroup::with_children(TagKind::TR, vec![Node::Group(cell)]);
+        let row = TagGroup::with_children(Tag::TR, vec![Node::Group(cell)]);
         // Empty row to ensure proper table structure because of the rowspan.
-        let empty_row = TagGroup::new(TagKind::TR);
-        TagGroup::with_children(TagKind::TFoot, vec![row.into(), empty_row.into()])
+        let empty_row = TagGroup::new(Tag::TR);
+        TagGroup::with_children(Tag::TFoot, vec![row.into(), empty_row.into()])
     };
 
     surface.finish();
     page.finish();
 
-    let mut table = TagGroup::new(TagKind::Table(Some("table summary".into())));
+    let mut table = TagGroup::new(Tag::Table.with_summary("table summary".into()));
     table.push(header);
     table.push(body);
     table.push(footer);
@@ -465,11 +457,11 @@ fn tagging_tag_attributes(document: &mut Document) {
     surface.finish();
     page.finish();
 
-    let figure = TagKind::Figure
-        .with_actual_text(Some("NASA".into()))
-        .with_alt_text(Some("The NASA logo".into()))
-        .with_expanded(Some("National Aeronautics and Space Administration".into()))
-        .with_lang(Some("en".into()));
+    let figure = Tag::Figure
+        .with_actual_text("NASA".into())
+        .with_alt_text("The NASA logo".into())
+        .with_expanded("National Aeronautics and Space Administration".into())
+        .with_lang("en".into());
 
     tag_tree.push(TagGroup::with_children(figure, vec![Node::Leaf(logo)]));
 
@@ -481,8 +473,8 @@ fn tagging_tag_attributes(document: &mut Document) {
 fn tagging_page_identifer_appears_twice() {
     let mut document = Document::new();
     let mut tag_tree = TagTree::new();
-    let mut fn_group_1 = TagGroup::new(TagKind::P);
-    let mut fn_group_2 = TagGroup::new(TagKind::P);
+    let mut fn_group_1 = TagGroup::new(Tag::P);
+    let mut fn_group_2 = TagGroup::new(Tag::P);
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -513,16 +505,8 @@ fn tagging_id_appears_twice() {
     let id = TagId::from(*b"one");
     let loc_1 = 1;
     let loc_2 = 2;
-    let group_1 = TagGroup::new(
-        TagKind::P
-            .with_id(Some(id.clone()))
-            .with_location(Some(loc_1)),
-    );
-    let group_2 = TagGroup::new(
-        TagKind::P
-            .with_id(Some(id.clone()))
-            .with_location(Some(loc_2)),
-    );
+    let group_1 = TagGroup::new(Tag::P.with_id(id.clone()).with_location(Some(loc_1)));
+    let group_2 = TagGroup::new(Tag::P.with_id(id.clone()).with_location(Some(loc_2)));
 
     tag_tree.push(group_1);
     tag_tree.push(group_2);
@@ -543,7 +527,9 @@ fn tagging_unknown_header_tag_id() {
     let id = TagId::from(*b"one");
     let loc_1 = 1;
     let group_1 = TagGroup::new(
-        TagKind::TD(TableDataCell::new().with_headers([id.clone()])).with_location(Some(loc_1)),
+        Tag::TD
+            .with_headers([id.clone()])
+            .with_location(Some(loc_1)),
     );
 
     tag_tree.push(group_1);
@@ -561,8 +547,8 @@ fn tagging_unknown_header_tag_id() {
 fn tagging_annotation_identifer_appears_twice() {
     let mut document = Document::new();
     let mut tag_tree = TagTree::new();
-    let mut fn_group_1 = TagGroup::new(TagKind::P);
-    let mut fn_group_2 = TagGroup::new(TagKind::P);
+    let mut fn_group_1 = TagGroup::new(Tag::P);
+    let mut fn_group_2 = TagGroup::new(Tag::P);
 
     let mut page = document.start_page();
     let link_id = page.add_tagged_annotation(

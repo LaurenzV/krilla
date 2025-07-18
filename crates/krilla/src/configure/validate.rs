@@ -151,7 +151,7 @@ pub enum Validator {
     /// - All requirements of PDF/A2-B.
     /// - You need to follow all requirements outlined in the _Other Notes_ section of the
     ///   [`tagging`] module.
-    /// - You need to follow all best practices when using [tags](`crate::interchange::tagging::Tag`), as outlined in the documentation
+    /// - You need to follow all best practices when using [tags](`crate::interchange::tagging::tag`), as outlined in the documentation
     ///   of each tag.
     /// - Artifacts such as page numbers, backgrounds, cut marks and color bars should be specified
     ///   correspondingly as artifacts.
@@ -203,7 +203,7 @@ pub enum Validator {
     ///   document.
     /// - Information should not be conveyed by contrast, color, format
     ///   or layout.
-    /// - All "best practice" notes in [`Tag`] need to be complied with.
+    /// - All "best practice" notes in [`TagKind`] need to be complied with.
     ///
     /// Text:
     /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributes
@@ -261,7 +261,7 @@ pub enum Validator {
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     ///   universal rendering.
     ///
-    /// [`Tag`]: crate::interchange::tagging::Tag
+    /// [`TagKind`]: crate::interchange::tagging::tag::TagKind
     UA1,
     /// The validator for the PDF/A4 standard.
     ///
