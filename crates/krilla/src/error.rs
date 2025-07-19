@@ -8,6 +8,7 @@ use crate::configure::ValidationError;
 use crate::graphics::image::Image;
 use crate::pdf::{PdfDocument, PdfError};
 use crate::surface::Location;
+use crate::tagging::TagId;
 use crate::text::Font;
 
 /// A wrapper type for krilla errors.
@@ -23,6 +24,14 @@ pub enum KrillaError {
     ///
     /// [`SerializeSettings`]: crate::SerializeSettings
     Validation(Vec<ValidationError>),
+    /// A duplicate [`Tag::id`] was provided.
+    ///
+    /// [`Tag::id`]: crate::interchange::tagging::Tag::id
+    DuplicateTagId(TagId, Option<Location>),
+    /// A [`TagId`] was not found in the [`TagTree`].
+    ///
+    /// [`TagTree`]: crate::interchange::tagging::TagTree
+    UnknownTagId(TagId, Option<Location>),
     /// An image couldn't be processed properly.
     #[cfg(feature = "raster-images")]
     Image(Image, Option<Location>),

@@ -131,7 +131,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
 use crate::util::lazy::{LazyGet, LazyInit};
@@ -857,10 +857,7 @@ impl TagGroup {
                     vacant.insert(elem_ref);
                 }
                 Entry::Occupied(_) => {
-                    sc.register_validation_error(ValidationError::DuplicateTagId(
-                        id.clone(),
-                        self.tag.location,
-                    ));
+                    return Err(KrillaError::DuplicateTagId(id.clone(), self.tag.location));
                 }
             }
         } else if TagKind::Note == self.tag.kind {
@@ -883,7 +880,7 @@ impl TagGroup {
         if let Some(alt) = &self.tag.alt_text {
             struct_elem.alt(TextStr(alt));
         } else if self.tag.kind.should_have_alt() {
-            sc.register_validation_error(ValidationError::MissingAltText);
+            sc.register_validation_error(ValidationError::MissingAltText(self.tag.location));
         }
 
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
@@ -904,7 +901,7 @@ impl TagGroup {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
 
-        match self.tag.kind {
+        match &self.tag.kind {
             TagKind::L(ln) => {
                 struct_elem
                     .attributes()
@@ -912,7 +909,19 @@ impl TagGroup {
                     .list()
                     .list_numbering(ln.to_pdf());
             }
-            TagKind::TH(ref cell) => {
+            TagKind::Table(summary) => {
+                // Lazily initialize the table attributes, to avoid an empty list.
+                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
+                let mut table_attributes =
+                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
+
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
+                    if let Some(summary) = summary {
+                        table_attributes.get().summary(TextStr(summary));
+                    }
+                }
+            }
+            TagKind::TH(cell) => {
                 // Lazily initialize the table attributes, to avoid an empty list.
                 let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
                 let mut table_attributes =
@@ -923,7 +932,7 @@ impl TagGroup {
                 }
                 serialize_table_cell_attributes(sc, &mut table_attributes, &cell.data);
             }
-            TagKind::TD(ref cell) => {
+            TagKind::TD(cell) => {
                 // Lazily initialize the table attributes, to avoid an empty list.
                 let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
                 let mut table_attributes =
@@ -947,15 +956,12 @@ impl TagGroup {
         Ok(Reference::Ref(elem_ref))
     }
 
-    fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
+    fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
         match &self.tag.kind {
             TagKind::TH(TableHeaderCell { data, .. }) | TagKind::TD(data) => {
                 for id in data.headers.iter() {
                     if !id_tree.contains_key(id) {
-                        sc.register_validation_error(ValidationError::UnknownTagId(
-                            id.clone(),
-                            self.tag.location,
-                        ));
+                        return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location));
                     }
                 }
             }
@@ -964,9 +970,10 @@ impl TagGroup {
 
         for child in self.children.iter() {
             if let Node::Group(group) = child {
-                group.validate(sc, id_tree)
+                group.validate(id_tree)?;
             }
         }
+        Ok(())
     }
 }
 
@@ -1064,12 +1071,13 @@ impl TagTree {
         Ok((root_ref, struct_elems))
     }
 
-    pub(crate) fn validate(&self, sc: &mut SerializeContext, id_tree: &BTreeMap<TagId, Ref>) {
+    pub(crate) fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
         for child in self.children.iter() {
             if let Node::Group(group) = child {
-                group.validate(sc, id_tree)
+                group.validate(id_tree)?;
             }
         }
+        Ok(())
     }
 }
 

@@ -10,7 +10,7 @@ use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
 use krilla::tagging::{
     ArtifactType, ContentTag, ListNumbering, SpanTag, TableCellSpan, TableHeaderCell,
-    TableHeaderScope, Tag, TagGroup, TagKind, TagTree,
+    TableHeaderScope, Tag, TagBuilder, TagGroup, TagKind, TagTree,
 };
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
@@ -92,7 +92,6 @@ fn validate_pdf_a_annotation(page: &mut Page) {
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         )
         .into(),
@@ -476,7 +475,6 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     let annotation = page.add_tagged_annotation(Annotation::new_link(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
-            None,
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         ),
         Some("A link to youtube".to_string()),
@@ -521,21 +519,26 @@ fn validate_pdf_ua1_missing_requirements() {
 
     surface.finish();
 
-    let annot = page.add_tagged_annotation(Annotation::new_link(
-        LinkAnnotation::new(
-            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+    let annot_loc = 1;
+    let annot = page.add_tagged_annotation(
+        Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            ),
             None,
-            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
-        ),
-        None,
-    ));
+        )
+        .with_location(Some(annot_loc)),
+    );
 
     page.finish();
 
-    let mut tag_tree = TagTree::new();
-    let mut tag_group = TagGroup::new(TagKind::Formula);
+    let formula_loc = 2;
+    let mut tag_group = TagGroup::new(TagKind::Formula.with_location(Some(formula_loc)));
     tag_group.push(id1);
     tag_group.push(annot);
+
+    let mut tag_tree = TagTree::new();
     tag_tree.push(tag_group);
     document.set_tag_tree(tag_tree);
 
@@ -543,8 +546,8 @@ fn validate_pdf_ua1_missing_requirements() {
         document.finish(),
         Err(KrillaError::Validation(vec![
             ValidationError::MissingDocumentOutline,
-            ValidationError::MissingAnnotationAltText,
-            ValidationError::MissingAltText,
+            ValidationError::MissingAnnotationAltText(Some(annot_loc)),
+            ValidationError::MissingAltText(Some(formula_loc)),
             ValidationError::NoDocumentTitle
         ]))
     )

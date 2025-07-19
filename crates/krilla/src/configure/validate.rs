@@ -28,7 +28,6 @@ use xmp_writer::XmpWriter;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
-use crate::tagging::TagId;
 use crate::text::Font;
 use crate::text::GlyphId;
 
@@ -102,13 +101,13 @@ pub enum ValidationError {
     /// the standard.
     NoDocumentTitle,
     /// A figure or formula is missing an alt text.
-    MissingAltText,
+    MissingAltText(Option<Location>),
     /// A heading is missing a title.
     MissingHeadingTitle,
     /// The document does not contain an outline.
     MissingDocumentOutline,
     /// An annotation is missing an alt text.
-    MissingAnnotationAltText,
+    MissingAnnotationAltText(Option<Location>),
     /// The date of the document is missing.
     // We need this because for some standards we need to add the
     // xmp:History attribute.
@@ -121,15 +120,7 @@ pub enum ValidationError {
     EmbeddedFile(EmbedError, Option<Location>),
     /// The PDF contains no tagging.
     MissingTagging,
-    /// A duplicate [`Tag::id`] was provided.
-    ///
-    /// [`Tag::id`]: crate::interchange::tagging::Tag::id
-    DuplicateTagId(TagId, Option<Location>),
-    /// A [`TagId`] was not found in the [`TagTree`].
-    ///
-    /// [`TagTree`]: crate::interchange::tagging::TagTree
-    UnknownTagId(TagId, Option<Location>),
-    /// THe PDF contains another embedded PDF.
+    /// The PDF contains another embedded PDF.
     ///
     /// This is currently forbidden in validated export because we cannot manually verify
     /// whether the file actually fulfills all the criteria for the export mode.
@@ -310,10 +301,10 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
                 ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText => false,
+                ValidationError::MissingAltText(_) => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText => false,
+                ValidationError::MissingAnnotationAltText(_) => false,
                 ValidationError::Transparency(_) => true,
                 ValidationError::ImageInterpolation(_) => true,
                 // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
@@ -329,8 +320,6 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A1_A,
                 ValidationError::MissingDocumentDate => true,
-                ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownTagId(_, _) => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
@@ -350,10 +339,10 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A2_A,
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText => false,
+                ValidationError::MissingAltText(_) => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText => false,
+                ValidationError::MissingAnnotationAltText(_) => false,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
@@ -369,8 +358,6 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A2_A,
                 ValidationError::MissingDocumentDate => true,
-                ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownTagId(_, _) => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
@@ -390,10 +377,10 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A3_A,
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText => false,
+                ValidationError::MissingAltText(_) => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText => false,
+                ValidationError::MissingAnnotationAltText(_) => false,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(er, _) => match er {
@@ -404,8 +391,6 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A3_A,
                 ValidationError::MissingDocumentDate => true,
-                ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownTagId(_, _) => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
@@ -425,10 +410,10 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _, _, _) => true,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText => false,
+                ValidationError::MissingAltText(_) => false,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText => false,
+                ValidationError::MissingAnnotationAltText(_) => false,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(e, _) => match e {
@@ -445,8 +430,6 @@ impl Validator {
                 // Only recommended, not required.
                 ValidationError::MissingTagging => false,
                 ValidationError::MissingDocumentDate => true,
-                ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownTagId(_, _) => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::UA1 => match validation_error {
@@ -466,10 +449,10 @@ impl Validator {
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
-                ValidationError::MissingAltText => true,
+                ValidationError::MissingAltText(_) => true,
                 ValidationError::MissingHeadingTitle => true,
                 ValidationError::MissingDocumentOutline => true,
-                ValidationError::MissingAnnotationAltText => true,
+                ValidationError::MissingAnnotationAltText(_) => true,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => false,
                 ValidationError::EmbeddedFile(er, _) => match er {
@@ -480,8 +463,6 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => true,
                 ValidationError::MissingDocumentDate => false,
-                ValidationError::DuplicateTagId(_, _) => true,
-                ValidationError::UnknownTagId(_, _) => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
         }

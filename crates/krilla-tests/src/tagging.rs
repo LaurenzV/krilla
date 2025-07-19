@@ -99,7 +99,6 @@ fn tagging_simple_with_link_impl(document: &mut Document) {
     let link_id = page.add_tagged_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
-            None,
             Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
         )
         .into(),
@@ -507,6 +506,57 @@ fn tagging_page_identifer_appears_twice() {
 }
 
 #[test]
+fn tagging_id_appears_twice() {
+    let mut document = Document::new();
+    let mut tag_tree = TagTree::new();
+
+    let id = TagId::from(*b"one");
+    let loc_1 = 1;
+    let loc_2 = 2;
+    let group_1 = TagGroup::new(
+        TagKind::P
+            .with_id(Some(id.clone()))
+            .with_location(Some(loc_1)),
+    );
+    let group_2 = TagGroup::new(
+        TagKind::P
+            .with_id(Some(id.clone()))
+            .with_location(Some(loc_2)),
+    );
+
+    tag_tree.push(group_1);
+    tag_tree.push(group_2);
+
+    document.set_tag_tree(tag_tree);
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::DuplicateTagId(id, Some(loc_2)))
+    );
+}
+
+#[test]
+fn tagging_unknown_header_tag_id() {
+    let mut document = Document::new();
+    let mut tag_tree = TagTree::new();
+
+    let id = TagId::from(*b"one");
+    let loc_1 = 1;
+    let group_1 = TagGroup::new(
+        TagKind::TD(TableDataCell::new().with_headers([id.clone()])).with_location(Some(loc_1)),
+    );
+
+    tag_tree.push(group_1);
+
+    document.set_tag_tree(tag_tree);
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::UnknownTagId(id, Some(loc_1)))
+    );
+}
+
+#[test]
 #[should_panic]
 fn tagging_annotation_identifer_appears_twice() {
     let mut document = Document::new();
@@ -518,7 +568,6 @@ fn tagging_annotation_identifer_appears_twice() {
     let link_id = page.add_tagged_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 100.0, 25.0).unwrap(),
-            None,
             Target::Action(Action::Link(LinkAction::new("www.youtube.com".to_string()))),
         )
         .into(),
