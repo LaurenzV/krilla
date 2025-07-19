@@ -132,7 +132,7 @@ use smallvec::SmallVec;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
-use crate::tagging::tag::{ListAttr, TableAttr, TagId, TagKind};
+use crate::tagging::tag::{LayoutAttr, ListAttr, TableAttr, TagId, TagKind};
 use crate::util::lazy::LazyInit;
 
 pub mod tag;
@@ -684,7 +684,7 @@ impl TagGroup {
 
         let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
 
-        // Lazily initialize the list attributes to avoid an empty list.
+        // Lazily initialize the list attributes to avoid an empty array.
         let mut list_attributes = LazyInit::new(&mut attributes, |attrs| attrs.get().push().list());
         for attr in tag.list_attrs.iter() {
             match attr {
@@ -695,7 +695,7 @@ impl TagGroup {
         }
         list_attributes.finish();
 
-        // Lazily initialize the table attributes to avoid an empty list.
+        // Lazily initialize the table attributes to avoid an empty array.
         let mut table_attributes =
             LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
         for attr in tag.table_attrs.iter() {
@@ -728,6 +728,30 @@ impl TagGroup {
         }
         table_attributes.finish();
 
+        // Lazily initialize the list attributes to avoid an empty array.
+        let mut layout_attributes =
+            LazyInit::new(&mut attributes, |attrs| attrs.get().push().layout());
+        for attr in tag.layout_attrs.iter() {
+            match attr {
+                LayoutAttr::Placement(placement) => {
+                    layout_attributes.get().placement(placement.to_pdf());
+                }
+                LayoutAttr::WritingMode(writing_mode) => {
+                    layout_attributes.get().writing_mode(writing_mode.to_pdf());
+                }
+                LayoutAttr::BBox(bbox) => {
+                    layout_attributes.get().bbox(bbox.to_pdf_rect());
+                }
+                LayoutAttr::Width(width) => {
+                    layout_attributes.get().width(*width);
+                }
+                LayoutAttr::Height(height) => {
+                    layout_attributes.get().height(*height);
+                }
+            }
+        }
+        layout_attributes.finish();
+
         attributes.finish();
 
         serialize_children(
@@ -745,7 +769,7 @@ impl TagGroup {
 
     fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
         let tag = self.tag.inner();
-        if let Some(headers) = tag.table_headers() {
+        if let Some(headers) = tag.headers() {
             for id in headers.iter() {
                 if !id_tree.contains_key(id) {
                     return Err(KrillaError::UnknownTagId(id.clone(), tag.location));

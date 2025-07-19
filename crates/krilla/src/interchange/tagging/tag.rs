@@ -7,7 +7,9 @@
 //! let tag = Tag::TH(TableHeaderScope::Row)
 //!     .with_id(TagId::from(*b"this id"))
 //!     .with_span(TableCellSpan::col(NonZeroU32::new(3).unwrap()))
-//!     .with_headers([TagId::from(*b"parent id")]);
+//!     .with_headers([TagId::from(*b"parent id")])
+//!     .with_width(250.0)
+//!     .with_height(100.0);
 //! let group = TagGroup::new(tag);
 //!
 //! let mut tree = TagTree::new();
@@ -19,6 +21,7 @@ use std::num::NonZeroU32;
 
 use smallvec::SmallVec;
 
+use crate::geom::Rect;
 use crate::surface::Location;
 
 macro_rules! if_present {
@@ -31,14 +34,17 @@ macro_rules! if_present {
 }
 
 macro_rules! set_attr {
-    (attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident), $variant:ident($name:ident)) => {
+    (attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
         $attrs.set(Attr::$variant($name));
     };
-    (list_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident), $variant:ident($name:ident)) => {
+    (list_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
         $list_attrs.set(ListAttr::$variant($name));
     };
-    (table_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident), $variant:ident($name:ident)) => {
+    (table_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
         $table_attrs.set(TableAttr::$variant($name));
+    };
+    (layout_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
+        $layout_attrs.set(LayoutAttr::$variant($name));
     };
 }
 
@@ -50,7 +56,7 @@ macro_rules! tag_kinds {
                 $(#[doc = $doc:expr])+
                 $variant:ident$((
                     $($name:ident: $attr_mod:ident::$required_attr:ident($attr_ty:ty)),*
-                    $(; $(Option<$o_attr_mod:ident::$optional_attr:ident>),+)?
+                    $(; $(Option<$o_attr_mod:ident::$optional_attr:ident>),+$(,)?)?
                 ))?,
             )+
         }
@@ -90,15 +96,18 @@ macro_rules! tag_kinds {
                             let mut list_attrs = BSet::new();
                             #[allow(unused_mut)]
                             let mut table_attrs = BSet::new();
+                            #[allow(unused_mut)]
+                            let mut layout_attrs = BSet::new();
 
                             $($(
-                                set_attr!($attr_mod, (attrs, list_attrs, table_attrs), $required_attr($name));
+                                set_attr!($attr_mod, (attrs, list_attrs, table_attrs, layout_attrs), $required_attr($name));
                             )*)?
 
                             Tag {
                                 attrs,
                                 list_attrs,
                                 table_attrs,
+                                layout_attrs,
                                 location: None,
                                 ty: PhantomData,
                             }
@@ -106,13 +115,7 @@ macro_rules! tag_kinds {
                     } else {
                         $(#[doc = $doc])+
                         #[allow(non_upper_case_globals)]
-                        pub const $variant: Self = Tag {
-                            attrs: BSet::new(),
-                            list_attrs: BSet::new(),
-                            table_attrs: BSet::new(),
-                            location: None,
-                            ty: PhantomData,
-                        };
+                        pub const $variant: Self = Tag::new();
                     }
                 }
             }
@@ -193,16 +196,32 @@ tag_kinds! {
         /// **Best practice**: Should consist of an optional table header row,
         /// one or more table body elements and an optional table footer. Can have
         /// caption as the first or last child.
-        Table(; Option<table_attr::Summary>),
+        Table(;
+            Option<table_attr::Summary>,
+            Option<layout_attr::BBox>,
+            Option<layout_attr::Width>,
+            Option<layout_attr::Height>,
+        ),
         /// A table row.
         ///
         /// **Best practice**: May contain table headers cells and table data cells.
         TR,
         /// A table header cell.
         // Table header scope is only required for PDF/UA, but we include it always for simplicity.
-        TH(scope: table_attr::HeaderScope(TableHeaderScope); Option<table_attr::CellHeaders>, Option<table_attr::CellSpan>),
+        TH(
+            scope: table_attr::HeaderScope(TableHeaderScope);
+            Option<table_attr::CellHeaders>,
+            Option<table_attr::CellSpan>,
+            Option<layout_attr::Width>,
+            Option<layout_attr::Height>,
+        ),
         /// A table data cell.
-        TD(; Option<table_attr::CellHeaders>, Option<table_attr::CellSpan>),
+        TD(;
+            Option<table_attr::CellHeaders>,
+            Option<table_attr::CellSpan>,
+            Option<layout_attr::Width>,
+            Option<layout_attr::Height>,
+        ),
         /// A table header row group.
         THead,
         /// A table data row group.
@@ -243,11 +262,19 @@ tag_kinds! {
         /// Item of graphical content.
         ///
         /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-        Figure,
+        Figure(;
+            Option<layout_attr::BBox>,
+            Option<layout_attr::Width>,
+            Option<layout_attr::Height>,
+        ),
         /// A mathematical formula.
         ///
         /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-        Formula,
+        Formula(;
+            Option<layout_attr::BBox>,
+            Option<layout_attr::Width>,
+            Option<layout_attr::Height>,
+        ),
         // All below are non-standard attributes.
         /// A date or time.
         Datetime,
@@ -317,11 +344,173 @@ pub struct Tag<T> {
     pub(crate) attrs: BSet<Attr>,
     pub(crate) list_attrs: BSet<ListAttr>,
     pub(crate) table_attrs: BSet<TableAttr>,
+    pub(crate) layout_attrs: BSet<LayoutAttr>,
     /// The type of this tag containing required attributes.
     pub(crate) ty: PhantomData<T>,
 }
 
 impl<T> Tag<T> {
+    /// This can't be public, otherwise tags could be constructed without
+    /// providing required attributes.
+    pub(crate) const fn new() -> Self {
+        Self {
+            attrs: BSet::new(),
+            list_attrs: BSet::new(),
+            table_attrs: BSet::new(),
+            layout_attrs: BSet::new(),
+            location: None,
+            ty: PhantomData,
+        }
+    }
+}
+
+macro_rules! gen_unwrap_impl {
+    ($ordinal:expr; ) => {};
+    ($ordinal:expr; $name:ident::$variant:ident($ty:ty) $($tail_name:ident::$tail_variant:ident($tail_ty:ty))*) => {
+        impl Unwrap<$name> for super::$variant {
+            type Item = $ty;
+
+            const ORDINAL: usize = $ordinal;
+
+            fn unwrap(value: &$name) -> &Self::Item {
+                match value {
+                    $name::$variant(val) => val,
+                    #[allow(unreachable_patterns)]
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        gen_unwrap_impl! { $ordinal + 1; $($tail_name::$tail_variant($tail_ty))* }
+    };
+}
+
+macro_rules! attrs {
+    (
+        $(
+            pub(crate) mod $attr_mod:ident;
+            pub(crate) enum $name:ident {
+                $(
+                    $variant:ident($ty:ty),
+                )+
+            }
+        )+
+    ) => {
+        $(
+            #[derive(Clone, Debug, PartialEq)]
+            pub(crate) enum $name {
+                $(
+                    $variant($ty),
+                )+
+            }
+
+            impl Ordinal for $name {
+                fn ordinal(&self) -> usize {
+                    match self {
+                        $(
+                            $name::$variant(_) => $attr_mod::$variant::ORDINAL,
+                        )+
+                    }
+                }
+            }
+
+            pub(crate) mod $attr_mod {
+                $(
+                    #[derive(Clone, Debug, PartialEq)]
+                    pub struct $variant;
+                )+
+
+                // generate unwrap impls inside another module to avoid
+                // ambiguity between the unit struct above and the Unwrap::Item
+                // type used in the impl
+                mod unwrap {
+                    use super::super::*;
+
+                    gen_unwrap_impl! {
+                        0_usize;
+                        $($name::$variant($ty))+
+                    }
+                }
+            }
+        )+
+
+        pub(crate) mod impls {
+            $(
+                pub mod $attr_mod {
+                    $(
+                        #[allow(unused)]
+                        pub trait $variant {}
+                    )+
+                }
+            )+
+        }
+    }
+}
+
+attrs! {
+    pub(crate) mod attr;
+    pub(crate) enum Attr {
+        Id(TagId),
+        Lang(String),
+        AltText(String),
+        Expanded(String),
+        ActualText(String),
+        Title(String),
+
+        // Not really an attribute, but it fits here quite well.
+        HeadingLevel(NonZeroU32),
+    }
+
+    pub(crate) mod list_attr;
+    pub(crate) enum ListAttr {
+        Numbering(ListNumbering),
+    }
+
+    pub(crate) mod table_attr;
+    pub(crate) enum TableAttr {
+        Summary(String),
+        HeaderScope(TableHeaderScope),
+        CellHeaders(SmallVec<[TagId; 1]>),
+        CellSpan(TableCellSpan),
+    }
+
+    pub(crate) mod layout_attr;
+    pub(crate) enum LayoutAttr {
+        Placement(Placement),
+        WritingMode(WritingMode),
+        BBox(Rect),
+        Width(f32),
+        Height(f32),
+    }
+}
+
+/// An identifier of a [`Tag`].
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct TagId(pub(crate) SmallVec<[u8; 16]>);
+
+impl<I: IntoIterator<Item = u8>> From<I> for TagId {
+    fn from(value: I) -> Self {
+        // Disambiguate ids provided by the user from ids automatically assigned
+        // to notes by prefixing them with a `U`.
+        let bytes = std::iter::once(b'U').chain(value).collect();
+        TagId(bytes)
+    }
+}
+
+impl TagId {
+    /// Returns the identifier as a byte slice.
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
+
+impl<T> Tag<T> {
+    /// Sets the location.
+    pub fn with_location(mut self, location: Option<Location>) -> Self {
+        self.location = location;
+        self
+    }
+
     /// Sets the tag id.
     pub fn with_id(mut self, id: TagId) -> Self {
         self.attrs.set(Attr::Id(id));
@@ -383,136 +572,6 @@ impl<T> Tag<T> {
     pub fn actual_text(&self) -> Option<&str> {
         self.attrs.get::<attr::ActualText>().map(|s| s.as_str())
     }
-
-    /// Sets the location.
-    pub fn with_location(mut self, location: Option<Location>) -> Self {
-        self.location = location;
-        self
-    }
-}
-
-macro_rules! gen_struct_and_unwrap_impl {
-    ($ordinal:expr; ) => {};
-    ($ordinal:expr; $name:ident::$variant:ident($ty:ty) $($tail_name:ident::$tail_variant:ident($tail_ty:ty))*) => {
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct $variant;
-
-        impl Unwrap<$name> for $variant {
-            type Item = $ty;
-
-            const ORDINAL: usize = $ordinal;
-
-            fn unwrap(value: &$name) -> &Self::Item {
-                match value {
-                    $name::$variant(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-        }
-
-        gen_struct_and_unwrap_impl! { $ordinal + 1; $($tail_name::$tail_variant($tail_ty))* }
-    };
-}
-
-macro_rules! attrs {
-    (
-        $(
-            pub(crate) mod $attr_mod:ident;
-            pub(crate) enum $name:ident {
-                $(
-                    $variant:ident($ty:ty),
-                )+
-            }
-        )+
-    ) => {
-        $(
-            #[derive(Clone, Debug, PartialEq)]
-            pub(crate) enum $name {
-                $(
-                    $variant($ty),
-                )+
-            }
-
-            impl Ordinal for $name {
-                fn ordinal(&self) -> usize {
-                    match self {
-                        $(
-                            $name::$variant(_) => $attr_mod::$variant::ORDINAL,
-                        )+
-                    }
-                }
-            }
-
-            pub(crate) mod $attr_mod {
-                use super::*;
-
-                gen_struct_and_unwrap_impl! {
-                    0_usize;
-                    $($name::$variant($ty))+
-                }
-            }
-        )+
-
-        pub(crate) mod impls {
-            $(
-                pub mod $attr_mod {
-                    $(
-                        #[allow(unused)]
-                        pub trait $variant {}
-                    )+
-                }
-            )+
-        }
-    }
-}
-
-attrs! {
-    pub(crate) mod attr;
-    pub(crate) enum Attr {
-        Id(TagId),
-        Lang(String),
-        AltText(String),
-        Expanded(String),
-        ActualText(String),
-        Title(String),
-
-        // Not really an attribute, but it fits here quite well.
-        HeadingLevel(NonZeroU32),
-    }
-
-    pub(crate) mod list_attr;
-    pub(crate) enum ListAttr {
-        Numbering(ListNumbering),
-    }
-
-    pub(crate) mod table_attr;
-    pub(crate) enum TableAttr {
-        Summary(String),
-        HeaderScope(TableHeaderScope),
-        CellHeaders(SmallVec<[TagId; 1]>),
-        CellSpan(TableCellSpan),
-    }
-}
-
-/// An identifier of a [`Tag`].
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct TagId(pub(crate) SmallVec<[u8; 16]>);
-
-impl<I: IntoIterator<Item = u8>> From<I> for TagId {
-    fn from(value: I) -> Self {
-        // Disambiguate ids provided by the user from ids automatically assigned
-        // to notes by prefixing them with a `U`.
-        let bytes = std::iter::once(b'U').chain(value).collect();
-        TagId(bytes)
-    }
-}
-
-impl TagId {
-    /// Returns the identifier as a byte slice.
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_slice()
-    }
 }
 
 impl<T: impls::attr::Title> Tag<T> {
@@ -534,14 +593,6 @@ impl Tag<Hn> {
     /// The heading level.
     pub fn level(&self) -> NonZeroU32 {
         *self.attrs.get::<attr::HeadingLevel>().unwrap()
-    }
-}
-
-impl<T: impls::list_attr::Numbering> Tag<T> {
-    /// The list numbering.
-    pub fn with_numbering(mut self, numbering: ListNumbering) -> Self {
-        self.list_attrs.set(ListAttr::Numbering(numbering));
-        self
     }
 }
 
@@ -601,7 +652,7 @@ impl<T: impls::table_attr::Summary> Tag<T> {
 
 impl Tag<TH> {
     /// The table header scope.
-    pub fn header_scope(&self) -> TableHeaderScope {
+    pub fn scope(&self) -> TableHeaderScope {
         *self.table_attrs.get::<table_attr::HeaderScope>().unwrap()
     }
 }
@@ -643,7 +694,14 @@ impl<T: impls::table_attr::CellHeaders> Tag<T> {
 }
 
 impl<T> Tag<T> {
-    pub(crate) fn table_headers(&self) -> Option<&[TagId]> {
+    /// A list of headers associated with a table cell.
+    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
+    /// which can also specify a list of parent header cells (`TH`), and so on.
+    /// To determine the list of associated headers this list is recursively
+    /// evaluated.
+    ///
+    /// This allows specifying header hierarchies inside tables.
+    pub fn headers(&self) -> Option<&[TagId]> {
         self.table_attrs
             .get::<table_attr::CellHeaders>()
             .map(|s| s.as_slice())
@@ -655,6 +713,13 @@ impl<T: impls::table_attr::CellSpan> Tag<T> {
     pub fn with_span(mut self, span: TableCellSpan) -> Self {
         self.table_attrs.set(TableAttr::CellSpan(span));
         self
+    }
+}
+
+impl<T> Tag<T> {
+    /// The row/column span of this table cell.
+    pub fn span(&self) -> Option<TableCellSpan> {
+        self.table_attrs.get::<table_attr::CellSpan>().copied()
     }
 }
 
@@ -704,5 +769,150 @@ impl TableCellSpan {
 
     pub(crate) fn col_span(self) -> Option<NonZeroU32> {
         (self.cols != NonZeroU32::MIN).then_some(self.cols)
+    }
+}
+
+impl<T> Tag<T> {
+    /// Sets the placment.
+    pub fn with_placement(mut self, placement: Placement) -> Self {
+        self.layout_attrs.set(LayoutAttr::Placement(placement));
+        self
+    }
+
+    /// The placement.
+    pub fn placement(&self) -> Option<Placement> {
+        self.layout_attrs.get::<layout_attr::Placement>().copied()
+    }
+
+    /// Sets the writing mode.
+    pub fn with_writing_mode(mut self, writing_mode: WritingMode) -> Self {
+        self.layout_attrs.set(LayoutAttr::WritingMode(writing_mode));
+        self
+    }
+
+    /// The writing mode.
+    pub fn writing_mode(&self) -> Option<WritingMode> {
+        self.layout_attrs.get::<layout_attr::WritingMode>().copied()
+    }
+}
+
+/// The positioning of the element with respect to the enclosing reference area
+/// and other content.
+/// When applied to an ILSE, any value except Inline shall cause the element to
+/// be treated as a BLSE instead.
+///
+/// Default value: [`Placement::Inline`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum Placement {
+    /// tacked in the block-progression direction within an enclosing reference
+    /// area or parent BLSE.
+    Block,
+    /// Packed in the inline-progression direction within an enclosing BLSE.
+    #[default]
+    Inline,
+    /// Placed so that the before edge of the element’s allocation rectangle.
+    /// (see “Content and Allocation Rectangles” in 14.8.5.4, “Layout Attributes”)
+    /// coincides with that of the nearest enclosing reference area. The element
+    /// may float, if necessary, to achieve the specified placement. The element
+    /// shall be treated as a block occupying the full extent of the enclosing
+    /// reference area in the inline direction. Other content shall be stacked
+    /// so as to begin at the after edge of the element’s allocation rectangle.
+    Before,
+    /// Placed so that the start edge of the element’s allocation rectangle
+    /// (see “Content and Allocation Rectangles” in 14.8.5.4, “Layout Attributes”)
+    /// coincides with that of the nearest enclosing reference area. The element
+    /// may float, if necessary, to achieve the specified placement. Other
+    /// content that would intrude into the element’s allocation rectangle
+    /// shall be laid out as a runaround.
+    Start,
+    /// Placed so that the end edge of the element’s allocation rectangle
+    /// (see “Content and Allocation Rectangles” in 14.8.5.4, “Layout Attributes”)
+    /// coincides with that of the nearest enclosing reference area. The element
+    /// may float, if necessary, to achieve the specified placement. Other
+    /// content that would intrude into the element’s allocation rectangle
+    /// shall be laid out as a runaround.
+    End,
+}
+
+impl Placement {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::Placement {
+        match self {
+            Placement::Block => pdf_writer::types::Placement::Block,
+            Placement::Inline => pdf_writer::types::Placement::Inline,
+            Placement::Before => pdf_writer::types::Placement::Before,
+            Placement::Start => pdf_writer::types::Placement::Start,
+            Placement::End => pdf_writer::types::Placement::End,
+        }
+    }
+}
+
+/// The directions of layout progression for packing of ILSEs (inline progression)
+/// and stacking of BLSEs (block progression).
+/// The specified layout directions shall apply to the given structure element
+/// and all of its descendants to any level of nesting.
+///
+/// Default value: [`WritingMode::LrTb`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum WritingMode {
+    /// Inline progression from left to right; block progression from top to
+    /// bottom. This is the typical writing mode for Western writing systems.
+    #[default]
+    LrTb,
+    /// Inline progression from right to left; block progression from top to
+    /// bottom. This is the typical writing mode for Arabic and Hebrew writing
+    /// systems.
+    RlTb,
+    /// Inline progression from top to bottom; block progression from right to
+    /// left. This is the typical writing mode for Chinese and Japanese writing
+    /// systems.
+    TbRl,
+}
+
+impl WritingMode {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::WritingMode {
+        match self {
+            WritingMode::LrTb => pdf_writer::types::WritingMode::LtrTtb,
+            WritingMode::RlTb => pdf_writer::types::WritingMode::RtlTtb,
+            WritingMode::TbRl => pdf_writer::types::WritingMode::TtbRtl,
+        }
+    }
+}
+
+impl<T: impls::layout_attr::BBox> Tag<T> {
+    /// Sets the bounding box.
+    pub fn with_bbox(mut self, bbox: Rect) -> Self {
+        self.layout_attrs.set(LayoutAttr::BBox(bbox));
+        self
+    }
+
+    /// The bounding box.
+    pub fn bbox(&self) -> Option<Rect> {
+        self.layout_attrs.get::<layout_attr::BBox>().copied()
+    }
+}
+
+impl<T: impls::layout_attr::Width> Tag<T> {
+    /// Sets the width.
+    pub fn with_width(mut self, width: f32) -> Self {
+        self.layout_attrs.set(LayoutAttr::Width(width));
+        self
+    }
+
+    /// The width.
+    pub fn width(&self) -> Option<f32> {
+        self.layout_attrs.get::<layout_attr::Width>().copied()
+    }
+}
+
+impl<T: impls::layout_attr::Height> Tag<T> {
+    /// Sets the height.
+    pub fn with_height(mut self, height: f32) -> Self {
+        self.layout_attrs.set(LayoutAttr::Height(height));
+        self
+    }
+
+    /// The height.
+    pub fn height(&self) -> Option<f32> {
+        self.layout_attrs.get::<layout_attr::Height>().copied()
     }
 }
