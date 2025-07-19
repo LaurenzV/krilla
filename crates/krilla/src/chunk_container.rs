@@ -1,5 +1,4 @@
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
-use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};

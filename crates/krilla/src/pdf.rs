@@ -1,20 +1,19 @@
 //! Including other PDF files.
 
-// TODO: Prohibit PDFs with validated export.
-use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::sync::{Arc, OnceLock};
+
+use hayro_write::{ExtractionError, ExtractionQuery, LoadPdfError, PdfData};
+use pdf_writer::Ref;
+
+use crate::chunk_container::EmbeddedPdfChunk;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
 use crate::util::{Deferred, Prehashed};
-use crate::{Data, Document};
-use hayro_write::{ExtractionError, ExtractionQuery, PdfData};
-use pdf_writer::{Chunk, Ref};
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::sync::{Arc, OnceLock};
-use tiny_skia_path::FiniteF32;
+use crate::Data;
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -54,21 +53,20 @@ pub struct PdfDocument(Arc<Prehashed<PdfDocumentRepr>>);
 impl PdfDocument {
     /// Load a new PDF document from the given data.
     pub fn new(data: Data) -> Result<PdfDocument, PdfError> {
-        let pdf = hayro_write::Pdf::new(data.clone().0).ok_or(PdfError::LoadFailed)?;
-        let pages = pdf.pages().ok_or(PdfError::LoadFailed)?;
-        
-        let render_dimensions = pages.get().iter().map(|p| {
-            p.render_dimensions()
-        }).collect();
-        
-        Ok(Self(Arc::new(Prehashed::new(
-            PdfDocumentRepr {
-                data,
-                render_dimensions,
-            }
-        ))))
+        let pdf = hayro_write::Pdf::new(data.clone().0).map_err(|e| match e {
+            LoadPdfError::Encryption => PdfError::Encrypted,
+            LoadPdfError::Invalid => PdfError::LoadFailed,
+        })?;
+        let pages = pdf.pages();
+
+        let render_dimensions = pages.iter().map(|p| p.render_dimensions()).collect();
+
+        Ok(Self(Arc::new(Prehashed::new(PdfDocumentRepr {
+            data,
+            render_dimensions,
+        }))))
     }
-    
+
     pub(crate) fn dimensions(&self) -> &[(f32, f32)] {
         &self.0.render_dimensions
     }
@@ -99,13 +97,6 @@ pub(crate) struct PdfSerializerContext {
 }
 
 impl PdfSerializerContext {
-    pub(crate) fn new() -> Self {
-        Self {
-            infos: HashMap::new(),
-            counter: 0,
-        }
-    }
-
     pub(crate) fn add_page(
         &mut self,
         document: &PdfDocument,
@@ -163,14 +154,18 @@ impl PdfSerializerContext {
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
 
-                // TODO: Don't just return an `Option` in hayro.
                 let data: PdfData = doc.0.data.0.clone();
                 let first_location = info.locations.iter().flat_map(|l| l).next().cloned();
-                let pdf = hayro_write::Pdf::new(data).ok_or(KrillaError::Pdf(
-                    doc.clone(),
-                    PdfError::LoadFailed,
-                    first_location,
-                ))?;
+                let pdf = hayro_write::Pdf::new(data).map_err(|e| {
+                    KrillaError::Pdf(
+                        doc.clone(),
+                        match e {
+                            LoadPdfError::Encryption => PdfError::Encrypted,
+                            LoadPdfError::Invalid => PdfError::LoadFailed,
+                        },
+                        first_location,
+                    )
+                })?;
 
                 let pdf_version = convert_pdf_version(pdf.version());
 
@@ -247,9 +242,7 @@ fn convert_extraction_result<T>(
 ) -> KrillaResult<T> {
     result.map_err(|e| {
         let pdf_error = match e {
-            ExtractionError::LoadPdfError => PdfError::LoadFailed,
             ExtractionError::InvalidPageIndex(i) => PdfError::InvalidPage(i),
-            ExtractionError::InvalidPdf => PdfError::LoadFailed,
         };
 
         KrillaError::Pdf(doc.clone(), pdf_error, location.cloned())

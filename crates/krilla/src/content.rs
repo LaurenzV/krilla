@@ -778,7 +778,7 @@ impl ContentBuilder {
             |sb, _| {
                 sb.expand_bbox(bbox);
             },
-            move |sb, sc| {
+            move |sb, _| {
                 let x_object_name = sb
                     .rd_builder
                     .register_resource(resource::XObject::new(x_object));

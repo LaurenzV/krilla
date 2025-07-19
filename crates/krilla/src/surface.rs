@@ -6,9 +6,9 @@
 
 use crate::color::rgb;
 use crate::content::ContentBuilder;
-use crate::geom::{Path, Rect};
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
+use crate::geom::{Path, Rect};
 use crate::geom::{Point, Transform};
 use crate::graphic::Graphic;
 use crate::graphics::blend::BlendMode;
@@ -418,22 +418,28 @@ impl<'a> Surface<'a> {
         let obj_ref = self.sc.embed_pdf_page_as_xobject(pdf, page_idx);
         // If the user provided an invalid page index, we will detect this later on anyway, so
         // just use dummy dimensions here.
-        let (page_width, page_height) = pdf.dimensions().get(page_idx).copied().unwrap_or((1.0, 1.0));
-        let transform = Transform::from_scale(
-            size.width() / page_width,
-            size.height() / page_height,
-        );
+        let (page_width, page_height) = pdf
+            .dimensions()
+            .get(page_idx)
+            .copied()
+            .unwrap_or((1.0, 1.0));
+        let transform =
+            Transform::from_scale(size.width() / page_width, size.height() / page_height);
         // We applied a transform to invert the y-axis initially, but since the embedded PDF also uses
         // a y-up coordinate system, we need to "invert" this.
         self.push_transform(&transform);
         self.push_transform(&Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_height));
-        
-        self.bd.get_mut().draw_xobject_by_reference(self.sc, Rect::from_xywh(0.0, 0.0, page_width, page_height).unwrap(), obj_ref);
-        
+
+        self.bd.get_mut().draw_xobject_by_reference(
+            self.sc,
+            Rect::from_xywh(0.0, 0.0, page_width, page_height).unwrap(),
+            obj_ref,
+        );
+
         self.pop();
         self.pop();
     }
-    
+
     /// Push a new opacity, meaning that each subsequent graphics object will be
     /// rendered with a base opacity.
     ///

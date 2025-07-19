@@ -9,7 +9,6 @@ use crate::graphics::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::graphics::paint::Stroke;
 use crate::resource::Resource;
 use crate::serialize::MaybeDeviceColorSpace;
-use crate::Data;
 use base64::Engine;
 pub(crate) use deferred::*;
 use pdf_writer::{Dict, Name};

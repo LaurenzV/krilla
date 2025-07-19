@@ -372,7 +372,8 @@ pub fn load_custom_image(name: &str) -> Image {
 }
 
 pub fn load_pdf(name: &str) -> PdfDocument {
-    PdfDocument::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap()).into()).unwrap()
+    PdfDocument::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap()).into())
+        .unwrap()
 }
 
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {
@@ -463,7 +464,7 @@ pub fn check_render(
     } else {
         format!("_{}", renderer.name())
     };
-    
+
     let mut messages = vec![];
 
     let mut check_single = |name: String, page: &RenderedPage, index: usize| {
@@ -477,7 +478,7 @@ pub fn check_render(
                 &oxipng::Options::max_compression(),
             )
             .unwrap();
-            
+
             messages.push("new reference image was created".to_string());
             return;
         }
@@ -510,9 +511,11 @@ pub fn check_render(
                 messages.push("test was replaced".to_string());
                 return;
             }
-            
-            messages.push(format!("pixel diff was {}, while threshold is {}",
-                                  pixel_diff, threshold));
+
+            messages.push(format!(
+                "pixel diff was {}, while threshold is {}",
+                pixel_diff, threshold
+            ));
 
             return;
         }
@@ -532,10 +535,14 @@ pub fn check_render(
         check_single(format!("{}{}", name, renderer_suffix), &document[0], 0);
     } else {
         for (index, page) in document.iter().enumerate() {
-            check_single(format!("{}{}_{}", name, renderer_suffix, index), page, index);
+            check_single(
+                format!("{}{}_{}", name, renderer_suffix, index),
+                page,
+                index,
+            );
         }
     }
-    
+
     if !messages.is_empty() {
         let final_message = messages.join("\n");
         panic!("{final_message}");

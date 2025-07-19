@@ -1,18 +1,20 @@
+use std::sync::Arc;
+
 use image::load_from_memory;
 use krilla::configure::{PdfVersion, ValidationError};
 use krilla::error::KrillaError;
 use krilla::geom::{Size, Transform};
 use krilla::page::{Page, PageSettings};
 use krilla::pdf::{PdfDocument, PdfError};
+use krilla::surface::Surface;
 use krilla::{Document, SerializeSettings};
 use krilla_macros::{snapshot, visreg};
-use std::sync::Arc;
-use krilla::surface::Surface;
 use krilla_svg::{SurfaceExt, SvgSettings};
+
 use crate::metadata::metadata_impl;
+use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
 use crate::{load_pdf, load_png_image, rect_to_path, red_fill, settings_16, NOTO_SANS};
-use crate::svg::sample_svg;
 
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
@@ -175,17 +177,20 @@ fn pdf_embedded_as_xobject_basic(page: &mut Page) {
 
 #[visreg(document)]
 fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
-    let mut page = document.start_page_with(PageSettings::new(600.0,600.0));
+    let mut page = document.start_page_with(PageSettings::new(600.0, 600.0));
     let mut surface = page.surface();
-    
+
     // let sizes = [(50.0, 50.0)];
     let sizes = [(50.0, 50.0), (150.0, 150.0), (300.0, 150.0), (200.0, 400.0)];
     let positions = [(10.0, 10.0), (100.0, 10.0), (30.0, 200.0), (350.0, 200.0)];
 
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
-    
+
     for (size, position) in sizes.iter().zip(positions) {
-        surface.push_transform(&Transform::from_translate(position.0 as f32, position.1 as f32));
+        surface.push_transform(&Transform::from_translate(
+            position.0 as f32,
+            position.1 as f32,
+        ));
         surface.draw_pdf_page(&pdf, Size::from_wh(size.0, size.1).unwrap(), 0);
         surface.pop();
     }
@@ -196,10 +201,10 @@ fn pdf_embedded_as_xobject_multiple(document: &mut Document) {
     let pdf1 = load_pdf("standard_fonts.pdf");
     let pdf2 = load_pdf("pdftc_100k_1894.pdf");
     let pdf3 = load_pdf("page_media_box_bottom_right.pdf");
-    
-    let mut page1 = document.start_page_with(PageSettings::new(600.0,800.0));
+
+    let mut page1 = document.start_page_with(PageSettings::new(600.0, 800.0));
     let mut surface = page1.surface();
-    
+
     surface.push_transform(&Transform::from_translate(10.0, 15.0));
     surface.draw_pdf_page(&pdf1, Size::from_wh(200.0, 282.8).unwrap(), 0);
     surface.pop();
@@ -211,11 +216,11 @@ fn pdf_embedded_as_xobject_multiple(document: &mut Document) {
     surface.push_transform(&Transform::from_translate(200.0, 400.0));
     surface.draw_pdf_page(&pdf3, Size::from_wh(250.0, 300.0).unwrap(), 0);
     surface.pop();
-    
+
     surface.finish();
     page1.finish();
 
-    let mut page2 = document.start_page_with(PageSettings::new(500.0,500.0));
+    let mut page2 = document.start_page_with(PageSettings::new(500.0, 500.0));
     let mut surface = page2.surface();
 
     surface.draw_pdf_page(&pdf2, Size::from_wh(250.0, 250.8).unwrap(), 3);
