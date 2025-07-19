@@ -534,11 +534,7 @@ pub fn check_render(
         check_single(format!("{name}{renderer_suffix}"), &document[0], 0);
     } else {
         for (index, page) in document.iter().enumerate() {
-            check_single(
-                format!("{name}{renderer_suffix}_{index}"),
-                page,
-                index,
-            );
+            check_single(format!("{name}{renderer_suffix}_{index}"), page, index);
         }
     }
 
