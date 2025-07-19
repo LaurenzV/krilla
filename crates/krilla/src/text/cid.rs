@@ -234,7 +234,7 @@ impl CIDFont {
 
         let base_font = base_font_name(&self.font, &self.glyph_remapper);
         let base_font_type0 = if is_cff {
-            format!("{base_font}-{}", IDENTITY_H)
+            format!("{base_font}-{IDENTITY_H}")
         } else {
             base_font.clone()
         };
@@ -412,5 +412,5 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u8>> {
     let font_data = font.font_data();
     subsetter::subset(font_data.as_ref(), font.index(), glyph_remapper)
-        .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {}", e)))
+        .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
 }

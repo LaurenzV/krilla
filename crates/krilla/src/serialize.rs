@@ -673,8 +673,7 @@ impl SerializeContext {
                                 let rci = PageTagIdentifier::new(page_index, mcid);
                                 refs.item(parent_tree_map.get(&rci.into()).unwrap_or_else(|| {
                                     panic!(
-                                        "page tag identifier {:?} doesn't appear in the tag tree",
-                                        rci
+                                        "page tag identifier {rci:?} doesn't appear in the tag tree"
                                     )
                                 }));
                             }
