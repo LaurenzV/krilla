@@ -132,7 +132,7 @@ use smallvec::SmallVec;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
-use crate::tagging::tag::{LayoutAttr, ListAttr, TableAttr, TagId, TagKind};
+use crate::tagging::tag::{Attr, LayoutAttr, ListAttr, TableAttr, TagId, TagKind};
 use crate::util::lazy::LazyInit;
 
 pub mod tag;
@@ -628,6 +628,7 @@ impl TagGroup {
         struct_elem.parent(parent_ref);
 
         let tag = self.tag.inner();
+        let pdf_version = sc.serialize_settings().pdf_version();
 
         if let Some(id) = tag.id() {
             match id_tree.entry(id.clone()) {
@@ -650,36 +651,41 @@ impl TagGroup {
             *note_id += 1;
         }
 
-        let pdf_version = sc.serialize_settings().pdf_version();
-
-        if pdf_version >= PdfVersion::Pdf14 {
-            if let Some(lang) = tag.lang() {
-                struct_elem.lang(TextStr(lang));
-            }
+        if self.tag.can_have_title() && tag.title().is_none() {
+            sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
-
-        if let Some(alt) = tag.alt_text() {
-            struct_elem.alt(TextStr(alt));
-        } else if self.tag.should_have_alt() {
+        if self.tag.should_have_alt() && tag.alt_text().is_none() {
             sc.register_validation_error(ValidationError::MissingAltText(tag.location));
         }
 
-        if pdf_version >= PdfVersion::Pdf15 {
-            if let Some(expanded) = tag.expanded() {
-                struct_elem.expanded(TextStr(expanded));
-            }
-        }
+        for attr in tag.attrs.iter() {
+            match attr {
+                Attr::Id(_) => (), // Handled above
+                Attr::Title(title) => {
+                    struct_elem.title(TextStr(title));
+                }
+                Attr::Lang(lang) => {
+                    if pdf_version >= PdfVersion::Pdf14 {
+                        struct_elem.lang(TextStr(lang));
+                    }
+                }
+                Attr::AltText(alt) => {
+                    struct_elem.alt(TextStr(alt));
+                }
+                Attr::Expanded(expanded) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        struct_elem.expanded(TextStr(expanded));
+                    }
+                }
+                Attr::ActualText(actual_text) => {
+                    if pdf_version >= PdfVersion::Pdf14 {
+                        struct_elem.actual_text(TextStr(actual_text));
+                    }
+                }
 
-        if pdf_version >= PdfVersion::Pdf14 {
-            if let Some(actual_text) = tag.actual_text() {
-                struct_elem.actual_text(TextStr(actual_text));
+                // Not really an attriute
+                Attr::HeadingLevel(_) => (),
             }
-        }
-
-        if let Some(title) = tag.title() {
-            struct_elem.title(TextStr(title));
-        } else if self.tag.can_have_title() {
-            sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
 
         let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());

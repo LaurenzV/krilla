@@ -456,11 +456,11 @@ attrs! {
     pub(crate) mod attr;
     pub(crate) enum Attr {
         Id(TagId),
+        Title(String),
         Lang(String),
         AltText(String),
         Expanded(String),
         ActualText(String),
-        Title(String),
 
         // Not really an attribute, but it fits here quite well.
         HeadingLevel(NonZeroU32),
