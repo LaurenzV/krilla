@@ -41,8 +41,6 @@ impl Debug for PdfDocumentRepr {
 
 impl Hash for PdfDocumentRepr {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        // The render dimensions are derived from the data, so we only need to hash the
-        // actual data.
         self.0.data().as_ref().as_ref().hash(state);
     }
 }
