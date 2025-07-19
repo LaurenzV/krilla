@@ -141,7 +141,7 @@ pub(crate) fn sample_svg() -> usvg::Tree {
 fn tagging_image_with_alt(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut image_group =
-        TagGroup::new(Tag::Figure.with_alt_text("This is the alternate text.".to_string()));
+        TagGroup::new(Tag::Figure.with_alt_text(Some("This is the alternate text.".to_string())));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -221,10 +221,12 @@ fn tagging_multiple_pages(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut par_1 = TagGroup::new(Tag::P);
     let mut par_2 = TagGroup::new(Tag::P);
-    let mut heading_1 =
-        TagGroup::new(Tag::Hn(NonZeroU32::new(1).unwrap()).with_title("first heading".into()));
-    let mut heading_2 =
-        TagGroup::new(Tag::Hn(NonZeroU32::new(1).unwrap()).with_title("second heading".into()));
+    let mut heading_1 = TagGroup::new(
+        Tag::Hn(NonZeroU32::new(1).unwrap()).with_title(Some("first heading".into())),
+    );
+    let mut heading_2 = TagGroup::new(
+        Tag::Hn(NonZeroU32::new(1).unwrap()).with_title(Some("second heading".into())),
+    );
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -299,7 +301,7 @@ fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
         surface.end_tagged();
 
         let level = NonZeroU32::new(level).unwrap();
-        let mut heading = TagGroup::new(Tag::Hn(level).with_title(name.into()));
+        let mut heading = TagGroup::new(Tag::Hn(level).with_title(Some(name.into())));
         heading.push(hn);
 
         let mut sect = TagGroup::new(Tag::Section);
@@ -391,7 +393,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
             cell_text(&mut surface, x, 0, &format!("heading {}", x + 1));
             surface.end_tagged();
 
-            let tag = Tag::TH(TableHeaderScope::Column).with_id(header_id(x));
+            let tag = Tag::TH(TableHeaderScope::Column).with_id(Some(header_id(x)));
             row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
         }
         TagGroup::with_children(Tag::THead, vec![Node::Group(row)])
@@ -434,7 +436,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
     surface.finish();
     page.finish();
 
-    let mut table = TagGroup::new(Tag::Table.with_summary("table summary".into()));
+    let mut table = TagGroup::new(Tag::Table.with_summary(Some("table summary".into())));
     table.push(header);
     table.push(body);
     table.push(footer);
@@ -458,10 +460,10 @@ fn tagging_tag_attributes(document: &mut Document) {
     page.finish();
 
     let figure = Tag::Figure
-        .with_actual_text("NASA".into())
-        .with_alt_text("The NASA logo".into())
-        .with_expanded("National Aeronautics and Space Administration".into())
-        .with_lang("en".into());
+        .with_actual_text(Some("NASA".into()))
+        .with_alt_text(Some("The NASA logo".into()))
+        .with_expanded(Some("National Aeronautics and Space Administration".into()))
+        .with_lang(Some("en".into()));
 
     tag_tree.push(TagGroup::with_children(figure, vec![Node::Leaf(logo)]));
 
@@ -505,8 +507,8 @@ fn tagging_id_appears_twice() {
     let id = TagId::from(*b"one");
     let loc_1 = 1;
     let loc_2 = 2;
-    let group_1 = TagGroup::new(Tag::P.with_id(id.clone()).with_location(Some(loc_1)));
-    let group_2 = TagGroup::new(Tag::P.with_id(id.clone()).with_location(Some(loc_2)));
+    let group_1 = TagGroup::new(Tag::P.with_id(Some(id.clone())).with_location(Some(loc_1)));
+    let group_2 = TagGroup::new(Tag::P.with_id(Some(id.clone())).with_location(Some(loc_2)));
 
     tag_tree.push(group_1);
     tag_tree.push(group_2);

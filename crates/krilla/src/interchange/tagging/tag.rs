@@ -5,11 +5,11 @@
 //! use krilla::tagging::tag::{TableCellSpan, TableHeaderScope, Tag, TagId};
 //!
 //! let tag = Tag::TH(TableHeaderScope::Row)
-//!     .with_id(TagId::from(*b"this id"))
+//!     .with_id(Some(TagId::from(*b"this id")))
 //!     .with_span(TableCellSpan::col(NonZeroU32::new(3).unwrap()))
 //!     .with_headers([TagId::from(*b"parent id")])
-//!     .with_width(250.0)
-//!     .with_height(100.0);
+//!     .with_width(Some(250.0))
+//!     .with_height(Some(100.0));
 //! let group = TagGroup::new(tag);
 //!
 //! let mut tree = TagTree::new();
@@ -308,12 +308,26 @@ impl<A: Ordinal> BSet<A> {
         }
     }
 
+    pub(crate) fn remove<U: Unwrap<A>>(&mut self) {
+        let idx = self.items.binary_search_by_key(&U::ORDINAL, A::ordinal);
+        if let Ok(idx) = idx {
+            self.items.remove(idx);
+        }
+    }
+
     pub(crate) fn get<U: Unwrap<A>>(&self) -> Option<&U::Item> {
         let idx = self
             .items
             .binary_search_by_key(&U::ORDINAL, A::ordinal)
             .ok()?;
         Some(U::unwrap(&self.items[idx]))
+    }
+
+    pub(crate) fn set_or_remove<U: Unwrap<A>>(&mut self, attr: Option<U::Item>) {
+        match attr {
+            Some(attr) => self.set(U::wrap(attr)),
+            None => self.remove::<U>(),
+        }
     }
 }
 
@@ -332,6 +346,8 @@ pub(crate) trait Unwrap<A> {
     const ORDINAL: usize;
 
     fn unwrap(attr: &A) -> &Self::Item;
+
+    fn wrap(val: Self::Item) -> A;
 }
 
 /// A tag for group nodes.
@@ -377,6 +393,10 @@ macro_rules! gen_unwrap_impl {
                     #[allow(unreachable_patterns)]
                     _ => unreachable!(),
                 }
+            }
+
+            fn wrap(value: Self::Item) -> $name {
+                $name::$variant(value)
             }
         }
 
@@ -517,8 +537,8 @@ impl<T> Tag<T> {
     }
 
     /// Sets the tag id.
-    pub fn with_id(mut self, id: TagId) -> Self {
-        self.attrs.set(Attr::Id(id));
+    pub fn with_id(mut self, id: Option<TagId>) -> Self {
+        self.attrs.set_or_remove::<attr::Id>(id);
         self
     }
 
@@ -528,8 +548,8 @@ impl<T> Tag<T> {
     }
 
     /// The language of this tag.
-    pub fn with_lang(mut self, lang: String) -> Self {
-        self.attrs.set(Attr::Lang(lang));
+    pub fn with_lang(mut self, lang: Option<String>) -> Self {
+        self.attrs.set_or_remove::<attr::Lang>(lang);
         self
     }
     /// The language of this tag.
@@ -539,8 +559,8 @@ impl<T> Tag<T> {
 
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
-    pub fn with_alt_text(mut self, alt_text: String) -> Self {
-        self.attrs.set(Attr::AltText(alt_text));
+    pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
+        self.attrs.set_or_remove::<attr::AltText>(alt_text);
         self
     }
 
@@ -552,8 +572,8 @@ impl<T> Tag<T> {
 
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
-    pub fn with_expanded(mut self, expanded: String) -> Self {
-        self.attrs.set(Attr::Expanded(expanded));
+    pub fn with_expanded(mut self, expanded: Option<String>) -> Self {
+        self.attrs.set_or_remove::<attr::Expanded>(expanded);
         self
     }
 
@@ -566,8 +586,8 @@ impl<T> Tag<T> {
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
-    pub fn with_actual_text(mut self, actual_text: String) -> Self {
-        self.attrs.set(Attr::ActualText(actual_text));
+    pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
+        self.attrs.set_or_remove::<attr::ActualText>(actual_text);
         self
     }
 
@@ -581,8 +601,8 @@ impl<T> Tag<T> {
 
 impl<T: bounds::attr::Title> Tag<T> {
     /// Sets the title.
-    pub fn with_title(mut self, title: String) -> Self {
-        self.attrs.set(Attr::Title(title));
+    pub fn with_title(mut self, title: Option<String>) -> Self {
+        self.attrs.set_or_remove::<attr::Title>(title);
         self
     }
 }
@@ -649,8 +669,9 @@ impl ListNumbering {
 
 impl<T: bounds::table_attr::Summary> Tag<T> {
     /// Sets the summary.
-    pub fn with_summary(mut self, summary: String) -> Self {
-        self.table_attrs.set(TableAttr::Summary(summary));
+    pub fn with_summary(mut self, summary: Option<String>) -> Self {
+        self.table_attrs
+            .set_or_remove::<table_attr::Summary>(summary);
         self
     }
 }
@@ -692,8 +713,12 @@ impl<T: bounds::table_attr::CellHeaders> Tag<T> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
-        let headers = headers.into_iter().collect();
-        self.table_attrs.set(TableAttr::CellHeaders(headers));
+        let headers: SmallVec<_> = headers.into_iter().collect();
+        if headers.is_empty() {
+            self.table_attrs.remove::<table_attr::CellHeaders>();
+        } else {
+            self.table_attrs.set(TableAttr::CellHeaders(headers));
+        }
         self
     }
 }
@@ -716,7 +741,11 @@ impl<T> Tag<T> {
 impl<T: bounds::table_attr::CellSpan> Tag<T> {
     /// Sets the row/column span of this table cell.
     pub fn with_span(mut self, span: TableCellSpan) -> Self {
-        self.table_attrs.set(TableAttr::CellSpan(span));
+        if span == TableCellSpan::ONE {
+            self.table_attrs.remove::<table_attr::CellSpan>();
+        } else {
+            self.table_attrs.set(TableAttr::CellSpan(span));
+        }
         self
     }
 }
@@ -779,8 +808,9 @@ impl TableCellSpan {
 
 impl<T> Tag<T> {
     /// Sets the placment.
-    pub fn with_placement(mut self, placement: Placement) -> Self {
-        self.layout_attrs.set(LayoutAttr::Placement(placement));
+    pub fn with_placement(mut self, placement: Option<Placement>) -> Self {
+        self.layout_attrs
+            .set_or_remove::<layout_attr::Placement>(placement);
         self
     }
 
@@ -790,8 +820,9 @@ impl<T> Tag<T> {
     }
 
     /// Sets the writing mode.
-    pub fn with_writing_mode(mut self, writing_mode: WritingMode) -> Self {
-        self.layout_attrs.set(LayoutAttr::WritingMode(writing_mode));
+    pub fn with_writing_mode(mut self, writing_mode: Option<WritingMode>) -> Self {
+        self.layout_attrs
+            .set_or_remove::<layout_attr::WritingMode>(writing_mode);
         self
     }
 
@@ -885,8 +916,8 @@ impl WritingMode {
 
 impl<T: bounds::layout_attr::BBox> Tag<T> {
     /// Sets the bounding box.
-    pub fn with_bbox(mut self, bbox: Rect) -> Self {
-        self.layout_attrs.set(LayoutAttr::BBox(bbox));
+    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+        self.layout_attrs.set_or_remove::<layout_attr::BBox>(bbox);
         self
     }
 
@@ -898,8 +929,8 @@ impl<T: bounds::layout_attr::BBox> Tag<T> {
 
 impl<T: bounds::layout_attr::Width> Tag<T> {
     /// Sets the width.
-    pub fn with_width(mut self, width: f32) -> Self {
-        self.layout_attrs.set(LayoutAttr::Width(width));
+    pub fn with_width(mut self, width: Option<f32>) -> Self {
+        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
         self
     }
 
@@ -911,8 +942,9 @@ impl<T: bounds::layout_attr::Width> Tag<T> {
 
 impl<T: bounds::layout_attr::Height> Tag<T> {
     /// Sets the height.
-    pub fn with_height(mut self, height: f32) -> Self {
-        self.layout_attrs.set(LayoutAttr::Height(height));
+    pub fn with_height(mut self, height: Option<f32>) -> Self {
+        self.layout_attrs
+            .set_or_remove::<layout_attr::Height>(height);
         self
     }
 
