@@ -864,7 +864,7 @@ impl TagGroup {
             // Explicitly don't use `TagId::from_bytes` to disambiguate note IDs
             // from user provided IDs.
             let mut id = TagId(SmallVec::new());
-            _ = write!(&mut id.0, "Note {}", note_id);
+            _ = write!(&mut id.0, "Note {note_id}");
             struct_elem.id(Str(id.as_bytes()));
             id_tree.insert(id, elem_ref);
 
@@ -1116,7 +1116,7 @@ fn serialize_children(
                     }
 
                     if parent_tree_map.contains_key(&pi.into()) {
-                        panic!("the identifier {:?} appears twice in the tag tree", pi);
+                        panic!("the identifier {pi:?} appears twice in the tag tree");
                     }
 
                     parent_tree_map.insert(pi.into(), parent_ref);
@@ -1152,7 +1152,7 @@ fn serialize_children(
                     };
 
                     if parent_tree_map.contains_key(&ai.into()) {
-                        panic!("identifier {:?} appears twice in the tag tree", ai);
+                        panic!("identifier {ai:?} appears twice in the tag tree");
                     }
                     parent_tree_map.insert(ai.into(), *annotation_ref);
 
