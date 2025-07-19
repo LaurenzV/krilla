@@ -73,7 +73,7 @@ pub(crate) struct PdfDocumentInfo {
 }
 
 impl PdfDocumentInfo {
-    pub fn new(counter: u64) -> Self {
+    pub(crate) fn new(counter: u64) -> Self {
         Self {
             counter,
             ..Self::default()
@@ -83,7 +83,6 @@ impl PdfDocumentInfo {
 
 #[derive(Default, Debug)]
 pub(crate) struct PdfSerializerContext {
-    // TODO: Ensure reproducible output when writing.
     infos: HashMap<PdfDocument, PdfDocumentInfo>,
     counter: u64,
 }
@@ -160,7 +159,7 @@ impl PdfSerializerContext {
                 }
 
                 let extracted =
-                    hayro_write::extract(&pdf, Box::new(|| new_ref.bump()), &info.queries);
+                    hayro_write::extract(pdf, Box::new(|| new_ref.bump()), &info.queries);
                 let result = convert_extraction_result(extracted, &doc, first_location.as_ref())?;
 
                 debug_assert_eq!(info.query_refs.len(), result.root_refs.len());
