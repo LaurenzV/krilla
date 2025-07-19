@@ -71,7 +71,8 @@ macro_rules! tag_kinds {
         }
 
         impl TagKind {
-            /// Type erased inner tag.
+            /// Type erased inner tag. This is useful, because it still allows
+            /// reading attributes and setting all global attributes.
             pub(crate) fn inner(&self) -> &Tag<()> {
                 match self {
                     $(
@@ -84,6 +85,9 @@ macro_rules! tag_kinds {
         }
 
         $(
+            // If required attributes are present generate a constructor function.
+            // This will be the only way to obtain an instance of this tag.
+            // Otherwise generate a constant.
             impl Tag<$variant> {
                 if_present! {
                     if ($($($required_attr)*)?) {
@@ -107,6 +111,8 @@ macro_rules! tag_kinds {
         )+
 
         $(
+            // These unit structs are used as a generic parameter for `Tag` to
+            // constrain which builder methods are available.
             $(#[doc = $doc])+
             #[derive(Clone, Debug, PartialEq)]
             pub struct $variant;
@@ -117,6 +123,9 @@ macro_rules! tag_kinds {
                 }
             }
 
+            // For each optional attribute a trail implementation for the unit
+            // struct above is generated. This trait bound is then required in
+            // the builder methods defined below.
             $($(
                 $(
                     impl bounds::$o_attr_mod::$optional_attr for $variant {}
@@ -308,10 +317,15 @@ impl<A: Ordinal> BSet<A> {
     }
 }
 
+/// Should return the ordinal number of this variant as defined in
+/// [`Unwrap::ORDINAL`].
 pub(crate) trait Ordinal {
     fn ordinal(&self) -> usize;
 }
 
+/// This trait is used to obtain an attribute variant. The ordinal number is
+/// used for binary search and if the variant is present, the unwrap function
+/// can be used to obtain a reference to the inner type.
 pub(crate) trait Unwrap<A> {
     type Item;
 
@@ -400,14 +414,17 @@ macro_rules! attrs {
             }
 
             pub(crate) mod $attr_mod {
+                // Generate a tuple struct for each variant of an attribute enum.
+                // These structs are used as generic parameters to the `BSet::get`
+                // function, to obtain each respective enum variant.
                 $(
                     #[derive(Clone, Debug, PartialEq)]
                     pub struct $variant;
                 )+
 
-                // generate unwrap impls inside another module to avoid
-                // ambiguity between the unit struct above and the Unwrap::Item
-                // type used in the impl
+                // Generate unwrap impls inside another module to avoid ambiguity
+                // between the unit struct above and the Unwrap::Item type used
+                // in the impl.
                 mod unwrap {
                     use super::super::*;
 
@@ -419,6 +436,9 @@ macro_rules! attrs {
             }
         )+
 
+        /// Generate a trait for each attribute enum variant, which can be used
+        /// as a generic bound for the builder methods, to guarantee a type-safe
+        /// API.
         pub(crate) mod bounds {
             $(
                 pub mod $attr_mod {
