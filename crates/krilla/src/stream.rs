@@ -328,7 +328,7 @@ fn hex_encode(data: &[u8]) -> Vec<u8> {
     let capacity = 2 * len + len / COLUMNS;
     let mut output = String::with_capacity(capacity);
     for (index, byte) in data.iter().enumerate() {
-        write!(output, "{:02X}", byte).unwrap();
+        write!(output, "{byte:02X}").unwrap();
         if index % COLUMNS == COLUMNS - 1 {
             output.push('\n');
         }

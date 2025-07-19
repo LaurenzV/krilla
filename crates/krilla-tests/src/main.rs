@@ -390,19 +390,19 @@ pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {
 fn write_snapshot_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("snapshots");
     let _ = std::fs::create_dir_all(&path);
-    path.push(format!("{}.pdf", name));
+    path.push(format!("{name}.pdf"));
     std::fs::write(&path, content).unwrap();
 }
 
 fn write_render_to_store(name: &str, content: &[u8]) {
     let mut path = STORE_PATH.clone().join("refs");
     let _ = std::fs::create_dir_all(&path);
-    path.push(format!("{}.pdf", name));
+    path.push(format!("{name}.pdf"));
     std::fs::write(&path, content).unwrap();
 }
 
 pub fn check_snapshot(name: &str, actual: &[u8], storable: bool) {
-    let path = SNAPSHOT_PATH.join(format!("{}.txt", name));
+    let path = SNAPSHOT_PATH.join(format!("{name}.txt"));
 
     if STORE.is_some() && storable {
         write_snapshot_to_store(name, actual);
@@ -430,13 +430,13 @@ pub fn check_snapshot(name: &str, actual: &[u8], storable: bool) {
         for diff in changeset.diffs {
             match diff {
                 Difference::Same(ref x) => {
-                    eprintln!(" {}", x);
+                    eprintln!(" {x}");
                 }
                 Difference::Add(ref x) => {
-                    eprintln!("+++++++++++++++++++\n{}\n+++++++++++++++++++", x);
+                    eprintln!("+++++++++++++++++++\n{x}\n+++++++++++++++++++");
                 }
                 Difference::Rem(ref x) => {
-                    eprintln!("-------------------\n{}\n-------------------", x);
+                    eprintln!("-------------------\n{x}\n-------------------");
                 }
             }
         }
@@ -495,7 +495,7 @@ pub fn check_render(
             .parse::<u32>()
             .unwrap();
         if pixel_diff > threshold {
-            let diff_path = DIFFS_PATH.join(format!("{}.png", name));
+            let diff_path = DIFFS_PATH.join(format!("{name}.png"));
             diff_image
                 .save_with_format(&diff_path, ::image::ImageFormat::Png)
                 .unwrap();
@@ -521,7 +521,7 @@ pub fn check_render(
         }
 
         if pixel_diff != 0 {
-            eprintln!("Warning: pixel diff was {} instead of 0", pixel_diff);
+            eprintln!("Warning: pixel diff was {pixel_diff} instead of 0");
         }
     };
 
@@ -827,7 +827,7 @@ pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
 pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     let settings = default();
     let mut d = Document::new_with(settings);
-    let svg_path = ASSETS_PATH.join(format!("svgs/{}.svg", name));
+    let svg_path = ASSETS_PATH.join(format!("svgs/{name}.svg"));
     let data = std::fs::read(&svg_path).unwrap();
     let tree = usvg::Tree::from_data(
         &data,

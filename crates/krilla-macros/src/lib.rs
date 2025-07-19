@@ -42,7 +42,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
         } else if st == "ignore" {
             ignore = true;
         } else {
-            panic!("unknown setting {}", st);
+            panic!("unknown setting {st}");
         }
     }
 
@@ -50,10 +50,10 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut fn_name = input_fn.sig.ident.clone();
     let snapshot_name = fn_name.to_string();
 
-    let impl_ident = Ident::new(&format!("{}_snapshot_impl", fn_name), fn_name.span());
+    let impl_ident = Ident::new(&format!("{fn_name}_snapshot_impl"), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
-    fn_name = Ident::new(&format!("{}_snapshot", fn_name), fn_name.span());
+    fn_name = Ident::new(&format!("{fn_name}_snapshot"), fn_name.span());
 
     let common = quote! {
         use krilla::SerializeSettings;
@@ -189,7 +189,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = input_fn.sig.ident.clone();
 
-    let impl_ident = Ident::new(&format!("{}_visreg_impl", fn_name), fn_name.span());
+    let impl_ident = Ident::new(&format!("{fn_name}_visreg_impl"), fn_name.span());
     input_fn.sig.ident = impl_ident.clone();
 
     let fn_body = if is_svg {
