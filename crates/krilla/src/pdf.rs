@@ -31,7 +31,7 @@ pub enum PdfError {
     VersionMismatch(PdfVersion),
 }
 
-struct PdfDocumentRepr(Pdf);
+struct PdfDocumentRepr(Arc<Pdf>);
 
 impl Debug for PdfDocumentRepr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -51,7 +51,7 @@ pub struct PdfDocument(Arc<Prehashed<PdfDocumentRepr>>);
 
 impl PdfDocument {
     /// Load a new PDF document.
-    pub fn new(pdf: Pdf) -> PdfDocument {
+    pub fn new(pdf: Arc<Pdf>) -> PdfDocument {
         Self(Arc::new(Prehashed::new(PdfDocumentRepr(pdf))))
     }
 
