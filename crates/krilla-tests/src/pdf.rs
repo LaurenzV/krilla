@@ -198,7 +198,7 @@ fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
 
 #[visreg(document)]
 fn pdf_embedded_as_xobject_multiple(document: &mut Document) {
-    let pdf1 = load_pdf("standard_fonts.pdf");
+    let pdf1 = load_pdf("typst_doc.pdf");
     let pdf2 = load_pdf("pdftc_100k_1894.pdf");
     let pdf3 = load_pdf("page_media_box_bottom_right.pdf");
 
@@ -254,6 +254,6 @@ fn pdf_embedded_multiple(document: &mut Document) {
 
 #[visreg(document)]
 fn pdf_embedded_multi_page_document(document: &mut Document) {
-    let pdf = load_pdf("standard_fonts.pdf");
+    let pdf = load_pdf("typst_doc.pdf");
     document.embed_pdf_pages(&pdf, &[0, 2, 3, 5, 7]);
 }
