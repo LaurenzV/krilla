@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
-use hayro_write::{ExtractionError, ExtractionQuery, LoadPdfError};
+use hayro_write::{ExtractionError, ExtractionQuery};
 use pdf_writer::Ref;
 
 pub use hayro_write::{Page, Pdf};
@@ -21,10 +21,6 @@ use crate::util::{Deferred, Prehashed};
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum PdfError {
-    /// The PDF document is encrypted. Encrypted PDF documents are _currently_ not supported.
-    Encrypted,
-    /// The PDF failed to load, either because it's broken or due to a bug.
-    LoadFailed,
     /// A page was requested that doesn't exist.
     InvalidPage(usize),
     /// The PDF version of the embedded PDF is not compatible with the version of the PDF
@@ -60,8 +56,12 @@ impl PdfDocument {
     pub fn new(pdf: Pdf) -> PdfDocument {
         Self(Arc::new(Prehashed::new(PdfDocumentRepr(pdf))))
     }
-    
-    pub(crate) fn pages(&self) -> &[hayro_write::Page] {
+
+    pub(crate) fn pdf(&self) -> &Pdf {
+        &self.0.deref().0
+    }
+
+    pub(crate) fn pages(&self) -> &[Page] {
         self.0.deref().0.pages()
     }
 }
@@ -148,18 +148,8 @@ impl PdfSerializerContext {
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
 
-                let data = doc.0.deref().0.data().clone();
                 let first_location = info.locations.iter().flatten().next().cloned();
-                let pdf = hayro_write::Pdf::new(data).map_err(|e| {
-                    KrillaError::Pdf(
-                        doc.clone(),
-                        match e {
-                            LoadPdfError::Encryption => PdfError::Encrypted,
-                            LoadPdfError::Invalid => PdfError::LoadFailed,
-                        },
-                        first_location,
-                    )
-                })?;
+                let pdf = doc.pdf();
 
                 let pdf_version = convert_pdf_version(pdf.version());
 
