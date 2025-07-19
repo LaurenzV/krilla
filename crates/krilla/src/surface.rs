@@ -6,7 +6,7 @@
 
 use crate::color::rgb;
 use crate::content::ContentBuilder;
-#[cfg(feature = "raster-images")]
+#[cfg(any(feature = "raster-images", feature = "pdf"))]
 use crate::geom::Size;
 use crate::geom::{Path, Rect};
 use crate::geom::{Point, Transform};
@@ -21,6 +21,7 @@ use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::paint::{InnerPaint, Paint};
+#[cfg(feature = "pdf")]
 use crate::pdf::PdfDocument;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
@@ -413,6 +414,7 @@ impl<'a> Surface<'a> {
             .push(ContentBuilder::new(Transform::identity(), true));
     }
 
+    #[cfg(feature = "pdf")]
     /// Embed a single PDF page with the given dimensions.
     pub fn draw_pdf_page(&mut self, pdf: &PdfDocument, size: Size, page_idx: usize) {
         let obj_ref = self.sc.embed_pdf_page_as_xobject(pdf, page_idx);

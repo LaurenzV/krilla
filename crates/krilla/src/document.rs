@@ -20,6 +20,7 @@ use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
 use crate::page::{Page, PageSettings};
+#[cfg(feature = "pdf")]
 use crate::pdf::PdfDocument;
 use crate::serialize::{SerializeContext, SerializeSettings};
 use crate::surface::Location;
@@ -88,6 +89,7 @@ impl Document {
 
     /// Embed the pages (starting with page index 0 for the first page) from the given
     /// PDF document.
+    #[cfg(feature = "pdf")]
     pub fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
         self.serializer_context.embed_pdf_pages(pdf, page_indices);
     }

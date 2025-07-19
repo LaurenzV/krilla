@@ -23,9 +23,8 @@ use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
-use crate::pdf::PdfDocument;
 #[cfg(feature = "pdf")]
-use crate::pdf::PdfSerializerContext;
+use crate::pdf::{PdfSerializerContext, PdfDocument};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
@@ -149,6 +148,7 @@ pub(crate) enum PageInfo {
         annotations: Vec<(Ref, OnceCell<Ref>)>,
     },
     /// A page embedded from an external PDF file.
+    #[allow(dead_code)]
     Pdf { ref_: Ref },
 }
 
@@ -374,6 +374,7 @@ impl SerializeContext {
         self.serialize_fonts()?;
         self.serialize_pages()?;
         self.serialize_page_tree();
+        #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs()?;
         self.serialize_xyz_destinations()?;
         // It is important that we serialize the tags AFTER we have serialized the pages,
@@ -622,6 +623,7 @@ impl SerializeContext {
         Ok(())
     }
 
+    #[cfg(feature = "pdf")]
     fn serialize_embedded_pdfs(&mut self) -> KrillaResult<()> {
         let pdf_ctx = self.global_objects.pdf_ctx.take();
 

@@ -6,6 +6,7 @@
 use crate::configure::ValidationError;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
+#[cfg(feature = "pdf")]
 use crate::pdf::{PdfDocument, PdfError};
 use crate::surface::Location;
 use crate::tagging::TagId;

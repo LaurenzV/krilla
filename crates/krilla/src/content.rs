@@ -767,6 +767,7 @@ impl ContentBuilder {
         );
     }
 
+    #[allow(dead_code)]
     pub(crate) fn draw_xobject_by_reference(
         &mut self,
         sc: &mut SerializeContext,
