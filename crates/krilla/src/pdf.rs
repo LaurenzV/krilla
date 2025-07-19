@@ -144,7 +144,7 @@ impl PdfSerializerContext {
 
         for (doc, info) in entries {
             for location in info.locations.iter() {
-                sc.register_validation_error(ValidationError::EmbeddedPDF(location.clone()))
+                sc.register_validation_error(ValidationError::EmbeddedPDF(*location))
             }
 
             let container = &mut sc.chunk_container;
@@ -155,7 +155,7 @@ impl PdfSerializerContext {
                 let mut new_ref = Ref::new(1);
 
                 let data: PdfData = doc.0.data.0.clone();
-                let first_location = info.locations.iter().flat_map(|l| l).next().cloned();
+                let first_location = info.locations.iter().flatten().next().cloned();
                 let pdf = hayro_write::Pdf::new(data).map_err(|e| {
                     KrillaError::Pdf(
                         doc.clone(),

@@ -468,7 +468,7 @@ pub fn check_render(
     let mut messages = vec![];
 
     let mut check_single = |name: String, page: &RenderedPage, index: usize| {
-        let ref_path = refs_path.join(format!("{}.png", name));
+        let ref_path = refs_path.join(format!("{name}.png"));
 
         if !ref_path.exists() {
             std::fs::write(&ref_path, page).unwrap();
@@ -513,8 +513,7 @@ pub fn check_render(
             }
 
             messages.push(format!(
-                "pixel diff was {}, while threshold is {}",
-                pixel_diff, threshold
+                "pixel diff was {pixel_diff}, while threshold is {threshold}"
             ));
 
             return;
@@ -532,11 +531,11 @@ pub fn check_render(
     if document.is_empty() {
         panic!("empty document");
     } else if document.len() == 1 {
-        check_single(format!("{}{}", name, renderer_suffix), &document[0], 0);
+        check_single(format!("{name}{renderer_suffix}"), &document[0], 0);
     } else {
         for (index, page) in document.iter().enumerate() {
             check_single(
-                format!("{}{}_{}", name, renderer_suffix, index),
+                format!("{name}{renderer_suffix}_{index}"),
                 page,
                 index,
             );
