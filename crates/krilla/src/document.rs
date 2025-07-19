@@ -87,7 +87,7 @@ impl Document {
         self.serializer_context.set_tag_tree(tag_tree);
     }
 
-    /// Embed the pages (starting with page index 0 for the first page) from the given
+    /// Embed the pages (0-indexed) from the given
     /// PDF document.
     #[cfg(feature = "pdf")]
     pub fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {

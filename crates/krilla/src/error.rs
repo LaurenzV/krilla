@@ -36,7 +36,7 @@ pub enum KrillaError {
     /// An image couldn't be processed properly.
     #[cfg(feature = "raster-images")]
     Image(Image, Option<Location>),
-    /// A embedded PDF document couldn't be processed properly.
+    /// An embedded PDF document couldn't be processed properly.
     #[cfg(feature = "pdf")]
     Pdf(PdfDocument, PdfError, Option<Location>),
     /// A sixteen bit image was used, even though it isn't

@@ -24,7 +24,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stop, Stroke};
-use krilla::pdf::PdfDocument;
+use krilla::pdf::{Pdf, PdfDocument};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
@@ -372,8 +372,7 @@ pub fn load_custom_image(name: &str) -> Image {
 }
 
 pub fn load_pdf(name: &str) -> PdfDocument {
-    PdfDocument::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap()).into())
-        .unwrap()
+    PdfDocument::new(Pdf::new(Arc::new(std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap())).unwrap())
 }
 
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {

@@ -1,11 +1,15 @@
 //! Including other PDF files.
 
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
-use hayro_write::{ExtractionError, ExtractionQuery, LoadPdfError, PdfData};
+use hayro_write::{ExtractionError, ExtractionQuery, LoadPdfError};
 use pdf_writer::Ref;
+
+pub use hayro_write::{Page, Pdf};
 
 use crate::chunk_container::EmbeddedPdfChunk;
 use crate::configure::{PdfVersion, ValidationError};
@@ -13,7 +17,6 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
 use crate::util::{Deferred, Prehashed};
-use crate::Data;
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -32,17 +35,19 @@ pub enum PdfError {
     VersionMismatch(PdfVersion),
 }
 
-#[derive(Debug)]
-struct PdfDocumentRepr {
-    data: Data,
-    render_dimensions: Vec<(f32, f32)>,
+struct PdfDocumentRepr(Pdf);
+
+impl Debug for PdfDocumentRepr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PdfDocumentRepr {{ .. }}")
+    }
 }
 
 impl Hash for PdfDocumentRepr {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // The render dimensions are derived from the data, so we only need to hash the
         // actual data.
-        self.data.0.as_ref().as_ref().hash(state);
+        self.0.data().as_ref().as_ref().hash(state);
     }
 }
 
@@ -51,24 +56,13 @@ impl Hash for PdfDocumentRepr {
 pub struct PdfDocument(Arc<Prehashed<PdfDocumentRepr>>);
 
 impl PdfDocument {
-    /// Load a new PDF document from the given data.
-    pub fn new(data: Data) -> Result<PdfDocument, PdfError> {
-        let pdf = hayro_write::Pdf::new(data.clone().0).map_err(|e| match e {
-            LoadPdfError::Encryption => PdfError::Encrypted,
-            LoadPdfError::Invalid => PdfError::LoadFailed,
-        })?;
-        let pages = pdf.pages();
-
-        let render_dimensions = pages.iter().map(|p| p.render_dimensions()).collect();
-
-        Ok(Self(Arc::new(Prehashed::new(PdfDocumentRepr {
-            data,
-            render_dimensions,
-        }))))
+    /// Load a new PDF document.
+    pub fn new(pdf: Pdf) -> PdfDocument {
+        Self(Arc::new(Prehashed::new(PdfDocumentRepr(pdf))))
     }
-
-    pub(crate) fn dimensions(&self) -> &[(f32, f32)] {
-        &self.0.render_dimensions
+    
+    pub(crate) fn pages(&self) -> &[hayro_write::Page] {
+        self.0.deref().0.pages()
     }
 }
 
@@ -154,7 +148,7 @@ impl PdfSerializerContext {
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
 
-                let data: PdfData = doc.0.data.0.clone();
+                let data = doc.0.deref().0.data().clone();
                 let first_location = info.locations.iter().flatten().next().cloned();
                 let pdf = hayro_write::Pdf::new(data).map_err(|e| {
                     KrillaError::Pdf(

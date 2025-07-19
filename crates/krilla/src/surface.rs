@@ -421,9 +421,9 @@ impl<'a> Surface<'a> {
         // If the user provided an invalid page index, we will detect this later on anyway, so
         // just use dummy dimensions here.
         let (page_width, page_height) = pdf
-            .dimensions()
+            .pages()
             .get(page_idx)
-            .copied()
+            .map(|p| p.render_dimensions())
             .unwrap_or((1.0, 1.0));
         let transform =
             Transform::from_scale(size.width() / page_width, size.height() / page_height);

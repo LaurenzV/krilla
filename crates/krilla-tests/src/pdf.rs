@@ -180,7 +180,6 @@ fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
     let mut page = document.start_page_with(PageSettings::new(600.0, 600.0));
     let mut surface = page.surface();
 
-    // let sizes = [(50.0, 50.0)];
     let sizes = [(50.0, 50.0), (150.0, 150.0), (300.0, 150.0), (200.0, 400.0)];
     let positions = [(10.0, 10.0), (100.0, 10.0), (30.0, 200.0), (350.0, 200.0)];
 
