@@ -25,26 +25,26 @@ use crate::geom::Rect;
 use crate::surface::Location;
 
 macro_rules! if_present {
-    (if ($present:tt) { $then:item } else { $other:item }) => {
-        $then
+    (if ($($present:tt)+) { $($then:tt)* } else { $($other:tt)* }) => {
+        $($then)*
     };
-    (if () { $then:item } else { $other:item }) => {
-        $other
+    (if () { $($then:item)* } else { $($other:item)* }) => {
+        $($other)*
     };
 }
 
 macro_rules! set_attr {
-    (attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
-        $attrs.set(Attr::$variant($name));
+    ($tag:ident, attr::$variant:ident($name:ident)) => {
+        $tag.attrs.set(Attr::$variant($name));
     };
-    (list_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
-        $list_attrs.set(ListAttr::$variant($name));
+    ($tag:ident, list_attr::$variant:ident($name:ident)) => {
+        $tag.list_attrs.set(ListAttr::$variant($name));
     };
-    (table_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
-        $table_attrs.set(TableAttr::$variant($name));
+    ($tag:ident, table_attr::$variant:ident($name:ident)) => {
+        $tag.table_attrs.set(TableAttr::$variant($name));
     };
-    (layout_attr, ($attrs:ident, $list_attrs:ident, $table_attrs:ident, $layout_attrs:ident), $variant:ident($name:ident)) => {
-        $layout_attrs.set(LayoutAttr::$variant($name));
+    ($tag:ident, layout_attr::$variant:ident($name:ident)) => {
+        $tag.layout_attrs.set(LayoutAttr::$variant($name));
     };
 }
 
@@ -86,31 +86,16 @@ macro_rules! tag_kinds {
         $(
             impl Tag<$variant> {
                 if_present! {
-                    if ($($($name)*)?) {
+                    if ($($($required_attr)*)?) {
                         $(#[doc = $doc])+
                         #[allow(non_snake_case)]
                         pub fn $variant($($($name: $attr_ty),*)?) -> Self {
                             #[allow(unused_mut)]
-                            let mut attrs =  BSet::new();
-                            #[allow(unused_mut)]
-                            let mut list_attrs = BSet::new();
-                            #[allow(unused_mut)]
-                            let mut table_attrs = BSet::new();
-                            #[allow(unused_mut)]
-                            let mut layout_attrs = BSet::new();
-
+                            let mut tag = Tag::new();
                             $($(
-                                set_attr!($attr_mod, (attrs, list_attrs, table_attrs, layout_attrs), $required_attr($name));
+                                set_attr!(tag, $attr_mod::$required_attr($name));
                             )*)?
-
-                            Tag {
-                                attrs,
-                                list_attrs,
-                                table_attrs,
-                                layout_attrs,
-                                location: None,
-                                ty: PhantomData,
-                            }
+                            tag
                         }
                     } else {
                         $(#[doc = $doc])+
@@ -134,7 +119,7 @@ macro_rules! tag_kinds {
 
             $($(
                 $(
-                    impl impls::$o_attr_mod::$optional_attr for $variant {}
+                    impl bounds::$o_attr_mod::$optional_attr for $variant {}
                 )+
             )?)?
         )+
@@ -434,7 +419,7 @@ macro_rules! attrs {
             }
         )+
 
-        pub(crate) mod impls {
+        pub(crate) mod bounds {
             $(
                 pub mod $attr_mod {
                     $(
@@ -574,7 +559,7 @@ impl<T> Tag<T> {
     }
 }
 
-impl<T: impls::attr::Title> Tag<T> {
+impl<T: bounds::attr::Title> Tag<T> {
     /// Sets the title.
     pub fn with_title(mut self, title: String) -> Self {
         self.attrs.set(Attr::Title(title));
@@ -642,7 +627,7 @@ impl ListNumbering {
     }
 }
 
-impl<T: impls::table_attr::Summary> Tag<T> {
+impl<T: bounds::table_attr::Summary> Tag<T> {
     /// Sets the summary.
     pub fn with_summary(mut self, summary: String) -> Self {
         self.table_attrs.set(TableAttr::Summary(summary));
@@ -678,7 +663,7 @@ impl TableHeaderScope {
     }
 }
 
-impl<T: impls::table_attr::CellHeaders> Tag<T> {
+impl<T: bounds::table_attr::CellHeaders> Tag<T> {
     /// A list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
@@ -708,7 +693,7 @@ impl<T> Tag<T> {
     }
 }
 
-impl<T: impls::table_attr::CellSpan> Tag<T> {
+impl<T: bounds::table_attr::CellSpan> Tag<T> {
     /// Sets the row/column span of this table cell.
     pub fn with_span(mut self, span: TableCellSpan) -> Self {
         self.table_attrs.set(TableAttr::CellSpan(span));
@@ -878,7 +863,7 @@ impl WritingMode {
     }
 }
 
-impl<T: impls::layout_attr::BBox> Tag<T> {
+impl<T: bounds::layout_attr::BBox> Tag<T> {
     /// Sets the bounding box.
     pub fn with_bbox(mut self, bbox: Rect) -> Self {
         self.layout_attrs.set(LayoutAttr::BBox(bbox));
@@ -891,7 +876,7 @@ impl<T: impls::layout_attr::BBox> Tag<T> {
     }
 }
 
-impl<T: impls::layout_attr::Width> Tag<T> {
+impl<T: bounds::layout_attr::Width> Tag<T> {
     /// Sets the width.
     pub fn with_width(mut self, width: f32) -> Self {
         self.layout_attrs.set(LayoutAttr::Width(width));
@@ -904,7 +889,7 @@ impl<T: impls::layout_attr::Width> Tag<T> {
     }
 }
 
-impl<T: impls::layout_attr::Height> Tag<T> {
+impl<T: bounds::layout_attr::Height> Tag<T> {
     /// Sets the height.
     pub fn with_height(mut self, height: f32) -> Self {
         self.layout_attrs.set(LayoutAttr::Height(height));
