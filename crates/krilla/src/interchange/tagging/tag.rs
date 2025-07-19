@@ -72,13 +72,25 @@ macro_rules! tag_kinds {
 
         impl TagKind {
             /// Type erased inner tag. This is useful, because it still allows
-            /// reading attributes and setting all global attributes.
-            pub(crate) fn inner(&self) -> &Tag<()> {
+            /// reading attributes.
+            pub fn inner(&self) -> &Tag<()> {
                 match self {
                     $(
                         // SAFETY: The tag is only used in PhantomData thus
                         // doesn't have any effect on layout.
                         Self::$variant(tag) => unsafe { std::mem::transmute::<&Tag<$variant>, &Tag<()>>(tag) },
+                    )+
+                }
+            }
+
+            /// Type erased inner tag. This is useful, because it still allows
+            /// reading attributes and setting all global attributes.
+            pub fn inner_mut(&mut self) -> &mut Tag<()> {
+                match self {
+                    $(
+                        // SAFETY: The tag is only used in PhantomData thus
+                        // doesn't have any effect on layout.
+                        Self::$variant(tag) => unsafe { std::mem::transmute::<&mut Tag<$variant>, &mut Tag<()>>(tag) },
                     )+
                 }
             }
