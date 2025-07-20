@@ -627,7 +627,7 @@ impl TagGroup {
         self.tag.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent_ref);
 
-        let tag = self.tag.inner();
+        let tag = self.tag.as_any();
         let pdf_version = sc.serialize_settings().pdf_version();
 
         if let Some(id) = tag.id() {
@@ -722,13 +722,11 @@ impl TagGroup {
                         table_attributes.get().headers().items(id_strs);
                     }
                 }
-                TableAttr::CellSpan(span) => {
-                    if let Some(n) = span.row_span() {
-                        table_attributes.get().row_span(n.get() as i32);
-                    }
-                    if let Some(n) = span.col_span() {
-                        table_attributes.get().col_span(n.get() as i32);
-                    }
+                TableAttr::RowSpan(n) => {
+                    table_attributes.get().row_span(n.get() as i32);
+                }
+                TableAttr::ColSpan(n) => {
+                    table_attributes.get().col_span(n.get() as i32);
                 }
             }
         }
@@ -774,7 +772,7 @@ impl TagGroup {
     }
 
     fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
-        let tag = self.tag.inner();
+        let tag = self.tag.as_any();
         if let Some(headers) = tag.headers() {
             for id in headers.iter() {
                 if !id_tree.contains_key(id) {

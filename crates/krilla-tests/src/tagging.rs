@@ -7,7 +7,7 @@ use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::tagging::tag::{ListNumbering, TableCellSpan, TableHeaderScope, Tag, TagId};
+use krilla::tagging::tag::{ListNumbering, TableHeaderScope, Tag, TagId};
 use krilla::tagging::{ArtifactType, ContentTag, Node, SpanTag, TagGroup, TagTree};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
@@ -420,10 +420,8 @@ fn tagging_table_header_and_footer(document: &mut Document) {
         surface.end_tagged();
 
         let cell = Tag::TD
-            .with_span(TableCellSpan {
-                rows: NonZeroU32::new(2).unwrap(),
-                cols: NonZeroU32::new(3).unwrap(),
-            })
+            .with_row_span(Some(NonZeroU32::new(2).unwrap()))
+            .with_col_span(Some(NonZeroU32::new(3).unwrap()))
             .with_headers((0..3).map(header_id));
         let cell = TagGroup::with_children(cell, vec![Node::Leaf(text)]);
 

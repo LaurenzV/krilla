@@ -1,0 +1,205 @@
+# A tag for group nodes.
+[Tag]
+# A part of a document that may contain multiple articles or sections.
+[Tag.Part]
+# An article with largely self-contained content.
+[Tag.Article]
+# Section of a larger document.
+[Tag.Section]
+# A paragraph-level quote.
+[Tag.BlockQuote]
+# An image or figure caption.
+#
+# **Best Practice**: In the tag tree, this should appear
+# as a sibling after the image (or other) content it describes.
+[Tag.Caption]
+# Table of contents.
+#
+# **Best Practice**: Should consist of TOCIs or other nested TOCs.
+[Tag.TOC]
+# Item in the table of contents.
+#
+# **Best Practice**: Should only appear within a TOC. Should only consist of
+# labels, references, paragraphs and TOCs.
+[Tag.TOCI]
+# Index of the key terms in the document.
+#
+# **Best Practice**: Should contain a sequence of text accompanied by
+# reference elements pointing to their occurrence in the text.
+[Tag.Index]
+# A paragraph.
+[Tag.P]
+# Heading level `n`, including an optional title of the heading.
+#
+# The title is required for some export modes, like for example PDF/UA.
+[Tag.Hn]
+required = ["Attr::HeadingLevel"]
+optional = ["Attr::Title"]
+# A list.
+#
+# **Best practice**: Should consist of an optional caption followed by
+# list items.
+# List numbering is only required for PDF/UA, but we just enforce it for always.
+[Tag.L]
+required = ["ListAttr::Numbering"]
+# A list item.
+#
+# **Best practice**: Should consist of one or more list labels and/or list bodies.
+[Tag.LI]
+# Label for a list item.
+[Tag.Lbl]
+# Description of the list item.
+[Tag.LBody]
+# A table, with an optional summary describing the purpose and structure.
+#
+# **Best practice**: Should consist of an optional table header row,
+# one or more table body elements and an optional table footer. Can have
+# caption as the first or last child.
+[Tag.Table]
+optional = [
+  "TableAttr::Summary",
+  "LayoutAttr::BBox",
+  "LayoutAttr::Width",
+  "LayoutAttr::Height",
+]
+# A table row.
+#
+# **Best practice**: May contain table headers cells and table data cells.
+[Tag.TR]
+# A table header cell.
+[Tag.TH]
+required = ["TableAttr::HeaderScope"]
+optional = [
+  "TableAttr::CellHeaders",
+  "TableAttr::RowSpan",
+  "TableAttr::ColSpan",
+  "LayoutAttr::Width",
+  "LayoutAttr::Height",
+]
+# A table data cell.
+[Tag.TD]
+optional = [
+  "TableAttr::CellHeaders",
+  "TableAttr::RowSpan",
+  "TableAttr::ColSpan",
+  "LayoutAttr::Width",
+  "LayoutAttr::Height",
+]
+# A table header row group.
+[Tag.THead]
+# A table data row group.
+[Tag.TBody]
+# A table footer row group.
+[Tag.TFoot]
+# An inline quotation.
+[Tag.InlineQuote]
+# A foot- or endnote, potentially referred to from within the text.
+#
+# **Best practice**: It may have a label as a child.
+[Tag.Note]
+# A reference to elsewhere in the document.
+#
+# **Best practice**: The first child of a tag group with this tag should be a link annotation
+# linking to a destination in the document, and the second child should consist of
+# the children that should be associated with that reference.
+[Tag.Reference]
+# A reference to the external source of some cited document.
+#
+# **Best practice**: It may have a label as a child.
+[Tag.BibEntry]
+# Computer code.
+[Tag.Code]
+# A link.
+#
+# **Best practice**: The first child of a tag group with this tag should be a link annotation
+# linking to an URL, and the second child should consist of the children that should
+# be associated with that link.
+[Tag.Link]
+# An association between an annotation and the content it belongs to. PDF
+#
+# **Best practice**: Should be used for all annotations, except for link annotations and
+# widget annotations. The first child should be the identifier of a non-link annotation,
+# and all other subsequent children should be content identifiers associated with that
+# annotation.
+[Tag.Annot]
+# Item of graphical content.
+#
+# Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
+[Tag.Figure]
+optional = [
+  "LayoutAttr::BBox",
+  "LayoutAttr::Width",
+  "LayoutAttr::Height",
+]
+# A mathematical formula.
+#
+# Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
+[Tag.Formula]
+optional = [
+  "LayoutAttr::BBox",
+  "LayoutAttr::Width",
+  "LayoutAttr::Height",
+]
+# A date or time.
+[Tag.Datetime]
+# A list of terms.
+[Tag.Terms]
+# A title.
+[Tag.Title]
+
+[Attr]
+# The tag id.
+Id = { type = "TagId", global = true }
+# The language of this tag.
+Lang = { type = "String", global = true, accessor = "AsRef<str>" }
+# An optional alternate text that describes the text (for example, if the text consists
+# of a star symbol, the alt text should describe that in natural language).
+AltText = { type = "String", global = true, accessor = "AsRef<str>" }
+# If the content of the tag is an abbreviation, the expanded form of the
+# abbreviation should be provided here.
+Expanded = { type = "String", global = true, accessor = "AsRef<str>" }
+# The actual text represented by the content of this tag, i.e. if it contained
+# some curves that artistically represent some word. This should be the exact
+# replacement text of the word.
+ActualText = { type = "String", global = true, accessor = "AsRef<str>" }
+# The actual text represented by the content of this tag, i.e. if it contained
+# some curves that artistically represent some word. This should be the exact
+# replacement text of the word.
+Title = { type = "String", accessor = "AsRef<str>" }
+
+# The heading level
+HeadingLevel = { name = "level", type = "NonZeroU32", accessor = "Copy" }
+
+[ListAttr]
+# The list numbering.
+Numbering = { type = "ListNumbering", accessor = "Copy" }
+
+[TableAttr]
+# The table summary.
+Summary = { type = "String", accessor = "AsRef<str>" }
+# The table header scope.
+HeaderScope = { name = "scope", type = "TableHeaderScope", accessor = "Copy" }
+# A list of headers associated with a table cell.
+# Table data cells (`TD`) may specify a list of table headers (`TH`),
+# which can also specify a list of parent header cells (`TH`), and so on.
+# To determine the list of associated headers this list is recursively
+# evaluated.
+#
+# This allows specifying header hierarchies inside tables.
+CellHeaders = { name = "headers", type = "SmallVec<[TagId; 1]>", accessor = "Custom" }
+# The row span of this table cell.
+RowSpan = { type = "NonZeroU32", accessor = "Copy" }
+# The column span of this table cell.
+ColSpan = { type = "NonZeroU32", accessor = "Copy" }
+
+[LayoutAttr]
+# The placement.
+Placement = { type = "Placement", global = true, accessor = "Copy" }
+# The writing mode.
+WritingMode = { type = "WritingMode", global = true, accessor = "Copy" }
+# The bounding box.
+BBox = { type = "Rect", accessor = "Copy" }
+# The width.
+Width = { type = "f32", accessor = "Copy" }
+# The height.
+Height = { type = "f32", accessor = "Copy" }
