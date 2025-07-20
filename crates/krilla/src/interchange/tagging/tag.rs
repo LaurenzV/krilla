@@ -33,18 +33,18 @@ macro_rules! if_present {
     };
 }
 
-macro_rules! set_attr {
-    ($tag:ident, attr::$variant:ident($name:ident)) => {
-        $tag.attrs.set(Attr::$variant($name));
+macro_rules! select_attrs {
+    ($tag:ident, attr $($t:tt)*) => {
+        $tag.attrs $($t)*
     };
-    ($tag:ident, list_attr::$variant:ident($name:ident)) => {
-        $tag.list_attrs.set(ListAttr::$variant($name));
+    ($tag:ident, list_attr $($t:tt)*) => {
+        $tag.list_attrs  $($t)*
     };
-    ($tag:ident, table_attr::$variant:ident($name:ident)) => {
-        $tag.table_attrs.set(TableAttr::$variant($name));
+    ($tag:ident, table_attr $($t:tt)*) => {
+        $tag.table_attrs $($t)*
     };
-    ($tag:ident, layout_attr::$variant:ident($name:ident)) => {
-        $tag.layout_attrs.set(LayoutAttr::$variant($name));
+    ($tag:ident, layout_attr $($t:tt)*) => {
+        $tag.layout_attrs $($t)*
     };
 }
 
@@ -109,7 +109,7 @@ macro_rules! tag_kinds {
                             #[allow(unused_mut)]
                             let mut tag = Tag::new();
                             $($(
-                                set_attr!(tag, $attr_mod::$required_attr($name));
+                                select_attrs!(tag, $attr_mod .set($attr_mod::$required_attr::wrap($name)));
                             )*)?
                             tag
                         }
@@ -547,83 +547,64 @@ impl<T> Tag<T> {
         self.location = location;
         self
     }
+}
 
-    /// Sets the tag id.
-    pub fn with_id(mut self, id: Option<TagId>) -> Self {
-        self.attrs.set_or_remove::<attr::Id>(id);
-        self
-    }
+macro_rules! tag_accessors {
+    (
+    $(
+        $(#[doc = $doc:expr])+
+        $(<T: $bounds:ident>)?
+        $name:ident$($map:expr)?; $set_name:ident; $with_name:ident; $attr_mod:ident::$variant:ident($ty:ty)
+    )+
+    ) => {
+        $(
+            impl<T: $($bounds::$attr_mod::$variant)?> Tag<T> {
+                $(#[doc = $doc])+
+                pub fn $with_name(mut self, value: Option<$ty>) -> Self {
+                    select_attrs!(self, $attr_mod .set_or_remove::<$attr_mod::$variant>(value));
+                    self
+                }
 
+                $(#[doc = $doc])+
+                pub fn $set_name(&mut self, value: Option<$ty>) {
+                    select_attrs!(self, $attr_mod .set_or_remove::<$attr_mod::$variant>(value));
+                }
+            }
+
+            impl<T> Tag<T> {
+                $(#[doc = $doc])+
+                pub fn $name(&self) -> Option<&$ty> {
+                    select_attrs!(self, $attr_mod .get::<$attr_mod::$variant>())
+                }
+            }
+        )+
+    };
+}
+
+tag_accessors! {
     /// The tag id.
-    pub fn id(&self) -> Option<&TagId> {
-        self.attrs.get::<attr::Id>()
-    }
+    id; set_id; with_id; attr::Id(TagId)
 
     /// The language of this tag.
-    pub fn with_lang(mut self, lang: Option<String>) -> Self {
-        self.attrs.set_or_remove::<attr::Lang>(lang);
-        self
-    }
-    /// The language of this tag.
-    pub fn lang(&self) -> Option<&str> {
-        self.attrs.get::<attr::Lang>().map(|s| s.as_str())
-    }
+    lang; set_lang; with_lang; attr::Lang(String)
 
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
-    pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
-        self.attrs.set_or_remove::<attr::AltText>(alt_text);
-        self
-    }
-
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
-    pub fn alt_text(&self) -> Option<&str> {
-        self.attrs.get::<attr::AltText>().map(|s| s.as_str())
-    }
+    alt_text; set_alt_text; with_alt_text; attr::AltText(String)
 
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
-    pub fn with_expanded(mut self, expanded: Option<String>) -> Self {
-        self.attrs.set_or_remove::<attr::Expanded>(expanded);
-        self
-    }
-
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
-    pub fn expanded(&self) -> Option<&str> {
-        self.attrs.get::<attr::Expanded>().map(|s| s.as_str())
-    }
+    expanded; set_expanded; with_expanded; attr::Expanded(String)
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
-    pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
-        self.attrs.set_or_remove::<attr::ActualText>(actual_text);
-        self
-    }
+    actual_text; set_actual_text; with_actual_text; attr::ActualText(String)
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
-    pub fn actual_text(&self) -> Option<&str> {
-        self.attrs.get::<attr::ActualText>().map(|s| s.as_str())
-    }
-}
-
-impl<T: bounds::attr::Title> Tag<T> {
-    /// Sets the title.
-    pub fn with_title(mut self, title: Option<String>) -> Self {
-        self.attrs.set_or_remove::<attr::Title>(title);
-        self
-    }
-}
-
-impl<T> Tag<T> {
-    /// Gets the title.
-    pub fn title(&self) -> Option<&str> {
-        self.attrs.get::<attr::Title>().map(|s| s.as_str())
-    }
+    <T: bounds> title; set_title; with_title; attr::Title(String)
 }
 
 impl Tag<Hn> {
@@ -679,13 +660,9 @@ impl ListNumbering {
     }
 }
 
-impl<T: bounds::table_attr::Summary> Tag<T> {
-    /// Sets the summary.
-    pub fn with_summary(mut self, summary: Option<String>) -> Self {
-        self.table_attrs
-            .set_or_remove::<table_attr::Summary>(summary);
-        self
-    }
+tag_accessors! {
+    /// The summary.
+    <T: bounds> summary; set_summary; with_summary; table_attr::Summary(String)
 }
 
 impl Tag<TH> {
@@ -733,6 +710,22 @@ impl<T: bounds::table_attr::CellHeaders> Tag<T> {
         }
         self
     }
+
+    /// A list of headers associated with a table cell.
+    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
+    /// which can also specify a list of parent header cells (`TH`), and so on.
+    /// To determine the list of associated headers this list is recursively
+    /// evaluated.
+    ///
+    /// This allows specifying header hierarchies inside tables.
+    pub fn set_headers(&mut self, headers: impl IntoIterator<Item = TagId>) {
+        let headers: SmallVec<_> = headers.into_iter().collect();
+        if headers.is_empty() {
+            self.table_attrs.remove::<table_attr::CellHeaders>();
+        } else {
+            self.table_attrs.set(TableAttr::CellHeaders(headers));
+        }
+    }
 }
 
 impl<T> Tag<T> {
@@ -751,7 +744,7 @@ impl<T> Tag<T> {
 }
 
 impl<T: bounds::table_attr::CellSpan> Tag<T> {
-    /// Sets the row/column span of this table cell.
+    /// The row/column span of this table cell.
     pub fn with_span(mut self, span: TableCellSpan) -> Self {
         if span == TableCellSpan::ONE {
             self.table_attrs.remove::<table_attr::CellSpan>();
@@ -759,6 +752,15 @@ impl<T: bounds::table_attr::CellSpan> Tag<T> {
             self.table_attrs.set(TableAttr::CellSpan(span));
         }
         self
+    }
+
+    /// The row/column span of this table cell.
+    pub fn set_span(&mut self, span: TableCellSpan) {
+        if span == TableCellSpan::ONE {
+            self.table_attrs.remove::<table_attr::CellSpan>();
+        } else {
+            self.table_attrs.set(TableAttr::CellSpan(span));
+        }
     }
 }
 
@@ -818,30 +820,21 @@ impl TableCellSpan {
     }
 }
 
-impl<T> Tag<T> {
-    /// Sets the placment.
-    pub fn with_placement(mut self, placement: Option<Placement>) -> Self {
-        self.layout_attrs
-            .set_or_remove::<layout_attr::Placement>(placement);
-        self
-    }
-
+tag_accessors! {
     /// The placement.
-    pub fn placement(&self) -> Option<Placement> {
-        self.layout_attrs.get::<layout_attr::Placement>().copied()
-    }
-
-    /// Sets the writing mode.
-    pub fn with_writing_mode(mut self, writing_mode: Option<WritingMode>) -> Self {
-        self.layout_attrs
-            .set_or_remove::<layout_attr::WritingMode>(writing_mode);
-        self
-    }
+    placement; set_placement; with_placement; layout_attr::Placement(Placement)
 
     /// The writing mode.
-    pub fn writing_mode(&self) -> Option<WritingMode> {
-        self.layout_attrs.get::<layout_attr::WritingMode>().copied()
-    }
+    writing_mode; set_writing_mode; with_writing_mode; layout_attr::WritingMode(WritingMode)
+
+    /// The bounding box.
+    <T: bounds> bbox; set_bbox; with_bbox; layout_attr::BBox(Rect)
+
+    /// The width.
+    <T: bounds> width; set_width; with_width; layout_attr::Width(f32)
+
+    /// The height.
+    <T: bounds> height; set_height; with_height; layout_attr::Height(f32)
 }
 
 /// The positioning of the element with respect to the enclosing reference area
@@ -923,45 +916,5 @@ impl WritingMode {
             WritingMode::RlTb => pdf_writer::types::WritingMode::RtlTtb,
             WritingMode::TbRl => pdf_writer::types::WritingMode::TtbRtl,
         }
-    }
-}
-
-impl<T: bounds::layout_attr::BBox> Tag<T> {
-    /// Sets the bounding box.
-    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
-        self.layout_attrs.set_or_remove::<layout_attr::BBox>(bbox);
-        self
-    }
-
-    /// The bounding box.
-    pub fn bbox(&self) -> Option<Rect> {
-        self.layout_attrs.get::<layout_attr::BBox>().copied()
-    }
-}
-
-impl<T: bounds::layout_attr::Width> Tag<T> {
-    /// Sets the width.
-    pub fn with_width(mut self, width: Option<f32>) -> Self {
-        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
-        self
-    }
-
-    /// The width.
-    pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
-    }
-}
-
-impl<T: bounds::layout_attr::Height> Tag<T> {
-    /// Sets the height.
-    pub fn with_height(mut self, height: Option<f32>) -> Self {
-        self.layout_attrs
-            .set_or_remove::<layout_attr::Height>(height);
-        self
-    }
-
-    /// The height.
-    pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
     }
 }
