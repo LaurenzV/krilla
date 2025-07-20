@@ -34,6 +34,7 @@
 # The title is required for some export modes, like for example PDF/UA.
 [Tag.Hn]
 required = ["Attr::HeadingLevel"]
+suggested = ["Attr::Title"]
 optional = ["Attr::Title"]
 # A list.
 #
@@ -126,6 +127,7 @@ optional = [
 #
 # Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
 [Tag.Figure]
+suggested = ["Attr::AltText"]
 optional = [
   "LayoutAttr::BBox",
   "LayoutAttr::Width",
@@ -135,6 +137,7 @@ optional = [
 #
 # Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
 [Tag.Formula]
+suggested = ["Attr::AltText"]
 optional = [
   "LayoutAttr::BBox",
   "LayoutAttr::Width",

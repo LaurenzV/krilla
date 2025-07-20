@@ -532,7 +532,7 @@ fn validate_pdf_ua1_missing_requirements() {
     page.finish();
 
     let formula_loc = 2;
-    let mut tag_group = TagGroup::new(Tag::Formula.with_location(Some(formula_loc)));
+    let mut tag_group = TagGroup::new(Tag::Formula(None).with_location(Some(formula_loc)));
     tag_group.push(id1);
     tag_group.push(annot);
 

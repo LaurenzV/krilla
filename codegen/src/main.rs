@@ -32,6 +32,7 @@ struct TagVariant<'a> {
     name: &'a str,
     required: Vec<(&'a Attr<'a>, &'a AttrVariant<'a>)>,
     optional: Vec<(&'a Attr<'a>, &'a AttrVariant<'a>)>,
+    suggested: Vec<(&'a Attr<'a>, &'a AttrVariant<'a>)>,
 }
 
 struct Attr<'a> {
@@ -238,11 +239,13 @@ fn parse_tag() -> Tag<'static> {
         let variant = entry.expect_table();
         let required = variant.get("required").map(attribute_array);
         let optional = variant.get("optional").map(attribute_array);
+        let suggested = variant.get("suggested").map(attribute_array);
         TagVariant {
             comments,
             name: variant_name,
             required: required.unwrap_or_default(),
             optional: optional.unwrap_or_default(),
+            suggested: suggested.unwrap_or_default(),
         }
     });
 
@@ -358,7 +361,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
         for comment in variant.comments.iter() {
             writeln!(f, "    ///{comment}").ok();
         }
-        if variant.required.is_empty() {
+        if variant.required.is_empty() && variant.suggested.is_empty() {
             writeln!(f, "    #[allow(non_upper_case_globals)]").ok();
             writeln!(f, "    pub const {name}: Tag<{name}> = Tag::new();").ok();
         } else {
@@ -368,6 +371,11 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
                     let ty = attr_variant.param_type();
                     format!("{name}: {ty}")
                 })
+                .chain((variant.suggested.iter()).map(|(_, attr_variant)| {
+                    let name = attr_variant.accessor_name();
+                    let ty = attr_variant.param_type();
+                    format!("{name}: Option<{ty}>")
+                }))
                 .collect::<Vec<_>>()
                 .join(", ");
             writeln!(f, "    #[allow(non_snake_case)]").ok();
@@ -375,6 +383,10 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
 
             writeln!(f, "        let mut tag = Tag::new();").ok();
             for (_, attr_variant) in variant.required.iter() {
+                let name = attr_variant.accessor_name();
+                writeln!(f, "        tag.set_{name}({name});").ok();
+            }
+            for (_, attr_variant) in variant.suggested.iter() {
                 let name = attr_variant.accessor_name();
                 writeln!(f, "        tag.set_{name}({name});").ok();
             }

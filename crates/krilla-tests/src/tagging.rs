@@ -141,7 +141,7 @@ pub(crate) fn sample_svg() -> usvg::Tree {
 fn tagging_image_with_alt(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut image_group =
-        TagGroup::new(Tag::Figure.with_alt_text(Some("This is the alternate text.".to_string())));
+        TagGroup::new(Tag::Figure(Some("This is the alternate text.".to_string())));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -221,12 +221,14 @@ fn tagging_multiple_pages(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut par_1 = TagGroup::new(Tag::P);
     let mut par_2 = TagGroup::new(Tag::P);
-    let mut heading_1 = TagGroup::new(
-        Tag::Hn(NonZeroU32::new(1).unwrap()).with_title(Some("first heading".into())),
-    );
-    let mut heading_2 = TagGroup::new(
-        Tag::Hn(NonZeroU32::new(1).unwrap()).with_title(Some("second heading".into())),
-    );
+    let mut heading_1 = TagGroup::new(Tag::Hn(
+        NonZeroU32::new(1).unwrap(),
+        Some("first heading".into()),
+    ));
+    let mut heading_2 = TagGroup::new(Tag::Hn(
+        NonZeroU32::new(1).unwrap(),
+        Some("second heading".into()),
+    ));
 
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -301,7 +303,7 @@ fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
         surface.end_tagged();
 
         let level = NonZeroU32::new(level).unwrap();
-        let mut heading = TagGroup::new(Tag::Hn(level).with_title(Some(name.into())));
+        let mut heading = TagGroup::new(Tag::Hn(level, Some(name.into())));
         heading.push(hn);
 
         let mut sect = TagGroup::new(Tag::Section);
@@ -457,9 +459,8 @@ fn tagging_tag_attributes(document: &mut Document) {
     surface.finish();
     page.finish();
 
-    let figure = Tag::Figure
+    let figure = Tag::Figure(Some("The NASA logo".into()))
         .with_actual_text(Some("NASA".into()))
-        .with_alt_text(Some("The NASA logo".into()))
         .with_expanded(Some("National Aeronautics and Space Administration".into()))
         .with_lang(Some("en".into()));
 

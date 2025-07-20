@@ -374,9 +374,10 @@ impl Tag<Hn> {
     ///
     /// The title is required for some export modes, like for example PDF/UA.
     #[allow(non_snake_case)]
-    pub fn Hn(level: NonZeroU32) -> Tag<Hn> {
+    pub fn Hn(level: NonZeroU32, title: Option<String>) -> Tag<Hn> {
         let mut tag = Tag::new();
         tag.set_level(level);
+        tag.set_title(title);
         tag
     }
 
@@ -1062,8 +1063,12 @@ impl Tag<Figure> {
     /// Item of graphical content.
     ///
     /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-    #[allow(non_upper_case_globals)]
-    pub const Figure: Tag<Figure> = Tag::new();
+    #[allow(non_snake_case)]
+    pub fn Figure(alt_text: Option<String>) -> Tag<Figure> {
+        let mut tag = Tag::new();
+        tag.set_alt_text(alt_text);
+        tag
+    }
 
     /// The bounding box.
     pub fn b_box(&self) -> Option<Rect> {
@@ -1129,8 +1134,12 @@ impl Tag<Formula> {
     /// A mathematical formula.
     ///
     /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-    #[allow(non_upper_case_globals)]
-    pub const Formula: Tag<Formula> = Tag::new();
+    #[allow(non_snake_case)]
+    pub fn Formula(alt_text: Option<String>) -> Tag<Formula> {
+        let mut tag = Tag::new();
+        tag.set_alt_text(alt_text);
+        tag
+    }
 
     /// The bounding box.
     pub fn b_box(&self) -> Option<Rect> {
