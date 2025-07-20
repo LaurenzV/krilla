@@ -710,7 +710,7 @@ dependencies = [
 [[package]]
 name = "hayro-syntax"
 version = "0.0.1"
-source = "git+https://github.com/LaurenzV/hayro?rev=d385360#d38536089c95b521b0b64080302d7a305344edbf"
+source = "git+https://github.com/LaurenzV/hayro?rev=2b63dc8#2b63dc85b9447a815cc5b40c16338841c3780f7e"
 dependencies = [
  "flate2",
  "kurbo",
@@ -723,7 +723,7 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=d385360#d38536089c95b521b0b64080302d7a305344edbf"
+source = "git+https://github.com/LaurenzV/hayro?rev=2b63dc8#2b63dc85b9447a815cc5b40c16338841c3780f7e"
 dependencies = [
  "flate2",
  "hayro-syntax",
