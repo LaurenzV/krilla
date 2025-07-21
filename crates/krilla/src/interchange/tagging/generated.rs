@@ -375,8 +375,8 @@ impl TagKind {
     }
 
     /// The bounding box.
-    pub fn b_box(&self) -> Option<Rect> {
-        self.as_any().b_box()
+    pub fn bbox(&self) -> Option<Rect> {
+        self.as_any().bbox()
     }
 
     /// The width.
@@ -739,18 +739,18 @@ impl Tag<Table> {
     }
 
     /// The bounding box.
-    pub fn b_box(&self) -> Option<Rect> {
-        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
+    pub fn bbox(&self) -> Option<Rect> {
+        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The bounding box.
-    pub fn set_b_box(&mut self, b_box: Option<Rect>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(b_box.map(LayoutAttr::BBox));
+    pub fn set_bbox(&mut self, bbox: Option<Rect>) {
+        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
-    pub fn with_b_box(mut self, b_box: Option<Rect>) -> Self {
-        self.set_b_box(b_box);
+    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+        self.set_bbox(bbox);
         self
     }
 
@@ -1259,18 +1259,18 @@ impl Tag<Figure> {
     }
 
     /// The bounding box.
-    pub fn b_box(&self) -> Option<Rect> {
-        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
+    pub fn bbox(&self) -> Option<Rect> {
+        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The bounding box.
-    pub fn set_b_box(&mut self, b_box: Option<Rect>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(b_box.map(LayoutAttr::BBox));
+    pub fn set_bbox(&mut self, bbox: Option<Rect>) {
+        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
-    pub fn with_b_box(mut self, b_box: Option<Rect>) -> Self {
-        self.set_b_box(b_box);
+    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+        self.set_bbox(bbox);
         self
     }
 
@@ -1330,18 +1330,18 @@ impl Tag<Formula> {
     }
 
     /// The bounding box.
-    pub fn b_box(&self) -> Option<Rect> {
-        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
+    pub fn bbox(&self) -> Option<Rect> {
+        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The bounding box.
-    pub fn set_b_box(&mut self, b_box: Option<Rect>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(b_box.map(LayoutAttr::BBox));
+    pub fn set_bbox(&mut self, bbox: Option<Rect>) {
+        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
-    pub fn with_b_box(mut self, b_box: Option<Rect>) -> Self {
-        self.set_b_box(b_box);
+    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+        self.set_bbox(bbox);
         self
     }
 
@@ -1727,8 +1727,8 @@ impl AnyTag {
     }
 
     /// The bounding box.
-    pub fn b_box(&self) -> Option<Rect> {
-        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
+    pub fn bbox(&self) -> Option<Rect> {
+        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The width.
@@ -1989,7 +1989,7 @@ impl LayoutAttr {
         }
 
         #[inline(always)]
-        fn unwrap_b_box(&self) -> Rect {
+        fn unwrap_bbox(&self) -> Rect {
             match self {
                 Self::BBox(val) => *val,
                 _ => unreachable!(),

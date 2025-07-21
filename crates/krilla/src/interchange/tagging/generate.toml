@@ -201,7 +201,7 @@ Placement = { type = "Placement", global = true, accessor = "Copy" }
 # The writing mode.
 WritingMode = { type = "WritingMode", global = true, accessor = "Copy" }
 # The bounding box.
-BBox = { type = "Rect", accessor = "Copy" }
+BBox = { name = "bbox", type = "Rect", accessor = "Copy" }
 # The width.
 Width = { type = "f32", accessor = "Copy" }
 # The height.
