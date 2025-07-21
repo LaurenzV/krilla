@@ -449,6 +449,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     writeln!(f).ok();
 }
 
+#[derive(PartialEq, Eq)]
 enum TagImpl {
     TagKind,
     Tag,
@@ -486,8 +487,12 @@ fn write_accessors(
         TagImpl::Tag => "self.inner",
         TagImpl::Any => "self",
     };
-    #[rustfmt::skip]
-    writeln!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
+    if tag_impl == TagImpl::TagKind {
+        writeln!(f, "        {tag}.{accessor}()").ok();
+    } else {
+        #[rustfmt::skip]
+        writeln!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
+    }
     writeln!(f, "    }}").ok();
 
     if !write {
@@ -506,11 +511,18 @@ fn write_accessors(
     #[rustfmt::skip]
     if attr_variant.accessor_kind == AccessorKind::Custom || required {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: {param_ty}) {{").ok();
-        writeln!(f, "        {tag}.{attr_field}.set({kind}::{variant}({accessor}{param_mapping}));").ok();
     } else {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: Option<{param_ty}>) {{").ok();
-        writeln!(f, "        {tag}.{attr_field}.set_or_remove::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
     };
+    if tag_impl == TagImpl::TagKind {
+        writeln!(f, "        {tag}.set_{accessor}({accessor});").ok();
+    } else if attr_variant.accessor_kind == AccessorKind::Custom || required {
+        #[rustfmt::skip]
+        writeln!(f, "        {tag}.{attr_field}.set({kind}::{variant}({accessor}{param_mapping}));").ok();
+    } else {
+        #[rustfmt::skip]
+        writeln!(f, "        {tag}.{attr_field}.set_or_remove::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
+    }
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
 
