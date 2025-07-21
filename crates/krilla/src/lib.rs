@@ -140,6 +140,7 @@ std::fs::write(path, &pdf).unwrap();
 */
 
 #![deny(missing_docs)]
+#![forbid(unsafe_code)]
 
 mod chunk_container;
 mod graphics;
