@@ -149,14 +149,14 @@ pub(crate) enum PageInfo {
     },
     /// A page embedded from an external PDF file.
     #[allow(dead_code)]
-    Pdf { ref_: Ref },
+    Pdf { ref_: Ref, size: Size },
 }
 
 impl PageInfo {
     pub(crate) fn ref_(&self) -> Ref {
         match self {
             PageInfo::Krilla { ref_, .. } => *ref_,
-            PageInfo::Pdf { ref_ } => *ref_,
+            PageInfo::Pdf { ref_, .. } => *ref_,
         }
     }
 
@@ -328,10 +328,23 @@ impl SerializeContext {
     pub(crate) fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
         for page_idx in page_indices {
             let page_ref = self.new_ref();
+            let size = pdf
+                .pages()
+                .get(*page_idx)
+                .and_then(|p| {
+                    let (x, y) = p.render_dimensions();
+                    Size::from_wh(x, y)
+                })
+                // In case the page doesn't exist, we will catch the error later, so just use
+                // a dummy size.
+                .unwrap_or(Size::from_wh(1.0, 1.0).unwrap());
             self.global_objects
                 .pdf_ctx
                 .add_page(pdf, *page_idx, page_ref, self.location);
-            self.page_infos.push(PageInfo::Pdf { ref_: page_ref });
+            self.page_infos.push(PageInfo::Pdf {
+                ref_: page_ref,
+                size,
+            });
         }
     }
 

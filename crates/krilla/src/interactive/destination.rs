@@ -131,12 +131,14 @@ impl XyzDestination {
                 sc.page_infos().len()
             )
         });
-        let PageInfo::Krilla {
-            ref_, surface_size, ..
-        } = page_info
-        else {
-            unreachable!()
+
+        let (ref_, surface_size) = match page_info {
+            PageInfo::Krilla {
+                ref_, surface_size, ..
+            } => (ref_, surface_size),
+            PageInfo::Pdf { ref_, size, .. } => (ref_, size),
         };
+
         let page_ref = *ref_;
         let page_size = surface_size.height();
 
