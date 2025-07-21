@@ -571,12 +571,12 @@ impl Tag<Hn> {
 
     /// The heading level
     pub fn level(&self) -> NonZeroU32 {
-        self.inner.attrs.get::<{Attr::HEADING_LEVEL}>().map(Attr::unwrap_level).unwrap()
+        self.inner.get_attr::<{Attr::HEADING_LEVEL}>().unwrap().unwrap_level()
     }
 
     /// The heading level
     pub fn set_level(&mut self, level: NonZeroU32) {
-        self.inner.attrs.set(Attr::HeadingLevel(level));
+        self.inner.set_attr(Attr::HeadingLevel(level));
     }
 
     /// The heading level
@@ -589,14 +589,14 @@ impl Tag<Hn> {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn title(&self) -> Option<&str> {
-        self.inner.attrs.get::<{Attr::TITLE}>().map(Attr::unwrap_title)
+        self.inner.get_attr::<{Attr::TITLE}>().map(Attr::unwrap_title)
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_title(&mut self, title: Option<String>) {
-        self.inner.attrs.set_or_remove::<{Attr::TITLE}>(title.map(Attr::Title));
+        self.inner.set_or_remove_attr::<{Attr::TITLE}>(title.map(Attr::Title));
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
@@ -636,12 +636,12 @@ impl Tag<L> {
 
     /// The list numbering.
     pub fn numbering(&self) -> ListNumbering {
-        self.inner.list_attrs.get::<{ListAttr::NUMBERING}>().map(ListAttr::unwrap_numbering).unwrap()
+        self.inner.get_list_attr::<{ListAttr::NUMBERING}>().unwrap().unwrap_numbering()
     }
 
     /// The list numbering.
     pub fn set_numbering(&mut self, numbering: ListNumbering) {
-        self.inner.list_attrs.set(ListAttr::Numbering(numbering));
+        self.inner.set_list_attr(ListAttr::Numbering(numbering));
     }
 
     /// The list numbering.
@@ -724,12 +724,12 @@ impl Tag<Table> {
 
     /// The table summary.
     pub fn summary(&self) -> Option<&str> {
-        self.inner.table_attrs.get::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
+        self.inner.get_table_attr::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
     }
 
     /// The table summary.
     pub fn set_summary(&mut self, summary: Option<String>) {
-        self.inner.table_attrs.set_or_remove::<{TableAttr::SUMMARY}>(summary.map(TableAttr::Summary));
+        self.inner.set_or_remove_table_attr::<{TableAttr::SUMMARY}>(summary.map(TableAttr::Summary));
     }
 
     /// The table summary.
@@ -740,12 +740,12 @@ impl Tag<Table> {
 
     /// The bounding box.
     pub fn bbox(&self) -> Option<Rect> {
-        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
+        self.inner.get_layout_attr::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The bounding box.
     pub fn set_bbox(&mut self, bbox: Option<Rect>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
@@ -756,12 +756,12 @@ impl Tag<Table> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+        self.inner.get_layout_attr::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -772,12 +772,12 @@ impl Tag<Table> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+        self.inner.get_layout_attr::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -826,12 +826,12 @@ impl Tag<TH> {
 
     /// The table header scope.
     pub fn scope(&self) -> TableHeaderScope {
-        self.inner.table_attrs.get::<{TableAttr::HEADER_SCOPE}>().map(TableAttr::unwrap_scope).unwrap()
+        self.inner.get_table_attr::<{TableAttr::HEADER_SCOPE}>().unwrap().unwrap_scope()
     }
 
     /// The table header scope.
     pub fn set_scope(&mut self, scope: TableHeaderScope) {
-        self.inner.table_attrs.set(TableAttr::HeaderScope(scope));
+        self.inner.set_table_attr(TableAttr::HeaderScope(scope));
     }
 
     /// The table header scope.
@@ -848,7 +848,7 @@ impl Tag<TH> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn headers(&self) -> Option<&[TagId]> {
-        self.inner.table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
+        self.inner.get_table_attr::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
     }
 
     /// A list of headers associated with a table cell.
@@ -859,7 +859,7 @@ impl Tag<TH> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn set_headers(&mut self, headers: impl IntoIterator<Item = TagId>) {
-        self.inner.table_attrs.set(TableAttr::CellHeaders(headers.into_iter().collect()));
+        self.inner.set_table_attr(TableAttr::CellHeaders(headers.into_iter().collect()));
     }
 
     /// A list of headers associated with a table cell.
@@ -876,12 +876,12 @@ impl Tag<TH> {
 
     /// The row span of this table cell.
     pub fn row_span(&self) -> Option<NonZeroU32> {
-        self.inner.table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
+        self.inner.get_table_attr::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
     }
 
     /// The row span of this table cell.
     pub fn set_row_span(&mut self, row_span: Option<NonZeroU32>) {
-        self.inner.table_attrs.set_or_remove::<{TableAttr::ROW_SPAN}>(row_span.map(TableAttr::RowSpan));
+        self.inner.set_or_remove_table_attr::<{TableAttr::ROW_SPAN}>(row_span.map(TableAttr::RowSpan));
     }
 
     /// The row span of this table cell.
@@ -892,12 +892,12 @@ impl Tag<TH> {
 
     /// The column span of this table cell.
     pub fn col_span(&self) -> Option<NonZeroU32> {
-        self.inner.table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
+        self.inner.get_table_attr::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
     }
 
     /// The column span of this table cell.
     pub fn set_col_span(&mut self, col_span: Option<NonZeroU32>) {
-        self.inner.table_attrs.set_or_remove::<{TableAttr::COL_SPAN}>(col_span.map(TableAttr::ColSpan));
+        self.inner.set_or_remove_table_attr::<{TableAttr::COL_SPAN}>(col_span.map(TableAttr::ColSpan));
     }
 
     /// The column span of this table cell.
@@ -908,12 +908,12 @@ impl Tag<TH> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+        self.inner.get_layout_attr::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -924,12 +924,12 @@ impl Tag<TH> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+        self.inner.get_layout_attr::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -961,7 +961,7 @@ impl Tag<TD> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn headers(&self) -> Option<&[TagId]> {
-        self.inner.table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
+        self.inner.get_table_attr::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
     }
 
     /// A list of headers associated with a table cell.
@@ -972,7 +972,7 @@ impl Tag<TD> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn set_headers(&mut self, headers: impl IntoIterator<Item = TagId>) {
-        self.inner.table_attrs.set(TableAttr::CellHeaders(headers.into_iter().collect()));
+        self.inner.set_table_attr(TableAttr::CellHeaders(headers.into_iter().collect()));
     }
 
     /// A list of headers associated with a table cell.
@@ -989,12 +989,12 @@ impl Tag<TD> {
 
     /// The row span of this table cell.
     pub fn row_span(&self) -> Option<NonZeroU32> {
-        self.inner.table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
+        self.inner.get_table_attr::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
     }
 
     /// The row span of this table cell.
     pub fn set_row_span(&mut self, row_span: Option<NonZeroU32>) {
-        self.inner.table_attrs.set_or_remove::<{TableAttr::ROW_SPAN}>(row_span.map(TableAttr::RowSpan));
+        self.inner.set_or_remove_table_attr::<{TableAttr::ROW_SPAN}>(row_span.map(TableAttr::RowSpan));
     }
 
     /// The row span of this table cell.
@@ -1005,12 +1005,12 @@ impl Tag<TD> {
 
     /// The column span of this table cell.
     pub fn col_span(&self) -> Option<NonZeroU32> {
-        self.inner.table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
+        self.inner.get_table_attr::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
     }
 
     /// The column span of this table cell.
     pub fn set_col_span(&mut self, col_span: Option<NonZeroU32>) {
-        self.inner.table_attrs.set_or_remove::<{TableAttr::COL_SPAN}>(col_span.map(TableAttr::ColSpan));
+        self.inner.set_or_remove_table_attr::<{TableAttr::COL_SPAN}>(col_span.map(TableAttr::ColSpan));
     }
 
     /// The column span of this table cell.
@@ -1021,12 +1021,12 @@ impl Tag<TD> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+        self.inner.get_layout_attr::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -1037,12 +1037,12 @@ impl Tag<TD> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+        self.inner.get_layout_attr::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -1260,12 +1260,12 @@ impl Tag<Figure> {
 
     /// The bounding box.
     pub fn bbox(&self) -> Option<Rect> {
-        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
+        self.inner.get_layout_attr::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The bounding box.
     pub fn set_bbox(&mut self, bbox: Option<Rect>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
@@ -1276,12 +1276,12 @@ impl Tag<Figure> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+        self.inner.get_layout_attr::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -1292,12 +1292,12 @@ impl Tag<Figure> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+        self.inner.get_layout_attr::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -1331,12 +1331,12 @@ impl Tag<Formula> {
 
     /// The bounding box.
     pub fn bbox(&self) -> Option<Rect> {
-        self.inner.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
+        self.inner.get_layout_attr::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The bounding box.
     pub fn set_bbox(&mut self, bbox: Option<Rect>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::B_BOX}>(bbox.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
@@ -1347,12 +1347,12 @@ impl Tag<Formula> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+        self.inner.get_layout_attr::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -1363,12 +1363,12 @@ impl Tag<Formula> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.inner.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+        self.inner.get_layout_attr::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -1428,12 +1428,12 @@ impl<T> Tag<T> {
 
     /// The tag id.
     pub fn id(&self) -> Option<&TagId> {
-        self.inner.attrs.get::<{Attr::ID}>().map(Attr::unwrap_id)
+        self.inner.get_attr::<{Attr::ID}>().map(Attr::unwrap_id)
     }
 
     /// The tag id.
     pub fn set_id(&mut self, id: Option<TagId>) {
-        self.inner.attrs.set_or_remove::<{Attr::ID}>(id.map(Attr::Id));
+        self.inner.set_or_remove_attr::<{Attr::ID}>(id.map(Attr::Id));
     }
 
     /// The tag id.
@@ -1444,12 +1444,12 @@ impl<T> Tag<T> {
 
     /// The language of this tag.
     pub fn lang(&self) -> Option<&str> {
-        self.inner.attrs.get::<{Attr::LANG}>().map(Attr::unwrap_lang)
+        self.inner.get_attr::<{Attr::LANG}>().map(Attr::unwrap_lang)
     }
 
     /// The language of this tag.
     pub fn set_lang(&mut self, lang: Option<String>) {
-        self.inner.attrs.set_or_remove::<{Attr::LANG}>(lang.map(Attr::Lang));
+        self.inner.set_or_remove_attr::<{Attr::LANG}>(lang.map(Attr::Lang));
     }
 
     /// The language of this tag.
@@ -1461,13 +1461,13 @@ impl<T> Tag<T> {
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub fn alt_text(&self) -> Option<&str> {
-        self.inner.attrs.get::<{Attr::ALT_TEXT}>().map(Attr::unwrap_alt_text)
+        self.inner.get_attr::<{Attr::ALT_TEXT}>().map(Attr::unwrap_alt_text)
     }
 
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub fn set_alt_text(&mut self, alt_text: Option<String>) {
-        self.inner.attrs.set_or_remove::<{Attr::ALT_TEXT}>(alt_text.map(Attr::AltText));
+        self.inner.set_or_remove_attr::<{Attr::ALT_TEXT}>(alt_text.map(Attr::AltText));
     }
 
     /// An optional alternate text that describes the text (for example, if the text consists
@@ -1480,13 +1480,13 @@ impl<T> Tag<T> {
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
     pub fn expanded(&self) -> Option<&str> {
-        self.inner.attrs.get::<{Attr::EXPANDED}>().map(Attr::unwrap_expanded)
+        self.inner.get_attr::<{Attr::EXPANDED}>().map(Attr::unwrap_expanded)
     }
 
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
     pub fn set_expanded(&mut self, expanded: Option<String>) {
-        self.inner.attrs.set_or_remove::<{Attr::EXPANDED}>(expanded.map(Attr::Expanded));
+        self.inner.set_or_remove_attr::<{Attr::EXPANDED}>(expanded.map(Attr::Expanded));
     }
 
     /// If the content of the tag is an abbreviation, the expanded form of the
@@ -1500,14 +1500,14 @@ impl<T> Tag<T> {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn actual_text(&self) -> Option<&str> {
-        self.inner.attrs.get::<{Attr::ACTUAL_TEXT}>().map(Attr::unwrap_actual_text)
+        self.inner.get_attr::<{Attr::ACTUAL_TEXT}>().map(Attr::unwrap_actual_text)
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_actual_text(&mut self, actual_text: Option<String>) {
-        self.inner.attrs.set_or_remove::<{Attr::ACTUAL_TEXT}>(actual_text.map(Attr::ActualText));
+        self.inner.set_or_remove_attr::<{Attr::ACTUAL_TEXT}>(actual_text.map(Attr::ActualText));
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
@@ -1520,12 +1520,12 @@ impl<T> Tag<T> {
 
     /// The placement.
     pub fn placement(&self) -> Option<Placement> {
-        self.inner.layout_attrs.get::<{LayoutAttr::PLACEMENT}>().map(LayoutAttr::unwrap_placement)
+        self.inner.get_layout_attr::<{LayoutAttr::PLACEMENT}>().map(LayoutAttr::unwrap_placement)
     }
 
     /// The placement.
     pub fn set_placement(&mut self, placement: Option<Placement>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::PLACEMENT}>(placement.map(LayoutAttr::Placement));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::PLACEMENT}>(placement.map(LayoutAttr::Placement));
     }
 
     /// The placement.
@@ -1536,12 +1536,12 @@ impl<T> Tag<T> {
 
     /// The writing mode.
     pub fn writing_mode(&self) -> Option<WritingMode> {
-        self.inner.layout_attrs.get::<{LayoutAttr::WRITING_MODE}>().map(LayoutAttr::unwrap_writing_mode)
+        self.inner.get_layout_attr::<{LayoutAttr::WRITING_MODE}>().map(LayoutAttr::unwrap_writing_mode)
     }
 
     /// The writing mode.
     pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
-        self.inner.layout_attrs.set_or_remove::<{LayoutAttr::WRITING_MODE}>(writing_mode.map(LayoutAttr::WritingMode));
+        self.inner.set_or_remove_layout_attr::<{LayoutAttr::WRITING_MODE}>(writing_mode.map(LayoutAttr::WritingMode));
     }
 
     /// The writing mode.
@@ -1553,15 +1553,83 @@ impl<T> Tag<T> {
 
 // Read accessors for all attributes and write accessors for global ones.
 impl AnyTag {
+    #[inline(always)]
+    fn get_attr<const ORDINAL: usize>(&self) -> Option<&Attr> {
+        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_attr)
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_attr(&mut self, attr: Attr) {
+        self.attrs.set(AnyAttr::Attr(attr));
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_or_remove_attr<const ORDINAL: usize>(&mut self, attr: Option<Attr>) {
+        self.attrs.set_or_remove::<ORDINAL>(attr.map(AnyAttr::Attr));
+    }
+
+    #[inline(always)]
+    fn get_list_attr<const ORDINAL: usize>(&self) -> Option<&ListAttr> {
+        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_list_attr)
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_list_attr(&mut self, list_attr: ListAttr) {
+        self.attrs.set(AnyAttr::ListAttr(list_attr));
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_or_remove_list_attr<const ORDINAL: usize>(&mut self, list_attr: Option<ListAttr>) {
+        self.attrs.set_or_remove::<ORDINAL>(list_attr.map(AnyAttr::ListAttr));
+    }
+
+    #[inline(always)]
+    fn get_table_attr<const ORDINAL: usize>(&self) -> Option<&TableAttr> {
+        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_table_attr)
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_table_attr(&mut self, table_attr: TableAttr) {
+        self.attrs.set(AnyAttr::TableAttr(table_attr));
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_or_remove_table_attr<const ORDINAL: usize>(&mut self, table_attr: Option<TableAttr>) {
+        self.attrs.set_or_remove::<ORDINAL>(table_attr.map(AnyAttr::TableAttr));
+    }
+
+    #[inline(always)]
+    fn get_layout_attr<const ORDINAL: usize>(&self) -> Option<&LayoutAttr> {
+        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_layout_attr)
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_layout_attr(&mut self, layout_attr: LayoutAttr) {
+        self.attrs.set(AnyAttr::LayoutAttr(layout_attr));
+    }
+
+    #[allow(unused)]
+    #[inline(always)]
+    fn set_or_remove_layout_attr<const ORDINAL: usize>(&mut self, layout_attr: Option<LayoutAttr>) {
+        self.attrs.set_or_remove::<ORDINAL>(layout_attr.map(AnyAttr::LayoutAttr));
+    }
+
 
     /// The tag id.
     pub fn id(&self) -> Option<&TagId> {
-        self.attrs.get::<{Attr::ID}>().map(Attr::unwrap_id)
+        self.get_attr::<{Attr::ID}>().map(Attr::unwrap_id)
     }
 
     /// The tag id.
     pub fn set_id(&mut self, id: Option<TagId>) {
-        self.attrs.set_or_remove::<{Attr::ID}>(id.map(Attr::Id));
+        self.set_or_remove_attr::<{Attr::ID}>(id.map(Attr::Id));
     }
 
     /// The tag id.
@@ -1572,12 +1640,12 @@ impl AnyTag {
 
     /// The language of this tag.
     pub fn lang(&self) -> Option<&str> {
-        self.attrs.get::<{Attr::LANG}>().map(Attr::unwrap_lang)
+        self.get_attr::<{Attr::LANG}>().map(Attr::unwrap_lang)
     }
 
     /// The language of this tag.
     pub fn set_lang(&mut self, lang: Option<String>) {
-        self.attrs.set_or_remove::<{Attr::LANG}>(lang.map(Attr::Lang));
+        self.set_or_remove_attr::<{Attr::LANG}>(lang.map(Attr::Lang));
     }
 
     /// The language of this tag.
@@ -1589,13 +1657,13 @@ impl AnyTag {
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub fn alt_text(&self) -> Option<&str> {
-        self.attrs.get::<{Attr::ALT_TEXT}>().map(Attr::unwrap_alt_text)
+        self.get_attr::<{Attr::ALT_TEXT}>().map(Attr::unwrap_alt_text)
     }
 
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub fn set_alt_text(&mut self, alt_text: Option<String>) {
-        self.attrs.set_or_remove::<{Attr::ALT_TEXT}>(alt_text.map(Attr::AltText));
+        self.set_or_remove_attr::<{Attr::ALT_TEXT}>(alt_text.map(Attr::AltText));
     }
 
     /// An optional alternate text that describes the text (for example, if the text consists
@@ -1608,13 +1676,13 @@ impl AnyTag {
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
     pub fn expanded(&self) -> Option<&str> {
-        self.attrs.get::<{Attr::EXPANDED}>().map(Attr::unwrap_expanded)
+        self.get_attr::<{Attr::EXPANDED}>().map(Attr::unwrap_expanded)
     }
 
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
     pub fn set_expanded(&mut self, expanded: Option<String>) {
-        self.attrs.set_or_remove::<{Attr::EXPANDED}>(expanded.map(Attr::Expanded));
+        self.set_or_remove_attr::<{Attr::EXPANDED}>(expanded.map(Attr::Expanded));
     }
 
     /// If the content of the tag is an abbreviation, the expanded form of the
@@ -1628,14 +1696,14 @@ impl AnyTag {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn actual_text(&self) -> Option<&str> {
-        self.attrs.get::<{Attr::ACTUAL_TEXT}>().map(Attr::unwrap_actual_text)
+        self.get_attr::<{Attr::ACTUAL_TEXT}>().map(Attr::unwrap_actual_text)
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_actual_text(&mut self, actual_text: Option<String>) {
-        self.attrs.set_or_remove::<{Attr::ACTUAL_TEXT}>(actual_text.map(Attr::ActualText));
+        self.set_or_remove_attr::<{Attr::ACTUAL_TEXT}>(actual_text.map(Attr::ActualText));
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
@@ -1650,27 +1718,27 @@ impl AnyTag {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn title(&self) -> Option<&str> {
-        self.attrs.get::<{Attr::TITLE}>().map(Attr::unwrap_title)
+        self.get_attr::<{Attr::TITLE}>().map(Attr::unwrap_title)
     }
 
     /// The heading level
     pub fn level(&self) -> Option<NonZeroU32> {
-        self.attrs.get::<{Attr::HEADING_LEVEL}>().map(Attr::unwrap_level)
+        self.get_attr::<{Attr::HEADING_LEVEL}>().map(Attr::unwrap_level)
     }
 
     /// The list numbering.
     pub fn numbering(&self) -> Option<ListNumbering> {
-        self.list_attrs.get::<{ListAttr::NUMBERING}>().map(ListAttr::unwrap_numbering)
+        self.get_list_attr::<{ListAttr::NUMBERING}>().map(ListAttr::unwrap_numbering)
     }
 
     /// The table summary.
     pub fn summary(&self) -> Option<&str> {
-        self.table_attrs.get::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
+        self.get_table_attr::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
     }
 
     /// The table header scope.
     pub fn scope(&self) -> Option<TableHeaderScope> {
-        self.table_attrs.get::<{TableAttr::HEADER_SCOPE}>().map(TableAttr::unwrap_scope)
+        self.get_table_attr::<{TableAttr::HEADER_SCOPE}>().map(TableAttr::unwrap_scope)
     }
 
     /// A list of headers associated with a table cell.
@@ -1681,27 +1749,27 @@ impl AnyTag {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn headers(&self) -> Option<&[TagId]> {
-        self.table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
+        self.get_table_attr::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
     }
 
     /// The row span of this table cell.
     pub fn row_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
+        self.get_table_attr::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
     }
 
     /// The column span of this table cell.
     pub fn col_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
+        self.get_table_attr::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
     }
 
     /// The placement.
     pub fn placement(&self) -> Option<Placement> {
-        self.layout_attrs.get::<{LayoutAttr::PLACEMENT}>().map(LayoutAttr::unwrap_placement)
+        self.get_layout_attr::<{LayoutAttr::PLACEMENT}>().map(LayoutAttr::unwrap_placement)
     }
 
     /// The placement.
     pub fn set_placement(&mut self, placement: Option<Placement>) {
-        self.layout_attrs.set_or_remove::<{LayoutAttr::PLACEMENT}>(placement.map(LayoutAttr::Placement));
+        self.set_or_remove_layout_attr::<{LayoutAttr::PLACEMENT}>(placement.map(LayoutAttr::Placement));
     }
 
     /// The placement.
@@ -1712,12 +1780,12 @@ impl AnyTag {
 
     /// The writing mode.
     pub fn writing_mode(&self) -> Option<WritingMode> {
-        self.layout_attrs.get::<{LayoutAttr::WRITING_MODE}>().map(LayoutAttr::unwrap_writing_mode)
+        self.get_layout_attr::<{LayoutAttr::WRITING_MODE}>().map(LayoutAttr::unwrap_writing_mode)
     }
 
     /// The writing mode.
     pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
-        self.layout_attrs.set_or_remove::<{LayoutAttr::WRITING_MODE}>(writing_mode.map(LayoutAttr::WritingMode));
+        self.set_or_remove_layout_attr::<{LayoutAttr::WRITING_MODE}>(writing_mode.map(LayoutAttr::WritingMode));
     }
 
     /// The writing mode.
@@ -1728,17 +1796,70 @@ impl AnyTag {
 
     /// The bounding box.
     pub fn bbox(&self) -> Option<Rect> {
-        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
+        self.get_layout_attr::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_bbox)
     }
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+        self.get_layout_attr::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+        self.get_layout_attr::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum AnyAttr {
+    Attr(Attr),
+    ListAttr(ListAttr),
+    TableAttr(TableAttr),
+    LayoutAttr(LayoutAttr),
+}
+
+impl AnyAttr {
+
+        #[inline(always)]
+        fn unwrap_attr(&self) -> &Attr {
+            match self {
+                Self::Attr(attr) => attr,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_list_attr(&self) -> &ListAttr {
+            match self {
+                Self::ListAttr(attr) => attr,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_table_attr(&self) -> &TableAttr {
+            match self {
+                Self::TableAttr(attr) => attr,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_layout_attr(&self) -> &LayoutAttr {
+            match self {
+                Self::LayoutAttr(attr) => attr,
+                _ => unreachable!(),
+            }
+        }
+}
+impl Ordinal for AnyAttr {
+    fn ordinal(&self) -> usize {
+        match self {
+            Self::Attr(a) => a.ordinal(),
+            Self::ListAttr(a) => a.ordinal(),
+            Self::TableAttr(a) => a.ordinal(),
+            Self::LayoutAttr(a) => a.ordinal(),
+        }
     }
 }
 
@@ -1853,7 +1974,7 @@ pub(crate) enum ListAttr {
 }
 
 impl ListAttr {
-    pub(crate) const NUMBERING: usize = 0;
+    pub(crate) const NUMBERING: usize = 7;
 
         #[inline(always)]
         fn unwrap_numbering(&self) -> ListNumbering {
@@ -1892,11 +2013,11 @@ pub(crate) enum TableAttr {
 }
 
 impl TableAttr {
-    pub(crate) const SUMMARY: usize = 0;
-    pub(crate) const HEADER_SCOPE: usize = 1;
-    pub(crate) const CELL_HEADERS: usize = 2;
-    pub(crate) const ROW_SPAN: usize = 3;
-    pub(crate) const COL_SPAN: usize = 4;
+    pub(crate) const SUMMARY: usize = 8;
+    pub(crate) const HEADER_SCOPE: usize = 9;
+    pub(crate) const CELL_HEADERS: usize = 10;
+    pub(crate) const ROW_SPAN: usize = 11;
+    pub(crate) const COL_SPAN: usize = 12;
 
         #[inline(always)]
         fn unwrap_summary(&self) -> &str {
@@ -1966,11 +2087,11 @@ pub(crate) enum LayoutAttr {
 }
 
 impl LayoutAttr {
-    pub(crate) const PLACEMENT: usize = 0;
-    pub(crate) const WRITING_MODE: usize = 1;
-    pub(crate) const B_BOX: usize = 2;
-    pub(crate) const WIDTH: usize = 3;
-    pub(crate) const HEIGHT: usize = 4;
+    pub(crate) const PLACEMENT: usize = 13;
+    pub(crate) const WRITING_MODE: usize = 14;
+    pub(crate) const B_BOX: usize = 15;
+    pub(crate) const WIDTH: usize = 16;
+    pub(crate) const HEIGHT: usize = 17;
 
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {

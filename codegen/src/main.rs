@@ -42,9 +42,9 @@ struct Attr<'a> {
 }
 
 impl Attr<'_> {
-    fn field(&self) -> &str {
+    fn accessor_name(&self) -> &str {
         self.field
-            .get_or_init(|| (self.name.to_case(Case::Snake) + "s").leak())
+            .get_or_init(|| self.name.to_case(Case::Snake).leak())
     }
 }
 
@@ -261,8 +261,11 @@ fn main() {
     output.push_str(HEADER);
 
     write_tag_kind(&mut output);
+    write_any_attr(&mut output);
+    let mut ordinal_offset = 0;
     for attr in ATTRS.values() {
-        write_attr(&mut output, attr);
+        write_attr(&mut output, attr, ordinal_offset);
+        ordinal_offset += attr.variants.len();
     }
 
     std::fs::write(OUTPUT_PATH, &output).unwrap();
@@ -440,6 +443,26 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     #[rustfmt::skip]
     writeln!(f, "// Read accessors for all attributes and write accessors for global ones.").ok();
     writeln!(f, "impl AnyTag {{").ok();
+    for (name, attr) in ATTRS.iter() {
+        let accessor = attr.accessor_name();
+        writeln!(f, "    #[inline(always)]").ok();
+        writeln!(f, "    fn get_{accessor}<const ORDINAL: usize>(&self) -> Option<&{name}> {{").ok();
+        writeln!(f, "        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_{accessor})").ok();
+        writeln!(f, "    }}").ok();
+        writeln!(f).ok();
+        writeln!(f, "    #[allow(unused)]").ok();
+        writeln!(f, "    #[inline(always)]").ok();
+        writeln!(f, "    fn set_{accessor}(&mut self, {accessor}: {name}) {{").ok();
+        writeln!(f, "        self.attrs.set(AnyAttr::{name}({accessor}));").ok();
+        writeln!(f, "    }}").ok();
+        writeln!(f).ok();
+        writeln!(f, "    #[allow(unused)]").ok();
+        writeln!(f, "    #[inline(always)]").ok();
+        writeln!(f, "    fn set_or_remove_{accessor}<const ORDINAL: usize>(&mut self, {accessor}: Option<{name}>) {{").ok();
+        writeln!(f, "        self.attrs.set_or_remove::<ORDINAL>({accessor}.map(AnyAttr::{name}));").ok();
+        writeln!(f, "    }}").ok();
+        writeln!(f).ok();
+    }
     for attr_kind in ATTRS.values() {
         for attr_variant in attr_kind.variants.iter() {
             let write = attr_variant.global;
@@ -466,10 +489,10 @@ fn write_accessors(
     tag_impl: TagImpl,
 ) {
     let kind = attr_kind.name;
+    let kind_accessor = attr_kind.accessor_name();
     let variant = attr_variant.name;
     let ordinal = attr_variant.ordinal_name();
     let accessor = attr_variant.accessor_name();
-    let attr_field = attr_kind.field();
     let param_ty = attr_variant.param_type();
     let param_mapping = attr_variant.param_mapping();
     let ret_ty = attr_variant.return_type();
@@ -491,7 +514,7 @@ fn write_accessors(
         writeln!(f, "        {tag}.{accessor}()").ok();
     } else {
         #[rustfmt::skip]
-        write!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>()").ok();
+        write!(f, "        {tag}.get_{kind_accessor}::<{{{kind}::{ordinal}}}>()").ok();
         if required {
             writeln!(f, ".unwrap().unwrap_{accessor}()").ok();
         } else {
@@ -523,10 +546,10 @@ fn write_accessors(
         writeln!(f, "        {tag}.set_{accessor}({accessor});").ok();
     } else if attr_variant.accessor_kind == AccessorKind::Custom || required {
         #[rustfmt::skip]
-        writeln!(f, "        {tag}.{attr_field}.set({kind}::{variant}({accessor}{param_mapping}));").ok();
+        writeln!(f, "        {tag}.set_{kind_accessor}({kind}::{variant}({accessor}{param_mapping}));").ok();
     } else {
         #[rustfmt::skip]
-        writeln!(f, "        {tag}.{attr_field}.set_or_remove::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
+        writeln!(f, "        {tag}.set_or_remove_{kind_accessor}::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
     }
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
@@ -545,7 +568,43 @@ fn write_accessors(
     writeln!(f, "    }}").ok();
 }
 
-fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr) {
+fn write_any_attr(f: &mut impl std::fmt::Write) {
+    writeln!(f, "#[derive(Clone, Debug, PartialEq)]").ok();
+    writeln!(f, "pub(crate) enum AnyAttr {{").ok();
+    for attr in ATTRS.keys() {
+        writeln!(f, "    {attr}({attr}),").ok();
+    }
+    writeln!(f, "}}").ok();
+    writeln!(f).ok();
+
+    writeln!(f, "impl AnyAttr {{").ok();
+    for (name, attr) in ATTRS.iter() {
+        let accessor = attr.accessor_name();
+        writeln!(f).ok();
+        writeln!(f, "        #[inline(always)]").ok();
+        writeln!(f, "        fn unwrap_{accessor}(&self) -> &{name} {{").ok();
+        writeln!(f, "            match self {{").ok();
+        #[rustfmt::skip]
+        writeln!(f, "                Self::{name}(attr) => attr,").ok();
+        writeln!(f, "                _ => unreachable!(),").ok();
+        writeln!(f, "            }}").ok();
+        writeln!(f, "        }}").ok();
+    }
+    writeln!(f, "}}").ok();
+
+    writeln!(f, "impl Ordinal for AnyAttr {{").ok();
+    writeln!(f, "    fn ordinal(&self) -> usize {{").ok();
+    writeln!(f, "        match self {{").ok();
+    for attr in ATTRS.keys() {
+        writeln!(f, "            Self::{attr}(a) => a.ordinal(),").ok();
+    }
+    writeln!(f, "        }}").ok();
+    writeln!(f, "    }}").ok();
+    writeln!(f, "}}").ok();
+    writeln!(f).ok();
+}
+
+fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr, ordinal_offset: usize) {
     let kind_name = attr.name;
     writeln!(f, "#[derive(Clone, Debug, PartialEq)]").ok();
     writeln!(f, "pub(crate) enum {kind_name} {{").ok();
@@ -560,9 +619,10 @@ fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr) {
 
     writeln!(f, "impl {kind_name} {{").ok();
     for (i, variant) in attr.variants.iter().enumerate() {
+        let o = ordinal_offset + i;
         let ordinal = variant.ordinal_name();
         #[rustfmt::skip]
-        writeln!(f, "    pub(crate) const {ordinal}: usize = {i};").ok();
+        writeln!(f, "    pub(crate) const {ordinal}: usize = {o};").ok();
     }
     for variant @ AttrVariant { name, .. } in attr.variants.iter() {
         let accessor = variant.accessor_name();

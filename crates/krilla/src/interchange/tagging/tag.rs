@@ -58,19 +58,13 @@ pub struct Tag<T> {
 pub struct AnyTag {
     /// The location of the tag.
     pub location: Option<Location>,
-    pub(crate) attrs: OrdinalSet<Attr>,
-    pub(crate) list_attrs: OrdinalSet<ListAttr>,
-    pub(crate) table_attrs: OrdinalSet<TableAttr>,
-    pub(crate) layout_attrs: OrdinalSet<LayoutAttr>,
+    pub(crate) attrs: OrdinalSet<AnyAttr>,
 }
 
 impl AnyTag {
     pub(crate) const fn new() -> Self {
         Self {
             attrs: OrdinalSet::new(),
-            list_attrs: OrdinalSet::new(),
-            table_attrs: OrdinalSet::new(),
-            layout_attrs: OrdinalSet::new(),
             location: None,
         }
     }
@@ -108,12 +102,14 @@ impl<T> Tag<T> {
 /// Due to the strict ordering, elements can be located using binary search.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct OrdinalSet<A> {
-    items: Vec<A>,
+    items: SmallVec<[A; 1]>,
 }
 
 impl<A> OrdinalSet<A> {
     pub(crate) const fn new() -> Self {
-        Self { items: Vec::new() }
+        Self {
+            items: SmallVec::new_const(),
+        }
     }
 }
 
@@ -127,23 +123,30 @@ impl<A> std::ops::Deref for OrdinalSet<A> {
 
 impl<A: Ordinal> OrdinalSet<A> {
     pub(crate) fn set(&mut self, attr: A) {
-        let res = self.items.binary_search_by_key(&attr.ordinal(), A::ordinal);
-        match res {
-            Ok(idx) => self.items[idx] = attr,
-            Err(idx) => self.items.insert(idx, attr),
+        for (i, item) in self.items.iter().enumerate() {
+            if item.ordinal() == attr.ordinal() {
+                self.items[i] = attr;
+                return;
+            }
+            if item.ordinal() > attr.ordinal() {
+                self.items.insert(i, attr);
+                return;
+            }
         }
+        self.items.push(attr);
     }
 
     pub(crate) fn remove<const ORDINAL: usize>(&mut self) {
-        let idx = self.items.binary_search_by_key(&ORDINAL, A::ordinal);
-        if let Ok(idx) = idx {
-            self.items.remove(idx);
+        for (i, item) in self.items.iter().enumerate() {
+            if item.ordinal() == ORDINAL {
+                self.items.remove(i);
+                return;
+            }
         }
     }
 
     pub(crate) fn get<const ORDINAL: usize>(&self) -> Option<&A> {
-        let idx = self.items.binary_search_by_key(&ORDINAL, A::ordinal).ok()?;
-        Some(&self.items[idx])
+        self.items.iter().find(|i| i.ordinal() == ORDINAL)
     }
 
     pub(crate) fn set_or_remove<const ORDINAL: usize>(&mut self, attr: Option<A>) {

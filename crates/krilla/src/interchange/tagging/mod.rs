@@ -132,7 +132,7 @@ use smallvec::SmallVec;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
-use crate::tagging::tag::{Attr, LayoutAttr, ListAttr, TableAttr, TagId, TagKind};
+use crate::tagging::tag::{AnyAttr, Attr, LayoutAttr, ListAttr, TableAttr, TagId, TagKind};
 use crate::util::lazy::LazyInit;
 
 pub mod tag;
@@ -659,6 +659,7 @@ impl TagGroup {
         }
 
         for attr in tag.attrs.iter() {
+            let AnyAttr::Attr(attr) = attr else { continue };
             match attr {
                 Attr::Id(_) => (), // Handled above
                 Attr::Title(title) => {
@@ -692,7 +693,10 @@ impl TagGroup {
 
         // Lazily initialize the list attributes to avoid an empty array.
         let mut list_attributes = LazyInit::new(&mut attributes, |attrs| attrs.get().push().list());
-        for attr in tag.list_attrs.iter() {
+        for attr in tag.attrs.iter() {
+            let AnyAttr::ListAttr(attr) = attr else {
+                continue;
+            };
             match attr {
                 ListAttr::Numbering(numbering) => {
                     list_attributes.get().list_numbering(numbering.to_pdf());
@@ -704,7 +708,10 @@ impl TagGroup {
         // Lazily initialize the table attributes to avoid an empty array.
         let mut table_attributes =
             LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
-        for attr in tag.table_attrs.iter() {
+        for attr in tag.attrs.iter() {
+            let AnyAttr::TableAttr(attr) = attr else {
+                continue;
+            };
             match attr {
                 TableAttr::Summary(summary) => {
                     if pdf_version >= PdfVersion::Pdf17 {
@@ -735,7 +742,10 @@ impl TagGroup {
         // Lazily initialize the list attributes to avoid an empty array.
         let mut layout_attributes =
             LazyInit::new(&mut attributes, |attrs| attrs.get().push().layout());
-        for attr in tag.layout_attrs.iter() {
+        for attr in tag.attrs.iter() {
+            let AnyAttr::LayoutAttr(attr) = attr else {
+                continue;
+            };
             match attr {
                 LayoutAttr::Placement(placement) => {
                     layout_attributes.get().placement(placement.to_pdf());
