@@ -1514,7 +1514,7 @@ impl Attr {
         #[inline(always)]
         fn unwrap_level(&self) -> NonZeroU32 {
             match self {
-                Self::HeadingLevel(val) => val.clone(),
+                Self::HeadingLevel(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1546,7 +1546,7 @@ impl ListAttr {
         #[inline(always)]
         fn unwrap_numbering(&self) -> ListNumbering {
             match self {
-                Self::Numbering(val) => val.clone(),
+                Self::Numbering(val) => *val,
             }
         }
 }
@@ -1597,7 +1597,7 @@ impl TableAttr {
         #[inline(always)]
         fn unwrap_scope(&self) -> TableHeaderScope {
             match self {
-                Self::HeaderScope(val) => val.clone(),
+                Self::HeaderScope(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1613,7 +1613,7 @@ impl TableAttr {
         #[inline(always)]
         fn unwrap_row_span(&self) -> NonZeroU32 {
             match self {
-                Self::RowSpan(val) => val.clone(),
+                Self::RowSpan(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1621,7 +1621,7 @@ impl TableAttr {
         #[inline(always)]
         fn unwrap_col_span(&self) -> NonZeroU32 {
             match self {
-                Self::ColSpan(val) => val.clone(),
+                Self::ColSpan(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1663,7 +1663,7 @@ impl LayoutAttr {
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {
             match self {
-                Self::Placement(val) => val.clone(),
+                Self::Placement(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1671,7 +1671,7 @@ impl LayoutAttr {
         #[inline(always)]
         fn unwrap_writing_mode(&self) -> WritingMode {
             match self {
-                Self::WritingMode(val) => val.clone(),
+                Self::WritingMode(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1679,7 +1679,7 @@ impl LayoutAttr {
         #[inline(always)]
         fn unwrap_b_box(&self) -> Rect {
             match self {
-                Self::BBox(val) => val.clone(),
+                Self::BBox(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1687,7 +1687,7 @@ impl LayoutAttr {
         #[inline(always)]
         fn unwrap_width(&self) -> f32 {
             match self {
-                Self::Width(val) => val.clone(),
+                Self::Width(val) => *val,
                 _ => unreachable!(),
             }
         }
@@ -1695,7 +1695,7 @@ impl LayoutAttr {
         #[inline(always)]
         fn unwrap_height(&self) -> f32 {
             match self {
-                Self::Height(val) => val.clone(),
+                Self::Height(val) => *val,
                 _ => unreachable!(),
             }
         }

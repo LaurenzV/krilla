@@ -122,11 +122,11 @@ impl AttrVariant<'_> {
 
     fn return_mapping(&self) -> &str {
         self.ret_mapping.get_or_init(|| match self.accessor_kind {
-            AccessorKind::Normal => "",
-            AccessorKind::Copy => ".clone()",
-            AccessorKind::AsRef(_) => ".as_ref()",
+            AccessorKind::Normal => "val",
+            AccessorKind::Copy => "*val",
+            AccessorKind::AsRef(_) => "val.as_ref()",
             AccessorKind::Custom => match self.name {
-                "CellHeaders" => ".as_ref()",
+                "CellHeaders" => "val.as_ref()",
                 _ => report_error(
                     &format!("no custom return type rule implemented for `{}`", self.name),
                     self.span,
@@ -532,7 +532,7 @@ fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr) {
         writeln!(f, "        fn unwrap_{accessor}(&self) -> {ret_ty} {{").ok();
         writeln!(f, "            match self {{").ok();
         #[rustfmt::skip]
-        writeln!(f, "                Self::{name}(val) => val{ret_mapping},").ok();
+        writeln!(f, "                Self::{name}(val) => {ret_mapping},").ok();
         if attr.variants.len() > 1 {
             writeln!(f, "                _ => unreachable!(),").ok();
         }
