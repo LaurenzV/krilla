@@ -200,6 +200,194 @@ impl TagKind {
             Self::Title(tag) => tag.as_any_mut(),
         }
     }
+
+
+    /// The tag id.
+    pub fn id(&self) -> Option<&TagId> {
+        self.as_any().attrs.get::<{Attr::ID}>().map(Attr::unwrap_id)
+    }
+
+    /// The tag id.
+    pub fn set_id(&mut self, id: Option<TagId>) {
+        self.as_any_mut().attrs.set_or_remove::<{Attr::ID}>(id.map(Attr::Id));
+    }
+
+    /// The tag id.
+    pub fn with_id(mut self, id: Option<TagId>) -> Self {
+        self.as_any_mut().set_id(id);
+        self
+    }
+
+    /// The language of this tag.
+    pub fn lang(&self) -> Option<&str> {
+        self.as_any().attrs.get::<{Attr::LANG}>().map(Attr::unwrap_lang)
+    }
+
+    /// The language of this tag.
+    pub fn set_lang(&mut self, lang: Option<String>) {
+        self.as_any_mut().attrs.set_or_remove::<{Attr::LANG}>(lang.map(Attr::Lang));
+    }
+
+    /// The language of this tag.
+    pub fn with_lang(mut self, lang: Option<String>) -> Self {
+        self.as_any_mut().set_lang(lang);
+        self
+    }
+
+    /// An optional alternate text that describes the text (for example, if the text consists
+    /// of a star symbol, the alt text should describe that in natural language).
+    pub fn alt_text(&self) -> Option<&str> {
+        self.as_any().attrs.get::<{Attr::ALT_TEXT}>().map(Attr::unwrap_alt_text)
+    }
+
+    /// An optional alternate text that describes the text (for example, if the text consists
+    /// of a star symbol, the alt text should describe that in natural language).
+    pub fn set_alt_text(&mut self, alt_text: Option<String>) {
+        self.as_any_mut().attrs.set_or_remove::<{Attr::ALT_TEXT}>(alt_text.map(Attr::AltText));
+    }
+
+    /// An optional alternate text that describes the text (for example, if the text consists
+    /// of a star symbol, the alt text should describe that in natural language).
+    pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
+        self.as_any_mut().set_alt_text(alt_text);
+        self
+    }
+
+    /// If the content of the tag is an abbreviation, the expanded form of the
+    /// abbreviation should be provided here.
+    pub fn expanded(&self) -> Option<&str> {
+        self.as_any().attrs.get::<{Attr::EXPANDED}>().map(Attr::unwrap_expanded)
+    }
+
+    /// If the content of the tag is an abbreviation, the expanded form of the
+    /// abbreviation should be provided here.
+    pub fn set_expanded(&mut self, expanded: Option<String>) {
+        self.as_any_mut().attrs.set_or_remove::<{Attr::EXPANDED}>(expanded.map(Attr::Expanded));
+    }
+
+    /// If the content of the tag is an abbreviation, the expanded form of the
+    /// abbreviation should be provided here.
+    pub fn with_expanded(mut self, expanded: Option<String>) -> Self {
+        self.as_any_mut().set_expanded(expanded);
+        self
+    }
+
+    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// some curves that artistically represent some word. This should be the exact
+    /// replacement text of the word.
+    pub fn actual_text(&self) -> Option<&str> {
+        self.as_any().attrs.get::<{Attr::ACTUAL_TEXT}>().map(Attr::unwrap_actual_text)
+    }
+
+    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// some curves that artistically represent some word. This should be the exact
+    /// replacement text of the word.
+    pub fn set_actual_text(&mut self, actual_text: Option<String>) {
+        self.as_any_mut().attrs.set_or_remove::<{Attr::ACTUAL_TEXT}>(actual_text.map(Attr::ActualText));
+    }
+
+    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// some curves that artistically represent some word. This should be the exact
+    /// replacement text of the word.
+    pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
+        self.as_any_mut().set_actual_text(actual_text);
+        self
+    }
+
+    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// some curves that artistically represent some word. This should be the exact
+    /// replacement text of the word.
+    pub fn title(&self) -> Option<&str> {
+        self.as_any().attrs.get::<{Attr::TITLE}>().map(Attr::unwrap_title)
+    }
+
+    /// The heading level
+    pub fn level(&self) -> Option<NonZeroU32> {
+        self.as_any().attrs.get::<{Attr::HEADING_LEVEL}>().map(Attr::unwrap_level)
+    }
+
+    /// The list numbering.
+    pub fn numbering(&self) -> Option<ListNumbering> {
+        self.as_any().list_attrs.get::<{ListAttr::NUMBERING}>().map(ListAttr::unwrap_numbering)
+    }
+
+    /// The table summary.
+    pub fn summary(&self) -> Option<&str> {
+        self.as_any().table_attrs.get::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
+    }
+
+    /// The table header scope.
+    pub fn scope(&self) -> Option<TableHeaderScope> {
+        self.as_any().table_attrs.get::<{TableAttr::HEADER_SCOPE}>().map(TableAttr::unwrap_scope)
+    }
+
+    /// A list of headers associated with a table cell.
+    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
+    /// which can also specify a list of parent header cells (`TH`), and so on.
+    /// To determine the list of associated headers this list is recursively
+    /// evaluated.
+    ///
+    /// This allows specifying header hierarchies inside tables.
+    pub fn headers(&self) -> Option<&[TagId]> {
+        self.as_any().table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
+    }
+
+    /// The row span of this table cell.
+    pub fn row_span(&self) -> Option<NonZeroU32> {
+        self.as_any().table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
+    }
+
+    /// The column span of this table cell.
+    pub fn col_span(&self) -> Option<NonZeroU32> {
+        self.as_any().table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
+    }
+
+    /// The placement.
+    pub fn placement(&self) -> Option<Placement> {
+        self.as_any().layout_attrs.get::<{LayoutAttr::PLACEMENT}>().map(LayoutAttr::unwrap_placement)
+    }
+
+    /// The placement.
+    pub fn set_placement(&mut self, placement: Option<Placement>) {
+        self.as_any_mut().layout_attrs.set_or_remove::<{LayoutAttr::PLACEMENT}>(placement.map(LayoutAttr::Placement));
+    }
+
+    /// The placement.
+    pub fn with_placement(mut self, placement: Option<Placement>) -> Self {
+        self.as_any_mut().set_placement(placement);
+        self
+    }
+
+    /// The writing mode.
+    pub fn writing_mode(&self) -> Option<WritingMode> {
+        self.as_any().layout_attrs.get::<{LayoutAttr::WRITING_MODE}>().map(LayoutAttr::unwrap_writing_mode)
+    }
+
+    /// The writing mode.
+    pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
+        self.as_any_mut().layout_attrs.set_or_remove::<{LayoutAttr::WRITING_MODE}>(writing_mode.map(LayoutAttr::WritingMode));
+    }
+
+    /// The writing mode.
+    pub fn with_writing_mode(mut self, writing_mode: Option<WritingMode>) -> Self {
+        self.as_any_mut().set_writing_mode(writing_mode);
+        self
+    }
+
+    /// The bounding box.
+    pub fn b_box(&self) -> Option<Rect> {
+        self.as_any().layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
+    }
+
+    /// The width.
+    pub fn width(&self) -> Option<f32> {
+        self.as_any().layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
+    }
+
+    /// The height.
+    pub fn height(&self) -> Option<f32> {
+        self.as_any().layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
+    }
 }
 /// A part of a document that may contain multiple articles or sections.
 #[derive(Clone, Debug, PartialEq)]

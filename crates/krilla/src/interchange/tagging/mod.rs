@@ -772,11 +772,10 @@ impl TagGroup {
     }
 
     fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
-        let tag = self.tag.as_any();
-        if let Some(headers) = tag.headers() {
+        if let Some(headers) = self.tag.headers() {
             for id in headers.iter() {
                 if !id_tree.contains_key(id) {
-                    return Err(KrillaError::UnknownTagId(id.clone(), tag.location));
+                    return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location()));
                 }
             }
         }

@@ -26,6 +26,24 @@ use crate::surface::Location;
 
 include!("generated.rs");
 
+impl TagKind {
+    /// The location.
+    pub fn location(&self) -> Option<Location> {
+        self.as_any().location
+    }
+
+    /// The location.
+    pub fn set_location(&mut self, location: Option<Location>) {
+        self.as_any_mut().location = location;
+    }
+
+    /// The location.
+    pub fn with_location(mut self, location: Option<Location>) -> Self {
+        self.as_any_mut().location = location;
+        self
+    }
+}
+
 /// A tag for group nodes.
 #[repr(C)]
 #[derive(Clone, Debug, PartialEq)]

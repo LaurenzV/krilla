@@ -338,6 +338,16 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     }
     writeln!(f, "        }}").ok();
     writeln!(f, "    }}").ok();
+    writeln!(f).ok();
+
+    // Generate accessors for `TagKind` specific attributes.
+    for attr_kind in ATTRS.values() {
+        for attr_variant in attr_kind.variants.iter() {
+            let write = attr_variant.global;
+            write_accessors(f, attr_kind, attr_variant, false, write, true);
+        }
+    }
+
     writeln!(f, "}}").ok();
 
     for variant @ TagVariant { name, .. } in TAG.variants.iter() {
@@ -405,7 +415,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
             }
             let required = i < variant.required.len();
 
-            write_accessors(f, attr_kind, attr_variant, required, true);
+            write_accessors(f, attr_kind, attr_variant, required, true, false);
         }
 
         writeln!(f, "}}").ok();
@@ -420,7 +430,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
                 continue;
             }
 
-            write_accessors(f, attr_kind, attr_variant, false, true);
+            write_accessors(f, attr_kind, attr_variant, false, true, false);
         }
     }
     writeln!(f, "}}").ok();
@@ -435,7 +445,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
                 continue;
             }
 
-            write_accessors(f, attr_kind, attr_variant, false, false);
+            write_accessors(f, attr_kind, attr_variant, false, false, false);
         }
     }
     writeln!(f, "}}").ok();
@@ -448,6 +458,7 @@ fn write_accessors(
     attr_variant: &AttrVariant,
     required: bool,
     write: bool,
+    tag_kind: bool,
 ) {
     let kind = attr_kind.name;
     let variant = attr_variant.name;
@@ -467,8 +478,9 @@ fn write_accessors(
         writeln!(f, "    pub fn {accessor}(&self) -> Option<{ret_ty}> {{").ok();
     }
     let unwrap = if required { ".unwrap()" } else { "" };
+    let tag = if tag_kind { "self.as_any()" } else { "self" };
     #[rustfmt::skip]
-    writeln!(f, "        self.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
+    writeln!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
     writeln!(f, "    }}").ok();
 
     if !write {
@@ -476,16 +488,21 @@ fn write_accessors(
     }
 
     writeln!(f).ok();
+    let tag = if tag_kind {
+        "self.as_any_mut()"
+    } else {
+        "self"
+    };
     for comment in attr_variant.comments.iter() {
         writeln!(f, "    ///{comment}").ok();
     }
     #[rustfmt::skip]
     if attr_variant.accessor_kind == AccessorKind::Custom || required {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: {param_ty}) {{").ok();
-        writeln!(f, "        self.{attr_field}.set({kind}::{variant}({accessor}{param_mapping}));").ok();
+        writeln!(f, "        {tag}.{attr_field}.set({kind}::{variant}({accessor}{param_mapping}));").ok();
     } else {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: Option<{param_ty}>) {{").ok();
-        writeln!(f, "        self.{attr_field}.set_or_remove::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
+        writeln!(f, "        {tag}.{attr_field}.set_or_remove::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
     };
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
@@ -499,7 +516,7 @@ fn write_accessors(
     } else {
         writeln!(f, "    pub fn with_{accessor}(mut self, {accessor}: Option<{param_ty}>) -> Self {{").ok();
     };
-    writeln!(f, "        self.set_{accessor}({accessor});").ok();
+    writeln!(f, "        {tag}.set_{accessor}({accessor});").ok();
     writeln!(f, "        self").ok();
     writeln!(f, "    }}").ok();
 }
