@@ -67,6 +67,13 @@ impl Document {
         Page::new(&mut self.serializer_context, page_index, page_settings)
     }
 
+    /// Embed the pages (0-indexed) from the given
+    /// PDF document.
+    #[cfg(feature = "pdf")]
+    pub fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
+        self.serializer_context.embed_pdf_pages(pdf, page_indices);
+    }
+
     /// Set the location that should be assumed for subsequent operations.
     pub fn set_location(&mut self, location: Location) {
         self.serializer_context.set_location(location);
@@ -85,13 +92,6 @@ impl Document {
     /// Set the tag tree of the document.
     pub fn set_tag_tree(&mut self, tag_tree: TagTree) {
         self.serializer_context.set_tag_tree(tag_tree);
-    }
-
-    /// Embed the pages (0-indexed) from the given
-    /// PDF document.
-    #[cfg(feature = "pdf")]
-    pub fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
-        self.serializer_context.embed_pdf_pages(pdf, page_indices);
     }
 
     /// Embed a new file in the PDF document.
