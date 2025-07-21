@@ -342,9 +342,8 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     }
     writeln!(f, "        }}").ok();
     writeln!(f, "    }}").ok();
-    writeln!(f).ok();
 
-    // Generate accessors for `TagKind`.
+    // Accessors for `TagKind`.
     for attr_kind in ATTRS.values() {
         for attr_variant in attr_kind.variants.iter() {
             let write = attr_variant.global;
@@ -353,6 +352,57 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     }
 
     writeln!(f, "}}").ok();
+    writeln!(f).ok();
+
+    // Accessors for `AnyTag`.
+    #[rustfmt::skip]
+    writeln!(f, "// Read accessors for all attributes and write accessors for global ones.").ok();
+    writeln!(f, "impl AnyTag {{").ok();
+    for (name, attr) in ATTRS.iter() {
+        let accessor = attr.accessor_name();
+        writeln!(f, "    #[inline(always)]").ok();
+        #[rustfmt::skip]
+        writeln!(f, "    fn get_{accessor}<const ORDINAL: usize>(&self) -> Option<&{name}> {{").ok();
+        #[rustfmt::skip]
+        writeln!(f, "        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_{accessor})").ok();
+        writeln!(f, "    }}").ok();
+        writeln!(f).ok();
+        writeln!(f, "    #[allow(unused)]").ok();
+        writeln!(f, "    #[inline(always)]").ok();
+        writeln!(f, "    fn set_{accessor}(&mut self, {accessor}: {name}) {{").ok();
+        writeln!(f, "        self.attrs.set(AnyAttr::{name}({accessor}));").ok();
+        writeln!(f, "    }}").ok();
+        writeln!(f).ok();
+        writeln!(f, "    #[allow(unused)]").ok();
+        writeln!(f, "    #[inline(always)]").ok();
+        writeln!(f, "    fn set_or_remove_{accessor}<const ORDINAL: usize>(&mut self, {accessor}: Option<{name}>) {{").ok();
+        #[rustfmt::skip]
+        writeln!(f, "        self.attrs.set_or_remove::<ORDINAL>({accessor}.map(AnyAttr::{name}));").ok();
+        writeln!(f, "    }}").ok();
+        writeln!(f).ok();
+    }
+    for attr_kind in ATTRS.values() {
+        for attr_variant in attr_kind.variants.iter() {
+            let write = attr_variant.global;
+            write_accessors(f, attr_kind, attr_variant, false, write, TagImpl::Any);
+        }
+    }
+    writeln!(f, "}}").ok();
+    writeln!(f).ok();
+
+    // Accessors for global attributes.
+    writeln!(f, "impl<T> Tag<T> {{").ok();
+    for attr_kind in ATTRS.values() {
+        for attr_variant in attr_kind.variants.iter() {
+            if !attr_variant.global {
+                continue;
+            }
+
+            write_accessors(f, attr_kind, attr_variant, false, true, TagImpl::Tag);
+        }
+    }
+    writeln!(f, "}}").ok();
+    writeln!(f).ok();
 
     for variant @ TagVariant { name, .. } in TAG.variants.iter() {
         // Struct definition.
@@ -370,7 +420,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
         writeln!(f, "    }}").ok();
         writeln!(f, "}}").ok();
 
-        // Constructor and accessors.
+        // Constructor
         writeln!(f, "impl Tag<{name}> {{").ok();
         for comment in variant.comments.iter() {
             writeln!(f, "    ///{comment}").ok();
@@ -394,83 +444,32 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
                 .join(", ");
             writeln!(f, "    #[allow(non_snake_case)]").ok();
             writeln!(f, "    pub fn {name}({params}) -> Tag<{name}> {{").ok();
-
             writeln!(f, "        let mut tag = Tag::new();").ok();
-            for (_, attr_variant) in variant.required.iter() {
-                let name = attr_variant.accessor_name();
-                writeln!(f, "        tag.set_{name}({name});").ok();
-            }
-            for (_, attr_variant) in variant.suggested.iter() {
+            for (_, attr_variant) in variant.required.iter().chain(variant.suggested.iter()) {
                 let name = attr_variant.accessor_name();
                 writeln!(f, "        tag.set_{name}({name});").ok();
             }
             writeln!(f, "        tag").ok();
-
             writeln!(f, "    }}").ok();
         }
 
-        // Generate accessors for tag specific attributes.
-        for (i, (attr_kind, attr_variant)) in (variant.required.iter())
-            .chain(variant.optional.iter())
-            .enumerate()
-        {
+        // Accessors for tag specific attributes.
+        for (attr_kind, attr_variant) in variant.required.iter() {
             if attr_variant.global {
                 continue;
             }
-            let required = i < variant.required.len();
-
-            write_accessors(f, attr_kind, attr_variant, required, true, TagImpl::Tag);
+            write_accessors(f, attr_kind, attr_variant, true, true, TagImpl::Tag);
+        }
+        for (attr_kind, attr_variant) in variant.optional.iter() {
+            if attr_variant.global {
+                continue;
+            }
+            write_accessors(f, attr_kind, attr_variant, false, true, TagImpl::Tag);
         }
 
         writeln!(f, "}}").ok();
         writeln!(f).ok();
     }
-
-    writeln!(f, "// Accessors for global attributes.").ok();
-    writeln!(f, "impl<T> Tag<T> {{").ok();
-    for attr_kind in ATTRS.values() {
-        for attr_variant in attr_kind.variants.iter() {
-            if !attr_variant.global {
-                continue;
-            }
-
-            write_accessors(f, attr_kind, attr_variant, false, true, TagImpl::Tag);
-        }
-    }
-    writeln!(f, "}}").ok();
-    writeln!(f).ok();
-
-    #[rustfmt::skip]
-    writeln!(f, "// Read accessors for all attributes and write accessors for global ones.").ok();
-    writeln!(f, "impl AnyTag {{").ok();
-    for (name, attr) in ATTRS.iter() {
-        let accessor = attr.accessor_name();
-        writeln!(f, "    #[inline(always)]").ok();
-        writeln!(f, "    fn get_{accessor}<const ORDINAL: usize>(&self) -> Option<&{name}> {{").ok();
-        writeln!(f, "        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_{accessor})").ok();
-        writeln!(f, "    }}").ok();
-        writeln!(f).ok();
-        writeln!(f, "    #[allow(unused)]").ok();
-        writeln!(f, "    #[inline(always)]").ok();
-        writeln!(f, "    fn set_{accessor}(&mut self, {accessor}: {name}) {{").ok();
-        writeln!(f, "        self.attrs.set(AnyAttr::{name}({accessor}));").ok();
-        writeln!(f, "    }}").ok();
-        writeln!(f).ok();
-        writeln!(f, "    #[allow(unused)]").ok();
-        writeln!(f, "    #[inline(always)]").ok();
-        writeln!(f, "    fn set_or_remove_{accessor}<const ORDINAL: usize>(&mut self, {accessor}: Option<{name}>) {{").ok();
-        writeln!(f, "        self.attrs.set_or_remove::<ORDINAL>({accessor}.map(AnyAttr::{name}));").ok();
-        writeln!(f, "    }}").ok();
-        writeln!(f).ok();
-    }
-    for attr_kind in ATTRS.values() {
-        for attr_variant in attr_kind.variants.iter() {
-            let write = attr_variant.global;
-            write_accessors(f, attr_kind, attr_variant, false, write, TagImpl::Any);
-        }
-    }
-    writeln!(f, "}}").ok();
-    writeln!(f).ok();
 }
 
 #[derive(PartialEq, Eq)]
