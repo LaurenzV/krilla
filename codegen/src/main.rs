@@ -320,7 +320,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     writeln!(f, "impl TagKind {{").ok();
     #[rustfmt::skip]
     writeln!(f, "    /// A type erased tag, which allows reading all attributes.").ok();
-    writeln!(f, "    pub fn as_any(&self) -> &Tag<()> {{").ok();
+    writeln!(f, "    pub fn as_any(&self) -> &AnyTag {{").ok();
     writeln!(f, "        match self {{").ok();
     for TagVariant { name, .. } in TAG.variants.iter() {
         writeln!(f, "            Self::{name}(tag) => tag.as_any(),").ok();
@@ -331,7 +331,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     #[rustfmt::skip]
     writeln!(f, "    /// A type erased tag, which allows reading all attributes and additionally").ok();
     writeln!(f, "    /// writing all global attributes.").ok();
-    writeln!(f, "    pub fn as_any_mut(&mut self) -> &mut Tag<()> {{").ok();
+    writeln!(f, "    pub fn as_any_mut(&mut self) -> &mut AnyTag {{").ok();
     writeln!(f, "        match self {{").ok();
     for TagVariant { name, .. } in TAG.variants.iter() {
         writeln!(f, "            Self::{name}(tag) => tag.as_any_mut(),").ok();
@@ -340,11 +340,11 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
 
-    // Generate accessors for `TagKind` specific attributes.
+    // Generate accessors for `TagKind`.
     for attr_kind in ATTRS.values() {
         for attr_variant in attr_kind.variants.iter() {
             let write = attr_variant.global;
-            write_accessors(f, attr_kind, attr_variant, false, write, true);
+            write_accessors(f, attr_kind, attr_variant, false, write, TagImpl::TagKind);
         }
     }
 
@@ -415,14 +415,14 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
             }
             let required = i < variant.required.len();
 
-            write_accessors(f, attr_kind, attr_variant, required, true, false);
+            write_accessors(f, attr_kind, attr_variant, required, true, TagImpl::Tag);
         }
 
         writeln!(f, "}}").ok();
         writeln!(f).ok();
     }
 
-    writeln!(f, "// Accessors for global attributes, for any tag").ok();
+    writeln!(f, "// Accessors for global attributes.").ok();
     writeln!(f, "impl<T> Tag<T> {{").ok();
     for attr_kind in ATTRS.values() {
         for attr_variant in attr_kind.variants.iter() {
@@ -430,26 +430,29 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
                 continue;
             }
 
-            write_accessors(f, attr_kind, attr_variant, false, true, false);
+            write_accessors(f, attr_kind, attr_variant, false, true, TagImpl::Tag);
         }
     }
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
     #[rustfmt::skip]
-    writeln!(f, "// Accessors for non-global attributes, for type-erased tag").ok();
-    writeln!(f, "impl Tag<()> {{").ok();
+    writeln!(f, "// Read accessors for all attributes and write accessors for global ones.").ok();
+    writeln!(f, "impl AnyTag {{").ok();
     for attr_kind in ATTRS.values() {
         for attr_variant in attr_kind.variants.iter() {
-            if attr_variant.global {
-                continue;
-            }
-
-            write_accessors(f, attr_kind, attr_variant, false, false, false);
+            let write = attr_variant.global;
+            write_accessors(f, attr_kind, attr_variant, false, write, TagImpl::Any);
         }
     }
     writeln!(f, "}}").ok();
     writeln!(f).ok();
+}
+
+enum TagImpl {
+    TagKind,
+    Tag,
+    Any,
 }
 
 fn write_accessors(
@@ -458,7 +461,7 @@ fn write_accessors(
     attr_variant: &AttrVariant,
     required: bool,
     write: bool,
-    tag_kind: bool,
+    tag_impl: TagImpl,
 ) {
     let kind = attr_kind.name;
     let variant = attr_variant.name;
@@ -478,7 +481,11 @@ fn write_accessors(
         writeln!(f, "    pub fn {accessor}(&self) -> Option<{ret_ty}> {{").ok();
     }
     let unwrap = if required { ".unwrap()" } else { "" };
-    let tag = if tag_kind { "self.as_any()" } else { "self" };
+    let tag = match tag_impl {
+        TagImpl::TagKind => "self.as_any()",
+        TagImpl::Tag => "self.inner",
+        TagImpl::Any => "self",
+    };
     #[rustfmt::skip]
     writeln!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
     writeln!(f, "    }}").ok();
@@ -488,10 +495,10 @@ fn write_accessors(
     }
 
     writeln!(f).ok();
-    let tag = if tag_kind {
-        "self.as_any_mut()"
-    } else {
-        "self"
+    let tag = match tag_impl {
+        TagImpl::TagKind => "self.as_any_mut()",
+        TagImpl::Tag => "self.inner",
+        TagImpl::Any => "self",
     };
     for comment in attr_variant.comments.iter() {
         writeln!(f, "    ///{comment}").ok();
@@ -516,7 +523,7 @@ fn write_accessors(
     } else {
         writeln!(f, "    pub fn with_{accessor}(mut self, {accessor}: Option<{param_ty}>) -> Self {{").ok();
     };
-    writeln!(f, "        {tag}.set_{accessor}({accessor});").ok();
+    writeln!(f, "        self.set_{accessor}({accessor});").ok();
     writeln!(f, "        self").ok();
     writeln!(f, "    }}").ok();
 }

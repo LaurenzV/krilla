@@ -44,23 +44,27 @@ impl TagKind {
     }
 }
 
-/// A tag for group nodes.
-#[repr(C)]
+/// A raw tag, which allows reading all attributes and additionally writing all
+/// global ones.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tag<T> {
+    inner: AnyTag,
+    /// Compile time marker for a type-safe API.
+    pub(crate) ty: PhantomData<T>,
+}
+
+/// A "raw" tag that allows reading all attributes and writing global ones.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AnyTag {
     /// The location of the tag.
     pub location: Option<Location>,
     pub(crate) attrs: OrdinalSet<Attr>,
     pub(crate) list_attrs: OrdinalSet<ListAttr>,
     pub(crate) table_attrs: OrdinalSet<TableAttr>,
     pub(crate) layout_attrs: OrdinalSet<LayoutAttr>,
-    /// Compile time marker for a type-safe API.
-    pub(crate) ty: PhantomData<T>,
 }
 
-impl<T> Tag<T> {
-    /// This can't be public, otherwise tags could be constructed without
-    /// providing required attributes.
+impl AnyTag {
     pub(crate) const fn new() -> Self {
         Self {
             attrs: OrdinalSet::new(),
@@ -68,28 +72,34 @@ impl<T> Tag<T> {
             table_attrs: OrdinalSet::new(),
             layout_attrs: OrdinalSet::new(),
             location: None,
+        }
+    }
+}
+
+impl<T> Tag<T> {
+    /// This can't be public, otherwise tags could be constructed without
+    /// providing required attributes.
+    pub(crate) const fn new() -> Self {
+        Self {
+            inner: AnyTag::new(),
             ty: PhantomData,
         }
     }
 
-    /// A type erased tag, which allows reading all attributes.
-    pub fn as_any(&self) -> &Tag<()> {
-        // SAFETY: the generic parameter of `Tag` is only used in PhantomData
-        // and doesn't affect layout
-        unsafe { &*(self as *const Self as *const Tag<()>) }
+    /// A raw tag, which allows reading all attributes.
+    pub fn as_any(&self) -> &AnyTag {
+        &self.inner
     }
 
-    /// A type erased tag, which allows reading all attributes and additionally
-    /// writing all global attributes.
-    pub fn as_any_mut(&mut self) -> &mut Tag<()> {
-        // SAFETY: the generic parameter of `Tag` is only used in PhantomData
-        // and doesn't affect layout
-        unsafe { &mut *(self as *mut Self as *mut Tag<()>) }
+    /// A raw tag, which allows reading all attributes and additionally writing
+    /// all global ones.
+    pub fn as_any_mut(&mut self) -> &mut AnyTag {
+        &mut self.inner
     }
 
     /// The location.
     pub fn with_location(mut self, location: Option<Location>) -> Self {
-        self.location = location;
+        self.inner.location = location;
         self
     }
 }
