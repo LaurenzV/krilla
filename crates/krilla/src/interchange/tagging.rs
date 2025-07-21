@@ -1109,7 +1109,7 @@ fn serialize_children(
                             .unwrap_or_else(|| panic!("tag tree contains identifier from page {}, but document only has {} pages",
                                 pi.page_index + 1,
                                 sc.page_infos().len()))
-                            .ref_;
+                            .ref_();
 
                     if struct_page_ref.is_none() {
                         struct_page_ref = Some(page_ref);
@@ -1139,15 +1139,15 @@ fn serialize_children(
                         );
                     };
 
-                    let page_ref = page_info.ref_;
+                    let page_ref = page_info.ref_();
                     let Some((annotation_ref, struct_parent)) =
-                        page_info.annotations.get_mut(ai.annot_index)
+                        page_info.annotations_mut().get_mut(ai.annot_index)
                     else {
                         panic!(
                             "tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
                             ai.annot_index + 1,
                             ai.page_index + 1,
-                            page_info.annotations.len()
+                            page_info.annotations().len()
                         );
                     };
 

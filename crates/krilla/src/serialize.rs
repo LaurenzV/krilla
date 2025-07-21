@@ -23,6 +23,8 @@ use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
+#[cfg(feature = "pdf")]
+use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
@@ -49,9 +51,8 @@ pub struct SerializeSettings {
     /// Note that this only on a best-effort basis. For example, XMP metadata always
     /// contains a binary marker. In addition to that, some validators,
     /// like PDF/A, require that the file header be a binary marker, meaning
-    /// that the header itself will not be ASCII-compatible.
-    ///
-    /// Binary streams will always be hex encoded and thus are ascii compatible, though.
+    /// that the header itself will not be ASCII-compatible. Finally, embedded PDFs will
+    /// be embedded as is and not re-encoded with ASCII-compatible encoding.
     pub ascii_compatible: bool,
     /// Whether the PDF should include XMP metadata.
     ///
@@ -130,19 +131,48 @@ impl Default for SerializeSettings {
     }
 }
 
-pub(crate) struct PageInfo {
-    /// The reference of the page in the chunk.
-    pub(crate) ref_: Ref,
-    /// The page size, necessary so that we can convert from PDF coordinates to
-    /// krilla coordinates.
-    pub(crate) surface_size: Size,
-    /// The refs of the annotations that are used by that page, and optionally
-    /// a ref to their struct parent in the tag tree.
-    ///
-    /// Note that this will be empty be default when adding a new `PageInfo` to
-    /// `page_infos` in `SerializeContext`, and only once we actually serialize
-    /// the page will the annotations be populated.
-    pub(crate) annotations: Vec<(Ref, OnceCell<Ref>)>,
+pub(crate) enum PageInfo {
+    /// A page built with krilla.
+    Krilla {
+        /// The reference of the page in the chunk.
+        ref_: Ref,
+        /// The page size, necessary so that we can convert from PDF coordinates to
+        /// krilla coordinates.
+        surface_size: Size,
+        /// The refs of the annotations that are used by that page, and optionally
+        /// a ref to their struct parent in the tag tree.
+        ///
+        /// Note that this will be empty be default when adding a new `PageInfo` to
+        /// `page_infos` in `SerializeContext`, and only once we actually serialize
+        /// the page will the annotations be populated.
+        annotations: Vec<(Ref, OnceCell<Ref>)>,
+    },
+    /// A page embedded from an external PDF file.
+    #[allow(dead_code)]
+    Pdf { ref_: Ref, size: Size },
+}
+
+impl PageInfo {
+    pub(crate) fn ref_(&self) -> Ref {
+        match self {
+            PageInfo::Krilla { ref_, .. } => *ref_,
+            PageInfo::Pdf { ref_, .. } => *ref_,
+        }
+    }
+
+    pub(crate) fn annotations(&self) -> &[(Ref, OnceCell<Ref>)] {
+        match self {
+            PageInfo::Krilla { annotations, .. } => annotations,
+            PageInfo::Pdf { .. } => &[],
+        }
+    }
+
+    pub(crate) fn annotations_mut(&mut self) -> &mut [(Ref, OnceCell<Ref>)] {
+        match self {
+            PageInfo::Krilla { annotations, .. } => annotations,
+            PageInfo::Pdf { .. } => &mut [],
+        }
+    }
 }
 
 enum StructParentElement {
@@ -185,9 +215,9 @@ pub(crate) struct SerializeContext {
     /// The current ref in use. All serializers should use the `new_ref` method (which indirectly
     /// is based on this field) to generate a new Ref, instead of creating one manually with
     /// `Ref::new`.
-    cur_ref: Ref,
+    pub(crate) cur_ref: Ref,
     /// Collect all chunks that are generated as part of the PDF writing process.
-    chunk_container: ChunkContainer,
+    pub(crate) chunk_container: ChunkContainer,
     /// All validation errors that are collected as part of the export process.
     validation_errors: Vec<ValidationError>,
     /// Settings used for serialization.
@@ -294,6 +324,40 @@ impl SerializeContext {
         self.serialize_settings.clone()
     }
 
+    #[cfg(feature = "pdf")]
+    pub(crate) fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
+        for page_idx in page_indices {
+            let page_ref = self.new_ref();
+            let size = pdf
+                .pages()
+                .get(*page_idx)
+                .and_then(|p| {
+                    let (x, y) = p.render_dimensions();
+                    Size::from_wh(x, y)
+                })
+                // In case the page doesn't exist, we will catch the error later, so just use
+                // a dummy size.
+                .unwrap_or(Size::from_wh(1.0, 1.0).unwrap());
+            self.global_objects
+                .pdf_ctx
+                .add_page(pdf, *page_idx, page_ref, self.location);
+            self.page_infos.push(PageInfo::Pdf {
+                ref_: page_ref,
+                size,
+            });
+        }
+    }
+
+    #[cfg(feature = "pdf")]
+    pub(crate) fn embed_pdf_page_as_xobject(&mut self, pdf: &PdfDocument, page_idx: usize) -> Ref {
+        let xobj_ref = self.new_ref();
+        self.global_objects
+            .pdf_ctx
+            .add_xobject(pdf, page_idx, xobj_ref, self.location);
+
+        xobj_ref
+    }
+
     pub(crate) fn page_tree_ref(&mut self) -> Ref {
         self.page_tree_ref
     }
@@ -323,6 +387,8 @@ impl SerializeContext {
         self.serialize_fonts()?;
         self.serialize_pages()?;
         self.serialize_page_tree();
+        #[cfg(feature = "pdf")]
+        self.serialize_embedded_pdfs()?;
         self.serialize_xyz_destinations()?;
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
@@ -413,7 +479,7 @@ impl SerializeContext {
 
     pub(crate) fn register_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
-        self.page_infos.push(PageInfo {
+        self.page_infos.push(PageInfo::Krilla {
             ref_,
             surface_size: page.page_settings.surface_size(),
             // Will be populated when the page is serialized.
@@ -570,6 +636,13 @@ impl SerializeContext {
         Ok(())
     }
 
+    #[cfg(feature = "pdf")]
+    fn serialize_embedded_pdfs(&mut self) -> KrillaResult<()> {
+        let pdf_ctx = self.global_objects.pdf_ctx.take();
+
+        pdf_ctx.serialize(self)
+    }
+
     fn serialize_fonts(&mut self) -> KrillaResult<()> {
         let fonts = self.global_objects.font_map.take();
         let mut sorted = fonts.values().collect::<Vec<_>>();
@@ -610,7 +683,7 @@ impl SerializeContext {
         page_tree_chunk
             .pages(self.page_tree_ref)
             .count(self.page_infos.len() as i32)
-            .kids(self.page_infos.iter().map(|i| i.ref_));
+            .kids(self.page_infos.iter().map(|i| i.ref_()));
         self.chunk_container.page_tree = Some((self.page_tree_ref, page_tree_chunk));
     }
 
@@ -689,7 +762,7 @@ impl SerializeContext {
                             // > For an object identified as a content item by means of an object reference
                             // > (see 14.7.5.3, "PDF objects as content items"), the value shall be an
                             // > indirect reference to the parent structure element.
-                            let page_annotations = &self.page_infos[ai.page_index].annotations;
+                            let page_annotations = &self.page_infos[ai.page_index].annotations();
                             let parent_ref =
                                 *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
                                     panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
@@ -837,9 +910,11 @@ pub(crate) struct GlobalObjects {
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
-
     /// A list of custom headings numbers used in the document.
     pub(crate) custom_heading_roles: BTreeSet<NonZeroU32>,
+    /// The context tracking all of the pdfs and their pages that have been inserted.
+    #[cfg(feature = "pdf")]
+    pub(crate) pdf_ctx: MaybeTaken<PdfSerializerContext>,
 }
 
 impl GlobalObjects {
@@ -852,6 +927,8 @@ impl GlobalObjects {
         assert!(self.outline.is_taken());
         assert!(self.tag_tree.is_taken());
         assert!(self.embedded_files.is_taken());
+        #[cfg(feature = "pdf")]
+        assert!(self.pdf_ctx.is_taken());
     }
 }
 

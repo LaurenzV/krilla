@@ -708,6 +708,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "hayro-syntax"
+version = "0.0.1"
+source = "git+https://github.com/LaurenzV/hayro?rev=e701f95#e701f9569157a2fe4ade68930dc9e9283782dcca"
+dependencies = [
+ "flate2",
+ "kurbo",
+ "log",
+ "rustc-hash 2.1.1",
+ "smallvec",
+ "zune-jpeg",
+]
+
+[[package]]
+name = "hayro-write"
+version = "0.1.0"
+source = "git+https://github.com/LaurenzV/hayro?rev=e701f95#e701f9569157a2fe4ade68930dc9e9283782dcca"
+dependencies = [
+ "flate2",
+ "hayro-syntax",
+ "log",
+ "pdf-writer",
+]
+
+[[package]]
 name = "icu_locid"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -816,6 +840,7 @@ dependencies = [
  "fontdb",
  "fxhash",
  "gif",
+ "hayro-write",
  "image 0.25.2",
  "image-webp",
  "imagesize 0.13.0",
@@ -1089,7 +1114,7 @@ dependencies = [
  "log",
  "rayon",
  "rgb",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustc_version",
  "zopfli",
 ]
@@ -1397,6 +1422,12 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "rustc-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
 name = "rustc_version"

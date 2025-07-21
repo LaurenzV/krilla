@@ -22,6 +22,8 @@ default = ["raster-images", "simple-text"]
 "simple-text" = ["dep:rustybuzz"]
 # Allow for adding raster images to your document.
 "raster-images" = ["dep:png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
+# Allow embedding pages from other PDF documents.
+"pdf" = ["dep:hayro-write"]
 
 [dependencies]
 base64 = { workspace = true }
@@ -31,6 +33,7 @@ flate2 = { workspace = true }
 float-cmp = { workspace = true }
 fxhash =  { workspace = true }
 gif = { workspace = true, optional = true }
+hayro-write = { workspace = true, optional = true }
 image-webp = { workspace = true, optional = true }
 imagesize = { workspace = true, optional = true }
 once_cell = { workspace = true }

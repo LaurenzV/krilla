@@ -6,9 +6,9 @@
 
 use crate::color::rgb;
 use crate::content::ContentBuilder;
-use crate::geom::Path;
-#[cfg(feature = "raster-images")]
+#[cfg(any(feature = "raster-images", feature = "pdf"))]
 use crate::geom::Size;
+use crate::geom::{Path, Rect};
 use crate::geom::{Point, Transform};
 use crate::graphic::Graphic;
 use crate::graphics::blend::BlendMode;
@@ -21,6 +21,8 @@ use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::paint::{InnerPaint, Paint};
+#[cfg(feature = "pdf")]
+use crate::pdf::PdfDocument;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::SpanTag;
@@ -410,6 +412,34 @@ impl<'a> Surface<'a> {
         self.bd
             .sub_builders
             .push(ContentBuilder::new(Transform::identity(), true));
+    }
+
+    #[cfg(feature = "pdf")]
+    /// Embed a single PDF page with the given dimensions.
+    pub fn draw_pdf_page(&mut self, pdf: &PdfDocument, size: Size, page_idx: usize) {
+        let obj_ref = self.sc.embed_pdf_page_as_xobject(pdf, page_idx);
+        // If the user provided an invalid page index, we will detect this later on anyway, so
+        // just use dummy dimensions here.
+        let (page_width, page_height) = pdf
+            .pages()
+            .get(page_idx)
+            .map(|p| p.render_dimensions())
+            .unwrap_or((1.0, 1.0));
+        let transform =
+            Transform::from_scale(size.width() / page_width, size.height() / page_height);
+        // We applied a transform to invert the y-axis initially, but since the embedded PDF also uses
+        // a y-up coordinate system, we need to "invert" this.
+        self.push_transform(&transform);
+        self.push_transform(&Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_height));
+
+        self.bd.get_mut().draw_xobject_by_reference(
+            self.sc,
+            Rect::from_xywh(0.0, 0.0, page_width, page_height).unwrap(),
+            obj_ref,
+        );
+
+        self.pop();
+        self.pop();
     }
 
     /// Push a new opacity, meaning that each subsequent graphics object will be

@@ -24,6 +24,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stop, Stroke};
+use krilla::pdf::{Pdf, PdfDocument};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
 use krilla::surface::Surface;
@@ -370,6 +371,15 @@ pub fn load_custom_image(name: &str) -> Image {
     .unwrap()
 }
 
+pub fn load_pdf(name: &str) -> PdfDocument {
+    PdfDocument::new(Arc::new(
+        Pdf::new(Arc::new(
+            std::fs::read(ASSETS_PATH.join("pdfs").join(name)).unwrap(),
+        ))
+        .unwrap(),
+    ))
+}
+
 pub fn load_custom_image_with_icc(name: &str, icc: Vec<u8>) -> Image {
     Image::from_custom(
         TestImage::new(
@@ -459,7 +469,9 @@ pub fn check_render(
         format!("_{}", renderer.name())
     };
 
-    let check_single = |name: String, page: &RenderedPage| {
+    let mut messages = vec![];
+
+    let mut check_single = |name: String, page: &RenderedPage, index: usize| {
         let ref_path = refs_path.join(format!("{name}.png"));
 
         if !ref_path.exists() {
@@ -470,13 +482,15 @@ pub fn check_render(
                 &oxipng::Options::max_compression(),
             )
             .unwrap();
-            panic!("new reference image was created");
+
+            messages.push("new reference image was created".to_string());
+            return;
         }
 
         let reference = load_from_memory(&std::fs::read(&ref_path).unwrap())
             .unwrap()
             .into_rgba8();
-        let actual = load_from_memory(&document[0]).unwrap().into_rgba8();
+        let actual = load_from_memory(&document[index]).unwrap().into_rgba8();
 
         let (diff_image, pixel_diff) = get_diff(&reference, &actual);
 
@@ -498,10 +512,15 @@ pub fn check_render(
                     &oxipng::Options::max_compression(),
                 )
                 .unwrap();
-                panic!("test was replaced");
+                messages.push("test was replaced".to_string());
+                return;
             }
 
-            panic!("pixel diff was {pixel_diff}, while threshold is {threshold}");
+            messages.push(format!(
+                "pixel diff was {pixel_diff}, while threshold is {threshold}"
+            ));
+
+            return;
         }
 
         if pixel_diff != 0 {
@@ -516,11 +535,16 @@ pub fn check_render(
     if document.is_empty() {
         panic!("empty document");
     } else if document.len() == 1 {
-        check_single(format!("{name}{renderer_suffix}"), &document[0]);
+        check_single(format!("{name}{renderer_suffix}"), &document[0], 0);
     } else {
         for (index, page) in document.iter().enumerate() {
-            check_single(format!("{name}{renderer_suffix}_{index}"), page);
+            check_single(format!("{name}{renderer_suffix}_{index}"), page, index);
         }
+    }
+
+    if !messages.is_empty() {
+        let final_message = messages.join("\n");
+        panic!("{final_message}");
     }
 }
 

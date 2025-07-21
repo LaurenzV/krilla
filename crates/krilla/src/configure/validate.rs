@@ -120,6 +120,11 @@ pub enum ValidationError {
     EmbeddedFile(EmbedError, Option<Location>),
     /// The PDF contains no tagging.
     MissingTagging,
+    /// The PDF contains another embedded PDF.
+    ///
+    /// This is currently forbidden in validated export because we cannot manually verify
+    /// whether the file actually fulfills all the criteria for the export mode.
+    EmbeddedPDF(Option<Location>),
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -315,6 +320,7 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A1_A,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -352,6 +358,7 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A2_A,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -384,6 +391,7 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => *self == Validator::A3_A,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
                 ValidationError::TooLongString => false,
@@ -422,6 +430,7 @@ impl Validator {
                 // Only recommended, not required.
                 ValidationError::MissingTagging => false,
                 ValidationError::MissingDocumentDate => true,
+                ValidationError::EmbeddedPDF(_) => true,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -454,6 +463,7 @@ impl Validator {
                 },
                 ValidationError::MissingTagging => true,
                 ValidationError::MissingDocumentDate => false,
+                ValidationError::EmbeddedPDF(_) => true,
             },
         }
     }

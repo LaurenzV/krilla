@@ -15,7 +15,7 @@ use crate::geom::{Rect, Size, Transform};
 use crate::interactive::annotation::Annotation;
 use crate::interchange::tagging::{Identifier, PageTagIdentifier};
 use crate::resource::ResourceDictionary;
-use crate::serialize::SerializeContext;
+use crate::serialize::{PageInfo, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::surface::Surface;
 use crate::tagging::AnnotationIdentifier;
@@ -438,8 +438,10 @@ impl InternalPage {
         }
 
         // Populate the refs for each annotation in page infos.
-        let page_info = &mut sc.page_infos_mut()[self.page_index];
-        page_info.annotations = annotation_refs;
+        let PageInfo::Krilla { annotations, .. } = &mut sc.page_infos_mut()[self.page_index] else {
+            unreachable!()
+        };
+        *annotations = annotation_refs;
 
         page.finish();
 

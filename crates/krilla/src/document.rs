@@ -20,7 +20,10 @@ use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
 use crate::page::{Page, PageSettings};
+#[cfg(feature = "pdf")]
+use crate::pdf::PdfDocument;
 use crate::serialize::{SerializeContext, SerializeSettings};
+use crate::surface::Location;
 
 /// A PDF document.
 pub struct Document {
@@ -62,6 +65,23 @@ impl Document {
     pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page {
         let page_index = self.serializer_context.page_infos().iter().len();
         Page::new(&mut self.serializer_context, page_index, page_settings)
+    }
+
+    /// Embed the pages (0-indexed) from the given
+    /// PDF document.
+    #[cfg(feature = "pdf")]
+    pub fn embed_pdf_pages(&mut self, pdf: &PdfDocument, page_indices: &[usize]) {
+        self.serializer_context.embed_pdf_pages(pdf, page_indices);
+    }
+
+    /// Set the location that should be assumed for subsequent operations.
+    pub fn set_location(&mut self, location: Location) {
+        self.serializer_context.set_location(location);
+    }
+
+    /// Reset the location that should be assumed for subsequent operations.
+    pub fn reset_location(&mut self) {
+        self.serializer_context.reset_location();
     }
 
     /// Set the outline of the document.

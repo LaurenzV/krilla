@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
 use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
+use std::collections::HashMap;
+use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
 
 use crate::configure::{PdfVersion, ValidationError};
@@ -39,6 +39,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) pages: Vec<DChunk>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
     pub(crate) embedded_files: Vec<DChunk>,
+    pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -62,7 +63,7 @@ impl ChunkContainer {
         // easier down the road.
         //
         // It also allows us to estimate the capacity we will need for the new PDF.
-        self.visit(&mut |chunk| {
+        self.visit(sc, &mut |chunk| {
             for object_ref in chunk.refs() {
                 let existing = remapper.insert(object_ref, remapped_ref.bump());
                 debug_assert!(existing.is_none());
@@ -85,7 +86,7 @@ impl ChunkContainer {
         }
 
         // Write the chunks in all the fields.
-        self.visit(&mut |chunk| {
+        self.visit(sc, &mut |chunk| {
             chunk.renumber_into(&mut pdf, |old| remapper[&old]);
         })?;
 
@@ -290,69 +291,102 @@ impl ChunkContainer {
     }
 }
 
+pub(crate) struct EmbeddedPdfChunk {
+    pub(crate) original_chunk: Chunk,
+    pub(crate) root_ref_mappings: HashMap<Ref, Ref>,
+    pub(crate) new_chunk: OnceLock<Chunk>,
+}
+
 /// Visits all chunks in a type.
 trait Visit {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()>;
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()>;
+}
+
+impl Visit for EmbeddedPdfChunk {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        // Now, we have a chunk that contains everything we need to fully embed the PDF, including
+        // the pages we wanted to extract into, as well as all their dependencies. The
+        // problem is: during the document creation, we already assigned references to the
+        // pages (stored in `SerializerContex::page_infos`), but `hayro_write` created new references
+        // for those (stored in `result.root_refs`).
+
+        // Because of this, embedded PDF chunks will be renumbered twice: First, we preprocess the
+        // chunk such that page/XObjects are reassigned their original references from the serialize
+        // context, and all other objects are assigned new, unique references provided by the
+        // serialize context. Then, we renumber them once again by treating them like any other chunk.
+
+        // Since we are calling `visit` twice, we also cache the renumbered chunk.
+
+        let renumbered = self.new_chunk.get_or_init(|| {
+            let mut remapper = self.root_ref_mappings.clone();
+
+            self.original_chunk
+                .renumber(|old| *remapper.entry(old).or_insert_with(|| sc.new_ref()))
+        });
+
+        renumbered.visit(sc, f)
+    }
 }
 
 impl Visit for ChunkContainer {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
-        self.page_tree.visit(f)?;
-        self.outline.visit(f)?;
-        self.page_label_tree.visit(f)?;
-        self.destination_profiles.visit(f)?;
-        self.struct_tree_root.visit(f)?;
-        self.struct_elements.visit(f)?;
-        self.page_labels.visit(f)?;
-        self.annotations.visit(f)?;
-        self.fonts.visit(f)?;
-        self.color_spaces.visit(f)?;
-        self.icc_profiles.visit(f)?;
-        self.destinations.visit(f)?;
-        self.ext_g_states.visit(f)?;
-        self.masks.visit(f)?;
-        self.x_objects.visit(f)?;
-        self.shading_functions.visit(f)?;
-        self.patterns.visit(f)?;
-        self.pages.visit(f)?;
-        self.images.visit(f)?;
-        self.embedded_files.visit(f)?;
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.page_tree.visit(sc, f)?;
+        self.outline.visit(sc, f)?;
+        self.page_label_tree.visit(sc, f)?;
+        self.destination_profiles.visit(sc, f)?;
+        self.struct_tree_root.visit(sc, f)?;
+        self.struct_elements.visit(sc, f)?;
+        self.page_labels.visit(sc, f)?;
+        self.annotations.visit(sc, f)?;
+        self.fonts.visit(sc, f)?;
+        self.color_spaces.visit(sc, f)?;
+        self.icc_profiles.visit(sc, f)?;
+        self.destinations.visit(sc, f)?;
+        self.ext_g_states.visit(sc, f)?;
+        self.masks.visit(sc, f)?;
+        self.x_objects.visit(sc, f)?;
+        self.shading_functions.visit(sc, f)?;
+        self.patterns.visit(sc, f)?;
+        self.pages.visit(sc, f)?;
+        self.images.visit(sc, f)?;
+        self.embedded_files.visit(sc, f)?;
+        self.embedded_pdfs.visit(sc, f)?;
         Ok(())
     }
 }
 
 impl Visit for Chunk {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+    fn visit(&self, _: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
         f(self);
         Ok(())
     }
 }
 
 impl Visit for Option<(Ref, Chunk)> {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
         if let Some((_, chunk)) = self {
-            chunk.visit(f)?;
+            chunk.visit(sc, f)?;
         }
         Ok(())
     }
 }
 
 impl<T: Visit + Send + Sync + 'static> Visit for Deferred<T> {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
-        self.wait().visit(f)
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.wait().visit(sc, f)
     }
 }
 
 impl<T: Visit> Visit for KrillaResult<T> {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
-        self.as_ref().map_err(|e| e.clone())?.visit(f)
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.as_ref().map_err(|e| e.clone())?.visit(sc, f)
     }
 }
 
 impl<T: Visit> Visit for Vec<T> {
-    fn visit(&self, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
         for field in self {
-            field.visit(f)?;
+            field.visit(sc, f)?;
         }
         Ok(())
     }

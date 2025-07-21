@@ -2,9 +2,9 @@ use krilla::destination::XyzDestination;
 use krilla::geom::{Point, Quadrilateral, Rect};
 use krilla::page::{Page, PageSettings};
 use krilla::Document;
-use krilla_macros::snapshot;
+use krilla_macros::{snapshot, visreg};
 
-use crate::{green_fill, rect_to_path, red_fill};
+use crate::{green_fill, load_pdf, rect_to_path, red_fill};
 use crate::{settings_1, LinkAction};
 use crate::{LinkAnnotation, Target};
 
@@ -93,5 +93,26 @@ fn annotation_to_destination(d: &mut Document) {
     my_surface.draw_path(&rect_to_path(50.0, 100.0, 150.0, 200.0));
 
     my_surface.finish();
+    page.finish();
+}
+
+#[snapshot(document)]
+fn annotation_to_embedded_pdf_page(document: &mut Document) {
+    let pdf = load_pdf("page_media_box_bottom_right.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
+
+    let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+    page.add_annotation(
+        LinkAnnotation::new(
+            Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),
+            Target::Destination(XyzDestination::new(0, Point::from_xy(100.0, 100.0)).into()),
+        )
+        .into(),
+    );
+
+    let mut surface = page.surface();
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(50.0, 0.0, 150.0, 100.0));
+    surface.finish();
     page.finish();
 }
