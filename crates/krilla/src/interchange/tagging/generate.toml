@@ -165,9 +165,7 @@ Expanded = { type = "String", global = true, accessor = "AsRef<str>" }
 # some curves that artistically represent some word. This should be the exact
 # replacement text of the word.
 ActualText = { type = "String", global = true, accessor = "AsRef<str>" }
-# The actual text represented by the content of this tag, i.e. if it contained
-# some curves that artistically represent some word. This should be the exact
-# replacement text of the word.
+# The title, characterizing a specific tag such as `"Chapter 1"`.
 Title = { type = "String", accessor = "AsRef<str>" }
 
 # The heading level

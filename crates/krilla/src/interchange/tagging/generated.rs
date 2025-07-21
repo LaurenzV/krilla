@@ -293,9 +293,7 @@ impl TagKind {
         self
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
+    /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.as_any().title()
     }
@@ -552,9 +550,7 @@ impl AnyTag {
         self
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
+    /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.get_attr::<{Attr::TITLE}>().map(Attr::unwrap_title)
     }
@@ -971,23 +967,17 @@ impl Tag<Hn> {
         self
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
+    /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn title(&self) -> Option<&str> {
         self.inner.get_attr::<{Attr::TITLE}>().map(Attr::unwrap_title)
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
+    /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn set_title(&mut self, title: Option<String>) {
         self.inner.set_or_remove_attr::<{Attr::TITLE}>(title.map(Attr::Title));
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
+    /// The title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn with_title(mut self, title: Option<String>) -> Self {
         self.set_title(title);
         self
@@ -1878,9 +1868,7 @@ pub(crate) enum Attr {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     ActualText(String),
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
+    /// The title, characterizing a specific tag such as `"Chapter 1"`.
     Title(String),
     /// The heading level
     HeadingLevel(NonZeroU32),
