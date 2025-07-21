@@ -81,11 +81,9 @@ impl AttrVariant<'_> {
             AccessorKind::AsRef(_) => self.ty,
             AccessorKind::Custom => match self.name {
                 "CellHeaders" => "impl IntoIterator<Item = TagId>",
+                #[rustfmt::skip]
                 _ => report_error(
-                    &format!(
-                        "no custom parameter type rule implemented for `{}`",
-                        self.name
-                    ),
+                    &format!("no custom parameter type rule implemented for `{}`", self.name),
                     self.span,
                 ),
             },
@@ -97,8 +95,9 @@ impl AttrVariant<'_> {
             AccessorKind::Normal | AccessorKind::Copy | AccessorKind::AsRef(_) => "",
             AccessorKind::Custom => match self.name {
                 "CellHeaders" => ".into_iter().collect()",
+                #[rustfmt::skip]
                 _ => report_error(
-                    &format!("no custom return type rule implemented for `{}`", self.name),
+                    &format!("no custom parameter mapping rule implemented for `{}`", self.name),
                     self.span,
                 ),
             },
@@ -112,6 +111,7 @@ impl AttrVariant<'_> {
             AccessorKind::AsRef(ret) => format!("&{ret}").leak(),
             AccessorKind::Custom => match self.name {
                 "CellHeaders" => "&[TagId]",
+                #[rustfmt::skip]
                 _ => report_error(
                     &format!("no custom return type rule implemented for `{}`", self.name),
                     self.span,
@@ -127,8 +127,9 @@ impl AttrVariant<'_> {
             AccessorKind::AsRef(_) => "val.as_ref()",
             AccessorKind::Custom => match self.name {
                 "CellHeaders" => "val.as_ref()",
+                #[rustfmt::skip]
                 _ => report_error(
-                    &format!("no custom return type rule implemented for `{}`", self.name),
+                    &format!("no custom return mapping rule implemented for `{}`", self.name),
                     self.span,
                 ),
             },
@@ -481,7 +482,6 @@ fn write_accessors(
     } else {
         writeln!(f, "    pub fn {accessor}(&self) -> Option<{ret_ty}> {{").ok();
     }
-    let unwrap = if required { ".unwrap()" } else { "" };
     let tag = match tag_impl {
         TagImpl::TagKind => "self.as_any()",
         TagImpl::Tag => "self.inner",
@@ -491,7 +491,12 @@ fn write_accessors(
         writeln!(f, "        {tag}.{accessor}()").ok();
     } else {
         #[rustfmt::skip]
-        writeln!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
+        write!(f, "        {tag}.{attr_field}.get::<{{{kind}::{ordinal}}}>()").ok();
+        if required {
+            writeln!(f, ".unwrap().unwrap_{accessor}()").ok();
+        } else {
+            writeln!(f, ".map({kind}::unwrap_{accessor})").ok();
+        }
     }
     writeln!(f, "    }}").ok();
 
