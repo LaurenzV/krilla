@@ -39,18 +39,12 @@ struct Attr<'a> {
     name: &'a str,
     variants: Vec<AttrVariant<'a>>,
     field: OnceLock<&'a str>,
-    module: OnceLock<&'a str>,
 }
 
 impl Attr<'_> {
     fn field(&self) -> &str {
         self.field
             .get_or_init(|| (self.name.to_case(Case::Snake) + "s").leak())
-    }
-
-    fn module(&self) -> &str {
-        self.module
-            .get_or_init(|| self.name.to_case(Case::Snake).leak())
     }
 }
 
@@ -62,6 +56,7 @@ struct AttrVariant<'a> {
     global: bool,
     accessor_name: OnceLock<&'a str>,
     accessor_kind: AccessorKind<'a>,
+    ordinal_name: OnceLock<&'a str>,
     param_type: OnceLock<&'a str>,
     param_mapping: OnceLock<&'a str>,
     ret_type: OnceLock<&'a str>,
@@ -72,6 +67,11 @@ impl AttrVariant<'_> {
     fn accessor_name(&self) -> &str {
         self.accessor_name
             .get_or_init(|| self.name.to_case(Case::Snake).leak())
+    }
+
+    fn ordinal_name(&self) -> &str {
+        self.ordinal_name
+            .get_or_init(|| self.name.to_case(Case::UpperSnake).leak())
     }
 
     fn param_type(&self) -> &str {
@@ -123,10 +123,10 @@ impl AttrVariant<'_> {
     fn return_mapping(&self) -> &str {
         self.ret_mapping.get_or_init(|| match self.accessor_kind {
             AccessorKind::Normal => "",
-            AccessorKind::Copy => ".copied()",
-            AccessorKind::AsRef(_) => ".map(|v| v.as_ref())",
+            AccessorKind::Copy => ".clone()",
+            AccessorKind::AsRef(_) => ".as_ref()",
             AccessorKind::Custom => match self.name {
-                "CellHeaders" => ".map(|v| v.as_ref())",
+                "CellHeaders" => ".as_ref()",
                 _ => report_error(
                     &format!("no custom return type rule implemented for `{}`", self.name),
                     self.span,
@@ -213,6 +213,7 @@ fn parse_attr(attrs: &mut IndexMap<&'static str, Attr>, name: &'static str) {
             global,
             accessor_name,
             accessor_kind,
+            ordinal_name: OnceLock::new(),
             param_type: OnceLock::new(),
             param_mapping: OnceLock::new(),
             ret_type: OnceLock::new(),
@@ -224,7 +225,6 @@ fn parse_attr(attrs: &mut IndexMap<&'static str, Attr>, name: &'static str) {
         name,
         variants: variants.collect(),
         field: OnceLock::new(),
-        module: OnceLock::new(),
     };
     attrs.insert(name, attr);
 }
@@ -451,13 +451,12 @@ fn write_accessors(
 ) {
     let kind = attr_kind.name;
     let variant = attr_variant.name;
+    let ordinal = attr_variant.ordinal_name();
     let accessor = attr_variant.accessor_name();
     let attr_field = attr_kind.field();
-    let attr_mod = attr_kind.module();
     let param_ty = attr_variant.param_type();
     let param_mapping = attr_variant.param_mapping();
     let ret_ty = attr_variant.return_type();
-    let ret_mapping = attr_variant.return_mapping();
     writeln!(f).ok();
     for comment in attr_variant.comments.iter() {
         writeln!(f, "    ///{comment}").ok();
@@ -469,7 +468,7 @@ fn write_accessors(
     }
     let unwrap = if required { ".unwrap()" } else { "" };
     #[rustfmt::skip]
-    writeln!(f, "        self.{attr_field}.get::<{attr_mod}::{variant}>(){ret_mapping}{unwrap}").ok();
+    writeln!(f, "        self.{attr_field}.get::<{{{kind}::{ordinal}}}>().map({kind}::unwrap_{accessor}){unwrap}").ok();
     writeln!(f, "    }}").ok();
 
     if !write {
@@ -486,7 +485,7 @@ fn write_accessors(
         writeln!(f, "        self.{attr_field}.set({kind}::{variant}({accessor}{param_mapping}));").ok();
     } else {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: Option<{param_ty}>) {{").ok();
-        writeln!(f, "        self.{attr_field}.set_or_remove::<{attr_mod}::{variant}>({accessor}{param_mapping});").ok();
+        writeln!(f, "        self.{attr_field}.set_or_remove::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
     };
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
@@ -518,53 +517,41 @@ fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr) {
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
-    let mod_name = attr.module();
-    writeln!(f, "impl Ordinal for {kind_name} {{").ok();
-    writeln!(f, "    fn ordinal(&self) -> usize {{").ok();
-    writeln!(f, "        match self {{").ok();
-    for AttrVariant { name, .. } in attr.variants.iter() {
+    writeln!(f, "impl {kind_name} {{").ok();
+    for (i, variant) in attr.variants.iter().enumerate() {
+        let ordinal = variant.ordinal_name();
         #[rustfmt::skip]
-        writeln!(f, "            Self::{name}(_) => {mod_name}::{name}::ORDINAL,").ok();
+        writeln!(f, "    pub(crate) const {ordinal}: usize = {i};").ok();
     }
-    writeln!(f, "        }}").ok();
-    writeln!(f, "    }}").ok();
+    for variant @ AttrVariant { name, .. } in attr.variants.iter() {
+        let accessor = variant.accessor_name();
+        let ret_ty = variant.return_type();
+        let ret_mapping = variant.return_mapping();
+        writeln!(f).ok();
+        writeln!(f, "        #[inline(always)]").ok();
+        writeln!(f, "        fn unwrap_{accessor}(&self) -> {ret_ty} {{").ok();
+        writeln!(f, "            match self {{").ok();
+        #[rustfmt::skip]
+        writeln!(f, "                Self::{name}(val) => val{ret_mapping},").ok();
+        if attr.variants.len() > 1 {
+            writeln!(f, "                _ => unreachable!(),").ok();
+        }
+        writeln!(f, "            }}").ok();
+        writeln!(f, "        }}").ok();
+    }
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
-    writeln!(f, "mod {mod_name} {{").ok();
+    writeln!(f, "impl Ordinal for {kind_name} {{").ok();
+    writeln!(f, "    fn ordinal(&self) -> usize {{").ok();
+    writeln!(f, "        match self {{").ok();
     for variant in attr.variants.iter() {
         let name = variant.name;
-        writeln!(f, "    pub struct {name};").ok();
-        writeln!(f).ok();
-    }
-    writeln!(f, "    mod impls {{").ok();
-    writeln!(f, "        use super::super::*;").ok();
-    for (i, variant) in attr.variants.iter().enumerate() {
-        let name = variant.name;
-        let ty = variant.ty;
-        writeln!(f, "        impl Unwrap<{kind_name}> for super::{name} {{").ok();
-        writeln!(f, "            type Item = {ty};").ok();
-        writeln!(f).ok();
-        writeln!(f, "            const ORDINAL: usize = {i};").ok();
-        writeln!(f).ok();
-        writeln!(f, "            #[inline(always)]").ok();
+        let ordinal = variant.ordinal_name();
         #[rustfmt::skip]
-        writeln!(f, "            fn unwrap(attr: &{kind_name}) -> &Self::Item {{").ok();
-        writeln!(f, "                match attr {{").ok();
-        #[rustfmt::skip]
-        writeln!(f, "                    {kind_name}::{name}(val) => val,").ok();
-        writeln!(f, "                    #[allow(unreachable_patterns)]").ok();
-        writeln!(f, "                    _ => unreachable!(),").ok();
-        writeln!(f, "                }}").ok();
-        writeln!(f, "            }}").ok();
-        writeln!(f).ok();
-        writeln!(f, "            #[inline(always)]").ok();
-        writeln!(f, "            fn wrap(val: Self::Item) -> {kind_name} {{").ok();
-        writeln!(f, "                {kind_name}::{name}(val)").ok();
-        writeln!(f, "            }}").ok();
-        writeln!(f, "        }}").ok();
-        writeln!(f).ok();
+        writeln!(f, "            Self::{name}(_) => Self::{ordinal},").ok();
     }
+    writeln!(f, "        }}").ok();
     writeln!(f, "    }}").ok();
     writeln!(f, "}}").ok();
     writeln!(f).ok();

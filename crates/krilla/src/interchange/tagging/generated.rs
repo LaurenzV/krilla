@@ -383,7 +383,7 @@ impl Tag<Hn> {
 
     /// The heading level
     pub fn level(&self) -> NonZeroU32 {
-        self.attrs.get::<attr::HeadingLevel>().copied().unwrap()
+        self.attrs.get::<{Attr::HEADING_LEVEL}>().map(Attr::unwrap_level).unwrap()
     }
 
     /// The heading level
@@ -401,14 +401,14 @@ impl Tag<Hn> {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn title(&self) -> Option<&str> {
-        self.attrs.get::<attr::Title>().map(|v| v.as_ref())
+        self.attrs.get::<{Attr::TITLE}>().map(Attr::unwrap_title)
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_title(&mut self, title: Option<String>) {
-        self.attrs.set_or_remove::<attr::Title>(title);
+        self.attrs.set_or_remove::<{Attr::TITLE}>(title.map(Attr::Title));
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
@@ -448,7 +448,7 @@ impl Tag<L> {
 
     /// The list numbering.
     pub fn numbering(&self) -> ListNumbering {
-        self.list_attrs.get::<list_attr::Numbering>().copied().unwrap()
+        self.list_attrs.get::<{ListAttr::NUMBERING}>().map(ListAttr::unwrap_numbering).unwrap()
     }
 
     /// The list numbering.
@@ -536,12 +536,12 @@ impl Tag<Table> {
 
     /// The table summary.
     pub fn summary(&self) -> Option<&str> {
-        self.table_attrs.get::<table_attr::Summary>().map(|v| v.as_ref())
+        self.table_attrs.get::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
     }
 
     /// The table summary.
     pub fn set_summary(&mut self, summary: Option<String>) {
-        self.table_attrs.set_or_remove::<table_attr::Summary>(summary);
+        self.table_attrs.set_or_remove::<{TableAttr::SUMMARY}>(summary.map(TableAttr::Summary));
     }
 
     /// The table summary.
@@ -552,12 +552,12 @@ impl Tag<Table> {
 
     /// The bounding box.
     pub fn b_box(&self) -> Option<Rect> {
-        self.layout_attrs.get::<layout_attr::BBox>().copied()
+        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
     }
 
     /// The bounding box.
     pub fn set_b_box(&mut self, b_box: Option<Rect>) {
-        self.layout_attrs.set_or_remove::<layout_attr::BBox>(b_box);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(b_box.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
@@ -568,12 +568,12 @@ impl Tag<Table> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -584,12 +584,12 @@ impl Tag<Table> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
+        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Height>(height);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -638,7 +638,7 @@ impl Tag<TH> {
 
     /// The table header scope.
     pub fn scope(&self) -> TableHeaderScope {
-        self.table_attrs.get::<table_attr::HeaderScope>().copied().unwrap()
+        self.table_attrs.get::<{TableAttr::HEADER_SCOPE}>().map(TableAttr::unwrap_scope).unwrap()
     }
 
     /// The table header scope.
@@ -660,7 +660,7 @@ impl Tag<TH> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn headers(&self) -> Option<&[TagId]> {
-        self.table_attrs.get::<table_attr::CellHeaders>().map(|v| v.as_ref())
+        self.table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
     }
 
     /// A list of headers associated with a table cell.
@@ -688,12 +688,12 @@ impl Tag<TH> {
 
     /// The row span of this table cell.
     pub fn row_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<table_attr::RowSpan>().copied()
+        self.table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
     }
 
     /// The row span of this table cell.
     pub fn set_row_span(&mut self, row_span: Option<NonZeroU32>) {
-        self.table_attrs.set_or_remove::<table_attr::RowSpan>(row_span);
+        self.table_attrs.set_or_remove::<{TableAttr::ROW_SPAN}>(row_span.map(TableAttr::RowSpan));
     }
 
     /// The row span of this table cell.
@@ -704,12 +704,12 @@ impl Tag<TH> {
 
     /// The column span of this table cell.
     pub fn col_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<table_attr::ColSpan>().copied()
+        self.table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
     }
 
     /// The column span of this table cell.
     pub fn set_col_span(&mut self, col_span: Option<NonZeroU32>) {
-        self.table_attrs.set_or_remove::<table_attr::ColSpan>(col_span);
+        self.table_attrs.set_or_remove::<{TableAttr::COL_SPAN}>(col_span.map(TableAttr::ColSpan));
     }
 
     /// The column span of this table cell.
@@ -720,12 +720,12 @@ impl Tag<TH> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -736,12 +736,12 @@ impl Tag<TH> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
+        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Height>(height);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -773,7 +773,7 @@ impl Tag<TD> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn headers(&self) -> Option<&[TagId]> {
-        self.table_attrs.get::<table_attr::CellHeaders>().map(|v| v.as_ref())
+        self.table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
     }
 
     /// A list of headers associated with a table cell.
@@ -801,12 +801,12 @@ impl Tag<TD> {
 
     /// The row span of this table cell.
     pub fn row_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<table_attr::RowSpan>().copied()
+        self.table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
     }
 
     /// The row span of this table cell.
     pub fn set_row_span(&mut self, row_span: Option<NonZeroU32>) {
-        self.table_attrs.set_or_remove::<table_attr::RowSpan>(row_span);
+        self.table_attrs.set_or_remove::<{TableAttr::ROW_SPAN}>(row_span.map(TableAttr::RowSpan));
     }
 
     /// The row span of this table cell.
@@ -817,12 +817,12 @@ impl Tag<TD> {
 
     /// The column span of this table cell.
     pub fn col_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<table_attr::ColSpan>().copied()
+        self.table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
     }
 
     /// The column span of this table cell.
     pub fn set_col_span(&mut self, col_span: Option<NonZeroU32>) {
-        self.table_attrs.set_or_remove::<table_attr::ColSpan>(col_span);
+        self.table_attrs.set_or_remove::<{TableAttr::COL_SPAN}>(col_span.map(TableAttr::ColSpan));
     }
 
     /// The column span of this table cell.
@@ -833,12 +833,12 @@ impl Tag<TD> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -849,12 +849,12 @@ impl Tag<TD> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
+        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Height>(height);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -1072,12 +1072,12 @@ impl Tag<Figure> {
 
     /// The bounding box.
     pub fn b_box(&self) -> Option<Rect> {
-        self.layout_attrs.get::<layout_attr::BBox>().copied()
+        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
     }
 
     /// The bounding box.
     pub fn set_b_box(&mut self, b_box: Option<Rect>) {
-        self.layout_attrs.set_or_remove::<layout_attr::BBox>(b_box);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(b_box.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
@@ -1088,12 +1088,12 @@ impl Tag<Figure> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -1104,12 +1104,12 @@ impl Tag<Figure> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
+        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Height>(height);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -1143,12 +1143,12 @@ impl Tag<Formula> {
 
     /// The bounding box.
     pub fn b_box(&self) -> Option<Rect> {
-        self.layout_attrs.get::<layout_attr::BBox>().copied()
+        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
     }
 
     /// The bounding box.
     pub fn set_b_box(&mut self, b_box: Option<Rect>) {
-        self.layout_attrs.set_or_remove::<layout_attr::BBox>(b_box);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::B_BOX}>(b_box.map(LayoutAttr::BBox));
     }
 
     /// The bounding box.
@@ -1159,12 +1159,12 @@ impl Tag<Formula> {
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The width.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Width>(width);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::WIDTH}>(width.map(LayoutAttr::Width));
     }
 
     /// The width.
@@ -1175,12 +1175,12 @@ impl Tag<Formula> {
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
+        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 
     /// The height.
     pub fn set_height(&mut self, height: Option<f32>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Height>(height);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::HEIGHT}>(height.map(LayoutAttr::Height));
     }
 
     /// The height.
@@ -1240,12 +1240,12 @@ impl<T> Tag<T> {
 
     /// The tag id.
     pub fn id(&self) -> Option<&TagId> {
-        self.attrs.get::<attr::Id>()
+        self.attrs.get::<{Attr::ID}>().map(Attr::unwrap_id)
     }
 
     /// The tag id.
     pub fn set_id(&mut self, id: Option<TagId>) {
-        self.attrs.set_or_remove::<attr::Id>(id);
+        self.attrs.set_or_remove::<{Attr::ID}>(id.map(Attr::Id));
     }
 
     /// The tag id.
@@ -1256,12 +1256,12 @@ impl<T> Tag<T> {
 
     /// The language of this tag.
     pub fn lang(&self) -> Option<&str> {
-        self.attrs.get::<attr::Lang>().map(|v| v.as_ref())
+        self.attrs.get::<{Attr::LANG}>().map(Attr::unwrap_lang)
     }
 
     /// The language of this tag.
     pub fn set_lang(&mut self, lang: Option<String>) {
-        self.attrs.set_or_remove::<attr::Lang>(lang);
+        self.attrs.set_or_remove::<{Attr::LANG}>(lang.map(Attr::Lang));
     }
 
     /// The language of this tag.
@@ -1273,13 +1273,13 @@ impl<T> Tag<T> {
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub fn alt_text(&self) -> Option<&str> {
-        self.attrs.get::<attr::AltText>().map(|v| v.as_ref())
+        self.attrs.get::<{Attr::ALT_TEXT}>().map(Attr::unwrap_alt_text)
     }
 
     /// An optional alternate text that describes the text (for example, if the text consists
     /// of a star symbol, the alt text should describe that in natural language).
     pub fn set_alt_text(&mut self, alt_text: Option<String>) {
-        self.attrs.set_or_remove::<attr::AltText>(alt_text);
+        self.attrs.set_or_remove::<{Attr::ALT_TEXT}>(alt_text.map(Attr::AltText));
     }
 
     /// An optional alternate text that describes the text (for example, if the text consists
@@ -1292,13 +1292,13 @@ impl<T> Tag<T> {
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
     pub fn expanded(&self) -> Option<&str> {
-        self.attrs.get::<attr::Expanded>().map(|v| v.as_ref())
+        self.attrs.get::<{Attr::EXPANDED}>().map(Attr::unwrap_expanded)
     }
 
     /// If the content of the tag is an abbreviation, the expanded form of the
     /// abbreviation should be provided here.
     pub fn set_expanded(&mut self, expanded: Option<String>) {
-        self.attrs.set_or_remove::<attr::Expanded>(expanded);
+        self.attrs.set_or_remove::<{Attr::EXPANDED}>(expanded.map(Attr::Expanded));
     }
 
     /// If the content of the tag is an abbreviation, the expanded form of the
@@ -1312,14 +1312,14 @@ impl<T> Tag<T> {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn actual_text(&self) -> Option<&str> {
-        self.attrs.get::<attr::ActualText>().map(|v| v.as_ref())
+        self.attrs.get::<{Attr::ACTUAL_TEXT}>().map(Attr::unwrap_actual_text)
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_actual_text(&mut self, actual_text: Option<String>) {
-        self.attrs.set_or_remove::<attr::ActualText>(actual_text);
+        self.attrs.set_or_remove::<{Attr::ACTUAL_TEXT}>(actual_text.map(Attr::ActualText));
     }
 
     /// The actual text represented by the content of this tag, i.e. if it contained
@@ -1332,12 +1332,12 @@ impl<T> Tag<T> {
 
     /// The placement.
     pub fn placement(&self) -> Option<Placement> {
-        self.layout_attrs.get::<layout_attr::Placement>().copied()
+        self.layout_attrs.get::<{LayoutAttr::PLACEMENT}>().map(LayoutAttr::unwrap_placement)
     }
 
     /// The placement.
     pub fn set_placement(&mut self, placement: Option<Placement>) {
-        self.layout_attrs.set_or_remove::<layout_attr::Placement>(placement);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::PLACEMENT}>(placement.map(LayoutAttr::Placement));
     }
 
     /// The placement.
@@ -1348,12 +1348,12 @@ impl<T> Tag<T> {
 
     /// The writing mode.
     pub fn writing_mode(&self) -> Option<WritingMode> {
-        self.layout_attrs.get::<layout_attr::WritingMode>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WRITING_MODE}>().map(LayoutAttr::unwrap_writing_mode)
     }
 
     /// The writing mode.
     pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
-        self.layout_attrs.set_or_remove::<layout_attr::WritingMode>(writing_mode);
+        self.layout_attrs.set_or_remove::<{LayoutAttr::WRITING_MODE}>(writing_mode.map(LayoutAttr::WritingMode));
     }
 
     /// The writing mode.
@@ -1370,27 +1370,27 @@ impl Tag<()> {
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn title(&self) -> Option<&str> {
-        self.attrs.get::<attr::Title>().map(|v| v.as_ref())
+        self.attrs.get::<{Attr::TITLE}>().map(Attr::unwrap_title)
     }
 
     /// The heading level
     pub fn level(&self) -> Option<NonZeroU32> {
-        self.attrs.get::<attr::HeadingLevel>().copied()
+        self.attrs.get::<{Attr::HEADING_LEVEL}>().map(Attr::unwrap_level)
     }
 
     /// The list numbering.
     pub fn numbering(&self) -> Option<ListNumbering> {
-        self.list_attrs.get::<list_attr::Numbering>().copied()
+        self.list_attrs.get::<{ListAttr::NUMBERING}>().map(ListAttr::unwrap_numbering)
     }
 
     /// The table summary.
     pub fn summary(&self) -> Option<&str> {
-        self.table_attrs.get::<table_attr::Summary>().map(|v| v.as_ref())
+        self.table_attrs.get::<{TableAttr::SUMMARY}>().map(TableAttr::unwrap_summary)
     }
 
     /// The table header scope.
     pub fn scope(&self) -> Option<TableHeaderScope> {
-        self.table_attrs.get::<table_attr::HeaderScope>().copied()
+        self.table_attrs.get::<{TableAttr::HEADER_SCOPE}>().map(TableAttr::unwrap_scope)
     }
 
     /// A list of headers associated with a table cell.
@@ -1401,32 +1401,32 @@ impl Tag<()> {
     ///
     /// This allows specifying header hierarchies inside tables.
     pub fn headers(&self) -> Option<&[TagId]> {
-        self.table_attrs.get::<table_attr::CellHeaders>().map(|v| v.as_ref())
+        self.table_attrs.get::<{TableAttr::CELL_HEADERS}>().map(TableAttr::unwrap_headers)
     }
 
     /// The row span of this table cell.
     pub fn row_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<table_attr::RowSpan>().copied()
+        self.table_attrs.get::<{TableAttr::ROW_SPAN}>().map(TableAttr::unwrap_row_span)
     }
 
     /// The column span of this table cell.
     pub fn col_span(&self) -> Option<NonZeroU32> {
-        self.table_attrs.get::<table_attr::ColSpan>().copied()
+        self.table_attrs.get::<{TableAttr::COL_SPAN}>().map(TableAttr::unwrap_col_span)
     }
 
     /// The bounding box.
     pub fn b_box(&self) -> Option<Rect> {
-        self.layout_attrs.get::<layout_attr::BBox>().copied()
+        self.layout_attrs.get::<{LayoutAttr::B_BOX}>().map(LayoutAttr::unwrap_b_box)
     }
 
     /// The width.
     pub fn width(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Width>().copied()
+        self.layout_attrs.get::<{LayoutAttr::WIDTH}>().map(LayoutAttr::unwrap_width)
     }
 
     /// The height.
     pub fn height(&self) -> Option<f32> {
-        self.layout_attrs.get::<layout_attr::Height>().copied()
+        self.layout_attrs.get::<{LayoutAttr::HEIGHT}>().map(LayoutAttr::unwrap_height)
     }
 }
 
@@ -1454,177 +1454,83 @@ pub(crate) enum Attr {
     HeadingLevel(NonZeroU32),
 }
 
+impl Attr {
+    pub(crate) const ID: usize = 0;
+    pub(crate) const LANG: usize = 1;
+    pub(crate) const ALT_TEXT: usize = 2;
+    pub(crate) const EXPANDED: usize = 3;
+    pub(crate) const ACTUAL_TEXT: usize = 4;
+    pub(crate) const TITLE: usize = 5;
+    pub(crate) const HEADING_LEVEL: usize = 6;
+
+        #[inline(always)]
+        fn unwrap_id(&self) -> &TagId {
+            match self {
+                Self::Id(val) => val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_lang(&self) -> &str {
+            match self {
+                Self::Lang(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_alt_text(&self) -> &str {
+            match self {
+                Self::AltText(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_expanded(&self) -> &str {
+            match self {
+                Self::Expanded(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_actual_text(&self) -> &str {
+            match self {
+                Self::ActualText(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_title(&self) -> &str {
+            match self {
+                Self::Title(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_level(&self) -> NonZeroU32 {
+            match self {
+                Self::HeadingLevel(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+}
+
 impl Ordinal for Attr {
     fn ordinal(&self) -> usize {
         match self {
-            Self::Id(_) => attr::Id::ORDINAL,
-            Self::Lang(_) => attr::Lang::ORDINAL,
-            Self::AltText(_) => attr::AltText::ORDINAL,
-            Self::Expanded(_) => attr::Expanded::ORDINAL,
-            Self::ActualText(_) => attr::ActualText::ORDINAL,
-            Self::Title(_) => attr::Title::ORDINAL,
-            Self::HeadingLevel(_) => attr::HeadingLevel::ORDINAL,
+            Self::Id(_) => Self::ID,
+            Self::Lang(_) => Self::LANG,
+            Self::AltText(_) => Self::ALT_TEXT,
+            Self::Expanded(_) => Self::EXPANDED,
+            Self::ActualText(_) => Self::ACTUAL_TEXT,
+            Self::Title(_) => Self::TITLE,
+            Self::HeadingLevel(_) => Self::HEADING_LEVEL,
         }
-    }
-}
-
-mod attr {
-    pub struct Id;
-
-    pub struct Lang;
-
-    pub struct AltText;
-
-    pub struct Expanded;
-
-    pub struct ActualText;
-
-    pub struct Title;
-
-    pub struct HeadingLevel;
-
-    mod impls {
-        use super::super::*;
-        impl Unwrap<Attr> for super::Id {
-            type Item = TagId;
-
-            const ORDINAL: usize = 0;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::Id(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::Id(val)
-            }
-        }
-
-        impl Unwrap<Attr> for super::Lang {
-            type Item = String;
-
-            const ORDINAL: usize = 1;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::Lang(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::Lang(val)
-            }
-        }
-
-        impl Unwrap<Attr> for super::AltText {
-            type Item = String;
-
-            const ORDINAL: usize = 2;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::AltText(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::AltText(val)
-            }
-        }
-
-        impl Unwrap<Attr> for super::Expanded {
-            type Item = String;
-
-            const ORDINAL: usize = 3;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::Expanded(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::Expanded(val)
-            }
-        }
-
-        impl Unwrap<Attr> for super::ActualText {
-            type Item = String;
-
-            const ORDINAL: usize = 4;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::ActualText(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::ActualText(val)
-            }
-        }
-
-        impl Unwrap<Attr> for super::Title {
-            type Item = String;
-
-            const ORDINAL: usize = 5;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::Title(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::Title(val)
-            }
-        }
-
-        impl Unwrap<Attr> for super::HeadingLevel {
-            type Item = NonZeroU32;
-
-            const ORDINAL: usize = 6;
-
-            #[inline(always)]
-            fn unwrap(attr: &Attr) -> &Self::Item {
-                match attr {
-                    Attr::HeadingLevel(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> Attr {
-                Attr::HeadingLevel(val)
-            }
-        }
-
     }
 }
 
@@ -1634,39 +1540,22 @@ pub(crate) enum ListAttr {
     Numbering(ListNumbering),
 }
 
+impl ListAttr {
+    pub(crate) const NUMBERING: usize = 0;
+
+        #[inline(always)]
+        fn unwrap_numbering(&self) -> ListNumbering {
+            match self {
+                Self::Numbering(val) => val.clone(),
+            }
+        }
+}
+
 impl Ordinal for ListAttr {
     fn ordinal(&self) -> usize {
         match self {
-            Self::Numbering(_) => list_attr::Numbering::ORDINAL,
+            Self::Numbering(_) => Self::NUMBERING,
         }
-    }
-}
-
-mod list_attr {
-    pub struct Numbering;
-
-    mod impls {
-        use super::super::*;
-        impl Unwrap<ListAttr> for super::Numbering {
-            type Item = ListNumbering;
-
-            const ORDINAL: usize = 0;
-
-            #[inline(always)]
-            fn unwrap(attr: &ListAttr) -> &Self::Item {
-                match attr {
-                    ListAttr::Numbering(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> ListAttr {
-                ListAttr::Numbering(val)
-            }
-        }
-
     }
 }
 
@@ -1690,131 +1579,63 @@ pub(crate) enum TableAttr {
     ColSpan(NonZeroU32),
 }
 
+impl TableAttr {
+    pub(crate) const SUMMARY: usize = 0;
+    pub(crate) const HEADER_SCOPE: usize = 1;
+    pub(crate) const CELL_HEADERS: usize = 2;
+    pub(crate) const ROW_SPAN: usize = 3;
+    pub(crate) const COL_SPAN: usize = 4;
+
+        #[inline(always)]
+        fn unwrap_summary(&self) -> &str {
+            match self {
+                Self::Summary(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_scope(&self) -> TableHeaderScope {
+            match self {
+                Self::HeaderScope(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_headers(&self) -> &[TagId] {
+            match self {
+                Self::CellHeaders(val) => val.as_ref(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_row_span(&self) -> NonZeroU32 {
+            match self {
+                Self::RowSpan(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_col_span(&self) -> NonZeroU32 {
+            match self {
+                Self::ColSpan(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+}
+
 impl Ordinal for TableAttr {
     fn ordinal(&self) -> usize {
         match self {
-            Self::Summary(_) => table_attr::Summary::ORDINAL,
-            Self::HeaderScope(_) => table_attr::HeaderScope::ORDINAL,
-            Self::CellHeaders(_) => table_attr::CellHeaders::ORDINAL,
-            Self::RowSpan(_) => table_attr::RowSpan::ORDINAL,
-            Self::ColSpan(_) => table_attr::ColSpan::ORDINAL,
+            Self::Summary(_) => Self::SUMMARY,
+            Self::HeaderScope(_) => Self::HEADER_SCOPE,
+            Self::CellHeaders(_) => Self::CELL_HEADERS,
+            Self::RowSpan(_) => Self::ROW_SPAN,
+            Self::ColSpan(_) => Self::COL_SPAN,
         }
-    }
-}
-
-mod table_attr {
-    pub struct Summary;
-
-    pub struct HeaderScope;
-
-    pub struct CellHeaders;
-
-    pub struct RowSpan;
-
-    pub struct ColSpan;
-
-    mod impls {
-        use super::super::*;
-        impl Unwrap<TableAttr> for super::Summary {
-            type Item = String;
-
-            const ORDINAL: usize = 0;
-
-            #[inline(always)]
-            fn unwrap(attr: &TableAttr) -> &Self::Item {
-                match attr {
-                    TableAttr::Summary(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> TableAttr {
-                TableAttr::Summary(val)
-            }
-        }
-
-        impl Unwrap<TableAttr> for super::HeaderScope {
-            type Item = TableHeaderScope;
-
-            const ORDINAL: usize = 1;
-
-            #[inline(always)]
-            fn unwrap(attr: &TableAttr) -> &Self::Item {
-                match attr {
-                    TableAttr::HeaderScope(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> TableAttr {
-                TableAttr::HeaderScope(val)
-            }
-        }
-
-        impl Unwrap<TableAttr> for super::CellHeaders {
-            type Item = SmallVec<[TagId; 1]>;
-
-            const ORDINAL: usize = 2;
-
-            #[inline(always)]
-            fn unwrap(attr: &TableAttr) -> &Self::Item {
-                match attr {
-                    TableAttr::CellHeaders(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> TableAttr {
-                TableAttr::CellHeaders(val)
-            }
-        }
-
-        impl Unwrap<TableAttr> for super::RowSpan {
-            type Item = NonZeroU32;
-
-            const ORDINAL: usize = 3;
-
-            #[inline(always)]
-            fn unwrap(attr: &TableAttr) -> &Self::Item {
-                match attr {
-                    TableAttr::RowSpan(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> TableAttr {
-                TableAttr::RowSpan(val)
-            }
-        }
-
-        impl Unwrap<TableAttr> for super::ColSpan {
-            type Item = NonZeroU32;
-
-            const ORDINAL: usize = 4;
-
-            #[inline(always)]
-            fn unwrap(attr: &TableAttr) -> &Self::Item {
-                match attr {
-                    TableAttr::ColSpan(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> TableAttr {
-                TableAttr::ColSpan(val)
-            }
-        }
-
     }
 }
 
@@ -1832,131 +1653,63 @@ pub(crate) enum LayoutAttr {
     Height(f32),
 }
 
+impl LayoutAttr {
+    pub(crate) const PLACEMENT: usize = 0;
+    pub(crate) const WRITING_MODE: usize = 1;
+    pub(crate) const B_BOX: usize = 2;
+    pub(crate) const WIDTH: usize = 3;
+    pub(crate) const HEIGHT: usize = 4;
+
+        #[inline(always)]
+        fn unwrap_placement(&self) -> Placement {
+            match self {
+                Self::Placement(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_writing_mode(&self) -> WritingMode {
+            match self {
+                Self::WritingMode(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_b_box(&self) -> Rect {
+            match self {
+                Self::BBox(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_width(&self) -> f32 {
+            match self {
+                Self::Width(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_height(&self) -> f32 {
+            match self {
+                Self::Height(val) => val.clone(),
+                _ => unreachable!(),
+            }
+        }
+}
+
 impl Ordinal for LayoutAttr {
     fn ordinal(&self) -> usize {
         match self {
-            Self::Placement(_) => layout_attr::Placement::ORDINAL,
-            Self::WritingMode(_) => layout_attr::WritingMode::ORDINAL,
-            Self::BBox(_) => layout_attr::BBox::ORDINAL,
-            Self::Width(_) => layout_attr::Width::ORDINAL,
-            Self::Height(_) => layout_attr::Height::ORDINAL,
+            Self::Placement(_) => Self::PLACEMENT,
+            Self::WritingMode(_) => Self::WRITING_MODE,
+            Self::BBox(_) => Self::B_BOX,
+            Self::Width(_) => Self::WIDTH,
+            Self::Height(_) => Self::HEIGHT,
         }
-    }
-}
-
-mod layout_attr {
-    pub struct Placement;
-
-    pub struct WritingMode;
-
-    pub struct BBox;
-
-    pub struct Width;
-
-    pub struct Height;
-
-    mod impls {
-        use super::super::*;
-        impl Unwrap<LayoutAttr> for super::Placement {
-            type Item = Placement;
-
-            const ORDINAL: usize = 0;
-
-            #[inline(always)]
-            fn unwrap(attr: &LayoutAttr) -> &Self::Item {
-                match attr {
-                    LayoutAttr::Placement(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> LayoutAttr {
-                LayoutAttr::Placement(val)
-            }
-        }
-
-        impl Unwrap<LayoutAttr> for super::WritingMode {
-            type Item = WritingMode;
-
-            const ORDINAL: usize = 1;
-
-            #[inline(always)]
-            fn unwrap(attr: &LayoutAttr) -> &Self::Item {
-                match attr {
-                    LayoutAttr::WritingMode(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> LayoutAttr {
-                LayoutAttr::WritingMode(val)
-            }
-        }
-
-        impl Unwrap<LayoutAttr> for super::BBox {
-            type Item = Rect;
-
-            const ORDINAL: usize = 2;
-
-            #[inline(always)]
-            fn unwrap(attr: &LayoutAttr) -> &Self::Item {
-                match attr {
-                    LayoutAttr::BBox(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> LayoutAttr {
-                LayoutAttr::BBox(val)
-            }
-        }
-
-        impl Unwrap<LayoutAttr> for super::Width {
-            type Item = f32;
-
-            const ORDINAL: usize = 3;
-
-            #[inline(always)]
-            fn unwrap(attr: &LayoutAttr) -> &Self::Item {
-                match attr {
-                    LayoutAttr::Width(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> LayoutAttr {
-                LayoutAttr::Width(val)
-            }
-        }
-
-        impl Unwrap<LayoutAttr> for super::Height {
-            type Item = f32;
-
-            const ORDINAL: usize = 4;
-
-            #[inline(always)]
-            fn unwrap(attr: &LayoutAttr) -> &Self::Item {
-                match attr {
-                    LayoutAttr::Height(val) => val,
-                    #[allow(unreachable_patterns)]
-                    _ => unreachable!(),
-                }
-            }
-
-            #[inline(always)]
-            fn wrap(val: Self::Item) -> LayoutAttr {
-                LayoutAttr::Height(val)
-            }
-        }
-
     }
 }
 

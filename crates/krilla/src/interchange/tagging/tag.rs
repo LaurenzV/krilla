@@ -32,10 +32,10 @@ include!("generated.rs");
 pub struct Tag<T> {
     /// The location of the tag.
     pub location: Option<Location>,
-    pub(crate) attrs: BSet<Attr>,
-    pub(crate) list_attrs: BSet<ListAttr>,
-    pub(crate) table_attrs: BSet<TableAttr>,
-    pub(crate) layout_attrs: BSet<LayoutAttr>,
+    pub(crate) attrs: OrdinalSet<Attr>,
+    pub(crate) list_attrs: OrdinalSet<ListAttr>,
+    pub(crate) table_attrs: OrdinalSet<TableAttr>,
+    pub(crate) layout_attrs: OrdinalSet<LayoutAttr>,
     /// The type of this tag containing required attributes.
     pub(crate) ty: PhantomData<T>,
 }
@@ -45,10 +45,10 @@ impl<T> Tag<T> {
     /// providing required attributes.
     pub(crate) const fn new() -> Self {
         Self {
-            attrs: BSet::new(),
-            list_attrs: BSet::new(),
-            table_attrs: BSet::new(),
-            layout_attrs: BSet::new(),
+            attrs: OrdinalSet::new(),
+            list_attrs: OrdinalSet::new(),
+            table_attrs: OrdinalSet::new(),
+            layout_attrs: OrdinalSet::new(),
             location: None,
             ty: PhantomData,
         }
@@ -76,19 +76,20 @@ impl<T> Tag<T> {
     }
 }
 
-/// An ordered set using binary search to find and insert items.
+/// An ordered set using ordinal numbers to sort and identify elements.
+/// Due to the strict ordering, elements can be located using binary search.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct BSet<A> {
+pub(crate) struct OrdinalSet<A> {
     items: Vec<A>,
 }
 
-impl<A> BSet<A> {
+impl<A> OrdinalSet<A> {
     pub(crate) const fn new() -> Self {
         Self { items: Vec::new() }
     }
 }
 
-impl<A> std::ops::Deref for BSet<A> {
+impl<A> std::ops::Deref for OrdinalSet<A> {
     type Target = [A];
 
     fn deref(&self) -> &Self::Target {
@@ -96,7 +97,7 @@ impl<A> std::ops::Deref for BSet<A> {
     }
 }
 
-impl<A: Ordinal> BSet<A> {
+impl<A: Ordinal> OrdinalSet<A> {
     pub(crate) fn set(&mut self, attr: A) {
         let res = self.items.binary_search_by_key(&attr.ordinal(), A::ordinal);
         match res {
@@ -105,46 +106,29 @@ impl<A: Ordinal> BSet<A> {
         }
     }
 
-    pub(crate) fn remove<U: Unwrap<A>>(&mut self) {
-        let idx = self.items.binary_search_by_key(&U::ORDINAL, A::ordinal);
+    pub(crate) fn remove<const ORDINAL: usize>(&mut self) {
+        let idx = self.items.binary_search_by_key(&ORDINAL, A::ordinal);
         if let Ok(idx) = idx {
             self.items.remove(idx);
         }
     }
 
-    pub(crate) fn get<U: Unwrap<A>>(&self) -> Option<&U::Item> {
-        let idx = self
-            .items
-            .binary_search_by_key(&U::ORDINAL, A::ordinal)
-            .ok()?;
-        Some(U::unwrap(&self.items[idx]))
+    pub(crate) fn get<const ORDINAL: usize>(&self) -> Option<&A> {
+        let idx = self.items.binary_search_by_key(&ORDINAL, A::ordinal).ok()?;
+        Some(&self.items[idx])
     }
 
-    pub(crate) fn set_or_remove<U: Unwrap<A>>(&mut self, attr: Option<U::Item>) {
+    pub(crate) fn set_or_remove<const ORDINAL: usize>(&mut self, attr: Option<A>) {
         match attr {
-            Some(attr) => self.set(U::wrap(attr)),
-            None => self.remove::<U>(),
+            Some(attr) => self.set(attr),
+            None => self.remove::<ORDINAL>(),
         }
     }
 }
 
-/// Should return the ordinal number of this variant as defined in
-/// [`Unwrap::ORDINAL`].
+/// Identifies elements using an ordianl number.
 pub(crate) trait Ordinal {
     fn ordinal(&self) -> usize;
-}
-
-/// This trait is used to obtain an attribute variant. The ordinal number is
-/// used for binary search and if the variant is present, the unwrap function
-/// can be used to obtain a reference to the inner type.
-pub(crate) trait Unwrap<A> {
-    type Item;
-
-    const ORDINAL: usize;
-
-    fn unwrap(attr: &A) -> &Self::Item;
-
-    fn wrap(val: Self::Item) -> A;
 }
 
 /// An identifier of a [`Tag`].
