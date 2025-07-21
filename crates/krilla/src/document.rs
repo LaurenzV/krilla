@@ -79,6 +79,11 @@ impl Document {
         self.serializer_context.set_location(location);
     }
 
+    /// Reset the location that should be assumed for subsequent operations.
+    pub fn reset_location(&mut self) {
+        self.serializer_context.reset_location();
+    }
+
     /// Set the outline of the document.
     pub fn set_outline(&mut self, outline: Outline) {
         self.serializer_context.set_outline(outline);
