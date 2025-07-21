@@ -362,9 +362,9 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
         let accessor = attr.accessor_name();
         writeln!(f, "    #[inline(always)]").ok();
         #[rustfmt::skip]
-        writeln!(f, "    fn get_{accessor}<const ORDINAL: usize>(&self) -> Option<&{name}> {{").ok();
+        writeln!(f, "    fn get_{accessor}(&self, ordinal: usize) -> Option<&{name}> {{").ok();
         #[rustfmt::skip]
-        writeln!(f, "        self.attrs.get::<ORDINAL>().map(AnyAttr::unwrap_{accessor})").ok();
+        writeln!(f, "        self.attrs.get(ordinal).map(AnyAttr::unwrap_{accessor})").ok();
         writeln!(f, "    }}").ok();
         writeln!(f).ok();
         writeln!(f, "    #[allow(unused)]").ok();
@@ -375,9 +375,9 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
         writeln!(f).ok();
         writeln!(f, "    #[allow(unused)]").ok();
         writeln!(f, "    #[inline(always)]").ok();
-        writeln!(f, "    fn set_or_remove_{accessor}<const ORDINAL: usize>(&mut self, {accessor}: Option<{name}>) {{").ok();
+        writeln!(f, "    fn set_or_remove_{accessor}(&mut self, ordinal: usize, {accessor}: Option<{name}>) {{").ok();
         #[rustfmt::skip]
-        writeln!(f, "        self.attrs.set_or_remove::<ORDINAL>({accessor}.map(AnyAttr::{name}));").ok();
+        writeln!(f, "        self.attrs.set_or_remove(ordinal, {accessor}.map(AnyAttr::{name}));").ok();
         writeln!(f, "    }}").ok();
         writeln!(f).ok();
     }
@@ -513,7 +513,7 @@ fn write_accessors(
         writeln!(f, "        {tag}.{accessor}()").ok();
     } else {
         #[rustfmt::skip]
-        write!(f, "        {tag}.get_{kind_accessor}::<{{{kind}::{ordinal}}}>()").ok();
+        write!(f, "        {tag}.get_{kind_accessor}({kind}::{ordinal})").ok();
         if required {
             writeln!(f, ".unwrap().unwrap_{accessor}()").ok();
         } else {
@@ -548,7 +548,7 @@ fn write_accessors(
         writeln!(f, "        {tag}.set_{kind_accessor}({kind}::{variant}({accessor}{param_mapping}));").ok();
     } else {
         #[rustfmt::skip]
-        writeln!(f, "        {tag}.set_or_remove_{kind_accessor}::<{{{kind}::{ordinal}}}>({accessor}{param_mapping}.map({kind}::{variant}));").ok();
+        writeln!(f, "        {tag}.set_or_remove_{kind_accessor}({kind}::{ordinal}, {accessor}{param_mapping}.map({kind}::{variant}));").ok();
     }
     writeln!(f, "    }}").ok();
     writeln!(f).ok();

@@ -113,15 +113,11 @@ impl<A> OrdinalSet<A> {
     }
 }
 
-impl<A> std::ops::Deref for OrdinalSet<A> {
-    type Target = [A];
-
-    fn deref(&self) -> &Self::Target {
-        &self.items
-    }
-}
-
 impl<A: Ordinal> OrdinalSet<A> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &A> {
+        self.items.iter()
+    }
+
     pub(crate) fn set(&mut self, attr: A) {
         for (i, item) in self.items.iter().enumerate() {
             if item.ordinal() == attr.ordinal() {
@@ -136,23 +132,34 @@ impl<A: Ordinal> OrdinalSet<A> {
         self.items.push(attr);
     }
 
-    pub(crate) fn remove<const ORDINAL: usize>(&mut self) {
+    pub(crate) fn remove(&mut self, ordinal: usize) {
         for (i, item) in self.items.iter().enumerate() {
-            if item.ordinal() == ORDINAL {
+            if item.ordinal() == ordinal {
                 self.items.remove(i);
                 return;
+            }
+            if item.ordinal() > ordinal {
+                break;
             }
         }
     }
 
-    pub(crate) fn get<const ORDINAL: usize>(&self) -> Option<&A> {
-        self.items.iter().find(|i| i.ordinal() == ORDINAL)
+    pub(crate) fn get(&self, ordinal: usize) -> Option<&A> {
+        for item in self.items.iter() {
+            if item.ordinal() == ordinal {
+                return Some(item);
+            }
+            if item.ordinal() > ordinal {
+                break;
+            }
+        }
+        None
     }
 
-    pub(crate) fn set_or_remove<const ORDINAL: usize>(&mut self, attr: Option<A>) {
+    pub(crate) fn set_or_remove(&mut self, ordinal: usize, attr: Option<A>) {
         match attr {
             Some(attr) => self.set(attr),
-            None => self.remove::<ORDINAL>(),
+            None => self.remove(ordinal),
         }
     }
 }
