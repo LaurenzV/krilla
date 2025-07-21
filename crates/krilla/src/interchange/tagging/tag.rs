@@ -54,7 +54,7 @@ pub struct Tag<T> {
     pub(crate) list_attrs: OrdinalSet<ListAttr>,
     pub(crate) table_attrs: OrdinalSet<TableAttr>,
     pub(crate) layout_attrs: OrdinalSet<LayoutAttr>,
-    /// The type of this tag containing required attributes.
+    /// Compile time marker for a type-safe API.
     pub(crate) ty: PhantomData<T>,
 }
 
