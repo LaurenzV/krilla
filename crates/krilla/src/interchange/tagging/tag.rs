@@ -257,7 +257,7 @@ impl TableHeaderScope {
 /// Default value: [`Placement::Inline`].
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Placement {
-    /// tacked in the block-progression direction within an enclosing reference
+    /// Stacked in the block-progression direction within an enclosing reference
     /// area or parent BLSE.
     Block,
     /// Packed in the inline-progression direction within an enclosing BLSE.
