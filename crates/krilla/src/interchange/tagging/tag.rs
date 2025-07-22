@@ -58,7 +58,7 @@ pub struct Tag<T> {
 pub struct AnyTag {
     /// The location of the tag.
     pub location: Option<Location>,
-    pub(crate) attrs: OrdinalSet<AnyAttr>,
+    pub(crate) attrs: OrdinalSet<Attr>,
 }
 
 impl AnyTag {

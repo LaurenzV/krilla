@@ -33,16 +33,16 @@
 #
 # The title is required for some export modes, like for example PDF/UA.
 [Tag.Hn]
-required = ["Attr::HeadingLevel"]
-suggested = ["Attr::Title"]
-optional = ["Attr::Title"]
+required = ["Struct::HeadingLevel"]
+suggested = ["Struct::Title"]
+optional = ["Struct::Title"]
 # A list.
 #
 # **Best practice**: Should consist of an optional caption followed by
 # list items.
 # List numbering is only required for PDF/UA, but we just enforce it for always.
 [Tag.L]
-required = ["ListAttr::Numbering"]
+required = ["List::Numbering"]
 # A list item.
 #
 # **Best practice**: Should consist of one or more list labels and/or list bodies.
@@ -58,10 +58,10 @@ required = ["ListAttr::Numbering"]
 # caption as the first or last child.
 [Tag.Table]
 optional = [
-  "TableAttr::Summary",
-  "LayoutAttr::BBox",
-  "LayoutAttr::Width",
-  "LayoutAttr::Height",
+  "Table::Summary",
+  "Layout::BBox",
+  "Layout::Width",
+  "Layout::Height",
 ]
 # A table row.
 #
@@ -69,22 +69,22 @@ optional = [
 [Tag.TR]
 # A table header cell.
 [Tag.TH]
-required = ["TableAttr::HeaderScope"]
+required = ["Table::HeaderScope"]
 optional = [
-  "TableAttr::CellHeaders",
-  "TableAttr::RowSpan",
-  "TableAttr::ColSpan",
-  "LayoutAttr::Width",
-  "LayoutAttr::Height",
+  "Table::CellHeaders",
+  "Table::RowSpan",
+  "Table::ColSpan",
+  "Layout::Width",
+  "Layout::Height",
 ]
 # A table data cell.
 [Tag.TD]
 optional = [
-  "TableAttr::CellHeaders",
-  "TableAttr::RowSpan",
-  "TableAttr::ColSpan",
-  "LayoutAttr::Width",
-  "LayoutAttr::Height",
+  "Table::CellHeaders",
+  "Table::RowSpan",
+  "Table::ColSpan",
+  "Layout::Width",
+  "Layout::Height",
 ]
 # A table header row group.
 [Tag.THead]
@@ -127,21 +127,21 @@ optional = [
 #
 # Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
 [Tag.Figure]
-suggested = ["Attr::AltText"]
+suggested = ["Struct::AltText"]
 optional = [
-  "LayoutAttr::BBox",
-  "LayoutAttr::Width",
-  "LayoutAttr::Height",
+  "Layout::BBox",
+  "Layout::Width",
+  "Layout::Height",
 ]
 # A mathematical formula.
 #
 # Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
 [Tag.Formula]
-suggested = ["Attr::AltText"]
+suggested = ["Struct::AltText"]
 optional = [
-  "LayoutAttr::BBox",
-  "LayoutAttr::Width",
-  "LayoutAttr::Height",
+  "Layout::BBox",
+  "Layout::Width",
+  "Layout::Height",
 ]
 # A date or time.
 [Tag.Datetime]
@@ -150,7 +150,7 @@ optional = [
 # A title.
 [Tag.Title]
 
-[Attr]
+[Attr.Struct]
 # The tag id.
 Id = { type = "TagId", global = true }
 # The language of this tag.
@@ -171,11 +171,11 @@ Title = { type = "String", accessor = "AsRef<str>" }
 # The heading level
 HeadingLevel = { name = "level", type = "NonZeroU32", accessor = "Copy" }
 
-[ListAttr]
+[Attr.List]
 # The list numbering.
 Numbering = { type = "ListNumbering", accessor = "Copy" }
 
-[TableAttr]
+[Attr.Table]
 # The table summary.
 Summary = { type = "String", accessor = "AsRef<str>" }
 # The table header scope.
@@ -193,7 +193,7 @@ RowSpan = { type = "NonZeroU32", accessor = "Copy" }
 # The column span of this table cell.
 ColSpan = { type = "NonZeroU32", accessor = "Copy" }
 
-[LayoutAttr]
+[Attr.Layout]
 # The placement.
 Placement = { type = "Placement", global = true, accessor = "Copy" }
 # The writing mode.

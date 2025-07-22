@@ -132,7 +132,7 @@ use smallvec::SmallVec;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
-use crate::tagging::tag::{AnyAttr, Attr, LayoutAttr, ListAttr, TableAttr, TagId, TagKind};
+use crate::tagging::tag::{Attr, LayoutAttr, ListAttr, StructAttr, TableAttr, TagId, TagKind};
 use crate::util::lazy::LazyInit;
 
 pub mod tag;
@@ -659,33 +659,35 @@ impl TagGroup {
         }
 
         for attr in tag.attrs.iter() {
-            let AnyAttr::Attr(attr) = attr else { continue };
+            let Attr::Struct(attr) = attr else {
+                continue;
+            };
             match attr {
-                Attr::Id(_) => (), // Handled above
-                Attr::Title(title) => {
+                StructAttr::Id(_) => (), // Handled above
+                StructAttr::Title(title) => {
                     struct_elem.title(TextStr(title));
                 }
-                Attr::Lang(lang) => {
+                StructAttr::Lang(lang) => {
                     if pdf_version >= PdfVersion::Pdf14 {
                         struct_elem.lang(TextStr(lang));
                     }
                 }
-                Attr::AltText(alt) => {
+                StructAttr::AltText(alt) => {
                     struct_elem.alt(TextStr(alt));
                 }
-                Attr::Expanded(expanded) => {
+                StructAttr::Expanded(expanded) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         struct_elem.expanded(TextStr(expanded));
                     }
                 }
-                Attr::ActualText(actual_text) => {
+                StructAttr::ActualText(actual_text) => {
                     if pdf_version >= PdfVersion::Pdf14 {
                         struct_elem.actual_text(TextStr(actual_text));
                     }
                 }
 
                 // Not really an attriute
-                Attr::HeadingLevel(_) => (),
+                StructAttr::HeadingLevel(_) => (),
             }
         }
 
@@ -694,7 +696,7 @@ impl TagGroup {
         // Lazily initialize the list attributes to avoid an empty array.
         let mut list_attributes = LazyInit::new(&mut attributes, |attrs| attrs.get().push().list());
         for attr in tag.attrs.iter() {
-            let AnyAttr::ListAttr(attr) = attr else {
+            let Attr::List(attr) = attr else {
                 continue;
             };
             match attr {
@@ -709,7 +711,7 @@ impl TagGroup {
         let mut table_attributes =
             LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
         for attr in tag.attrs.iter() {
-            let AnyAttr::TableAttr(attr) = attr else {
+            let Attr::Table(attr) = attr else {
                 continue;
             };
             match attr {
@@ -743,7 +745,7 @@ impl TagGroup {
         let mut layout_attributes =
             LazyInit::new(&mut attributes, |attrs| attrs.get().push().layout());
         for attr in tag.attrs.iter() {
-            let AnyAttr::LayoutAttr(attr) = attr else {
+            let Attr::Layout(attr) = attr else {
                 continue;
             };
             match attr {

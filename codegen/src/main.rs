@@ -39,9 +39,15 @@ struct Attr<'a> {
     name: &'a str,
     variants: Vec<AttrVariant<'a>>,
     field: OnceLock<&'a str>,
+    struct_name: OnceLock<&'a str>,
 }
 
 impl Attr<'_> {
+    fn struct_name(&self) -> &str {
+        self.struct_name
+            .get_or_init(|| format!("{}Attr", self.name).leak())
+    }
+
     fn accessor_name(&self) -> &str {
         self.field
             .get_or_init(|| self.name.to_case(Case::Snake).leak())
@@ -170,20 +176,19 @@ static TOML: LazyLock<&Toml> = LazyLock::new(|| {
 });
 
 static ATTRS: LazyLock<IndexMap<&str, Attr>> = LazyLock::new(|| {
-    let mut attrs = IndexMap::new();
-    parse_attr(&mut attrs, "Attr");
-    parse_attr(&mut attrs, "ListAttr");
-    parse_attr(&mut attrs, "TableAttr");
-    parse_attr(&mut attrs, "LayoutAttr");
-    attrs
+    TOML.map
+        .expect_key("Attr", Span::pos(Pos::ZERO))
+        .expect_table()
+        .iter()
+        .map(|(name, attr)| {
+            let attr = parse_attr(name, attr.expect_table());
+            (*name, attr)
+        })
+        .collect()
 });
 static TAG: LazyLock<Tag> = LazyLock::new(parse_tag);
 
-fn parse_attr(attrs: &mut IndexMap<&'static str, Attr>, name: &'static str) {
-    let attr = (TOML.map)
-        .expect_key(name, Span::pos(Pos::ZERO))
-        .expect_table();
-
+fn parse_attr<'a>(name: &'a str, attr: &'a MapTable<'a>) -> Attr<'a> {
     let variants = attr.iter().map(|(variant_name, entry)| {
         let span = entry.reprs.first().repr_span();
         let variant = entry.expect_table();
@@ -222,12 +227,12 @@ fn parse_attr(attrs: &mut IndexMap<&'static str, Attr>, name: &'static str) {
         }
     });
 
-    let attr = Attr {
+    Attr {
         name,
         variants: variants.collect(),
         field: OnceLock::new(),
-    };
-    attrs.insert(name, attr);
+        struct_name: OnceLock::new(),
+    }
 }
 
 fn parse_tag() -> Tag<'static> {
@@ -359,25 +364,28 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     writeln!(f, "// Read accessors for all attributes and write accessors for global ones.").ok();
     writeln!(f, "impl AnyTag {{").ok();
     for (name, attr) in ATTRS.iter() {
+        let struct_name = attr.struct_name();
         let accessor = attr.accessor_name();
         writeln!(f, "    #[inline(always)]").ok();
         #[rustfmt::skip]
-        writeln!(f, "    fn get_{accessor}(&self, ordinal: usize) -> Option<&{name}> {{").ok();
+        writeln!(f, "    fn get_{accessor}(&self, ordinal: usize) -> Option<&{struct_name}> {{").ok();
         #[rustfmt::skip]
-        writeln!(f, "        self.attrs.get(ordinal).map(AnyAttr::unwrap_{accessor})").ok();
+        writeln!(f, "        self.attrs.get(ordinal).map(Attr::unwrap_{accessor})").ok();
         writeln!(f, "    }}").ok();
         writeln!(f).ok();
         writeln!(f, "    #[allow(unused)]").ok();
         writeln!(f, "    #[inline(always)]").ok();
-        writeln!(f, "    fn set_{accessor}(&mut self, {accessor}: {name}) {{").ok();
-        writeln!(f, "        self.attrs.set(AnyAttr::{name}({accessor}));").ok();
+        #[rustfmt::skip]
+        writeln!(f, "    fn set_{accessor}(&mut self, attr: {struct_name}) {{").ok();
+        writeln!(f, "        self.attrs.set(Attr::{name}(attr));").ok();
         writeln!(f, "    }}").ok();
         writeln!(f).ok();
         writeln!(f, "    #[allow(unused)]").ok();
         writeln!(f, "    #[inline(always)]").ok();
-        writeln!(f, "    fn set_or_remove_{accessor}(&mut self, ordinal: usize, {accessor}: Option<{name}>) {{").ok();
         #[rustfmt::skip]
-        writeln!(f, "        self.attrs.set_or_remove(ordinal, {accessor}.map(AnyAttr::{name}));").ok();
+        writeln!(f, "    fn set_or_remove_{accessor}(&mut self, ordinal: usize, attr: Option<{struct_name}>) {{").ok();
+        #[rustfmt::skip]
+        writeln!(f, "        self.attrs.set_or_remove(ordinal, attr.map(Attr::{name}));").ok();
         writeln!(f, "    }}").ok();
         writeln!(f).ok();
     }
@@ -487,7 +495,7 @@ fn write_accessors(
     write: bool,
     tag_impl: TagImpl,
 ) {
-    let kind = attr_kind.name;
+    let kind = attr_kind.struct_name();
     let kind_accessor = attr_kind.accessor_name();
     let variant = attr_variant.name;
     let ordinal = attr_variant.ordinal_name();
@@ -569,19 +577,25 @@ fn write_accessors(
 
 fn write_any_attr(f: &mut impl std::fmt::Write) {
     writeln!(f, "#[derive(Clone, Debug, PartialEq)]").ok();
-    writeln!(f, "pub(crate) enum AnyAttr {{").ok();
-    for attr in ATTRS.keys() {
-        writeln!(f, "    {attr}({attr}),").ok();
+    writeln!(f, "pub(crate) enum Attr {{").ok();
+    for (kind, attr) in ATTRS.iter() {
+        let struct_name = attr.struct_name();
+        writeln!(f, "    {kind}({struct_name}),").ok();
     }
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
-    writeln!(f, "impl AnyAttr {{").ok();
+    writeln!(f, "impl Attr {{").ok();
     for (name, attr) in ATTRS.iter() {
+        let struct_name = attr.struct_name();
         let accessor = attr.accessor_name();
         writeln!(f).ok();
         writeln!(f, "        #[inline(always)]").ok();
-        writeln!(f, "        fn unwrap_{accessor}(&self) -> &{name} {{").ok();
+        writeln!(
+            f,
+            "        fn unwrap_{accessor}(&self) -> &{struct_name} {{"
+        )
+        .ok();
         writeln!(f, "            match self {{").ok();
         #[rustfmt::skip]
         writeln!(f, "                Self::{name}(attr) => attr,").ok();
@@ -591,7 +605,7 @@ fn write_any_attr(f: &mut impl std::fmt::Write) {
     }
     writeln!(f, "}}").ok();
 
-    writeln!(f, "impl Ordinal for AnyAttr {{").ok();
+    writeln!(f, "impl Ordinal for Attr {{").ok();
     writeln!(f, "    fn ordinal(&self) -> usize {{").ok();
     writeln!(f, "        match self {{").ok();
     for attr in ATTRS.keys() {
@@ -604,9 +618,9 @@ fn write_any_attr(f: &mut impl std::fmt::Write) {
 }
 
 fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr, ordinal_offset: usize) {
-    let kind_name = attr.name;
+    let struct_name = attr.struct_name();
     writeln!(f, "#[derive(Clone, Debug, PartialEq)]").ok();
-    writeln!(f, "pub(crate) enum {kind_name} {{").ok();
+    writeln!(f, "pub(crate) enum {struct_name} {{").ok();
     for variant @ AttrVariant { name, ty, .. } in attr.variants.iter() {
         for comment in variant.comments.iter() {
             writeln!(f, "    ///{comment}").ok();
@@ -616,7 +630,7 @@ fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr, ordinal_offset: usize) 
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
-    writeln!(f, "impl {kind_name} {{").ok();
+    writeln!(f, "impl {struct_name} {{").ok();
     for (i, variant) in attr.variants.iter().enumerate() {
         let o = ordinal_offset + i;
         let ordinal = variant.ordinal_name();
@@ -642,7 +656,7 @@ fn write_attr(f: &mut impl std::fmt::Write, attr: &Attr, ordinal_offset: usize) 
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
-    writeln!(f, "impl Ordinal for {kind_name} {{").ok();
+    writeln!(f, "impl Ordinal for {struct_name} {{").ok();
     writeln!(f, "    fn ordinal(&self) -> usize {{").ok();
     writeln!(f, "        match self {{").ok();
     for variant in attr.variants.iter() {
