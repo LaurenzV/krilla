@@ -4,10 +4,12 @@ use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
 use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
+use krilla::metadata::Metadata;
+use krilla::outline::Outline;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::tagging::tag::{ListNumbering, TableHeaderScope, Tag, TagId};
+use krilla::tagging::tag::{ListNumbering, Placement, TableHeaderScope, Tag, TagId, WritingMode};
 use krilla::tagging::{ArtifactType, ContentTag, Node, SpanTag, TagGroup, TagTree};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
@@ -465,6 +467,72 @@ fn tagging_tag_attributes(document: &mut Document) {
         .with_lang(Some("en".into()));
 
     tag_tree.push(TagGroup::with_children(figure, vec![Node::Leaf(logo)]));
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document, settings_15)]
+fn tagging_figure_bounds(document: &mut Document) {
+    document.set_metadata(Metadata::new().title("Figure".into()).language("en".into()));
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id1 = surface.start_tagged(ContentTag::Other);
+    let image = load_png_image("rgb8.png");
+    let image_size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.push_transform(&Transform::from_translate(100.0, 300.0));
+    surface.draw_image(image, image_size);
+    surface.pop();
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let bbox = Rect::from_xywh(100.0, 300.0, image_size.width(), image_size.height()).unwrap();
+    let figure_tag = Tag::Figure(Some("a gradient".into()))
+        // removing this bbox will cause PAC 2024 to complain
+        .with_bbox(Some(bbox))
+        .with_width(Some(image_size.width()))
+        .with_height(Some(image_size.height()));
+    let figure = TagGroup::with_children(figure_tag, vec![id1.into()]);
+
+    let par = TagGroup::with_children(Tag::P, vec![figure.into()]);
+
+    tag_tree.push(par);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document, settings_15)]
+fn tagging_layout_placement_and_writing_mode(document: &mut Document) {
+    document.set_metadata(Metadata::new().title("Layout".into()).language("en".into()));
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "\"Some quoted text\"");
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let mut quote = TagGroup::new(Tag::InlineQuote.with_placement(Some(Placement::Inline)));
+    quote.push(text);
+
+    let mut par = TagGroup::new(
+        Tag::P
+            .with_writing_mode(Some(WritingMode::LrTb))
+            .with_placement(Some(Placement::Block)),
+    );
+    par.push(quote);
+
+    tag_tree.push(par);
 
     document.set_tag_tree(tag_tree);
 }
