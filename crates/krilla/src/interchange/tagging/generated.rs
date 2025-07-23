@@ -206,12 +206,12 @@ impl TagKind {
         self.as_any().id()
     }
 
-    /// The tag id.
+    /// Set the tag id.
     pub fn set_id(&mut self, id: Option<TagId>) {
         self.as_any_mut().set_id(id);
     }
 
-    /// The tag id.
+    /// Set the tag id.
     pub fn with_id(mut self, id: Option<TagId>) -> Self {
         self.set_id(id);
         self
@@ -222,50 +222,50 @@ impl TagKind {
         self.as_any().lang()
     }
 
-    /// The language of this tag.
+    /// Set the language of this tag.
     pub fn set_lang(&mut self, lang: Option<String>) {
         self.as_any_mut().set_lang(lang);
     }
 
-    /// The language of this tag.
+    /// Set the language of this tag.
     pub fn with_lang(mut self, lang: Option<String>) -> Self {
         self.set_lang(lang);
         self
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// The optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn alt_text(&self) -> Option<&str> {
         self.as_any().alt_text()
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// Set the optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn set_alt_text(&mut self, alt_text: Option<String>) {
         self.as_any_mut().set_alt_text(alt_text);
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// Set the optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
         self.set_alt_text(alt_text);
         self
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// The expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn expanded(&self) -> Option<&str> {
         self.as_any().expanded()
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// Set the expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn set_expanded(&mut self, expanded: Option<String>) {
         self.as_any_mut().set_expanded(expanded);
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// Set the expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn with_expanded(mut self, expanded: Option<String>) -> Self {
         self.set_expanded(expanded);
         self
@@ -278,14 +278,14 @@ impl TagKind {
         self.as_any().actual_text()
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// Set the actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_actual_text(&mut self, actual_text: Option<String>) {
         self.as_any_mut().set_actual_text(actual_text);
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// Set the actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
@@ -318,7 +318,7 @@ impl TagKind {
         self.as_any().scope()
     }
 
-    /// A list of headers associated with a table cell.
+    /// The list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -344,12 +344,12 @@ impl TagKind {
         self.as_any().placement()
     }
 
-    /// The placement.
+    /// Set the placement.
     pub fn set_placement(&mut self, placement: Option<Placement>) {
         self.as_any_mut().set_placement(placement);
     }
 
-    /// The placement.
+    /// Set the placement.
     pub fn with_placement(mut self, placement: Option<Placement>) -> Self {
         self.set_placement(placement);
         self
@@ -360,12 +360,12 @@ impl TagKind {
         self.as_any().writing_mode()
     }
 
-    /// The writing mode.
+    /// Set the writing mode.
     pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
         self.as_any_mut().set_writing_mode(writing_mode);
     }
 
-    /// The writing mode.
+    /// Set the writing mode.
     pub fn with_writing_mode(mut self, writing_mode: Option<WritingMode>) -> Self {
         self.set_writing_mode(writing_mode);
         self
@@ -463,12 +463,12 @@ impl AnyTag {
         self.get_struct(StructAttr::ID).map(StructAttr::unwrap_id)
     }
 
-    /// The tag id.
+    /// Set the tag id.
     pub fn set_id(&mut self, id: Option<TagId>) {
         self.set_or_remove_struct(StructAttr::ID, id.map(StructAttr::Id));
     }
 
-    /// The tag id.
+    /// Set the tag id.
     pub fn with_id(mut self, id: Option<TagId>) -> Self {
         self.set_id(id);
         self
@@ -479,50 +479,50 @@ impl AnyTag {
         self.get_struct(StructAttr::LANG).map(StructAttr::unwrap_lang)
     }
 
-    /// The language of this tag.
+    /// Set the language of this tag.
     pub fn set_lang(&mut self, lang: Option<String>) {
         self.set_or_remove_struct(StructAttr::LANG, lang.map(StructAttr::Lang));
     }
 
-    /// The language of this tag.
+    /// Set the language of this tag.
     pub fn with_lang(mut self, lang: Option<String>) -> Self {
         self.set_lang(lang);
         self
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// The optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn alt_text(&self) -> Option<&str> {
         self.get_struct(StructAttr::ALT_TEXT).map(StructAttr::unwrap_alt_text)
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// Set the optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn set_alt_text(&mut self, alt_text: Option<String>) {
         self.set_or_remove_struct(StructAttr::ALT_TEXT, alt_text.map(StructAttr::AltText));
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// Set the optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
         self.set_alt_text(alt_text);
         self
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// The expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn expanded(&self) -> Option<&str> {
         self.get_struct(StructAttr::EXPANDED).map(StructAttr::unwrap_expanded)
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// Set the expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn set_expanded(&mut self, expanded: Option<String>) {
         self.set_or_remove_struct(StructAttr::EXPANDED, expanded.map(StructAttr::Expanded));
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// Set the expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn with_expanded(mut self, expanded: Option<String>) -> Self {
         self.set_expanded(expanded);
         self
@@ -535,14 +535,14 @@ impl AnyTag {
         self.get_struct(StructAttr::ACTUAL_TEXT).map(StructAttr::unwrap_actual_text)
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// Set the actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_actual_text(&mut self, actual_text: Option<String>) {
         self.set_or_remove_struct(StructAttr::ACTUAL_TEXT, actual_text.map(StructAttr::ActualText));
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// Set the actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
@@ -575,7 +575,7 @@ impl AnyTag {
         self.get_table(TableAttr::HEADER_SCOPE).map(TableAttr::unwrap_scope)
     }
 
-    /// A list of headers associated with a table cell.
+    /// The list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -601,12 +601,12 @@ impl AnyTag {
         self.get_layout(LayoutAttr::PLACEMENT).map(LayoutAttr::unwrap_placement)
     }
 
-    /// The placement.
+    /// Set the placement.
     pub fn set_placement(&mut self, placement: Option<Placement>) {
         self.set_or_remove_layout(LayoutAttr::PLACEMENT, placement.map(LayoutAttr::Placement));
     }
 
-    /// The placement.
+    /// Set the placement.
     pub fn with_placement(mut self, placement: Option<Placement>) -> Self {
         self.set_placement(placement);
         self
@@ -617,12 +617,12 @@ impl AnyTag {
         self.get_layout(LayoutAttr::WRITING_MODE).map(LayoutAttr::unwrap_writing_mode)
     }
 
-    /// The writing mode.
+    /// Set the writing mode.
     pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
         self.set_or_remove_layout(LayoutAttr::WRITING_MODE, writing_mode.map(LayoutAttr::WritingMode));
     }
 
-    /// The writing mode.
+    /// Set the writing mode.
     pub fn with_writing_mode(mut self, writing_mode: Option<WritingMode>) -> Self {
         self.set_writing_mode(writing_mode);
         self
@@ -651,12 +651,12 @@ impl<T> Tag<T> {
         self.inner.get_struct(StructAttr::ID).map(StructAttr::unwrap_id)
     }
 
-    /// The tag id.
+    /// Set the tag id.
     pub fn set_id(&mut self, id: Option<TagId>) {
         self.inner.set_or_remove_struct(StructAttr::ID, id.map(StructAttr::Id));
     }
 
-    /// The tag id.
+    /// Set the tag id.
     pub fn with_id(mut self, id: Option<TagId>) -> Self {
         self.set_id(id);
         self
@@ -667,50 +667,50 @@ impl<T> Tag<T> {
         self.inner.get_struct(StructAttr::LANG).map(StructAttr::unwrap_lang)
     }
 
-    /// The language of this tag.
+    /// Set the language of this tag.
     pub fn set_lang(&mut self, lang: Option<String>) {
         self.inner.set_or_remove_struct(StructAttr::LANG, lang.map(StructAttr::Lang));
     }
 
-    /// The language of this tag.
+    /// Set the language of this tag.
     pub fn with_lang(mut self, lang: Option<String>) -> Self {
         self.set_lang(lang);
         self
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// The optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn alt_text(&self) -> Option<&str> {
         self.inner.get_struct(StructAttr::ALT_TEXT).map(StructAttr::unwrap_alt_text)
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// Set the optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn set_alt_text(&mut self, alt_text: Option<String>) {
         self.inner.set_or_remove_struct(StructAttr::ALT_TEXT, alt_text.map(StructAttr::AltText));
     }
 
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// Set the optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
         self.set_alt_text(alt_text);
         self
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// The expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn expanded(&self) -> Option<&str> {
         self.inner.get_struct(StructAttr::EXPANDED).map(StructAttr::unwrap_expanded)
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// Set the expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn set_expanded(&mut self, expanded: Option<String>) {
         self.inner.set_or_remove_struct(StructAttr::EXPANDED, expanded.map(StructAttr::Expanded));
     }
 
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// Set the expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     pub fn with_expanded(mut self, expanded: Option<String>) -> Self {
         self.set_expanded(expanded);
         self
@@ -723,14 +723,14 @@ impl<T> Tag<T> {
         self.inner.get_struct(StructAttr::ACTUAL_TEXT).map(StructAttr::unwrap_actual_text)
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// Set the actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn set_actual_text(&mut self, actual_text: Option<String>) {
         self.inner.set_or_remove_struct(StructAttr::ACTUAL_TEXT, actual_text.map(StructAttr::ActualText));
     }
 
-    /// The actual text represented by the content of this tag, i.e. if it contained
+    /// Set the actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
     /// replacement text of the word.
     pub fn with_actual_text(mut self, actual_text: Option<String>) -> Self {
@@ -743,12 +743,12 @@ impl<T> Tag<T> {
         self.inner.get_layout(LayoutAttr::PLACEMENT).map(LayoutAttr::unwrap_placement)
     }
 
-    /// The placement.
+    /// Set the placement.
     pub fn set_placement(&mut self, placement: Option<Placement>) {
         self.inner.set_or_remove_layout(LayoutAttr::PLACEMENT, placement.map(LayoutAttr::Placement));
     }
 
-    /// The placement.
+    /// Set the placement.
     pub fn with_placement(mut self, placement: Option<Placement>) -> Self {
         self.set_placement(placement);
         self
@@ -759,12 +759,12 @@ impl<T> Tag<T> {
         self.inner.get_layout(LayoutAttr::WRITING_MODE).map(LayoutAttr::unwrap_writing_mode)
     }
 
-    /// The writing mode.
+    /// Set the writing mode.
     pub fn set_writing_mode(&mut self, writing_mode: Option<WritingMode>) {
         self.inner.set_or_remove_layout(LayoutAttr::WRITING_MODE, writing_mode.map(LayoutAttr::WritingMode));
     }
 
-    /// The writing mode.
+    /// Set the writing mode.
     pub fn with_writing_mode(mut self, writing_mode: Option<WritingMode>) -> Self {
         self.set_writing_mode(writing_mode);
         self
@@ -1085,12 +1085,12 @@ impl Tag<kind::Hn> {
         self.inner.get_struct(StructAttr::HEADING_LEVEL).unwrap().unwrap_level()
     }
 
-    /// The heading level
+    /// Set the heading level
     pub fn set_level(&mut self, level: NonZeroU32) {
         self.inner.set_struct(StructAttr::HeadingLevel(level));
     }
 
-    /// The heading level
+    /// Set the heading level
     pub fn with_level(mut self, level: NonZeroU32) -> Self {
         self.set_level(level);
         self
@@ -1101,12 +1101,12 @@ impl Tag<kind::Hn> {
         self.inner.get_struct(StructAttr::TITLE).map(StructAttr::unwrap_title)
     }
 
-    /// The title, characterizing a specific tag such as `"Chapter 1"`.
+    /// Set the title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn set_title(&mut self, title: Option<String>) {
         self.inner.set_or_remove_struct(StructAttr::TITLE, title.map(StructAttr::Title));
     }
 
-    /// The title, characterizing a specific tag such as `"Chapter 1"`.
+    /// Set the title, characterizing a specific tag such as `"Chapter 1"`.
     pub fn with_title(mut self, title: Option<String>) -> Self {
         self.set_title(title);
         self
@@ -1136,12 +1136,12 @@ impl Tag<kind::L> {
         self.inner.get_list(ListAttr::NUMBERING).unwrap().unwrap_numbering()
     }
 
-    /// The list numbering.
+    /// Set the list numbering.
     pub fn set_numbering(&mut self, numbering: ListNumbering) {
         self.inner.set_list(ListAttr::Numbering(numbering));
     }
 
-    /// The list numbering.
+    /// Set the list numbering.
     pub fn with_numbering(mut self, numbering: ListNumbering) -> Self {
         self.set_numbering(numbering);
         self
@@ -1202,12 +1202,12 @@ impl Tag<kind::Table> {
         self.inner.get_table(TableAttr::SUMMARY).map(TableAttr::unwrap_summary)
     }
 
-    /// The table summary.
+    /// Set the table summary.
     pub fn set_summary(&mut self, summary: Option<String>) {
         self.inner.set_or_remove_table(TableAttr::SUMMARY, summary.map(TableAttr::Summary));
     }
 
-    /// The table summary.
+    /// Set the table summary.
     pub fn with_summary(mut self, summary: Option<String>) -> Self {
         self.set_summary(summary);
         self
@@ -1218,12 +1218,12 @@ impl Tag<kind::Table> {
         self.inner.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
-    /// The bounding box.
+    /// Set the bounding box.
     pub fn set_bbox(&mut self, bbox: Option<Rect>) {
         self.inner.set_or_remove_layout(LayoutAttr::B_BOX, bbox.map(LayoutAttr::BBox));
     }
 
-    /// The bounding box.
+    /// Set the bounding box.
     pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
         self.set_bbox(bbox);
         self
@@ -1234,12 +1234,12 @@ impl Tag<kind::Table> {
         self.inner.get_layout(LayoutAttr::WIDTH).map(LayoutAttr::unwrap_width)
     }
 
-    /// The width.
+    /// Set the width.
     pub fn set_width(&mut self, width: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::WIDTH, width.map(LayoutAttr::Width));
     }
 
-    /// The width.
+    /// Set the width.
     pub fn with_width(mut self, width: Option<f32>) -> Self {
         self.set_width(width);
         self
@@ -1250,12 +1250,12 @@ impl Tag<kind::Table> {
         self.inner.get_layout(LayoutAttr::HEIGHT).map(LayoutAttr::unwrap_height)
     }
 
-    /// The height.
+    /// Set the height.
     pub fn set_height(&mut self, height: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::HEIGHT, height.map(LayoutAttr::Height));
     }
 
-    /// The height.
+    /// Set the height.
     pub fn with_height(mut self, height: Option<f32>) -> Self {
         self.set_height(height);
         self
@@ -1294,18 +1294,18 @@ impl Tag<kind::TH> {
         self.inner.get_table(TableAttr::HEADER_SCOPE).unwrap().unwrap_scope()
     }
 
-    /// The table header scope.
+    /// Set the table header scope.
     pub fn set_scope(&mut self, scope: TableHeaderScope) {
         self.inner.set_table(TableAttr::HeaderScope(scope));
     }
 
-    /// The table header scope.
+    /// Set the table header scope.
     pub fn with_scope(mut self, scope: TableHeaderScope) -> Self {
         self.set_scope(scope);
         self
     }
 
-    /// A list of headers associated with a table cell.
+    /// The list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -1316,7 +1316,7 @@ impl Tag<kind::TH> {
         self.inner.get_table(TableAttr::CELL_HEADERS).map(TableAttr::unwrap_headers)
     }
 
-    /// A list of headers associated with a table cell.
+    /// Set the list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -1327,7 +1327,7 @@ impl Tag<kind::TH> {
         self.inner.set_table(TableAttr::CellHeaders(headers.into_iter().collect()));
     }
 
-    /// A list of headers associated with a table cell.
+    /// Set the list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -1344,12 +1344,12 @@ impl Tag<kind::TH> {
         self.inner.get_table(TableAttr::ROW_SPAN).map(TableAttr::unwrap_row_span)
     }
 
-    /// The row span of this table cell.
+    /// Set the row span of this table cell.
     pub fn set_row_span(&mut self, row_span: Option<NonZeroU32>) {
         self.inner.set_or_remove_table(TableAttr::ROW_SPAN, row_span.map(TableAttr::RowSpan));
     }
 
-    /// The row span of this table cell.
+    /// Set the row span of this table cell.
     pub fn with_row_span(mut self, row_span: Option<NonZeroU32>) -> Self {
         self.set_row_span(row_span);
         self
@@ -1360,12 +1360,12 @@ impl Tag<kind::TH> {
         self.inner.get_table(TableAttr::COL_SPAN).map(TableAttr::unwrap_col_span)
     }
 
-    /// The column span of this table cell.
+    /// Set the column span of this table cell.
     pub fn set_col_span(&mut self, col_span: Option<NonZeroU32>) {
         self.inner.set_or_remove_table(TableAttr::COL_SPAN, col_span.map(TableAttr::ColSpan));
     }
 
-    /// The column span of this table cell.
+    /// Set the column span of this table cell.
     pub fn with_col_span(mut self, col_span: Option<NonZeroU32>) -> Self {
         self.set_col_span(col_span);
         self
@@ -1376,12 +1376,12 @@ impl Tag<kind::TH> {
         self.inner.get_layout(LayoutAttr::WIDTH).map(LayoutAttr::unwrap_width)
     }
 
-    /// The width.
+    /// Set the width.
     pub fn set_width(&mut self, width: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::WIDTH, width.map(LayoutAttr::Width));
     }
 
-    /// The width.
+    /// Set the width.
     pub fn with_width(mut self, width: Option<f32>) -> Self {
         self.set_width(width);
         self
@@ -1392,12 +1392,12 @@ impl Tag<kind::TH> {
         self.inner.get_layout(LayoutAttr::HEIGHT).map(LayoutAttr::unwrap_height)
     }
 
-    /// The height.
+    /// Set the height.
     pub fn set_height(&mut self, height: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::HEIGHT, height.map(LayoutAttr::Height));
     }
 
-    /// The height.
+    /// Set the height.
     pub fn with_height(mut self, height: Option<f32>) -> Self {
         self.set_height(height);
         self
@@ -1414,7 +1414,7 @@ impl Tag<kind::TD> {
     #[allow(non_upper_case_globals)]
     pub const TD: Tag<kind::TD> = Tag::new();
 
-    /// A list of headers associated with a table cell.
+    /// The list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -1425,7 +1425,7 @@ impl Tag<kind::TD> {
         self.inner.get_table(TableAttr::CELL_HEADERS).map(TableAttr::unwrap_headers)
     }
 
-    /// A list of headers associated with a table cell.
+    /// Set the list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -1436,7 +1436,7 @@ impl Tag<kind::TD> {
         self.inner.set_table(TableAttr::CellHeaders(headers.into_iter().collect()));
     }
 
-    /// A list of headers associated with a table cell.
+    /// Set the list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively
@@ -1453,12 +1453,12 @@ impl Tag<kind::TD> {
         self.inner.get_table(TableAttr::ROW_SPAN).map(TableAttr::unwrap_row_span)
     }
 
-    /// The row span of this table cell.
+    /// Set the row span of this table cell.
     pub fn set_row_span(&mut self, row_span: Option<NonZeroU32>) {
         self.inner.set_or_remove_table(TableAttr::ROW_SPAN, row_span.map(TableAttr::RowSpan));
     }
 
-    /// The row span of this table cell.
+    /// Set the row span of this table cell.
     pub fn with_row_span(mut self, row_span: Option<NonZeroU32>) -> Self {
         self.set_row_span(row_span);
         self
@@ -1469,12 +1469,12 @@ impl Tag<kind::TD> {
         self.inner.get_table(TableAttr::COL_SPAN).map(TableAttr::unwrap_col_span)
     }
 
-    /// The column span of this table cell.
+    /// Set the column span of this table cell.
     pub fn set_col_span(&mut self, col_span: Option<NonZeroU32>) {
         self.inner.set_or_remove_table(TableAttr::COL_SPAN, col_span.map(TableAttr::ColSpan));
     }
 
-    /// The column span of this table cell.
+    /// Set the column span of this table cell.
     pub fn with_col_span(mut self, col_span: Option<NonZeroU32>) -> Self {
         self.set_col_span(col_span);
         self
@@ -1485,12 +1485,12 @@ impl Tag<kind::TD> {
         self.inner.get_layout(LayoutAttr::WIDTH).map(LayoutAttr::unwrap_width)
     }
 
-    /// The width.
+    /// Set the width.
     pub fn set_width(&mut self, width: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::WIDTH, width.map(LayoutAttr::Width));
     }
 
-    /// The width.
+    /// Set the width.
     pub fn with_width(mut self, width: Option<f32>) -> Self {
         self.set_width(width);
         self
@@ -1501,12 +1501,12 @@ impl Tag<kind::TD> {
         self.inner.get_layout(LayoutAttr::HEIGHT).map(LayoutAttr::unwrap_height)
     }
 
-    /// The height.
+    /// Set the height.
     pub fn set_height(&mut self, height: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::HEIGHT, height.map(LayoutAttr::Height));
     }
 
-    /// The height.
+    /// Set the height.
     pub fn with_height(mut self, height: Option<f32>) -> Self {
         self.set_height(height);
         self
@@ -1661,12 +1661,12 @@ impl Tag<kind::Figure> {
         self.inner.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
-    /// The bounding box.
+    /// Set the bounding box.
     pub fn set_bbox(&mut self, bbox: Option<Rect>) {
         self.inner.set_or_remove_layout(LayoutAttr::B_BOX, bbox.map(LayoutAttr::BBox));
     }
 
-    /// The bounding box.
+    /// Set the bounding box.
     pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
         self.set_bbox(bbox);
         self
@@ -1677,12 +1677,12 @@ impl Tag<kind::Figure> {
         self.inner.get_layout(LayoutAttr::WIDTH).map(LayoutAttr::unwrap_width)
     }
 
-    /// The width.
+    /// Set the width.
     pub fn set_width(&mut self, width: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::WIDTH, width.map(LayoutAttr::Width));
     }
 
-    /// The width.
+    /// Set the width.
     pub fn with_width(mut self, width: Option<f32>) -> Self {
         self.set_width(width);
         self
@@ -1693,12 +1693,12 @@ impl Tag<kind::Figure> {
         self.inner.get_layout(LayoutAttr::HEIGHT).map(LayoutAttr::unwrap_height)
     }
 
-    /// The height.
+    /// Set the height.
     pub fn set_height(&mut self, height: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::HEIGHT, height.map(LayoutAttr::Height));
     }
 
-    /// The height.
+    /// Set the height.
     pub fn with_height(mut self, height: Option<f32>) -> Self {
         self.set_height(height);
         self
@@ -1726,12 +1726,12 @@ impl Tag<kind::Formula> {
         self.inner.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
-    /// The bounding box.
+    /// Set the bounding box.
     pub fn set_bbox(&mut self, bbox: Option<Rect>) {
         self.inner.set_or_remove_layout(LayoutAttr::B_BOX, bbox.map(LayoutAttr::BBox));
     }
 
-    /// The bounding box.
+    /// Set the bounding box.
     pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
         self.set_bbox(bbox);
         self
@@ -1742,12 +1742,12 @@ impl Tag<kind::Formula> {
         self.inner.get_layout(LayoutAttr::WIDTH).map(LayoutAttr::unwrap_width)
     }
 
-    /// The width.
+    /// Set the width.
     pub fn set_width(&mut self, width: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::WIDTH, width.map(LayoutAttr::Width));
     }
 
-    /// The width.
+    /// Set the width.
     pub fn with_width(mut self, width: Option<f32>) -> Self {
         self.set_width(width);
         self
@@ -1758,12 +1758,12 @@ impl Tag<kind::Formula> {
         self.inner.get_layout(LayoutAttr::HEIGHT).map(LayoutAttr::unwrap_height)
     }
 
-    /// The height.
+    /// Set the height.
     pub fn set_height(&mut self, height: Option<f32>) {
         self.inner.set_or_remove_layout(LayoutAttr::HEIGHT, height.map(LayoutAttr::Height));
     }
 
-    /// The height.
+    /// Set the height.
     pub fn with_height(mut self, height: Option<f32>) -> Self {
         self.set_height(height);
         self
@@ -1862,11 +1862,11 @@ pub(crate) enum StructAttr {
     Id(TagId),
     /// The language of this tag.
     Lang(String),
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
+    /// The optional alternate text that describes the text (for example, if the text
+    /// consists of a star symbol, the alt text should describe that in natural language).
     AltText(String),
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
+    /// The expanded form of an abbreviation.
+    /// Only applicable if the content of the tag is an abbreviation.
     Expanded(String),
     /// The actual text represented by the content of this tag, i.e. if it contained
     /// some curves that artistically represent some word. This should be the exact
@@ -1989,7 +1989,7 @@ pub(crate) enum TableAttr {
     Summary(String),
     /// The table header scope.
     HeaderScope(TableHeaderScope),
-    /// A list of headers associated with a table cell.
+    /// The list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
     /// which can also specify a list of parent header cells (`TH`), and so on.
     /// To determine the list of associated headers this list is recursively

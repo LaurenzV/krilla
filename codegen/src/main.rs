@@ -504,8 +504,8 @@ fn write_accessors(
     let kind = attr_kind.struct_name();
     let kind_accessor = attr_kind.accessor_name();
     let variant = attr_variant.name;
-    let ordinal = attr_variant.ordinal_name();
     let accessor = attr_variant.accessor_name();
+    let ordinal = attr_variant.ordinal_name();
     let param_ty = attr_variant.param_type();
     let param_mapping = attr_variant.param_mapping();
     let ret_ty = attr_variant.return_type();
@@ -546,9 +546,7 @@ fn write_accessors(
         TagImpl::Tag => "self.inner",
         TagImpl::Any => "self",
     };
-    for comment in attr_variant.comments.iter() {
-        writeln!(f, "    ///{comment}").ok();
-    }
+    write_setter_comment(f, &attr_variant.comments);
     #[rustfmt::skip]
     if attr_variant.accessor_kind == AccessorKind::Custom || required {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: {param_ty}) {{").ok();
@@ -567,9 +565,7 @@ fn write_accessors(
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
 
-    for comment in attr_variant.comments.iter() {
-        writeln!(f, "    ///{comment}").ok();
-    }
+    write_setter_comment(f, &attr_variant.comments);
     #[rustfmt::skip]
     if attr_variant.accessor_kind == AccessorKind::Custom || required {
         writeln!(f, "    pub fn with_{accessor}(mut self, {accessor}: {param_ty}) -> Self {{").ok();
@@ -579,6 +575,18 @@ fn write_accessors(
     writeln!(f, "        self.set_{accessor}({accessor});").ok();
     writeln!(f, "        self").ok();
     writeln!(f, "    }}").ok();
+}
+
+fn write_setter_comment(f: &mut impl std::fmt::Write, comments: &[&str]) {
+    if let Some(comment) = comments.first() {
+        let line = comment.trim_start();
+        let first = line.chars().next().unwrap();
+        let remainder = &line[first.len_utf8()..];
+        writeln!(f, "    /// Set {}{remainder}", first.to_lowercase()).ok();
+    }
+    for comment in comments.iter().skip(1) {
+        writeln!(f, "    ///{comment}").ok();
+    }
 }
 
 fn write_any_attr(f: &mut impl std::fmt::Write) {

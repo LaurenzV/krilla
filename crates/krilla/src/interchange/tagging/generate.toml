@@ -155,11 +155,11 @@ optional = [
 Id = { type = "TagId", global = true }
 # The language of this tag.
 Lang = { type = "String", global = true, accessor = "AsRef<str>" }
-# An optional alternate text that describes the text (for example, if the text consists
-# of a star symbol, the alt text should describe that in natural language).
+# The optional alternate text that describes the text (for example, if the text
+# consists of a star symbol, the alt text should describe that in natural language).
 AltText = { type = "String", global = true, accessor = "AsRef<str>" }
-# If the content of the tag is an abbreviation, the expanded form of the
-# abbreviation should be provided here.
+# The expanded form of an abbreviation.
+# Only applicable if the content of the tag is an abbreviation.
 Expanded = { type = "String", global = true, accessor = "AsRef<str>" }
 # The actual text represented by the content of this tag, i.e. if it contained
 # some curves that artistically represent some word. This should be the exact
@@ -180,7 +180,7 @@ Numbering = { type = "ListNumbering", accessor = "Copy" }
 Summary = { type = "String", accessor = "AsRef<str>" }
 # The table header scope.
 HeaderScope = { name = "scope", type = "TableHeaderScope", accessor = "Copy" }
-# A list of headers associated with a table cell.
+# The list of headers associated with a table cell.
 # Table data cells (`TD`) may specify a list of table headers (`TH`),
 # which can also specify a list of parent header cells (`TH`), and so on.
 # To determine the list of associated headers this list is recursively
