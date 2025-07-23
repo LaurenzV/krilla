@@ -98,7 +98,6 @@ impl<T> Tag<T> {
 }
 
 /// An ordered set using ordinal numbers to sort and identify elements.
-/// Due to the strict ordering, elements can be located using binary search.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct OrdinalSet<A> {
     items: SmallVec<[A; 1]>,
@@ -163,7 +162,7 @@ impl<A: Ordinal> OrdinalSet<A> {
     }
 }
 
-/// Identifies elements using an ordianl number.
+/// Identifies elements using an ordinal number.
 pub(crate) trait Ordinal {
     fn ordinal(&self) -> usize;
 }

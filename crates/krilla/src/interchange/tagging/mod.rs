@@ -687,7 +687,7 @@ impl TagGroup {
                     }
                 }
 
-                // Not really an attriute
+                // Not really an attribute
                 StructAttr::HeadingLevel(_) => (),
             }
         }
