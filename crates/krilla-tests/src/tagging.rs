@@ -9,7 +9,7 @@ use krilla::outline::Outline;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::tagging::{ArtifactType, ContentTag, Node, SpanTag, TagGroup, TagTree};
+use krilla::tagging::{ArtifactType, BBox, ContentTag, Node, SpanTag, TagGroup, TagTree};
 use krilla::tagging::{ListNumbering, Placement, TableHeaderScope, Tag, TagId, WritingMode};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
@@ -491,10 +491,10 @@ fn tagging_figure_bounds(document: &mut Document) {
     surface.finish();
     page.finish();
 
-    let bbox = Rect::from_xywh(100.0, 300.0, image_size.width(), image_size.height()).unwrap();
+    let rect = Rect::from_xywh(100.0, 300.0, image_size.width(), image_size.height()).unwrap();
     let figure_tag = Tag::Figure(Some("a gradient".into()))
         // removing this bbox will cause PAC 2024 to complain
-        .with_bbox(Some(bbox))
+        .with_bbox(Some(BBox::new(0, rect)))
         .with_width(Some(image_size.width()))
         .with_height(Some(image_size.height()));
     let figure = TagGroup::with_children(figure_tag, vec![id1.into()]);

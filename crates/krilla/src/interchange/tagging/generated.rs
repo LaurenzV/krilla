@@ -371,8 +371,9 @@ impl TagKind {
         self
     }
 
-    /// The bounding box.
-    pub fn bbox(&self) -> Option<Rect> {
+    /// The bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn bbox(&self) -> Option<BBox> {
         self.as_any().bbox()
     }
 
@@ -628,8 +629,9 @@ impl AnyTag {
         self
     }
 
-    /// The bounding box.
-    pub fn bbox(&self) -> Option<Rect> {
+    /// The bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn bbox(&self) -> Option<BBox> {
         self.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
@@ -1213,18 +1215,21 @@ impl Tag<kind::Table> {
         self
     }
 
-    /// The bounding box.
-    pub fn bbox(&self) -> Option<Rect> {
+    /// The bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn bbox(&self) -> Option<BBox> {
         self.inner.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
-    /// Set the bounding box.
-    pub fn set_bbox(&mut self, bbox: Option<Rect>) {
+    /// Set the bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn set_bbox(&mut self, bbox: Option<BBox>) {
         self.inner.set_or_remove_layout(LayoutAttr::B_BOX, bbox.map(LayoutAttr::BBox));
     }
 
-    /// Set the bounding box.
-    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+    /// Set the bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn with_bbox(mut self, bbox: Option<BBox>) -> Self {
         self.set_bbox(bbox);
         self
     }
@@ -1656,18 +1661,21 @@ impl Tag<kind::Figure> {
         tag
     }
 
-    /// The bounding box.
-    pub fn bbox(&self) -> Option<Rect> {
+    /// The bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn bbox(&self) -> Option<BBox> {
         self.inner.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
-    /// Set the bounding box.
-    pub fn set_bbox(&mut self, bbox: Option<Rect>) {
+    /// Set the bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn set_bbox(&mut self, bbox: Option<BBox>) {
         self.inner.set_or_remove_layout(LayoutAttr::B_BOX, bbox.map(LayoutAttr::BBox));
     }
 
-    /// Set the bounding box.
-    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+    /// Set the bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn with_bbox(mut self, bbox: Option<BBox>) -> Self {
         self.set_bbox(bbox);
         self
     }
@@ -1721,18 +1729,21 @@ impl Tag<kind::Formula> {
         tag
     }
 
-    /// The bounding box.
-    pub fn bbox(&self) -> Option<Rect> {
+    /// The bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn bbox(&self) -> Option<BBox> {
         self.inner.get_layout(LayoutAttr::B_BOX).map(LayoutAttr::unwrap_bbox)
     }
 
-    /// Set the bounding box.
-    pub fn set_bbox(&mut self, bbox: Option<Rect>) {
+    /// Set the bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn set_bbox(&mut self, bbox: Option<BBox>) {
         self.inner.set_or_remove_layout(LayoutAttr::B_BOX, bbox.map(LayoutAttr::BBox));
     }
 
-    /// Set the bounding box.
-    pub fn with_bbox(mut self, bbox: Option<Rect>) -> Self {
+    /// Set the bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    pub fn with_bbox(mut self, bbox: Option<BBox>) -> Self {
         self.set_bbox(bbox);
         self
     }
@@ -2069,8 +2080,9 @@ pub(crate) enum LayoutAttr {
     Placement(Placement),
     /// The writing mode.
     WritingMode(WritingMode),
-    /// The bounding box.
-    BBox(Rect),
+    /// The bounding box of a tag that encloses its visible content.
+    /// If the content spans multiple pages, this should be omitted.
+    BBox(BBox),
     /// The width.
     Width(f32),
     /// The height.
@@ -2101,7 +2113,7 @@ impl LayoutAttr {
         }
 
         #[inline(always)]
-        fn unwrap_bbox(&self) -> Rect {
+        fn unwrap_bbox(&self) -> BBox {
             match self {
                 Self::BBox(val) => *val,
                 _ => unreachable!(),

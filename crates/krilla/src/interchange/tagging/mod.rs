@@ -131,6 +131,7 @@ use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
+use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::lazy::LazyInit;
 
@@ -756,8 +757,17 @@ impl TagGroup {
                 LayoutAttr::WritingMode(writing_mode) => {
                     layout_attributes.get().writing_mode(writing_mode.to_pdf());
                 }
-                LayoutAttr::BBox(bbox) => {
-                    layout_attributes.get().bbox(bbox.to_pdf_rect());
+                LayoutAttr::BBox(BBox { page_idx, rect }) => {
+                    let Some(page_info) = sc.page_infos().get(*page_idx) else {
+                        panic!(
+                            "tag tree contains bounding box with page index {page_idx}, \
+                            but document only has {} pages",
+                            sc.page_infos().len()
+                        );
+                    };
+                    let transform = page_root_transform(page_info.size().height());
+                    let actual_rect = rect.transform(transform).unwrap();
+                    layout_attributes.get().bbox(actual_rect.to_pdf_rect());
                 }
                 LayoutAttr::Width(width) => {
                     layout_attributes.get().width(*width);

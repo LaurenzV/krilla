@@ -328,3 +328,20 @@ impl WritingMode {
         }
     }
 }
+
+/// The bounding box of a tag that encloses its visible content.
+/// If the content spans multiple pages, this should be omitted.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BBox {
+    /// The page index of the bounding box.
+    pub page_idx: usize,
+    /// The rectangle that encloses the content.
+    pub rect: Rect,
+}
+
+impl BBox {
+    /// Create a new bounding box.
+    pub fn new(page_idx: usize, rect: Rect) -> Self {
+        Self { page_idx, rect }
+    }
+}

@@ -160,6 +160,13 @@ impl PageInfo {
         }
     }
 
+    pub(crate) fn size(&self) -> Size {
+        match self {
+            PageInfo::Krilla { surface_size, .. } => *surface_size,
+            PageInfo::Pdf { size, .. } => *size,
+        }
+    }
+
     pub(crate) fn annotations(&self) -> &[(Ref, OnceCell<Ref>)] {
         match self {
             PageInfo::Krilla { annotations, .. } => annotations,

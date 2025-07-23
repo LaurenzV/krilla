@@ -198,8 +198,9 @@ ColSpan = { type = "NonZeroU32", accessor = "Copy" }
 Placement = { type = "Placement", global = true, accessor = "Copy" }
 # The writing mode.
 WritingMode = { type = "WritingMode", global = true, accessor = "Copy" }
-# The bounding box.
-BBox = { name = "bbox", type = "Rect", accessor = "Copy" }
+# The bounding box of a tag that encloses its visible content.
+# If the content spans multiple pages, this should be omitted.
+BBox = { name = "bbox", type = "BBox", accessor = "Copy" }
 # The width.
 Width = { type = "f32", accessor = "Copy" }
 # The height.
