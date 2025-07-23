@@ -1,0 +1,15 @@
+[package]
+name = "codegen"
+version = "0.1.0"
+publish = false
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[dependencies]
+indexmap = "2.10.0"
+convert_case = "0.8.0"
+crates-toml = { git = "https://github.com/saecki/crates-nvim-rs", rev = "dcdbd18" }
+crates-common = { git = "https://github.com/saecki/crates-nvim-rs", rev = "dcdbd18" }

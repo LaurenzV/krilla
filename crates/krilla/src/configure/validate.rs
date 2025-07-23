@@ -203,7 +203,7 @@ pub enum Validator {
     ///   document.
     /// - Information should not be conveyed by contrast, color, format
     ///   or layout.
-    /// - All "best practice" notes in [`Tag`] need to be complied with.
+    /// - All "best practice" notes in [`TagKind`] need to be complied with.
     ///
     /// Text:
     /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributes
@@ -261,7 +261,7 @@ pub enum Validator {
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     ///   universal rendering.
     ///
-    /// [`Tag`]: crate::interchange::tagging::Tag
+    /// [`TagKind`]: crate::interchange::tagging::TagKind
     UA1,
     /// The validator for the PDF/A4 standard.
     ///

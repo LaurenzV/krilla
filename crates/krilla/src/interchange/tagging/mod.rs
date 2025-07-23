@@ -71,7 +71,7 @@
 //!    - Use the `add_tagged_annotation` method on [`Page`], which allows you to associate
 //!      annotations to the content they correspond to. Currently, krilla only supports link
 //!      annotations, and a link annotation should always be a child in a tag group with the
-//!      [Tag] `Link`, with its sibling being an identifier or another tag group that is
+//!      [`TagKind`] [`Link`](TagKind::Link), with its sibling being an identifier or another tag group that is
 //!      to be associated with the link.
 //!    - Use the `start_tagged` command on [`Surface`], which returns an [Identifier], and
 //!      indicates that all content drawn on the surface should be associated with that
@@ -108,7 +108,7 @@
 //! - Hyphenation should be represented as a soft hyphen character (U+00AD) instead
 //!   of a hard hyphen (U+002D).
 //! - Tag groups should follow the best-practice of what kind of children they contain. See
-//!   [Tag] for more information.
+//!   [`TagKind`] for more information.
 //! - You should provide "Alt" descriptions for formulas and images.
 //! - In case you have a link annotation that applies to text that wraps into one or multiple
 //!   new lines, you should use the `quad_points` functionality to indicate the exact covered
@@ -123,18 +123,21 @@ use std::cmp::PartialEq;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write as _;
-use std::num::NonZeroU32;
 
 use pdf_writer::types::{ArtifactSubtype, StructRole};
-use pdf_writer::writers::{PropertyList, StructElement, TableAttributes};
+use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
+use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
-use crate::surface::Location;
-use crate::util::lazy::{LazyGet, LazyInit};
+use crate::util::lazy::LazyInit;
+
+pub use tag::*;
+
+mod tag;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -399,224 +402,6 @@ impl Identifier {
     }
 }
 
-/// A tag for group nodes.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Tag {
-    /// The tag kind.
-    pub kind: TagKind,
-    /// The identifier of this tag.
-    pub id: Option<TagId>,
-    /// The language of this tag.
-    pub lang: Option<String>,
-    /// An optional alternate text that describes the text (for example, if the text consists
-    /// of a star symbol, the alt text should describe that in natural language).
-    pub alt_text: Option<String>,
-    /// If the content of the tag is an abbreviation, the expanded form of the
-    /// abbreviation should be provided here.
-    pub expanded: Option<String>,
-    /// The actual text represented by the content of this tag, i.e. if it contained
-    /// some curves that artistically represent some word. This should be the exact
-    /// replacement text of the word.
-    pub actual_text: Option<String>,
-    /// The location of the tag.
-    pub location: Option<Location>,
-}
-
-impl From<TagKind> for Tag {
-    fn from(kind: TagKind) -> Self {
-        Self::new(kind)
-    }
-}
-
-impl Tag {
-    /// Create a new tag with a specific kind.
-    pub fn new(kind: TagKind) -> Self {
-        Self {
-            kind,
-            id: None,
-            lang: None,
-            alt_text: None,
-            expanded: None,
-            actual_text: None,
-            location: None,
-        }
-    }
-}
-
-/// Fluent builder methods to create a [`Tag`].
-///
-/// # Example
-/// ```
-/// use krilla::tagging::{Tag, TagBuilder, TagKind};
-/// let tag: Tag = TagKind::P
-///     .with_actual_text(Some("My paragraph".into()))
-///     .with_lang(Some("en".into()));
-/// ```
-pub trait TagBuilder: Into<Tag> {
-    /// Sets [`Tag::id`].
-    fn with_id(self, id: Option<TagId>) -> Tag {
-        let mut tag = self.into();
-        tag.id = id;
-        tag
-    }
-
-    /// Sets [`Tag::lang`].
-    fn with_lang(self, lang: Option<String>) -> Tag {
-        let mut tag = self.into();
-        tag.lang = lang;
-        tag
-    }
-
-    /// Sets [`Tag::alt_text`].
-    fn with_alt_text(self, alt_text: Option<String>) -> Tag {
-        let mut tag = self.into();
-        tag.alt_text = alt_text;
-        tag
-    }
-
-    /// Sets [`Tag::expanded`].
-    fn with_expanded(self, expanded: Option<String>) -> Tag {
-        let mut tag = self.into();
-        tag.expanded = expanded;
-        tag
-    }
-
-    /// Sets [`Tag::actual_text`].
-    fn with_actual_text(self, actual_text: Option<String>) -> Tag {
-        let mut tag = self.into();
-        tag.actual_text = actual_text;
-        tag
-    }
-
-    /// Sets [`Tag::location`].
-    fn with_location(self, location: Option<Location>) -> Tag {
-        let mut tag = self.into();
-        tag.location = location;
-        tag
-    }
-}
-
-impl<T: Into<Tag>> TagBuilder for T {}
-
-/// A tag kind.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum TagKind {
-    /// A part of a document that may contain multiple articles or sections.
-    Part,
-    /// An article with largely self-contained content.
-    Article,
-    /// Section of a larger document.
-    Section,
-    /// A paragraph-level quote.
-    BlockQuote,
-    /// An image or figure caption.
-    ///
-    /// **Best Practice**: In the tag tree, this should appear
-    /// as a sibling after the image (or other) content it describes.
-    Caption,
-    /// Table of contents.
-    ///
-    /// **Best Practice**: Should consist of TOCIs or other nested TOCs.
-    TOC,
-    /// Item in the table of contents.
-    ///
-    /// **Best Practice**: Should only appear within a TOC. Should only consist of
-    /// labels, references, paragraphs and TOCs.
-    TOCI,
-    /// Index of the key terms in the document.
-    ///
-    /// **Best Practice**: Should contain a sequence of text accompanied by
-    /// reference elements pointing to their occurrence in the text.
-    Index,
-    /// A paragraph.
-    P,
-    /// Heading level `n`, including an optional title of the heading.
-    ///
-    /// The title is required for some export modes, like for example PDF/UA.
-    Hn(NonZeroU32, Option<String>),
-    /// A list.
-    ///
-    /// **Best practice**: Should consist of an optional caption followed by
-    /// list items.
-    // List numbering is only required for PDF/UA, but we just enforce it for always.
-    L(ListNumbering),
-    /// A list item.
-    ///
-    /// **Best practice**: Should consist of one or more list labels and/or list bodies.
-    LI,
-    /// Label for a list item.
-    Lbl,
-    /// Description of the list item.
-    LBody,
-    /// A table, with an optional summary describing the purpose and structure.
-    ///
-    /// **Best practice**: Should consist of an optional table header row,
-    /// one or more table body elements and an optional table footer. Can have
-    /// caption as the first or last child.
-    Table(Option<String>),
-    /// A table row.
-    ///
-    /// **Best practice**: May contain table headers cells and table data cells.
-    TR,
-    /// A table header cell.
-    // Table header scope is only required for PDF/UA, but we include it always for simplicity.
-    TH(TableHeaderCell),
-    /// A table data cell.
-    TD(TableDataCell),
-    /// A table header row group.
-    THead,
-    /// A table data row group.
-    TBody,
-    /// A table footer row group.
-    TFoot,
-    /// An inline quotation.
-    InlineQuote,
-    /// A foot- or endnote, potentially referred to from within the text.
-    ///
-    /// **Best practice**: It may have a label as a child.
-    Note,
-    /// A reference to elsewhere in the document.
-    ///
-    /// **Best practice**: The first child of a tag group with this tag should be a link annotation
-    /// linking to a destination in the document, and the second child should consist of
-    /// the children that should be associated with that reference.
-    Reference,
-    /// A reference to the external source of some cited document.
-    ///
-    /// **Best practice**: It may have a label as a child.
-    BibEntry,
-    /// Computer code.
-    Code,
-    /// A link.
-    ///
-    /// **Best practice**: The first child of a tag group with this tag should be a link annotation
-    /// linking to an URL, and the second child should consist of the children that should
-    /// be associated with that link.
-    Link,
-    /// An association between an annotation and the content it belongs to. PDF
-    ///
-    /// **Best practice**: Should be used for all annotations, except for link annotations and
-    /// widget annotations. The first child should be the identifier of a non-link annotation,
-    /// and all other subsequent children should be content identifiers associated with that
-    /// annotation.
-    Annot,
-    /// Item of graphical content.
-    ///
-    /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-    Figure,
-    /// A mathematical formula.
-    ///
-    /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-    Formula,
-    // All below are non-standard attributes.
-    /// A date or time.
-    Datetime,
-    /// A list of terms.
-    Terms,
-    /// A title.
-    Title,
-}
-
 impl TagKind {
     pub(crate) fn write_kind(&self, struct_elem: &mut StructElement, sc: &mut SerializeContext) {
         let pdf_version = sc.serialize_settings().pdf_version();
@@ -628,51 +413,52 @@ impl TagKind {
         }
 
         match self {
-            Self::Part => struct_elem.kind(StructRole::Part),
-            Self::Article => struct_elem.kind(StructRole::Art),
-            Self::Section => struct_elem.kind(StructRole::Sect),
-            Self::BlockQuote => struct_elem.kind(StructRole::BlockQuote),
-            Self::Caption => struct_elem.kind(StructRole::Caption),
-            Self::TOC => struct_elem.kind(StructRole::TOC),
-            Self::TOCI => struct_elem.kind(StructRole::TOCI),
-            Self::Index => struct_elem.kind(StructRole::Index),
-            Self::P => struct_elem.kind(StructRole::P),
-            Self::Hn(n, _) if n.get() == 1 => struct_elem.kind(StructRole::H1),
-            Self::Hn(n, _) if n.get() == 2 => struct_elem.kind(StructRole::H2),
-            Self::Hn(n, _) if n.get() == 3 => struct_elem.kind(StructRole::H3),
-            Self::Hn(n, _) if n.get() == 4 => struct_elem.kind(StructRole::H4),
-            Self::Hn(n, _) if n.get() == 5 => struct_elem.kind(StructRole::H5),
-            Self::Hn(n, _) if n.get() == 6 => struct_elem.kind(StructRole::H6),
+            Self::Part(_) => struct_elem.kind(StructRole::Part),
+            Self::Article(_) => struct_elem.kind(StructRole::Art),
+            Self::Section(_) => struct_elem.kind(StructRole::Sect),
+            Self::BlockQuote(_) => struct_elem.kind(StructRole::BlockQuote),
+            Self::Caption(_) => struct_elem.kind(StructRole::Caption),
+            Self::TOC(_) => struct_elem.kind(StructRole::TOC),
+            Self::TOCI(_) => struct_elem.kind(StructRole::TOCI),
+            Self::Index(_) => struct_elem.kind(StructRole::Index),
+            Self::P(_) => struct_elem.kind(StructRole::P),
+            Self::Hn(tag) if tag.level().get() == 1 => struct_elem.kind(StructRole::H1),
+            Self::Hn(tag) if tag.level().get() == 2 => struct_elem.kind(StructRole::H2),
+            Self::Hn(tag) if tag.level().get() == 3 => struct_elem.kind(StructRole::H3),
+            Self::Hn(tag) if tag.level().get() == 4 => struct_elem.kind(StructRole::H4),
+            Self::Hn(tag) if tag.level().get() == 5 => struct_elem.kind(StructRole::H5),
+            Self::Hn(tag) if tag.level().get() == 6 => struct_elem.kind(StructRole::H6),
             Self::L(_) => struct_elem.kind(StructRole::L),
-            Self::LI => struct_elem.kind(StructRole::LI),
-            Self::Lbl => struct_elem.kind(StructRole::Lbl),
-            Self::LBody => struct_elem.kind(StructRole::LBody),
+            Self::LI(_) => struct_elem.kind(StructRole::LI),
+            Self::Lbl(_) => struct_elem.kind(StructRole::Lbl),
+            Self::LBody(_) => struct_elem.kind(StructRole::LBody),
             Self::Table(_) => struct_elem.kind(StructRole::Table),
-            Self::TR => struct_elem.kind(StructRole::TR),
+            Self::TR(_) => struct_elem.kind(StructRole::TR),
             Self::TH(_) => struct_elem.kind(StructRole::TH),
             Self::TD(_) => struct_elem.kind(StructRole::TD),
-            Self::THead => struct_elem.kind(StructRole::THead),
-            Self::TBody => struct_elem.kind(StructRole::TBody),
-            Self::TFoot => struct_elem.kind(StructRole::TFoot),
-            Self::InlineQuote => struct_elem.kind(StructRole::Quote),
-            Self::Note => struct_elem.kind(StructRole::Note),
-            Self::Reference => struct_elem.kind(StructRole::Reference),
-            Self::BibEntry => struct_elem.kind(StructRole::BibEntry),
-            Self::Code => struct_elem.kind(StructRole::Code),
-            Self::Link => struct_elem.kind(StructRole::Link),
-            Self::Annot => struct_elem.kind(StructRole::Annot),
-            Self::Figure => struct_elem.kind(StructRole::Figure),
-            Self::Formula => struct_elem.kind(StructRole::Formula),
+            Self::THead(_) => struct_elem.kind(StructRole::THead),
+            Self::TBody(_) => struct_elem.kind(StructRole::TBody),
+            Self::TFoot(_) => struct_elem.kind(StructRole::TFoot),
+            Self::InlineQuote(_) => struct_elem.kind(StructRole::Quote),
+            Self::Note(_) => struct_elem.kind(StructRole::Note),
+            Self::Reference(_) => struct_elem.kind(StructRole::Reference),
+            Self::BibEntry(_) => struct_elem.kind(StructRole::BibEntry),
+            Self::Code(_) => struct_elem.kind(StructRole::Code),
+            Self::Link(_) => struct_elem.kind(StructRole::Link),
+            Self::Annot(_) => struct_elem.kind(StructRole::Annot),
+            Self::Figure(_) => struct_elem.kind(StructRole::Figure),
+            Self::Formula(_) => struct_elem.kind(StructRole::Formula),
             // Every additional tag needs to be registered in the role map!
-            Self::Datetime => struct_elem.custom_kind(Name(b"Datetime")),
-            Self::Terms => struct_elem.custom_kind(Name(b"Terms")),
-            Self::Title => struct_elem.custom_kind(Name(b"Title")),
-            Self::Hn(level, _) => {
+            Self::Datetime(_) => struct_elem.custom_kind(Name(b"Datetime")),
+            Self::Terms(_) => struct_elem.custom_kind(Name(b"Terms")),
+            Self::Title(_) => struct_elem.custom_kind(Name(b"Title")),
+            Self::Hn(tag) => {
+                let level = tag.level();
                 // Dynamically register custom headings `Hn` with `n >= 7`
                 // Starting from PDF 2.0 arbitrary heading levels are supported,
                 // so the custom role mapping is redundant.
                 if pdf_version < PdfVersion::Pdf20 {
-                    sc.global_objects.custom_heading_roles.insert(*level);
+                    sc.global_objects.custom_heading_roles.insert(level);
                 }
                 let name = format!("H{level}");
                 struct_elem.custom_kind(Name(name.as_bytes()))
@@ -682,60 +468,53 @@ impl TagKind {
 
     pub(crate) fn minimum_version(&self) -> PdfVersion {
         match self {
-            Self::Part => PdfVersion::Pdf14,
-            Self::Article => PdfVersion::Pdf14,
-            Self::Section => PdfVersion::Pdf14,
-            Self::BlockQuote => PdfVersion::Pdf14,
-            Self::Caption => PdfVersion::Pdf14,
-            Self::TOC => PdfVersion::Pdf14,
-            Self::TOCI => PdfVersion::Pdf14,
-            Self::Index => PdfVersion::Pdf14,
-            Self::P => PdfVersion::Pdf14,
-            Self::Hn(_, _) => PdfVersion::Pdf14,
+            Self::Part(_) => PdfVersion::Pdf14,
+            Self::Article(_) => PdfVersion::Pdf14,
+            Self::Section(_) => PdfVersion::Pdf14,
+            Self::BlockQuote(_) => PdfVersion::Pdf14,
+            Self::Caption(_) => PdfVersion::Pdf14,
+            Self::TOC(_) => PdfVersion::Pdf14,
+            Self::TOCI(_) => PdfVersion::Pdf14,
+            Self::Index(_) => PdfVersion::Pdf14,
+            Self::P(_) => PdfVersion::Pdf14,
+            Self::Hn(_) => PdfVersion::Pdf14,
             Self::L(_) => PdfVersion::Pdf14,
-            Self::LI => PdfVersion::Pdf14,
-            Self::Lbl => PdfVersion::Pdf14,
-            Self::LBody => PdfVersion::Pdf14,
+            Self::LI(_) => PdfVersion::Pdf14,
+            Self::Lbl(_) => PdfVersion::Pdf14,
+            Self::LBody(_) => PdfVersion::Pdf14,
             Self::Table(_) => PdfVersion::Pdf14,
-            Self::TR => PdfVersion::Pdf14,
+            Self::TR(_) => PdfVersion::Pdf14,
             Self::TH(_) => PdfVersion::Pdf14,
             Self::TD(_) => PdfVersion::Pdf14,
-            Self::THead => PdfVersion::Pdf15,
-            Self::TBody => PdfVersion::Pdf15,
-            Self::TFoot => PdfVersion::Pdf15,
-            Self::InlineQuote => PdfVersion::Pdf14,
-            Self::Note => PdfVersion::Pdf14,
-            Self::Reference => PdfVersion::Pdf14,
-            Self::BibEntry => PdfVersion::Pdf14,
-            Self::Code => PdfVersion::Pdf14,
-            Self::Link => PdfVersion::Pdf14,
-            Self::Annot => PdfVersion::Pdf15,
-            Self::Figure => PdfVersion::Pdf15,
-            Self::Formula => PdfVersion::Pdf15,
-            Self::Datetime => PdfVersion::Pdf15,
-            Self::Terms => PdfVersion::Pdf15,
-            Self::Title => PdfVersion::Pdf15,
+            Self::THead(_) => PdfVersion::Pdf15,
+            Self::TBody(_) => PdfVersion::Pdf15,
+            Self::TFoot(_) => PdfVersion::Pdf15,
+            Self::InlineQuote(_) => PdfVersion::Pdf14,
+            Self::Note(_) => PdfVersion::Pdf14,
+            Self::Reference(_) => PdfVersion::Pdf14,
+            Self::BibEntry(_) => PdfVersion::Pdf14,
+            Self::Code(_) => PdfVersion::Pdf14,
+            Self::Link(_) => PdfVersion::Pdf14,
+            Self::Annot(_) => PdfVersion::Pdf15,
+            Self::Figure(_) => PdfVersion::Pdf15,
+            Self::Formula(_) => PdfVersion::Pdf15,
+            Self::Datetime(_) => PdfVersion::Pdf15,
+            Self::Terms(_) => PdfVersion::Pdf15,
+            Self::Title(_) => PdfVersion::Pdf15,
         }
     }
 
     pub(crate) fn should_have_alt(&self) -> bool {
-        matches!(self, TagKind::Figure | TagKind::Formula)
-    }
-
-    pub(crate) fn title(&self) -> Option<&str> {
-        match self {
-            Self::Hn(_, s) => s.as_deref(),
-            _ => None,
-        }
+        matches!(self, TagKind::Figure(_) | TagKind::Formula(_))
     }
 
     pub(crate) fn can_have_title(&self) -> bool {
-        matches!(self, Self::Hn(_, _))
+        matches!(self, Self::Hn(_))
     }
 }
 
 /// A node in a tag tree.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     /// A group node.
     Group(TagGroup),
@@ -789,17 +568,17 @@ pub(crate) enum Reference {
 }
 
 /// A tag group.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TagGroup {
     /// The tag of the tag group.
-    tag: Tag,
+    tag: TagKind,
     /// The children of the tag group.
     children: Vec<Node>,
 }
 
 impl TagGroup {
     /// Create a new tag group with a specific tag.
-    pub fn new(tag: impl Into<Tag>) -> Self {
+    pub fn new(tag: impl Into<TagKind>) -> Self {
         Self {
             tag: tag.into(),
             children: vec![],
@@ -807,7 +586,7 @@ impl TagGroup {
     }
 
     /// Create a new tag group with a specific tag and a list of children.
-    pub fn with_children(tag: impl Into<Tag>, children: Vec<Node>) -> Self {
+    pub fn with_children(tag: impl Into<TagKind>, children: Vec<Node>) -> Self {
         Self {
             tag: tag.into(),
             children,
@@ -847,20 +626,23 @@ impl TagGroup {
 
         let mut chunk = Chunk::new();
         let mut struct_elem = chunk.struct_element(elem_ref);
-        self.tag.kind.write_kind(&mut struct_elem, sc);
+        self.tag.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent_ref);
 
-        if let Some(id) = &self.tag.id {
+        let tag = self.tag.as_any();
+        let pdf_version = sc.serialize_settings().pdf_version();
+
+        if let Some(id) = tag.id() {
             match id_tree.entry(id.clone()) {
                 Entry::Vacant(vacant) => {
                     struct_elem.id(Str(id.as_bytes()));
                     vacant.insert(elem_ref);
                 }
                 Entry::Occupied(_) => {
-                    return Err(KrillaError::DuplicateTagId(id.clone(), self.tag.location));
+                    return Err(KrillaError::DuplicateTagId(id.clone(), tag.location));
                 }
             }
-        } else if TagKind::Note == self.tag.kind {
+        } else if matches!(self.tag, TagKind::Note(_)) {
             // Explicitly don't use `TagId::from_bytes` to disambiguate note IDs
             // from user provided IDs.
             let mut id = TagId(SmallVec::new());
@@ -871,77 +653,133 @@ impl TagGroup {
             *note_id += 1;
         }
 
-        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf14 {
-            if let Some(lang) = &self.tag.lang {
-                struct_elem.lang(TextStr(lang));
-            }
-        }
-
-        if let Some(alt) = &self.tag.alt_text {
-            struct_elem.alt(TextStr(alt));
-        } else if self.tag.kind.should_have_alt() {
-            sc.register_validation_error(ValidationError::MissingAltText(self.tag.location));
-        }
-
-        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-            if let Some(expanded) = &self.tag.expanded {
-                struct_elem.expanded(TextStr(expanded));
-            }
-        }
-
-        if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf14 {
-            if let Some(actual_text) = &self.tag.actual_text {
-                struct_elem.actual_text(TextStr(actual_text));
-            }
-        }
-
-        if let Some(title) = self.tag.kind.title() {
-            struct_elem.title(TextStr(title));
-        } else if self.tag.kind.can_have_title() {
+        if self.tag.can_have_title() && tag.title().is_none() {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
+        if self.tag.should_have_alt() && tag.alt_text().is_none() {
+            sc.register_validation_error(ValidationError::MissingAltText(tag.location));
+        }
 
-        match &self.tag.kind {
-            TagKind::L(ln) => {
-                struct_elem
-                    .attributes()
-                    .push()
-                    .list()
-                    .list_numbering(ln.to_pdf());
+        for attr in tag.attrs.iter() {
+            let Attr::Struct(attr) = attr else {
+                continue;
+            };
+            match attr {
+                StructAttr::Id(_) => (), // Handled above
+                StructAttr::Title(title) => {
+                    struct_elem.title(TextStr(title));
+                }
+                StructAttr::Lang(lang) => {
+                    if pdf_version >= PdfVersion::Pdf14 {
+                        struct_elem.lang(TextStr(lang));
+                    }
+                }
+                StructAttr::AltText(alt) => {
+                    struct_elem.alt(TextStr(alt));
+                }
+                StructAttr::Expanded(expanded) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        struct_elem.expanded(TextStr(expanded));
+                    }
+                }
+                StructAttr::ActualText(actual_text) => {
+                    if pdf_version >= PdfVersion::Pdf14 {
+                        struct_elem.actual_text(TextStr(actual_text));
+                    }
+                }
+
+                // Not really an attribute
+                StructAttr::HeadingLevel(_) => (),
             }
-            TagKind::Table(summary) => {
-                // Lazily initialize the table attributes, to avoid an empty list.
-                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
-                let mut table_attributes =
-                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
+        }
 
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
-                    if let Some(summary) = summary {
+        let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
+
+        // Lazily initialize the list attributes to avoid an empty array.
+        let mut list_attributes = LazyInit::new(&mut attributes, |attrs| attrs.get().push().list());
+        for attr in tag.attrs.iter() {
+            let Attr::List(attr) = attr else {
+                continue;
+            };
+            match attr {
+                ListAttr::Numbering(numbering) => {
+                    list_attributes.get().list_numbering(numbering.to_pdf());
+                }
+            }
+        }
+        list_attributes.finish();
+
+        // Lazily initialize the table attributes to avoid an empty array.
+        let mut table_attributes =
+            LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
+        for attr in tag.attrs.iter() {
+            let Attr::Table(attr) = attr else {
+                continue;
+            };
+            match attr {
+                TableAttr::Summary(summary) => {
+                    if pdf_version >= PdfVersion::Pdf17 {
                         table_attributes.get().summary(TextStr(summary));
                     }
                 }
-            }
-            TagKind::TH(cell) => {
-                // Lazily initialize the table attributes, to avoid an empty list.
-                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
-                let mut table_attributes =
-                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
-
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-                    table_attributes.get().scope(cell.scope.to_pdf());
+                TableAttr::HeaderScope(scope) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        table_attributes.get().scope(scope.to_pdf());
+                    }
                 }
-                serialize_table_cell_attributes(sc, &mut table_attributes, &cell.data);
+                TableAttr::CellHeaders(headers) => {
+                    if pdf_version >= PdfVersion::Pdf15 && !headers.is_empty() {
+                        let id_strs = headers.iter().map(|id| Str(id.as_bytes()));
+                        table_attributes.get().headers().items(id_strs);
+                    }
+                }
+                TableAttr::RowSpan(n) => {
+                    table_attributes.get().row_span(n.get() as i32);
+                }
+                TableAttr::ColSpan(n) => {
+                    table_attributes.get().col_span(n.get() as i32);
+                }
             }
-            TagKind::TD(cell) => {
-                // Lazily initialize the table attributes, to avoid an empty list.
-                let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
-                let mut table_attributes =
-                    LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
-
-                serialize_table_cell_attributes(sc, &mut table_attributes, cell);
-            }
-            _ => {}
         }
+        table_attributes.finish();
+
+        // Lazily initialize the list attributes to avoid an empty array.
+        let mut layout_attributes =
+            LazyInit::new(&mut attributes, |attrs| attrs.get().push().layout());
+        for attr in tag.attrs.iter() {
+            let Attr::Layout(attr) = attr else {
+                continue;
+            };
+            match attr {
+                LayoutAttr::Placement(placement) => {
+                    layout_attributes.get().placement(placement.to_pdf());
+                }
+                LayoutAttr::WritingMode(writing_mode) => {
+                    layout_attributes.get().writing_mode(writing_mode.to_pdf());
+                }
+                LayoutAttr::BBox(BBox { page_idx, rect }) => {
+                    let Some(page_info) = sc.page_infos().get(*page_idx) else {
+                        panic!(
+                            "tag tree contains bounding box with page index {page_idx}, \
+                            but document only has {} pages",
+                            sc.page_infos().len()
+                        );
+                    };
+                    let transform = page_root_transform(page_info.size().height());
+                    let actual_rect = rect.transform(transform).unwrap();
+                    layout_attributes.get().bbox(actual_rect.to_pdf_rect());
+                }
+                LayoutAttr::Width(width) => {
+                    layout_attributes.get().width(*width);
+                }
+                LayoutAttr::Height(height) => {
+                    layout_attributes.get().height(*height);
+                }
+            }
+        }
+        layout_attributes.finish();
+
+        attributes.finish();
 
         serialize_children(
             sc,
@@ -957,15 +795,12 @@ impl TagGroup {
     }
 
     fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {
-        match &self.tag.kind {
-            TagKind::TH(TableHeaderCell { data, .. }) | TagKind::TD(data) => {
-                for id in data.headers.iter() {
-                    if !id_tree.contains_key(id) {
-                        return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location));
-                    }
+        if let Some(headers) = self.tag.headers() {
+            for id in headers.iter() {
+                if !id_tree.contains_key(id) {
+                    return Err(KrillaError::UnknownTagId(id.clone(), self.tag.location()));
                 }
             }
-            _ => (),
         }
 
         for child in self.children.iter() {
@@ -974,23 +809,6 @@ impl TagGroup {
             }
         }
         Ok(())
-    }
-}
-
-fn serialize_table_cell_attributes<'a: 'b, 'b>(
-    sc: &mut SerializeContext,
-    mut table_attributes: impl LazyGet<TableAttributes<'a>>,
-    cell: &TableDataCell,
-) {
-    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 && !cell.headers.is_empty() {
-        let id_strs = cell.headers.iter().map(|id| Str(id.as_bytes()));
-        table_attributes.lazy_get().headers().items(id_strs);
-    }
-    if let Some(n) = cell.span.row_span() {
-        table_attributes.lazy_get().row_span(n.get() as i32);
-    }
-    if let Some(n) = cell.span.col_span() {
-        table_attributes.lazy_get().col_span(n.get() as i32);
     }
 }
 
@@ -1183,205 +1001,4 @@ pub enum ArtifactAttachment {
     Top,
     Right,
     Bottom,
-}
-
-/// The list numbering type.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum ListNumbering {
-    /// No numbering.
-    None,
-    /// Solid circular bullets.
-    Disc,
-    /// Open circular bullets.
-    Circle,
-    /// Solid square bullets.
-    Square,
-    /// Decimal numbers.
-    Decimal,
-    /// Lowercase Roman numerals.
-    LowerRoman,
-    /// Uppercase Roman numerals.
-    UpperRoman,
-    /// Lowercase letters.
-    LowerAlpha,
-    /// Uppercase letters.
-    UpperAlpha,
-}
-
-impl ListNumbering {
-    fn to_pdf(self) -> pdf_writer::types::ListNumbering {
-        match self {
-            ListNumbering::None => pdf_writer::types::ListNumbering::None,
-            ListNumbering::Disc => pdf_writer::types::ListNumbering::Disc,
-            ListNumbering::Circle => pdf_writer::types::ListNumbering::Circle,
-            ListNumbering::Square => pdf_writer::types::ListNumbering::Square,
-            ListNumbering::Decimal => pdf_writer::types::ListNumbering::Decimal,
-            ListNumbering::LowerRoman => pdf_writer::types::ListNumbering::LowerRoman,
-            ListNumbering::UpperRoman => pdf_writer::types::ListNumbering::UpperRoman,
-            ListNumbering::LowerAlpha => pdf_writer::types::ListNumbering::LowerAlpha,
-            ListNumbering::UpperAlpha => pdf_writer::types::ListNumbering::UpperAlpha,
-        }
-    }
-}
-
-/// A table header cell.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TableHeaderCell {
-    /// The scope of the table header.
-    pub scope: TableHeaderScope,
-    /// Attributes shared with `TD`.
-    pub data: TableDataCell,
-}
-
-impl TableHeaderCell {
-    /// Create a new table header cell.
-    pub const fn new(scope: TableHeaderScope) -> Self {
-        Self {
-            scope,
-            data: TableDataCell::new(),
-        }
-    }
-
-    /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
-        self.data.headers = headers.into_iter().collect();
-        self
-    }
-
-    /// Sets [`TableDataCell::span`].
-    pub fn with_span(mut self, span: TableCellSpan) -> Self {
-        self.data.span = span;
-        self
-    }
-}
-
-/// A table data cell.
-#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
-pub struct TableDataCell {
-    headers: SmallVec<[TagId; 1]>,
-    /// The column/row span of the table.
-    pub span: TableCellSpan,
-}
-
-impl TableDataCell {
-    /// Create a new table data cell.
-    pub const fn new() -> Self {
-        Self {
-            headers: SmallVec::new_const(),
-            span: TableCellSpan::ONE,
-        }
-    }
-
-    /// A list of headers associated with a table cell.
-    /// Table data cells (`TD`) may specify a list of table headers (`TH`),
-    /// which can also specify a list of parent header cells (`TH`), and so on.
-    /// To determine the list of associated headers this list is recursively
-    /// evaluated.
-    ///
-    /// This allows specifying header hierarchies inside tables.
-    pub fn headers(&self) -> &[TagId] {
-        &self.headers
-    }
-
-    /// Sets [`TableDataCell::headers`].
-    pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
-        self.headers = headers.into_iter().collect();
-        self
-    }
-
-    /// Sets [`TableDataCell::span`].
-    pub fn with_span(mut self, span: TableCellSpan) -> Self {
-        self.span = span;
-        self
-    }
-}
-
-/// The scope of a table header cell.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum TableHeaderScope {
-    /// The header cell refers to the row.
-    Row,
-    /// The header cell refers to the column.
-    Column,
-    /// The header cell refers to both the row and the column.
-    Both,
-}
-
-impl TableHeaderScope {
-    fn to_pdf(self) -> pdf_writer::types::TableHeaderScope {
-        match self {
-            TableHeaderScope::Row => pdf_writer::types::TableHeaderScope::Row,
-            TableHeaderScope::Column => pdf_writer::types::TableHeaderScope::Column,
-            TableHeaderScope::Both => pdf_writer::types::TableHeaderScope::Both,
-        }
-    }
-}
-
-/// An identifier of a [`Tag`].
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct TagId(SmallVec<[u8; 16]>);
-
-impl<I: IntoIterator<Item = u8>> From<I> for TagId {
-    fn from(value: I) -> Self {
-        // Disambiguate ids provided by the user from ids automatically assigned
-        // to notes by prefixing them with a `U`.
-        let bytes = std::iter::once(b'U').chain(value).collect();
-        TagId(bytes)
-    }
-}
-
-impl TagId {
-    /// Returns the identifier as a byte slice.
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_slice()
-    }
-}
-
-/// The span of a table cell.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct TableCellSpan {
-    /// The number of spanned rows inside the enclosing table.
-    pub rows: NonZeroU32,
-    /// The number of spanned cells inside the enclosing table.
-    pub cols: NonZeroU32,
-}
-
-impl Default for TableCellSpan {
-    fn default() -> Self {
-        Self::ONE
-    }
-}
-
-impl TableCellSpan {
-    /// A table cell that spans only one row and column.
-    pub const ONE: Self = Self::new(NonZeroU32::MIN, NonZeroU32::MIN);
-
-    /// Create a new table cell span.
-    pub const fn new(rows: NonZeroU32, cols: NonZeroU32) -> Self {
-        Self { rows, cols }
-    }
-
-    /// Create a new table cell span that spans a number of rows.
-    pub const fn row(rows: NonZeroU32) -> Self {
-        Self {
-            rows,
-            cols: NonZeroU32::MIN,
-        }
-    }
-
-    /// Create a new table cell span that spans a number of columns.
-    pub const fn col(cols: NonZeroU32) -> Self {
-        Self {
-            rows: NonZeroU32::MIN,
-            cols,
-        }
-    }
-
-    fn row_span(self) -> Option<NonZeroU32> {
-        (self.rows != NonZeroU32::MIN).then_some(self.rows)
-    }
-
-    fn col_span(self) -> Option<NonZeroU32> {
-        (self.cols != NonZeroU32::MIN).then_some(self.cols)
-    }
 }
