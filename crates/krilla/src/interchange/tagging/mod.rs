@@ -60,7 +60,7 @@
 //!
 //! 1) Ensure that you activate the `enable_tagging` attribute in [`SerializeSettings`].
 //! 2) Create a [tag tree](TagTree), which represents the "root" of a tag tree.
-//! 3) As you create your document, create new [tag groups](TagGroup) with corresponding [tags](tag).
+//! 3) As you create your document, create new [tag groups](TagGroup) with corresponding [tags](Tag).
 //!    Nest them with other tag groups, if necessary, by using the `push` method.
 //! 4) Populate tag groups with [identifiers](Identifier), which represent the leaf nodes
 //!    in the tag tree. Identifiers are unique and point to a sequence of content on the
@@ -132,10 +132,11 @@ use smallvec::SmallVec;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::serialize::SerializeContext;
-use crate::tagging::tag::{Attr, LayoutAttr, ListAttr, StructAttr, TableAttr, TagId, TagKind};
 use crate::util::lazy::LazyInit;
 
-pub mod tag;
+pub use tag::*;
+
+mod tag;
 
 /// A type of artifact.
 #[derive(Copy, Clone, Debug, PartialEq)]

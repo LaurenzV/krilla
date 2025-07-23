@@ -125,7 +125,7 @@ optional = [
 [Tag.Annot]
 # Item of graphical content.
 #
-# Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
+# Providing `alt_text` is required in some export modes, like for example PDF/UA1.
 [Tag.Figure]
 suggested = ["Struct::AltText"]
 optional = [
@@ -135,7 +135,7 @@ optional = [
 ]
 # A mathematical formula.
 #
-# Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
+# Providing `alt_text` is required in some export modes, like for example PDF/UA1.
 [Tag.Formula]
 suggested = ["Struct::AltText"]
 optional = [

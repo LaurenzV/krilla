@@ -8,117 +8,117 @@
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagKind {
     /// A part of a document that may contain multiple articles or sections.
-    Part(Tag<Part>),
+    Part(Tag<kind::Part>),
     /// An article with largely self-contained content.
-    Article(Tag<Article>),
+    Article(Tag<kind::Article>),
     /// Section of a larger document.
-    Section(Tag<Section>),
+    Section(Tag<kind::Section>),
     /// A paragraph-level quote.
-    BlockQuote(Tag<BlockQuote>),
+    BlockQuote(Tag<kind::BlockQuote>),
     /// An image or figure caption.
     ///
     /// **Best Practice**: In the tag tree, this should appear
     /// as a sibling after the image (or other) content it describes.
-    Caption(Tag<Caption>),
+    Caption(Tag<kind::Caption>),
     /// Table of contents.
     ///
     /// **Best Practice**: Should consist of TOCIs or other nested TOCs.
-    TOC(Tag<TOC>),
+    TOC(Tag<kind::TOC>),
     /// Item in the table of contents.
     ///
     /// **Best Practice**: Should only appear within a TOC. Should only consist of
     /// labels, references, paragraphs and TOCs.
-    TOCI(Tag<TOCI>),
+    TOCI(Tag<kind::TOCI>),
     /// Index of the key terms in the document.
     ///
     /// **Best Practice**: Should contain a sequence of text accompanied by
     /// reference elements pointing to their occurrence in the text.
-    Index(Tag<Index>),
+    Index(Tag<kind::Index>),
     /// A paragraph.
-    P(Tag<P>),
+    P(Tag<kind::P>),
     /// Heading level `n`, including an optional title of the heading.
     ///
     /// The title is required for some export modes, like for example PDF/UA.
-    Hn(Tag<Hn>),
+    Hn(Tag<kind::Hn>),
     /// A list.
     ///
     /// **Best practice**: Should consist of an optional caption followed by
     /// list items.
     /// List numbering is only required for PDF/UA, but we just enforce it for always.
-    L(Tag<L>),
+    L(Tag<kind::L>),
     /// A list item.
     ///
     /// **Best practice**: Should consist of one or more list labels and/or list bodies.
-    LI(Tag<LI>),
+    LI(Tag<kind::LI>),
     /// Label for a list item.
-    Lbl(Tag<Lbl>),
+    Lbl(Tag<kind::Lbl>),
     /// Description of the list item.
-    LBody(Tag<LBody>),
+    LBody(Tag<kind::LBody>),
     /// A table, with an optional summary describing the purpose and structure.
     ///
     /// **Best practice**: Should consist of an optional table header row,
     /// one or more table body elements and an optional table footer. Can have
     /// caption as the first or last child.
-    Table(Tag<Table>),
+    Table(Tag<kind::Table>),
     /// A table row.
     ///
     /// **Best practice**: May contain table headers cells and table data cells.
-    TR(Tag<TR>),
+    TR(Tag<kind::TR>),
     /// A table header cell.
-    TH(Tag<TH>),
+    TH(Tag<kind::TH>),
     /// A table data cell.
-    TD(Tag<TD>),
+    TD(Tag<kind::TD>),
     /// A table header row group.
-    THead(Tag<THead>),
+    THead(Tag<kind::THead>),
     /// A table data row group.
-    TBody(Tag<TBody>),
+    TBody(Tag<kind::TBody>),
     /// A table footer row group.
-    TFoot(Tag<TFoot>),
+    TFoot(Tag<kind::TFoot>),
     /// An inline quotation.
-    InlineQuote(Tag<InlineQuote>),
+    InlineQuote(Tag<kind::InlineQuote>),
     /// A foot- or endnote, potentially referred to from within the text.
     ///
     /// **Best practice**: It may have a label as a child.
-    Note(Tag<Note>),
+    Note(Tag<kind::Note>),
     /// A reference to elsewhere in the document.
     ///
     /// **Best practice**: The first child of a tag group with this tag should be a link annotation
     /// linking to a destination in the document, and the second child should consist of
     /// the children that should be associated with that reference.
-    Reference(Tag<Reference>),
+    Reference(Tag<kind::Reference>),
     /// A reference to the external source of some cited document.
     ///
     /// **Best practice**: It may have a label as a child.
-    BibEntry(Tag<BibEntry>),
+    BibEntry(Tag<kind::BibEntry>),
     /// Computer code.
-    Code(Tag<Code>),
+    Code(Tag<kind::Code>),
     /// A link.
     ///
     /// **Best practice**: The first child of a tag group with this tag should be a link annotation
     /// linking to an URL, and the second child should consist of the children that should
     /// be associated with that link.
-    Link(Tag<Link>),
+    Link(Tag<kind::Link>),
     /// An association between an annotation and the content it belongs to. PDF
     ///
     /// **Best practice**: Should be used for all annotations, except for link annotations and
     /// widget annotations. The first child should be the identifier of a non-link annotation,
     /// and all other subsequent children should be content identifiers associated with that
     /// annotation.
-    Annot(Tag<Annot>),
+    Annot(Tag<kind::Annot>),
     /// Item of graphical content.
     ///
-    /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-    Figure(Tag<Figure>),
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    Figure(Tag<kind::Figure>),
     /// A mathematical formula.
     ///
-    /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-    Formula(Tag<Formula>),
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    Formula(Tag<kind::Formula>),
     /// A date or time.
-    Datetime(Tag<Datetime>),
+    Datetime(Tag<kind::Datetime>),
     /// A list of terms.
-    Terms(Tag<Terms>),
+    Terms(Tag<kind::Terms>),
     /// A title.
-    Title(Tag<Title>),
+    Title(Tag<kind::Title>),
 }
 
 impl TagKind {
@@ -771,180 +771,309 @@ impl<T> Tag<T> {
     }
 }
 
-/// A part of a document that may contain multiple articles or sections.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Part;
+/// Tag kind structs.
+pub mod kind {
+    /// A part of a document that may contain multiple articles or sections.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Part;
 
-impl From<Tag<Part>> for TagKind {
-    fn from(value: Tag<Part>) -> Self {
+    /// An article with largely self-contained content.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Article;
+
+    /// Section of a larger document.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Section;
+
+    /// A paragraph-level quote.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct BlockQuote;
+
+    /// An image or figure caption.
+    ///
+    /// **Best Practice**: In the tag tree, this should appear
+    /// as a sibling after the image (or other) content it describes.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Caption;
+
+    /// Table of contents.
+    ///
+    /// **Best Practice**: Should consist of TOCIs or other nested TOCs.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TOC;
+
+    /// Item in the table of contents.
+    ///
+    /// **Best Practice**: Should only appear within a TOC. Should only consist of
+    /// labels, references, paragraphs and TOCs.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TOCI;
+
+    /// Index of the key terms in the document.
+    ///
+    /// **Best Practice**: Should contain a sequence of text accompanied by
+    /// reference elements pointing to their occurrence in the text.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Index;
+
+    /// A paragraph.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct P;
+
+    /// Heading level `n`, including an optional title of the heading.
+    ///
+    /// The title is required for some export modes, like for example PDF/UA.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Hn;
+
+    /// A list.
+    ///
+    /// **Best practice**: Should consist of an optional caption followed by
+    /// list items.
+    /// List numbering is only required for PDF/UA, but we just enforce it for always.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct L;
+
+    /// A list item.
+    ///
+    /// **Best practice**: Should consist of one or more list labels and/or list bodies.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct LI;
+
+    /// Label for a list item.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Lbl;
+
+    /// Description of the list item.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct LBody;
+
+    /// A table, with an optional summary describing the purpose and structure.
+    ///
+    /// **Best practice**: Should consist of an optional table header row,
+    /// one or more table body elements and an optional table footer. Can have
+    /// caption as the first or last child.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Table;
+
+    /// A table row.
+    ///
+    /// **Best practice**: May contain table headers cells and table data cells.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TR;
+
+    /// A table header cell.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TH;
+
+    /// A table data cell.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TD;
+
+    /// A table header row group.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct THead;
+
+    /// A table data row group.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TBody;
+
+    /// A table footer row group.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct TFoot;
+
+    /// An inline quotation.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct InlineQuote;
+
+    /// A foot- or endnote, potentially referred to from within the text.
+    ///
+    /// **Best practice**: It may have a label as a child.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Note;
+
+    /// A reference to elsewhere in the document.
+    ///
+    /// **Best practice**: The first child of a tag group with this tag should be a link annotation
+    /// linking to a destination in the document, and the second child should consist of
+    /// the children that should be associated with that reference.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Reference;
+
+    /// A reference to the external source of some cited document.
+    ///
+    /// **Best practice**: It may have a label as a child.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct BibEntry;
+
+    /// Computer code.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Code;
+
+    /// A link.
+    ///
+    /// **Best practice**: The first child of a tag group with this tag should be a link annotation
+    /// linking to an URL, and the second child should consist of the children that should
+    /// be associated with that link.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Link;
+
+    /// An association between an annotation and the content it belongs to. PDF
+    ///
+    /// **Best practice**: Should be used for all annotations, except for link annotations and
+    /// widget annotations. The first child should be the identifier of a non-link annotation,
+    /// and all other subsequent children should be content identifiers associated with that
+    /// annotation.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Annot;
+
+    /// Item of graphical content.
+    ///
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Figure;
+
+    /// A mathematical formula.
+    ///
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Formula;
+
+    /// A date or time.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Datetime;
+
+    /// A list of terms.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Terms;
+
+    /// A title.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Title;
+
+}
+
+impl From<Tag<kind::Part>> for TagKind {
+    fn from(value: Tag<kind::Part>) -> Self {
         Self::Part(value)
     }
 }
-impl Tag<Part> {
+impl Tag<kind::Part> {
     /// A part of a document that may contain multiple articles or sections.
     #[allow(non_upper_case_globals)]
-    pub const Part: Tag<Part> = Tag::new();
+    pub const Part: Tag<kind::Part> = Tag::new();
 }
 
-/// An article with largely self-contained content.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Article;
-
-impl From<Tag<Article>> for TagKind {
-    fn from(value: Tag<Article>) -> Self {
+impl From<Tag<kind::Article>> for TagKind {
+    fn from(value: Tag<kind::Article>) -> Self {
         Self::Article(value)
     }
 }
-impl Tag<Article> {
+impl Tag<kind::Article> {
     /// An article with largely self-contained content.
     #[allow(non_upper_case_globals)]
-    pub const Article: Tag<Article> = Tag::new();
+    pub const Article: Tag<kind::Article> = Tag::new();
 }
 
-/// Section of a larger document.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Section;
-
-impl From<Tag<Section>> for TagKind {
-    fn from(value: Tag<Section>) -> Self {
+impl From<Tag<kind::Section>> for TagKind {
+    fn from(value: Tag<kind::Section>) -> Self {
         Self::Section(value)
     }
 }
-impl Tag<Section> {
+impl Tag<kind::Section> {
     /// Section of a larger document.
     #[allow(non_upper_case_globals)]
-    pub const Section: Tag<Section> = Tag::new();
+    pub const Section: Tag<kind::Section> = Tag::new();
 }
 
-/// A paragraph-level quote.
-#[derive(Clone, Debug, PartialEq)]
-pub struct BlockQuote;
-
-impl From<Tag<BlockQuote>> for TagKind {
-    fn from(value: Tag<BlockQuote>) -> Self {
+impl From<Tag<kind::BlockQuote>> for TagKind {
+    fn from(value: Tag<kind::BlockQuote>) -> Self {
         Self::BlockQuote(value)
     }
 }
-impl Tag<BlockQuote> {
+impl Tag<kind::BlockQuote> {
     /// A paragraph-level quote.
     #[allow(non_upper_case_globals)]
-    pub const BlockQuote: Tag<BlockQuote> = Tag::new();
+    pub const BlockQuote: Tag<kind::BlockQuote> = Tag::new();
 }
 
-/// An image or figure caption.
-///
-/// **Best Practice**: In the tag tree, this should appear
-/// as a sibling after the image (or other) content it describes.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Caption;
-
-impl From<Tag<Caption>> for TagKind {
-    fn from(value: Tag<Caption>) -> Self {
+impl From<Tag<kind::Caption>> for TagKind {
+    fn from(value: Tag<kind::Caption>) -> Self {
         Self::Caption(value)
     }
 }
-impl Tag<Caption> {
+impl Tag<kind::Caption> {
     /// An image or figure caption.
     ///
     /// **Best Practice**: In the tag tree, this should appear
     /// as a sibling after the image (or other) content it describes.
     #[allow(non_upper_case_globals)]
-    pub const Caption: Tag<Caption> = Tag::new();
+    pub const Caption: Tag<kind::Caption> = Tag::new();
 }
 
-/// Table of contents.
-///
-/// **Best Practice**: Should consist of TOCIs or other nested TOCs.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TOC;
-
-impl From<Tag<TOC>> for TagKind {
-    fn from(value: Tag<TOC>) -> Self {
+impl From<Tag<kind::TOC>> for TagKind {
+    fn from(value: Tag<kind::TOC>) -> Self {
         Self::TOC(value)
     }
 }
-impl Tag<TOC> {
+impl Tag<kind::TOC> {
     /// Table of contents.
     ///
     /// **Best Practice**: Should consist of TOCIs or other nested TOCs.
     #[allow(non_upper_case_globals)]
-    pub const TOC: Tag<TOC> = Tag::new();
+    pub const TOC: Tag<kind::TOC> = Tag::new();
 }
 
-/// Item in the table of contents.
-///
-/// **Best Practice**: Should only appear within a TOC. Should only consist of
-/// labels, references, paragraphs and TOCs.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TOCI;
-
-impl From<Tag<TOCI>> for TagKind {
-    fn from(value: Tag<TOCI>) -> Self {
+impl From<Tag<kind::TOCI>> for TagKind {
+    fn from(value: Tag<kind::TOCI>) -> Self {
         Self::TOCI(value)
     }
 }
-impl Tag<TOCI> {
+impl Tag<kind::TOCI> {
     /// Item in the table of contents.
     ///
     /// **Best Practice**: Should only appear within a TOC. Should only consist of
     /// labels, references, paragraphs and TOCs.
     #[allow(non_upper_case_globals)]
-    pub const TOCI: Tag<TOCI> = Tag::new();
+    pub const TOCI: Tag<kind::TOCI> = Tag::new();
 }
 
-/// Index of the key terms in the document.
-///
-/// **Best Practice**: Should contain a sequence of text accompanied by
-/// reference elements pointing to their occurrence in the text.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Index;
-
-impl From<Tag<Index>> for TagKind {
-    fn from(value: Tag<Index>) -> Self {
+impl From<Tag<kind::Index>> for TagKind {
+    fn from(value: Tag<kind::Index>) -> Self {
         Self::Index(value)
     }
 }
-impl Tag<Index> {
+impl Tag<kind::Index> {
     /// Index of the key terms in the document.
     ///
     /// **Best Practice**: Should contain a sequence of text accompanied by
     /// reference elements pointing to their occurrence in the text.
     #[allow(non_upper_case_globals)]
-    pub const Index: Tag<Index> = Tag::new();
+    pub const Index: Tag<kind::Index> = Tag::new();
 }
 
-/// A paragraph.
-#[derive(Clone, Debug, PartialEq)]
-pub struct P;
-
-impl From<Tag<P>> for TagKind {
-    fn from(value: Tag<P>) -> Self {
+impl From<Tag<kind::P>> for TagKind {
+    fn from(value: Tag<kind::P>) -> Self {
         Self::P(value)
     }
 }
-impl Tag<P> {
+impl Tag<kind::P> {
     /// A paragraph.
     #[allow(non_upper_case_globals)]
-    pub const P: Tag<P> = Tag::new();
+    pub const P: Tag<kind::P> = Tag::new();
 }
 
-/// Heading level `n`, including an optional title of the heading.
-///
-/// The title is required for some export modes, like for example PDF/UA.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Hn;
-
-impl From<Tag<Hn>> for TagKind {
-    fn from(value: Tag<Hn>) -> Self {
+impl From<Tag<kind::Hn>> for TagKind {
+    fn from(value: Tag<kind::Hn>) -> Self {
         Self::Hn(value)
     }
 }
-impl Tag<Hn> {
+impl Tag<kind::Hn> {
     /// Heading level `n`, including an optional title of the heading.
     ///
     /// The title is required for some export modes, like for example PDF/UA.
     #[allow(non_snake_case)]
-    pub fn Hn(level: NonZeroU32, title: Option<String>) -> Tag<Hn> {
+    pub fn Hn(level: NonZeroU32, title: Option<String>) -> Tag<kind::Hn> {
         let mut tag = Tag::new();
         tag.set_level(level);
         tag.set_title(title);
@@ -984,27 +1113,19 @@ impl Tag<Hn> {
     }
 }
 
-/// A list.
-///
-/// **Best practice**: Should consist of an optional caption followed by
-/// list items.
-/// List numbering is only required for PDF/UA, but we just enforce it for always.
-#[derive(Clone, Debug, PartialEq)]
-pub struct L;
-
-impl From<Tag<L>> for TagKind {
-    fn from(value: Tag<L>) -> Self {
+impl From<Tag<kind::L>> for TagKind {
+    fn from(value: Tag<kind::L>) -> Self {
         Self::L(value)
     }
 }
-impl Tag<L> {
+impl Tag<kind::L> {
     /// A list.
     ///
     /// **Best practice**: Should consist of an optional caption followed by
     /// list items.
     /// List numbering is only required for PDF/UA, but we just enforce it for always.
     #[allow(non_snake_case)]
-    pub fn L(numbering: ListNumbering) -> Tag<L> {
+    pub fn L(numbering: ListNumbering) -> Tag<kind::L> {
         let mut tag = Tag::new();
         tag.set_numbering(numbering);
         tag
@@ -1027,76 +1148,54 @@ impl Tag<L> {
     }
 }
 
-/// A list item.
-///
-/// **Best practice**: Should consist of one or more list labels and/or list bodies.
-#[derive(Clone, Debug, PartialEq)]
-pub struct LI;
-
-impl From<Tag<LI>> for TagKind {
-    fn from(value: Tag<LI>) -> Self {
+impl From<Tag<kind::LI>> for TagKind {
+    fn from(value: Tag<kind::LI>) -> Self {
         Self::LI(value)
     }
 }
-impl Tag<LI> {
+impl Tag<kind::LI> {
     /// A list item.
     ///
     /// **Best practice**: Should consist of one or more list labels and/or list bodies.
     #[allow(non_upper_case_globals)]
-    pub const LI: Tag<LI> = Tag::new();
+    pub const LI: Tag<kind::LI> = Tag::new();
 }
 
-/// Label for a list item.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Lbl;
-
-impl From<Tag<Lbl>> for TagKind {
-    fn from(value: Tag<Lbl>) -> Self {
+impl From<Tag<kind::Lbl>> for TagKind {
+    fn from(value: Tag<kind::Lbl>) -> Self {
         Self::Lbl(value)
     }
 }
-impl Tag<Lbl> {
+impl Tag<kind::Lbl> {
     /// Label for a list item.
     #[allow(non_upper_case_globals)]
-    pub const Lbl: Tag<Lbl> = Tag::new();
+    pub const Lbl: Tag<kind::Lbl> = Tag::new();
 }
 
-/// Description of the list item.
-#[derive(Clone, Debug, PartialEq)]
-pub struct LBody;
-
-impl From<Tag<LBody>> for TagKind {
-    fn from(value: Tag<LBody>) -> Self {
+impl From<Tag<kind::LBody>> for TagKind {
+    fn from(value: Tag<kind::LBody>) -> Self {
         Self::LBody(value)
     }
 }
-impl Tag<LBody> {
+impl Tag<kind::LBody> {
     /// Description of the list item.
     #[allow(non_upper_case_globals)]
-    pub const LBody: Tag<LBody> = Tag::new();
+    pub const LBody: Tag<kind::LBody> = Tag::new();
 }
 
-/// A table, with an optional summary describing the purpose and structure.
-///
-/// **Best practice**: Should consist of an optional table header row,
-/// one or more table body elements and an optional table footer. Can have
-/// caption as the first or last child.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Table;
-
-impl From<Tag<Table>> for TagKind {
-    fn from(value: Tag<Table>) -> Self {
+impl From<Tag<kind::Table>> for TagKind {
+    fn from(value: Tag<kind::Table>) -> Self {
         Self::Table(value)
     }
 }
-impl Tag<Table> {
+impl Tag<kind::Table> {
     /// A table, with an optional summary describing the purpose and structure.
     ///
     /// **Best practice**: Should consist of an optional table header row,
     /// one or more table body elements and an optional table footer. Can have
     /// caption as the first or last child.
     #[allow(non_upper_case_globals)]
-    pub const Table: Tag<Table> = Tag::new();
+    pub const Table: Tag<kind::Table> = Tag::new();
 
     /// The table summary.
     pub fn summary(&self) -> Option<&str> {
@@ -1163,38 +1262,28 @@ impl Tag<Table> {
     }
 }
 
-/// A table row.
-///
-/// **Best practice**: May contain table headers cells and table data cells.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TR;
-
-impl From<Tag<TR>> for TagKind {
-    fn from(value: Tag<TR>) -> Self {
+impl From<Tag<kind::TR>> for TagKind {
+    fn from(value: Tag<kind::TR>) -> Self {
         Self::TR(value)
     }
 }
-impl Tag<TR> {
+impl Tag<kind::TR> {
     /// A table row.
     ///
     /// **Best practice**: May contain table headers cells and table data cells.
     #[allow(non_upper_case_globals)]
-    pub const TR: Tag<TR> = Tag::new();
+    pub const TR: Tag<kind::TR> = Tag::new();
 }
 
-/// A table header cell.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TH;
-
-impl From<Tag<TH>> for TagKind {
-    fn from(value: Tag<TH>) -> Self {
+impl From<Tag<kind::TH>> for TagKind {
+    fn from(value: Tag<kind::TH>) -> Self {
         Self::TH(value)
     }
 }
-impl Tag<TH> {
+impl Tag<kind::TH> {
     /// A table header cell.
     #[allow(non_snake_case)]
-    pub fn TH(scope: TableHeaderScope) -> Tag<TH> {
+    pub fn TH(scope: TableHeaderScope) -> Tag<kind::TH> {
         let mut tag = Tag::new();
         tag.set_scope(scope);
         tag
@@ -1315,19 +1404,15 @@ impl Tag<TH> {
     }
 }
 
-/// A table data cell.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TD;
-
-impl From<Tag<TD>> for TagKind {
-    fn from(value: Tag<TD>) -> Self {
+impl From<Tag<kind::TD>> for TagKind {
+    fn from(value: Tag<kind::TD>) -> Self {
         Self::TD(value)
     }
 }
-impl Tag<TD> {
+impl Tag<kind::TD> {
     /// A table data cell.
     #[allow(non_upper_case_globals)]
-    pub const TD: Tag<TD> = Tag::new();
+    pub const TD: Tag<kind::TD> = Tag::new();
 
     /// A list of headers associated with a table cell.
     /// Table data cells (`TD`) may specify a list of table headers (`TH`),
@@ -1428,180 +1513,123 @@ impl Tag<TD> {
     }
 }
 
-/// A table header row group.
-#[derive(Clone, Debug, PartialEq)]
-pub struct THead;
-
-impl From<Tag<THead>> for TagKind {
-    fn from(value: Tag<THead>) -> Self {
+impl From<Tag<kind::THead>> for TagKind {
+    fn from(value: Tag<kind::THead>) -> Self {
         Self::THead(value)
     }
 }
-impl Tag<THead> {
+impl Tag<kind::THead> {
     /// A table header row group.
     #[allow(non_upper_case_globals)]
-    pub const THead: Tag<THead> = Tag::new();
+    pub const THead: Tag<kind::THead> = Tag::new();
 }
 
-/// A table data row group.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TBody;
-
-impl From<Tag<TBody>> for TagKind {
-    fn from(value: Tag<TBody>) -> Self {
+impl From<Tag<kind::TBody>> for TagKind {
+    fn from(value: Tag<kind::TBody>) -> Self {
         Self::TBody(value)
     }
 }
-impl Tag<TBody> {
+impl Tag<kind::TBody> {
     /// A table data row group.
     #[allow(non_upper_case_globals)]
-    pub const TBody: Tag<TBody> = Tag::new();
+    pub const TBody: Tag<kind::TBody> = Tag::new();
 }
 
-/// A table footer row group.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TFoot;
-
-impl From<Tag<TFoot>> for TagKind {
-    fn from(value: Tag<TFoot>) -> Self {
+impl From<Tag<kind::TFoot>> for TagKind {
+    fn from(value: Tag<kind::TFoot>) -> Self {
         Self::TFoot(value)
     }
 }
-impl Tag<TFoot> {
+impl Tag<kind::TFoot> {
     /// A table footer row group.
     #[allow(non_upper_case_globals)]
-    pub const TFoot: Tag<TFoot> = Tag::new();
+    pub const TFoot: Tag<kind::TFoot> = Tag::new();
 }
 
-/// An inline quotation.
-#[derive(Clone, Debug, PartialEq)]
-pub struct InlineQuote;
-
-impl From<Tag<InlineQuote>> for TagKind {
-    fn from(value: Tag<InlineQuote>) -> Self {
+impl From<Tag<kind::InlineQuote>> for TagKind {
+    fn from(value: Tag<kind::InlineQuote>) -> Self {
         Self::InlineQuote(value)
     }
 }
-impl Tag<InlineQuote> {
+impl Tag<kind::InlineQuote> {
     /// An inline quotation.
     #[allow(non_upper_case_globals)]
-    pub const InlineQuote: Tag<InlineQuote> = Tag::new();
+    pub const InlineQuote: Tag<kind::InlineQuote> = Tag::new();
 }
 
-/// A foot- or endnote, potentially referred to from within the text.
-///
-/// **Best practice**: It may have a label as a child.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Note;
-
-impl From<Tag<Note>> for TagKind {
-    fn from(value: Tag<Note>) -> Self {
+impl From<Tag<kind::Note>> for TagKind {
+    fn from(value: Tag<kind::Note>) -> Self {
         Self::Note(value)
     }
 }
-impl Tag<Note> {
+impl Tag<kind::Note> {
     /// A foot- or endnote, potentially referred to from within the text.
     ///
     /// **Best practice**: It may have a label as a child.
     #[allow(non_upper_case_globals)]
-    pub const Note: Tag<Note> = Tag::new();
+    pub const Note: Tag<kind::Note> = Tag::new();
 }
 
-/// A reference to elsewhere in the document.
-///
-/// **Best practice**: The first child of a tag group with this tag should be a link annotation
-/// linking to a destination in the document, and the second child should consist of
-/// the children that should be associated with that reference.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Reference;
-
-impl From<Tag<Reference>> for TagKind {
-    fn from(value: Tag<Reference>) -> Self {
+impl From<Tag<kind::Reference>> for TagKind {
+    fn from(value: Tag<kind::Reference>) -> Self {
         Self::Reference(value)
     }
 }
-impl Tag<Reference> {
+impl Tag<kind::Reference> {
     /// A reference to elsewhere in the document.
     ///
     /// **Best practice**: The first child of a tag group with this tag should be a link annotation
     /// linking to a destination in the document, and the second child should consist of
     /// the children that should be associated with that reference.
     #[allow(non_upper_case_globals)]
-    pub const Reference: Tag<Reference> = Tag::new();
+    pub const Reference: Tag<kind::Reference> = Tag::new();
 }
 
-/// A reference to the external source of some cited document.
-///
-/// **Best practice**: It may have a label as a child.
-#[derive(Clone, Debug, PartialEq)]
-pub struct BibEntry;
-
-impl From<Tag<BibEntry>> for TagKind {
-    fn from(value: Tag<BibEntry>) -> Self {
+impl From<Tag<kind::BibEntry>> for TagKind {
+    fn from(value: Tag<kind::BibEntry>) -> Self {
         Self::BibEntry(value)
     }
 }
-impl Tag<BibEntry> {
+impl Tag<kind::BibEntry> {
     /// A reference to the external source of some cited document.
     ///
     /// **Best practice**: It may have a label as a child.
     #[allow(non_upper_case_globals)]
-    pub const BibEntry: Tag<BibEntry> = Tag::new();
+    pub const BibEntry: Tag<kind::BibEntry> = Tag::new();
 }
 
-/// Computer code.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Code;
-
-impl From<Tag<Code>> for TagKind {
-    fn from(value: Tag<Code>) -> Self {
+impl From<Tag<kind::Code>> for TagKind {
+    fn from(value: Tag<kind::Code>) -> Self {
         Self::Code(value)
     }
 }
-impl Tag<Code> {
+impl Tag<kind::Code> {
     /// Computer code.
     #[allow(non_upper_case_globals)]
-    pub const Code: Tag<Code> = Tag::new();
+    pub const Code: Tag<kind::Code> = Tag::new();
 }
 
-/// A link.
-///
-/// **Best practice**: The first child of a tag group with this tag should be a link annotation
-/// linking to an URL, and the second child should consist of the children that should
-/// be associated with that link.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Link;
-
-impl From<Tag<Link>> for TagKind {
-    fn from(value: Tag<Link>) -> Self {
+impl From<Tag<kind::Link>> for TagKind {
+    fn from(value: Tag<kind::Link>) -> Self {
         Self::Link(value)
     }
 }
-impl Tag<Link> {
+impl Tag<kind::Link> {
     /// A link.
     ///
     /// **Best practice**: The first child of a tag group with this tag should be a link annotation
     /// linking to an URL, and the second child should consist of the children that should
     /// be associated with that link.
     #[allow(non_upper_case_globals)]
-    pub const Link: Tag<Link> = Tag::new();
+    pub const Link: Tag<kind::Link> = Tag::new();
 }
 
-/// An association between an annotation and the content it belongs to. PDF
-///
-/// **Best practice**: Should be used for all annotations, except for link annotations and
-/// widget annotations. The first child should be the identifier of a non-link annotation,
-/// and all other subsequent children should be content identifiers associated with that
-/// annotation.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Annot;
-
-impl From<Tag<Annot>> for TagKind {
-    fn from(value: Tag<Annot>) -> Self {
+impl From<Tag<kind::Annot>> for TagKind {
+    fn from(value: Tag<kind::Annot>) -> Self {
         Self::Annot(value)
     }
 }
-impl Tag<Annot> {
+impl Tag<kind::Annot> {
     /// An association between an annotation and the content it belongs to. PDF
     ///
     /// **Best practice**: Should be used for all annotations, except for link annotations and
@@ -1609,26 +1637,20 @@ impl Tag<Annot> {
     /// and all other subsequent children should be content identifiers associated with that
     /// annotation.
     #[allow(non_upper_case_globals)]
-    pub const Annot: Tag<Annot> = Tag::new();
+    pub const Annot: Tag<kind::Annot> = Tag::new();
 }
 
-/// Item of graphical content.
-///
-/// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Figure;
-
-impl From<Tag<Figure>> for TagKind {
-    fn from(value: Tag<Figure>) -> Self {
+impl From<Tag<kind::Figure>> for TagKind {
+    fn from(value: Tag<kind::Figure>) -> Self {
         Self::Figure(value)
     }
 }
-impl Tag<Figure> {
+impl Tag<kind::Figure> {
     /// Item of graphical content.
     ///
-    /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
     #[allow(non_snake_case)]
-    pub fn Figure(alt_text: Option<String>) -> Tag<Figure> {
+    pub fn Figure(alt_text: Option<String>) -> Tag<kind::Figure> {
         let mut tag = Tag::new();
         tag.set_alt_text(alt_text);
         tag
@@ -1683,23 +1705,17 @@ impl Tag<Figure> {
     }
 }
 
-/// A mathematical formula.
-///
-/// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Formula;
-
-impl From<Tag<Formula>> for TagKind {
-    fn from(value: Tag<Formula>) -> Self {
+impl From<Tag<kind::Formula>> for TagKind {
+    fn from(value: Tag<kind::Formula>) -> Self {
         Self::Formula(value)
     }
 }
-impl Tag<Formula> {
+impl Tag<kind::Formula> {
     /// A mathematical formula.
     ///
-    /// Providing [`Tag::alt_text`] is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
     #[allow(non_snake_case)]
-    pub fn Formula(alt_text: Option<String>) -> Tag<Formula> {
+    pub fn Formula(alt_text: Option<String>) -> Tag<kind::Formula> {
         let mut tag = Tag::new();
         tag.set_alt_text(alt_text);
         tag
@@ -1754,49 +1770,37 @@ impl Tag<Formula> {
     }
 }
 
-/// A date or time.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Datetime;
-
-impl From<Tag<Datetime>> for TagKind {
-    fn from(value: Tag<Datetime>) -> Self {
+impl From<Tag<kind::Datetime>> for TagKind {
+    fn from(value: Tag<kind::Datetime>) -> Self {
         Self::Datetime(value)
     }
 }
-impl Tag<Datetime> {
+impl Tag<kind::Datetime> {
     /// A date or time.
     #[allow(non_upper_case_globals)]
-    pub const Datetime: Tag<Datetime> = Tag::new();
+    pub const Datetime: Tag<kind::Datetime> = Tag::new();
 }
 
-/// A list of terms.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Terms;
-
-impl From<Tag<Terms>> for TagKind {
-    fn from(value: Tag<Terms>) -> Self {
+impl From<Tag<kind::Terms>> for TagKind {
+    fn from(value: Tag<kind::Terms>) -> Self {
         Self::Terms(value)
     }
 }
-impl Tag<Terms> {
+impl Tag<kind::Terms> {
     /// A list of terms.
     #[allow(non_upper_case_globals)]
-    pub const Terms: Tag<Terms> = Tag::new();
+    pub const Terms: Tag<kind::Terms> = Tag::new();
 }
 
-/// A title.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Title;
-
-impl From<Tag<Title>> for TagKind {
-    fn from(value: Tag<Title>) -> Self {
+impl From<Tag<kind::Title>> for TagKind {
+    fn from(value: Tag<kind::Title>) -> Self {
         Self::Title(value)
     }
 }
-impl Tag<Title> {
+impl Tag<kind::Title> {
     /// A title.
     #[allow(non_upper_case_globals)]
-    pub const Title: Tag<Title> = Tag::new();
+    pub const Title: Tag<kind::Title> = Tag::new();
 }
 
 #[derive(Clone, Debug, PartialEq)]

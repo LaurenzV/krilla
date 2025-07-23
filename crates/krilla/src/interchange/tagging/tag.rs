@@ -1,21 +1,3 @@
-//! # Example
-//! ```
-//! use std::num::NonZeroU32;
-//! use krilla::tagging::{TagGroup, TagTree};
-//! use krilla::tagging::tag::{TableHeaderScope, Tag, TagId};
-//!
-//! let tag = Tag::TH(TableHeaderScope::Row)
-//!     .with_id(Some(TagId::from(*b"this id")))
-//!     .with_col_span(Some(NonZeroU32::new(3).unwrap()))
-//!     .with_headers([TagId::from(*b"parent id")])
-//!     .with_width(Some(250.0))
-//!     .with_height(Some(100.0));
-//! let group = TagGroup::new(tag);
-//!
-//! let mut tree = TagTree::new();
-//! tree.push(group);
-//! ```
-
 use std::marker::PhantomData;
 use std::num::NonZeroU32;
 
@@ -44,8 +26,24 @@ impl TagKind {
     }
 }
 
-/// A raw tag, which allows reading all attributes and additionally writing all
-/// global ones.
+/// A specific tag which allows accessing attributes specific to this [`TagKind`].
+///
+/// # Example
+/// ```
+/// use std::num::NonZeroU32;
+/// use krilla::tagging::{TagGroup, TagTree, TableHeaderScope, Tag, TagId};
+///
+/// let tag = Tag::TH(TableHeaderScope::Row)
+///     .with_id(Some(TagId::from(*b"this id")))
+///     .with_col_span(Some(NonZeroU32::new(3).unwrap()))
+///     .with_headers([TagId::from(*b"parent id")])
+///     .with_width(Some(250.0))
+///     .with_height(Some(100.0));
+/// let group = TagGroup::new(tag);
+///
+/// let mut tree = TagTree::new();
+/// tree.push(group);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tag<T> {
     inner: AnyTag,
@@ -53,7 +51,8 @@ pub struct Tag<T> {
     pub(crate) ty: PhantomData<T>,
 }
 
-/// A "raw" tag that allows reading all attributes and writing global ones.
+/// A raw tag, which allows reading all attributes and additionally writing all
+/// global ones.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnyTag {
     /// The location of the tag.

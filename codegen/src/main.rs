@@ -321,7 +321,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
         for comment in comments.iter() {
             writeln!(f, "    ///{comment}").ok();
         }
-        writeln!(f, "    {name}(Tag<{name}>),").ok();
+        writeln!(f, "    {name}(Tag<kind::{name}>),").ok();
     }
     writeln!(f, "}}").ok();
     writeln!(f).ok();
@@ -412,30 +412,36 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
+    writeln!(f, "/// Tag kind structs.").ok();
+    writeln!(f, "pub mod kind {{").ok();
     for variant @ TagVariant { name, .. } in TAG.variants.iter() {
         // Struct definition.
         for comment in variant.comments.iter() {
-            writeln!(f, "///{comment}").ok();
+            writeln!(f, "    ///{comment}").ok();
         }
-        writeln!(f, "#[derive(Clone, Debug, PartialEq)]").ok();
-        writeln!(f, "pub struct {name};").ok();
+        writeln!(f, "    #[derive(Clone, Debug, PartialEq)]").ok();
+        writeln!(f, "    pub struct {name};").ok();
         writeln!(f).ok();
+    }
+    writeln!(f, "}}").ok();
+    writeln!(f).ok();
 
+    for variant @ TagVariant { name, .. } in TAG.variants.iter() {
         // From impl.
-        writeln!(f, "impl From<Tag<{name}>> for TagKind {{").ok();
-        writeln!(f, "    fn from(value: Tag<{name}>) -> Self {{").ok();
+        writeln!(f, "impl From<Tag<kind::{name}>> for TagKind {{").ok();
+        writeln!(f, "    fn from(value: Tag<kind::{name}>) -> Self {{").ok();
         writeln!(f, "        Self::{name}(value)").ok();
         writeln!(f, "    }}").ok();
         writeln!(f, "}}").ok();
 
         // Constructor
-        writeln!(f, "impl Tag<{name}> {{").ok();
+        writeln!(f, "impl Tag<kind::{name}> {{").ok();
         for comment in variant.comments.iter() {
             writeln!(f, "    ///{comment}").ok();
         }
         if variant.required.is_empty() && variant.suggested.is_empty() {
             writeln!(f, "    #[allow(non_upper_case_globals)]").ok();
-            writeln!(f, "    pub const {name}: Tag<{name}> = Tag::new();").ok();
+            writeln!(f, "    pub const {name}: Tag<kind::{name}> = Tag::new();").ok();
         } else {
             let params = (variant.required.iter())
                 .map(|(_, attr_variant)| {
@@ -451,7 +457,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
                 .collect::<Vec<_>>()
                 .join(", ");
             writeln!(f, "    #[allow(non_snake_case)]").ok();
-            writeln!(f, "    pub fn {name}({params}) -> Tag<{name}> {{").ok();
+            writeln!(f, "    pub fn {name}({params}) -> Tag<kind::{name}> {{").ok();
             writeln!(f, "        let mut tag = Tag::new();").ok();
             for (_, attr_variant) in variant.required.iter().chain(variant.suggested.iter()) {
                 let name = attr_variant.accessor_name();
