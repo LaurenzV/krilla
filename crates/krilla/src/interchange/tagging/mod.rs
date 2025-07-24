@@ -448,6 +448,7 @@ impl TagKind {
             Self::Annot(_) => struct_elem.kind(StructRole::Annot),
             Self::Figure(_) => struct_elem.kind(StructRole::Figure),
             Self::Formula(_) => struct_elem.kind(StructRole::Formula),
+            Self::NonStruct(_) => struct_elem.kind(StructRole::NonStruct),
             // Every additional tag needs to be registered in the role map!
             Self::Datetime(_) => struct_elem.custom_kind(Name(b"Datetime")),
             Self::Terms(_) => struct_elem.custom_kind(Name(b"Terms")),
@@ -498,6 +499,7 @@ impl TagKind {
             Self::Annot(_) => PdfVersion::Pdf15,
             Self::Figure(_) => PdfVersion::Pdf15,
             Self::Formula(_) => PdfVersion::Pdf15,
+            Self::NonStruct(_) => PdfVersion::Pdf14,
             Self::Datetime(_) => PdfVersion::Pdf15,
             Self::Terms(_) => PdfVersion::Pdf15,
             Self::Title(_) => PdfVersion::Pdf15,

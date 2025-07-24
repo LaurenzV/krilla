@@ -143,6 +143,10 @@ optional = [
   "Layout::Width",
   "Layout::Height",
 ]
+# Non-structural element. A grouping element having no inherent structural significance;
+# it serves solely for grouping purposes.
+[Tag.NonStruct]
+
 # A date or time.
 [Tag.Datetime]
 # A list of terms.

@@ -113,6 +113,9 @@ pub enum TagKind {
     ///
     /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
     Formula(Tag<kind::Formula>),
+    /// Non-structural element. A grouping element having no inherent structural significance;
+    /// it serves solely for grouping purposes.
+    NonStruct(Tag<kind::NonStruct>),
     /// A date or time.
     Datetime(Tag<kind::Datetime>),
     /// A list of terms.
@@ -155,6 +158,7 @@ impl TagKind {
             Self::Annot(tag) => tag.as_any(),
             Self::Figure(tag) => tag.as_any(),
             Self::Formula(tag) => tag.as_any(),
+            Self::NonStruct(tag) => tag.as_any(),
             Self::Datetime(tag) => tag.as_any(),
             Self::Terms(tag) => tag.as_any(),
             Self::Title(tag) => tag.as_any(),
@@ -195,6 +199,7 @@ impl TagKind {
             Self::Annot(tag) => tag.as_any_mut(),
             Self::Figure(tag) => tag.as_any_mut(),
             Self::Formula(tag) => tag.as_any_mut(),
+            Self::NonStruct(tag) => tag.as_any_mut(),
             Self::Datetime(tag) => tag.as_any_mut(),
             Self::Terms(tag) => tag.as_any_mut(),
             Self::Title(tag) => tag.as_any_mut(),
@@ -940,6 +945,11 @@ pub mod kind {
     /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Formula;
+
+    /// Non-structural element. A grouping element having no inherent structural significance;
+    /// it serves solely for grouping purposes.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct NonStruct;
 
     /// A date or time.
     #[derive(Clone, Debug, PartialEq)]
@@ -1779,6 +1789,18 @@ impl Tag<kind::Formula> {
         self.set_height(height);
         self
     }
+}
+
+impl From<Tag<kind::NonStruct>> for TagKind {
+    fn from(value: Tag<kind::NonStruct>) -> Self {
+        Self::NonStruct(value)
+    }
+}
+impl Tag<kind::NonStruct> {
+    /// Non-structural element. A grouping element having no inherent structural significance;
+    /// it serves solely for grouping purposes.
+    #[allow(non_upper_case_globals)]
+    pub const NonStruct: Tag<kind::NonStruct> = Tag::new();
 }
 
 impl From<Tag<kind::Datetime>> for TagKind {
