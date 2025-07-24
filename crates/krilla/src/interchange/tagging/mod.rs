@@ -416,6 +416,7 @@ impl TagKind {
             Self::Part(_) => struct_elem.kind(StructRole::Part),
             Self::Article(_) => struct_elem.kind(StructRole::Art),
             Self::Section(_) => struct_elem.kind(StructRole::Sect),
+            Self::Div(_) => struct_elem.kind(StructRole::Div),
             Self::BlockQuote(_) => struct_elem.kind(StructRole::BlockQuote),
             Self::Caption(_) => struct_elem.kind(StructRole::Caption),
             Self::TOC(_) => struct_elem.kind(StructRole::TOC),
@@ -439,6 +440,7 @@ impl TagKind {
             Self::THead(_) => struct_elem.kind(StructRole::THead),
             Self::TBody(_) => struct_elem.kind(StructRole::TBody),
             Self::TFoot(_) => struct_elem.kind(StructRole::TFoot),
+            Self::Span(_) => struct_elem.kind(StructRole::Span),
             Self::InlineQuote(_) => struct_elem.kind(StructRole::Quote),
             Self::Note(_) => struct_elem.kind(StructRole::Note),
             Self::Reference(_) => struct_elem.kind(StructRole::Reference),
@@ -472,6 +474,7 @@ impl TagKind {
             Self::Part(_) => PdfVersion::Pdf14,
             Self::Article(_) => PdfVersion::Pdf14,
             Self::Section(_) => PdfVersion::Pdf14,
+            Self::Div(_) => PdfVersion::Pdf14,
             Self::BlockQuote(_) => PdfVersion::Pdf14,
             Self::Caption(_) => PdfVersion::Pdf14,
             Self::TOC(_) => PdfVersion::Pdf14,
@@ -490,6 +493,7 @@ impl TagKind {
             Self::THead(_) => PdfVersion::Pdf15,
             Self::TBody(_) => PdfVersion::Pdf15,
             Self::TFoot(_) => PdfVersion::Pdf15,
+            Self::Span(_) => PdfVersion::Pdf14,
             Self::InlineQuote(_) => PdfVersion::Pdf14,
             Self::Note(_) => PdfVersion::Pdf14,
             Self::Reference(_) => PdfVersion::Pdf14,
@@ -776,6 +780,180 @@ impl TagGroup {
                 }
                 LayoutAttr::Height(height) => {
                     layout_attributes.get().height(*height);
+                }
+                &LayoutAttr::BackgroundColor(color) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes.get().background_color(color.into());
+                    }
+                }
+                &LayoutAttr::BorderColor(sides) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        match sides {
+                            Sides::All(color) => {
+                                layout_attributes.get().border_color(color.into());
+                            }
+                            Sides::Specific {
+                                before,
+                                after,
+                                start,
+                                end,
+                            } => {
+                                let mut array =
+                                    layout_attributes.get().insert(Name(b"BorderColor")).array();
+
+                                for side in [before, after, start, end] {
+                                    array.push().array().typed().items(side.into_array());
+                                }
+                            }
+                        }
+                    }
+                }
+                &LayoutAttr::BorderStyle(sides) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes
+                            .get()
+                            .border_style(sides.into_array().map(BorderStyle::to_pdf));
+                    }
+                }
+                &LayoutAttr::BorderThickness(sides) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        sides.write(
+                            layout_attributes.get(),
+                            Name(b"BorderThickness"),
+                            |thickness| thickness,
+                        );
+                    }
+                }
+                &LayoutAttr::Padding(sides) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        sides.write(layout_attributes.get(), Name(b"Padding"), |padding| padding);
+                    }
+                }
+                &LayoutAttr::Color(color) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes.get().color(color.into());
+                    }
+                }
+                &LayoutAttr::SpaceBefore(margin) => {
+                    layout_attributes.get().space_before(margin);
+                }
+                &LayoutAttr::SpaceAfter(margin) => {
+                    layout_attributes.get().space_after(margin);
+                }
+                &LayoutAttr::StartIndent(margin) => {
+                    layout_attributes.get().start_indent(margin);
+                }
+                &LayoutAttr::EndIndent(margin) => {
+                    layout_attributes.get().end_indent(margin);
+                }
+                &LayoutAttr::TextIndent(indent) => {
+                    layout_attributes.get().text_indent(indent);
+                }
+                &LayoutAttr::BlockAlign(alignment) => {
+                    layout_attributes.get().block_align(alignment.to_pdf());
+                }
+                &LayoutAttr::InlineAlign(alignment) => {
+                    layout_attributes.get().inline_align(alignment.to_pdf());
+                }
+                &LayoutAttr::TextAlign(alignment) => {
+                    layout_attributes.get().text_align(alignment.to_pdf());
+                }
+                &LayoutAttr::TableBorderStyle(sides) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes
+                            .get()
+                            .table_border_style(sides.into_array().map(BorderStyle::to_pdf));
+                    }
+                }
+                &LayoutAttr::TablePadding(sides) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        sides.write(layout_attributes.get(), Name(b"TPadding"), |padding| {
+                            padding
+                        });
+                    }
+                }
+                &LayoutAttr::BaselineShift(shift) => {
+                    layout_attributes.get().baseline_shift(shift);
+                }
+                &LayoutAttr::LineHeight(height) => {
+                    let name = Name(b"LineHeight");
+                    match height {
+                        LineHeight::Auto => {
+                            layout_attributes.get().pair(name, Name(b"Auto"));
+                        }
+                        LineHeight::Normal => {
+                            layout_attributes.get().pair(name, Name(b"Normal"));
+                        }
+                        LineHeight::Custom(height) => {
+                            layout_attributes.get().pair(name, height);
+                        }
+                    }
+                }
+                &LayoutAttr::TextDecorationColor(color) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes.get().text_decoration_color(color.into());
+                    }
+                }
+                &LayoutAttr::TextDecorationThickness(thickness) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes.get().text_decoration_thickness(thickness);
+                    }
+                }
+                &LayoutAttr::TextDecorationType(style) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        layout_attributes.get().text_decoration_type(style.to_pdf());
+                    }
+                }
+                &LayoutAttr::GlyphOrientationVertical(orientation) => {
+                    if pdf_version >= PdfVersion::Pdf15 {
+                        match orientation.into_f32() {
+                            Some(orientation) => {
+                                layout_attributes
+                                    .get()
+                                    .glyph_orientation_vertical(orientation);
+                            }
+                            None => {
+                                layout_attributes
+                                    .get()
+                                    .pair(Name(b"GlyphOrientationVertical"), Name(b"Auto"));
+                            }
+                        }
+                    }
+                }
+                &LayoutAttr::ColumnCount(columns) => {
+                    if pdf_version >= PdfVersion::Pdf16 {
+                        layout_attributes.get().column_count(columns.get() as i32);
+                    }
+                }
+                LayoutAttr::ColumnGap(gap) => {
+                    if pdf_version >= PdfVersion::Pdf16 {
+                        match gap {
+                            ColumnDimensions::All(gap) => {
+                                layout_attributes.get().pair(Name(b"ColumnGap"), gap);
+                            }
+                            ColumnDimensions::Specific(values) => {
+                                layout_attributes
+                                    .get()
+                                    .column_gap()
+                                    .items(values.iter().copied());
+                            }
+                        }
+                    }
+                }
+                LayoutAttr::ColumnWidths(width) => {
+                    if pdf_version >= PdfVersion::Pdf16 {
+                        match width {
+                            ColumnDimensions::All(width) => {
+                                layout_attributes.get().pair(Name(b"ColumnWidths"), width);
+                            }
+                            ColumnDimensions::Specific(values) => {
+                                layout_attributes
+                                    .get()
+                                    .column_widths()
+                                    .items(values.iter().copied());
+                            }
+                        }
+                    }
                 }
             }
         }
