@@ -798,6 +798,11 @@ impl TagGroup {
                                 start,
                                 end,
                             } => {
+                                // TODO: pdf-writer currently has no typed API
+                                // for setting a border color for each side.
+                                // Once it does, we can use that.
+                                // The same applies to TPadding.
+                                // See https://github.com/typst/pdf-writer/issues/54
                                 let mut array =
                                     layout_attributes.get().insert(Name(b"BorderColor")).array();
 
@@ -810,6 +815,13 @@ impl TagGroup {
                 }
                 &LayoutAttr::BorderStyle(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
+                        // TODO: pdf-writer currently has no typed API for
+                        // setting a single border style for all sides. What we
+                        // do here has the same effect, but takes up more
+                        // storage. Once pdf-writer has a typed API for both
+                        // cases, we can use that. The same applies to
+                        // BorderThickness, Padding, and TBorderStyle.
+                        // See https://github.com/typst/pdf-writer/issues/54
                         layout_attributes
                             .get()
                             .border_style(sides.into_array().map(BorderStyle::to_pdf));
@@ -817,6 +829,8 @@ impl TagGroup {
                 }
                 &LayoutAttr::BorderThickness(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
+                        // TODO: Issue with pdf-writer API, see BorderStyle for
+                        // more. Both cases are written manually here.
                         sides.write(
                             layout_attributes.get(),
                             Name(b"BorderThickness"),
@@ -826,6 +840,8 @@ impl TagGroup {
                 }
                 &LayoutAttr::Padding(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
+                        // TODO: Issue with pdf-writer API, see BorderStyle for
+                        // more. Both cases are written manually here.
                         sides.write(layout_attributes.get(), Name(b"Padding"), |padding| padding);
                     }
                 }
@@ -860,6 +876,9 @@ impl TagGroup {
                 }
                 &LayoutAttr::TableBorderStyle(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
+                        // TODO: Issue with pdf-writer API, see BorderStyle for
+                        // more. Here, we always write the specific sides, even
+                        // if all sides have the same style.
                         layout_attributes
                             .get()
                             .table_border_style(sides.into_array().map(BorderStyle::to_pdf));
@@ -867,6 +886,8 @@ impl TagGroup {
                 }
                 &LayoutAttr::TablePadding(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
+                        // TODO: Issue with pdf-writer API, see BorderColor
+                        // match arm.
                         sides.write(layout_attributes.get(), Name(b"TPadding"), |padding| {
                             padding
                         });
@@ -876,6 +897,12 @@ impl TagGroup {
                     layout_attributes.get().baseline_shift(shift);
                 }
                 &LayoutAttr::LineHeight(height) => {
+                    // TODO: The `.line_height()` method of `pdf-writer` is
+                    // currently unusable because the crate failed to export the
+                    // `LineHeight` type used in its arguments. Once this is
+                    // fixed, we can use that method instead of writing the
+                    // `LineHeight` manually.
+                    // See https://github.com/typst/pdf-writer/issues/53
                     let name = Name(b"LineHeight");
                     match height {
                         LineHeight::Auto => {
@@ -929,6 +956,11 @@ impl TagGroup {
                     if pdf_version >= PdfVersion::Pdf16 {
                         match gap {
                             ColumnDimensions::All(gap) => {
+                                // TODO: pdf-writer currently has no typed API
+                                // for setting a uniform column gap. Currently,
+                                // we write it manually. Once pdf-writer has a
+                                // typed API for this, we can use that.
+                                // See https://github.com/typst/pdf-writer/issues/55
                                 layout_attributes.get().pair(Name(b"ColumnGap"), gap);
                             }
                             ColumnDimensions::Specific(values) => {
@@ -944,6 +976,11 @@ impl TagGroup {
                     if pdf_version >= PdfVersion::Pdf16 {
                         match width {
                             ColumnDimensions::All(width) => {
+                                // TODO: pdf-writer currently has no typed API
+                                // for setting uniform column widths. Currently,
+                                // we write it manually. Once pdf-writer has a
+                                // typed API for this, we can use that.
+                                // See https://github.com/typst/pdf-writer/issues/55
                                 layout_attributes.get().pair(Name(b"ColumnWidths"), width);
                             }
                             ColumnDimensions::Specific(values) => {
