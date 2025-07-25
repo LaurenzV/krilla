@@ -345,3 +345,332 @@ impl BBox {
         Self { page_idx, rect }
     }
 }
+
+/// An RGB color within the tag tree. The color space of this color is not
+/// specified. Each component is in the range [0.0, 1.0].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NaiveRgbColor {
+    /// The red component of the color.
+    pub red: f32,
+    /// The green component of the color.
+    pub green: f32,
+    /// The blue component of the color.
+    pub blue: f32,
+}
+
+impl NaiveRgbColor {
+    /// Create a new RGB color.
+    pub fn new(red: f32, green: f32, blue: f32) -> Self {
+        if !(0.0..=1.0).contains(&red)
+            || !(0.0..=1.0).contains(&green)
+            || !(0.0..=1.0).contains(&blue)
+        {
+            panic!("RGB color components must be in the range [0.0, 1.0]");
+        }
+
+        Self { red, green, blue }
+    }
+
+    /// Convert the color into an array of f32 components for PDF serialization.
+    pub fn into_array(self) -> [f32; 3] {
+        [self.red, self.green, self.blue]
+    }
+}
+
+impl From<NaiveRgbColor> for crate::graphics::color::rgb::Color {
+    fn from(color: NaiveRgbColor) -> Self {
+        crate::graphics::color::rgb::Color::new(
+            (color.red * 255.0) as u8,
+            (color.green * 255.0) as u8,
+            (color.blue * 255.0) as u8,
+        )
+    }
+}
+
+impl From<NaiveRgbColor> for [f32; 3] {
+    fn from(color: NaiveRgbColor) -> Self {
+        color.into_array()
+    }
+}
+
+/// The border style of an element.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum BorderStyle {
+    /// No border.
+    None,
+    /// Hidden border.
+    Hidden,
+    /// Solid border.
+    Solid,
+    /// Dashed border.
+    Dashed,
+    /// Dotted border.
+    Dotted,
+    /// Double border.
+    Double,
+    /// Groove border.
+    Groove,
+    /// Ridge border.
+    Ridge,
+    /// Inset border.
+    Inset,
+    /// Outset border.
+    Outset,
+}
+
+impl BorderStyle {
+    pub(super) fn to_pdf(self) -> pdf_writer::types::LayoutBorderStyle {
+        match self {
+            BorderStyle::None => pdf_writer::types::LayoutBorderStyle::None,
+            BorderStyle::Hidden => pdf_writer::types::LayoutBorderStyle::Hidden,
+            BorderStyle::Solid => pdf_writer::types::LayoutBorderStyle::Solid,
+            BorderStyle::Dashed => pdf_writer::types::LayoutBorderStyle::Dashed,
+            BorderStyle::Dotted => pdf_writer::types::LayoutBorderStyle::Dotted,
+            BorderStyle::Double => pdf_writer::types::LayoutBorderStyle::Double,
+            BorderStyle::Groove => pdf_writer::types::LayoutBorderStyle::Groove,
+            BorderStyle::Ridge => pdf_writer::types::LayoutBorderStyle::Ridge,
+            BorderStyle::Inset => pdf_writer::types::LayoutBorderStyle::Inset,
+            BorderStyle::Outset => pdf_writer::types::LayoutBorderStyle::Outset,
+        }
+    }
+}
+
+/// The text alignment.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum TextAlign {
+    /// At the start of the inline advance direction.
+    Start,
+    /// Centered.
+    Center,
+    /// At the end of the inline advance direction.
+    End,
+    /// Justified.
+    Justify,
+}
+
+impl TextAlign {
+    pub(super) fn to_pdf(self) -> pdf_writer::types::TextAlign {
+        match self {
+            TextAlign::Start => pdf_writer::types::TextAlign::Start,
+            TextAlign::Center => pdf_writer::types::TextAlign::Center,
+            TextAlign::End => pdf_writer::types::TextAlign::End,
+            TextAlign::Justify => pdf_writer::types::TextAlign::Justify,
+        }
+    }
+}
+
+/// The block alignment.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum BlockAlign {
+    /// At the start of the block advance direction.
+    Begin,
+    /// Centered.
+    Middle,
+    /// At the end of the block advance direction.
+    After,
+    /// Justified.
+    Justify,
+}
+
+impl BlockAlign {
+    pub(super) fn to_pdf(self) -> pdf_writer::types::BlockAlign {
+        match self {
+            BlockAlign::Begin => pdf_writer::types::BlockAlign::Begin,
+            BlockAlign::Middle => pdf_writer::types::BlockAlign::Middle,
+            BlockAlign::After => pdf_writer::types::BlockAlign::After,
+            BlockAlign::Justify => pdf_writer::types::BlockAlign::Justify,
+        }
+    }
+}
+
+/// The inline alignment.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum InlineAlign {
+    /// At the start of the inline advance direction.
+    Start,
+    /// Centered.
+    Center,
+    /// At the end of the inline advance direction.
+    End,
+}
+
+impl InlineAlign {
+    pub(super) fn to_pdf(self) -> pdf_writer::types::InlineAlign {
+        match self {
+            InlineAlign::Start => pdf_writer::types::InlineAlign::Start,
+            InlineAlign::Center => pdf_writer::types::InlineAlign::Center,
+            InlineAlign::End => pdf_writer::types::InlineAlign::End,
+        }
+    }
+}
+
+/// The height of a line.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum LineHeight {
+    /// Adjust the line height automatically, taking `/BaselineShift` into
+    /// account.
+    Normal,
+    /// Adjust the line height automatically.
+    Auto,
+    /// Set a fixed line height.
+    Custom(f32),
+}
+
+/// The text decoration type (over- and underlines).
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum TextDecorationType {
+    /// No decoration.
+    None,
+    /// Underlined.
+    Underline,
+    /// Line over the text.
+    Overline,
+    /// Strike the text.
+    LineThrough,
+}
+
+impl TextDecorationType {
+    pub(super) fn to_pdf(self) -> pdf_writer::types::TextDecorationType {
+        match self {
+            Self::None => pdf_writer::types::TextDecorationType::None,
+            Self::Underline => pdf_writer::types::TextDecorationType::Underline,
+            Self::Overline => pdf_writer::types::TextDecorationType::Overline,
+            Self::LineThrough => pdf_writer::types::TextDecorationType::LineThrough,
+        }
+    }
+}
+
+/// The rotation of glyphs in vertical writing modes.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum GlyphOrientationVertical {
+    /// Determine the rotation based on whether the text is full-width.
+    Auto,
+    /// No rotation.
+    None,
+    /// Rotate 90 degrees clockwise.
+    Clockwise90,
+    /// Rotate 90 degrees counter-clockwise.
+    CounterClockwise90,
+    /// Rotate 180 degrees clockwise.
+    Clockwise180,
+    /// Rotate 180 degrees counter-clockwise.
+    CounterClockwise180,
+    /// Rotate 270 degrees clockwise.
+    Clockwise270,
+}
+
+impl GlyphOrientationVertical {
+    /// Convert the rotation to a number. If the rotation is `Auto`, returns
+    /// `None`.
+    pub(super) fn into_f32(self) -> Option<f32> {
+        match self {
+            GlyphOrientationVertical::Auto => None,
+            GlyphOrientationVertical::None => Some(0.0),
+            GlyphOrientationVertical::Clockwise90 => Some(90.0),
+            GlyphOrientationVertical::CounterClockwise90 => Some(-90.0),
+            GlyphOrientationVertical::Clockwise180 => Some(180.0),
+            GlyphOrientationVertical::CounterClockwise180 => Some(-180.0),
+            GlyphOrientationVertical::Clockwise270 => Some(270.0),
+        }
+    }
+}
+
+/// An attribute value that can apply to all sides of the element, or have a specific value for each side.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Sides<T: std::fmt::Debug + Copy + PartialEq> {
+    /// The same value applies to all sides.
+    All(T),
+    /// Each side has a different value.
+    Specific {
+        /// The start of the element on the block axis.
+        before: T,
+        /// The end of the element on the block axis.
+        after: T,
+        /// The start of the element on the inline axis.
+        start: T,
+        /// The end of the element on the inline axis.
+        end: T,
+    },
+}
+
+impl<T: std::fmt::Debug + Copy + PartialEq> Sides<T> {
+    /// Construct a new `Sides` value with the same value for all sides.
+    pub fn all(value: T) -> Self {
+        Sides::All(value)
+    }
+
+    /// Construct a new `Sides` value with specific values for each side.
+    pub fn specific(before: T, after: T, start: T, end: T) -> Self {
+        Sides::Specific {
+            before,
+            after,
+            start,
+            end,
+        }
+    }
+
+    /// Returns an array for all sides.
+    pub(super) fn into_array(self) -> [T; 4] {
+        match self {
+            Sides::All(value) => [value; 4],
+            Sides::Specific {
+                before,
+                after,
+                start,
+                end,
+            } => [before, after, start, end],
+        }
+    }
+
+    /// Write the value in the most appropriate way given the variant.
+    ///
+    /// Only applicable if the type `T` can be converted to a PDF primitive.
+    pub(super) fn write<P: pdf_writer::Primitive>(
+        self,
+        writer: &mut pdf_writer::writers::LayoutAttributes<'_>,
+        name: pdf_writer::Name<'_>,
+        to_pdf: impl Fn(T) -> P,
+    ) {
+        match self {
+            Sides::All(value) => {
+                // Write the same value for all sides.
+                writer.pair(name, to_pdf(value));
+            }
+            Sides::Specific {
+                before,
+                after,
+                start,
+                end,
+            } => {
+                let mut array = writer.insert(name).array();
+
+                for side in [before, after, start, end] {
+                    // Write each side's value.
+                    array.item(to_pdf(side));
+                }
+            }
+        }
+    }
+}
+
+/// Widths related to columns, either for all columns or
+/// with specific values for each.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ColumnDimensions {
+    /// The same value applies to all columns.
+    All(f32),
+    /// The value varies for each column or column gap.
+    Specific(Vec<f32>),
+}
+
+impl ColumnDimensions {
+    /// Construct a new `ColumnDimensions` with the same value for all columns.
+    pub fn all(value: f32) -> Self {
+        ColumnDimensions::All(value)
+    }
+
+    /// Construct a new `ColumnDimensions` with specific values for each column.
+    pub fn specific(values: Vec<f32>) -> Self {
+        ColumnDimensions::Specific(values)
+    }
+}

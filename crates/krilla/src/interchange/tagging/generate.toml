@@ -4,8 +4,25 @@
 [Tag.Part]
 # An article with largely self-contained content.
 [Tag.Article]
+optional = [
+  "Layout::ColumnCount",
+  "Layout::ColumnGap",
+  "Layout::ColumnWidths",
+]
 # Section of a larger document.
 [Tag.Section]
+optional = [
+  "Layout::ColumnCount",
+  "Layout::ColumnGap",
+  "Layout::ColumnWidths",
+]
+# A generic block-level grouping element.
+[Tag.Div]
+optional = [
+  "Layout::ColumnCount",
+  "Layout::ColumnGap",
+  "Layout::ColumnWidths",
+]
 # A paragraph-level quote.
 [Tag.BlockQuote]
 # An image or figure caption.
@@ -29,13 +46,39 @@
 [Tag.Index]
 # A paragraph.
 [Tag.P]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # Heading level `n`, including an optional title of the heading.
 #
 # The title is required for some export modes, like for example PDF/UA.
 [Tag.Hn]
 required = ["Struct::HeadingLevel"]
 suggested = ["Struct::Title"]
-optional = ["Struct::Title"]
+optional = [
+  "Struct::Title",
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A list.
 #
 # **Best practice**: Should consist of an optional caption followed by
@@ -43,14 +86,66 @@ optional = ["Struct::Title"]
 # List numbering is only required for PDF/UA, but we just enforce it for always.
 [Tag.L]
 required = ["List::Numbering"]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A list item.
 #
 # **Best practice**: Should consist of one or more list labels and/or list bodies.
 [Tag.LI]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # Label for a list item.
 [Tag.Lbl]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # Description of the list item.
 [Tag.LBody]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A table, with an optional summary describing the purpose and structure.
 #
 # **Best practice**: Should consist of an optional table header row,
@@ -62,6 +157,17 @@ optional = [
   "Layout::BBox",
   "Layout::Width",
   "Layout::Height",
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::TextIndent",
+  "Layout::TextAlign",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
 ]
 # A table row.
 #
@@ -76,6 +182,10 @@ optional = [
   "Table::ColSpan",
   "Layout::Width",
   "Layout::Height",
+  "Layout::TableBorderStyle",
+  "Layout::TablePadding",
+  "Layout::BlockAlign",
+  "Layout::InlineAlign",
 ]
 # A table data cell.
 [Tag.TD]
@@ -85,6 +195,10 @@ optional = [
   "Table::ColSpan",
   "Layout::Width",
   "Layout::Height",
+  "Layout::TableBorderStyle",
+  "Layout::TablePadding",
+  "Layout::BlockAlign",
+  "Layout::InlineAlign",
 ]
 # A table header row group.
 [Tag.THead]
@@ -92,30 +206,109 @@ optional = [
 [Tag.TBody]
 # A table footer row group.
 [Tag.TFoot]
+# An inline-level element that does not have a specific meaning.
+[Tag.Span]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # An inline quotation.
 [Tag.InlineQuote]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A foot- or endnote, potentially referred to from within the text.
 #
 # **Best practice**: It may have a label as a child.
 [Tag.Note]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A reference to elsewhere in the document.
 #
 # **Best practice**: The first child of a tag group with this tag should be a link annotation
 # linking to a destination in the document, and the second child should consist of
 # the children that should be associated with that reference.
 [Tag.Reference]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A reference to the external source of some cited document.
 #
 # **Best practice**: It may have a label as a child.
 [Tag.BibEntry]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # Computer code.
 [Tag.Code]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # A link.
 #
 # **Best practice**: The first child of a tag group with this tag should be a link annotation
 # linking to an URL, and the second child should consist of the children that should
 # be associated with that link.
 [Tag.Link]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # An association between an annotation and the content it belongs to. PDF
 #
 # **Best practice**: Should be used for all annotations, except for link annotations and
@@ -123,6 +316,17 @@ optional = [
 # and all other subsequent children should be content identifiers associated with that
 # annotation.
 [Tag.Annot]
+optional = [
+  "Layout::SpaceBefore",
+  "Layout::SpaceAfter",
+  "Layout::StartIndent",
+  "Layout::EndIndent",
+  "Layout::LineHeight",
+  "Layout::BaselineShift",
+  "Layout::TextDecorationColor",
+  "Layout::TextDecorationThickness",
+  "Layout::TextDecorationType",
+]
 # Item of graphical content.
 #
 # Providing `alt_text` is required in some export modes, like for example PDF/UA1.
@@ -209,3 +413,54 @@ BBox = { name = "bbox", type = "BBox", accessor = "Copy" }
 Width = { type = "f32", accessor = "Copy" }
 # The height.
 Height = { type = "f32", accessor = "Copy" }
+# The background color.
+BackgroundColor = { type = "NaiveRgbColor", global = true, accessor = "Copy" }
+# The border color.
+BorderColor = { type = "Sides<NaiveRgbColor>", global = true, accessor = "Copy" }
+# The way the border is drawn.
+BorderStyle = { type = "Sides<BorderStyle>", global = true, accessor = "Copy" }
+# The border width.
+BorderThickness = { type = "Sides<f32>", global = true, accessor = "Copy" }
+# The padding inside of an element.
+Padding = { type = "Sides<f32>", global = true, accessor = "Copy" }
+# The color of text, borders, and text decorations.
+Color = { type = "NaiveRgbColor", global = true, accessor = "Copy" }
+# The spacing before the block-level element.
+SpaceBefore = { type = "f32", accessor = "Copy" }
+# The spacing after the block-level element.
+SpaceAfter = { type = "f32", accessor = "Copy" }
+# The spacing between the start inline edge of the element and the parent.
+StartIndent = { type = "f32", accessor = "Copy" }
+# The spacing between the end inline edge of the element and the parent.
+EndIndent = { type = "f32", accessor = "Copy" }
+# The amount the first line of text in a block-level element is indented. Only
+# applicable to paragraph-like elements with non-block-level elements.
+TextIndent = { type = "f32", accessor = "Copy" }
+# The text alignment.
+TextAlign = { type = "TextAlign", accessor = "Copy" }
+# The alignment of block-level elements inside of this block-level element.
+BlockAlign = { type = "BlockAlign", accessor = "Copy" }
+# The alignment of inline-level elements inside of this block-level element.
+InlineAlign = { type = "InlineAlign", accessor = "Copy" }
+# The border style of table cells, overriding `BorderStyle`.
+TableBorderStyle = { type = "Sides<BorderStyle>", accessor = "Copy" }
+# The padding inside of table cells, overriding `Padding`.
+TablePadding = { type = "Sides<f32>", accessor = "Copy" }
+# The distance by which the baseline shall be shifted from the default position.
+BaselineShift = { type = "f32", global = true, accessor = "Copy" }
+# The height of each line in an element on the block axis.
+LineHeight = { type = "LineHeight", global = true, accessor = "Copy" }
+# The color of the text decoration, overriding the fill color.
+TextDecorationColor = { type = "NaiveRgbColor", global = true, accessor = "Copy" }
+# The width of the text decoration line.
+TextDecorationThickness = { type = "f32", global = true, accessor = "Copy" }
+# The kind of text decoration.
+TextDecorationType = { type = "TextDecorationType", global = true, accessor = "Copy" }
+# How the glyphs are rotated in a vertical writing mode.
+GlyphOrientationVertical = { type = "GlyphOrientationVertical", global = true, accessor = "Copy" }
+# The number of columns in the grouping element.
+ColumnCount = { type = "NonZeroU32", accessor = "Copy" }
+# The width of the gaps between columns in the grouping element.
+ColumnGap = { type = "ColumnDimensions" }
+# The width of the columns in the grouping element.
+ColumnWidths = { type = "ColumnDimensions" }

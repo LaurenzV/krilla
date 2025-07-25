@@ -13,6 +13,8 @@ pub enum TagKind {
     Article(Tag<kind::Article>),
     /// Section of a larger document.
     Section(Tag<kind::Section>),
+    /// A generic block-level grouping element.
+    Div(Tag<kind::Div>),
     /// A paragraph-level quote.
     BlockQuote(Tag<kind::BlockQuote>),
     /// An image or figure caption.
@@ -74,6 +76,8 @@ pub enum TagKind {
     TBody(Tag<kind::TBody>),
     /// A table footer row group.
     TFoot(Tag<kind::TFoot>),
+    /// An inline-level element that does not have a specific meaning.
+    Span(Tag<kind::Span>),
     /// An inline quotation.
     InlineQuote(Tag<kind::InlineQuote>),
     /// A foot- or endnote, potentially referred to from within the text.
@@ -131,6 +135,7 @@ impl TagKind {
             Self::Part(tag) => tag.as_any(),
             Self::Article(tag) => tag.as_any(),
             Self::Section(tag) => tag.as_any(),
+            Self::Div(tag) => tag.as_any(),
             Self::BlockQuote(tag) => tag.as_any(),
             Self::Caption(tag) => tag.as_any(),
             Self::TOC(tag) => tag.as_any(),
@@ -149,6 +154,7 @@ impl TagKind {
             Self::THead(tag) => tag.as_any(),
             Self::TBody(tag) => tag.as_any(),
             Self::TFoot(tag) => tag.as_any(),
+            Self::Span(tag) => tag.as_any(),
             Self::InlineQuote(tag) => tag.as_any(),
             Self::Note(tag) => tag.as_any(),
             Self::Reference(tag) => tag.as_any(),
@@ -172,6 +178,7 @@ impl TagKind {
             Self::Part(tag) => tag.as_any_mut(),
             Self::Article(tag) => tag.as_any_mut(),
             Self::Section(tag) => tag.as_any_mut(),
+            Self::Div(tag) => tag.as_any_mut(),
             Self::BlockQuote(tag) => tag.as_any_mut(),
             Self::Caption(tag) => tag.as_any_mut(),
             Self::TOC(tag) => tag.as_any_mut(),
@@ -190,6 +197,7 @@ impl TagKind {
             Self::THead(tag) => tag.as_any_mut(),
             Self::TBody(tag) => tag.as_any_mut(),
             Self::TFoot(tag) => tag.as_any_mut(),
+            Self::Span(tag) => tag.as_any_mut(),
             Self::InlineQuote(tag) => tag.as_any_mut(),
             Self::Note(tag) => tag.as_any_mut(),
             Self::Reference(tag) => tag.as_any_mut(),
@@ -390,6 +398,264 @@ impl TagKind {
     /// The height.
     pub fn height(&self) -> Option<f32> {
         self.as_any().height()
+    }
+
+    /// The background color.
+    pub fn background_color(&self) -> Option<NaiveRgbColor> {
+        self.as_any().background_color()
+    }
+
+    /// Set the background color.
+    pub fn set_background_color(&mut self, background_color: Option<NaiveRgbColor>) {
+        self.as_any_mut().set_background_color(background_color);
+    }
+
+    /// Set the background color.
+    pub fn with_background_color(mut self, background_color: Option<NaiveRgbColor>) -> Self {
+        self.set_background_color(background_color);
+        self
+    }
+
+    /// The border color.
+    pub fn border_color(&self) -> Option<Sides<NaiveRgbColor>> {
+        self.as_any().border_color()
+    }
+
+    /// Set the border color.
+    pub fn set_border_color(&mut self, border_color: Option<Sides<NaiveRgbColor>>) {
+        self.as_any_mut().set_border_color(border_color);
+    }
+
+    /// Set the border color.
+    pub fn with_border_color(mut self, border_color: Option<Sides<NaiveRgbColor>>) -> Self {
+        self.set_border_color(border_color);
+        self
+    }
+
+    /// The way the border is drawn.
+    pub fn border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.as_any().border_style()
+    }
+
+    /// Set the way the border is drawn.
+    pub fn set_border_style(&mut self, border_style: Option<Sides<BorderStyle>>) {
+        self.as_any_mut().set_border_style(border_style);
+    }
+
+    /// Set the way the border is drawn.
+    pub fn with_border_style(mut self, border_style: Option<Sides<BorderStyle>>) -> Self {
+        self.set_border_style(border_style);
+        self
+    }
+
+    /// The border width.
+    pub fn border_thickness(&self) -> Option<Sides<f32>> {
+        self.as_any().border_thickness()
+    }
+
+    /// Set the border width.
+    pub fn set_border_thickness(&mut self, border_thickness: Option<Sides<f32>>) {
+        self.as_any_mut().set_border_thickness(border_thickness);
+    }
+
+    /// Set the border width.
+    pub fn with_border_thickness(mut self, border_thickness: Option<Sides<f32>>) -> Self {
+        self.set_border_thickness(border_thickness);
+        self
+    }
+
+    /// The padding inside of an element.
+    pub fn padding(&self) -> Option<Sides<f32>> {
+        self.as_any().padding()
+    }
+
+    /// Set the padding inside of an element.
+    pub fn set_padding(&mut self, padding: Option<Sides<f32>>) {
+        self.as_any_mut().set_padding(padding);
+    }
+
+    /// Set the padding inside of an element.
+    pub fn with_padding(mut self, padding: Option<Sides<f32>>) -> Self {
+        self.set_padding(padding);
+        self
+    }
+
+    /// The color of text, borders, and text decorations.
+    pub fn color(&self) -> Option<NaiveRgbColor> {
+        self.as_any().color()
+    }
+
+    /// Set the color of text, borders, and text decorations.
+    pub fn set_color(&mut self, color: Option<NaiveRgbColor>) {
+        self.as_any_mut().set_color(color);
+    }
+
+    /// Set the color of text, borders, and text decorations.
+    pub fn with_color(mut self, color: Option<NaiveRgbColor>) -> Self {
+        self.set_color(color);
+        self
+    }
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.as_any().space_before()
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.as_any().space_after()
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.as_any().start_indent()
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.as_any().end_indent()
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.as_any().text_indent()
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.as_any().text_align()
+    }
+
+    /// The alignment of block-level elements inside of this block-level element.
+    pub fn block_align(&self) -> Option<BlockAlign> {
+        self.as_any().block_align()
+    }
+
+    /// The alignment of inline-level elements inside of this block-level element.
+    pub fn inline_align(&self) -> Option<InlineAlign> {
+        self.as_any().inline_align()
+    }
+
+    /// The border style of table cells, overriding `BorderStyle`.
+    pub fn table_border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.as_any().table_border_style()
+    }
+
+    /// The padding inside of table cells, overriding `Padding`.
+    pub fn table_padding(&self) -> Option<Sides<f32>> {
+        self.as_any().table_padding()
+    }
+
+    /// The distance by which the baseline shall be shifted from the default position.
+    pub fn baseline_shift(&self) -> Option<f32> {
+        self.as_any().baseline_shift()
+    }
+
+    /// Set the distance by which the baseline shall be shifted from the default position.
+    pub fn set_baseline_shift(&mut self, baseline_shift: Option<f32>) {
+        self.as_any_mut().set_baseline_shift(baseline_shift);
+    }
+
+    /// Set the distance by which the baseline shall be shifted from the default position.
+    pub fn with_baseline_shift(mut self, baseline_shift: Option<f32>) -> Self {
+        self.set_baseline_shift(baseline_shift);
+        self
+    }
+
+    /// The height of each line in an element on the block axis.
+    pub fn line_height(&self) -> Option<LineHeight> {
+        self.as_any().line_height()
+    }
+
+    /// Set the height of each line in an element on the block axis.
+    pub fn set_line_height(&mut self, line_height: Option<LineHeight>) {
+        self.as_any_mut().set_line_height(line_height);
+    }
+
+    /// Set the height of each line in an element on the block axis.
+    pub fn with_line_height(mut self, line_height: Option<LineHeight>) -> Self {
+        self.set_line_height(line_height);
+        self
+    }
+
+    /// The color of the text decoration, overriding the fill color.
+    pub fn text_decoration_color(&self) -> Option<NaiveRgbColor> {
+        self.as_any().text_decoration_color()
+    }
+
+    /// Set the color of the text decoration, overriding the fill color.
+    pub fn set_text_decoration_color(&mut self, text_decoration_color: Option<NaiveRgbColor>) {
+        self.as_any_mut().set_text_decoration_color(text_decoration_color);
+    }
+
+    /// Set the color of the text decoration, overriding the fill color.
+    pub fn with_text_decoration_color(mut self, text_decoration_color: Option<NaiveRgbColor>) -> Self {
+        self.set_text_decoration_color(text_decoration_color);
+        self
+    }
+
+    /// The width of the text decoration line.
+    pub fn text_decoration_thickness(&self) -> Option<f32> {
+        self.as_any().text_decoration_thickness()
+    }
+
+    /// Set the width of the text decoration line.
+    pub fn set_text_decoration_thickness(&mut self, text_decoration_thickness: Option<f32>) {
+        self.as_any_mut().set_text_decoration_thickness(text_decoration_thickness);
+    }
+
+    /// Set the width of the text decoration line.
+    pub fn with_text_decoration_thickness(mut self, text_decoration_thickness: Option<f32>) -> Self {
+        self.set_text_decoration_thickness(text_decoration_thickness);
+        self
+    }
+
+    /// The kind of text decoration.
+    pub fn text_decoration_type(&self) -> Option<TextDecorationType> {
+        self.as_any().text_decoration_type()
+    }
+
+    /// Set the kind of text decoration.
+    pub fn set_text_decoration_type(&mut self, text_decoration_type: Option<TextDecorationType>) {
+        self.as_any_mut().set_text_decoration_type(text_decoration_type);
+    }
+
+    /// Set the kind of text decoration.
+    pub fn with_text_decoration_type(mut self, text_decoration_type: Option<TextDecorationType>) -> Self {
+        self.set_text_decoration_type(text_decoration_type);
+        self
+    }
+
+    /// How the glyphs are rotated in a vertical writing mode.
+    pub fn glyph_orientation_vertical(&self) -> Option<GlyphOrientationVertical> {
+        self.as_any().glyph_orientation_vertical()
+    }
+
+    /// Set how the glyphs are rotated in a vertical writing mode.
+    pub fn set_glyph_orientation_vertical(&mut self, glyph_orientation_vertical: Option<GlyphOrientationVertical>) {
+        self.as_any_mut().set_glyph_orientation_vertical(glyph_orientation_vertical);
+    }
+
+    /// Set how the glyphs are rotated in a vertical writing mode.
+    pub fn with_glyph_orientation_vertical(mut self, glyph_orientation_vertical: Option<GlyphOrientationVertical>) -> Self {
+        self.set_glyph_orientation_vertical(glyph_orientation_vertical);
+        self
+    }
+
+    /// The number of columns in the grouping element.
+    pub fn column_count(&self) -> Option<NonZeroU32> {
+        self.as_any().column_count()
+    }
+
+    /// The width of the gaps between columns in the grouping element.
+    pub fn column_gap(&self) -> Option<&ColumnDimensions> {
+        self.as_any().column_gap()
+    }
+
+    /// The width of the columns in the grouping element.
+    pub fn column_widths(&self) -> Option<&ColumnDimensions> {
+        self.as_any().column_widths()
     }
 }
 
@@ -649,6 +915,264 @@ impl AnyTag {
     pub fn height(&self) -> Option<f32> {
         self.get_layout(LayoutAttr::HEIGHT).map(LayoutAttr::unwrap_height)
     }
+
+    /// The background color.
+    pub fn background_color(&self) -> Option<NaiveRgbColor> {
+        self.get_layout(LayoutAttr::BACKGROUND_COLOR).map(LayoutAttr::unwrap_background_color)
+    }
+
+    /// Set the background color.
+    pub fn set_background_color(&mut self, background_color: Option<NaiveRgbColor>) {
+        self.set_or_remove_layout(LayoutAttr::BACKGROUND_COLOR, background_color.map(LayoutAttr::BackgroundColor));
+    }
+
+    /// Set the background color.
+    pub fn with_background_color(mut self, background_color: Option<NaiveRgbColor>) -> Self {
+        self.set_background_color(background_color);
+        self
+    }
+
+    /// The border color.
+    pub fn border_color(&self) -> Option<Sides<NaiveRgbColor>> {
+        self.get_layout(LayoutAttr::BORDER_COLOR).map(LayoutAttr::unwrap_border_color)
+    }
+
+    /// Set the border color.
+    pub fn set_border_color(&mut self, border_color: Option<Sides<NaiveRgbColor>>) {
+        self.set_or_remove_layout(LayoutAttr::BORDER_COLOR, border_color.map(LayoutAttr::BorderColor));
+    }
+
+    /// Set the border color.
+    pub fn with_border_color(mut self, border_color: Option<Sides<NaiveRgbColor>>) -> Self {
+        self.set_border_color(border_color);
+        self
+    }
+
+    /// The way the border is drawn.
+    pub fn border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.get_layout(LayoutAttr::BORDER_STYLE).map(LayoutAttr::unwrap_border_style)
+    }
+
+    /// Set the way the border is drawn.
+    pub fn set_border_style(&mut self, border_style: Option<Sides<BorderStyle>>) {
+        self.set_or_remove_layout(LayoutAttr::BORDER_STYLE, border_style.map(LayoutAttr::BorderStyle));
+    }
+
+    /// Set the way the border is drawn.
+    pub fn with_border_style(mut self, border_style: Option<Sides<BorderStyle>>) -> Self {
+        self.set_border_style(border_style);
+        self
+    }
+
+    /// The border width.
+    pub fn border_thickness(&self) -> Option<Sides<f32>> {
+        self.get_layout(LayoutAttr::BORDER_THICKNESS).map(LayoutAttr::unwrap_border_thickness)
+    }
+
+    /// Set the border width.
+    pub fn set_border_thickness(&mut self, border_thickness: Option<Sides<f32>>) {
+        self.set_or_remove_layout(LayoutAttr::BORDER_THICKNESS, border_thickness.map(LayoutAttr::BorderThickness));
+    }
+
+    /// Set the border width.
+    pub fn with_border_thickness(mut self, border_thickness: Option<Sides<f32>>) -> Self {
+        self.set_border_thickness(border_thickness);
+        self
+    }
+
+    /// The padding inside of an element.
+    pub fn padding(&self) -> Option<Sides<f32>> {
+        self.get_layout(LayoutAttr::PADDING).map(LayoutAttr::unwrap_padding)
+    }
+
+    /// Set the padding inside of an element.
+    pub fn set_padding(&mut self, padding: Option<Sides<f32>>) {
+        self.set_or_remove_layout(LayoutAttr::PADDING, padding.map(LayoutAttr::Padding));
+    }
+
+    /// Set the padding inside of an element.
+    pub fn with_padding(mut self, padding: Option<Sides<f32>>) -> Self {
+        self.set_padding(padding);
+        self
+    }
+
+    /// The color of text, borders, and text decorations.
+    pub fn color(&self) -> Option<NaiveRgbColor> {
+        self.get_layout(LayoutAttr::COLOR).map(LayoutAttr::unwrap_color)
+    }
+
+    /// Set the color of text, borders, and text decorations.
+    pub fn set_color(&mut self, color: Option<NaiveRgbColor>) {
+        self.set_or_remove_layout(LayoutAttr::COLOR, color.map(LayoutAttr::Color));
+    }
+
+    /// Set the color of text, borders, and text decorations.
+    pub fn with_color(mut self, color: Option<NaiveRgbColor>) -> Self {
+        self.set_color(color);
+        self
+    }
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// The alignment of block-level elements inside of this block-level element.
+    pub fn block_align(&self) -> Option<BlockAlign> {
+        self.get_layout(LayoutAttr::BLOCK_ALIGN).map(LayoutAttr::unwrap_block_align)
+    }
+
+    /// The alignment of inline-level elements inside of this block-level element.
+    pub fn inline_align(&self) -> Option<InlineAlign> {
+        self.get_layout(LayoutAttr::INLINE_ALIGN).map(LayoutAttr::unwrap_inline_align)
+    }
+
+    /// The border style of table cells, overriding `BorderStyle`.
+    pub fn table_border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.get_layout(LayoutAttr::TABLE_BORDER_STYLE).map(LayoutAttr::unwrap_table_border_style)
+    }
+
+    /// The padding inside of table cells, overriding `Padding`.
+    pub fn table_padding(&self) -> Option<Sides<f32>> {
+        self.get_layout(LayoutAttr::TABLE_PADDING).map(LayoutAttr::unwrap_table_padding)
+    }
+
+    /// The distance by which the baseline shall be shifted from the default position.
+    pub fn baseline_shift(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::BASELINE_SHIFT).map(LayoutAttr::unwrap_baseline_shift)
+    }
+
+    /// Set the distance by which the baseline shall be shifted from the default position.
+    pub fn set_baseline_shift(&mut self, baseline_shift: Option<f32>) {
+        self.set_or_remove_layout(LayoutAttr::BASELINE_SHIFT, baseline_shift.map(LayoutAttr::BaselineShift));
+    }
+
+    /// Set the distance by which the baseline shall be shifted from the default position.
+    pub fn with_baseline_shift(mut self, baseline_shift: Option<f32>) -> Self {
+        self.set_baseline_shift(baseline_shift);
+        self
+    }
+
+    /// The height of each line in an element on the block axis.
+    pub fn line_height(&self) -> Option<LineHeight> {
+        self.get_layout(LayoutAttr::LINE_HEIGHT).map(LayoutAttr::unwrap_line_height)
+    }
+
+    /// Set the height of each line in an element on the block axis.
+    pub fn set_line_height(&mut self, line_height: Option<LineHeight>) {
+        self.set_or_remove_layout(LayoutAttr::LINE_HEIGHT, line_height.map(LayoutAttr::LineHeight));
+    }
+
+    /// Set the height of each line in an element on the block axis.
+    pub fn with_line_height(mut self, line_height: Option<LineHeight>) -> Self {
+        self.set_line_height(line_height);
+        self
+    }
+
+    /// The color of the text decoration, overriding the fill color.
+    pub fn text_decoration_color(&self) -> Option<NaiveRgbColor> {
+        self.get_layout(LayoutAttr::TEXT_DECORATION_COLOR).map(LayoutAttr::unwrap_text_decoration_color)
+    }
+
+    /// Set the color of the text decoration, overriding the fill color.
+    pub fn set_text_decoration_color(&mut self, text_decoration_color: Option<NaiveRgbColor>) {
+        self.set_or_remove_layout(LayoutAttr::TEXT_DECORATION_COLOR, text_decoration_color.map(LayoutAttr::TextDecorationColor));
+    }
+
+    /// Set the color of the text decoration, overriding the fill color.
+    pub fn with_text_decoration_color(mut self, text_decoration_color: Option<NaiveRgbColor>) -> Self {
+        self.set_text_decoration_color(text_decoration_color);
+        self
+    }
+
+    /// The width of the text decoration line.
+    pub fn text_decoration_thickness(&self) -> Option<f32> {
+        self.get_layout(LayoutAttr::TEXT_DECORATION_THICKNESS).map(LayoutAttr::unwrap_text_decoration_thickness)
+    }
+
+    /// Set the width of the text decoration line.
+    pub fn set_text_decoration_thickness(&mut self, text_decoration_thickness: Option<f32>) {
+        self.set_or_remove_layout(LayoutAttr::TEXT_DECORATION_THICKNESS, text_decoration_thickness.map(LayoutAttr::TextDecorationThickness));
+    }
+
+    /// Set the width of the text decoration line.
+    pub fn with_text_decoration_thickness(mut self, text_decoration_thickness: Option<f32>) -> Self {
+        self.set_text_decoration_thickness(text_decoration_thickness);
+        self
+    }
+
+    /// The kind of text decoration.
+    pub fn text_decoration_type(&self) -> Option<TextDecorationType> {
+        self.get_layout(LayoutAttr::TEXT_DECORATION_TYPE).map(LayoutAttr::unwrap_text_decoration_type)
+    }
+
+    /// Set the kind of text decoration.
+    pub fn set_text_decoration_type(&mut self, text_decoration_type: Option<TextDecorationType>) {
+        self.set_or_remove_layout(LayoutAttr::TEXT_DECORATION_TYPE, text_decoration_type.map(LayoutAttr::TextDecorationType));
+    }
+
+    /// Set the kind of text decoration.
+    pub fn with_text_decoration_type(mut self, text_decoration_type: Option<TextDecorationType>) -> Self {
+        self.set_text_decoration_type(text_decoration_type);
+        self
+    }
+
+    /// How the glyphs are rotated in a vertical writing mode.
+    pub fn glyph_orientation_vertical(&self) -> Option<GlyphOrientationVertical> {
+        self.get_layout(LayoutAttr::GLYPH_ORIENTATION_VERTICAL).map(LayoutAttr::unwrap_glyph_orientation_vertical)
+    }
+
+    /// Set how the glyphs are rotated in a vertical writing mode.
+    pub fn set_glyph_orientation_vertical(&mut self, glyph_orientation_vertical: Option<GlyphOrientationVertical>) {
+        self.set_or_remove_layout(LayoutAttr::GLYPH_ORIENTATION_VERTICAL, glyph_orientation_vertical.map(LayoutAttr::GlyphOrientationVertical));
+    }
+
+    /// Set how the glyphs are rotated in a vertical writing mode.
+    pub fn with_glyph_orientation_vertical(mut self, glyph_orientation_vertical: Option<GlyphOrientationVertical>) -> Self {
+        self.set_glyph_orientation_vertical(glyph_orientation_vertical);
+        self
+    }
+
+    /// The number of columns in the grouping element.
+    pub fn column_count(&self) -> Option<NonZeroU32> {
+        self.get_layout(LayoutAttr::COLUMN_COUNT).map(LayoutAttr::unwrap_column_count)
+    }
+
+    /// The width of the gaps between columns in the grouping element.
+    pub fn column_gap(&self) -> Option<&ColumnDimensions> {
+        self.get_layout(LayoutAttr::COLUMN_GAP).map(LayoutAttr::unwrap_column_gap)
+    }
+
+    /// The width of the columns in the grouping element.
+    pub fn column_widths(&self) -> Option<&ColumnDimensions> {
+        self.get_layout(LayoutAttr::COLUMN_WIDTHS).map(LayoutAttr::unwrap_column_widths)
+    }
 }
 
 impl<T> Tag<T> {
@@ -776,6 +1300,198 @@ impl<T> Tag<T> {
         self.set_writing_mode(writing_mode);
         self
     }
+
+    /// The background color.
+    pub fn background_color(&self) -> Option<NaiveRgbColor> {
+        self.inner.get_layout(LayoutAttr::BACKGROUND_COLOR).map(LayoutAttr::unwrap_background_color)
+    }
+
+    /// Set the background color.
+    pub fn set_background_color(&mut self, background_color: Option<NaiveRgbColor>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BACKGROUND_COLOR, background_color.map(LayoutAttr::BackgroundColor));
+    }
+
+    /// Set the background color.
+    pub fn with_background_color(mut self, background_color: Option<NaiveRgbColor>) -> Self {
+        self.set_background_color(background_color);
+        self
+    }
+
+    /// The border color.
+    pub fn border_color(&self) -> Option<Sides<NaiveRgbColor>> {
+        self.inner.get_layout(LayoutAttr::BORDER_COLOR).map(LayoutAttr::unwrap_border_color)
+    }
+
+    /// Set the border color.
+    pub fn set_border_color(&mut self, border_color: Option<Sides<NaiveRgbColor>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BORDER_COLOR, border_color.map(LayoutAttr::BorderColor));
+    }
+
+    /// Set the border color.
+    pub fn with_border_color(mut self, border_color: Option<Sides<NaiveRgbColor>>) -> Self {
+        self.set_border_color(border_color);
+        self
+    }
+
+    /// The way the border is drawn.
+    pub fn border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.inner.get_layout(LayoutAttr::BORDER_STYLE).map(LayoutAttr::unwrap_border_style)
+    }
+
+    /// Set the way the border is drawn.
+    pub fn set_border_style(&mut self, border_style: Option<Sides<BorderStyle>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BORDER_STYLE, border_style.map(LayoutAttr::BorderStyle));
+    }
+
+    /// Set the way the border is drawn.
+    pub fn with_border_style(mut self, border_style: Option<Sides<BorderStyle>>) -> Self {
+        self.set_border_style(border_style);
+        self
+    }
+
+    /// The border width.
+    pub fn border_thickness(&self) -> Option<Sides<f32>> {
+        self.inner.get_layout(LayoutAttr::BORDER_THICKNESS).map(LayoutAttr::unwrap_border_thickness)
+    }
+
+    /// Set the border width.
+    pub fn set_border_thickness(&mut self, border_thickness: Option<Sides<f32>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BORDER_THICKNESS, border_thickness.map(LayoutAttr::BorderThickness));
+    }
+
+    /// Set the border width.
+    pub fn with_border_thickness(mut self, border_thickness: Option<Sides<f32>>) -> Self {
+        self.set_border_thickness(border_thickness);
+        self
+    }
+
+    /// The padding inside of an element.
+    pub fn padding(&self) -> Option<Sides<f32>> {
+        self.inner.get_layout(LayoutAttr::PADDING).map(LayoutAttr::unwrap_padding)
+    }
+
+    /// Set the padding inside of an element.
+    pub fn set_padding(&mut self, padding: Option<Sides<f32>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::PADDING, padding.map(LayoutAttr::Padding));
+    }
+
+    /// Set the padding inside of an element.
+    pub fn with_padding(mut self, padding: Option<Sides<f32>>) -> Self {
+        self.set_padding(padding);
+        self
+    }
+
+    /// The color of text, borders, and text decorations.
+    pub fn color(&self) -> Option<NaiveRgbColor> {
+        self.inner.get_layout(LayoutAttr::COLOR).map(LayoutAttr::unwrap_color)
+    }
+
+    /// Set the color of text, borders, and text decorations.
+    pub fn set_color(&mut self, color: Option<NaiveRgbColor>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLOR, color.map(LayoutAttr::Color));
+    }
+
+    /// Set the color of text, borders, and text decorations.
+    pub fn with_color(mut self, color: Option<NaiveRgbColor>) -> Self {
+        self.set_color(color);
+        self
+    }
+
+    /// The distance by which the baseline shall be shifted from the default position.
+    pub fn baseline_shift(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::BASELINE_SHIFT).map(LayoutAttr::unwrap_baseline_shift)
+    }
+
+    /// Set the distance by which the baseline shall be shifted from the default position.
+    pub fn set_baseline_shift(&mut self, baseline_shift: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BASELINE_SHIFT, baseline_shift.map(LayoutAttr::BaselineShift));
+    }
+
+    /// Set the distance by which the baseline shall be shifted from the default position.
+    pub fn with_baseline_shift(mut self, baseline_shift: Option<f32>) -> Self {
+        self.set_baseline_shift(baseline_shift);
+        self
+    }
+
+    /// The height of each line in an element on the block axis.
+    pub fn line_height(&self) -> Option<LineHeight> {
+        self.inner.get_layout(LayoutAttr::LINE_HEIGHT).map(LayoutAttr::unwrap_line_height)
+    }
+
+    /// Set the height of each line in an element on the block axis.
+    pub fn set_line_height(&mut self, line_height: Option<LineHeight>) {
+        self.inner.set_or_remove_layout(LayoutAttr::LINE_HEIGHT, line_height.map(LayoutAttr::LineHeight));
+    }
+
+    /// Set the height of each line in an element on the block axis.
+    pub fn with_line_height(mut self, line_height: Option<LineHeight>) -> Self {
+        self.set_line_height(line_height);
+        self
+    }
+
+    /// The color of the text decoration, overriding the fill color.
+    pub fn text_decoration_color(&self) -> Option<NaiveRgbColor> {
+        self.inner.get_layout(LayoutAttr::TEXT_DECORATION_COLOR).map(LayoutAttr::unwrap_text_decoration_color)
+    }
+
+    /// Set the color of the text decoration, overriding the fill color.
+    pub fn set_text_decoration_color(&mut self, text_decoration_color: Option<NaiveRgbColor>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_DECORATION_COLOR, text_decoration_color.map(LayoutAttr::TextDecorationColor));
+    }
+
+    /// Set the color of the text decoration, overriding the fill color.
+    pub fn with_text_decoration_color(mut self, text_decoration_color: Option<NaiveRgbColor>) -> Self {
+        self.set_text_decoration_color(text_decoration_color);
+        self
+    }
+
+    /// The width of the text decoration line.
+    pub fn text_decoration_thickness(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_DECORATION_THICKNESS).map(LayoutAttr::unwrap_text_decoration_thickness)
+    }
+
+    /// Set the width of the text decoration line.
+    pub fn set_text_decoration_thickness(&mut self, text_decoration_thickness: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_DECORATION_THICKNESS, text_decoration_thickness.map(LayoutAttr::TextDecorationThickness));
+    }
+
+    /// Set the width of the text decoration line.
+    pub fn with_text_decoration_thickness(mut self, text_decoration_thickness: Option<f32>) -> Self {
+        self.set_text_decoration_thickness(text_decoration_thickness);
+        self
+    }
+
+    /// The kind of text decoration.
+    pub fn text_decoration_type(&self) -> Option<TextDecorationType> {
+        self.inner.get_layout(LayoutAttr::TEXT_DECORATION_TYPE).map(LayoutAttr::unwrap_text_decoration_type)
+    }
+
+    /// Set the kind of text decoration.
+    pub fn set_text_decoration_type(&mut self, text_decoration_type: Option<TextDecorationType>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_DECORATION_TYPE, text_decoration_type.map(LayoutAttr::TextDecorationType));
+    }
+
+    /// Set the kind of text decoration.
+    pub fn with_text_decoration_type(mut self, text_decoration_type: Option<TextDecorationType>) -> Self {
+        self.set_text_decoration_type(text_decoration_type);
+        self
+    }
+
+    /// How the glyphs are rotated in a vertical writing mode.
+    pub fn glyph_orientation_vertical(&self) -> Option<GlyphOrientationVertical> {
+        self.inner.get_layout(LayoutAttr::GLYPH_ORIENTATION_VERTICAL).map(LayoutAttr::unwrap_glyph_orientation_vertical)
+    }
+
+    /// Set how the glyphs are rotated in a vertical writing mode.
+    pub fn set_glyph_orientation_vertical(&mut self, glyph_orientation_vertical: Option<GlyphOrientationVertical>) {
+        self.inner.set_or_remove_layout(LayoutAttr::GLYPH_ORIENTATION_VERTICAL, glyph_orientation_vertical.map(LayoutAttr::GlyphOrientationVertical));
+    }
+
+    /// Set how the glyphs are rotated in a vertical writing mode.
+    pub fn with_glyph_orientation_vertical(mut self, glyph_orientation_vertical: Option<GlyphOrientationVertical>) -> Self {
+        self.set_glyph_orientation_vertical(glyph_orientation_vertical);
+        self
+    }
 }
 
 /// Tag kind structs.
@@ -791,6 +1507,10 @@ pub mod kind {
     /// Section of a larger document.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Section;
+
+    /// A generic block-level grouping element.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Div;
 
     /// A paragraph-level quote.
     #[derive(Clone, Debug, PartialEq)]
@@ -889,6 +1609,10 @@ pub mod kind {
     #[derive(Clone, Debug, PartialEq)]
     pub struct TFoot;
 
+    /// An inline-level element that does not have a specific meaning.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Span;
+
     /// An inline quotation.
     #[derive(Clone, Debug, PartialEq)]
     pub struct InlineQuote;
@@ -985,6 +1709,54 @@ impl Tag<kind::Article> {
     /// An article with largely self-contained content.
     #[allow(non_upper_case_globals)]
     pub const Article: Tag<kind::Article> = Tag::new();
+
+    /// The number of columns in the grouping element.
+    pub fn column_count(&self) -> Option<NonZeroU32> {
+        self.inner.get_layout(LayoutAttr::COLUMN_COUNT).map(LayoutAttr::unwrap_column_count)
+    }
+
+    /// Set the number of columns in the grouping element.
+    pub fn set_column_count(&mut self, column_count: Option<NonZeroU32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_COUNT, column_count.map(LayoutAttr::ColumnCount));
+    }
+
+    /// Set the number of columns in the grouping element.
+    pub fn with_column_count(mut self, column_count: Option<NonZeroU32>) -> Self {
+        self.set_column_count(column_count);
+        self
+    }
+
+    /// The width of the gaps between columns in the grouping element.
+    pub fn column_gap(&self) -> Option<&ColumnDimensions> {
+        self.inner.get_layout(LayoutAttr::COLUMN_GAP).map(LayoutAttr::unwrap_column_gap)
+    }
+
+    /// Set the width of the gaps between columns in the grouping element.
+    pub fn set_column_gap(&mut self, column_gap: Option<ColumnDimensions>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_GAP, column_gap.map(LayoutAttr::ColumnGap));
+    }
+
+    /// Set the width of the gaps between columns in the grouping element.
+    pub fn with_column_gap(mut self, column_gap: Option<ColumnDimensions>) -> Self {
+        self.set_column_gap(column_gap);
+        self
+    }
+
+    /// The width of the columns in the grouping element.
+    pub fn column_widths(&self) -> Option<&ColumnDimensions> {
+        self.inner.get_layout(LayoutAttr::COLUMN_WIDTHS).map(LayoutAttr::unwrap_column_widths)
+    }
+
+    /// Set the width of the columns in the grouping element.
+    pub fn set_column_widths(&mut self, column_widths: Option<ColumnDimensions>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_WIDTHS, column_widths.map(LayoutAttr::ColumnWidths));
+    }
+
+    /// Set the width of the columns in the grouping element.
+    pub fn with_column_widths(mut self, column_widths: Option<ColumnDimensions>) -> Self {
+        self.set_column_widths(column_widths);
+        self
+    }
 }
 
 impl From<Tag<kind::Section>> for TagKind {
@@ -996,6 +1768,113 @@ impl Tag<kind::Section> {
     /// Section of a larger document.
     #[allow(non_upper_case_globals)]
     pub const Section: Tag<kind::Section> = Tag::new();
+
+    /// The number of columns in the grouping element.
+    pub fn column_count(&self) -> Option<NonZeroU32> {
+        self.inner.get_layout(LayoutAttr::COLUMN_COUNT).map(LayoutAttr::unwrap_column_count)
+    }
+
+    /// Set the number of columns in the grouping element.
+    pub fn set_column_count(&mut self, column_count: Option<NonZeroU32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_COUNT, column_count.map(LayoutAttr::ColumnCount));
+    }
+
+    /// Set the number of columns in the grouping element.
+    pub fn with_column_count(mut self, column_count: Option<NonZeroU32>) -> Self {
+        self.set_column_count(column_count);
+        self
+    }
+
+    /// The width of the gaps between columns in the grouping element.
+    pub fn column_gap(&self) -> Option<&ColumnDimensions> {
+        self.inner.get_layout(LayoutAttr::COLUMN_GAP).map(LayoutAttr::unwrap_column_gap)
+    }
+
+    /// Set the width of the gaps between columns in the grouping element.
+    pub fn set_column_gap(&mut self, column_gap: Option<ColumnDimensions>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_GAP, column_gap.map(LayoutAttr::ColumnGap));
+    }
+
+    /// Set the width of the gaps between columns in the grouping element.
+    pub fn with_column_gap(mut self, column_gap: Option<ColumnDimensions>) -> Self {
+        self.set_column_gap(column_gap);
+        self
+    }
+
+    /// The width of the columns in the grouping element.
+    pub fn column_widths(&self) -> Option<&ColumnDimensions> {
+        self.inner.get_layout(LayoutAttr::COLUMN_WIDTHS).map(LayoutAttr::unwrap_column_widths)
+    }
+
+    /// Set the width of the columns in the grouping element.
+    pub fn set_column_widths(&mut self, column_widths: Option<ColumnDimensions>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_WIDTHS, column_widths.map(LayoutAttr::ColumnWidths));
+    }
+
+    /// Set the width of the columns in the grouping element.
+    pub fn with_column_widths(mut self, column_widths: Option<ColumnDimensions>) -> Self {
+        self.set_column_widths(column_widths);
+        self
+    }
+}
+
+impl From<Tag<kind::Div>> for TagKind {
+    fn from(value: Tag<kind::Div>) -> Self {
+        Self::Div(value)
+    }
+}
+impl Tag<kind::Div> {
+    /// A generic block-level grouping element.
+    #[allow(non_upper_case_globals)]
+    pub const Div: Tag<kind::Div> = Tag::new();
+
+    /// The number of columns in the grouping element.
+    pub fn column_count(&self) -> Option<NonZeroU32> {
+        self.inner.get_layout(LayoutAttr::COLUMN_COUNT).map(LayoutAttr::unwrap_column_count)
+    }
+
+    /// Set the number of columns in the grouping element.
+    pub fn set_column_count(&mut self, column_count: Option<NonZeroU32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_COUNT, column_count.map(LayoutAttr::ColumnCount));
+    }
+
+    /// Set the number of columns in the grouping element.
+    pub fn with_column_count(mut self, column_count: Option<NonZeroU32>) -> Self {
+        self.set_column_count(column_count);
+        self
+    }
+
+    /// The width of the gaps between columns in the grouping element.
+    pub fn column_gap(&self) -> Option<&ColumnDimensions> {
+        self.inner.get_layout(LayoutAttr::COLUMN_GAP).map(LayoutAttr::unwrap_column_gap)
+    }
+
+    /// Set the width of the gaps between columns in the grouping element.
+    pub fn set_column_gap(&mut self, column_gap: Option<ColumnDimensions>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_GAP, column_gap.map(LayoutAttr::ColumnGap));
+    }
+
+    /// Set the width of the gaps between columns in the grouping element.
+    pub fn with_column_gap(mut self, column_gap: Option<ColumnDimensions>) -> Self {
+        self.set_column_gap(column_gap);
+        self
+    }
+
+    /// The width of the columns in the grouping element.
+    pub fn column_widths(&self) -> Option<&ColumnDimensions> {
+        self.inner.get_layout(LayoutAttr::COLUMN_WIDTHS).map(LayoutAttr::unwrap_column_widths)
+    }
+
+    /// Set the width of the columns in the grouping element.
+    pub fn set_column_widths(&mut self, column_widths: Option<ColumnDimensions>) {
+        self.inner.set_or_remove_layout(LayoutAttr::COLUMN_WIDTHS, column_widths.map(LayoutAttr::ColumnWidths));
+    }
+
+    /// Set the width of the columns in the grouping element.
+    pub fn with_column_widths(mut self, column_widths: Option<ColumnDimensions>) -> Self {
+        self.set_column_widths(column_widths);
+        self
+    }
 }
 
 impl From<Tag<kind::BlockQuote>> for TagKind {
@@ -1073,6 +1952,105 @@ impl Tag<kind::P> {
     /// A paragraph.
     #[allow(non_upper_case_globals)]
     pub const P: Tag<kind::P> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
+        self
+    }
 }
 
 impl From<Tag<kind::Hn>> for TagKind {
@@ -1123,6 +2101,105 @@ impl Tag<kind::Hn> {
         self.set_title(title);
         self
     }
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
+        self
+    }
 }
 
 impl From<Tag<kind::L>> for TagKind {
@@ -1158,6 +2235,105 @@ impl Tag<kind::L> {
         self.set_numbering(numbering);
         self
     }
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
+        self
+    }
 }
 
 impl From<Tag<kind::LI>> for TagKind {
@@ -1171,6 +2347,105 @@ impl Tag<kind::LI> {
     /// **Best practice**: Should consist of one or more list labels and/or list bodies.
     #[allow(non_upper_case_globals)]
     pub const LI: Tag<kind::LI> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
+        self
+    }
 }
 
 impl From<Tag<kind::Lbl>> for TagKind {
@@ -1182,6 +2457,105 @@ impl Tag<kind::Lbl> {
     /// Label for a list item.
     #[allow(non_upper_case_globals)]
     pub const Lbl: Tag<kind::Lbl> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
+        self
+    }
 }
 
 impl From<Tag<kind::LBody>> for TagKind {
@@ -1193,6 +2567,105 @@ impl Tag<kind::LBody> {
     /// Description of the list item.
     #[allow(non_upper_case_globals)]
     pub const LBody: Tag<kind::LBody> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
+        self
+    }
 }
 
 impl From<Tag<kind::Table>> for TagKind {
@@ -1273,6 +2746,105 @@ impl Tag<kind::Table> {
     /// Set the height.
     pub fn with_height(mut self, height: Option<f32>) -> Self {
         self.set_height(height);
+        self
+    }
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn text_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::TEXT_INDENT).map(LayoutAttr::unwrap_text_indent)
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn set_text_indent(&mut self, text_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_INDENT, text_indent.map(LayoutAttr::TextIndent));
+    }
+
+    /// Set the amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    pub fn with_text_indent(mut self, text_indent: Option<f32>) -> Self {
+        self.set_text_indent(text_indent);
+        self
+    }
+
+    /// The text alignment.
+    pub fn text_align(&self) -> Option<TextAlign> {
+        self.inner.get_layout(LayoutAttr::TEXT_ALIGN).map(LayoutAttr::unwrap_text_align)
+    }
+
+    /// Set the text alignment.
+    pub fn set_text_align(&mut self, text_align: Option<TextAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TEXT_ALIGN, text_align.map(LayoutAttr::TextAlign));
+    }
+
+    /// Set the text alignment.
+    pub fn with_text_align(mut self, text_align: Option<TextAlign>) -> Self {
+        self.set_text_align(text_align);
         self
     }
 }
@@ -1417,6 +2989,70 @@ impl Tag<kind::TH> {
         self.set_height(height);
         self
     }
+
+    /// The border style of table cells, overriding `BorderStyle`.
+    pub fn table_border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.inner.get_layout(LayoutAttr::TABLE_BORDER_STYLE).map(LayoutAttr::unwrap_table_border_style)
+    }
+
+    /// Set the border style of table cells, overriding `BorderStyle`.
+    pub fn set_table_border_style(&mut self, table_border_style: Option<Sides<BorderStyle>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TABLE_BORDER_STYLE, table_border_style.map(LayoutAttr::TableBorderStyle));
+    }
+
+    /// Set the border style of table cells, overriding `BorderStyle`.
+    pub fn with_table_border_style(mut self, table_border_style: Option<Sides<BorderStyle>>) -> Self {
+        self.set_table_border_style(table_border_style);
+        self
+    }
+
+    /// The padding inside of table cells, overriding `Padding`.
+    pub fn table_padding(&self) -> Option<Sides<f32>> {
+        self.inner.get_layout(LayoutAttr::TABLE_PADDING).map(LayoutAttr::unwrap_table_padding)
+    }
+
+    /// Set the padding inside of table cells, overriding `Padding`.
+    pub fn set_table_padding(&mut self, table_padding: Option<Sides<f32>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TABLE_PADDING, table_padding.map(LayoutAttr::TablePadding));
+    }
+
+    /// Set the padding inside of table cells, overriding `Padding`.
+    pub fn with_table_padding(mut self, table_padding: Option<Sides<f32>>) -> Self {
+        self.set_table_padding(table_padding);
+        self
+    }
+
+    /// The alignment of block-level elements inside of this block-level element.
+    pub fn block_align(&self) -> Option<BlockAlign> {
+        self.inner.get_layout(LayoutAttr::BLOCK_ALIGN).map(LayoutAttr::unwrap_block_align)
+    }
+
+    /// Set the alignment of block-level elements inside of this block-level element.
+    pub fn set_block_align(&mut self, block_align: Option<BlockAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BLOCK_ALIGN, block_align.map(LayoutAttr::BlockAlign));
+    }
+
+    /// Set the alignment of block-level elements inside of this block-level element.
+    pub fn with_block_align(mut self, block_align: Option<BlockAlign>) -> Self {
+        self.set_block_align(block_align);
+        self
+    }
+
+    /// The alignment of inline-level elements inside of this block-level element.
+    pub fn inline_align(&self) -> Option<InlineAlign> {
+        self.inner.get_layout(LayoutAttr::INLINE_ALIGN).map(LayoutAttr::unwrap_inline_align)
+    }
+
+    /// Set the alignment of inline-level elements inside of this block-level element.
+    pub fn set_inline_align(&mut self, inline_align: Option<InlineAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::INLINE_ALIGN, inline_align.map(LayoutAttr::InlineAlign));
+    }
+
+    /// Set the alignment of inline-level elements inside of this block-level element.
+    pub fn with_inline_align(mut self, inline_align: Option<InlineAlign>) -> Self {
+        self.set_inline_align(inline_align);
+        self
+    }
 }
 
 impl From<Tag<kind::TD>> for TagKind {
@@ -1526,6 +3162,70 @@ impl Tag<kind::TD> {
         self.set_height(height);
         self
     }
+
+    /// The border style of table cells, overriding `BorderStyle`.
+    pub fn table_border_style(&self) -> Option<Sides<BorderStyle>> {
+        self.inner.get_layout(LayoutAttr::TABLE_BORDER_STYLE).map(LayoutAttr::unwrap_table_border_style)
+    }
+
+    /// Set the border style of table cells, overriding `BorderStyle`.
+    pub fn set_table_border_style(&mut self, table_border_style: Option<Sides<BorderStyle>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TABLE_BORDER_STYLE, table_border_style.map(LayoutAttr::TableBorderStyle));
+    }
+
+    /// Set the border style of table cells, overriding `BorderStyle`.
+    pub fn with_table_border_style(mut self, table_border_style: Option<Sides<BorderStyle>>) -> Self {
+        self.set_table_border_style(table_border_style);
+        self
+    }
+
+    /// The padding inside of table cells, overriding `Padding`.
+    pub fn table_padding(&self) -> Option<Sides<f32>> {
+        self.inner.get_layout(LayoutAttr::TABLE_PADDING).map(LayoutAttr::unwrap_table_padding)
+    }
+
+    /// Set the padding inside of table cells, overriding `Padding`.
+    pub fn set_table_padding(&mut self, table_padding: Option<Sides<f32>>) {
+        self.inner.set_or_remove_layout(LayoutAttr::TABLE_PADDING, table_padding.map(LayoutAttr::TablePadding));
+    }
+
+    /// Set the padding inside of table cells, overriding `Padding`.
+    pub fn with_table_padding(mut self, table_padding: Option<Sides<f32>>) -> Self {
+        self.set_table_padding(table_padding);
+        self
+    }
+
+    /// The alignment of block-level elements inside of this block-level element.
+    pub fn block_align(&self) -> Option<BlockAlign> {
+        self.inner.get_layout(LayoutAttr::BLOCK_ALIGN).map(LayoutAttr::unwrap_block_align)
+    }
+
+    /// Set the alignment of block-level elements inside of this block-level element.
+    pub fn set_block_align(&mut self, block_align: Option<BlockAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::BLOCK_ALIGN, block_align.map(LayoutAttr::BlockAlign));
+    }
+
+    /// Set the alignment of block-level elements inside of this block-level element.
+    pub fn with_block_align(mut self, block_align: Option<BlockAlign>) -> Self {
+        self.set_block_align(block_align);
+        self
+    }
+
+    /// The alignment of inline-level elements inside of this block-level element.
+    pub fn inline_align(&self) -> Option<InlineAlign> {
+        self.inner.get_layout(LayoutAttr::INLINE_ALIGN).map(LayoutAttr::unwrap_inline_align)
+    }
+
+    /// Set the alignment of inline-level elements inside of this block-level element.
+    pub fn set_inline_align(&mut self, inline_align: Option<InlineAlign>) {
+        self.inner.set_or_remove_layout(LayoutAttr::INLINE_ALIGN, inline_align.map(LayoutAttr::InlineAlign));
+    }
+
+    /// Set the alignment of inline-level elements inside of this block-level element.
+    pub fn with_inline_align(mut self, inline_align: Option<InlineAlign>) -> Self {
+        self.set_inline_align(inline_align);
+        self
+    }
 }
 
 impl From<Tag<kind::THead>> for TagKind {
@@ -1561,6 +3261,81 @@ impl Tag<kind::TFoot> {
     pub const TFoot: Tag<kind::TFoot> = Tag::new();
 }
 
+impl From<Tag<kind::Span>> for TagKind {
+    fn from(value: Tag<kind::Span>) -> Self {
+        Self::Span(value)
+    }
+}
+impl Tag<kind::Span> {
+    /// An inline-level element that does not have a specific meaning.
+    #[allow(non_upper_case_globals)]
+    pub const Span: Tag<kind::Span> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
+}
+
 impl From<Tag<kind::InlineQuote>> for TagKind {
     fn from(value: Tag<kind::InlineQuote>) -> Self {
         Self::InlineQuote(value)
@@ -1570,6 +3345,70 @@ impl Tag<kind::InlineQuote> {
     /// An inline quotation.
     #[allow(non_upper_case_globals)]
     pub const InlineQuote: Tag<kind::InlineQuote> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::Note>> for TagKind {
@@ -1583,6 +3422,70 @@ impl Tag<kind::Note> {
     /// **Best practice**: It may have a label as a child.
     #[allow(non_upper_case_globals)]
     pub const Note: Tag<kind::Note> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::Reference>> for TagKind {
@@ -1598,6 +3501,70 @@ impl Tag<kind::Reference> {
     /// the children that should be associated with that reference.
     #[allow(non_upper_case_globals)]
     pub const Reference: Tag<kind::Reference> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::BibEntry>> for TagKind {
@@ -1611,6 +3578,70 @@ impl Tag<kind::BibEntry> {
     /// **Best practice**: It may have a label as a child.
     #[allow(non_upper_case_globals)]
     pub const BibEntry: Tag<kind::BibEntry> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::Code>> for TagKind {
@@ -1622,6 +3653,70 @@ impl Tag<kind::Code> {
     /// Computer code.
     #[allow(non_upper_case_globals)]
     pub const Code: Tag<kind::Code> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::Link>> for TagKind {
@@ -1637,6 +3732,70 @@ impl Tag<kind::Link> {
     /// be associated with that link.
     #[allow(non_upper_case_globals)]
     pub const Link: Tag<kind::Link> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::Annot>> for TagKind {
@@ -1653,6 +3812,70 @@ impl Tag<kind::Annot> {
     /// annotation.
     #[allow(non_upper_case_globals)]
     pub const Annot: Tag<kind::Annot> = Tag::new();
+
+    /// The spacing before the block-level element.
+    pub fn space_before(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_BEFORE).map(LayoutAttr::unwrap_space_before)
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn set_space_before(&mut self, space_before: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_BEFORE, space_before.map(LayoutAttr::SpaceBefore));
+    }
+
+    /// Set the spacing before the block-level element.
+    pub fn with_space_before(mut self, space_before: Option<f32>) -> Self {
+        self.set_space_before(space_before);
+        self
+    }
+
+    /// The spacing after the block-level element.
+    pub fn space_after(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::SPACE_AFTER).map(LayoutAttr::unwrap_space_after)
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn set_space_after(&mut self, space_after: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::SPACE_AFTER, space_after.map(LayoutAttr::SpaceAfter));
+    }
+
+    /// Set the spacing after the block-level element.
+    pub fn with_space_after(mut self, space_after: Option<f32>) -> Self {
+        self.set_space_after(space_after);
+        self
+    }
+
+    /// The spacing between the start inline edge of the element and the parent.
+    pub fn start_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::START_INDENT).map(LayoutAttr::unwrap_start_indent)
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn set_start_indent(&mut self, start_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::START_INDENT, start_indent.map(LayoutAttr::StartIndent));
+    }
+
+    /// Set the spacing between the start inline edge of the element and the parent.
+    pub fn with_start_indent(mut self, start_indent: Option<f32>) -> Self {
+        self.set_start_indent(start_indent);
+        self
+    }
+
+    /// The spacing between the end inline edge of the element and the parent.
+    pub fn end_indent(&self) -> Option<f32> {
+        self.inner.get_layout(LayoutAttr::END_INDENT).map(LayoutAttr::unwrap_end_indent)
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn set_end_indent(&mut self, end_indent: Option<f32>) {
+        self.inner.set_or_remove_layout(LayoutAttr::END_INDENT, end_indent.map(LayoutAttr::EndIndent));
+    }
+
+    /// Set the spacing between the end inline edge of the element and the parent.
+    pub fn with_end_indent(mut self, end_indent: Option<f32>) -> Self {
+        self.set_end_indent(end_indent);
+        self
+    }
 }
 
 impl From<Tag<kind::Figure>> for TagKind {
@@ -2109,6 +4332,57 @@ pub(crate) enum LayoutAttr {
     Width(f32),
     /// The height.
     Height(f32),
+    /// The background color.
+    BackgroundColor(NaiveRgbColor),
+    /// The border color.
+    BorderColor(Sides<NaiveRgbColor>),
+    /// The way the border is drawn.
+    BorderStyle(Sides<BorderStyle>),
+    /// The border width.
+    BorderThickness(Sides<f32>),
+    /// The padding inside of an element.
+    Padding(Sides<f32>),
+    /// The color of text, borders, and text decorations.
+    Color(NaiveRgbColor),
+    /// The spacing before the block-level element.
+    SpaceBefore(f32),
+    /// The spacing after the block-level element.
+    SpaceAfter(f32),
+    /// The spacing between the start inline edge of the element and the parent.
+    StartIndent(f32),
+    /// The spacing between the end inline edge of the element and the parent.
+    EndIndent(f32),
+    /// The amount the first line of text in a block-level element is indented. Only
+    /// applicable to paragraph-like elements with non-block-level elements.
+    TextIndent(f32),
+    /// The text alignment.
+    TextAlign(TextAlign),
+    /// The alignment of block-level elements inside of this block-level element.
+    BlockAlign(BlockAlign),
+    /// The alignment of inline-level elements inside of this block-level element.
+    InlineAlign(InlineAlign),
+    /// The border style of table cells, overriding `BorderStyle`.
+    TableBorderStyle(Sides<BorderStyle>),
+    /// The padding inside of table cells, overriding `Padding`.
+    TablePadding(Sides<f32>),
+    /// The distance by which the baseline shall be shifted from the default position.
+    BaselineShift(f32),
+    /// The height of each line in an element on the block axis.
+    LineHeight(LineHeight),
+    /// The color of the text decoration, overriding the fill color.
+    TextDecorationColor(NaiveRgbColor),
+    /// The width of the text decoration line.
+    TextDecorationThickness(f32),
+    /// The kind of text decoration.
+    TextDecorationType(TextDecorationType),
+    /// How the glyphs are rotated in a vertical writing mode.
+    GlyphOrientationVertical(GlyphOrientationVertical),
+    /// The number of columns in the grouping element.
+    ColumnCount(NonZeroU32),
+    /// The width of the gaps between columns in the grouping element.
+    ColumnGap(ColumnDimensions),
+    /// The width of the columns in the grouping element.
+    ColumnWidths(ColumnDimensions),
 }
 
 impl LayoutAttr {
@@ -2117,6 +4391,31 @@ impl LayoutAttr {
     pub(crate) const B_BOX: usize = 15;
     pub(crate) const WIDTH: usize = 16;
     pub(crate) const HEIGHT: usize = 17;
+    pub(crate) const BACKGROUND_COLOR: usize = 18;
+    pub(crate) const BORDER_COLOR: usize = 19;
+    pub(crate) const BORDER_STYLE: usize = 20;
+    pub(crate) const BORDER_THICKNESS: usize = 21;
+    pub(crate) const PADDING: usize = 22;
+    pub(crate) const COLOR: usize = 23;
+    pub(crate) const SPACE_BEFORE: usize = 24;
+    pub(crate) const SPACE_AFTER: usize = 25;
+    pub(crate) const START_INDENT: usize = 26;
+    pub(crate) const END_INDENT: usize = 27;
+    pub(crate) const TEXT_INDENT: usize = 28;
+    pub(crate) const TEXT_ALIGN: usize = 29;
+    pub(crate) const BLOCK_ALIGN: usize = 30;
+    pub(crate) const INLINE_ALIGN: usize = 31;
+    pub(crate) const TABLE_BORDER_STYLE: usize = 32;
+    pub(crate) const TABLE_PADDING: usize = 33;
+    pub(crate) const BASELINE_SHIFT: usize = 34;
+    pub(crate) const LINE_HEIGHT: usize = 35;
+    pub(crate) const TEXT_DECORATION_COLOR: usize = 36;
+    pub(crate) const TEXT_DECORATION_THICKNESS: usize = 37;
+    pub(crate) const TEXT_DECORATION_TYPE: usize = 38;
+    pub(crate) const GLYPH_ORIENTATION_VERTICAL: usize = 39;
+    pub(crate) const COLUMN_COUNT: usize = 40;
+    pub(crate) const COLUMN_GAP: usize = 41;
+    pub(crate) const COLUMN_WIDTHS: usize = 42;
 
         #[inline(always)]
         fn unwrap_placement(&self) -> Placement {
@@ -2157,6 +4456,206 @@ impl LayoutAttr {
                 _ => unreachable!(),
             }
         }
+
+        #[inline(always)]
+        fn unwrap_background_color(&self) -> NaiveRgbColor {
+            match self {
+                Self::BackgroundColor(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_border_color(&self) -> Sides<NaiveRgbColor> {
+            match self {
+                Self::BorderColor(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_border_style(&self) -> Sides<BorderStyle> {
+            match self {
+                Self::BorderStyle(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_border_thickness(&self) -> Sides<f32> {
+            match self {
+                Self::BorderThickness(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_padding(&self) -> Sides<f32> {
+            match self {
+                Self::Padding(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_color(&self) -> NaiveRgbColor {
+            match self {
+                Self::Color(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_space_before(&self) -> f32 {
+            match self {
+                Self::SpaceBefore(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_space_after(&self) -> f32 {
+            match self {
+                Self::SpaceAfter(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_start_indent(&self) -> f32 {
+            match self {
+                Self::StartIndent(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_end_indent(&self) -> f32 {
+            match self {
+                Self::EndIndent(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_text_indent(&self) -> f32 {
+            match self {
+                Self::TextIndent(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_text_align(&self) -> TextAlign {
+            match self {
+                Self::TextAlign(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_block_align(&self) -> BlockAlign {
+            match self {
+                Self::BlockAlign(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_inline_align(&self) -> InlineAlign {
+            match self {
+                Self::InlineAlign(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_table_border_style(&self) -> Sides<BorderStyle> {
+            match self {
+                Self::TableBorderStyle(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_table_padding(&self) -> Sides<f32> {
+            match self {
+                Self::TablePadding(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_baseline_shift(&self) -> f32 {
+            match self {
+                Self::BaselineShift(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_line_height(&self) -> LineHeight {
+            match self {
+                Self::LineHeight(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_text_decoration_color(&self) -> NaiveRgbColor {
+            match self {
+                Self::TextDecorationColor(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_text_decoration_thickness(&self) -> f32 {
+            match self {
+                Self::TextDecorationThickness(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_text_decoration_type(&self) -> TextDecorationType {
+            match self {
+                Self::TextDecorationType(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_glyph_orientation_vertical(&self) -> GlyphOrientationVertical {
+            match self {
+                Self::GlyphOrientationVertical(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_column_count(&self) -> NonZeroU32 {
+            match self {
+                Self::ColumnCount(val) => *val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_column_gap(&self) -> &ColumnDimensions {
+            match self {
+                Self::ColumnGap(val) => val,
+                _ => unreachable!(),
+            }
+        }
+
+        #[inline(always)]
+        fn unwrap_column_widths(&self) -> &ColumnDimensions {
+            match self {
+                Self::ColumnWidths(val) => val,
+                _ => unreachable!(),
+            }
+        }
 }
 
 impl Ordinal for LayoutAttr {
@@ -2167,6 +4666,31 @@ impl Ordinal for LayoutAttr {
             Self::BBox(_) => Self::B_BOX,
             Self::Width(_) => Self::WIDTH,
             Self::Height(_) => Self::HEIGHT,
+            Self::BackgroundColor(_) => Self::BACKGROUND_COLOR,
+            Self::BorderColor(_) => Self::BORDER_COLOR,
+            Self::BorderStyle(_) => Self::BORDER_STYLE,
+            Self::BorderThickness(_) => Self::BORDER_THICKNESS,
+            Self::Padding(_) => Self::PADDING,
+            Self::Color(_) => Self::COLOR,
+            Self::SpaceBefore(_) => Self::SPACE_BEFORE,
+            Self::SpaceAfter(_) => Self::SPACE_AFTER,
+            Self::StartIndent(_) => Self::START_INDENT,
+            Self::EndIndent(_) => Self::END_INDENT,
+            Self::TextIndent(_) => Self::TEXT_INDENT,
+            Self::TextAlign(_) => Self::TEXT_ALIGN,
+            Self::BlockAlign(_) => Self::BLOCK_ALIGN,
+            Self::InlineAlign(_) => Self::INLINE_ALIGN,
+            Self::TableBorderStyle(_) => Self::TABLE_BORDER_STYLE,
+            Self::TablePadding(_) => Self::TABLE_PADDING,
+            Self::BaselineShift(_) => Self::BASELINE_SHIFT,
+            Self::LineHeight(_) => Self::LINE_HEIGHT,
+            Self::TextDecorationColor(_) => Self::TEXT_DECORATION_COLOR,
+            Self::TextDecorationThickness(_) => Self::TEXT_DECORATION_THICKNESS,
+            Self::TextDecorationType(_) => Self::TEXT_DECORATION_TYPE,
+            Self::GlyphOrientationVertical(_) => Self::GLYPH_ORIENTATION_VERTICAL,
+            Self::ColumnCount(_) => Self::COLUMN_COUNT,
+            Self::ColumnGap(_) => Self::COLUMN_GAP,
+            Self::ColumnWidths(_) => Self::COLUMN_WIDTHS,
         }
     }
 }

@@ -9,7 +9,10 @@ use krilla::outline::Outline;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
-use krilla::tagging::{ArtifactType, BBox, ContentTag, Node, SpanTag, TagGroup, TagTree};
+use krilla::tagging::{
+    ArtifactType, BBox, ColumnDimensions, ContentTag, NaiveRgbColor, Node, Sides, SpanTag,
+    TagGroup, TagTree,
+};
 use krilla::tagging::{ListNumbering, Placement, TableHeaderScope, Tag, TagId, WritingMode};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
@@ -533,6 +536,44 @@ fn tagging_layout_placement_and_writing_mode(document: &mut Document) {
     par.push(quote);
 
     tag_tree.push(par);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document, settings_15)]
+fn tagging_div_and_border_color(document: &mut Document) {
+    document.set_metadata(
+        Metadata::new()
+            .title("Tagged Borders".into())
+            .language("en".into()),
+    );
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let text = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "\"Some quoted text\"");
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let red = NaiveRgbColor::new(1.0, 0.0, 0.0);
+    let blue = NaiveRgbColor::new(0.0, 0.0, 1.0);
+    let mut div = TagGroup::new(
+        Tag::Div
+            .with_border_color(Some(Sides::specific(red, blue, red, blue)))
+            .with_column_count(Some(NonZeroU32::new(2).unwrap()))
+            .with_column_widths(Some(ColumnDimensions::all(50.0))),
+    );
+    let mut p = TagGroup::new(Tag::P);
+
+    p.push(text);
+    div.push(p);
+
+    tag_tree.push(div);
 
     document.set_tag_tree(tag_tree);
 }
