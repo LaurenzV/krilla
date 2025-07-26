@@ -34,7 +34,7 @@ pub(crate) type Cid = u16;
 /// A shared function for CID fonts and Type3 fonts to write the cmap entries.
 pub(crate) fn write_cmap_entry<G>(
     font: &Font,
-    entry: Option<&(String, Option<u64>)>,
+    entry: Option<&(String, Option<Location>)>,
     sc: &mut SerializeContext,
     cmap: &mut UnicodeCmap<G>,
     g: G,

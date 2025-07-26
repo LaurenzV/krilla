@@ -4,6 +4,8 @@
 //! represents a drawing area on which you can define the contents of your page. This includes
 //! operations such as applying linear transformations, showing text or images and drawing paths.
 
+use std::num::NonZeroU64;
+
 use crate::color::rgb;
 use crate::content::ContentBuilder;
 #[cfg(any(feature = "raster-images", feature = "pdf"))]
@@ -34,7 +36,7 @@ use crate::text::{shape::naive_shape, TextDirection};
 /// Can be used to associate render operations with a unique identifier.
 /// This is useful if you want to backtrack a validation error to a specific
 /// identifier chosen by you.
-pub type Location = u64;
+pub type Location = NonZeroU64;
 
 /// A surface.
 ///
