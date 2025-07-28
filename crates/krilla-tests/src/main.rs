@@ -6,6 +6,7 @@
 use std::cmp::max;
 use std::env;
 use std::hash::{Hash, Hasher};
+use std::num::NonZeroU64;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, OnceLock};
@@ -27,7 +28,7 @@ use krilla::paint::{Fill, Stop, Stroke};
 use krilla::pdf::{Pdf, PdfDocument};
 use krilla::stream::Stream;
 use krilla::stream::StreamBuilder;
-use krilla::surface::Surface;
+use krilla::surface::{Location, Surface};
 use krilla::text::Font;
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla::Data;
@@ -224,9 +225,9 @@ fn dummy_glyph(
 pub fn dummy_text_with_spans() -> (String, Vec<KrillaGlyph>) {
     let text = "Hi.".to_string();
     let glyphs = vec![
-        dummy_glyph(GlyphId::new(10), 0..1, Some(3)),
-        dummy_glyph(GlyphId::new(0), 1..2, Some(4)),
-        dummy_glyph(GlyphId::new(20), 2..3, Some(5)),
+        dummy_glyph(GlyphId::new(10), 0..1, Some(loc(3))),
+        dummy_glyph(GlyphId::new(0), 1..2, Some(loc(4))),
+        dummy_glyph(GlyphId::new(20), 2..3, Some(loc(5))),
     ];
 
     (text, glyphs)
@@ -447,6 +448,10 @@ pub fn check_snapshot(name: &str, actual: &[u8], storable: bool) {
     }
 
     assert_eq!(changeset.distance, 0);
+}
+
+pub const fn loc(l: u64) -> Location {
+    NonZeroU64::new(l).unwrap()
 }
 
 pub fn check_render(

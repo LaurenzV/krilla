@@ -19,7 +19,7 @@ use krilla::Document;
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
 
-use crate::{green_fill, load_png_image, rect_to_path, red_stroke, NOTO_SANS, SVGS_PATH};
+use crate::{green_fill, load_png_image, loc, rect_to_path, red_stroke, NOTO_SANS, SVGS_PATH};
 
 pub trait SurfaceTaggingExt {
     fn fill_text_(&mut self, y: f32, content: &str);
@@ -613,8 +613,8 @@ fn tagging_id_appears_twice() {
     let mut tag_tree = TagTree::new();
 
     let id = TagId::from(*b"one");
-    let loc_1 = 1;
-    let loc_2 = 2;
+    let loc_1 = loc(1);
+    let loc_2 = loc(2);
     let group_1 = TagGroup::new(Tag::P.with_id(Some(id.clone())).with_location(Some(loc_1)));
     let group_2 = TagGroup::new(Tag::P.with_id(Some(id.clone())).with_location(Some(loc_2)));
 
@@ -635,7 +635,7 @@ fn tagging_unknown_header_tag_id() {
     let mut tag_tree = TagTree::new();
 
     let id = TagId::from(*b"one");
-    let loc_1 = 1;
+    let loc_1 = loc(1);
     let group_1 = TagGroup::new(
         Tag::TD
             .with_headers([id.clone()])

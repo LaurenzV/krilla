@@ -14,7 +14,7 @@ use krilla_svg::{SurfaceExt, SvgSettings};
 use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
-use crate::{load_pdf, load_png_image, rect_to_path, red_fill, settings_16, NOTO_SANS};
+use crate::{load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, NOTO_SANS};
 
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
@@ -95,7 +95,7 @@ fn pdf_embedded_out_of_bounds() {
     let mut document = Document::new();
 
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
-    document.set_location(1);
+    document.set_location(loc(1));
     document.embed_pdf_pages(&pdf, &[1]);
 
     assert_eq!(
@@ -103,7 +103,7 @@ fn pdf_embedded_out_of_bounds() {
         Err(KrillaError::Pdf(
             pdf.clone(),
             PdfError::InvalidPage(1),
-            Some(1)
+            Some(loc(1))
         ))
     )
 }

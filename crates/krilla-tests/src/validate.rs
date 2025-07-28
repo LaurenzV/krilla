@@ -16,7 +16,7 @@ use krilla_macros::snapshot;
 
 use crate::embed::{embedded_file_impl, file_1};
 use crate::{
-    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image,
+    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_23,
     settings_24, settings_7, settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
 };
@@ -211,7 +211,7 @@ fn validate_pdfa2u_text_with_location() {
     let font = Font::new(font_data, 0).unwrap();
     let (text, glyphs) = dummy_text_with_spans();
 
-    surface.set_location(2);
+    surface.set_location(loc(2));
     surface.set_fill(Some(red_fill(0.1)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
@@ -229,7 +229,7 @@ fn validate_pdfa2u_text_with_location() {
     assert_eq!(
         document.finish(),
         Err(KrillaError::Validation(vec![
-            ValidationError::ContainsNotDefGlyph(font, Some(4), "i".to_string())
+            ValidationError::ContainsNotDefGlyph(font, Some(loc(4)), "i".to_string())
         ]))
     )
 }
@@ -240,22 +240,22 @@ fn validate_pdfa1b_transparency_with_location() {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
-    surface.set_location(2);
+    surface.set_location(loc(2));
     surface.set_fill(Some(red_fill(1.0)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
-    surface.set_location(3);
+    surface.set_location(loc(3));
     surface.set_fill(Some(green_fill(1.0)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
-    surface.set_location(4);
+    surface.set_location(loc(4));
     surface.set_fill(Some(green_fill(0.9)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
-    surface.set_location(5);
+    surface.set_location(loc(5));
     surface.set_fill(Some(green_fill(1.0)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
-    surface.set_location(6);
+    surface.set_location(loc(6));
     surface.set_fill(Some(blue_fill(0.8)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
-    surface.set_location(7);
+    surface.set_location(loc(7));
     surface.set_fill(Some(blue_fill(0.9)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
 
@@ -265,8 +265,8 @@ fn validate_pdfa1b_transparency_with_location() {
     assert_eq!(
         document.finish(),
         Err(KrillaError::Validation(vec![
-            ValidationError::Transparency(Some(4)),
-            ValidationError::Transparency(Some(6)),
+            ValidationError::Transparency(Some(loc(4))),
+            ValidationError::Transparency(Some(loc(6))),
             // Note that we don't have 7 here, even though we should in theory. The reason is
             // that since we cache graphics states, only the first time we serialize it will
             // it trigger the validation error. Not optimal, but changing that would be a pain.
@@ -517,7 +517,7 @@ fn validate_pdf_ua1_missing_requirements() {
 
     surface.finish();
 
-    let annot_loc = 1;
+    let annot_loc = loc(1);
     let annot = page.add_tagged_annotation(
         Annotation::new_link(
             LinkAnnotation::new(
@@ -531,7 +531,7 @@ fn validate_pdf_ua1_missing_requirements() {
 
     page.finish();
 
-    let formula_loc = 2;
+    let formula_loc = loc(2);
     let mut tag_group = TagGroup::new(Tag::Formula(None).with_location(Some(formula_loc)));
     tag_group.push(id1);
     tag_group.push(annot);
@@ -758,7 +758,7 @@ fn validate_deduplicate_errors() {
 
     surface.set_fill(Some(red_fill(0.5)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
-    surface.set_location(2);
+    surface.set_location(loc(2));
     surface.set_fill(Some(red_fill(0.4)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
     surface.reset_location();
@@ -771,7 +771,7 @@ fn validate_deduplicate_errors() {
         document.finish(),
         Err(KrillaError::Validation(vec![
             ValidationError::Transparency(None),
-            ValidationError::Transparency(Some(2))
+            ValidationError::Transparency(Some(loc(2)))
         ]))
     );
 }
