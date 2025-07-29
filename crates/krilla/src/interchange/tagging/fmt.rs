@@ -2,7 +2,7 @@
 //! YAML is a good fit to represent the hierarchy of the tag tree, and many
 //! editors allow folding the sub-trees.
 
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 
 use crate::tagging::{
     Attr, BBox, BlockAlign, BorderStyle, ColumnDimensions, GlyphOrientationVertical, Identifier,
@@ -209,22 +209,24 @@ impl Output for Attr {
             Attr::Layout(layout_attr) => match layout_attr {
                 Placement(placement) => writeln!(f, "/Placement: {}", placement.display()),
                 WritingMode(mode) => writeln!(f, "/WritingMode: {}", mode.display()),
-                BBox(bbox) => writeln!(f, "/BBox: {}", bbox.display_indent(indent.inc())),
+                BBox(bbox) => writeln!(f, "/BBox:{}", bbox.display_indent(indent.inc())),
                 Width(width) => writeln!(f, "/Width: {}", width.display()),
                 Height(height) => writeln!(f, "/Height: {}", height.display()),
                 BackgroundColor(color) => writeln!(f, "/BackgroundColor: {}", color.display()),
                 BorderColor(sides) => {
-                    writeln!(f, "/BorderColor: {}", sides.display_indent(indent.inc()))
+                    let space = omit_if(" ", sides.is_multiline());
+                    let sides = sides.display_indent(indent.inc());
+                    writeln!(f, "/BorderColor:{space}{sides}")
                 }
                 BorderStyle(sides) => {
-                    writeln!(f, "/BorderStyle: {}", sides.display_indent(indent.inc()))
+                    let space = omit_if(" ", sides.is_multiline());
+                    let sides = sides.display_indent(indent.inc());
+                    writeln!(f, "/BorderStyle:{space}{sides}")
                 }
                 BorderThickness(sides) => {
-                    writeln!(
-                        f,
-                        "/BorderThickness: {}",
-                        sides.display_indent(indent.inc())
-                    )
+                    let space = omit_if(" ", sides.is_multiline());
+                    let sides = sides.display_indent(indent.inc());
+                    write!(f, "/BorderThickness:{space}{sides}")
                 }
                 Padding(sides) => {
                     writeln!(f, "/Padding: {}", sides.display_indent(indent.inc()))
@@ -235,25 +237,23 @@ impl Output for Attr {
                 StartIndent(indent) => writeln!(f, "/StartIndent: {}", indent.display()),
                 EndIndent(indent) => writeln!(f, "/EndIndent: {}", indent.display()),
                 TextIndent(indent) => writeln!(f, "/TextIndent: {}", indent.display()),
-                TextAlign(text_align) => writeln!(f, "/TextAlign: {}", text_align.display()),
-                BlockAlign(block_align) => writeln!(f, "/BlockAlign: {}", block_align.display()),
-                InlineAlign(inline_align) => {
-                    writeln!(f, "/InlineAlign: {}", inline_align.display())
+                TextAlign(align) => writeln!(f, "/TextAlign: {}", align.display()),
+                BlockAlign(align) => writeln!(f, "/BlockAlign: {}", align.display()),
+                InlineAlign(align) => writeln!(f, "/InlineAlign: {}", align.display()),
+                TableBorderStyle(sides) => {
+                    let space = omit_if(" ", sides.is_multiline());
+                    let style = sides.display_indent(indent.inc());
+                    writeln!(f, "/TableBorderStyle:{space}{style}")
                 }
-                TableBorderStyle(sides) => writeln!(
-                    f,
-                    "/TableBorderStyle: {}",
-                    sides.display_indent(indent.inc())
-                ),
                 TablePadding(sides) => {
-                    writeln!(f, "/TablePadding: {}", sides.display_indent(indent.inc()))
+                    let space = omit_if(" ", sides.is_multiline());
+                    let sides = sides.display_indent(indent.inc());
+                    writeln!(f, "/TablePadding:{space}{sides}")
                 }
                 BaselineShift(shift) => writeln!(f, "/BaselineShift: {}", shift.display()),
-                LineHeight(line_height) => writeln!(
-                    f,
-                    "/LineHeight: {}",
-                    line_height.display_indent(indent.inc())
-                ),
+                LineHeight(line_height) => {
+                    writeln!(f, "/LineHeight: {}", line_height.display())
+                }
                 TextDecorationColor(color) => {
                     writeln!(f, "/TextDecorationColor: {}", color.display())
                 }
@@ -268,20 +268,46 @@ impl Output for Attr {
                 }
                 ColumnCount(column_count) => writeln!(f, "/ColumnCount: {}", column_count.get()),
                 ColumnGap(column_gap) => {
-                    writeln!(f, "/ColumnGap: {}", column_gap.display_indent(indent.inc()))
+                    let space = omit_if(" ", column_gap.is_multiline());
+                    let column_gap = column_gap.display_indent(indent.inc());
+                    writeln!(f, "/ColumnGap:{space}{column_gap}")
                 }
                 ColumnWidths(column_width) => {
-                    writeln!(
-                        f,
-                        "/ColumnWidths: {}",
-                        column_width.display_indent(indent.inc())
-                    )
+                    let space = omit_if(" ", column_width.is_multiline());
+                    let column_width = column_width.display_indent(indent.inc());
+                    writeln!(f, "/ColumnWidths:{space}{column_width}")
                 }
             },
         }
     }
 }
 
+trait ValueOutput: Output {
+    fn is_multiline(&self) -> bool {
+        false
+    }
+}
+
+#[derive(Clone, Copy)]
+struct OmitText {
+    text: &'static str,
+    omit: bool,
+}
+
+fn omit_if(text: &'static str, omit: bool) -> OmitText {
+    OmitText { text, omit }
+}
+
+impl Display for OmitText {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if !self.omit {
+            f.write_str(self.text)?;
+        }
+        Ok(())
+    }
+}
+
+impl ValueOutput for TagId {}
 impl Output for TagId {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         if self
@@ -300,6 +326,7 @@ impl Output for TagId {
     }
 }
 
+impl ValueOutput for ListNumbering {}
 impl Output for ListNumbering {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -316,6 +343,7 @@ impl Output for ListNumbering {
     }
 }
 
+impl ValueOutput for TableHeaderScope {}
 impl Output for TableHeaderScope {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -326,6 +354,7 @@ impl Output for TableHeaderScope {
     }
 }
 
+impl ValueOutput for Placement {}
 impl Output for Placement {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -338,6 +367,7 @@ impl Output for Placement {
     }
 }
 
+impl ValueOutput for WritingMode {}
 impl Output for WritingMode {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -348,23 +378,52 @@ impl Output for WritingMode {
     }
 }
 
+impl ValueOutput for BBox {
+    fn is_multiline(&self) -> bool {
+        true
+    }
+}
 impl Output for BBox {
     fn output_indent(&self, f: &mut impl std::fmt::Write, indent: Indent) -> std::fmt::Result {
         writeln!(f)?;
         writeln!(f, "{indent}page: {}", self.page_idx)?;
-        writeln!(f, "{indent}left:   {}", self.rect.left().display())?;
-        writeln!(f, "{indent}top:    {}", self.rect.top().display())?;
-        writeln!(f, "{indent}right:  {}", self.rect.right().display())?;
-        write!(f, "{indent}bottom: {}", self.rect.bottom().display())?;
+        writeln!(
+            f,
+            "{indent}left:   {}",
+            self.rect.left().display_indent(indent)
+        )?;
+        writeln!(
+            f,
+            "{indent}top:    {}",
+            self.rect.top().display_indent(indent)
+        )?;
+        writeln!(
+            f,
+            "{indent}right:  {}",
+            self.rect.right().display_indent(indent)
+        )?;
+        write!(
+            f,
+            "{indent}bottom: {}",
+            self.rect.bottom().display_indent(indent)
+        )?;
         Ok(())
     }
 }
 
-impl<T: Output + Debug + Copy + PartialEq> Output for Sides<T> {
+impl<T: ValueOutput> ValueOutput for Sides<T> {
+    fn is_multiline(&self) -> bool {
+        match self {
+            Sides::All(all) => all.is_multiline(),
+            Sides::Specific { .. } => true,
+        }
+    }
+}
+impl<T: ValueOutput> Output for Sides<T> {
     fn output_indent(&self, f: &mut impl std::fmt::Write, indent: Indent) -> std::fmt::Result {
         match self {
             Sides::All(all) => {
-                all.output_indent(f, indent.inc())?;
+                all.output_indent(f, indent)?;
             }
             Sides::Specific {
                 before,
@@ -373,16 +432,29 @@ impl<T: Output + Debug + Copy + PartialEq> Output for Sides<T> {
                 end,
             } => {
                 writeln!(f)?;
-                writeln!(f, "{indent}before: {}", before.display_indent(indent.inc()))?;
-                writeln!(f, "{indent}after:  {}", after.display_indent(indent.inc()))?;
-                writeln!(f, "{indent}start:  {}", start.display_indent(indent.inc()))?;
-                write!(f, "{indent}end:    {}", end.display_indent(indent.inc()))?;
+
+                let space = omit_if(" ", before.is_multiline());
+                let before = before.display_indent(indent.inc());
+                writeln!(f, "{indent}before:{space}{before}")?;
+
+                let space = omit_if("  ", after.is_multiline());
+                let after = after.display_indent(indent.inc());
+                writeln!(f, "{indent}after:{space}{after}")?;
+
+                let space = omit_if("  ", start.is_multiline());
+                let start = start.display_indent(indent.inc());
+                writeln!(f, "{indent}start:{space}{start}")?;
+
+                let space = omit_if("    ", end.is_multiline());
+                let end = end.display_indent(indent.inc());
+                write!(f, "{indent}end:{space}{end}")?;
             }
         }
         Ok(())
     }
 }
 
+impl ValueOutput for NaiveRgbColor {}
 impl Output for NaiveRgbColor {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         let r = (255.0 * self.red).round() as u8;
@@ -392,6 +464,7 @@ impl Output for NaiveRgbColor {
     }
 }
 
+impl ValueOutput for BorderStyle {}
 impl Output for BorderStyle {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -409,6 +482,7 @@ impl Output for BorderStyle {
     }
 }
 
+impl ValueOutput for TextAlign {}
 impl Output for TextAlign {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -420,6 +494,7 @@ impl Output for TextAlign {
     }
 }
 
+impl ValueOutput for BlockAlign {}
 impl Output for BlockAlign {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -431,6 +506,7 @@ impl Output for BlockAlign {
     }
 }
 
+impl ValueOutput for InlineAlign {}
 impl Output for InlineAlign {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -441,6 +517,7 @@ impl Output for InlineAlign {
     }
 }
 
+impl ValueOutput for LineHeight {}
 impl Output for LineHeight {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -451,6 +528,7 @@ impl Output for LineHeight {
     }
 }
 
+impl ValueOutput for TextDecorationType {}
 impl Output for TextDecorationType {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -462,6 +540,7 @@ impl Output for TextDecorationType {
     }
 }
 
+impl ValueOutput for GlyphOrientationVertical {}
 impl Output for GlyphOrientationVertical {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         match self {
@@ -476,6 +555,11 @@ impl Output for GlyphOrientationVertical {
     }
 }
 
+impl ValueOutput for ColumnDimensions {
+    fn is_multiline(&self) -> bool {
+        matches!(self, Self::Specific(_))
+    }
+}
 impl Output for ColumnDimensions {
     fn output_indent(&self, f: &mut impl std::fmt::Write, indent: Indent) -> std::fmt::Result {
         match self {
@@ -494,6 +578,7 @@ impl Output for ColumnDimensions {
     }
 }
 
+impl ValueOutput for f32 {}
 impl Output for f32 {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
         write!(f, "{self:7.3}")
@@ -502,10 +587,12 @@ impl Output for f32 {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use crate::action::{Action, LinkAction};
     use crate::annotation::{LinkAnnotation, Target};
     use crate::geom::Rect;
-    use crate::tagging::fmt::Output;
+    use crate::tagging::fmt::{Indent, Output};
     use crate::tagging::{
         BBox, ColumnDimensions, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup, TagTree,
     };
@@ -562,10 +649,10 @@ mod tests {
         let expected = "\
 - Tag: Section
   /Lang: de
-  /ColumnGap:\x20
+  /ColumnGap:
     -   3.000
     -   4.000
-  /ColumnWidths:\x20
+  /ColumnWidths:
     -  17.000
     -  23.000
     -  34.000
@@ -573,7 +660,7 @@ mod tests {
     - Tag: Figure
       /Alt: figure alt text
       /ActualText: THE ACTUAL TEXT
-      /BBox:\x20
+      /BBox:
         page: 0
         left:    12.100
         top:     12.342
@@ -583,7 +670,7 @@ mod tests {
       /K:
         - Annotation: page=0 index=0
     - Tag: Table
-      /BorderColor:\x20
+      /BorderColor:
         before: #1a66ff
         after:  #4d8033
         start:  #4d664d
@@ -591,5 +678,32 @@ mod tests {
       /LineHeight:  23.000
 ";
         assert_eq!(expected, yaml)
+    }
+
+    #[test]
+    fn display_sides_mutliline() {
+        let sides = Sides::specific(
+            ColumnDimensions::specific(vec![1.0, 5.0]),
+            ColumnDimensions::specific(vec![2.0, 6.0]),
+            ColumnDimensions::specific(vec![3.0, 7.0]),
+            ColumnDimensions::specific(vec![4.0, 8.0]),
+        );
+        let yaml = format!("val:{}\n", sides.display_indent(Indent(1)));
+        let expected = "\
+val:
+  before:
+    -   1.000
+    -   5.000
+  after:
+    -   2.000
+    -   6.000
+  start:
+    -   3.000
+    -   7.000
+  end:
+    -   4.000
+    -   8.000
+";
+        assert_eq!(expected, yaml);
     }
 }
