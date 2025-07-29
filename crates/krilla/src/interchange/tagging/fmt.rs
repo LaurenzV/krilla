@@ -499,3 +499,97 @@ impl Output for f32 {
         write!(f, "{self:7.3}")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::action::{Action, LinkAction};
+    use crate::annotation::{LinkAnnotation, Target};
+    use crate::geom::Rect;
+    use crate::tagging::fmt::Output;
+    use crate::tagging::{
+        BBox, ColumnDimensions, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup, TagTree,
+    };
+    use crate::Document;
+
+    #[test]
+    fn display_empty_tag_tree() {
+        assert_eq!("", TagTree::new().display().to_string());
+    }
+
+    #[test]
+    fn display_tag_tree() {
+        let mut document = Document::new();
+        let mut page = document.start_page();
+
+        let mut tree = TagTree::new();
+
+        let sec = Tag::Section
+            .with_lang(Some("de".into()))
+            .with_column_widths(Some(ColumnDimensions::Specific(vec![17.0, 23.0, 34.0])))
+            .with_column_gap(Some(ColumnDimensions::Specific(vec![3.0, 4.0])));
+        let mut sec = TagGroup::new(sec);
+
+        let figure_rect = Rect::from_ltrb(12.1, 12.342, 24.789877, 32.0).unwrap();
+        let figure = Tag::Figure(Some("figure alt text".into()))
+            .with_actual_text(Some("THE ACTUAL TEXT".into()))
+            .with_bbox(Some(BBox::new(0, figure_rect)))
+            .with_line_height(Some(LineHeight::Normal));
+        let mut figure = TagGroup::new(figure);
+
+        let link_rect = Rect::from_ltrb(12.0, 12.0, 24.0, 32.32).unwrap();
+        let link_target =
+            Target::Action(Action::Link(LinkAction::new("https://github.com".into())));
+        let link_id =
+            page.add_tagged_annotation(LinkAnnotation::new(link_rect, link_target).into());
+        figure.push(link_id);
+        sec.push(figure);
+
+        let border_color = Sides::specific(
+            NaiveRgbColor::new(0.1, 0.4, 1.0),
+            NaiveRgbColor::new(0.3, 0.5, 0.2),
+            NaiveRgbColor::new(0.3, 0.4, 0.3),
+            NaiveRgbColor::new(0.0, 0.7, 0.2),
+        );
+        let table = Tag::Table
+            .with_border_color(Some(border_color))
+            .with_line_height(Some(LineHeight::Custom(23.0)));
+        let table = TagGroup::new(table);
+        sec.push(table);
+
+        tree.push(sec);
+
+        let yaml = tree.display().to_string();
+        let expected = "\
+- Tag: Section
+  /Lang: de
+  /ColumnGap:\x20
+    -   3.000
+    -   4.000
+  /ColumnWidths:\x20
+    -  17.000
+    -  23.000
+    -  34.000
+  /K:
+    - Tag: Figure
+      /Alt: figure alt text
+      /ActualText: THE ACTUAL TEXT
+      /BBox:\x20
+        page: 0
+        left:    12.100
+        top:     12.342
+        right:   24.790
+        bottom:  32.000
+      /LineHeight: Normal
+      /K:
+        - Annotation: page=0 index=0
+    - Tag: Table
+      /BorderColor:\x20
+        before: #1a66ff
+        after:  #4d8033
+        start:  #4d664d
+        end:    #00b333
+      /LineHeight:  23.000
+";
+        assert_eq!(expected, yaml)
+    }
+}
