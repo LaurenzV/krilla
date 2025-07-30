@@ -174,6 +174,10 @@ impl Output for Attr {
         use StructAttr::*;
         use TableAttr::*;
 
+        if let Attr::Struct(StructAttr::HeadingLevel(_)) = self {
+            return Ok(());
+        }
+
         write!(f, "{indent}")?;
         match self {
             Attr::Struct(struct_attr) => match struct_attr {
@@ -587,6 +591,8 @@ impl Output for f32 {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU32;
+
     use pretty_assertions::assert_eq;
 
     use crate::action::{Action, LinkAction};
@@ -594,7 +600,8 @@ mod tests {
     use crate::geom::Rect;
     use crate::tagging::fmt::{Indent, Output};
     use crate::tagging::{
-        BBox, ColumnDimensions, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup, TagTree,
+        BBox, ColumnDimensions, ContentTag, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup,
+        TagTree,
     };
     use crate::Document;
 
@@ -607,7 +614,6 @@ mod tests {
     fn display_tag_tree() {
         let mut document = Document::new();
         let mut page = document.start_page();
-
         let mut tree = TagTree::new();
 
         let sec = Tag::Section
@@ -703,6 +709,32 @@ val:
   end:
     -   4.000
     -   8.000
+";
+        assert_eq!(expected, yaml);
+    }
+
+    #[test]
+    fn display_heading_with_children() {
+        let mut document = Document::new();
+        let mut page = document.start_page();
+        let mut tree = TagTree::new();
+
+        let heading = Tag::Hn(NonZeroU32::new(1).unwrap(), None);
+        let mut heading = TagGroup::new(heading);
+
+        let mut surface = page.surface();
+
+        let id1 = surface.start_tagged(ContentTag::Other);
+        surface.end_tagged();
+        heading.push(id1);
+
+        tree.push(heading);
+
+        let yaml = tree.display().to_string();
+        let expected = "\
+- Tag: H1
+  /K:
+    - Content: page=0 mcid=0
 ";
         assert_eq!(expected, yaml);
     }
