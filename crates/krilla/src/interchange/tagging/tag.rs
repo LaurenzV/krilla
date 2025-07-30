@@ -577,7 +577,7 @@ impl GlyphOrientationVertical {
 
 /// An attribute value that can apply to all sides of the element, or have a specific value for each side.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Sides<T: std::fmt::Debug + Copy + PartialEq> {
+pub enum Sides<T> {
     /// The same value applies to all sides.
     All(T),
     /// Each side has a different value.
@@ -593,7 +593,22 @@ pub enum Sides<T: std::fmt::Debug + Copy + PartialEq> {
     },
 }
 
-impl<T: std::fmt::Debug + Copy + PartialEq> Sides<T> {
+impl<T: Copy> Sides<T> {
+    /// Returns an array for all sides.
+    pub(super) fn into_array(self) -> [T; 4] {
+        match self {
+            Sides::All(value) => [value; 4],
+            Sides::Specific {
+                before,
+                after,
+                start,
+                end,
+            } => [before, after, start, end],
+        }
+    }
+}
+
+impl<T> Sides<T> {
     /// Construct a new `Sides` value with the same value for all sides.
     pub fn all(value: T) -> Self {
         Sides::All(value)
@@ -606,19 +621,6 @@ impl<T: std::fmt::Debug + Copy + PartialEq> Sides<T> {
             after,
             start,
             end,
-        }
-    }
-
-    /// Returns an array for all sides.
-    pub(super) fn into_array(self) -> [T; 4] {
-        match self {
-            Sides::All(value) => [value; 4],
-            Sides::Specific {
-                before,
-                after,
-                start,
-                end,
-            } => [before, after, start, end],
         }
     }
 

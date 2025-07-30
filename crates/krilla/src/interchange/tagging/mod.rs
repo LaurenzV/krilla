@@ -137,6 +137,7 @@ use crate::util::lazy::LazyInit;
 
 pub use tag::*;
 
+pub mod fmt;
 mod tag;
 
 /// A type of artifact.
@@ -577,9 +578,9 @@ pub(crate) enum Reference {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TagGroup {
     /// The tag of the tag group.
-    tag: TagKind,
+    pub tag: TagKind,
     /// The children of the tag group.
-    children: Vec<Node>,
+    pub children: Vec<Node>,
 }
 
 impl TagGroup {
@@ -1032,7 +1033,8 @@ impl TagGroup {
 /// A tag tree.
 #[derive(Default)]
 pub struct TagTree {
-    children: Vec<Node>,
+    /// The children of the tag tree.
+    pub children: Vec<Node>,
 }
 
 impl From<Vec<Node>> for TagTree {
