@@ -182,11 +182,11 @@ impl Output for Attr {
         match self {
             Attr::Struct(struct_attr) => match struct_attr {
                 Id(id) => writeln!(f, "/Id: {}", id.display()),
-                Lang(lang) => writeln!(f, "/Lang: {lang}"),
-                AltText(alt) => writeln!(f, "/Alt: {alt}"),
-                Expanded(e) => writeln!(f, "/E: {e}"),
-                ActualText(actual) => writeln!(f, "/ActualText: {actual}"),
-                Title(title) => writeln!(f, "/T: {title}"),
+                Lang(lang) => writeln!(f, "/Lang: {lang:?}"),
+                AltText(alt) => writeln!(f, "/Alt: {alt:?}"),
+                Expanded(e) => writeln!(f, "/E: {e:?}"),
+                ActualText(actual) => writeln!(f, "/ActualText: {actual:?}"),
+                Title(title) => writeln!(f, "/T: {title:?}"),
 
                 // Not a real attribute, is already displayed in tag kind.
                 HeadingLevel(_) => Ok(()),
@@ -195,7 +195,7 @@ impl Output for Attr {
                 Numbering(n) => writeln!(f, "/Numbering: {}", n.display()),
             },
             Attr::Table(table_attr) => match table_attr {
-                Summary(summary) => writeln!(f, "/Summary: {summary}"),
+                Summary(summary) => writeln!(f, "/Summary: {summary:?}"),
                 HeaderScope(scope) => writeln!(f, "/Scope: {}", scope.display()),
                 CellHeaders(headers) => {
                     write!(f, "/Headers: [")?;
@@ -320,7 +320,7 @@ impl Output for TagId {
             .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z'))
         {
             let str = std::str::from_utf8(self.as_bytes()).unwrap();
-            write!(f, "'{str}'")?;
+            write!(f, "\"{str}\"")?;
         } else {
             for b in self.as_bytes() {
                 write!(f, "0x{b:02x}")?;
@@ -654,7 +654,7 @@ mod tests {
         let yaml = tree.display().to_string();
         let expected = "\
 - Tag: Section
-  /Lang: de
+  /Lang: \"de\"
   /ColumnGap:
     -   3.000
     -   4.000
@@ -664,8 +664,8 @@ mod tests {
     -  34.000
   /K:
     - Tag: Figure
-      /Alt: figure alt text
-      /ActualText: THE ACTUAL TEXT
+      /Alt: \"figure alt text\"
+      /ActualText: \"THE ACTUAL TEXT\"
       /BBox:
         page: 0
         left:    12.100
