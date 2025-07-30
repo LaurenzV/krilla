@@ -58,4 +58,4 @@ paste = { workspace = true }
 sitro = { workspace = true }
 fontdb = { workspace = true }
 parley = { workspace = true }
-pretty_assertions = "1.4.1"
+pretty_assertions = { workspace = true }
