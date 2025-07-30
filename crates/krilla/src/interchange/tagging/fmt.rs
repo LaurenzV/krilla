@@ -174,15 +174,19 @@ impl Output for Attr {
         use StructAttr::*;
         use TableAttr::*;
 
+        if let Attr::Struct(StructAttr::HeadingLevel(_)) = self {
+            return Ok(());
+        }
+
         write!(f, "{indent}")?;
         match self {
             Attr::Struct(struct_attr) => match struct_attr {
                 Id(id) => writeln!(f, "/Id: {}", id.display()),
-                Lang(lang) => writeln!(f, "/Lang: {lang}"),
-                AltText(alt) => writeln!(f, "/Alt: {alt}"),
-                Expanded(e) => writeln!(f, "/E: {e}"),
-                ActualText(actual) => writeln!(f, "/ActualText: {actual}"),
-                Title(title) => writeln!(f, "/T: {title}"),
+                Lang(lang) => writeln!(f, "/Lang: {lang:?}"),
+                AltText(alt) => writeln!(f, "/Alt: {alt:?}"),
+                Expanded(e) => writeln!(f, "/E: {e:?}"),
+                ActualText(actual) => writeln!(f, "/ActualText: {actual:?}"),
+                Title(title) => writeln!(f, "/T: {title:?}"),
 
                 // Not a real attribute, is already displayed in tag kind.
                 HeadingLevel(_) => Ok(()),
@@ -191,7 +195,7 @@ impl Output for Attr {
                 Numbering(n) => writeln!(f, "/Numbering: {}", n.display()),
             },
             Attr::Table(table_attr) => match table_attr {
-                Summary(summary) => writeln!(f, "/Summary: {summary}"),
+                Summary(summary) => writeln!(f, "/Summary: {summary:?}"),
                 HeaderScope(scope) => writeln!(f, "/Scope: {}", scope.display()),
                 CellHeaders(headers) => {
                     write!(f, "/Headers: [")?;
@@ -316,7 +320,7 @@ impl Output for TagId {
             .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z'))
         {
             let str = std::str::from_utf8(self.as_bytes()).unwrap();
-            write!(f, "'{str}'")?;
+            write!(f, "\"{str}\"")?;
         } else {
             for b in self.as_bytes() {
                 write!(f, "0x{b:02x}")?;
@@ -587,6 +591,8 @@ impl Output for f32 {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU32;
+
     use pretty_assertions::assert_eq;
 
     use crate::action::{Action, LinkAction};
@@ -594,7 +600,8 @@ mod tests {
     use crate::geom::Rect;
     use crate::tagging::fmt::{Indent, Output};
     use crate::tagging::{
-        BBox, ColumnDimensions, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup, TagTree,
+        BBox, ColumnDimensions, ContentTag, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup,
+        TagTree,
     };
     use crate::Document;
 
@@ -607,7 +614,6 @@ mod tests {
     fn display_tag_tree() {
         let mut document = Document::new();
         let mut page = document.start_page();
-
         let mut tree = TagTree::new();
 
         let sec = Tag::Section
@@ -648,7 +654,7 @@ mod tests {
         let yaml = tree.display().to_string();
         let expected = "\
 - Tag: Section
-  /Lang: de
+  /Lang: \"de\"
   /ColumnGap:
     -   3.000
     -   4.000
@@ -658,8 +664,8 @@ mod tests {
     -  34.000
   /K:
     - Tag: Figure
-      /Alt: figure alt text
-      /ActualText: THE ACTUAL TEXT
+      /Alt: \"figure alt text\"
+      /ActualText: \"THE ACTUAL TEXT\"
       /BBox:
         page: 0
         left:    12.100
@@ -703,6 +709,32 @@ val:
   end:
     -   4.000
     -   8.000
+";
+        assert_eq!(expected, yaml);
+    }
+
+    #[test]
+    fn display_heading_with_children() {
+        let mut document = Document::new();
+        let mut page = document.start_page();
+        let mut tree = TagTree::new();
+
+        let heading = Tag::Hn(NonZeroU32::new(1).unwrap(), None);
+        let mut heading = TagGroup::new(heading);
+
+        let mut surface = page.surface();
+
+        let id1 = surface.start_tagged(ContentTag::Other);
+        surface.end_tagged();
+        heading.push(id1);
+
+        tree.push(heading);
+
+        let yaml = tree.display().to_string();
+        let expected = "\
+- Tag: H1
+  /K:
+    - Content: page=0 mcid=0
 ";
         assert_eq!(expected, yaml);
     }
