@@ -1,10 +1,10 @@
 use std::hash::Hash;
 use std::ops::DerefMut;
 
-use fxhash::FxHashMap;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
+use rustc_hash::FxHashMap;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
 use subsetter::GlyphRemapper;

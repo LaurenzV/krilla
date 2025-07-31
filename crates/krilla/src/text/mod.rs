@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 
 use crate::text::cid::CIDFont;
 use crate::text::type3::{ColoredGlyph, Type3Font, Type3FontMapper, Type3ID};

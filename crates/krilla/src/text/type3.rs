@@ -2,10 +2,10 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use std::ops::DerefMut;
 
-use fxhash::FxHashMap;
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
+use rustc_hash::FxHashMap;
 
 use super::{FontIdentifier, Type3Identifier};
 use crate::color::rgb;
