@@ -414,8 +414,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
             cell_text(&mut surface, x, y, &format!("body {} {}", x + 1, y + 1));
             surface.end_tagged();
 
-            let headers = [header_id(x)];
-            let tag = Tag::TD.with_headers(headers);
+            let tag = Tag::TD.with_headers(Some([header_id(x)]));
             row.push(TagGroup::with_children(tag, vec![Node::Leaf(text)]));
         }
         body.push(row);
@@ -429,7 +428,7 @@ fn tagging_table_header_and_footer(document: &mut Document) {
         let cell = Tag::TD
             .with_row_span(Some(NonZeroU32::new(2).unwrap()))
             .with_col_span(Some(NonZeroU32::new(3).unwrap()))
-            .with_headers((0..3).map(header_id));
+            .with_headers(Some((0..3).map(header_id)));
         let cell = TagGroup::with_children(cell, vec![Node::Leaf(text)]);
 
         let row = TagGroup::with_children(Tag::TR, vec![Node::Group(cell)]);
@@ -638,7 +637,7 @@ fn tagging_unknown_header_tag_id() {
     let loc_1 = loc(1);
     let group_1 = TagGroup::new(
         Tag::TD
-            .with_headers([id.clone()])
+            .with_headers(Some([id.clone()]))
             .with_location(Some(loc_1)),
     );
 
