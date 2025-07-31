@@ -15,11 +15,10 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 base64 = "0.22.1"
 bumpalo = "3.16.0"
-comemo = "0.4.0"
+comemo = "0.5.0"
 difference = "2.0.0"
 flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
 float-cmp = "0.10.0"
-fxhash = "0.2.1"
 fontdb = "0.23.0"
 gif = "0.13.1"
 hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "e701f95" }
@@ -39,12 +38,13 @@ proc-macro2 = "1.0.86"
 quote = "1.0.37"
 rayon = "1.10.0"
 resvg = "0.45.0"
+rustc-hash = "2.1.1"
 rustybuzz = "0.20.1"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "fb804b3" }
 skrifa = "0.32.0"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
-subsetter = "0.2.1"
+subsetter = "0.2.2"
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
 tiny-skia-path = "0.11.4"
