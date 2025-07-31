@@ -2910,8 +2910,8 @@ impl Tag<kind::TH> {
     /// evaluated.
     ///
     /// This allows specifying header hierarchies inside tables.
-    pub fn set_headers(&mut self, headers: impl IntoIterator<Item = TagId>) {
-        self.inner.set_table(TableAttr::CellHeaders(headers.into_iter().collect()));
+    pub fn set_headers(&mut self, headers: Option<impl IntoIterator<Item = TagId>>) {
+        self.inner.set_or_remove_table(TableAttr::CELL_HEADERS, headers.map(|ids| ids.into_iter().collect()).map(TableAttr::CellHeaders));
     }
 
     /// Set the list of headers associated with a table cell.
@@ -2921,7 +2921,7 @@ impl Tag<kind::TH> {
     /// evaluated.
     ///
     /// This allows specifying header hierarchies inside tables.
-    pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
+    pub fn with_headers(mut self, headers: Option<impl IntoIterator<Item = TagId>>) -> Self {
         self.set_headers(headers);
         self
     }
@@ -3083,8 +3083,8 @@ impl Tag<kind::TD> {
     /// evaluated.
     ///
     /// This allows specifying header hierarchies inside tables.
-    pub fn set_headers(&mut self, headers: impl IntoIterator<Item = TagId>) {
-        self.inner.set_table(TableAttr::CellHeaders(headers.into_iter().collect()));
+    pub fn set_headers(&mut self, headers: Option<impl IntoIterator<Item = TagId>>) {
+        self.inner.set_or_remove_table(TableAttr::CELL_HEADERS, headers.map(|ids| ids.into_iter().collect()).map(TableAttr::CellHeaders));
     }
 
     /// Set the list of headers associated with a table cell.
@@ -3094,7 +3094,7 @@ impl Tag<kind::TD> {
     /// evaluated.
     ///
     /// This allows specifying header hierarchies inside tables.
-    pub fn with_headers(mut self, headers: impl IntoIterator<Item = TagId>) -> Self {
+    pub fn with_headers(mut self, headers: Option<impl IntoIterator<Item = TagId>>) -> Self {
         self.set_headers(headers);
         self
     }

@@ -97,17 +97,19 @@ impl AttrVariant<'_> {
     }
 
     fn param_mapping(&self) -> &str {
-        self.param_mapping.get_or_init(|| match self.accessor_kind {
-            AccessorKind::Normal | AccessorKind::Copy | AccessorKind::AsRef(_) => "",
-            AccessorKind::Custom => match self.name {
-                "CellHeaders" => ".into_iter().collect()",
+        match self.accessor_kind {
+            AccessorKind::Normal | AccessorKind::Copy | AccessorKind::AsRef(_) => {
+                self.accessor_name()
+            }
+            AccessorKind::Custom => self.param_mapping.get_or_init(|| match self.name {
+                "CellHeaders" => "headers.map(|ids| ids.into_iter().collect())",
                 #[rustfmt::skip]
                 _ => report_error(
                     &format!("no custom parameter mapping rule implemented for `{}`", self.name),
                     self.span,
                 ),
-            },
-        })
+            }),
+        }
     }
 
     fn return_type(&self) -> &str {
@@ -548,26 +550,26 @@ fn write_accessors(
     };
     write_setter_comment(f, &attr_variant.comments);
     #[rustfmt::skip]
-    if attr_variant.accessor_kind == AccessorKind::Custom || required {
+    if required {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: {param_ty}) {{").ok();
     } else {
         writeln!(f, "    pub fn set_{accessor}(&mut self, {accessor}: Option<{param_ty}>) {{").ok();
     };
     if tag_impl == TagImpl::TagKind {
         writeln!(f, "        {tag}.set_{accessor}({accessor});").ok();
-    } else if attr_variant.accessor_kind == AccessorKind::Custom || required {
+    } else if required {
         #[rustfmt::skip]
-        writeln!(f, "        {tag}.set_{kind_accessor}({kind}::{variant}({accessor}{param_mapping}));").ok();
+        writeln!(f, "        {tag}.set_{kind_accessor}({kind}::{variant}({param_mapping}));").ok();
     } else {
         #[rustfmt::skip]
-        writeln!(f, "        {tag}.set_or_remove_{kind_accessor}({kind}::{ordinal}, {accessor}{param_mapping}.map({kind}::{variant}));").ok();
+        writeln!(f, "        {tag}.set_or_remove_{kind_accessor}({kind}::{ordinal}, {param_mapping}.map({kind}::{variant}));").ok();
     }
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
 
     write_setter_comment(f, &attr_variant.comments);
     #[rustfmt::skip]
-    if attr_variant.accessor_kind == AccessorKind::Custom || required {
+    if required {
         writeln!(f, "    pub fn with_{accessor}(mut self, {accessor}: {param_ty}) -> Self {{").ok();
     } else {
         writeln!(f, "    pub fn with_{accessor}(mut self, {accessor}: Option<{param_ty}>) -> Self {{").ok();

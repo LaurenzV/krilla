@@ -36,7 +36,7 @@ impl TagKind {
 /// let tag = Tag::TH(TableHeaderScope::Row)
 ///     .with_id(Some(TagId::from(*b"this id")))
 ///     .with_col_span(Some(NonZeroU32::new(3).unwrap()))
-///     .with_headers([TagId::from(*b"parent id")])
+///     .with_headers(Some([TagId::from(*b"parent id")]))
 ///     .with_width(Some(250.0))
 ///     .with_height(Some(100.0));
 /// let group = TagGroup::new(tag);
