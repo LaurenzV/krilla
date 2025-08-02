@@ -133,11 +133,6 @@ impl PdfSerializerContext {
         info.queries.push(ExtractionQuery::new_xobject(page_index));
         info.locations.push(location);
 
-        // krilla should always cache objects, so `add_xobject` should never be called twice
-        // on the same page of the same PDF document. We need to make sure to always first call
-        // `get_cached_xobject`  before calling `add_xobject`.
-        assert!(info.cached_xobjects.get(&page_index).is_none());
-
         info.cached_xobjects.insert(page_index, ref_);
 
         ref_
