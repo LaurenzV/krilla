@@ -1,12 +1,16 @@
-use std::hash::Hash;
-use std::ops::DerefMut;
-
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
 use pdf_writer::{Chunk, Finish, Name, Ref, Str};
 use rustc_hash::FxHashMap;
+use skrifa::instance::Size;
+use skrifa::outline::DrawSettings;
+use skrifa::prelude::LocationRef;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
+use skrifa::MetadataProvider;
+use std::hash::Hash;
+use std::ops::DerefMut;
+use std::sync::Arc;
 use subsetter::GlyphRemapper;
 
 use super::{CIDIdentifier, FontIdentifier, PDF_UNITS_PER_EM};
@@ -16,6 +20,7 @@ use crate::geom::Rect;
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
+use crate::text::outline::OutlineBuilder;
 use crate::text::Font;
 use crate::text::GlyphId;
 use crate::util::{hash128, SliceExt};
@@ -210,18 +215,15 @@ impl CIDFont {
             };
         }
 
-        let subsetted = subset_font(self.font.clone(), glyph_remapper)?;
-        let num_glyphs;
+        let (subsetted, global_bbox) = subset_font(self.font.clone(), glyph_remapper)?;
+        let num_glyphs = subsetted.num_glyphs();
+        let subsetted_data = subsetted.font_data().0;
 
         let font_stream = {
-            let mut data = subsetted.as_slice();
+            let mut data = subsetted_data.as_ref().as_ref();
 
             // If we have a CFF font, only embed the standalone CFF program.
             let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
-                KrillaError::Font(self.font.clone(), "failed to read font subset".to_string())
-            })?;
-
-            num_glyphs = subsetted_ref.maxp().map(|m| m.num_glyphs()).map_err(|_| {
                 KrillaError::Font(self.font.clone(), "failed to read font subset".to_string())
             })?;
 
@@ -315,12 +317,11 @@ impl CIDFont {
         flags.insert(FontFlags::SMALL_CAP);
 
         let bbox = {
-            let fb = self.font.bbox();
             Rect::from_ltrb(
-                to_pdf_units(fb.left()),
-                to_pdf_units(fb.top()),
-                to_pdf_units(fb.right()),
-                to_pdf_units(fb.bottom()),
+                to_pdf_units(global_bbox.left()),
+                to_pdf_units(global_bbox.top()),
+                to_pdf_units(global_bbox.right()),
+                to_pdf_units(global_bbox.bottom()),
             )
             .unwrap()
         }
@@ -409,8 +410,42 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 }
 
 #[cfg_attr(feature = "comemo", comemo::memoize)]
-fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<Vec<u8>> {
-    let font_data = font.font_data();
-    subsetter::subset(font_data.as_ref(), font.index(), glyph_remapper)
+fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font, Rect)> {
+    let mut bbox: Option<Rect> = None;
+
+    let font = subsetter::subset(font.font_data().as_ref(), font.index(), glyph_remapper)
         .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
+        .and_then(|data| {
+            Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(
+                font.clone(),
+                "failed to subset font".to_string(),
+            ))
+        })?;
+    let global_bbox = font.bbox();
+
+    let outline_glyphs = font.font_ref().outline_glyphs();
+
+    for g in 0..font.num_glyphs() {
+        if let Some(outline_glyph) = outline_glyphs.get(skrifa::GlyphId::new(g)) {
+            let mut glyph_builder = OutlineBuilder::new();
+            let _ = outline_glyph.draw(
+                DrawSettings::unhinted(Size::unscaled(), LocationRef::default()),
+                &mut glyph_builder,
+            );
+            let path = glyph_builder.finish();
+
+            if let Some(path) = path {
+                let path_bbox = Rect::from_tsp(path.bounds());
+
+                bbox = bbox
+                    .map(|mut r| {
+                        r.expand(&path_bbox);
+                        r
+                    })
+                    .or_else(|| Some(path_bbox));
+            }
+        }
+    }
+
+    Ok((font, bbox.unwrap_or(global_bbox)))
 }

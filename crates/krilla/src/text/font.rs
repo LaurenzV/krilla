@@ -96,6 +96,10 @@ impl Font {
         self.0.font_info.descent.get()
     }
 
+    pub(crate) fn num_glyphs(&self) -> u32 {
+        self.0.font_info.num_glyphs
+    }
+
     pub(crate) fn is_monospaced(&self) -> bool {
         self.0.font_info.is_monospaced
     }
@@ -158,6 +162,7 @@ pub(crate) struct FontInfo {
     location: Location,
     units_per_em: u16,
     global_bbox: Rect,
+    num_glyphs: u32,
     postscript_name: Option<String>,
     ascent: FiniteF32,
     descent: FiniteF32,
@@ -193,6 +198,7 @@ impl FontInfo {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
+        let num_glyphs = font_ref.glyph_names().num_glyphs();
 
         let location = Location::default();
         let metrics = font_ref.metrics(Size::unscaled(), &location);
@@ -249,6 +255,7 @@ impl FontInfo {
             data_len,
             checksum,
             location,
+            num_glyphs,
             units_per_em,
             postscript_name,
             ascent,

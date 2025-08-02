@@ -51,7 +51,7 @@ endobj
   /Type /FontDescriptor
   /FontName /IZPIXC+NewCMMath-Regular
   /Flags 131076
-  /FontBBox [-1042 -3060 4082 3560]
+  /FontBBox [28 -83 722 694]
   /ItalicAngle 0
   /Ascent 806
   /Descent -194
@@ -192,17 +192,17 @@ xref
 0000000253 00000 n
 0000000537 00000 n
 0000000649 00000 n
-0000000898 00000 n
-0000001666 00000 n
-0000003577 00000 n
-0000003772 00000 n
-0000003969 00000 n
+0000000891 00000 n
+0000001659 00000 n
+0000003570 00000 n
+0000003765 00000 n
+0000003962 00000 n
 trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(yGbP6lx36nzez+Yt0vGT6g==) (yGbP6lx36nzez+Yt0vGT6g==)]
+  /ID [(BSKBpkBFxKUd2n75bJ4SEg==) (BSKBpkBFxKUd2n75bJ4SEg==)]
 >>
 startxref
-4024
+4017
 %%EOF
