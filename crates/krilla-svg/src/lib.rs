@@ -170,9 +170,11 @@ pub fn render_svg_glyph(
     // this will have the effect of a scale transformation on the SVG “user” coordinate
     // system.
     if apply_scale {
+        let scale = (default_size.width() / tree.size().width())
+            .min(default_size.height() / tree.size().height());
         surface.push_transform(&Transform::from_scale(
-            default_size.width() / tree.size().width(),
-            default_size.height() / tree.size().height(),
+            scale,
+            scale,
         ))
     }
 
