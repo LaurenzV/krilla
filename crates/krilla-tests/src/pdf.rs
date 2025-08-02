@@ -256,3 +256,19 @@ fn pdf_embedded_multi_page_document(document: &mut Document) {
     let pdf = load_pdf("typst_doc.pdf");
     document.embed_pdf_pages(&pdf, &[0, 2, 3, 5, 7]);
 }
+
+#[snapshot]
+fn pdf_embedded_as_xobject_caching(page: &mut Page) {
+    let pdf = load_pdf("xobject_1.pdf");
+    let mut surface = page.surface();
+    surface.draw_pdf_page(&pdf, Size::from_wh(100.0, 100.0).unwrap(), 0);
+    surface.push_transform(&Transform::from_translate(100.0, 0.0));
+    surface.draw_pdf_page(&pdf, Size::from_wh(100.0, 100.0).unwrap(), 0);
+    surface.pop();
+    surface.push_transform(&Transform::from_translate(0.0, 100.0));
+    surface.draw_pdf_page(&pdf, Size::from_wh(100.0, 100.0).unwrap(), 0);
+    surface.pop();
+    surface.push_transform(&Transform::from_translate(100.0, 100.0));
+    surface.draw_pdf_page(&pdf, Size::from_wh(100.0, 100.0).unwrap(), 0);
+    surface.pop();
+}

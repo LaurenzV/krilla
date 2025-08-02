@@ -68,6 +68,7 @@ impl PdfDocument {
 pub(crate) struct PdfDocumentInfo {
     counter: u64,
     query_refs: Vec<Ref>,
+    cached_xobjects: HashMap<usize, Ref>,
     queries: Vec<ExtractionQuery>,
     locations: Vec<Option<Location>>,
 }
@@ -95,6 +96,8 @@ impl PdfSerializerContext {
         ref_: Ref,
         location: Option<Location>,
     ) {
+        // Unlike XObject's, we cannot cache page refs since Acrobat doesn't like duplicate page
+        // refs in the page tree.
         let info = self.get_info(document);
 
         info.query_refs.push(ref_);
@@ -111,18 +114,28 @@ impl PdfSerializerContext {
         })
     }
 
+    #[must_use = "This method might not use the original ref and could return a different one that \
+    was previously cached."]
     pub(crate) fn add_xobject(
         &mut self,
         document: &PdfDocument,
         page_index: usize,
         ref_: Ref,
         location: Option<Location>,
-    ) {
+    ) -> Ref {
         let info = self.get_info(document);
+
+        if let Some(cached_ref) = info.cached_xobjects.get(&page_index) {
+            return *cached_ref;
+        }
 
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_xobject(page_index));
         info.locations.push(location);
+
+        info.cached_xobjects.insert(page_index, ref_);
+
+        ref_
     }
 
     pub(crate) fn serialize(self, sc: &mut SerializeContext) -> KrillaResult<()> {
