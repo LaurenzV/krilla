@@ -84,6 +84,7 @@ impl PdfDocumentInfo {
 #[derive(Default, Debug)]
 pub(crate) struct PdfSerializerContext {
     infos: HashMap<PdfDocument, PdfDocumentInfo>,
+    cached_xobjects: HashMap<usize, Ref>,
     counter: u64,
 }
 
@@ -123,6 +124,11 @@ impl PdfSerializerContext {
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_xobject(page_index));
         info.locations.push(location);
+        self.cached_xobjects.insert(page_index, ref_);
+    }
+    
+    pub(crate) fn get_cached_xobject(&mut self, page_index: usize) -> Option<Ref> {
+        self.cached_xobjects.get(&page_index).copied()
     }
 
     pub(crate) fn serialize(self, sc: &mut SerializeContext) -> KrillaResult<()> {
