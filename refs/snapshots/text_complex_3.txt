@@ -52,7 +52,7 @@ endobj
   /Type /FontDescriptor
   /FontName /BZVPLP+NotoSansDevanagari-Regular
   /Flags 131076
-  /FontBBox [-585 -530 1574 1347]
+  /FontBBox [-456 -398 1037 896]
   /ItalicAngle 0
   /Ascent 896
   /Descent -408
@@ -382,17 +382,17 @@ xref
 0000000251 00000 n
 0000000704 00000 n
 0000000822 00000 n
-0000001078 00000 n
-0000002069 00000 n
-0000007863 00000 n
-0000008058 00000 n
-0000009994 00000 n
+0000001077 00000 n
+0000002068 00000 n
+0000007862 00000 n
+0000008057 00000 n
+0000009993 00000 n
 trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(wF6cTcLzGRRYliQ5YYu3iA==) (wF6cTcLzGRRYliQ5YYu3iA==)]
+  /ID [(fJF7SbBWWE42xHypHjO/SA==) (fJF7SbBWWE42xHypHjO/SA==)]
 >>
 startxref
-10049
+10048
 %%EOF

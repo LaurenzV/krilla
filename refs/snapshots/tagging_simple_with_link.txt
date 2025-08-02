@@ -104,7 +104,7 @@ endobj
   /Type /FontDescriptor
   /FontName /YZNZOV+NotoSans-Regular
   /Flags 131076
-  /FontBBox [-621 -394 2800 1347]
+  /FontBBox [46 -240 560 760]
   /ItalicAngle 0
   /Ascent 1069
   /Descent -293
@@ -278,18 +278,18 @@ xref
 0000000766 00000 n
 0000001075 00000 n
 0000001187 00000 n
-0000001436 00000 n
-0000002205 00000 n
-0000004158 00000 n
-0000004350 00000 n
-0000004596 00000 n
-0000004852 00000 n
+0000001432 00000 n
+0000002201 00000 n
+0000004154 00000 n
+0000004346 00000 n
+0000004592 00000 n
+0000004848 00000 n
 trailer
 <<
   /Size 17
   /Root 16 0 R
-  /ID [(XGI9+mjMrjcU/IoTsYDgIw==) (XGI9+mjMrjcU/IoTsYDgIw==)]
+  /ID [(OT0wMXqwGP/+7iKaRpp7sA==) (OT0wMXqwGP/+7iKaRpp7sA==)]
 >>
 startxref
-4988
+4984
 %%EOF

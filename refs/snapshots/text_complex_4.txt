@@ -52,7 +52,7 @@ endobj
   /Type /FontDescriptor
   /FontName /HQGATO+NotoSansDevanagari-Regular
   /Flags 131076
-  /FontBBox [-585 -530 1574 1347]
+  /FontBBox [-456 -268 779 896]
   /ItalicAngle 0
   /Ascent 896
   /Descent -408
@@ -446,17 +446,17 @@ xref
 0000000251 00000 n
 0000000741 00000 n
 0000000859 00000 n
-0000001115 00000 n
-0000002150 00000 n
-0000007848 00000 n
-0000008043 00000 n
-0000010905 00000 n
+0000001113 00000 n
+0000002148 00000 n
+0000007846 00000 n
+0000008041 00000 n
+0000010903 00000 n
 trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(fd/HY5EhiBrevI8rnnMjUg==) (fd/HY5EhiBrevI8rnnMjUg==)]
+  /ID [(1jAa0N4xp70erSn6uEM3hQ==) (1jAa0N4xp70erSn6uEM3hQ==)]
 >>
 startxref
-10960
+10958
 %%EOF
