@@ -176,7 +176,10 @@ mod cid {
     use krilla::text::{Font, TextDirection};
     use krilla_macros::{snapshot, visreg};
 
-    use crate::{ASSETS_PATH, DEJAVU_SANS_MONO, FONT_PATH, LATIN_MODERN_ROMAN, NEW_CM_MATH, NOTO_SANS, NOTO_SANS_ARABIC};
+    use crate::{
+        ASSETS_PATH, DEJAVU_SANS_MONO, FONT_PATH, LATIN_MODERN_ROMAN, NEW_CM_MATH, NOTO_SANS,
+        NOTO_SANS_ARABIC,
+    };
 
     #[visreg(all)]
     fn font_ttf_simple_text(surface: &mut Surface) {
