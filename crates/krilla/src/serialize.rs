@@ -104,7 +104,7 @@ pub struct SerializeSettings {
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
 }
 
-pub type RenderSvgGlyphFn = fn(&[u8], rgb::Color, GlyphId, &mut Surface) -> Option<()>;
+pub type RenderSvgGlyphFn = fn(&[u8], rgb::Color, GlyphId, (f32, f32), &mut Surface) -> Option<()>;
 
 impl SerializeSettings {
     pub(crate) fn pdf_version(&self) -> PdfVersion {
@@ -126,7 +126,7 @@ impl Default for SerializeSettings {
             cmyk_profile: None,
             configuration: Configuration::new(),
             enable_tagging: true,
-            render_svg_glyph_fn: |_, _, _, _| None,
+            render_svg_glyph_fn: |_, _, _,  _, _| None,
         }
     }
 }

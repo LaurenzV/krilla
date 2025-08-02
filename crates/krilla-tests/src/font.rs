@@ -134,11 +134,17 @@ mod svg {
     use krilla::Document;
     use krilla_macros::visreg;
 
-    use crate::{all_glyphs_to_pdf, purple_fill, red_fill, SVG_EXTRA, TWITTER_COLOR_EMOJI};
+    use crate::{all_glyphs_to_pdf, purple_fill, red_fill, EMOJI_ONE, SVG_EXTRA, TWITTER_COLOR_EMOJI};
 
     #[visreg(document, all)]
     fn font_twitter_color_emoji(document: &mut Document) {
         let font_data = TWITTER_COLOR_EMOJI.clone();
+        all_glyphs_to_pdf(font_data, None, false, document);
+    }
+
+    #[visreg(document)]
+    fn font_emoji_one(document: &mut Document) {
+        let font_data = EMOJI_ONE.clone();
         all_glyphs_to_pdf(font_data, None, false, document);
     }
 

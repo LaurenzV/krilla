@@ -122,10 +122,13 @@ pub fn render_svg_glyph(
     data: &[u8],
     context_color: rgb::Color,
     glyph: GlyphId,
+    default_size: (f32, f32),
     surface: &mut Surface,
 ) -> Option<()> {
     let mut data = data;
     let settings = SvgSettings::default();
+    
+    let default_size = usvg::Size::from_wh(default_size.0, default_size.1).unwrap();
 
     let mut decoded = vec![];
     if data.starts_with(&[0x1f, 0x8b]) {
@@ -135,6 +138,8 @@ pub fn render_svg_glyph(
     }
 
     let xml = std::str::from_utf8(data).ok()?;
+    // Incredibly hacky, but hopefully that's enough for SVG glyphs.
+    let has_viewbox = xml.contains("viewBox");
     let document = roxmltree::Document::parse(xml).ok()?;
 
     // Reparsing every time might be pretty slow in some cases, because Noto Color Emoji
@@ -149,9 +154,24 @@ pub fn render_svg_glyph(
             context_color.green(),
             context_color.blue()
         )),
+        default_size,
         ..Default::default()
     };
     let tree = Tree::from_xmltree(&document, &opts).ok()?;
+    
+    let apply_scale = default_size != tree.size() && has_viewbox;
+    
+    // From the specification: 
+    // 
+    // The size of the initial viewport for the SVG document is the em square: 
+    // height and width both equal to head.unitsPerEm. If a viewBox 
+    // attribute is specified on the <svg> element with width or 
+    // height values different from the unitsPerEm value,
+    // this will have the effect of a scale transformation on the SVG “user” coordinate 
+    // system.
+    if apply_scale {
+        surface.push_transform(&Transform::from_scale( default_size.width() / tree.size().width(), default_size.height() / tree.size().height() ))
+    }
 
     if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
         render_node(node, tree.fontdb().clone(), settings, surface)
@@ -160,6 +180,10 @@ pub fn render_svg_glyph(
         // usvg. So in this case, we simply draw the whole document.
         render_tree(&tree, settings, surface)
     };
+
+    if apply_scale {
+        surface.pop();
+    }
 
     Some(())
 }
