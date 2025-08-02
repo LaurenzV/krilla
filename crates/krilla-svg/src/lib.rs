@@ -172,10 +172,7 @@ pub fn render_svg_glyph(
     if apply_scale {
         let scale = (default_size.width() / tree.size().width())
             .min(default_size.height() / tree.size().height());
-        surface.push_transform(&Transform::from_scale(
-            scale,
-            scale,
-        ))
+        surface.push_transform(&Transform::from_scale(scale, scale))
     }
 
     if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
