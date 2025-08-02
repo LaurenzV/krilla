@@ -68,6 +68,7 @@ impl PdfDocument {
 pub(crate) struct PdfDocumentInfo {
     counter: u64,
     query_refs: Vec<Ref>,
+    cached_xobjects: HashMap<usize, Ref>,
     queries: Vec<ExtractionQuery>,
     locations: Vec<Option<Location>>,
 }
@@ -84,7 +85,6 @@ impl PdfDocumentInfo {
 #[derive(Default, Debug)]
 pub(crate) struct PdfSerializerContext {
     infos: HashMap<PdfDocument, PdfDocumentInfo>,
-    cached_xobjects: HashMap<usize, Ref>,
     counter: u64,
 }
 
@@ -114,23 +114,33 @@ impl PdfSerializerContext {
         })
     }
 
+    #[must_use = "This method might not use the original ref and could return a different one that \
+    was previously cached."]
     pub(crate) fn add_xobject(
         &mut self,
         document: &PdfDocument,
         page_index: usize,
         ref_: Ref,
         location: Option<Location>,
-    ) {
+    ) -> Ref {
         let info = self.get_info(document);
+
+        if let Some(cached_ref) = info.cached_xobjects.get(&page_index) {
+            return *cached_ref;
+        }
 
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_xobject(page_index));
         info.locations.push(location);
-        self.cached_xobjects.insert(page_index, ref_);
-    }
 
-    pub(crate) fn get_cached_xobject(&mut self, page_index: usize) -> Option<Ref> {
-        self.cached_xobjects.get(&page_index).copied()
+        // krilla should always cache objects, so `add_xobject` should never be called twice
+        // on the same page of the same PDF document. We need to make sure to always first call
+        // `get_cached_xobject`  before calling `add_xobject`.
+        assert!(info.cached_xobjects.get(&page_index).is_none());
+
+        info.cached_xobjects.insert(page_index, ref_);
+
+        ref_
     }
 
     pub(crate) fn serialize(self, sc: &mut SerializeContext) -> KrillaResult<()> {
