@@ -24,9 +24,9 @@ pub(crate) fn draw_glyph(
         .svg()
         .and_then(|svg_table| svg_table.glyph_data(glyph.to_skrifa()))
         .ok()??;
-    
+
     let upem = font.units_per_em();
-    
+
     let fn_ = surface.sc.serialize_settings().render_svg_glyph_fn;
     fn_(svg_data, context_color, glyph, (upem, upem), surface)?;
 

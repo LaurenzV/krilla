@@ -126,7 +126,7 @@ impl Default for SerializeSettings {
             cmyk_profile: None,
             configuration: Configuration::new(),
             enable_tagging: true,
-            render_svg_glyph_fn: |_, _, _,  _, _| None,
+            render_svg_glyph_fn: |_, _, _, _, _| None,
         }
     }
 }

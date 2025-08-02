@@ -127,7 +127,7 @@ pub fn render_svg_glyph(
 ) -> Option<()> {
     let mut data = data;
     let settings = SvgSettings::default();
-    
+
     let default_size = usvg::Size::from_wh(default_size.0, default_size.1).unwrap();
 
     let mut decoded = vec![];
@@ -158,19 +158,22 @@ pub fn render_svg_glyph(
         ..Default::default()
     };
     let tree = Tree::from_xmltree(&document, &opts).ok()?;
-    
+
     let apply_scale = default_size != tree.size() && has_viewbox;
-    
-    // From the specification: 
-    // 
-    // The size of the initial viewport for the SVG document is the em square: 
-    // height and width both equal to head.unitsPerEm. If a viewBox 
-    // attribute is specified on the <svg> element with width or 
+
+    // From the specification:
+    //
+    // The size of the initial viewport for the SVG document is the em square:
+    // height and width both equal to head.unitsPerEm. If a viewBox
+    // attribute is specified on the <svg> element with width or
     // height values different from the unitsPerEm value,
-    // this will have the effect of a scale transformation on the SVG “user” coordinate 
+    // this will have the effect of a scale transformation on the SVG “user” coordinate
     // system.
     if apply_scale {
-        surface.push_transform(&Transform::from_scale( default_size.width() / tree.size().width(), default_size.height() / tree.size().height() ))
+        surface.push_transform(&Transform::from_scale(
+            default_size.width() / tree.size().width(),
+            default_size.height() / tree.size().height(),
+        ))
     }
 
     if let Some(node) = tree.node_by_id(&format!("glyph{}", glyph.to_u32())) {
