@@ -96,6 +96,8 @@ impl PdfSerializerContext {
         ref_: Ref,
         location: Option<Location>,
     ) {
+        // Unlike XObject's, we cannot cache page refs since Acrobat doesn't like duplicate page
+        // refs in the page tree.
         let info = self.get_info(document);
 
         info.query_refs.push(ref_);
