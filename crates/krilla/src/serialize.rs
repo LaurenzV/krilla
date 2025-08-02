@@ -359,7 +359,7 @@ impl SerializeContext {
     pub(crate) fn embed_pdf_page_as_xobject(&mut self, pdf: &PdfDocument, page_idx: usize) -> Ref {
         if let Some(cached) = self.global_objects.pdf_ctx.get_cached_xobject(page_idx) {
             cached
-        }   else {
+        } else {
             let xobj_ref = self.new_ref();
             self.global_objects
                 .pdf_ctx

@@ -128,7 +128,7 @@ impl PdfSerializerContext {
         info.locations.push(location);
         self.cached_xobjects.insert(page_index, ref_);
     }
-    
+
     pub(crate) fn get_cached_xobject(&mut self, page_index: usize) -> Option<Ref> {
         self.cached_xobjects.get(&page_index).copied()
     }
