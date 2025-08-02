@@ -442,7 +442,7 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font
                         r.expand(&path_bbox);
                         r
                     })
-                    .or_else(|| Some(path_bbox));
+                    .or(Some(path_bbox));
             }
         }
     }
