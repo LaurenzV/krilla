@@ -6,7 +6,7 @@ use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::metrics::GlyphMetrics;
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, MetadataProvider};
+use skrifa::{FontRef, MetadataProvider, OutlineGlyphCollection};
 use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
@@ -52,6 +52,7 @@ impl Font {
                         font_ref: font_ref.clone(),
                         glyph_metrics: font_ref
                             .glyph_metrics(Size::unscaled(), LocationRef::default()),
+                        outline_glyphs: font_ref.outline_glyphs(),
                     }
                 },
             );
@@ -96,6 +97,10 @@ impl Font {
         self.0.font_info.descent.get()
     }
 
+    pub(crate) fn num_glyphs(&self) -> u32 {
+        self.0.font_info.num_glyphs
+    }
+
     pub(crate) fn is_monospaced(&self) -> bool {
         self.0.font_info.is_monospaced
     }
@@ -124,6 +129,10 @@ impl Font {
 
     pub(crate) fn glyph_metrics(&self) -> &GlyphMetrics {
         &self.0.font_ref_yoke.get().glyph_metrics
+    }
+
+    pub(crate) fn outline_glyphs(&self) -> &OutlineGlyphCollection {
+        &self.0.font_ref_yoke.get().outline_glyphs
     }
 
     pub(crate) fn font_data(&self) -> Data {
@@ -158,6 +167,7 @@ pub(crate) struct FontInfo {
     location: Location,
     units_per_em: u16,
     global_bbox: Rect,
+    num_glyphs: u32,
     postscript_name: Option<String>,
     ascent: FiniteF32,
     descent: FiniteF32,
@@ -193,6 +203,7 @@ impl FontInfo {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
+        let num_glyphs = font_ref.glyph_names().num_glyphs();
 
         let location = Location::default();
         let metrics = font_ref.metrics(Size::unscaled(), &location);
@@ -249,6 +260,7 @@ impl FontInfo {
             data_len,
             checksum,
             location,
+            num_glyphs,
             units_per_em,
             postscript_name,
             ascent,
@@ -276,4 +288,5 @@ impl FontInfo {
 struct FontRefYoke<'a> {
     pub font_ref: FontRef<'a>,
     pub glyph_metrics: GlyphMetrics<'a>,
+    pub outline_glyphs: OutlineGlyphCollection<'a>,
 }

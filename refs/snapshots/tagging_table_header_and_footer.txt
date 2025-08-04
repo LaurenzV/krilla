@@ -365,7 +365,7 @@ endobj
   /Type /FontDescriptor
   /FontName /QWWHUP+NotoSans-Regular
   /Flags 131076
-  /FontBBox [-621 -394 2800 1347]
+  /FontBBox [1 -240 560 765]
   /ItalicAngle 0
   /Ascent 1069
   /Descent -293
@@ -746,17 +746,17 @@ xref
 0000003569 00000 n
 0000003974 00000 n
 0000004091 00000 n
-0000004341 00000 n
-0000005279 00000 n
-0000008936 00000 n
-0000009153 00000 n
-0000011301 00000 n
+0000004336 00000 n
+0000005274 00000 n
+0000008931 00000 n
+0000009148 00000 n
+0000011296 00000 n
 trailer
 <<
   /Size 37
   /Root 36 0 R
-  /ID [(NosDXJpJGLY4Ovd+WwF8xg==) (NosDXJpJGLY4Ovd+WwF8xg==)]
+  /ID [(5vJ0ByAmqjlYI34rC3m6wg==) (5vJ0ByAmqjlYI34rC3m6wg==)]
 >>
 startxref
-11437
+11432
 %%EOF

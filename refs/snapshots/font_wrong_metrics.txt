@@ -52,7 +52,7 @@ endobj
   /Type /FontDescriptor
   /FontName /OMMPIC+NotoSerifSC-Regular
   /Flags 131078
-  /FontBBox [-997 -1049 2929 1809]
+  /FontBBox [47 -77 946 838]
   /ItalicAngle 0
   /Ascent 880
   /Descent -120
@@ -184,17 +184,17 @@ xref
 0000000244 00000 n
 0000000508 00000 n
 0000000620 00000 n
-0000000870 00000 n
-0000001568 00000 n
-0000003250 00000 n
-0000003445 00000 n
-0000003577 00000 n
+0000000864 00000 n
+0000001562 00000 n
+0000003244 00000 n
+0000003439 00000 n
+0000003571 00000 n
 trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(uFRNoHU8Yw2PuzvhbG23tA==) (uFRNoHU8Yw2PuzvhbG23tA==)]
+  /ID [(/3kVuRKSUX9Uwg3IowJXUA==) (/3kVuRKSUX9Uwg3IowJXUA==)]
 >>
 startxref
-3632
+3626
 %%EOF

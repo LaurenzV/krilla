@@ -185,7 +185,8 @@ mod cid {
     use krilla_macros::{snapshot, visreg};
 
     use crate::{
-        ASSETS_PATH, DEJAVU_SANS_MONO, FONT_PATH, LATIN_MODERN_ROMAN, NOTO_SANS, NOTO_SANS_ARABIC,
+        ASSETS_PATH, DEJAVU_SANS_MONO, FONT_PATH, LATIN_MODERN_ROMAN, NEW_CM_MATH, NOTO_SANS,
+        NOTO_SANS_ARABIC,
     };
 
     #[visreg(all)]
@@ -299,6 +300,24 @@ mod cid {
             font.clone(),
             25.0,
             "H",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
+    // See https://github.com/typst/typst/issues/6671.
+    #[snapshot]
+    fn font_wrong_metrics_3(page: &mut Page) {
+        let mut surface = page.surface();
+
+        let font_data = NEW_CM_MATH.clone();
+        let font = Font::new(font_data.clone(), 0).unwrap();
+
+        surface.draw_text(
+            Point::from_xy(0.0, 50.0),
+            font.clone(),
+            25.0,
+            "a + b = c",
             false,
             TextDirection::Auto,
         );
