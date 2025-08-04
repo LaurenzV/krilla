@@ -8,7 +8,7 @@ use crate::text::Font;
 use crate::text::GlyphId;
 
 pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<tiny_skia_path::Path> {
-    let outline_glyphs = font.font_ref().outline_glyphs();
+    let outline_glyphs = font.outline_glyphs();
     let mut outline_builder = OutlineBuilder::new();
 
     if let Some(outline_glyph) = outline_glyphs.get(glyph.to_skrifa()) {

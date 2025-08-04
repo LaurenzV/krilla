@@ -7,7 +7,6 @@ use skrifa::outline::DrawSettings;
 use skrifa::prelude::LocationRef;
 use skrifa::raw::tables::cff::Cff;
 use skrifa::raw::{TableProvider, TopLevelTable};
-use skrifa::MetadataProvider;
 use std::hash::Hash;
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -423,29 +422,32 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font
         })?;
     let global_bbox = font.bbox();
 
-    let outline_glyphs = font.font_ref().outline_glyphs();
-
     for g in 0..font.num_glyphs() {
-        if let Some(outline_glyph) = outline_glyphs.get(skrifa::GlyphId::new(g)) {
-            let mut glyph_builder = OutlineBuilder::new();
-            let _ = outline_glyph.draw(
-                DrawSettings::unhinted(Size::unscaled(), LocationRef::default()),
-                &mut glyph_builder,
-            );
-            let path = glyph_builder.finish();
-
-            if let Some(path) = path {
-                let path_bbox = Rect::from_tsp(path.bounds());
-
-                bbox = bbox
-                    .map(|mut r| {
-                        r.expand(&path_bbox);
-                        r
-                    })
-                    .or(Some(path_bbox));
-            }
+        if let Some(path_bbox) = compute_bbox(&font, skrifa::GlyphId::new(g)) {
+            bbox = bbox
+                .map(|mut r| {
+                    r.expand(&path_bbox);
+                    r
+                })
+                .or(Some(path_bbox));
         }
     }
 
     Ok((font, bbox.unwrap_or(global_bbox)))
+}
+
+#[cfg_attr(feature = "comemo", comemo::memoize)]
+fn compute_bbox(font: &Font, glyph: skrifa::GlyphId) -> Option<Rect> {
+    let outline_glyphs = font.outline_glyphs();
+
+    if let Some(outline_glyph) = outline_glyphs.get(glyph) {
+        let mut glyph_builder = OutlineBuilder::new();
+        let _ = outline_glyph.draw(
+            DrawSettings::unhinted(Size::unscaled(), LocationRef::default()),
+            &mut glyph_builder,
+        );
+        glyph_builder.finish().map(|p| Rect::from_tsp(p.bounds()))
+    } else {
+        None
+    }
 }

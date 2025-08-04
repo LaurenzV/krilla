@@ -6,7 +6,7 @@ use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::metrics::GlyphMetrics;
 use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
-use skrifa::{FontRef, MetadataProvider};
+use skrifa::{FontRef, MetadataProvider, OutlineGlyphCollection};
 use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
@@ -52,6 +52,7 @@ impl Font {
                         font_ref: font_ref.clone(),
                         glyph_metrics: font_ref
                             .glyph_metrics(Size::unscaled(), LocationRef::default()),
+                        outline_glyphs: font_ref.outline_glyphs(),
                     }
                 },
             );
@@ -128,6 +129,10 @@ impl Font {
 
     pub(crate) fn glyph_metrics(&self) -> &GlyphMetrics {
         &self.0.font_ref_yoke.get().glyph_metrics
+    }
+
+    pub(crate) fn outline_glyphs(&self) -> &OutlineGlyphCollection {
+        &self.0.font_ref_yoke.get().outline_glyphs
     }
 
     pub(crate) fn font_data(&self) -> Data {
@@ -283,4 +288,5 @@ impl FontInfo {
 struct FontRefYoke<'a> {
     pub font_ref: FontRef<'a>,
     pub glyph_metrics: GlyphMetrics<'a>,
+    pub outline_glyphs: OutlineGlyphCollection<'a>,
 }
