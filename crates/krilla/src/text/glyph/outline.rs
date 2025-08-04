@@ -1,5 +1,4 @@
 use skrifa::outline::{DrawSettings, OutlinePen};
-use skrifa::MetadataProvider;
 
 use crate::geom::Path;
 use crate::geom::Transform;
