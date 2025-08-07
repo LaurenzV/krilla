@@ -21,7 +21,7 @@ endobj
   /RoleMap <<
     /Datetime /Span
     /Terms /Part
-    /Title /H1
+    /Title /P
     /Strong /Span
     /Em /Span
   >>
@@ -316,7 +316,7 @@ endobj
   /Subtype /XML
 >>
 stream
-<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Strong and Em</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>1</pdfuaid:part><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>NASNflbShr+YDMSiPu5cdQ==</xmpMM:InstanceID><xmpMM:DocumentID>NASNflbShr+YDMSiPu5cdQ==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Strong and Em</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>1</pdfuaid:part><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>FVGYLme6Iy9xh/GHoy4hRQ==</xmpMM:InstanceID><xmpMM:DocumentID>FVGYLme6Iy9xh/GHoy4hRQ==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
 endstream
 endobj
 
@@ -344,29 +344,29 @@ xref
 0000000016 00000 n
 0000000081 00000 n
 0000000121 00000 n
-0000000348 00000 n
-0000000378 00000 n
-0000000459 00000 n
-0000000539 00000 n
-0000000623 00000 n
-0000000711 00000 n
-0000000874 00000 n
-0000001318 00000 n
-0000001435 00000 n
-0000001680 00000 n
-0000002646 00000 n
-0000006459 00000 n
-0000006675 00000 n
-0000007135 00000 n
-0000007183 00000 n
-0000008234 00000 n
+0000000347 00000 n
+0000000377 00000 n
+0000000458 00000 n
+0000000538 00000 n
+0000000622 00000 n
+0000000710 00000 n
+0000000873 00000 n
+0000001317 00000 n
+0000001434 00000 n
+0000001679 00000 n
+0000002645 00000 n
+0000006458 00000 n
+0000006674 00000 n
+0000007134 00000 n
+0000007182 00000 n
+0000008233 00000 n
 trailer
 <<
   /Size 20
   /Root 19 0 R
   /Info 17 0 R
-  /ID [(NASNflbShr+YDMSiPu5cdQ==) (NASNflbShr+YDMSiPu5cdQ==)]
+  /ID [(FVGYLme6Iy9xh/GHoy4hRQ==) (FVGYLme6Iy9xh/GHoy4hRQ==)]
 >>
 startxref
-8475
+8474
 %%EOF
