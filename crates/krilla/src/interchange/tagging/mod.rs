@@ -456,6 +456,8 @@ impl TagKind {
             Self::Datetime(_) => struct_elem.custom_kind(Name(b"Datetime")),
             Self::Terms(_) => struct_elem.custom_kind(Name(b"Terms")),
             Self::Title(_) => struct_elem.custom_kind(Name(b"Title")),
+            Self::Strong(_) => struct_elem.custom_kind(Name(b"Strong")),
+            Self::Em(_) => struct_elem.custom_kind(Name(b"Em")),
             Self::Hn(tag) => {
                 let level = tag.level();
                 // Dynamically register custom headings `Hn` with `n >= 7`
@@ -508,6 +510,8 @@ impl TagKind {
             Self::Datetime(_) => PdfVersion::Pdf15,
             Self::Terms(_) => PdfVersion::Pdf15,
             Self::Title(_) => PdfVersion::Pdf15,
+            Self::Strong(_) => PdfVersion::Pdf15,
+            Self::Em(_) => PdfVersion::Pdf15,
         }
     }
 
