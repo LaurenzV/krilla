@@ -577,6 +577,43 @@ fn tagging_div_and_border_color(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
+#[snapshot(document, settings_15)]
+fn tagging_strong_and_em(document: &mut Document) {
+    document.set_metadata(
+        Metadata::new()
+            .title("Strong and Em".into())
+            .language("en".into()),
+    );
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "STRONG TEXT");
+    surface.end_tagged();
+    let mut strong = TagGroup::new(Tag::Strong);
+    strong.push(id1);
+
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "emphasized text");
+    surface.end_tagged();
+    let mut em = TagGroup::new(Tag::Em);
+    em.push(id2);
+
+    surface.finish();
+    page.finish();
+
+    let mut p = TagGroup::new(Tag::P);
+    p.push(strong);
+    p.push(em);
+
+    tag_tree.push(p);
+
+    document.set_tag_tree(tag_tree);
+}
+
 #[test]
 #[should_panic]
 fn tagging_page_identifer_appears_twice() {
