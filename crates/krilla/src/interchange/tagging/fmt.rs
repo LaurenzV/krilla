@@ -155,6 +155,8 @@ impl Output for TagKind {
             TagKind::Datetime(_) => write!(f, "Datetime"),
             TagKind::Terms(_) => write!(f, "Terms"),
             TagKind::Title(_) => write!(f, "Title"),
+            TagKind::Strong(_) => write!(f, "Strong"),
+            TagKind::Em(_) => write!(f, "Em"),
         }?;
         writeln!(f)?;
 

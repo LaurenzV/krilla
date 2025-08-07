@@ -126,6 +126,10 @@ pub enum TagKind {
     Terms(Tag<kind::Terms>),
     /// A title.
     Title(Tag<kind::Title>),
+    /// Encloses content with strong importance, most commonly **bold** text.
+    Strong(Tag<kind::Strong>),
+    /// Encloses content that is emphasized, most commonly *italic* text.
+    Em(Tag<kind::Em>),
 }
 
 impl TagKind {
@@ -168,6 +172,8 @@ impl TagKind {
             Self::Datetime(tag) => tag.as_any(),
             Self::Terms(tag) => tag.as_any(),
             Self::Title(tag) => tag.as_any(),
+            Self::Strong(tag) => tag.as_any(),
+            Self::Em(tag) => tag.as_any(),
         }
     }
 
@@ -211,6 +217,8 @@ impl TagKind {
             Self::Datetime(tag) => tag.as_any_mut(),
             Self::Terms(tag) => tag.as_any_mut(),
             Self::Title(tag) => tag.as_any_mut(),
+            Self::Strong(tag) => tag.as_any_mut(),
+            Self::Em(tag) => tag.as_any_mut(),
         }
     }
 
@@ -1686,6 +1694,14 @@ pub mod kind {
     /// A title.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Title;
+
+    /// Encloses content with strong importance, most commonly **bold** text.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Strong;
+
+    /// Encloses content that is emphasized, most commonly *italic* text.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Em;
 
 }
 
@@ -4057,6 +4073,28 @@ impl Tag<kind::Title> {
     /// A title.
     #[allow(non_upper_case_globals)]
     pub const Title: Tag<kind::Title> = Tag::new();
+}
+
+impl From<Tag<kind::Strong>> for TagKind {
+    fn from(value: Tag<kind::Strong>) -> Self {
+        Self::Strong(value)
+    }
+}
+impl Tag<kind::Strong> {
+    /// Encloses content with strong importance, most commonly **bold** text.
+    #[allow(non_upper_case_globals)]
+    pub const Strong: Tag<kind::Strong> = Tag::new();
+}
+
+impl From<Tag<kind::Em>> for TagKind {
+    fn from(value: Tag<kind::Em>) -> Self {
+        Self::Em(value)
+    }
+}
+impl Tag<kind::Em> {
+    /// Encloses content that is emphasized, most commonly *italic* text.
+    #[allow(non_upper_case_globals)]
+    pub const Em: Tag<kind::Em> = Tag::new();
 }
 
 #[derive(Clone, Debug, PartialEq)]

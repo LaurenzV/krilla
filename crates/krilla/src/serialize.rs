@@ -727,7 +727,12 @@ impl SerializeContext {
             let mut role_map = tree.insert(Name(b"RoleMap")).start::<RoleMap>();
             role_map.insert(Name(b"Datetime"), StructRole::Span);
             role_map.insert(Name(b"Terms"), StructRole::Part);
-            role_map.insert(Name(b"Title"), StructRole::H1);
+            // PDF 2.0 exclusive structure elements.
+            if self.serialize_settings.pdf_version() < PdfVersion::Pdf20 {
+                role_map.insert(Name(b"Title"), StructRole::H1);
+                role_map.insert(Name(b"Strong"), StructRole::Span);
+                role_map.insert(Name(b"Em"), StructRole::Span);
+            }
             for level in self.global_objects.custom_heading_roles.iter() {
                 let name = format!("H{level}");
                 role_map.insert(Name(name.as_bytes()), StructRole::P);

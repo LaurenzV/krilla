@@ -351,12 +351,18 @@ optional = [
 # it serves solely for grouping purposes.
 [Tag.NonStruct]
 
+# Non-standard role-mapped tag kinds:
+
 # A date or time.
 [Tag.Datetime]
 # A list of terms.
 [Tag.Terms]
 # A title.
 [Tag.Title]
+# Encloses content with strong importance, most commonly **bold** text.
+[Tag.Strong]
+# Encloses content that is emphasized, most commonly *italic* text.
+[Tag.Em]
 
 [Attr.Struct]
 # The tag id.
