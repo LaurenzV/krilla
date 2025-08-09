@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use std::sync::Arc;
 
 use skrifa::instance::{Location, LocationRef, Size};
@@ -43,18 +44,22 @@ impl Font {
     }
 
     pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
-        let font_ref_yoke =
-            Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
-                data.0.clone(),
-                |data| {
-                    let font_ref = FontRef::from_index(data.as_ref(), font_info.index).unwrap();
-                    FontRefYoke {
-                        font_ref: font_ref.clone(),
-                        glyph_metrics: font_ref
-                            .glyph_metrics(Size::unscaled(), LocationRef::default()),
-                    }
-                },
-            );
+        let yoke_data = YokeData {
+            data: data.0.clone(),
+            location: font_info.location.clone(),
+        };
+
+        let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
+            Box::new(yoke_data),
+            |yoke_data| {
+                let font_ref =
+                    FontRef::from_index(yoke_data.data.as_ref().as_ref(), font_info.index).unwrap();
+                FontRefYoke {
+                    font_ref: font_ref.clone(),
+                    glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &yoke_data.location),
+                }
+            },
+        );
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_data: data,
@@ -142,6 +147,19 @@ impl Debug for Font {
     }
 }
 
+struct YokeData {
+    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    location: Location,
+}
+
+impl Deref for YokeData {
+    type Target = YokeData;
+
+    fn deref(&self) -> &Self::Target {
+        self
+    }
+}
+
 /// `FontInfo` holds basic information about the font which is necessary
 /// to distinguish a `Font` object from others. The `Hash` implementation
 /// of the `Font` struct solely depends on its `FontInfo` object. The reason
@@ -174,7 +192,7 @@ pub(crate) struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_data: Data,
-    font_ref_yoke: Yoke<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
+    font_ref_yoke: Yoke<FontRefYoke<'static>, Box<YokeData>>,
 }
 
 impl Hash for Repr {
