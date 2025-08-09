@@ -32,13 +32,15 @@ impl Font {
     /// set to 0. The location indicates the variation axes that should be associated with
     /// the font.
     ///
-    /// The `allow_color` property allows you to specify whether krilla should render the font
-    /// as a color font. When setting this property to false, krilla will always only use the
-    /// `glyf`/`CFF` tables of the font. If you don't know what this means, just set it to `true`.
-    ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(data: Data, index: u32) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref(), index)?;
+        Self::new_variable(data, index, &[])
+    }
+    
+    /// Like [`Font::new`], creates a new font from some data, but allows you to specify
+    /// variation coordinates in case the font is variable.
+    pub fn new_variable(data: Data, index: u32, variation_coords: &[(String, f32)]) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref(), index, variation_coords)?;
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
@@ -80,6 +82,10 @@ impl Font {
     pub(crate) fn font_info(&self) -> Arc<FontInfo> {
         self.0.font_info.clone()
     }
+    
+    pub(crate) fn variation_coordinates(&self) -> &[(String, FiniteF32)] {
+        &self.0.font_info.var_coords
+    }
 
     pub(crate) fn cap_height(&self) -> Option<f32> {
         self.0.font_info.cap_height.map(|n| n.get())
@@ -117,8 +123,7 @@ impl Font {
     pub(crate) fn bbox(&self) -> Rect {
         self.0.font_info.global_bbox
     }
-
-    // For now, location will always be default, until we support variable fonts.
+    
     pub(crate) fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
     }
@@ -173,6 +178,9 @@ pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     data_len: usize,
+    var_coords: Vec<(String, FiniteF32)>,
+    // Location is derived from `var_coord`, but we need to store it explicitly
+    // so we can later pass it to the subsetter.
     location: Location,
     units_per_em: u16,
     global_bbox: Rect,
@@ -207,12 +215,12 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(String, f32)]) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
+        let location = font_ref.axes().location(var_coords.iter().map(|i| (i.0.as_str(), i.1)));
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
-
-        let location = Location::default();
+        
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let os_2 = font_ref.os2().ok();
         let ascent = FiniteF32::new(
@@ -266,6 +274,8 @@ impl FontInfo {
             index,
             data_len,
             checksum,
+            var_coords: var_coords.iter().map(|v| (v.0.clone(), FiniteF32::new(v.1).unwrap_or_default()))
+                .collect(),
             location,
             units_per_em,
             postscript_name,

@@ -1,6 +1,5 @@
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
-use skrifa::prelude::LocationRef;
 use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
 use skrifa::MetadataProvider;
@@ -228,7 +227,7 @@ impl ColorPainter for ColrBuilder {
         };
 
         let Ok(_) = outline_glyph.draw(
-            DrawSettings::unhinted(skrifa::instance::Size::unscaled(), LocationRef::default()),
+            DrawSettings::unhinted(skrifa::instance::Size::unscaled(), self.font.location_ref()),
             &mut glyph_builder,
         ) else {
             self.error = true;
