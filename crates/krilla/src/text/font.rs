@@ -25,12 +25,12 @@ use crate::Data;
 pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
-    /// Create a new font from some data.
+    /// Create a new font from some data. If you want to create a variable font at a specific 
+    /// location, use [`Font::new_variable`] instead.
     ///
     /// The `index` indicates the index that should be
     /// associated with this font for TrueType collections, otherwise this value should be
-    /// set to 0. The location indicates the variation axes that should be associated with
-    /// the font.
+    /// set to 0. 
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(data: Data, index: u32) -> Option<Self> {
