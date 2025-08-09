@@ -1379,6 +1379,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "read-fonts"
+version = "0.31.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb16bffd9221b97a7de1b048520122b3926cf11e778c42c4c7514a4ee9da9455"
+dependencies = [
+ "bytemuck",
+ "font-types 0.9.0",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1640,6 +1650,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "skrifa"
+version = "0.33.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78cc1f79e5624f166718224ef883095bea315801aca75b62c64f3937755a586d"
+dependencies = [
+ "bytemuck",
+ "read-fonts 0.31.2",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1693,10 +1713,11 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "subsetter"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35725d9d2d056905865f8a36146e45be43691b15fc5d973bd7f79dd438288544"
 dependencies = [
+ "kurbo",
  "rustc-hash 2.1.1",
+ "skrifa 0.33.2",
+ "write-fonts",
 ]
 
 [[package]]
@@ -2153,6 +2174,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "write-fonts"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cac89848aeba9b7e1877f1e89e3f9c95adb8771f640e1ef23c605aa734748c2b"
+dependencies = [
+ "font-types 0.9.0",
+ "indexmap",
+ "kurbo",
+ "log",
+ "read-fonts 0.31.2",
 ]
 
 [[package]]
