@@ -9,7 +9,7 @@ use krilla_macros::{snapshot, visreg};
 use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN,
     LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
-    TWITTER_COLOR_EMOJI,
+    NOTO_SANS_VAR, TWITTER_COLOR_EMOJI,
 };
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
@@ -419,5 +419,33 @@ fn text_two_fonts_reproducibility() {
 
     for _ in 0..10 {
         assert_eq!(expected, render_single());
+    }
+}
+
+#[visreg]
+fn text_variable_font(surface: &mut Surface) {
+    let f1 = Font::new_variable(NOTO_SANS_VAR.clone(), 0, &[("wght".to_string(), 400.0)]).unwrap();
+    let f2 = Font::new_variable(NOTO_SANS_VAR.clone(), 0, &[("wght".to_string(), 100.0)]).unwrap();
+    let f3 = Font::new_variable(NOTO_SANS_VAR.clone(), 0, &[("wght".to_string(), 900.0)]).unwrap();
+    let f4 = Font::new_variable(
+        NOTO_SANS_VAR.clone(),
+        0,
+        &[("wght".to_string(), 900.0), ("wdth".to_string(), 62.5)],
+    )
+    .unwrap();
+
+    let mut cur_y = 20.0;
+
+    for font in [f1, f2, f3, f4] {
+        surface.draw_text(
+            Point::from_xy(0.0, cur_y),
+            font,
+            16.0,
+            "I love variable fonts!",
+            false,
+            TextDirection::Auto,
+        );
+
+        cur_y += 20.0;
     }
 }
