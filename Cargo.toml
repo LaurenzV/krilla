@@ -21,7 +21,7 @@ flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
 float-cmp = "0.10.0"
 fontdb = "0.23.0"
 gif = "0.13.1"
-hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "e701f95" }
+hayro-write = { version = "0.2.0", default-features = false }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.13.0"
 image-webp = "0.2.1"
