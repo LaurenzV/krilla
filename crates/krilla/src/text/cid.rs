@@ -409,14 +409,19 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font
         .iter()
         .map(|v| (v.0.clone(), v.1.get()))
         .collect::<Vec<_>>();
-    let font = subsetter::subset(font.font_data().as_ref(), font.index(), &variation_coordinates, glyph_remapper)
-        .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
-        .and_then(|data| {
-            Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(
-                font.clone(),
-                "failed to subset font".to_string(),
-            ))
-        })?;
+    let font = subsetter::subset(
+        font.font_data().as_ref(),
+        font.index(),
+        &variation_coordinates,
+        glyph_remapper,
+    )
+    .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
+    .and_then(|data| {
+        Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(
+            font.clone(),
+            "failed to subset font".to_string(),
+        ))
+    })?;
     let global_bbox = font.bbox();
 
     for g in 0..font.num_glyphs() {

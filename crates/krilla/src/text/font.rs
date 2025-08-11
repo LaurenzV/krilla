@@ -54,20 +54,19 @@ impl Font {
             data: data.0.clone(),
             location: font_info.location.clone(),
         };
-        
-        let font_ref_yoke =
-            Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
-                Box::new(yoke_data),
-                |data| {
-                    let font_ref = FontRef::from_index(data.data.as_ref().as_ref(), font_info.index).unwrap();
-                    FontRefYoke {
-                        font_ref: font_ref.clone(),
-                        glyph_metrics: font_ref
-                            .glyph_metrics(Size::unscaled(), &data.location),
-                        outline_glyphs: font_ref.outline_glyphs(),
-                    }
-                },
-            );
+
+        let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
+            Box::new(yoke_data),
+            |data| {
+                let font_ref =
+                    FontRef::from_index(data.data.as_ref().as_ref(), font_info.index).unwrap();
+                FontRefYoke {
+                    font_ref: font_ref.clone(),
+                    glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &data.location),
+                    outline_glyphs: font_ref.outline_glyphs(),
+                }
+            },
+        );
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_data: data,
