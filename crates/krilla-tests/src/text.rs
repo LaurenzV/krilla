@@ -6,11 +6,7 @@ use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
 use krilla::{Data, Document};
 use krilla_macros::{snapshot, visreg};
 
-use crate::{
-    blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, LATIN_MODERN_ROMAN,
-    LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI,
-    NOTO_SANS_VAR, TWITTER_COLOR_EMOJI,
-};
+use crate::{blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, CANTARELL_VAR, LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, NOTO_SANS_VAR, TWITTER_COLOR_EMOJI};
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
     LinearGradient {
@@ -422,30 +418,44 @@ fn text_two_fonts_reproducibility() {
     }
 }
 
-#[visreg]
-fn text_variable_font(surface: &mut Surface) {
-    let f1 = Font::new_variable(NOTO_SANS_VAR.clone(), 0, &[("wght".to_string(), 400.0)]).unwrap();
-    let f2 = Font::new_variable(NOTO_SANS_VAR.clone(), 0, &[("wght".to_string(), 100.0)]).unwrap();
-    let f3 = Font::new_variable(NOTO_SANS_VAR.clone(), 0, &[("wght".to_string(), 900.0)]).unwrap();
-    let f4 = Font::new_variable(
-        NOTO_SANS_VAR.clone(),
-        0,
-        &[("wght".to_string(), 900.0), ("wdth".to_string(), 62.5)],
-    )
-    .unwrap();
-
+fn variable_impl(surface: &mut Surface, coords: Vec<Vec<(String, f32)>>, font: Data, text: &str) {
     let mut cur_y = 20.0;
+    
+    for coords in coords {
+        let font = Font::new_variable(font.clone(), 0, &coords).unwrap();
 
-    for font in [f1, f2, f3, f4] {
         surface.draw_text(
             Point::from_xy(0.0, cur_y),
             font,
             16.0,
-            "I love variable fonts!",
+            text,
             false,
             TextDirection::Auto,
         );
 
         cur_y += 20.0;
     }
+}
+
+#[visreg]
+fn text_variable_font(surface: &mut Surface) {
+    let coords = vec![
+        vec![("wght".to_string(), 400.0)],
+        vec![("wght".to_string(), 100.0)],
+        vec![("wght".to_string(), 900.0)],
+        vec![("wght".to_string(), 900.0), ("wdth".to_string(), 62.5)],
+    ];
+    
+    variable_impl(surface, coords, NOTO_SANS_VAR.clone(), "I love variable fonts!");
+}
+
+#[visreg]
+fn text_variable_font_cff2(surface: &mut Surface) {
+    let coords = vec![
+        vec![("wght".to_string(), 400.0)],
+        vec![("wght".to_string(), 100.0)],
+        vec![("wght".to_string(), 900.0)],
+    ];
+    
+    variable_impl(surface, coords, CANTARELL_VAR.clone(), "I love variable fonts!");
 }
