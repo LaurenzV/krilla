@@ -137,6 +137,8 @@ lazy_font!(SVG_EXTRA, FONT_PATH.join("SVG_extra.ttf"));
 lazy_font!(LIBERTINUS_SERIF, FONT_PATH.join("LibertinusSerif-Regular.otf"));
 #[rustfmt::skip]
 lazy_font!(DEJAVU_SANS_MONO, FONT_PATH.join("DejaVuSansMono.ttf"));
+#[rustfmt::skip]
+lazy_font!(NEW_CM_MATH, FONT_PATH.join("NewCMMath-Regular.otf"));
 
 #[derive(Clone)]
 struct TestImage {
