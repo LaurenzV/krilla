@@ -21,7 +21,7 @@ flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
 float-cmp = "0.10.0"
 fontdb = "0.23.0"
 gif = "0.13.1"
-hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "d0fd227" }
+hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "0fb51da" }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.13.0"
 image-webp = "0.2.1"
@@ -32,7 +32,7 @@ once_cell = "1.19.0"
 oxipng = "9.1.2"
 parley = { git = "https://github.com/linebender/parley", rev = "14070d5" }
 paste = "1.0.15"
-pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "f11af55" }
+pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "0c10ef6" }
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"

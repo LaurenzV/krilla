@@ -760,7 +760,7 @@ checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 [[package]]
 name = "hayro-syntax"
 version = "0.2.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=d0fd227#d0fd2274f1c12ac9b13e782c2cc73ea90c338c46"
+source = "git+https://github.com/LaurenzV/hayro?rev=0fb51da#0fb51da3a1bce56adca40024e0c419ae0d68e453"
 dependencies = [
  "flate2",
  "kurbo",
@@ -773,7 +773,7 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.2.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=d0fd227#d0fd2274f1c12ac9b13e782c2cc73ea90c338c46"
+source = "git+https://github.com/LaurenzV/hayro?rev=0fb51da#0fb51da3a1bce56adca40024e0c419ae0d68e453"
 dependencies = [
  "flate2",
  "hayro-syntax",
@@ -1214,7 +1214,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "pdf-writer"
 version = "0.13.0"
-source = "git+https://github.com/typst/pdf-writer?rev=f11af55#f11af55004ef890bcf79042984a31a9513875f4c"
+source = "git+https://github.com/typst/pdf-writer?rev=0c10ef6#0c10ef69829fc2f0d374476585a3e75246598ba4"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",

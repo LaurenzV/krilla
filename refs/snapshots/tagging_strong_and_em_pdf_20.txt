@@ -24,14 +24,14 @@ endobj
 3 0 obj
 <<
   /Type /Namespace
-  /Name (https://www.iso.org/pdf2/ssn)
+  /NS (https://www.iso.org/pdf2/ssn)
 >>
 endobj
 
 4 0 obj
 <<
   /Type /Namespace
-  /Name (https://github.com/LaurenzV/krilla)
+  /NS (https://github.com/LaurenzV/krilla)
   /RoleMapNS <<
     /Datetime [/Span 3 0 R]
     /Terms [/Part 3 0 R]
@@ -322,28 +322,28 @@ xref
 0000000016 00000 n
 0000000081 00000 n
 0000000233 00000 n
-0000000313 00000 n
-0000000473 00000 n
-0000000503 00000 n
-0000000584 00000 n
-0000000676 00000 n
-0000000772 00000 n
-0000000872 00000 n
-0000001036 00000 n
-0000001480 00000 n
-0000001708 00000 n
-0000002674 00000 n
-0000006487 00000 n
-0000006662 00000 n
-0000007122 00000 n
-0000007144 00000 n
+0000000311 00000 n
+0000000469 00000 n
+0000000499 00000 n
+0000000580 00000 n
+0000000672 00000 n
+0000000768 00000 n
+0000000868 00000 n
+0000001032 00000 n
+0000001476 00000 n
+0000001704 00000 n
+0000002670 00000 n
+0000006483 00000 n
+0000006658 00000 n
+0000007118 00000 n
+0000007140 00000 n
 trailer
 <<
   /Size 19
   /Root 18 0 R
   /Info 17 0 R
-  /ID [(vdAD6kxIjgc0eH86xCd9Wg==) (vdAD6kxIjgc0eH86xCd9Wg==)]
+  /ID [(FFF3fIOvp13ZSLOQfqhZlg==) (FFF3fIOvp13ZSLOQfqhZlg==)]
 >>
 startxref
-7273
+7269
 %%EOF
