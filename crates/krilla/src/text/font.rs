@@ -59,11 +59,11 @@ impl Font {
             Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
                 Box::new(yoke_data),
                 |data| {
-                    let font_ref = FontRef::from_index(data.as_ref(), font_info.index).unwrap();
+                    let font_ref = FontRef::from_index(data.data.as_ref().as_ref(), font_info.index).unwrap();
                     FontRefYoke {
                         font_ref: font_ref.clone(),
                         glyph_metrics: font_ref
-                            .glyph_metrics(Size::unscaled(), LocationRef::default()),
+                            .glyph_metrics(Size::unscaled(), &data.location),
                         outline_glyphs: font_ref.outline_glyphs(),
                     }
                 },
