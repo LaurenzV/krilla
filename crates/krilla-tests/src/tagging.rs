@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::num::{NonZeroU16, NonZeroU32};
 
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
@@ -227,11 +227,11 @@ fn tagging_multiple_pages(document: &mut Document) {
     let mut par_1 = TagGroup::new(Tag::P);
     let mut par_2 = TagGroup::new(Tag::P);
     let mut heading_1 = TagGroup::new(Tag::Hn(
-        NonZeroU32::new(1).unwrap(),
+        NonZeroU16::new(1).unwrap(),
         Some("first heading".into()),
     ));
     let mut heading_2 = TagGroup::new(Tag::Hn(
-        NonZeroU32::new(1).unwrap(),
+        NonZeroU16::new(1).unwrap(),
         Some("second heading".into()),
     ));
 
@@ -307,7 +307,7 @@ fn tagging_heading_level_7_and_8_impl(document: &mut Document) {
         offset += 25.0;
         surface.end_tagged();
 
-        let level = NonZeroU32::new(level).unwrap();
+        let level = NonZeroU16::new(level).unwrap();
         let mut heading = TagGroup::new(Tag::Hn(level, Some(name.into())));
         heading.push(hn);
 
@@ -563,7 +563,7 @@ fn tagging_div_and_border_color(document: &mut Document) {
     let blue = NaiveRgbColor::new(0.0, 0.0, 1.0);
     let mut div = TagGroup::new(
         Tag::Div
-            .with_border_color(Some(Sides::specific(red, blue, red, blue)))
+            .with_border_color(Some(Sides::new(red, blue, red, blue)))
             .with_column_count(Some(NonZeroU32::new(2).unwrap()))
             .with_column_widths(Some(ColumnDimensions::all(50.0))),
     );
@@ -578,7 +578,16 @@ fn tagging_div_and_border_color(document: &mut Document) {
 }
 
 #[snapshot(document, settings_15)]
-fn tagging_strong_and_em(document: &mut Document) {
+fn tagging_strong_and_em_pdf_17(document: &mut Document) {
+    tagging_strong_and_em_impl(document);
+}
+
+#[snapshot(document, settings_25)]
+fn tagging_strong_and_em_pdf_20(document: &mut Document) {
+    tagging_strong_and_em_impl(document);
+}
+
+fn tagging_strong_and_em_impl(document: &mut Document) {
     document.set_metadata(
         Metadata::new()
             .title("Strong and Em".into())

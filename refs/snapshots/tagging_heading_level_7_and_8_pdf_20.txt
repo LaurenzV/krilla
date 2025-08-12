@@ -5,53 +5,50 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [26 0 R]
+  /Kids [28 0 R]
 >>
 endobj
 
 2 0 obj
 <<
   /Type /StructTreeRoot
-  /RoleMap <<
-    /Datetime /Span
-    /Terms /Part
-  >>
-  /K [4 0 R]
+  /Namespaces [3 0 R 4 0 R]
+  /K [6 0 R]
   /ParentTree <<
-    /Nums [0 3 0 R]
+    /Nums [0 5 0 R]
   >>
   /ParentTreeNextKey 1
 >>
 endobj
 
 3 0 obj
-[20 0 R 19 0 R 18 0 R 17 0 R 16 0 R 15 0 R 14 0 R 13 0 R]
+<<
+  /Type /Namespace
+  /NS (https://www.iso.org/pdf2/ssn)
+>>
 endobj
 
 4 0 obj
 <<
-  /Type /StructElem
-  /S /Document
-  /P 2 0 R
-  /K [5 0 R]
+  /Type /Namespace
+  /NS (https://github.com/LaurenzV/krilla)
+  /RoleMapNS <<
+    /Datetime [/Span 3 0 R]
+    /Terms [/Part 3 0 R]
+  >>
 >>
 endobj
 
 5 0 obj
-<<
-  /Type /StructElem
-  /S /Sect
-  /P 4 0 R
-  /K [20 0 R 6 0 R]
->>
+[22 0 R 21 0 R 20 0 R 19 0 R 18 0 R 17 0 R 16 0 R 15 0 R]
 endobj
 
 6 0 obj
 <<
   /Type /StructElem
-  /S /Sect
-  /P 5 0 R
-  /K [19 0 R 7 0 R]
+  /S /Document
+  /P 2 0 R
+  /K [7 0 R]
 >>
 endobj
 
@@ -59,8 +56,9 @@ endobj
 <<
   /Type /StructElem
   /S /Sect
+  /NS 3 0 R
   /P 6 0 R
-  /K [18 0 R 8 0 R]
+  /K [22 0 R 8 0 R]
 >>
 endobj
 
@@ -68,8 +66,9 @@ endobj
 <<
   /Type /StructElem
   /S /Sect
+  /NS 3 0 R
   /P 7 0 R
-  /K [17 0 R 9 0 R]
+  /K [21 0 R 9 0 R]
 >>
 endobj
 
@@ -77,8 +76,9 @@ endobj
 <<
   /Type /StructElem
   /S /Sect
+  /NS 3 0 R
   /P 8 0 R
-  /K [16 0 R 10 0 R]
+  /K [20 0 R 10 0 R]
 >>
 endobj
 
@@ -86,8 +86,9 @@ endobj
 <<
   /Type /StructElem
   /S /Sect
+  /NS 3 0 R
   /P 9 0 R
-  /K [15 0 R 11 0 R]
+  /K [19 0 R 11 0 R]
 >>
 endobj
 
@@ -95,8 +96,9 @@ endobj
 <<
   /Type /StructElem
   /S /Sect
+  /NS 3 0 R
   /P 10 0 R
-  /K [14 0 R 12 0 R]
+  /K [18 0 R 12 0 R]
 >>
 endobj
 
@@ -104,111 +106,140 @@ endobj
 <<
   /Type /StructElem
   /S /Sect
+  /NS 3 0 R
   /P 11 0 R
-  /K [13 0 R]
+  /K [17 0 R 13 0 R]
 >>
 endobj
 
 13 0 obj
 <<
   /Type /StructElem
-  /S /H8
+  /S /Sect
+  /NS 3 0 R
   /P 12 0 R
-  /T (eigth heading)
-  /K [7]
-  /Pg 26 0 R
+  /K [16 0 R 14 0 R]
 >>
 endobj
 
 14 0 obj
 <<
   /Type /StructElem
-  /S /H7
-  /P 11 0 R
-  /T (senventh heading)
-  /K [6]
-  /Pg 26 0 R
+  /S /Sect
+  /NS 3 0 R
+  /P 13 0 R
+  /K [15 0 R]
 >>
 endobj
 
 15 0 obj
 <<
   /Type /StructElem
-  /S /H6
-  /P 10 0 R
-  /T (sixth heading)
-  /K [5]
-  /Pg 26 0 R
+  /S /H8
+  /NS 3 0 R
+  /P 14 0 R
+  /T (eigth heading)
+  /K [7]
+  /Pg 28 0 R
 >>
 endobj
 
 16 0 obj
 <<
   /Type /StructElem
-  /S /H5
-  /P 9 0 R
-  /T (fifth heading)
-  /K [4]
-  /Pg 26 0 R
+  /S /H7
+  /NS 3 0 R
+  /P 13 0 R
+  /T (senventh heading)
+  /K [6]
+  /Pg 28 0 R
 >>
 endobj
 
 17 0 obj
 <<
   /Type /StructElem
-  /S /H4
-  /P 8 0 R
-  /T (fourth heading)
-  /K [3]
-  /Pg 26 0 R
+  /S /H6
+  /NS 3 0 R
+  /P 12 0 R
+  /T (sixth heading)
+  /K [5]
+  /Pg 28 0 R
 >>
 endobj
 
 18 0 obj
 <<
   /Type /StructElem
-  /S /H3
-  /P 7 0 R
-  /T (third heading)
-  /K [2]
-  /Pg 26 0 R
+  /S /H5
+  /NS 3 0 R
+  /P 11 0 R
+  /T (fifth heading)
+  /K [4]
+  /Pg 28 0 R
 >>
 endobj
 
 19 0 obj
 <<
   /Type /StructElem
-  /S /H2
-  /P 6 0 R
-  /T (second heading)
-  /K [1]
-  /Pg 26 0 R
+  /S /H4
+  /NS 3 0 R
+  /P 10 0 R
+  /T (fourth heading)
+  /K [3]
+  /Pg 28 0 R
 >>
 endobj
 
 20 0 obj
 <<
   /Type /StructElem
-  /S /H1
-  /P 5 0 R
-  /T (first heading)
-  /K [0]
-  /Pg 26 0 R
+  /S /H3
+  /NS 3 0 R
+  /P 9 0 R
+  /T (third heading)
+  /K [2]
+  /Pg 28 0 R
 >>
 endobj
 
 21 0 obj
 <<
-  /Type /Font
-  /Subtype /Type0
-  /BaseFont /EUEULO+NotoSans-Regular
-  /Encoding /Identity-H
-  /DescendantFonts [22 0 R]
-  /ToUnicode 24 0 R
+  /Type /StructElem
+  /S /H2
+  /NS 3 0 R
+  /P 8 0 R
+  /T (second heading)
+  /K [1]
+  /Pg 28 0 R
 >>
 endobj
 
 22 0 obj
+<<
+  /Type /StructElem
+  /S /H1
+  /NS 3 0 R
+  /P 7 0 R
+  /T (first heading)
+  /K [0]
+  /Pg 28 0 R
+>>
+endobj
+
+23 0 obj
+<<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /EUEULO+NotoSans-Regular
+  /Encoding /Identity-H
+  /DescendantFonts [24 0 R]
+  /ToUnicode 26 0 R
+>>
+endobj
+
+24 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -218,14 +249,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 23 0 R
+  /FontDescriptor 25 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 602 2 2 413 3 3 479 4 4 361 5 5 260 6 6 618 7 7 564 8 8 561 9 9 615 10 10 258 11 11 618 12 12 615 13 13 480 14 14 605 15 15 344 16 16 618 17 17 529 18 18 508.00003]
 >>
 endobj
 
-23 0 obj
+25 0 obj
 <<
   /Type /FontDescriptor
   /FontName /EUEULO+NotoSans-Regular
@@ -236,11 +267,11 @@ endobj
   /Descent -293
   /CapHeight 714
   /StemV 95.4
-  /FontFile2 25 0 R
+  /FontFile2 27 0 R
 >>
 endobj
 
-24 0 obj
+26 0 obj
 <<
   /Length 862
   /Type /CMap
@@ -298,7 +329,7 @@ end
 endstream
 endobj
 
-25 0 obj
+27 0 obj
 <<
   /Length 3367
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -355,22 +386,22 @@ AE64A6F426FA9FCA482529003EC60C4E62163A9C4018C308218218C6318A698C218E79
 endstream
 endobj
 
-26 0 obj
+28 0 obj
 <<
   /Type /Page
   /Resources <<
     /Font <<
-      /f0 21 0 R
+      /f0 23 0 R
     >>
   >>
   /MediaBox [0 0 595 842]
   /StructParents 0
   /Parent 1 0 R
-  /Contents 27 0 R
+  /Contents 29 0 R
 >>
 endobj
 
-27 0 obj
+29 0 obj
 <<
   /Length 1604
 >>
@@ -490,7 +521,7 @@ EMC
 endstream
 endobj
 
-28 0 obj
+30 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -502,42 +533,44 @@ endobj
 endobj
 
 xref
-0 29
+0 31
 0000000000 65535 f
 0000000016 00000 n
 0000000081 00000 n
-0000000261 00000 n
-0000000335 00000 n
-0000000416 00000 n
-0000000500 00000 n
-0000000584 00000 n
-0000000668 00000 n
-0000000752 00000 n
-0000000837 00000 n
-0000000923 00000 n
-0000001010 00000 n
-0000001090 00000 n
-0000001197 00000 n
-0000001307 00000 n
-0000001414 00000 n
-0000001520 00000 n
-0000001627 00000 n
-0000001733 00000 n
-0000001840 00000 n
-0000001946 00000 n
-0000002110 00000 n
-0000002540 00000 n
-0000002768 00000 n
-0000003710 00000 n
-0000007174 00000 n
-0000007349 00000 n
-0000009009 00000 n
+0000000233 00000 n
+0000000311 00000 n
+0000000469 00000 n
+0000000543 00000 n
+0000000624 00000 n
+0000000720 00000 n
+0000000816 00000 n
+0000000913 00000 n
+0000001011 00000 n
+0000001110 00000 n
+0000001209 00000 n
+0000001308 00000 n
+0000001400 00000 n
+0000001519 00000 n
+0000001641 00000 n
+0000001760 00000 n
+0000001879 00000 n
+0000001999 00000 n
+0000002117 00000 n
+0000002236 00000 n
+0000002354 00000 n
+0000002518 00000 n
+0000002948 00000 n
+0000003176 00000 n
+0000004118 00000 n
+0000007582 00000 n
+0000007757 00000 n
+0000009417 00000 n
 trailer
 <<
-  /Size 29
-  /Root 28 0 R
-  /ID [(fWAQ1RO0aNjg/rt5TVxtUA==) (fWAQ1RO0aNjg/rt5TVxtUA==)]
+  /Size 31
+  /Root 30 0 R
+  /ID [(/k8ZxOq/cyhLHCCssTf0ww==) (/k8ZxOq/cyhLHCCssTf0ww==)]
 >>
 startxref
-9125
+9533
 %%EOF

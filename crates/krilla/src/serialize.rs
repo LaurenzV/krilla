@@ -1,13 +1,13 @@
 use std::cell::{OnceCell, RefCell};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::num::NonZeroU32;
+use std::num::NonZeroU16;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use pdf_writer::types::StructRole;
-use pdf_writer::writers::{NameTree, NumberTree, OutputIntent, RoleMap};
-use pdf_writer::{Chunk, Dict, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::types::{StructRole, StructRole2};
+use pdf_writer::writers::{OutputIntent, StructTreeRoot};
+use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 
 use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
@@ -212,6 +212,8 @@ pub(crate) struct SerializeContext {
     pub(crate) font_cache: HashMap<Arc<FontInfo>, Font>,
     /// The ref of the page tree.
     page_tree_ref: Ref,
+    /// PDF 2.0 namespaces.
+    pub(crate) pdf2_ns: Pdf2Namespaces,
     /// All global objects, such as PDF fonts, that are populated over time.
     pub(crate) global_objects: GlobalObjects,
     /// Information for each page written so far, index by the page index.
@@ -248,10 +250,15 @@ impl SerializeContext {
 
         let mut cur_ref = Ref::new(1);
         let page_tree_ref = cur_ref.bump();
+        let pdf2_ns = Pdf2Namespaces {
+            ssn_ref: cur_ref.bump(),
+            krilla_ref: cur_ref.bump(),
+        };
 
         Self {
             cached_mappings: HashMap::new(),
             font_cache: HashMap::new(),
+            pdf2_ns,
             global_objects: GlobalObjects::default(),
             cur_ref,
             chunk_container: ChunkContainer::new(),
@@ -722,28 +729,53 @@ impl SerializeContext {
             root.validate(&id_tree_map)?;
 
             let mut chunk = Chunk::new();
-            let mut tree = chunk.indirect(struct_tree_root_ref).start::<Dict>();
-            tree.pair(Name(b"Type"), Name(b"StructTreeRoot"));
-            let mut role_map = tree.insert(Name(b"RoleMap")).start::<RoleMap>();
-            role_map.insert(Name(b"Datetime"), StructRole::Span);
-            role_map.insert(Name(b"Terms"), StructRole::Part);
-            // PDF 2.0 exclusive structure elements.
-            if self.serialize_settings.pdf_version() < PdfVersion::Pdf20 {
-                role_map.insert(Name(b"Title"), StructRole::H1);
-                role_map.insert(Name(b"Strong"), StructRole::Span);
-                role_map.insert(Name(b"Em"), StructRole::Span);
-            }
-            for level in self.global_objects.custom_heading_roles.iter() {
-                let name = format!("H{level}");
-                role_map.insert(Name(name.as_bytes()), StructRole::P);
-            }
-            role_map.finish();
-            tree.insert(Name(b"K")).array().item(document_ref);
+            let mut tree = chunk
+                .indirect(struct_tree_root_ref)
+                .start::<StructTreeRoot>();
 
             let mut sub_chunks = vec![];
 
+            if self.serialize_settings.pdf_version() < PdfVersion::Pdf20 {
+                let mut role_map = tree.role_map();
+                // Custom structure elements.
+                role_map.insert(Name(b"Datetime"), StructRole::Span);
+                role_map.insert(Name(b"Terms"), StructRole::Part);
+
+                // PDF 2.0 exclusive structure elements.
+                role_map.insert(Name(b"Title"), StructRole::P);
+                role_map.insert(Name(b"Strong"), StructRole::Span);
+                role_map.insert(Name(b"Em"), StructRole::Span);
+                for level in self.global_objects.custom_heading_roles.iter() {
+                    let role2 = StructRole2::Heading(*level);
+                    role_map.insert(role2.to_name(&mut [0; 6]), StructRole::P);
+                }
+            } else {
+                let mut namespaces = tree.namespaces();
+
+                // PDF 2.0 standard structure namespace
+                namespaces.item(self.pdf2_ns.ssn_ref);
+                let mut ns_chunk = Chunk::new();
+                ns_chunk.namespace(self.pdf2_ns.ssn_ref).pdf_2_ns();
+                sub_chunks.push(ns_chunk);
+
+                // Custom krilla namspace
+                namespaces.item(self.pdf2_ns.krilla_ref);
+                let mut ns_chunk = Chunk::new();
+                let mut ns = ns_chunk.namespace(self.pdf2_ns.krilla_ref);
+                ns.ns(TextStr("https://github.com/LaurenzV/krilla"));
+
+                // Custom structure elements.
+                ns.role_map_ns()
+                    .to_pdf_2_0(Name(b"Datetime"), StructRole2::Span, self.pdf2_ns.ssn_ref)
+                    .to_pdf_2_0(Name(b"Terms"), StructRole2::Part, self.pdf2_ns.ssn_ref);
+
+                ns.finish();
+                sub_chunks.push(ns_chunk);
+            }
+            tree.children().item(document_ref);
+
             if !struct_parents.is_empty() {
-                let mut parent_tree = tree.insert(Name(b"ParentTree")).start::<NumberTree<Ref>>();
+                let mut parent_tree = tree.parent_tree();
                 let mut tree_nums = parent_tree.nums();
 
                 for (index, struct_parent) in struct_parents.iter().enumerate() {
@@ -789,7 +821,7 @@ impl SerializeContext {
             }
 
             if !id_tree_map.is_empty() {
-                let mut id_tree = tree.insert(Name(b"IDTree")).start::<NameTree<Ref>>();
+                let mut id_tree = tree.id_tree();
                 let mut names = id_tree.names();
 
                 for (name, ref_) in id_tree_map {
@@ -798,7 +830,7 @@ impl SerializeContext {
             }
 
             if !struct_parents.is_empty() {
-                tree.pair(Name(b"ParentTreeNextKey"), struct_parents.len() as i32);
+                tree.parent_tree_next_key(struct_parents.len() as i32);
             }
             tree.finish();
 
@@ -897,6 +929,13 @@ impl<T> DerefMut for MaybeTaken<T> {
     }
 }
 
+pub(crate) struct Pdf2Namespaces {
+    /// The ref of the PDF 2.0 standard structure namspace (`https://www.iso.org/pdf2/ssn`).
+    pub(crate) ssn_ref: Ref,
+    /// The ref of the custom krilla namespace used for role mapping.
+    pub(crate) krilla_ref: Ref,
+}
+
 #[derive(Default)]
 pub(crate) struct GlobalObjects {
     /// All named destinations that have been registered, including a Ref to their destination.
@@ -923,7 +962,7 @@ pub(crate) struct GlobalObjects {
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
     /// A list of custom headings numbers used in the document.
-    pub(crate) custom_heading_roles: BTreeSet<NonZeroU32>,
+    pub(crate) custom_heading_roles: BTreeSet<NonZeroU16>,
     /// The context tracking all of the pdfs and their pages that have been inserted.
     #[cfg(feature = "pdf")]
     pub(crate) pdf_ctx: MaybeTaken<PdfSerializerContext>,

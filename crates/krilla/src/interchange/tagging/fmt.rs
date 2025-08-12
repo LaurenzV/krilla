@@ -417,44 +417,33 @@ impl Output for BBox {
     }
 }
 
-impl<T: ValueOutput> ValueOutput for Sides<T> {
+impl<T: PartialEq + ValueOutput> ValueOutput for Sides<T> {
     fn is_multiline(&self) -> bool {
-        match self {
-            Sides::All(all) => all.is_multiline(),
-            Sides::Specific { .. } => true,
-        }
+        !self.is_uniform() || self.before.is_multiline()
     }
 }
-impl<T: ValueOutput> Output for Sides<T> {
+impl<T: PartialEq + ValueOutput> Output for Sides<T> {
     fn output_indent(&self, f: &mut impl std::fmt::Write, indent: Indent) -> std::fmt::Result {
-        match self {
-            Sides::All(all) => {
-                all.output_indent(f, indent)?;
-            }
-            Sides::Specific {
-                before,
-                after,
-                start,
-                end,
-            } => {
-                writeln!(f)?;
+        if self.is_uniform() {
+            self.before.output_indent(f, indent)?;
+        } else {
+            writeln!(f)?;
 
-                let space = omit_if(" ", before.is_multiline());
-                let before = before.display_indent(indent.inc());
-                writeln!(f, "{indent}before:{space}{before}")?;
+            let space = omit_if(" ", self.before.is_multiline());
+            let before = self.before.display_indent(indent.inc());
+            writeln!(f, "{indent}before:{space}{before}")?;
 
-                let space = omit_if("  ", after.is_multiline());
-                let after = after.display_indent(indent.inc());
-                writeln!(f, "{indent}after:{space}{after}")?;
+            let space = omit_if("  ", self.after.is_multiline());
+            let after = self.after.display_indent(indent.inc());
+            writeln!(f, "{indent}after:{space}{after}")?;
 
-                let space = omit_if("  ", start.is_multiline());
-                let start = start.display_indent(indent.inc());
-                writeln!(f, "{indent}start:{space}{start}")?;
+            let space = omit_if("  ", self.start.is_multiline());
+            let start = self.start.display_indent(indent.inc());
+            writeln!(f, "{indent}start:{space}{start}")?;
 
-                let space = omit_if("    ", end.is_multiline());
-                let end = end.display_indent(indent.inc());
-                write!(f, "{indent}end:{space}{end}")?;
-            }
+            let space = omit_if("    ", self.end.is_multiline());
+            let end = self.end.display_indent(indent.inc());
+            write!(f, "{indent}end:{space}{end}")?;
         }
         Ok(())
     }
@@ -593,7 +582,7 @@ impl Output for f32 {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU32;
+    use std::num::NonZeroU16;
 
     use pretty_assertions::assert_eq;
 
@@ -639,7 +628,7 @@ mod tests {
         figure.push(link_id);
         sec.push(figure);
 
-        let border_color = Sides::specific(
+        let border_color = Sides::new(
             NaiveRgbColor::new(0.1, 0.4, 1.0),
             NaiveRgbColor::new(0.3, 0.5, 0.2),
             NaiveRgbColor::new(0.3, 0.4, 0.3),
@@ -690,7 +679,7 @@ mod tests {
 
     #[test]
     fn display_sides_mutliline() {
-        let sides = Sides::specific(
+        let sides = Sides::new(
             ColumnDimensions::specific(vec![1.0, 5.0]),
             ColumnDimensions::specific(vec![2.0, 6.0]),
             ColumnDimensions::specific(vec![3.0, 7.0]),
@@ -721,7 +710,7 @@ val:
         let mut page = document.start_page();
         let mut tree = TagTree::new();
 
-        let heading = Tag::Hn(NonZeroU32::new(1).unwrap(), None);
+        let heading = Tag::Hn(NonZeroU16::new(1).unwrap(), None);
         let mut heading = TagGroup::new(heading);
 
         let mut surface = page.surface();
