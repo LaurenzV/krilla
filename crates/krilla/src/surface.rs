@@ -8,9 +8,9 @@ use std::num::NonZeroU64;
 
 use crate::color::rgb;
 use crate::content::ContentBuilder;
+use crate::geom::Path;
 #[cfg(any(feature = "raster-images", feature = "pdf"))]
 use crate::geom::Size;
-use crate::geom::{Path, Rect};
 use crate::geom::{Point, Transform};
 use crate::graphic::Graphic;
 use crate::graphics::blend::BlendMode;
@@ -419,6 +419,8 @@ impl<'a> Surface<'a> {
     #[cfg(feature = "pdf")]
     /// Embed a single PDF page with the given dimensions.
     pub fn draw_pdf_page(&mut self, pdf: &PdfDocument, size: Size, page_idx: usize) {
+        use crate::geom::Rect;
+
         let obj_ref = self.sc.embed_pdf_page_as_xobject(pdf, page_idx);
         // If the user provided an invalid page index, we will detect this later on anyway, so
         // just use dummy dimensions here.
