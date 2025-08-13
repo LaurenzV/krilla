@@ -5,7 +5,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
 use krilla_macros::snapshot;
 
-use crate::{metadata_1, Document};
+use crate::{metadata_1, settings_10, Document};
 use crate::{settings_13, settings_23, ASSETS_PATH};
 
 pub(crate) fn file_1() -> EmbeddedFile {
@@ -16,6 +16,7 @@ pub(crate) fn file_1() -> EmbeddedFile {
         description: Some("The description of the file.".to_string()),
         association_kind: AssociationKind::Supplement,
         data: data.into(),
+        modification_date: Some(DateTime::new(2001)),
         compress: Some(false),
         location: None,
     }
@@ -29,6 +30,7 @@ fn file_2() -> EmbeddedFile {
         mime_type: Some("image/svg+xml".to_string()),
         description: Some("A nice SVG image!".to_string()),
         association_kind: AssociationKind::Supplement,
+        modification_date: Some(DateTime::new(2001)),
         data: data.into(),
         compress: Some(false),
         location: None,
@@ -44,6 +46,7 @@ fn file_3() -> EmbeddedFile {
         description: Some("A nice picture.".to_string()),
         association_kind: AssociationKind::Unspecified,
         data: data.into(),
+        modification_date: Some(DateTime::new(2001)),
         compress: Some(false),
         location: None,
     }
@@ -57,6 +60,7 @@ fn file_4() -> EmbeddedFile {
         mime_type: Some("image/gif".to_string()),
         description: Some("A nice gif.".to_string()),
         association_kind: AssociationKind::Unspecified,
+        modification_date: Some(DateTime::new(2001)),
         data: data.into(),
         compress: Some(false),
         location: None,
@@ -143,6 +147,40 @@ fn embedded_file_pdf_a2() {
         d.finish(),
         Err(KrillaError::Validation(vec![
             ValidationError::EmbeddedFile(EmbedError::Existence, None),
+        ]))
+    )
+}
+
+// See <https://github.com/typst/typst/issues/6758>
+#[test]
+fn embedded_file_before_metadata() {
+    let mut d = Document::new_with(settings_10());
+    d.set_tag_tree(TagTree::new());
+
+    let f1 = file_1();
+    d.embed_file(f1);
+
+    let metadata = metadata_1();
+    d.set_metadata(metadata);
+
+    assert!(d.finish().is_ok())
+}
+
+#[test]
+fn embedded_file_pdf_a3b_missing_date() {
+    let mut d = Document::new_with(settings_10());
+    d.set_tag_tree(TagTree::new());
+    let metadata = metadata_1();
+    d.set_metadata(metadata);
+
+    let mut f1 = file_1();
+    f1.modification_date = None;
+    d.embed_file(f1);
+
+    assert_eq!(
+        d.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
         ]))
     )
 }

@@ -13,7 +13,7 @@ use crate::configure::{Configuration, PdfVersion, ValidationError};
 use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Metadata {
     pub(crate) title: Option<String>,
     pub(crate) subject: Option<String>,
@@ -283,7 +283,7 @@ impl Metadata {
 }
 
 /// A datetime. Invalid values will be clamped.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct DateTime {
     /// The year (0-9999).
     pub(crate) year: u16,
