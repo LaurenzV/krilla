@@ -7,6 +7,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use crate::chunk_container::ChunkContainerFn;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
+use crate::metadata::DateTime;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
@@ -40,6 +41,8 @@ pub struct EmbeddedFile {
     pub association_kind: AssociationKind,
     /// The raw data of the embedded file.
     pub data: Data,
+    /// The modiciation date of the embedded file.
+    pub modification_date: Option<DateTime>,
     /// Whether the embedded file should be compressed (recommended to turn off if the
     /// original file already has compression). If `None`, krilla will use its own logic
     /// for determining whether to compress the file or not.
@@ -84,8 +87,8 @@ impl Cacheable for EmbeddedFile {
         let mut params = embedded_file_stream.params();
         params.size(self.data.as_ref().len() as i32);
 
-        if let Some(date_time) = sc.metadata().and_then(|m| m.creation_date) {
-            let date = pdf_date(date_time);
+        if let Some(date_time) = &self.modification_date {
+            let date = pdf_date(*date_time);
             params.modification_date(date);
         } else {
             sc.register_validation_error(ValidationError::EmbeddedFile(
