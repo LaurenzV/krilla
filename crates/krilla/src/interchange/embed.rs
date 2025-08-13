@@ -41,7 +41,7 @@ pub struct EmbeddedFile {
     pub association_kind: AssociationKind,
     /// The raw data of the embedded file.
     pub data: Data,
-    /// The modiciation date of the embedded file.
+    /// The modification date of the embedded file.
     pub modification_date: Option<DateTime>,
     /// Whether the embedded file should be compressed (recommended to turn off if the
     /// original file already has compression). If `None`, krilla will use its own logic
