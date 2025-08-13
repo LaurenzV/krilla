@@ -153,7 +153,7 @@ fn embedded_file_pdf_a2() {
 
 // See <https://github.com/typst/typst/issues/6758>
 #[test]
-fn embedded_file_after_metadata() {
+fn embedded_file_before_metadata() {
     let mut d = Document::new_with(settings_10());
     d.set_tag_tree(TagTree::new());
 
