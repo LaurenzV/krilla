@@ -1,5 +1,5 @@
 use krilla::configure::ValidationError;
-use krilla::embed::{AssociationKind, EmbedError, EmbeddedFile};
+use krilla::embed::{AssociationKind, EmbedError, EmbeddedFile, MimeType};
 use krilla::error::KrillaError;
 use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
@@ -12,7 +12,7 @@ pub(crate) fn file_1() -> EmbeddedFile {
     let data = std::fs::read(ASSETS_PATH.join("emojis.txt")).unwrap();
     EmbeddedFile {
         path: "emojis.txt".to_string(),
-        mime_type: Some("text/txt".to_string()),
+        mime_type: Some(MimeType::new("text/txt").unwrap()),
         description: Some("The description of the file.".to_string()),
         association_kind: AssociationKind::Supplement,
         data: data.into(),
@@ -27,7 +27,7 @@ fn file_2() -> EmbeddedFile {
         .unwrap();
     EmbeddedFile {
         path: "image.svg".to_string(),
-        mime_type: Some("image/svg+xml".to_string()),
+        mime_type: Some(MimeType::new("image/svg+xml").unwrap()),
         description: Some("A nice SVG image!".to_string()),
         association_kind: AssociationKind::Supplement,
         modification_date: Some(DateTime::new(2001)),
@@ -42,7 +42,7 @@ fn file_3() -> EmbeddedFile {
 
     EmbeddedFile {
         path: "rgb8.png".to_string(),
-        mime_type: Some("image/png".to_string()),
+        mime_type: Some(MimeType::new("image/png").unwrap()),
         description: Some("A nice picture.".to_string()),
         association_kind: AssociationKind::Unspecified,
         data: data.into(),
@@ -57,7 +57,7 @@ fn file_4() -> EmbeddedFile {
 
     EmbeddedFile {
         path: "rgb8.gif".to_string(),
-        mime_type: Some("image/gif".to_string()),
+        mime_type: Some(MimeType::new("image/gif").unwrap()),
         description: Some("A nice gif.".to_string()),
         association_kind: AssociationKind::Unspecified,
         modification_date: Some(DateTime::new(2001)),
