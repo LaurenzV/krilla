@@ -383,7 +383,7 @@ ActualText = { type = "String", global = true, accessor = "AsRef<str>" }
 Title = { type = "String", accessor = "AsRef<str>" }
 
 # The heading level
-HeadingLevel = { name = "level", type = "NonZeroU32", accessor = "Copy" }
+HeadingLevel = { name = "level", type = "NonZeroU16", accessor = "Copy" }
 
 [Attr.List]
 # The list numbering.

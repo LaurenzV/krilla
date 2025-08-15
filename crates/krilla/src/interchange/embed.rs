@@ -7,6 +7,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use crate::chunk_container::ChunkContainerFn;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
+use crate::metadata::DateTime;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
@@ -33,13 +34,15 @@ pub struct EmbeddedFile {
     /// The name of the embedded file.
     pub path: String,
     /// The mime type of the embedded file.
-    pub mime_type: Option<String>,
+    pub mime_type: Option<MimeType>,
     /// A description of the embedded file.
     pub description: Option<String>,
     /// The association kind of the embedded file.
     pub association_kind: AssociationKind,
     /// The raw data of the embedded file.
     pub data: Data,
+    /// The modification date of the embedded file.
+    pub modification_date: Option<DateTime>,
     /// Whether the embedded file should be compressed (recommended to turn off if the
     /// original file already has compression). If `None`, krilla will use its own logic
     /// for determining whether to compress the file or not.
@@ -73,7 +76,7 @@ impl Cacheable for EmbeddedFile {
         file_stream.write_filters(embedded_file_stream.deref_mut().deref_mut());
 
         if let Some(mime_type) = &self.mime_type {
-            embedded_file_stream.subtype(mime_type.to_pdf_name());
+            embedded_file_stream.subtype(mime_type.0.to_pdf_name());
         } else {
             sc.register_validation_error(ValidationError::EmbeddedFile(
                 EmbedError::MissingMimeType,
@@ -84,8 +87,8 @@ impl Cacheable for EmbeddedFile {
         let mut params = embedded_file_stream.params();
         params.size(self.data.as_ref().len() as i32);
 
-        if let Some(date_time) = sc.metadata().and_then(|m| m.creation_date) {
-            let date = pdf_date(date_time);
+        if let Some(date_time) = &self.modification_date {
+            let date = pdf_date(*date_time);
             params.modification_date(date);
         } else {
             sc.register_validation_error(ValidationError::EmbeddedFile(
@@ -160,5 +163,80 @@ impl AssociationKind {
             AssociationKind::Supplement => pdf_writer::types::AssociationKind::Supplement,
             AssociationKind::Unspecified => pdf_writer::types::AssociationKind::Unspecified,
         }
+    }
+}
+
+/// A mime type.
+#[derive(Debug, Clone, Hash)]
+pub struct MimeType(String);
+
+impl MimeType {
+    /// Create a new mime type.
+    ///
+    /// Returns `None` if the mime type is invalid.
+    pub fn new(mime_type: &str) -> Option<Self> {
+        if valid_mime_type(mime_type) {
+            Some(Self(mime_type.to_string()))
+        } else {
+            None
+        }
+    }
+}
+
+fn valid_mime_type(mime_type: &str) -> bool {
+    let parts: Vec<&str> = mime_type.split('/').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+
+    let (type_part, subtype_part) = (parts[0], parts[1]);
+
+    valid_mime_part(type_part) && valid_mime_part(subtype_part)
+}
+
+fn valid_mime_part(part: &str) -> bool {
+    if part.is_empty() {
+        return false;
+    }
+
+    part.chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '+' || c == '.')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_mime_types() {
+        assert!(valid_mime_type("text/plain"));
+        assert!(valid_mime_type("application/pdf"));
+        assert!(valid_mime_type("image/jpeg"));
+        assert!(valid_mime_type("application/octet-stream"));
+        assert!(valid_mime_type("text/html"));
+        assert!(valid_mime_type("application/json"));
+        assert!(valid_mime_type("image/png"));
+        assert!(valid_mime_type("video/mp4"));
+        assert!(valid_mime_type("audio/mpeg"));
+        assert!(valid_mime_type("application/vnd.ms-excel"));
+        assert!(valid_mime_type("text/css"));
+        assert!(valid_mime_type("application/x-www-form-urlencoded"));
+        assert!(valid_mime_type("multipart/form-data"));
+        assert!(valid_mime_type("application/xml+svg"));
+        assert!(valid_mime_type("text/plain+charset"));
+    }
+
+    #[test]
+    fn invalid_mime_types() {
+        assert!(!valid_mime_type("source"));
+        assert!(!valid_mime_type("text/"));
+        assert!(!valid_mime_type("/plain"));
+        assert!(!valid_mime_type(""));
+        assert!(!valid_mime_type("text"));
+        assert!(!valid_mime_type("text/plain/extra"));
+        assert!(!valid_mime_type("text plain"));
+        assert!(!valid_mime_type("text\\plain"));
+        assert!(!valid_mime_type("text@plain"));
+        assert!(!valid_mime_type("text/plain*"));
     }
 }

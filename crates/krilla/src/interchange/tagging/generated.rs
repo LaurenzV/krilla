@@ -320,7 +320,7 @@ impl TagKind {
     }
 
     /// The heading level
-    pub fn level(&self) -> Option<NonZeroU32> {
+    pub fn level(&self) -> Option<NonZeroU16> {
         self.as_any().level()
     }
 
@@ -836,7 +836,7 @@ impl AnyTag {
     }
 
     /// The heading level
-    pub fn level(&self) -> Option<NonZeroU32> {
+    pub fn level(&self) -> Option<NonZeroU16> {
         self.get_struct(StructAttr::HEADING_LEVEL).map(StructAttr::unwrap_level)
     }
 
@@ -2079,7 +2079,7 @@ impl Tag<kind::Hn> {
     ///
     /// The title is required for some export modes, like for example PDF/UA.
     #[allow(non_snake_case)]
-    pub fn Hn(level: NonZeroU32, title: Option<String>) -> Tag<kind::Hn> {
+    pub fn Hn(level: NonZeroU16, title: Option<String>) -> Tag<kind::Hn> {
         let mut tag = Tag::new();
         tag.set_level(level);
         tag.set_title(title);
@@ -2087,17 +2087,17 @@ impl Tag<kind::Hn> {
     }
 
     /// The heading level
-    pub fn level(&self) -> NonZeroU32 {
+    pub fn level(&self) -> NonZeroU16 {
         self.inner.get_struct(StructAttr::HEADING_LEVEL).unwrap().unwrap_level()
     }
 
     /// Set the heading level
-    pub fn set_level(&mut self, level: NonZeroU32) {
+    pub fn set_level(&mut self, level: NonZeroU16) {
         self.inner.set_struct(StructAttr::HeadingLevel(level));
     }
 
     /// Set the heading level
-    pub fn with_level(mut self, level: NonZeroU32) -> Self {
+    pub fn with_level(mut self, level: NonZeroU16) -> Self {
         self.set_level(level);
         self
     }
@@ -4169,7 +4169,7 @@ pub(crate) enum StructAttr {
     /// The title, characterizing a specific tag such as `"Chapter 1"`.
     Title(String),
     /// The heading level
-    HeadingLevel(NonZeroU32),
+    HeadingLevel(NonZeroU16),
 }
 
 impl StructAttr {
@@ -4230,7 +4230,7 @@ impl StructAttr {
         }
 
         #[inline(always)]
-        fn unwrap_level(&self) -> NonZeroU32 {
+        fn unwrap_level(&self) -> NonZeroU16 {
             match self {
                 Self::HeadingLevel(val) => *val,
                 _ => unreachable!(),

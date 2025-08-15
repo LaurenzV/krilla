@@ -124,7 +124,7 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write as _;
 
-use pdf_writer::types::{ArtifactSubtype, StructRole};
+use pdf_writer::types::{ArtifactSubtype, RoleMapOpts, StructRole, StructRole2};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
@@ -196,7 +196,7 @@ pub enum ContentTag<'a> {
 }
 
 impl ContentTag<'_> {
-    pub(crate) fn name(&self) -> Name {
+    pub(crate) fn name(&self) -> Name<'static> {
         match self {
             ContentTag::Artifact(_) => Name(b"Artifact"),
             ContentTag::Span(_) => Name(b"Span"),
@@ -406,7 +406,7 @@ impl Identifier {
 impl TagKind {
     pub(crate) fn write_kind(&self, struct_elem: &mut StructElement, sc: &mut SerializeContext) {
         let pdf_version = sc.serialize_settings().pdf_version();
-        if self.minimum_version() > pdf_version {
+        if pdf_version < self.minimum_version() {
             // Fall back to P in case the tag is not supported with the current
             // PDF version
             struct_elem.kind(StructRole::P);
@@ -414,60 +414,70 @@ impl TagKind {
         }
 
         match self {
-            Self::Part(_) => struct_elem.kind(StructRole::Part),
-            Self::Article(_) => struct_elem.kind(StructRole::Art),
-            Self::Section(_) => struct_elem.kind(StructRole::Sect),
-            Self::Div(_) => struct_elem.kind(StructRole::Div),
-            Self::BlockQuote(_) => struct_elem.kind(StructRole::BlockQuote),
-            Self::Caption(_) => struct_elem.kind(StructRole::Caption),
-            Self::TOC(_) => struct_elem.kind(StructRole::TOC),
-            Self::TOCI(_) => struct_elem.kind(StructRole::TOCI),
-            Self::Index(_) => struct_elem.kind(StructRole::Index),
-            Self::P(_) => struct_elem.kind(StructRole::P),
-            Self::Hn(tag) if tag.level().get() == 1 => struct_elem.kind(StructRole::H1),
-            Self::Hn(tag) if tag.level().get() == 2 => struct_elem.kind(StructRole::H2),
-            Self::Hn(tag) if tag.level().get() == 3 => struct_elem.kind(StructRole::H3),
-            Self::Hn(tag) if tag.level().get() == 4 => struct_elem.kind(StructRole::H4),
-            Self::Hn(tag) if tag.level().get() == 5 => struct_elem.kind(StructRole::H5),
-            Self::Hn(tag) if tag.level().get() == 6 => struct_elem.kind(StructRole::H6),
-            Self::L(_) => struct_elem.kind(StructRole::L),
-            Self::LI(_) => struct_elem.kind(StructRole::LI),
-            Self::Lbl(_) => struct_elem.kind(StructRole::Lbl),
-            Self::LBody(_) => struct_elem.kind(StructRole::LBody),
-            Self::Table(_) => struct_elem.kind(StructRole::Table),
-            Self::TR(_) => struct_elem.kind(StructRole::TR),
-            Self::TH(_) => struct_elem.kind(StructRole::TH),
-            Self::TD(_) => struct_elem.kind(StructRole::TD),
-            Self::THead(_) => struct_elem.kind(StructRole::THead),
-            Self::TBody(_) => struct_elem.kind(StructRole::TBody),
-            Self::TFoot(_) => struct_elem.kind(StructRole::TFoot),
-            Self::Span(_) => struct_elem.kind(StructRole::Span),
-            Self::InlineQuote(_) => struct_elem.kind(StructRole::Quote),
-            Self::Note(_) => struct_elem.kind(StructRole::Note),
-            Self::Reference(_) => struct_elem.kind(StructRole::Reference),
-            Self::BibEntry(_) => struct_elem.kind(StructRole::BibEntry),
-            Self::Code(_) => struct_elem.kind(StructRole::Code),
-            Self::Link(_) => struct_elem.kind(StructRole::Link),
-            Self::Annot(_) => struct_elem.kind(StructRole::Annot),
-            Self::Figure(_) => struct_elem.kind(StructRole::Figure),
-            Self::Formula(_) => struct_elem.kind(StructRole::Formula),
-            Self::NonStruct(_) => struct_elem.kind(StructRole::NonStruct),
-            // Every additional tag needs to be registered in the role map!
-            Self::Datetime(_) => struct_elem.custom_kind(Name(b"Datetime")),
-            Self::Terms(_) => struct_elem.custom_kind(Name(b"Terms")),
-            Self::Title(_) => struct_elem.custom_kind(Name(b"Title")),
-            Self::Strong(_) => struct_elem.custom_kind(Name(b"Strong")),
-            Self::Em(_) => struct_elem.custom_kind(Name(b"Em")),
+            Self::Part(_) => write_kind_compat(sc, struct_elem, StructRole2::Part),
+            Self::Article(_) => write_kind_1_7(struct_elem, StructRole::Art),
+            Self::Section(_) => write_kind_compat(sc, struct_elem, StructRole2::Sect),
+            Self::Div(_) => write_kind_compat(sc, struct_elem, StructRole2::Div),
+            Self::BlockQuote(_) => write_kind_1_7(struct_elem, StructRole::BlockQuote),
+            Self::Caption(_) => write_kind_compat(sc, struct_elem, StructRole2::Caption),
+            Self::TOC(_) => write_kind_1_7(struct_elem, StructRole::TOC),
+            Self::TOCI(_) => write_kind_1_7(struct_elem, StructRole::TOCI),
+            Self::Index(_) => write_kind_1_7(struct_elem, StructRole::Index),
+            Self::P(_) => write_kind_compat(sc, struct_elem, StructRole2::P),
+            Self::L(_) => write_kind_compat(sc, struct_elem, StructRole2::L),
+            Self::LI(_) => write_kind_compat(sc, struct_elem, StructRole2::LI),
+            Self::Lbl(_) => write_kind_compat(sc, struct_elem, StructRole2::Lbl),
+            Self::LBody(_) => write_kind_compat(sc, struct_elem, StructRole2::LBody),
+            Self::Table(_) => write_kind_compat(sc, struct_elem, StructRole2::Table),
+            Self::TR(_) => write_kind_compat(sc, struct_elem, StructRole2::TR),
+            Self::TH(_) => write_kind_compat(sc, struct_elem, StructRole2::TH),
+            Self::TD(_) => write_kind_compat(sc, struct_elem, StructRole2::TD),
+            Self::THead(_) => write_kind_compat(sc, struct_elem, StructRole2::THead),
+            Self::TBody(_) => write_kind_compat(sc, struct_elem, StructRole2::TBody),
+            Self::TFoot(_) => write_kind_compat(sc, struct_elem, StructRole2::TFoot),
+            Self::Span(_) => write_kind_compat(sc, struct_elem, StructRole2::Span),
+            Self::InlineQuote(_) => write_kind_1_7(struct_elem, StructRole::Quote),
+            Self::Note(_) => write_kind_1_7(struct_elem, StructRole::Note),
+            Self::Reference(_) => write_kind_1_7(struct_elem, StructRole::Reference),
+            Self::BibEntry(_) => write_kind_1_7(struct_elem, StructRole::BibEntry),
+            Self::Code(_) => write_kind_1_7(struct_elem, StructRole::Code),
+            Self::Link(_) => write_kind_compat(sc, struct_elem, StructRole2::Link),
+            Self::Annot(_) => write_kind_compat(sc, struct_elem, StructRole2::Annot),
+            Self::Figure(_) => write_kind_compat(sc, struct_elem, StructRole2::Figure),
+            Self::Formula(_) => write_kind_compat(sc, struct_elem, StructRole2::Formula),
+            Self::NonStruct(_) => write_kind_compat(sc, struct_elem, StructRole2::NonStruct),
+            // Custom structure roles that are registered in the `RoleMap`.
+            Self::Datetime(_) => write_kind_custom(sc, struct_elem, Name(b"Datetime")),
+            Self::Terms(_) => write_kind_custom(sc, struct_elem, Name(b"Terms")),
+            Self::Title(_) => write_kind_custom(sc, struct_elem, Name(b"Title")),
+            // PDF 2.0 structure roles that are conditionally registered.
             Self::Hn(tag) => {
-                let level = tag.level();
-                // Dynamically register custom headings `Hn` with `n >= 7`
-                // Starting from PDF 2.0 arbitrary heading levels are supported,
-                // so the custom role mapping is redundant.
+                let role2 = StructRole2::Heading(tag.level());
                 if pdf_version < PdfVersion::Pdf20 {
-                    sc.global_objects.custom_heading_roles.insert(level);
+                    // Dynamically register custom headings `Hn` if the level
+                    // (`n >= 7`) isn't supported by PDF 1.7 and below.
+                    let compat = role2.compatibility_1_7(RoleMapOpts::default());
+                    if compat.into_pdf_1_7().is_none() {
+                        sc.global_objects.custom_heading_roles.insert(tag.level());
+                    }
+                    struct_elem.custom_kind(role2.to_name(&mut [0; 6]));
+                } else {
+                    struct_elem.kind_2(role2, sc.pdf2_ns.ssn_ref);
                 }
-                let name = format!("H{level}");
-                struct_elem.custom_kind(Name(name.as_bytes()))
+            }
+            Self::Strong(_) => {
+                if pdf_version < PdfVersion::Pdf20 {
+                    struct_elem.custom_kind(Name(b"Strong"));
+                } else {
+                    struct_elem.kind_2(StructRole2::Strong, sc.pdf2_ns.ssn_ref);
+                }
+            }
+            Self::Em(_) => {
+                if pdf_version < PdfVersion::Pdf20 {
+                    struct_elem.custom_kind(Name(b"Em"));
+                } else {
+                    struct_elem.kind_2(StructRole2::Em, sc.pdf2_ns.ssn_ref);
+                }
             }
         };
     }
@@ -493,6 +503,9 @@ impl TagKind {
             Self::TR(_) => PdfVersion::Pdf14,
             Self::TH(_) => PdfVersion::Pdf14,
             Self::TD(_) => PdfVersion::Pdf14,
+            // TODO: writing `P` tags in PDF 1.4 will break the table structure.
+            // Instead consider just transparently inserting all children, which
+            // should be `TR`s anyway.
             Self::THead(_) => PdfVersion::Pdf15,
             Self::TBody(_) => PdfVersion::Pdf15,
             Self::TFoot(_) => PdfVersion::Pdf15,
@@ -504,14 +517,14 @@ impl TagKind {
             Self::Code(_) => PdfVersion::Pdf14,
             Self::Link(_) => PdfVersion::Pdf14,
             Self::Annot(_) => PdfVersion::Pdf15,
-            Self::Figure(_) => PdfVersion::Pdf15,
-            Self::Formula(_) => PdfVersion::Pdf15,
+            Self::Figure(_) => PdfVersion::Pdf14,
+            Self::Formula(_) => PdfVersion::Pdf14,
             Self::NonStruct(_) => PdfVersion::Pdf14,
-            Self::Datetime(_) => PdfVersion::Pdf15,
-            Self::Terms(_) => PdfVersion::Pdf15,
-            Self::Title(_) => PdfVersion::Pdf15,
-            Self::Strong(_) => PdfVersion::Pdf15,
-            Self::Em(_) => PdfVersion::Pdf15,
+            Self::Datetime(_) => PdfVersion::Pdf14,
+            Self::Terms(_) => PdfVersion::Pdf14,
+            Self::Title(_) => PdfVersion::Pdf14,
+            Self::Strong(_) => PdfVersion::Pdf14,
+            Self::Em(_) => PdfVersion::Pdf14,
         }
     }
 
@@ -521,6 +534,34 @@ impl TagKind {
 
     pub(crate) fn can_have_title(&self) -> bool {
         matches!(self, Self::Hn(_))
+    }
+}
+
+fn write_kind_1_7(struct_elem: &mut StructElement, role: StructRole) {
+    struct_elem.kind(role);
+}
+
+/// If serializing a PDF 2.0 document, write a PDF 2.0 structure role, otherwise
+/// fall back to the compatible PDF 1.7 role.
+fn write_kind_compat(
+    sc: &mut SerializeContext,
+    struct_elem: &mut StructElement,
+    role: StructRole2,
+) {
+    if sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
+        let compat = role.compatibility_1_7(RoleMapOpts::default());
+        struct_elem.kind(compat.role());
+    } else {
+        struct_elem.kind_2(role, sc.pdf2_ns.ssn_ref);
+    }
+}
+
+/// Write a custom role-mapped structure role. If serializing a PDF 2.0 document
+/// also write the custom krilla namespace.
+fn write_kind_custom(sc: &mut SerializeContext, struct_elem: &mut StructElement, name: Name) {
+    struct_elem.custom_kind(name);
+    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20 {
+        struct_elem.namespace(sc.pdf2_ns.krilla_ref);
     }
 }
 
@@ -768,8 +809,8 @@ impl TagGroup {
                 LayoutAttr::WritingMode(writing_mode) => {
                     layout_attributes.get().writing_mode(writing_mode.to_pdf());
                 }
-                LayoutAttr::BBox(BBox { page_idx, rect }) => {
-                    let Some(page_info) = sc.page_infos().get(*page_idx) else {
+                &LayoutAttr::BBox(BBox { page_idx, rect }) => {
+                    let Some(page_info) = sc.page_infos().get(page_idx) else {
                         panic!(
                             "tag tree contains bounding box with page index {page_idx}, \
                             but document only has {} pages",
@@ -780,74 +821,37 @@ impl TagGroup {
                     let actual_rect = rect.transform(transform).unwrap();
                     layout_attributes.get().bbox(actual_rect.to_pdf_rect());
                 }
-                LayoutAttr::Width(width) => {
-                    layout_attributes.get().width(*width);
+                &LayoutAttr::Width(width) => {
+                    layout_attributes.get().width(width);
                 }
-                LayoutAttr::Height(height) => {
-                    layout_attributes.get().height(*height);
+                &LayoutAttr::Height(height) => {
+                    layout_attributes.get().height(height);
                 }
                 &LayoutAttr::BackgroundColor(color) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         layout_attributes.get().background_color(color.into());
                     }
                 }
-                &LayoutAttr::BorderColor(sides) => {
+                LayoutAttr::BorderColor(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        match sides {
-                            Sides::All(color) => {
-                                layout_attributes.get().border_color(color.into());
-                            }
-                            Sides::Specific {
-                                before,
-                                after,
-                                start,
-                                end,
-                            } => {
-                                // TODO: pdf-writer currently has no typed API
-                                // for setting a border color for each side.
-                                // Once it does, we can use that.
-                                // The same applies to TPadding.
-                                // See https://github.com/typst/pdf-writer/issues/54
-                                let mut array =
-                                    layout_attributes.get().insert(Name(b"BorderColor")).array();
-
-                                for side in [before, after, start, end] {
-                                    array.push().array().typed().items(side.into_array());
-                                }
-                            }
-                        }
+                        let sides = sides.map_pdf(NaiveRgbColor::into_array);
+                        layout_attributes.get().border_color(sides);
                     }
                 }
-                &LayoutAttr::BorderStyle(sides) => {
+                LayoutAttr::BorderStyle(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        // TODO: pdf-writer currently has no typed API for
-                        // setting a single border style for all sides. What we
-                        // do here has the same effect, but takes up more
-                        // storage. Once pdf-writer has a typed API for both
-                        // cases, we can use that. The same applies to
-                        // BorderThickness, Padding, and TBorderStyle.
-                        // See https://github.com/typst/pdf-writer/issues/54
-                        layout_attributes
-                            .get()
-                            .border_style(sides.into_array().map(BorderStyle::to_pdf));
+                        let sides = sides.map_pdf(BorderStyle::to_pdf);
+                        layout_attributes.get().border_style(sides);
                     }
                 }
-                &LayoutAttr::BorderThickness(sides) => {
+                LayoutAttr::BorderThickness(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        // TODO: Issue with pdf-writer API, see BorderStyle for
-                        // more. Both cases are written manually here.
-                        sides.write(
-                            layout_attributes.get(),
-                            Name(b"BorderThickness"),
-                            |thickness| thickness,
-                        );
+                        layout_attributes.get().border_thickness(sides.into_pdf());
                     }
                 }
-                &LayoutAttr::Padding(sides) => {
+                LayoutAttr::Padding(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        // TODO: Issue with pdf-writer API, see BorderStyle for
-                        // more. Both cases are written manually here.
-                        sides.write(layout_attributes.get(), Name(b"Padding"), |padding| padding);
+                        layout_attributes.get().padding(sides.into_pdf());
                     }
                 }
                 &LayoutAttr::Color(color) => {
@@ -870,56 +874,31 @@ impl TagGroup {
                 &LayoutAttr::TextIndent(indent) => {
                     layout_attributes.get().text_indent(indent);
                 }
-                &LayoutAttr::BlockAlign(alignment) => {
+                LayoutAttr::BlockAlign(alignment) => {
                     layout_attributes.get().block_align(alignment.to_pdf());
                 }
-                &LayoutAttr::InlineAlign(alignment) => {
+                LayoutAttr::InlineAlign(alignment) => {
                     layout_attributes.get().inline_align(alignment.to_pdf());
                 }
-                &LayoutAttr::TextAlign(alignment) => {
+                LayoutAttr::TextAlign(alignment) => {
                     layout_attributes.get().text_align(alignment.to_pdf());
                 }
-                &LayoutAttr::TableBorderStyle(sides) => {
+                LayoutAttr::TableBorderStyle(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        // TODO: Issue with pdf-writer API, see BorderStyle for
-                        // more. Here, we always write the specific sides, even
-                        // if all sides have the same style.
-                        layout_attributes
-                            .get()
-                            .table_border_style(sides.into_array().map(BorderStyle::to_pdf));
+                        let sides = sides.map_pdf(BorderStyle::to_pdf);
+                        layout_attributes.get().table_border_style(sides);
                     }
                 }
-                &LayoutAttr::TablePadding(sides) => {
+                LayoutAttr::TablePadding(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        // TODO: Issue with pdf-writer API, see BorderColor
-                        // match arm.
-                        sides.write(layout_attributes.get(), Name(b"TPadding"), |padding| {
-                            padding
-                        });
+                        layout_attributes.get().table_padding(sides.into_pdf());
                     }
                 }
                 &LayoutAttr::BaselineShift(shift) => {
                     layout_attributes.get().baseline_shift(shift);
                 }
-                &LayoutAttr::LineHeight(height) => {
-                    // TODO: The `.line_height()` method of `pdf-writer` is
-                    // currently unusable because the crate failed to export the
-                    // `LineHeight` type used in its arguments. Once this is
-                    // fixed, we can use that method instead of writing the
-                    // `LineHeight` manually.
-                    // See https://github.com/typst/pdf-writer/issues/53
-                    let name = Name(b"LineHeight");
-                    match height {
-                        LineHeight::Auto => {
-                            layout_attributes.get().pair(name, Name(b"Auto"));
-                        }
-                        LineHeight::Normal => {
-                            layout_attributes.get().pair(name, Name(b"Normal"));
-                        }
-                        LineHeight::Custom(height) => {
-                            layout_attributes.get().pair(name, height);
-                        }
-                    }
+                LayoutAttr::LineHeight(height) => {
+                    layout_attributes.get().line_height(height.to_pdf());
                 }
                 &LayoutAttr::TextDecorationColor(color) => {
                     if pdf_version >= PdfVersion::Pdf15 {
@@ -931,68 +910,41 @@ impl TagGroup {
                         layout_attributes.get().text_decoration_thickness(thickness);
                     }
                 }
-                &LayoutAttr::TextDecorationType(style) => {
+                LayoutAttr::TextDecorationType(style) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         layout_attributes.get().text_decoration_type(style.to_pdf());
                     }
                 }
                 &LayoutAttr::GlyphOrientationVertical(orientation) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        match orientation.into_f32() {
-                            Some(orientation) => {
-                                layout_attributes
-                                    .get()
-                                    .glyph_orientation_vertical(orientation);
-                            }
-                            None => {
-                                layout_attributes
-                                    .get()
-                                    .pair(Name(b"GlyphOrientationVertical"), Name(b"Auto"));
-                            }
-                        }
+                        layout_attributes
+                            .get()
+                            .glyph_orientation_vertical(orientation.to_pdf());
                     }
                 }
-                &LayoutAttr::ColumnCount(columns) => {
+                LayoutAttr::ColumnCount(columns) => {
                     if pdf_version >= PdfVersion::Pdf16 {
                         layout_attributes.get().column_count(columns.get() as i32);
                     }
                 }
                 LayoutAttr::ColumnGap(gap) => {
                     if pdf_version >= PdfVersion::Pdf16 {
+                        let sizes = layout_attributes.get().column_gap();
                         match gap {
-                            ColumnDimensions::All(gap) => {
-                                // TODO: pdf-writer currently has no typed API
-                                // for setting a uniform column gap. Currently,
-                                // we write it manually. Once pdf-writer has a
-                                // typed API for this, we can use that.
-                                // See https://github.com/typst/pdf-writer/issues/55
-                                layout_attributes.get().pair(Name(b"ColumnGap"), gap);
-                            }
+                            ColumnDimensions::All(gap) => sizes.uniform(*gap),
                             ColumnDimensions::Specific(values) => {
-                                layout_attributes
-                                    .get()
-                                    .column_gap()
-                                    .items(values.iter().copied());
+                                sizes.individual().items(values.iter().copied());
                             }
                         }
                     }
                 }
                 LayoutAttr::ColumnWidths(width) => {
                     if pdf_version >= PdfVersion::Pdf16 {
+                        let sizes = layout_attributes.get().column_widths();
                         match width {
-                            ColumnDimensions::All(width) => {
-                                // TODO: pdf-writer currently has no typed API
-                                // for setting uniform column widths. Currently,
-                                // we write it manually. Once pdf-writer has a
-                                // typed API for this, we can use that.
-                                // See https://github.com/typst/pdf-writer/issues/55
-                                layout_attributes.get().pair(Name(b"ColumnWidths"), width);
-                            }
+                            ColumnDimensions::All(width) => sizes.uniform(*width),
                             ColumnDimensions::Specific(values) => {
-                                layout_attributes
-                                    .get()
-                                    .column_widths()
-                                    .items(values.iter().copied());
+                                sizes.individual().items(values.iter().copied());
                             }
                         }
                     }

@@ -683,6 +683,7 @@ fn validate_pdf_a3_missing_fields() {
     let mut d = Document::new_with(settings_23());
     let mut f1 = file_1();
     f1.description = None;
+    f1.modification_date = None;
     d.embed_file(f1);
 
     assert_eq!(

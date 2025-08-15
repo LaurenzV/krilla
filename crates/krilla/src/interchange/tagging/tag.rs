@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use std::num::NonZeroU32;
+use std::num::{NonZeroU16, NonZeroU32};
 
 use smallvec::SmallVec;
 
@@ -475,7 +475,7 @@ pub enum BlockAlign {
 impl BlockAlign {
     pub(super) fn to_pdf(self) -> pdf_writer::types::BlockAlign {
         match self {
-            BlockAlign::Begin => pdf_writer::types::BlockAlign::Begin,
+            BlockAlign::Begin => pdf_writer::types::BlockAlign::Before,
             BlockAlign::Middle => pdf_writer::types::BlockAlign::Middle,
             BlockAlign::After => pdf_writer::types::BlockAlign::After,
             BlockAlign::Justify => pdf_writer::types::BlockAlign::Justify,
@@ -514,6 +514,16 @@ pub enum LineHeight {
     Auto,
     /// Set a fixed line height.
     Custom(f32),
+}
+
+impl LineHeight {
+    pub(super) fn to_pdf(self) -> pdf_writer::types::LineHeight {
+        match self {
+            LineHeight::Auto => pdf_writer::types::LineHeight::Auto,
+            LineHeight::Normal => pdf_writer::types::LineHeight::Normal,
+            LineHeight::Custom(height) => pdf_writer::types::LineHeight::Custom(height),
+        }
+    }
 }
 
 /// The text decoration type (over- and underlines).
@@ -562,61 +572,39 @@ pub enum GlyphOrientationVertical {
 impl GlyphOrientationVertical {
     /// Convert the rotation to a number. If the rotation is `Auto`, returns
     /// `None`.
-    pub(super) fn into_f32(self) -> Option<f32> {
-        match self {
-            GlyphOrientationVertical::Auto => None,
-            GlyphOrientationVertical::None => Some(0.0),
-            GlyphOrientationVertical::Clockwise90 => Some(90.0),
-            GlyphOrientationVertical::CounterClockwise90 => Some(-90.0),
-            GlyphOrientationVertical::Clockwise180 => Some(180.0),
-            GlyphOrientationVertical::CounterClockwise180 => Some(-180.0),
-            GlyphOrientationVertical::Clockwise270 => Some(270.0),
-        }
+    pub(super) fn to_pdf(self) -> pdf_writer::types::GlyphOrientationVertical {
+        let angle = match self {
+            GlyphOrientationVertical::Auto => {
+                return pdf_writer::types::GlyphOrientationVertical::Auto
+            }
+            GlyphOrientationVertical::None => 0,
+            GlyphOrientationVertical::Clockwise90 => 90,
+            GlyphOrientationVertical::CounterClockwise90 => -90,
+            GlyphOrientationVertical::Clockwise180 => 180,
+            GlyphOrientationVertical::CounterClockwise180 => -180,
+            GlyphOrientationVertical::Clockwise270 => 270,
+        };
+        pdf_writer::types::GlyphOrientationVertical::Angle(angle)
     }
 }
 
 /// An attribute value that can apply to all sides of the element, or have a specific value for each side.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Sides<T> {
-    /// The same value applies to all sides.
-    All(T),
-    /// Each side has a different value.
-    Specific {
-        /// The start of the element on the block axis.
-        before: T,
-        /// The end of the element on the block axis.
-        after: T,
-        /// The start of the element on the inline axis.
-        start: T,
-        /// The end of the element on the inline axis.
-        end: T,
-    },
-}
-
-impl<T: Copy> Sides<T> {
-    /// Returns an array for all sides.
-    pub(super) fn into_array(self) -> [T; 4] {
-        match self {
-            Sides::All(value) => [value; 4],
-            Sides::Specific {
-                before,
-                after,
-                start,
-                end,
-            } => [before, after, start, end],
-        }
-    }
+pub struct Sides<T> {
+    /// The start of the element on the block axis.
+    pub before: T,
+    /// The end of the element on the block axis.
+    pub after: T,
+    /// The start of the element on the inline axis.
+    pub start: T,
+    /// The end of the element on the inline axis.
+    pub end: T,
 }
 
 impl<T> Sides<T> {
-    /// Construct a new `Sides` value with the same value for all sides.
-    pub fn all(value: T) -> Self {
-        Sides::All(value)
-    }
-
     /// Construct a new `Sides` value with specific values for each side.
-    pub fn specific(before: T, after: T, start: T, end: T) -> Self {
-        Sides::Specific {
+    pub fn new(before: T, after: T, start: T, end: T) -> Self {
+        Self {
             before,
             after,
             start,
@@ -624,34 +612,39 @@ impl<T> Sides<T> {
         }
     }
 
-    /// Write the value in the most appropriate way given the variant.
-    ///
-    /// Only applicable if the type `T` can be converted to a PDF primitive.
-    pub(super) fn write<P: pdf_writer::Primitive>(
-        self,
-        writer: &mut pdf_writer::writers::LayoutAttributes<'_>,
-        name: pdf_writer::Name<'_>,
-        to_pdf: impl Fn(T) -> P,
-    ) {
-        match self {
-            Sides::All(value) => {
-                // Write the same value for all sides.
-                writer.pair(name, to_pdf(value));
-            }
-            Sides::Specific {
-                before,
-                after,
-                start,
-                end,
-            } => {
-                let mut array = writer.insert(name).array();
-
-                for side in [before, after, start, end] {
-                    // Write each side's value.
-                    array.item(to_pdf(side));
-                }
-            }
+    /// Construct a new `Sides` value with the same value for all sides.
+    pub fn uniform(value: T) -> Self
+    where
+        T: Copy,
+    {
+        Sides {
+            before: value,
+            after: value,
+            start: value,
+            end: value,
         }
+    }
+
+    pub(crate) fn is_uniform(&self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.before == self.after && self.before == self.start && self.before == self.end
+    }
+
+    /// Returns an array for all sides.
+    pub(super) fn into_array(self) -> [T; 4] {
+        [self.before, self.after, self.start, self.end]
+    }
+
+    /// Convert into [`pdf_writer::types::Sides`].
+    pub(super) fn into_pdf(self) -> pdf_writer::types::Sides<T> {
+        pdf_writer::types::Sides::from_array(self.into_array())
+    }
+
+    /// Convert into [`pdf_writer::types::Sides`] by each side value.
+    pub(super) fn map_pdf<P>(self, to_pdf: impl Fn(T) -> P) -> pdf_writer::types::Sides<P> {
+        pdf_writer::types::Sides::from_array(self.into_array().map(to_pdf))
     }
 }
 

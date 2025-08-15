@@ -760,8 +760,7 @@ checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 [[package]]
 name = "hayro-syntax"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1d3e06bd0f8a1861e353ed4d516751fac3c1c0a202cbe9f3ed325be9194e1cf"
+source = "git+https://github.com/LaurenzV/hayro?rev=cbebe75#cbebe75cbd131b97349a2f78507c508c0d01390d"
 dependencies = [
  "flate2",
  "kurbo",
@@ -774,8 +773,7 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d55f2b3e748993b8d87ff2e72d34f74b4c9a11d09d6c5f4eb54340f5d2aed275"
+source = "git+https://github.com/LaurenzV/hayro?rev=cbebe75#cbebe75cbd131b97349a2f78507c508c0d01390d"
 dependencies = [
  "flate2",
  "hayro-syntax",
@@ -1216,8 +1214,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "pdf-writer"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ea27c5015ab81753fc61e49f8cde74999346605ee148bb20008ef3d3150e0dc"
+source = "git+https://github.com/typst/pdf-writer?rev=143a1c3#143a1c3543a1422a22bda40a68022d0d9ad3a40e"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",
@@ -1385,16 +1382,6 @@ name = "read-fonts"
 version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "192735ef611aac958468e670cb98432c925426f3cb71521fda202130f7388d91"
-dependencies = [
- "bytemuck",
- "font-types 0.9.0",
-]
-
-[[package]]
-name = "read-fonts"
-version = "0.31.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb16bffd9221b97a7de1b048520122b3926cf11e778c42c4c7514a4ee9da9455"
 dependencies = [
  "bytemuck",
  "font-types 0.9.0",
@@ -1662,16 +1649,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "skrifa"
-version = "0.33.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78cc1f79e5624f166718224ef883095bea315801aca75b62c64f3937755a586d"
-dependencies = [
- "bytemuck",
- "read-fonts 0.31.2",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1725,11 +1702,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "subsetter"
 version = "0.2.2"
+source = "git+https://github.com/typst/subsetter?rev=63de755#63de7558c469b918125193b4d6766393db18d36a"
 dependencies = [
- "kurbo",
  "rustc-hash 2.1.1",
- "skrifa 0.33.2",
- "write-fonts",
 ]
 
 [[package]]
@@ -2186,19 +2161,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5"
 dependencies = [
  "winapi",
-]
-
-[[package]]
-name = "write-fonts"
-version = "0.39.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cac89848aeba9b7e1877f1e89e3f9c95adb8771f640e1ef23c605aa734748c2b"
-dependencies = [
- "font-types 0.9.0",
- "indexmap",
- "kurbo",
- "log",
- "read-fonts 0.31.2",
 ]
 
 [[package]]
