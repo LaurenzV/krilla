@@ -197,21 +197,13 @@ impl CIDFont {
 
         let is_glyf = self.font.font_ref().glyf().is_ok();
         let is_cff = self.font.font_ref().cff().is_ok();
+        let is_cff2 = self.font.font_ref().cff2().is_ok();
 
-        if !is_glyf && !is_cff {
-            let is_cff2 = self.font.font_ref().cff2().is_ok();
-
-            return if is_cff2 {
-                Err(KrillaError::Font(
-                    self.font.clone(),
-                    "CFF2 fonts are not supported".to_string(),
-                ))
-            } else {
-                Err(KrillaError::Font(
-                    self.font.clone(),
-                    "font is missing `glyf` or `CFF` table".to_string(),
-                ))
-            };
+        if !is_glyf && !is_cff && !is_cff2 {
+            return Err(KrillaError::Font(
+                self.font.clone(),
+                "font is missing an outline table".to_string(),
+            ));
         }
 
         let (subsetted, global_bbox) = subset_font(self.font.clone(), glyph_remapper)?;
@@ -412,14 +404,24 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font, Rect)> {
     let mut bbox: Option<Rect> = None;
 
-    let font = subsetter::subset(font.font_data().as_ref(), font.index(), glyph_remapper)
-        .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
-        .and_then(|data| {
-            Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(
-                font.clone(),
-                "failed to subset font".to_string(),
-            ))
-        })?;
+    let variation_coordinates = font
+        .variation_coordinates()
+        .iter()
+        .map(|v| (subsetter::Tag::new(v.0.get()), v.1.get()))
+        .collect::<Vec<_>>();
+    let font = subsetter::subset_with_variations(
+        font.font_data().as_ref(),
+        font.index(),
+        &variation_coordinates,
+        glyph_remapper,
+    )
+    .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
+    .and_then(|data| {
+        Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(
+            font.clone(),
+            "failed to subset font".to_string(),
+        ))
+    })?;
     let global_bbox = font.bbox();
 
     for g in 0..font.num_glyphs() {

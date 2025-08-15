@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use std::sync::Arc;
 
 use skrifa::instance::{Location, LocationRef, Size};
@@ -24,38 +25,44 @@ use crate::Data;
 pub struct Font(Arc<Prehashed<Repr>>);
 
 impl Font {
-    /// Create a new font from some data.
+    /// Create a new font from some data. If you want to create a variable font at a specific
+    /// location, use [`Font::new_variable`] instead.
     ///
     /// The `index` indicates the index that should be
     /// associated with this font for TrueType collections, otherwise this value should be
-    /// set to 0. The location indicates the variation axes that should be associated with
-    /// the font.
-    ///
-    /// The `allow_color` property allows you to specify whether krilla should render the font
-    /// as a color font. When setting this property to false, krilla will always only use the
-    /// `glyf`/`CFF` tables of the font. If you don't know what this means, just set it to `true`.
+    /// set to 0.
     ///
     /// Returns `None` if the index is invalid or the font couldn't be read.
     pub fn new(data: Data, index: u32) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref(), index)?;
+        Self::new_variable(data, index, &[])
+    }
+
+    /// Like [`Font::new`], creates a new font from some data, but allows you to specify
+    /// variation coordinates in case the font is variable.
+    pub fn new_variable(data: Data, index: u32, variation_coords: &[(Tag, f32)]) -> Option<Self> {
+        let font_info = FontInfo::new(data.as_ref(), index, variation_coords)?;
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
     }
 
     pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
-        let font_ref_yoke =
-            Yoke::<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>::attach_to_cart(
-                data.0.clone(),
-                |data| {
-                    let font_ref = FontRef::from_index(data.as_ref(), font_info.index).unwrap();
-                    FontRefYoke {
-                        font_ref: font_ref.clone(),
-                        glyph_metrics: font_ref
-                            .glyph_metrics(Size::unscaled(), LocationRef::default()),
-                        outline_glyphs: font_ref.outline_glyphs(),
-                    }
-                },
-            );
+        let yoke_data = YokeData {
+            data: data.0.clone(),
+            location: font_info.location.clone(),
+        };
+
+        let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
+            Box::new(yoke_data),
+            |data| {
+                let font_ref =
+                    FontRef::from_index(data.data.as_ref().as_ref(), font_info.index).unwrap();
+                FontRefYoke {
+                    font_ref: font_ref.clone(),
+                    glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &data.location),
+                    outline_glyphs: font_ref.outline_glyphs(),
+                }
+            },
+        );
 
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_data: data,
@@ -75,6 +82,10 @@ impl Font {
 
     pub(crate) fn font_info(&self) -> Arc<FontInfo> {
         self.0.font_info.clone()
+    }
+
+    pub(crate) fn variation_coordinates(&self) -> &[(Tag, FiniteF32)] {
+        &self.0.font_info.var_coords
     }
 
     pub(crate) fn cap_height(&self) -> Option<f32> {
@@ -118,7 +129,6 @@ impl Font {
         self.0.font_info.global_bbox
     }
 
-    // For now, location will always be default, until we support variable fonts.
     pub(crate) fn location_ref(&self) -> LocationRef {
         (&self.0.font_info.location).into()
     }
@@ -145,9 +155,47 @@ impl Font {
     }
 }
 
+/// A 4-byte OpenType tag.
+#[derive(Copy, Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Tag([u8; 4]);
+
+impl Tag {
+    /// Create a new tag.
+    pub fn new(tag: &[u8; 4]) -> Self {
+        Self(*tag)
+    }
+
+    /// Try to create a new tag from a string.
+    ///
+    /// Return `None` if the string is not 4 bytes in size.
+    pub fn try_from_str(s: &str) -> Option<Self> {
+        let tag: [u8; 4] = s.as_bytes().try_into().ok()?;
+
+        Some(Self(tag))
+    }
+
+    /// Return the value of the tag.
+    pub fn get(&self) -> &[u8; 4] {
+        &self.0
+    }
+}
+
 impl Debug for Font {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Font {{..}}")
+    }
+}
+
+struct YokeData {
+    data: Arc<dyn AsRef<[u8]> + Send + Sync>,
+    location: Location,
+}
+
+impl Deref for YokeData {
+    type Target = YokeData;
+
+    fn deref(&self) -> &Self::Target {
+        self
     }
 }
 
@@ -164,6 +212,9 @@ pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     data_len: usize,
+    // `location` is derived from `var_coords`, but we need to store `var_coords` it explicitly
+    // so we can later pass it to the subsetter.
+    var_coords: Vec<(Tag, FiniteF32)>,
     location: Location,
     units_per_em: u16,
     global_bbox: Rect,
@@ -184,7 +235,7 @@ pub(crate) struct FontInfo {
 struct Repr {
     font_info: Arc<FontInfo>,
     font_data: Data,
-    font_ref_yoke: Yoke<FontRefYoke<'static>, Arc<dyn AsRef<[u8]> + Send + Sync>>,
+    font_ref_yoke: Yoke<FontRefYoke<'static>, Box<YokeData>>,
 }
 
 impl Hash for Repr {
@@ -199,13 +250,17 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(Tag, f32)]) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
+        let location = font_ref.axes().location(
+            var_coords
+                .iter()
+                .map(|i| (skrifa::Tag::new(i.0.get()), i.1)),
+        );
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
         let num_glyphs = font_ref.glyph_names().num_glyphs();
 
-        let location = Location::default();
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let os_2 = font_ref.os2().ok();
         let ascent = FiniteF32::new(
@@ -259,6 +314,10 @@ impl FontInfo {
             index,
             data_len,
             checksum,
+            var_coords: var_coords
+                .iter()
+                .map(|v| (v.0, FiniteF32::new(v.1).unwrap_or_default()))
+                .collect(),
             location,
             num_glyphs,
             units_per_em,

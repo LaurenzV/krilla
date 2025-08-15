@@ -42,9 +42,9 @@ rustc-hash = "2.1.1"
 rustybuzz = "0.20.1"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "fb804b3" }
-skrifa = "0.32.0"
+skrifa = "0.33"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
-subsetter = { git = "https://github.com/typst/subsetter", rev = "63de755" }
+subsetter = { git = "https://github.com/typst/subsetter", rev = "02ad2a4", features = ["variable-fonts"] }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
 tiny-skia-path = "0.11.4"

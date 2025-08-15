@@ -112,6 +112,10 @@ macro_rules! lazy_font {
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS, FONT_PATH.join("NotoSans-Regular.ttf"));
 #[rustfmt::skip]
+lazy_font!(NOTO_SANS_VAR, FONT_PATH.join("NotoSans_variable.ttf"));
+#[rustfmt::skip]
+lazy_font!(CANTARELL_VAR, FONT_PATH.join("Cantarell-VF.otf"));
+#[rustfmt::skip]
 lazy_font!(LATIN_MODERN_ROMAN, FONT_PATH.join("LatinModernRoman-Regular.otf"));
 #[rustfmt::skip]
 lazy_font!(NOTO_SANS_ARABIC, FONT_PATH.join("NotoSansArabic-Regular.ttf"));
