@@ -341,7 +341,6 @@ impl<'a> Surface<'a> {
                     );
                 }
             }
-            if self.fill.is_some() || self.stroke.is_some() {}
         }
     }
 
