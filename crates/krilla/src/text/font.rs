@@ -39,11 +39,7 @@ impl Font {
 
     /// Like [`Font::new`], creates a new font from some data, but allows you to specify
     /// variation coordinates in case the font is variable.
-    pub fn new_variable(
-        data: Data,
-        index: u32,
-        variation_coords: &[(Tag, f32)],
-    ) -> Option<Self> {
+    pub fn new_variable(data: Data, index: u32, variation_coords: &[(Tag, f32)]) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref(), index, variation_coords)?;
 
         Font::new_with_info(data.clone(), Arc::new(font_info))
@@ -256,9 +252,11 @@ impl Hash for Repr {
 impl FontInfo {
     pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(Tag, f32)]) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
-        let location = font_ref
-            .axes()
-            .location(var_coords.iter().map(|i| (skrifa::Tag::new(i.0.get()), i.1)));
+        let location = font_ref.axes().location(
+            var_coords
+                .iter()
+                .map(|i| (skrifa::Tag::new(i.0.get()), i.1)),
+        );
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
         let num_glyphs = font_ref.glyph_names().num_glyphs();
