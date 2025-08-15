@@ -168,7 +168,7 @@ impl Tag {
     /// Try to create a new tag from a string.
     ///
     /// Return `None` if the string is not 4 bytes in size.
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn try_from_str(s: &str) -> Option<Self> {
         let tag: [u8; 4] = s.as_bytes().try_into().ok()?;
 
         Some(Self(tag))
@@ -316,7 +316,7 @@ impl FontInfo {
             checksum,
             var_coords: var_coords
                 .iter()
-                .map(|v| (v.0.clone(), FiniteF32::new(v.1).unwrap_or_default()))
+                .map(|v| (v.0, FiniteF32::new(v.1).unwrap_or_default()))
                 .collect(),
             location,
             num_glyphs,
