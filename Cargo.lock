@@ -1722,6 +1722,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "subsetter"
 version = "0.2.2"
+source = "git+https://github.com/typst/subsetter?rev=02ad2a4#02ad2a43e9f1fce02a194018ec5687c107e87ce4"
 dependencies = [
  "kurbo",
  "rustc-hash 2.1.1",
