@@ -212,9 +212,9 @@ pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     data_len: usize,
-    var_coords: Vec<(Tag, FiniteF32)>,
-    // Location is derived from `var_coord`, but we need to store it explicitly
+    // `location` is derived from `var_coords`, but we need to store `var_coords` it explicitly
     // so we can later pass it to the subsetter.
+    var_coords: Vec<(Tag, FiniteF32)>,
     location: Location,
     units_per_em: u16,
     global_bbox: Rect,
