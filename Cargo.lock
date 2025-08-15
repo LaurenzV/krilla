@@ -1702,8 +1702,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "subsetter"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35725d9d2d056905865f8a36146e45be43691b15fc5d973bd7f79dd438288544"
+source = "git+https://github.com/typst/subsetter?rev=63de755#63de7558c469b918125193b4d6766393db18d36a"
 dependencies = [
  "rustc-hash 2.1.1",
 ]
