@@ -2,7 +2,7 @@ use krilla::geom::Point;
 use krilla::page::Page;
 use krilla::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::surface::Surface;
-use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
+use krilla::text::{Font, GlyphId, KrillaGlyph, Tag, TextDirection};
 use krilla::{Data, Document};
 use krilla_macros::{snapshot, visreg};
 
@@ -422,7 +422,7 @@ fn text_two_fonts_reproducibility() {
     }
 }
 
-fn variable_impl(surface: &mut Surface, coords: Vec<Vec<(String, f32)>>, font: Data, text: &str) {
+fn variable_impl(surface: &mut Surface, coords: Vec<Vec<(Tag, f32)>>, font: Data, text: &str) {
     let mut cur_y = 20.0;
 
     for coords in coords {
@@ -444,10 +444,10 @@ fn variable_impl(surface: &mut Surface, coords: Vec<Vec<(String, f32)>>, font: D
 #[visreg]
 fn text_variable_font(surface: &mut Surface) {
     let coords = vec![
-        vec![("wght".to_string(), 400.0)],
-        vec![("wght".to_string(), 100.0)],
-        vec![("wght".to_string(), 900.0)],
-        vec![("wght".to_string(), 900.0), ("wdth".to_string(), 62.5)],
+        vec![(Tag::new(b"wght"), 400.0)],
+        vec![(Tag::new(b"wght"), 100.0)],
+        vec![(Tag::new(b"wght"), 900.0)],
+        vec![(Tag::new(b"wght"), 900.0), (Tag::new(b"wdth"), 62.5)],
     ];
 
     variable_impl(
@@ -461,9 +461,9 @@ fn text_variable_font(surface: &mut Surface) {
 #[visreg]
 fn text_variable_font_cff2(surface: &mut Surface) {
     let coords = vec![
-        vec![("wght".to_string(), 400.0)],
-        vec![("wght".to_string(), 100.0)],
-        vec![("wght".to_string(), 900.0)],
+        vec![(Tag::new(b"wght"), 400.0)],
+        vec![(Tag::new(b"wght"), 100.0)],
+        vec![(Tag::new(b"wght"), 900.0)],
     ];
 
     variable_impl(

@@ -9,10 +9,7 @@ pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> V
     let mut rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
 
     for variation in font.variation_coordinates() {
-        let tag_bytes: Option<[u8; 4]> = variation.0.as_bytes().try_into().ok();
-        if let Some(tag) = tag_bytes {
-            rb_font.set_variation(Tag::from_bytes(&tag), variation.1.get());
-        }
+        rb_font.set_variation(Tag::from_bytes(&variation.0.get()), variation.1.get());
     }
 
     let mut buffer = UnicodeBuffer::new();

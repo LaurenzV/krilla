@@ -407,9 +407,9 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font
     let variation_coordinates = font
         .variation_coordinates()
         .iter()
-        .map(|v| (v.0.clone(), v.1.get()))
+        .map(|v| (subsetter::Tag::new(v.0.get()), v.1.get()))
         .collect::<Vec<_>>();
-    let font = subsetter::subset(
+    let font = subsetter::subset_with_variations(
         font.font_data().as_ref(),
         font.index(),
         &variation_coordinates,

@@ -42,7 +42,7 @@ impl Font {
     pub fn new_variable(
         data: Data,
         index: u32,
-        variation_coords: &[(String, f32)],
+        variation_coords: &[(Tag, f32)],
     ) -> Option<Self> {
         let font_info = FontInfo::new(data.as_ref(), index, variation_coords)?;
 
@@ -88,7 +88,7 @@ impl Font {
         self.0.font_info.clone()
     }
 
-    pub(crate) fn variation_coordinates(&self) -> &[(String, FiniteF32)] {
+    pub(crate) fn variation_coordinates(&self) -> &[(Tag, FiniteF32)] {
         &self.0.font_info.var_coords
     }
 
@@ -159,6 +159,31 @@ impl Font {
     }
 }
 
+/// A 4-byte OpenType tag.
+#[derive(Copy, Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Tag([u8; 4]);
+
+impl Tag {
+    /// Create a new tag.
+    pub fn new(tag: &[u8; 4]) -> Self {
+        Self(*tag)
+    }
+
+    /// Try to create a new tag from a string.
+    ///
+    /// Return `None` if the string is not 4 bytes in size.
+    pub fn from_str(s: &str) -> Option<Self> {
+        let tag: [u8; 4] = s.as_bytes().try_into().ok()?;
+
+        Some(Self(tag))
+    }
+
+    /// Return the value of the tag.
+    pub fn get(&self) -> &[u8; 4] {
+        &self.0
+    }
+}
+
 impl Debug for Font {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Font {{..}}")
@@ -191,7 +216,7 @@ pub(crate) struct FontInfo {
     index: u32,
     checksum: u32,
     data_len: usize,
-    var_coords: Vec<(String, FiniteF32)>,
+    var_coords: Vec<(Tag, FiniteF32)>,
     // Location is derived from `var_coord`, but we need to store it explicitly
     // so we can later pass it to the subsetter.
     location: Location,
@@ -229,11 +254,11 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(String, f32)]) -> Option<Self> {
+    pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(Tag, f32)]) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
         let location = font_ref
             .axes()
-            .location(var_coords.iter().map(|i| (i.0.as_str(), i.1)));
+            .location(var_coords.iter().map(|i| (skrifa::Tag::new(i.0.get()), i.1)));
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
         let num_glyphs = font_ref.glyph_names().num_glyphs();
