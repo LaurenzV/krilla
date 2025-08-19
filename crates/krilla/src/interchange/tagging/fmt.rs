@@ -232,7 +232,7 @@ impl Output for Attr {
                 BorderThickness(sides) => {
                     let space = omit_if(" ", sides.is_multiline());
                     let sides = sides.display_indent(indent.inc());
-                    write!(f, "/BorderThickness:{space}{sides}")
+                    writeln!(f, "/BorderThickness:{space}{sides}")
                 }
                 Padding(sides) => {
                     writeln!(f, "/Padding: {}", sides.display_indent(indent.inc()))
