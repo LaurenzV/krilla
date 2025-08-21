@@ -59,7 +59,7 @@ See `README.md` for the meaning of each color.
 - The information there is hardly enforceable in an automated way, so not documented yet. 🟠
 
 7.4.3:
-- krilla does not support heading levels higher than 6. 🔵
+- krilla adds tags for heading levels higher than 6 as prescribed. 🟢
 
 7.4.4:
 - The information there is hardly enforceable in an automated way, so not documented yet. 🟠
