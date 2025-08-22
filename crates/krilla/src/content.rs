@@ -51,6 +51,8 @@ pub(crate) struct ContentBuilder {
     // need to provide a bbox of all its contents. If we are on the main page stream, we only
     // need it if automatic size detection is enabled.
     bbox_important: bool,
+    /// A temporary buffer that's reused across the builder.
+    scratch: Vec<u8>,
     pub(crate) active_marked_content: bool,
 }
 
@@ -72,6 +74,7 @@ impl ContentBuilder {
             bbox_important,
             graphics_states: GraphicsStates::new(),
             bbox: None,
+            scratch: Vec::new(),
             active_marked_content: false,
         }
     }
@@ -505,28 +508,72 @@ impl ContentBuilder {
             Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
         );
 
-        let mut positioned = self.content.show_positioned();
-        let mut items = positioned.items();
-
-        let mut adjustment = 0.0;
-        let mut encoded = vec![];
-
         for glyph in glyphs {
-            match glyph.location() {
-                None => sc.reset_location(),
-                Some(l) => sc.set_location(l),
-            };
-
             if glyph.glyph_id() == GlyphId::new(0)
                 || pdf_font.font().postscript_name() == Some("LastResort")
             {
                 sc.register_validation_error(ValidationError::ContainsNotDefGlyph(
                     pdf_font.font(),
-                    sc.location,
+                    glyph.location(),
                     text[glyph.text_range()].to_string(),
                 ));
             }
+        }
 
+        // If it's just a single glyph and without an x_offset, there is no need for individual
+        // positioning, so we can use `Tj` instead of `TJ`. The reason we're doing this is because
+        // Acrobat's copy-paste is a bit buggy if `/ActualText` is used at the end of a line, but
+        // only if `TJ` is used. With `Tj`, it's fine.
+        if let [glyph] = glyphs {
+            if approx_eq!(f32, glyph.x_offset(1.0), 0.0, epsilon = 0.001) {
+                self.encode_single_glyph(cur_x, pdf_font, size, context_color, glyph);
+                return;
+            }
+        }
+
+        self.encode_glyphs_with_individual_positioning(
+            cur_x,
+            pdf_font,
+            size,
+            context_color,
+            glyphs,
+        );
+    }
+
+    fn encode_single_glyph(
+        &mut self,
+        cur_x: &mut f32,
+        pdf_font: &dyn PdfFont,
+        size: f32,
+        context_color: rgb::Color,
+        glyph: &impl Glyph,
+    ) {
+        let pdf_glyph = pdf_font
+            .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
+            .unwrap();
+        self.scratch.clear();
+        let encoded = &mut self.scratch;
+        pdf_glyph.encode_into(encoded);
+        self.content.show(Str(encoded));
+        *cur_x += glyph.x_advance(size);
+    }
+
+    fn encode_glyphs_with_individual_positioning(
+        &mut self,
+        cur_x: &mut f32,
+        pdf_font: &dyn PdfFont,
+        size: f32,
+        context_color: rgb::Color,
+        glyphs: &[impl Glyph],
+    ) {
+        self.scratch.clear();
+        let encoded = &mut self.scratch;
+
+        let mut adjustment = 0.0;
+        let mut positioned = self.content.show_positioned();
+        let mut items = positioned.items();
+
+        for glyph in glyphs {
             let pdf_glyph = pdf_font
                 .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
                 .unwrap();
@@ -545,7 +592,7 @@ impl ContentBuilder {
             // Make sure we don't write miniscule adjustments
             if !approx_eq!(f32, adjustment, 0.0, epsilon = 0.001) {
                 if !encoded.is_empty() {
-                    items.show(Str(&encoded));
+                    items.show(Str(encoded));
                     encoded.clear();
                 }
 
@@ -554,7 +601,7 @@ impl ContentBuilder {
                 adjustment = 0.0;
             }
 
-            pdf_glyph.encode_into(&mut encoded);
+            pdf_glyph.encode_into(encoded);
 
             if let Some(font_advance) = font_advance {
                 adjustment += x_advance - font_advance;
@@ -563,12 +610,10 @@ impl ContentBuilder {
             adjustment -= x_offset;
             // cur_x/cur_y and glyph metrics are in user space units.
             *cur_x += glyph.x_advance(size);
-
-            sc.reset_location();
         }
 
         if !encoded.is_empty() {
-            items.show(Str(&encoded));
+            items.show(Str(encoded));
         }
 
         items.finish();
