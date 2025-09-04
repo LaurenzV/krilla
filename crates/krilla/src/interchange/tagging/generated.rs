@@ -13,6 +13,7 @@ pub enum TagKind {
     Article(Tag<kind::Article>),
     /// Section of a larger document.
     Section(Tag<kind::Section>),
+    
     /// A generic block-level grouping element.
     Div(Tag<kind::Div>),
     /// A paragraph-level quote.
