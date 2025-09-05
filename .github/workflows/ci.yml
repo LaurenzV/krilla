@@ -206,3 +206,16 @@ jobs:
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
       - run: RUSTFLAGS=-Awarnings cargo hack check --each-feature
+        
+  check-generated-code:
+    name: Ensure the generated code is up-to-date
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+      - name: run code generator
+        run: cargo run --bin=codegen
+      - name: check for uncommitted changes
+        run: git diff --exit-code
