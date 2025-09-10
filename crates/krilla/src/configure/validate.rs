@@ -732,7 +732,7 @@ impl Validator {
     }
 
     /// The string representation of the validator.
-    pub fn as_str(&self) -> &str {
+    pub fn as_str(self) -> &'static str {
         match self {
             Validator::None => "None",
             Validator::A1_A => "PDF/A1-A",
