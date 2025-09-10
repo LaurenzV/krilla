@@ -644,16 +644,24 @@ impl ContentBuilder {
                 let mut cur_x = x;
                 let mut cur_y = ys;
 
+                // When the glyph ranges are monotonically decreasing, the glyphs are in reverse
+                // order and we should write `/ReversedChars` marked content.
+                let reversed = glyphs.len() > 1
+                    && glyphs
+                        .windows(2)
+                        .all(|w| w[0].text_range().start >= w[1].text_range().end);
+
                 action(sb, sc);
                 sb.content.begin_text();
 
                 let font_container = sc.register_font_container(font.clone());
-                let do_text_span = use_text_spanner(
-                    glyphs,
-                    text,
-                    context_color,
-                    &mut font_container.borrow_mut(),
-                );
+                let do_text_span = reversed
+                    || use_text_spanner(
+                        glyphs,
+                        text,
+                        context_color,
+                        &mut font_container.borrow_mut(),
+                    );
 
                 if do_text_span {
                     // Separate into distinct glyph runs that either are encoded using actual text, or are
@@ -661,6 +669,7 @@ impl ContentBuilder {
                     let spanned = GlyphSpanner::new(
                         glyphs,
                         text,
+                        reversed,
                         sc.serialize_settings()
                             .validator()
                             .requires_codepoint_mappings(),
@@ -679,6 +688,7 @@ impl ContentBuilder {
                             context_color,
                             text,
                             font_size,
+                            reversed,
                         )
                     }
                 } else {
@@ -694,6 +704,7 @@ impl ContentBuilder {
                         context_color,
                         text,
                         font_size,
+                        reversed,
                     )
                 }
 
@@ -715,12 +726,17 @@ impl ContentBuilder {
         context_color: rgb::Color,
         text: &str,
         font_size: f32,
+        reversed: bool,
     ) {
         if let Some(text) = fragment.actual_text() {
             let mut actual_text = self
                 .content
                 .begin_marked_content_with_properties(Name(b"Span"));
             actual_text.properties().actual_text(TextStr(text));
+        }
+
+        if reversed {
+            self.content.begin_marked_content(Name(b"ReversedChars"));
         }
 
         // Segment into glyph runs that can be encoded in one go using a PDF
@@ -739,6 +755,10 @@ impl ContentBuilder {
                 text,
                 font_size,
             )
+        }
+
+        if reversed {
+            self.content.end_marked_content();
         }
 
         if fragment.actual_text().is_some() {

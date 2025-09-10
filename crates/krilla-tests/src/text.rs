@@ -8,8 +8,8 @@ use krilla_macros::{snapshot, visreg};
 
 use crate::{
     blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, CANTARELL_VAR,
-    LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_CJK,
-    NOTO_SANS_DEVANAGARI, NOTO_SANS_VAR, TWITTER_COLOR_EMOJI,
+    LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_ARABIC,
+    NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, NOTO_SANS_VAR, TWITTER_COLOR_EMOJI,
 };
 
 fn text_gradient(spread_method: SpreadMethod) -> LinearGradient {
@@ -212,6 +212,20 @@ fn text_direction_btt(surface: &mut Surface) {
         "你好这是一段则是文字",
         false,
         TextDirection::BottomToTop,
+    );
+}
+
+#[snapshot]
+fn text_direction_auto(page: &mut Page) {
+    let font = Font::new(NOTO_SANS_ARABIC.clone(), 0).unwrap();
+    let mut surface = page.surface();
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        32.0,
+        "مرحبا بالعالم",
+        false,
+        TextDirection::Auto,
     );
 }
 

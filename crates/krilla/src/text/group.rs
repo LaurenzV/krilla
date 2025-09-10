@@ -57,6 +57,7 @@ where
 {
     slice: &'a [T],
     context_color: rgb::Color,
+    reversed: bool,
     forbid_invalid_codepoints: bool,
     font_container: Rc<RefCell<FontContainer>>,
     text: &'a str,
@@ -69,6 +70,7 @@ where
     pub(crate) fn new(
         slice: &'a [T],
         text: &'a str,
+        reversed: bool,
         forbid_invalid_codepoints: bool,
         context_color: rgb::Color,
         font_container: Rc<RefCell<FontContainer>>,
@@ -76,6 +78,7 @@ where
         Self {
             slice,
             context_color,
+            reversed,
             forbid_invalid_codepoints,
             text,
             font_container,
@@ -220,8 +223,18 @@ where
                 }
             }
 
-            prev_range = next.text_range().clone();
+            prev_range = next_range;
             count += 1;
+
+            // PDF 1.7 § 14.8.2.3.3 says that `/ReversedChars` show strings shall not contain
+            // interior space glyphs. Thus, we check whether we have a glyph that is not the first
+            // one and which has a space as its text mapping, and if so, stop after it. That a space
+            // is in the same cluster as another codepoint should be exceedingly rare, so we do a
+            // literal comparison against `" "` instead of a containment check and prefer to
+            // continue otherwise.
+            if self.reversed && count > 1 && &self.text[prev_range.clone()] == " " {
+                break;
+            }
         }
 
         // If we only had one glyph to begin with (and never entered the for loop), then
