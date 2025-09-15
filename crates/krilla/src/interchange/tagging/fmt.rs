@@ -452,9 +452,9 @@ impl<T: PartialEq + ValueOutput> Output for Sides<T> {
 impl ValueOutput for NaiveRgbColor {}
 impl Output for NaiveRgbColor {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
-        let r = (255.0 * self.red).round() as u8;
-        let g = (255.0 * self.green).round() as u8;
-        let b = (255.0 * self.blue).round() as u8;
+        let r = self.red;
+        let g = self.green;
+        let b = self.blue;
         write!(f, "#{r:02x}{g:02x}{b:02x}")
     }
 }
@@ -629,10 +629,10 @@ mod tests {
         sec.push(figure);
 
         let border_color = Sides::new(
-            NaiveRgbColor::new(0.1, 0.4, 1.0),
-            NaiveRgbColor::new(0.3, 0.5, 0.2),
-            NaiveRgbColor::new(0.3, 0.4, 0.3),
-            NaiveRgbColor::new(0.0, 0.7, 0.2),
+            NaiveRgbColor::new(0x1A, 0x66, 0xFF),
+            NaiveRgbColor::new(0x4D, 0x80, 0x33),
+            NaiveRgbColor::new(0x4D, 0x66, 0x4D),
+            NaiveRgbColor::new(0x00, 0xB3, 0x33),
         );
         let table = Tag::Table
             .with_border_color(Some(border_color))

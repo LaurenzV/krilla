@@ -351,45 +351,50 @@ impl BBox {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct NaiveRgbColor {
     /// The red component of the color.
-    pub red: f32,
+    pub red: u8,
     /// The green component of the color.
-    pub green: f32,
+    pub green: u8,
     /// The blue component of the color.
-    pub blue: f32,
+    pub blue: u8,
 }
 
 impl NaiveRgbColor {
     /// Create a new RGB color.
-    pub fn new(red: f32, green: f32, blue: f32) -> Self {
+    pub fn new(red: u8, green: u8, blue: u8) -> Self {
+        Self { red, green, blue }
+    }
+
+    /// Create a new RGB color from normalized floating point values.
+    pub fn new_f32(red: f32, green: f32, blue: f32) -> Self {
         if !(0.0..=1.0).contains(&red)
             || !(0.0..=1.0).contains(&green)
             || !(0.0..=1.0).contains(&blue)
         {
             panic!("RGB color components must be in the range [0.0, 1.0]");
         }
-
-        Self { red, green, blue }
+        Self {
+            red: (255.0 * red).round() as u8,
+            green: (255.0 * green).round() as u8,
+            blue: (255.0 * blue).round() as u8,
+        }
     }
 
     /// Convert the color into an array of f32 components for PDF serialization.
-    pub fn into_array(self) -> [f32; 3] {
-        [self.red, self.green, self.blue]
+    pub fn into_f32_array(self) -> [f32; 3] {
+        let normalize = |n| n as f32 / 255.0;
+        [self.red, self.green, self.blue].map(normalize)
     }
 }
 
 impl From<NaiveRgbColor> for crate::graphics::color::rgb::Color {
     fn from(color: NaiveRgbColor) -> Self {
-        crate::graphics::color::rgb::Color::new(
-            (color.red * 255.0) as u8,
-            (color.green * 255.0) as u8,
-            (color.blue * 255.0) as u8,
-        )
+        crate::graphics::color::rgb::Color::new(color.red, color.green, color.blue)
     }
 }
 
 impl From<NaiveRgbColor> for [f32; 3] {
     fn from(color: NaiveRgbColor) -> Self {
-        color.into_array()
+        color.into_f32_array()
     }
 }
 
