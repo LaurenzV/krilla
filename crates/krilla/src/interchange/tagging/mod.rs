@@ -834,7 +834,7 @@ impl TagGroup {
                 }
                 LayoutAttr::BorderColor(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        let sides = sides.map_pdf(NaiveRgbColor::into_array);
+                        let sides = sides.map_pdf(NaiveRgbColor::into_f32_array);
                         layout_attributes.get().border_color(sides);
                     }
                 }

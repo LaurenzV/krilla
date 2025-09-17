@@ -559,8 +559,8 @@ fn tagging_div_and_border_color(document: &mut Document) {
     surface.finish();
     page.finish();
 
-    let red = NaiveRgbColor::new(1.0, 0.0, 0.0);
-    let blue = NaiveRgbColor::new(0.0, 0.0, 1.0);
+    let red = NaiveRgbColor::new(0xFF, 0x00, 0x00);
+    let blue = NaiveRgbColor::new(0x00, 0x00, 0xFF);
     let mut div = TagGroup::new(
         Tag::Div
             .with_border_color(Some(Sides::new(red, blue, red, blue)))
