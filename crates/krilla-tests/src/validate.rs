@@ -449,7 +449,7 @@ fn validate_pdf_a4e_full_example(document: &mut Document) {
     validate_pdf_full_example(document);
 }
 
-#[snapshot(document, settings_15, ignore)]
+#[snapshot(document, settings_15)]
 fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
@@ -495,7 +495,6 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
 }
 
 #[test]
-#[ignore]
 fn validate_pdf_ua1_missing_requirements() {
     let mut document = Document::new_with(settings_15());
     let mut page = document.start_page();
@@ -551,7 +550,7 @@ fn validate_pdf_ua1_missing_requirements() {
     )
 }
 
-#[snapshot(document, settings_15, ignore)]
+#[snapshot(document, settings_15)]
 fn validate_pdf_ua1_attributes(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
