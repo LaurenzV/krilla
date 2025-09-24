@@ -702,7 +702,7 @@ pub fn all_glyphs_to_pdf(
             )
         }
 
-        if (cur_point / size) % num_cols == 0 {
+        if (cur_point / size).is_multiple_of(num_cols) {
             color = *color_picker.next().unwrap();
         }
 
