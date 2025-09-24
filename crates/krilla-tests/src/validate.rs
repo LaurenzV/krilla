@@ -8,7 +8,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
-use krilla::tagging::{ArtifactType, ContentTag, SpanTag, TagGroup, TagTree};
+use krilla::tagging::{ArtifactType, ContentTag, SpanTag, TagGroup, TagKind, TagTree};
 use krilla::tagging::{ListNumbering, TableHeaderScope, Tag};
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
@@ -478,11 +478,14 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
         Some("A link to youtube".to_string()),
     ));
 
+    let mut link_group = TagGroup::new(Tag::Link);
+    link_group.push(annotation);
+
     page.finish();
 
     let mut tag_tree = TagTree::new();
     tag_tree.push(id1);
-    tag_tree.push(annotation);
+    tag_tree.push(link_group);
     document.set_tag_tree(tag_tree);
 
     let metadata = Metadata::new()
@@ -572,7 +575,7 @@ fn validate_pdf_ua1_attributes(document: &mut Document) {
 
     let mut group1 = TagGroup::new(Tag::L(ListNumbering::Circle));
     group1.push(id1);
-    
+
     let mut group2 = TagGroup::new(Tag::TH(TableHeaderScope::Row));
     let mut group3 = TagGroup::new(Tag::TR);
     let mut group4 = TagGroup::new(Tag::Table);
