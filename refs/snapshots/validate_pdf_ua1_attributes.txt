@@ -1,0 +1,205 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [10 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Outlines
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /StructTreeRoot
+  /RoleMap <<
+    /Datetime /Span
+    /Terms /Part
+    /Title /P
+    /Strong /Span
+    /Em /Span
+  >>
+  /K [5 0 R]
+  /ParentTree <<
+    /Nums [0 4 0 R]
+  >>
+  /ParentTreeNextKey 1
+>>
+endobj
+
+4 0 obj
+[9 0 R 8 0 R]
+endobj
+
+5 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 3 0 R
+  /K [9 0 R 6 0 R]
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /StructElem
+  /S /Table
+  /P 5 0 R
+  /K [7 0 R]
+>>
+endobj
+
+7 0 obj
+<<
+  /Type /StructElem
+  /S /TR
+  /P 6 0 R
+  /K [8 0 R]
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /StructElem
+  /S /TH
+  /P 7 0 R
+  /A [<<
+    /O /Table
+    /Scope /Row
+  >>]
+  /K [1]
+  /Pg 10 0 R
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /StructElem
+  /S /L
+  /P 5 0 R
+  /A [<<
+    /O /List
+    /ListNumbering /Circle
+  >>]
+  /K [0]
+  /Pg 10 0 R
+>>
+endobj
+
+10 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+  >>
+  /MediaBox [0 0 595 842]
+  /StructParents 0
+  /Parent 1 0 R
+  /Contents 11 0 R
+>>
+endobj
+
+11 0 obj
+<<
+  /Length 190
+>>
+stream
+/Span <<
+  /MCID 0
+>> BDC
+q
+1 0 0 -1 0 842 cm
+1 0 0 rg
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
+EMC
+/P <<
+  /MCID 1
+>> BDC
+q
+1 0 0 -1 0 842 cm
+1 0 0 rg
+0 0 m
+100 0 l
+100 100 l
+0 100 l
+h
+f
+Q
+EMC
+endstream
+endobj
+
+12 0 obj
+<<
+  /Title (a nice title)
+>>
+endobj
+
+13 0 obj
+<<
+  /Length 961
+  /Type /Metadata
+  /Subtype /XML
+>>
+stream
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">a nice title</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><pdfuaid:part>1</pdfuaid:part><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>ohv3gN2S9EwC2W45P1kQtw==</xmpMM:InstanceID><xmpMM:DocumentID>ohv3gN2S9EwC2W45P1kQtw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+endstream
+endobj
+
+14 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Metadata 13 0 R
+  /Lang (en)
+  /StructTreeRoot 3 0 R
+  /MarkInfo <<
+    /Marked true
+    /Suspects false
+  >>
+  /ViewerPreferences <<
+    /DisplayDocTitle true
+  >>
+  /Outlines 2 0 R
+>>
+endobj
+
+xref
+0 15
+0000000000 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000121 00000 n
+0000000347 00000 n
+0000000377 00000 n
+0000000464 00000 n
+0000000542 00000 n
+0000000617 00000 n
+0000000746 00000 n
+0000000884 00000 n
+0000001064 00000 n
+0000001309 00000 n
+0000001356 00000 n
+0000002406 00000 n
+trailer
+<<
+  /Size 15
+  /Root 14 0 R
+  /Info 12 0 R
+  /ID [(ohv3gN2S9EwC2W45P1kQtw==) (ohv3gN2S9EwC2W45P1kQtw==)]
+>>
+startxref
+2647
+%%EOF
