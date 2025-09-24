@@ -667,7 +667,7 @@ impl Validator {
         }
     }
 
-    pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype> {
+    pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype<'_>> {
         match self {
             Validator::None => None,
             Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),

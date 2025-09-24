@@ -228,7 +228,7 @@ impl<'a> Page<'a> {
 
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
-    pub fn surface(&mut self) -> Surface {
+    pub fn surface(&mut self) -> Surface<'_> {
         let root_builder = ContentBuilder::new(
             self.root_transform(),
             self.page_settings.media_box.is_none(),

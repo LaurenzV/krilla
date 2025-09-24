@@ -52,7 +52,7 @@ impl Document {
     }
 
     /// Start a new page with default settings.
-    pub fn start_page(&mut self) -> Page {
+    pub fn start_page(&mut self) -> Page<'_> {
         let page_index = self.serializer_context.page_infos().iter().len();
         Page::new(
             &mut self.serializer_context,
@@ -62,7 +62,7 @@ impl Document {
     }
 
     /// Start a new page with specific page settings.
-    pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page {
+    pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page<'_> {
         let page_index = self.serializer_context.page_infos().iter().len();
         Page::new(&mut self.serializer_context, page_index, page_settings)
     }

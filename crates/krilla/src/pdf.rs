@@ -59,7 +59,7 @@ impl PdfDocument {
         &self.0.deref().0
     }
 
-    pub(crate) fn pages(&self) -> &[Page] {
+    pub(crate) fn pages(&self) -> &[Page<'_>] {
         self.0.deref().0.pages()
     }
 }
