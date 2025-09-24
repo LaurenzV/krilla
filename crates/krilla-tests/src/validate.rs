@@ -573,13 +573,15 @@ fn validate_pdf_ua1_attributes(document: &mut Document) {
     let mut group1 = TagGroup::new(Tag::L(ListNumbering::Circle));
     group1.push(id1);
     
-    let mut group2 = TagGroup::new(Tag::TR);
-    let mut group3 = TagGroup::new(Tag::TH(TableHeaderScope::Row));
-    group3.push(id2);
-    group2.push(group3);
+    let mut group2 = TagGroup::new(Tag::TH(TableHeaderScope::Row));
+    let mut group3 = TagGroup::new(Tag::TR);
+    let mut group4 = TagGroup::new(Tag::Table);
+    group2.push(id2);
+    group3.push(group2);
+    group4.push(group3);
 
     tag_tree.push(group1);
-    tag_tree.push(group2);
+    tag_tree.push(group4);
     document.set_tag_tree(tag_tree);
 
     let metadata = Metadata::new()
