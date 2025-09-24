@@ -12,7 +12,7 @@ pub(crate) fn has_bitmap_data(font: &Font, glyph: GlyphId) -> bool {
     get_bitmap_glyph(font, glyph).is_some_and(|b| matches!(b.data, BitmapData::Png(_)))
 }
 
-pub(crate) fn get_bitmap_glyph(font: &Font, glyph: GlyphId) -> Option<BitmapGlyph> {
+pub(crate) fn get_bitmap_glyph(font: &Font, glyph: GlyphId) -> Option<BitmapGlyph<'_>> {
     let bitmap_strikes = font.font_ref().bitmap_strikes();
     bitmap_strikes.glyph_for_size(skrifa::instance::Size::unscaled(), glyph.to_skrifa())
 }

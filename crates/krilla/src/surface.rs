@@ -95,7 +95,7 @@ impl<'a> Surface<'a> {
     }
 
     /// Return a `StreamBuilder` to allow drawing on a sub-context.
-    pub fn stream_builder(&mut self) -> StreamBuilder {
+    pub fn stream_builder(&mut self) -> StreamBuilder<'_> {
         StreamBuilder::new(self.sc)
     }
 

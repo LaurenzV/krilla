@@ -99,7 +99,7 @@ impl<'a> StreamBuilder<'a> {
     }
 
     /// Get the surface of the stream builder.
-    pub fn surface(&mut self) -> Surface {
+    pub fn surface(&mut self) -> Surface<'_> {
         // Stream builders cannot have any tags since we always pass a dummy
         // identifier. Only main page content streams can have one.
         let finish_fn = Box::new(|stream, _| {

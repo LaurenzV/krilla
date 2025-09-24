@@ -16,17 +16,17 @@ use siphasher::sip128::{Hasher128, SipHasher13};
 use tiny_skia_path::Path;
 
 pub(crate) trait NameExt {
-    fn to_pdf_name(&self) -> Name;
+    fn to_pdf_name(&self) -> Name<'_>;
 }
 
 impl NameExt for String {
-    fn to_pdf_name(&self) -> Name {
+    fn to_pdf_name(&self) -> Name<'_> {
         Name(self.as_bytes())
     }
 }
 
 impl NameExt for &str {
-    fn to_pdf_name(&self) -> Name {
+    fn to_pdf_name(&self) -> Name<'_> {
         Name(self.as_bytes())
     }
 }
