@@ -1,5 +1,5 @@
 # Description
-PDF-A/1 requires PDF a version <= 1.4 and defines three conformance levels, 
+PDF/A-1 requires PDF a version <= 1.4 and defines three conformance levels, 
 in the following order from less strict to more strict:
 - Level B
 - Level A
@@ -208,7 +208,7 @@ when a PostScript function is used. 🟢
 6.8.6: krilla currently does not support any non-textual annotations. 🔵
 
 
-NOTE: krilla will discard any alt text / abbreviations specifications in PDF/A1, because it's based on PDF 1.4,
+NOTE: krilla will discard any alt text / abbreviations specifications in PDF/A-1, because it's based on PDF 1.4,
 and we define them inline as properties to spans, which
 is actually only available for PDF >= 1.5. Maybe we
 can fix this in the future.

@@ -62,7 +62,7 @@ impl Metadata {
 
     /// The main language of the document, as an RFC 3066 language tag.
     ///
-    /// This property is required for some export modes, like for example PDF/A3-A
+    /// This property is required for some export modes, like for example PDF/A-3a.
     pub fn language(mut self, language: String) -> Self {
         self.language = Some(language);
         self
@@ -377,7 +377,7 @@ impl DateTime {
 /// Converts a datetime to a pdf-writer date.
 pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
     // We always assume a full date with all fields because for some reason
-    // Acrobat doesn't like PDF/A1 files without everything set.
+    // Acrobat doesn't like PDF/A-1 files without everything set.
     pdf_writer::Date::new(date_time.year)
         .month(date_time.month.unwrap_or(1))
         .day(date_time.day.unwrap_or(1))
@@ -399,7 +399,7 @@ fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
     };
 
     // We always assume a full date with all fields because for some reason
-    // Acrobat doesn't like PDF/A1 files without everything set.
+    // Acrobat doesn't like PDF/A-1 files without everything set.
     xmp_writer::DateTime {
         year: datetime.year,
         month: Some(datetime.month.unwrap_or(1)),

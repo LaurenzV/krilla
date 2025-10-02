@@ -93,7 +93,7 @@ pub struct SerializeSettings {
     /// disable it dynamically, without having to make any changes to your code.
     ///
     /// Note that this value might be overridden depending on which validator
-    /// you use. For example, when exporting with PDF-UA, this value will always
+    /// you use. For example, when exporting with PDF/UA, this value will always
     /// be set to `true`.
     ///
     /// [`tagging`]: crate::interchange::tagging
