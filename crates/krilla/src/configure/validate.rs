@@ -94,6 +94,9 @@ pub enum ValidationError {
     // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
     // attribute to be present. But we just completely forbid it, for simplicity.
     UnicodePrivateArea(Font, GlyphId, char, Option<Location>),
+    /// A font has a license that requires explicit permission of the legal owner for embedding
+    /// but the standard requires font programs to be legally embeddable for universal rendering.
+    RestrictedLicense(Font),
     /// No document language was set via the metadata, even though it is required
     /// by the standard.
     NoDocumentLanguage,
@@ -299,6 +302,7 @@ impl Validator {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
+                ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText(_) => false,
@@ -337,6 +341,7 @@ impl Validator {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A2_A,
+                ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText(_) => false,
@@ -375,6 +380,7 @@ impl Validator {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A3_A,
+                ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText(_) => false,
@@ -408,6 +414,7 @@ impl Validator {
                 // Not strictly forbidden if we surround with actual text, but
                 // easier to just forbid it.
                 ValidationError::UnicodePrivateArea(_, _, _, _) => true,
+                ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => false,
                 ValidationError::MissingAltText(_) => false,
@@ -447,6 +454,7 @@ impl Validator {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
+                ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => false,
                 ValidationError::NoDocumentTitle => true,
                 ValidationError::MissingAltText(_) => true,

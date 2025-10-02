@@ -112,6 +112,7 @@ See `README.md` for the meaning of each color.
 - krilla ensures Unicode values are always greater than 0 and not equal to U+FEFF or U+FFFE. 🟢
 - krilla straight out forbids characters in the private use area. 🟢
 - krilla disallows the .notdef glyph in this export mode. 🟢
+- krilla checks the OpenType fsType field to ensure that fonts are legally embeddable. 🟢
 
 ## 6.3 Annotations
 
