@@ -549,7 +549,7 @@ fn decode_png(data: &[u8]) -> Option<Repr> {
     let mut decoder = png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder.read_info().unwrap();
-    let mut img_data = vec![0; reader.output_buffer_size().unwrap()];
+    let mut img_data = vec![0; reader.output_buffer_size()];
     let _ = reader.next_frame(&mut img_data).unwrap();
     let (color_type, bit_depth) = reader.output_color_type();
 
