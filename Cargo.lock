@@ -808,7 +808,7 @@ dependencies = [
  "gif",
  "jpeg-decoder",
  "num-traits",
- "png 0.17.16",
+ "png",
  "qoi",
  "tiff",
 ]
@@ -822,7 +822,7 @@ dependencies = [
  "bytemuck",
  "byteorder-lite",
  "num-traits",
- "png 0.17.16",
+ "png",
 ]
 
 [[package]]
@@ -906,7 +906,7 @@ dependencies = [
  "parley",
  "paste",
  "pdf-writer",
- "png 0.18.0",
+ "png",
  "pretty_assertions",
  "rayon",
  "rustc-hash 2.1.1",
@@ -941,7 +941,7 @@ dependencies = [
  "krilla",
  "krilla-macros",
  "once_cell",
- "png 0.18.0",
+ "png",
  "resvg",
  "sitro",
  "tiny-skia",
@@ -1265,19 +1265,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
 dependencies = [
  "bitflags 1.3.2",
- "crc32fast",
- "fdeflate",
- "flate2",
- "miniz_oxide 0.8.5",
-]
-
-[[package]]
-name = "png"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97baced388464909d42d89643fe4361939af9b7ce7a31ee32a168f832a70f2a0"
-dependencies = [
- "bitflags 2.6.0",
  "crc32fast",
  "fdeflate",
  "flate2",
@@ -1855,7 +1842,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "log",
- "png 0.17.16",
+ "png",
  "tiny-skia-path",
 ]
 

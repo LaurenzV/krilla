@@ -51,5 +51,5 @@ tiny-skia-path = "0.11.4"
 usvg = "0.45.0"
 xmp-writer = "0.3.2"
 yoke = { version = "0.8.0", features = ["derive"] }
-png = "0.18.0"
+png = "0.17.0"
 zune-jpeg = "0.4.13"
