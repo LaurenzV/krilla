@@ -206,6 +206,28 @@ impl CIDFont {
             ));
         }
 
+        // OS/2 fsType has a few bits that describe which kind of license the font has. Of
+        // particular interest is bit 2 "Restricted License embedding", which places restrictions on
+        // font embedding that are incompatible with some PDF standards.
+        //
+        // The OpenType spec intended for the different bits to be mutually exclusive. However, some
+        // fonts have multiple of the bits sets. The OpenType spec was thus adjusted to require
+        // mutual exclusion, allowing applications to assume the least-restrictive specified
+        // variant. Specifically, it also clarifies that "For Restricted License embedding to take
+        // effect, the Embedding permissions sub-field must have the value 2 (that is, only bit 1 is
+        // set)."
+        //
+        // Hence, we are not checking `fsType & 2 != 0` (as would be usual for bit flags),
+        // but rather `fsType & 0xF == 2`.
+        if self
+            .font
+            .font_ref()
+            .os2()
+            .is_ok_and(|os2| os2.fs_type() & 0xF == 2)
+        {
+            sc.register_validation_error(ValidationError::RestrictedLicense(self.font.clone()));
+        }
+
         let (subsetted, global_bbox) = subset_font(self.font.clone(), glyph_remapper)?;
         let num_glyphs = subsetted.num_glyphs();
         let subsetted_data = subsetted.font_data().0;
