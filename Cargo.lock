@@ -760,7 +760,7 @@ checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 [[package]]
 name = "hayro-syntax"
 version = "0.2.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=cbebe75#cbebe75cbd131b97349a2f78507c508c0d01390d"
+source = "git+https://github.com/LaurenzV/hayro?rev=e62f9d8#e62f9d8849f62ab4296f98999b5aaef301dab0dd"
 dependencies = [
  "flate2",
  "kurbo",
@@ -773,7 +773,7 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.2.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=cbebe75#cbebe75cbd131b97349a2f78507c508c0d01390d"
+source = "git+https://github.com/LaurenzV/hayro?rev=e62f9d8#e62f9d8849f62ab4296f98999b5aaef301dab0dd"
 dependencies = [
  "flate2",
  "hayro-syntax",
