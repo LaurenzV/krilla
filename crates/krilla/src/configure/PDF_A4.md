@@ -1,5 +1,5 @@
 # Description
-PDF-A/4 requires PDF a version 2.0 and defines three conformance levels,
+PDF/A-4 requires PDF a version 2.0 and defines three conformance levels,
 in the following order from less strict to more strict:
 - Level B
 - Level U

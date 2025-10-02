@@ -111,11 +111,11 @@ pub enum TagKind {
     Annot(Tag<kind::Annot>),
     /// Item of graphical content.
     ///
-    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     Figure(Tag<kind::Figure>),
     /// A mathematical formula.
     ///
-    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     Formula(Tag<kind::Formula>),
     /// Non-structural element. A grouping element having no inherent structural significance;
     /// it serves solely for grouping purposes.
@@ -1668,13 +1668,13 @@ pub mod kind {
 
     /// Item of graphical content.
     ///
-    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Figure;
 
     /// A mathematical formula.
     ///
-    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Formula;
 
@@ -3902,7 +3902,7 @@ impl From<Tag<kind::Figure>> for TagKind {
 impl Tag<kind::Figure> {
     /// Item of graphical content.
     ///
-    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     #[allow(non_snake_case)]
     pub fn Figure(alt_text: Option<String>) -> Tag<kind::Figure> {
         let mut tag = Tag::new();
@@ -3970,7 +3970,7 @@ impl From<Tag<kind::Formula>> for TagKind {
 impl Tag<kind::Formula> {
     /// A mathematical formula.
     ///
-    /// Providing `alt_text` is required in some export modes, like for example PDF/UA1.
+    /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     #[allow(non_snake_case)]
     pub fn Formula(alt_text: Option<String>) -> Tag<kind::Formula> {
         let mut tag = Tag::new();

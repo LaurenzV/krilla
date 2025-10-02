@@ -271,7 +271,7 @@ impl CIDFont {
         width_writer.finish();
         cid.finish();
 
-        // The only reason we write this in the first place is that PDF/A1-b requires
+        // The only reason we write this in the first place is that PDF/A-1b requires
         // a CIDSet.
         if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
             let cid_stream_data = {

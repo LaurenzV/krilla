@@ -90,7 +90,7 @@ pub enum ValidationError {
     /// an empty string). Otherwise, it was mapped to that codepoint.
     InvalidCodepointMapping(Font, GlyphId, Option<char>, Option<Location>),
     /// A glyph was mapped to a codepoint in the Unicode private use area, which is forbidden
-    /// by some standards, like for example PDF/A2-A.
+    /// by some standards, like for example PDF/A-2a.
     // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
     // attribute to be present. But we just completely forbid it, for simplicity.
     UnicodePrivateArea(Font, GlyphId, char, Option<Location>),
@@ -112,7 +112,7 @@ pub enum ValidationError {
     // We need this because for some standards we need to add the
     // xmp:History attribute.
     MissingDocumentDate,
-    /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A1).
+    /// The PDF contains transparency, which is forbidden by some standards (e.g. PDF/A-1).
     Transparency(Option<Location>),
     /// The PDF contains an image with `interpolate` set to `true`.
     ImageInterpolation(Option<Location>),
@@ -136,19 +136,19 @@ pub enum Validator {
     /// **Requirements**: -
     #[default]
     None,
-    /// The validator for the PDF/A1-A standard.
+    /// The validator for the PDF/A-1a standard.
     ///
     /// **Requirements**:
     ///
     A1_A,
-    /// The validator for the PDF/A1-B standard.
+    /// The validator for the PDF/A-1b standard.
     ///
     /// **Requirements**: -
     A1_B,
-    /// The validator for the PDF/A2-A standard.
+    /// The validator for the PDF/A-2a standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A2-B.
+    /// - All requirements of PDF/A-2b.
     /// - You need to follow all requirements outlined in the _Other Notes_ section of the
     ///   [`tagging`] module.
     /// - You need to follow all best practices when using [tags](`crate::interchange::tagging::Tag`), as outlined in the documentation
@@ -165,31 +165,31 @@ pub enum Validator {
     ///
     /// [`tagging`]: crate::interchange::tagging
     A2_A,
-    /// The validator for the PDF/A2-B standard.
+    /// The validator for the PDF/A-2b standard.
     ///
     /// **Requirements**:
     /// - You should only use fonts that are legally embeddable in a file for unlimited,
     ///   universal rendering.
     A2_B,
-    /// The validator for the PDF/A2-U standard.
+    /// The validator for the PDF/A-2u standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A2-B
+    /// - All requirements of PDF/A-2b
     A2_U,
-    /// The validator for the PDF/A3-A standard.
+    /// The validator for the PDF/A-3a standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A2-A
+    /// - All requirements of PDF/A-2a
     A3_A,
-    /// The validator for the PDF/A3-B standard.
+    /// The validator for the PDF/A-3b standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A2-B
+    /// - All requirements of PDF/A-2b
     A3_B,
-    /// The validator for the PDF/A3-U standard.
+    /// The validator for the PDF/A-3u standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A2-B
+    /// - All requirements of PDF/A-2b
     A3_U,
     /// The validator for the PDF/UA-1 standard.
     /// NOTE: THIS EXPORT MODE IS EXPERIMENTAL AND SHOULDN'T BE USED IN PRODUCTION YET!
@@ -209,7 +209,7 @@ pub enum Validator {
     /// - You should make use of the `Alt`, `ActualText`, `Lang` and `Expansion` attributes
     ///   whenever possible.
     /// - Usually, you can provide an empty string as `Lang` to indicate that a language is unknown.
-    ///   You should not do that in PDF-UA.
+    ///   You should not do that in PDF/UA.
     /// - Stretchable characters (such as brackets, which often consist of several glyphs)
     ///   should be marked accordingly with `ActualText`.
     ///
@@ -263,20 +263,20 @@ pub enum Validator {
     ///
     /// [`TagKind`]: crate::interchange::tagging::TagKind
     UA1,
-    /// The validator for the PDF/A4 standard.
+    /// The validator for the PDF/A-4 standard.
     ///
     /// **Requirements**:
     /// - While not required, it's recommended to enable tagging.
     A4,
-    /// The validator for the PDF/A4f standard.
+    /// The validator for the PDF/A-4f standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A4
+    /// - All requirements of PDF/A-4
     A4F,
-    /// The validator for the PDF/A4e standard.
+    /// The validator for the PDF/A-4e standard.
     ///
     /// **Requirements**:
-    /// - All requirements of PDF/A4
+    /// - All requirements of PDF/A-4
     A4E,
 }
 
@@ -307,7 +307,7 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText(_) => false,
                 ValidationError::Transparency(_) => true,
                 ValidationError::ImageInterpolation(_) => true,
-                // PDF/A1 doesn't strictly forbid, but it disallows the EF key,
+                // PDF/A-1 doesn't strictly forbid, but it disallows the EF key,
                 // which we always insert. So we just forbid it overall.
                 ValidationError::EmbeddedFile(e, _) => match e {
                     EmbedError::Existence => true,
@@ -345,7 +345,7 @@ impl Validator {
                 ValidationError::MissingAnnotationAltText(_) => false,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
-                // Also not strictly forbidden, but we can't ensure that it is PDF/A2 compliant,
+                // Also not strictly forbidden, but we can't ensure that it is PDF/A-2 compliant,
                 // so we just forbid it completely.
                 ValidationError::EmbeddedFile(e, _) => match e {
                     EmbedError::Existence => true,
@@ -718,7 +718,7 @@ impl Validator {
         match self {
             // PDF 2.0 _does_ support associated files. However, in this case the document has to
             // provide a modification date, since it's a required field. Therefore, it's easier to
-            // just use the associated files feature, apart from PDF/A3.
+            // just use the associated files feature, apart from PDF/A-3.
             Validator::None => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
             Validator::A4 | Validator::A4F | Validator::A4E => true,
@@ -735,18 +735,18 @@ impl Validator {
     pub fn as_str(self) -> &'static str {
         match self {
             Validator::None => "None",
-            Validator::A1_A => "PDF/A1-A",
-            Validator::A1_B => "PDF/A1-B",
-            Validator::A2_A => "PDF/A2-A",
-            Validator::A2_B => "PDF/A2-B",
-            Validator::A2_U => "PDF/A2-U",
-            Validator::A3_A => "PDF/A3-A",
-            Validator::A3_B => "PDF/A3-B",
-            Validator::A3_U => "PDF/A3-U",
-            Validator::A4 => "PDF/A4",
-            Validator::A4F => "PDF/A4f",
-            Validator::A4E => "PDF/A4e",
-            Validator::UA1 => "PDF/UA1",
+            Validator::A1_A => "PDF/A-1a",
+            Validator::A1_B => "PDF/A-1b",
+            Validator::A2_A => "PDF/A-2a",
+            Validator::A2_B => "PDF/A-2b",
+            Validator::A2_U => "PDF/A-2u",
+            Validator::A3_A => "PDF/A-3a",
+            Validator::A3_B => "PDF/A-3b",
+            Validator::A3_U => "PDF/A-3u",
+            Validator::A4 => "PDF/A-4",
+            Validator::A4F => "PDF/A-4f",
+            Validator::A4E => "PDF/A-4e",
+            Validator::UA1 => "PDF/UA-1",
         }
     }
 }
