@@ -33,7 +33,7 @@
 //! Please note that doing tagging 100% correctly as recommended by various PDF standards is very
 //! difficult. While the documentation lists many of the recommendations to abstract away
 //! as much as possible, users are still expected to consult the given specifications to
-//! ensure their implementation matches the specification. A "reference implementation" that 
+//! ensure their implementation matches the specification. A "reference implementation" that
 //! could be good to consult is the [`typst-pdf`](https://github.com/typst/typst/tree/main/crates/typst-pdf)
 //! crate which implements most of the expected features for well-tagged PDFs.
 //!
@@ -116,7 +116,7 @@
 //! - In case you have a link annotation that applies to text that wraps into one or multiple
 //!   new lines, you should use the `quad_points` functionality to indicate the exact covered
 //!   areas of the link.
-//! 
+//!
 //! Once again, the above is only a best-effort summary, if you are interested in creating
 //! completely well-tagged PDFs, you are advised to consult the given specifications.
 //!
