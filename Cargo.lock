@@ -759,12 +759,12 @@ checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 
 [[package]]
 name = "hayro-syntax"
-version = "0.2.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1d3e06bd0f8a1861e353ed4d516751fac3c1c0a202cbe9f3ed325be9194e1cf"
+checksum = "3f9e5c7dbc0f11dc42775d1a6cc00f5f5137b90b6288dd7fe5f71d17b14d10be"
 dependencies = [
  "flate2",
- "kurbo 0.11.3",
+ "kurbo 0.12.0",
  "log",
  "rustc-hash 2.1.1",
  "smallvec",
@@ -773,14 +773,14 @@ dependencies = [
 
 [[package]]
 name = "hayro-write"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d55f2b3e748993b8d87ff2e72d34f74b4c9a11d09d6c5f4eb54340f5d2aed275"
+checksum = "cc05d8b4bc878b9aee48d980ecb25ed08f1dd9fad6da5ab4d9b7c56ec03a0cf6"
 dependencies = [
  "flate2",
  "hayro-syntax",
  "log",
- "pdf-writer 0.13.0",
+ "pdf-writer",
 ]
 
 [[package]]
@@ -905,7 +905,7 @@ dependencies = [
  "oxipng",
  "parley",
  "paste",
- "pdf-writer 0.14.0",
+ "pdf-writer",
  "png 0.18.0",
  "pretty_assertions",
  "rayon",
@@ -1229,18 +1229,6 @@ name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
-
-[[package]]
-name = "pdf-writer"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ea27c5015ab81753fc61e49f8cde74999346605ee148bb20008ef3d3150e0dc"
-dependencies = [
- "bitflags 2.6.0",
- "itoa",
- "memchr",
- "ryu",
-]
 
 [[package]]
 name = "pdf-writer"
