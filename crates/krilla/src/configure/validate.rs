@@ -1,6 +1,6 @@
 //! Exporting with a specific PDF conformance level.
 //!
-//! PDF defines a number of additional conformance levelx that restrict the features of PDF that
+//! PDF defines a number of additional conformance levels that restrict the features of PDF that
 //! can be used to a specific subset.
 //!
 //! You can use a [`Validator`] by creating a corresponding [`Configuration`]
@@ -14,8 +14,12 @@
 //!   return them as an error, instead of returning the finished document. See [`ValidationError`].
 //! - Finally, some standards have requirements that cannot possibly be validated by krilla, as
 //!   they are semantic in nature. It is upon you, as a user of that library, to ensure that those
-//!   requirements are fulfilled.
-//!   You can find them under **Requirements** for each [`Validator`].
+//!   requirements are fulfilled. Therefore, while krilla tries to make it as easy as possible
+//!   to generate compliant PDFs, it is still highly recommended that you familiarize yourself
+//!   with the PDF specification as well as the specifications for the substandards. This is
+//!   especially true for standards related to universal accessibility.
+//!   
+//!  You can find some requirements below **Requirements** for each [`Validator`].
 //!
 //! [`Configuration`]: crate::configure::Configuration
 
@@ -195,7 +199,6 @@ pub enum Validator {
     /// - All requirements of PDF/A-2b
     A3_U,
     /// The validator for the PDF/UA-1 standard.
-    /// NOTE: THIS EXPORT MODE IS EXPERIMENTAL AND SHOULDN'T BE USED IN PRODUCTION YET!
     ///
     /// **Requirements**:
     ///

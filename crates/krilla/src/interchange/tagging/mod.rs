@@ -30,9 +30,12 @@
 //! a specific subset has been implemented, with a focus on features that improve the
 //! accessibility of documents.
 //!
-//! The goal in krilla's implementation of tagged PDF is to make it possible for users to create
-//! well-tagged PDF files simply by following the instructions in the documentation,
-//! without having to read or consult the PDF specification.
+//! Please note that doing tagging 100% correctly as recommended by various PDF standards is very
+//! difficult. While the documentation lists many of the recommendations to abstract away
+//! as much as possible, users are still expected to consult the given specifications to
+//! ensure their implementation matches the specification. A "reference implementation" that
+//! could be good to consult is the [`typst-pdf`](https://github.com/typst/typst/tree/main/crates/typst-pdf)
+//! crate which implements most of the expected features for well-tagged PDFs.
 //!
 //! # Basic Principles
 //!
@@ -91,7 +94,7 @@
 //! Make sure that you carefully read the documentation of the other parts of this module, as
 //! there are some more points as well as best practices you need to keep in mind
 //! when creating well-tagged documents. The PDF specification is in some places very vague
-//! on how a tagged document should look like, so there is quite a bit of room for flexibility.
+//! on how a tagged document should look like, so there is quite a bit of ambiguity.
 //!
 //! Apart from that, the PDF specification does make a few statements on requirements a well-tagged PDF
 //! should follows, although  those are not really "strict" requirements in the sense that they can
@@ -113,6 +116,9 @@
 //! - In case you have a link annotation that applies to text that wraps into one or multiple
 //!   new lines, you should use the `quad_points` functionality to indicate the exact covered
 //!   areas of the link.
+//!
+//! Once again, the above is only a best-effort summary, if you are interested in creating
+//! completely well-tagged PDFs, you are advised to consult the given specifications.
 //!
 //! [`SerializeSettings`]: crate::SerializeSettings
 //! [`Page`]: crate::page::Page
