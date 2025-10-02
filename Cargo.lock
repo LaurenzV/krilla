@@ -614,9 +614,9 @@ dependencies = [
 
 [[package]]
 name = "font-types"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02a596f5713680923a2080d86de50fe472fb290693cf0f701187a1c8b36996b7"
+checksum = "511e2c18a516c666d27867d2f9821f76e7d591f762e9fc41dd6cc5c90fe54b0b"
 dependencies = [
  "bytemuck",
 ]
@@ -759,11 +759,12 @@ checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 
 [[package]]
 name = "hayro-syntax"
-version = "0.2.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=cbebe75#cbebe75cbd131b97349a2f78507c508c0d01390d"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f9e5c7dbc0f11dc42775d1a6cc00f5f5137b90b6288dd7fe5f71d17b14d10be"
 dependencies = [
  "flate2",
- "kurbo",
+ "kurbo 0.12.0",
  "log",
  "rustc-hash 2.1.1",
  "smallvec",
@@ -772,8 +773,9 @@ dependencies = [
 
 [[package]]
 name = "hayro-write"
-version = "0.2.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=cbebe75#cbebe75cbd131b97349a2f78507c508c0d01390d"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc05d8b4bc878b9aee48d980ecb25ed08f1dd9fad6da5ab4d9b7c56ec03a0cf6"
 dependencies = [
  "flate2",
  "hayro-syntax",
@@ -846,6 +848,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edcd27d72f2f071c64249075f42e205ff93c9a4c5f6c6da53e79ed9f9832c285"
 
 [[package]]
+name = "imagesize"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09e54e57b4c48b40f7aec75635392b12b3421fa26fe8b4332e63138ed278459c"
+
+[[package]]
 name = "indexmap"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -892,7 +900,7 @@ dependencies = [
  "hayro-write",
  "image 0.25.2",
  "image-webp",
- "imagesize 0.13.0",
+ "imagesize 0.14.0",
  "once_cell",
  "oxipng",
  "parley",
@@ -905,7 +913,7 @@ dependencies = [
  "rustybuzz",
  "siphasher",
  "sitro",
- "skrifa 0.33.2",
+ "skrifa 0.37.0",
  "smallvec",
  "subsetter",
  "tiny-skia-path",
@@ -953,7 +961,7 @@ dependencies = [
  "once_cell",
  "oxipng",
  "sitro",
- "skrifa 0.33.2",
+ "skrifa 0.37.0",
  "tiny-skia-path",
  "usvg",
 ]
@@ -963,6 +971,17 @@ name = "kurbo"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c62026ae44756f8a599ba21140f350303d4f08dcdcc71b5ad9c9bb8128c13c62"
+dependencies = [
+ "arrayvec",
+ "euclid",
+ "smallvec",
+]
+
+[[package]]
+name = "kurbo"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce9729cc38c18d86123ab736fd2e7151763ba226ac2490ec092d1dd148825e32"
 dependencies = [
  "arrayvec",
  "euclid",
@@ -1213,8 +1232,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pdf-writer"
-version = "0.13.0"
-source = "git+https://github.com/typst/pdf-writer?rev=143a1c3#143a1c3543a1422a22bda40a68022d0d9ad3a40e"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92a79477295a713c2ed425aa82a8b5d20cec3fdee203706cbe6f3854880c1c81"
 dependencies = [
  "bitflags 2.6.0",
  "itoa",
@@ -1228,7 +1248,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c28d7294093837856bb80ad191cc46a2fcec8a30b43b7a3b0285325f0a917a9"
 dependencies = [
- "kurbo",
+ "kurbo 0.11.3",
  "smallvec",
 ]
 
@@ -1379,12 +1399,12 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.31.3"
+version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b8250b8f09ed4b9ba9271e06f10e7b1f03e8f8e3619e2368a991ecb25efa204"
+checksum = "6717cf23b488adf64b9d711329542ba34de147df262370221940dfabc2c91358"
 dependencies = [
  "bytemuck",
- "font-types 0.9.0",
+ "font-types 0.10.0",
 ]
 
 [[package]]
@@ -1640,12 +1660,12 @@ dependencies = [
 
 [[package]]
 name = "skrifa"
-version = "0.33.2"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78cc1f79e5624f166718224ef883095bea315801aca75b62c64f3937755a586d"
+checksum = "8c31071dedf532758ecf3fed987cdb4bd9509f900e026ab684b4ecb81ea49841"
 dependencies = [
  "bytemuck",
- "read-fonts 0.31.3",
+ "read-fonts 0.35.0",
 ]
 
 [[package]]
@@ -1701,12 +1721,13 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subsetter"
-version = "0.2.2"
-source = "git+https://github.com/typst/subsetter?rev=02ad2a4#02ad2a43e9f1fce02a194018ec5687c107e87ce4"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb6895a12ac5599bb6057362f00e8a3cf1daab4df33f553a55690a44e4fed8d0"
 dependencies = [
- "kurbo",
+ "kurbo 0.12.0",
  "rustc-hash 2.1.1",
- "skrifa 0.33.2",
+ "skrifa 0.37.0",
  "write-fonts",
 ]
 
@@ -1716,7 +1737,7 @@ version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68c7541fff44b35860c1a7a47a7cadf3e4a304c457b58f9870d9706ece028afc"
 dependencies = [
- "kurbo",
+ "kurbo 0.11.3",
  "siphasher",
 ]
 
@@ -1934,7 +1955,7 @@ dependencies = [
  "flate2",
  "fontdb",
  "imagesize 0.13.0",
- "kurbo",
+ "kurbo 0.11.3",
  "log",
  "pico-args",
  "roxmltree 0.20.0",
@@ -2168,15 +2189,15 @@ dependencies = [
 
 [[package]]
 name = "write-fonts"
-version = "0.39.1"
+version = "0.43.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cac89848aeba9b7e1877f1e89e3f9c95adb8771f640e1ef23c605aa734748c2b"
+checksum = "886614b5ce857341226aa091f3c285e450683894acaaa7887f366c361efef79d"
 dependencies = [
- "font-types 0.9.0",
+ "font-types 0.10.0",
  "indexmap",
- "kurbo",
+ "kurbo 0.12.0",
  "log",
- "read-fonts 0.31.3",
+ "read-fonts 0.35.0",
 ]
 
 [[package]]
