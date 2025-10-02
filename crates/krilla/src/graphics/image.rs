@@ -10,6 +10,7 @@
 
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -508,7 +509,8 @@ impl Image {
 const PNG_TRANSFORMATIONS: Transformations = Transformations::EXPAND;
 
 fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
-    let mut decoder = png::Decoder::new(data);
+    let cursor = Cursor::new(data);
+    let mut decoder = png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let reader = decoder.read_info().unwrap();
     let info = reader.info();
@@ -543,10 +545,11 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
 }
 
 fn decode_png(data: &[u8]) -> Option<Repr> {
-    let mut decoder = png::Decoder::new(data);
+    let cursor = Cursor::new(data);
+    let mut decoder = png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder.read_info().unwrap();
-    let mut img_data = vec![0; reader.output_buffer_size()];
+    let mut img_data = vec![0; reader.output_buffer_size().unwrap()];
     let _ = reader.next_frame(&mut img_data).unwrap();
     let (color_type, bit_depth) = reader.output_color_type();
 
