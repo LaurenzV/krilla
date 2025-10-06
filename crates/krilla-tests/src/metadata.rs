@@ -17,7 +17,7 @@ pub(crate) fn metadata_impl(document: &mut Document) {
     let date = datetime();
     let metadata = Metadata::new()
         .creation_date(date)
-        .subject("A very interesting subject".to_string())
+        .description("A very interesting subject".to_string())
         .creator("krilla".to_string())
         .producer("krilla".to_string())
         .language("en".to_string())
