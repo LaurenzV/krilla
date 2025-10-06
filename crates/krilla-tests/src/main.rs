@@ -1077,6 +1077,14 @@ pub fn settings_29() -> SerializeSettings {
     SerializeSettings::default()
 }
 
+pub fn settings_30() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_version(PdfVersion::Pdf20),
+        xmp_metadata: true,
+        ..settings_1()
+    }
+}
+
 pub fn metadata_1() -> Metadata {
     Metadata::new()
         .language("en".to_string())
