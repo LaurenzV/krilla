@@ -45,6 +45,12 @@ impl Metadata {
     }
 
     /// The subject of the document.
+    ///
+    /// This should be a short, human-readable abstract, summary, or description
+    /// of the topic of the document.
+    ///
+    /// _Note:_ The semantics of the field differs from Dublin Core's
+    /// `dc:subject` field and instead more closely matches `dc:description`.
     pub fn subject(mut self, subject: String) -> Self {
         if !subject.is_empty() {
             self.subject = Some(subject);
@@ -140,7 +146,7 @@ impl Metadata {
         }
 
         if let Some(subject) = &self.subject {
-            xmp.subject([subject.as_str()]);
+            xmp.description([(None, subject.as_str())]);
         }
 
         if let Some(keywords) = &self.keywords {
