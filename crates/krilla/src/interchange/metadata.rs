@@ -148,25 +148,36 @@ impl Metadata {
             xmp.pdf_keywords(joined.as_str());
         }
 
-        if let Some(authors) = &self.authors {
-            // Turns out that if the authors are given in both the document
-            // information dictionary and the XMP metadata, Acrobat takes a little
-            // bit of both: The first author from the document information
-            // dictionary and the remaining authors from the XMP metadata.
-            //
-            // To fix this for Acrobat, we could omit the remaining authors or all
-            // metadata from the document information catalog (it is optional) and
-            // only write XMP. However, not all other tools (including Apple
-            // Preview) read the XMP data. This means we do want to include all
-            // authors in the document information dictionary.
-            //
-            // Thus, the only alternative is to fold all authors into a single
-            // `<rdf:li>` in the XMP metadata. This is, in fact, exactly what the
-            // PDF/A spec Part 1 section 6.7.3 has to say about the matter. It's a
-            // bit weird to not use the array (and it makes Acrobat show the author
-            // list in quotes), but there's not much we can do about that.
-            let joined = authors.join(", ");
-            xmp.creator([joined.as_str()]);
+        match &self.authors {
+            Some(authors) if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20 => {
+                // PDF 2.0+ deprecates the document information dictionary, so
+                // we can use the array here.
+                xmp.creator(authors.iter().map(String::as_str));
+            }
+            Some(authors) => {
+                // Turns out that if the authors are given in both the document
+                // information dictionary and the XMP metadata, Acrobat takes a
+                // little bit of both: The first author from the document
+                // information dictionary and the remaining authors from the XMP
+                // metadata.
+                //
+                // To fix this for Acrobat, we could omit the remaining authors
+                // or all metadata from the document information catalog (it is
+                // optional) and only write XMP. However, not all other tools
+                // (including Apple Preview) read the XMP data. This means we do
+                // want to include all authors in the document information
+                // dictionary.
+                //
+                // Thus, the only alternative is to fold all authors into a
+                // single `<rdf:li>` in the XMP metadata. This is, in fact,
+                // exactly what the PDF/A spec Part 1 section 6.7.3 has to say
+                // about the matter. It's a bit weird to not use the array (and
+                // it makes Acrobat show the author list in quotes), but there's
+                // not much we can do about that.
+                let joined = authors.join(", ");
+                xmp.creator([joined.as_str()]);
+            }
+            None => {}
         }
 
         if let Some(creator) = &self.creator {
