@@ -16,7 +16,7 @@ use crate::serialize::SerializeContext;
 #[derive(Default, Clone, Debug)]
 pub struct Metadata {
     pub(crate) title: Option<String>,
-    pub(crate) subject: Option<String>,
+    pub(crate) description: Option<String>,
     pub(crate) creator: Option<String>,
     pub(crate) producer: Option<String>,
     pub(crate) keywords: Option<Vec<String>>,
@@ -44,16 +44,13 @@ impl Metadata {
         self
     }
 
-    /// The subject of the document.
+    /// The description of the document.
     ///
     /// This should be a short, human-readable abstract, summary, or description
     /// of the topic of the document.
-    ///
-    /// _Note:_ The semantics of the field differs from Dublin Core's
-    /// `dc:subject` field and instead more closely matches `dc:description`.
-    pub fn subject(mut self, subject: String) -> Self {
-        if !subject.is_empty() {
-            self.subject = Some(subject);
+    pub fn description(mut self, description: String) -> Self {
+        if !description.is_empty() {
+            self.description = Some(description);
         }
         self
     }
@@ -132,7 +129,7 @@ impl Metadata {
             || self.authors.is_some()
             || self.creator.is_some()
             || self.creation_date.is_some()
-            || self.subject.is_some()
+            || self.description.is_some()
     }
 
     pub(crate) fn serialize_xmp_metadata(
@@ -145,8 +142,8 @@ impl Metadata {
             xmp.title([(None, title.as_str())]);
         }
 
-        if let Some(subject) = &self.subject {
-            xmp.description([(None, subject.as_str())]);
+        if let Some(description) = &self.description {
+            xmp.description([(None, description.as_str())]);
         }
 
         if let Some(keywords) = &self.keywords {
@@ -257,8 +254,8 @@ impl Metadata {
                     document_info.title(TextStr(title));
                 }
 
-                if let Some(subject) = &self.subject {
-                    document_info.subject(TextStr(subject));
+                if let Some(description) = &self.description {
+                    document_info.subject(TextStr(description));
                 }
 
                 if let Some(keywords) = &self.keywords {
