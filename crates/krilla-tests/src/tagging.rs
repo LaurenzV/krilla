@@ -477,6 +477,22 @@ fn tagging_tag_attributes(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
+#[snapshot(document)]
+fn tagging_artifact_subtypes(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    surface.start_tagged(ContentTag::Artifact(Artifact::new(
+        ArtifactType::Watermark,
+        Some(Rect::from_xywh(0.0, 80.0, 200.0, 50.0).unwrap()),
+    )));
+    surface.outline_text_(100.0, "++");
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+}
+
 #[snapshot(document, settings_15)]
 fn tagging_figure_bounds(document: &mut Document) {
     document.set_metadata(Metadata::new().title("Figure".into()).language("en".into()));
