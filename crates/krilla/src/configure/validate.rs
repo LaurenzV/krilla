@@ -146,6 +146,20 @@ pub enum Validator {
     /// The validator for the PDF/A-1a standard.
     ///
     /// **Requirements**:
+    /// - All requirements of PDF/A-1b.
+    /// - You need to follow all requirements outlined in the _Other Notes_ section of the
+    ///   [`tagging`] module.
+    /// - You need to follow all best practices when using [tags](`crate::interchange::tagging::Tag`), as outlined in the documentation
+    ///   of each tag.
+    /// - Artifacts such as page numbers, backgrounds, cut marks and color bars should be specified
+    ///   correspondingly as artifacts.
+    /// - Word boundaries need to be explicitly specified with a space. The same applies to words at
+    ///   the end of a line that are not followed by punctuation.
+    /// - To the fullest extent possible, the logical structure of the document should be encoded
+    ///   correspondingly in the tag tree using appropriate grouping tags.
+    /// - Language identifiers used must be valid according to RFC 3066.
+    /// - You should provide an alternate text to span content tags, if applicable.
+    /// - You should provide the expansion of abbreviations to span content tags, if applicable.
     ///
     A1_A,
     /// The validator for the PDF/A-1b standard.
@@ -308,10 +322,10 @@ impl Validator {
                 ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => false,
+                ValidationError::MissingAltText(_) => *self == Validator::A1_A,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => false,
+                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A1_A,
                 ValidationError::Transparency(_) => true,
                 ValidationError::ImageInterpolation(_) => true,
                 // PDF/A-1 doesn't strictly forbid, but it disallows the EF key,
@@ -347,10 +361,10 @@ impl Validator {
                 ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => false,
+                ValidationError::MissingAltText(_) => *self == Validator::A2_A,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => false,
+                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A2_A,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A-2 compliant,
@@ -386,10 +400,10 @@ impl Validator {
                 ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => false,
+                ValidationError::MissingAltText(_) => *self == Validator::A3_A,
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => false,
+                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A3_A,
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(er, _) => match er {
