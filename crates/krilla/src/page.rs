@@ -421,13 +421,14 @@ impl InternalPage {
 
         if let Some(struct_parent) = self.struct_parent {
             page.struct_parents(struct_parent);
+        }
 
-            // Only required for PDF/UA, but might as well always set it.
-            if !self.annotations.is_empty()
-                && sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
-            {
-                page.tab_order(TabOrder::StructureOrder);
-            }
+        // Only required for PDF/UA, but might as well always set it.
+        if !self.annotations.is_empty()
+            && sc.serialize_settings().enable_tagging
+            && sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
+        {
+            page.tab_order(TabOrder::StructureOrder);
         }
 
         page.parent(sc.page_tree_ref());
