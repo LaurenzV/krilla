@@ -116,8 +116,8 @@ always required. 🟢
 6.2.11.3.3: krilla always writes the `WMode` entry for cmaps and never references any other ones. 🟢
 
 6.2.11.4.1: 
-- krilla always embeds the used fonts. 6.2.11.4.2:
-- krilla does not verify the "legality" of the embedded font. 🟣
+- krilla embeds all fonts that are used. 🟢
+- krilla checks the OpenType fsType field to ensure that fonts are legally embeddable. 🟢
 
 6.2.11.4.2: 
 - krilla never writes the `CharSet` attribute. 🔵
@@ -238,7 +238,9 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 6.7.3.2: The need to specify word boundaries is documented. 🟣
 
-6.7.3.3: The need to specify the structure hierarchy is documented. 🟣
+6.7.3.3:
+- The presence of a structure tree is enforced. 🟢
+- The need to specify a granular structure hierarchy is documented. 🟣
 
 6.7.3.4: krilla maps all non-standard structure types. 🟢
 
@@ -247,12 +249,13 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 - krilla forces the user to specify the language on each span. 🟢
 - The need for correctness of language tags is documented. 🟣
 
-6.7.5: The need to document images and formulas with alt text is documented. 🟣
+6.7.5: The fact that an alternate text should be provided to figures and formulas is checked. 🟢
 
-6.7.6: krilla currently does not support any non-textual annotations. 🔵
+6.7.6: krilla ensures that annotations have an alternate text. 🟢
 
-6.7.7: The requirement to specify alt text is documented. 🟣
+6.7.7: The requirement to specify replacement text is documented. 🟣
 
 6.7.8: The requirement to specify the expansions of abbreviations is documented. 🟣
-
-
+NOTE: When inserting expansions of abbreviations, you must set them on the
+leaf `SpanTag` struct passed to `Surface::start_tagged` method instead of the
+`Tag` struct in the structure tree

@@ -23,7 +23,7 @@ user enables `ascii_compatible`, we still write a binary header marker. 🟢
 6.1.4: `pdf-writer` always write the xref section as described in the spec. 🟢
 
 6.1.5: krilla ensures that the document information dictionary is consistent with
-the XMP metadata.
+the XMP metadata. 🟢
 
 6.1.6: `pdf-writer` always writes hex strings 
 with an even number of characters and without whitespaces. 🟢
@@ -108,7 +108,9 @@ when a PostScript function is used. 🟢
 
 6.3.3.3: krilla always writes the `WMode` entry for cmaps and never references any other ones. 🟢
 
-6.3.4: krilla embeds all fonts that are used. 🟢
+6.3.4:
+- krilla embeds all fonts that are used. 🟢
+- krilla checks the OpenType fsType field to ensure that fonts are legally embeddable. 🟢
 
 6.3.5:
 - krilla doesn't support Type1 fonts and thus doesn't need the `CharSet` attribute. 🔵
@@ -152,12 +154,12 @@ when a PostScript function is used. 🟢
 
 6.6.3: -
 
-## 6.6 Metadata
+## 6.7 Metadata
 
 6.7.2: 
 - krilla overrides the `xmp_metadata` attribute for PDF/A exports so that it's always contained. 🟢
 - `xmp-writer` always creates conforming XMP streams. 🟢
-- We never apply a filter to the metadata stream dictioanry.
+- We never apply a filter to the metadata stream dictionary.
 
 6.7.3: 
 - krilla ensures that XMP metadata and document info dictionary are consistent. 🟢
@@ -194,7 +196,9 @@ when a PostScript function is used. 🟢
 
 6.8.3.2: The need to specify word boundaries is documented. 🟣
 
-6.8.3.3: The need to specify the structure hierarchy is documented. 🟣
+6.8.3.3: 
+- The presence of a structure tree is enforced. 🟢
+- The need to specify a granular structure hierarchy is documented. 🟣
 
 6.8.3.4: krilla maps all non-standard structure types. 🟢
 
@@ -203,18 +207,16 @@ when a PostScript function is used. 🟢
 - krilla forces the user to specify the language on each span. 🟢
 - The need for correctness of language tags is documented. 🟣
 
-6.8.5: The need to document images and formulas with alt text is documented. 🟣
+6.8.5: The fact that an alternate text should be provided to figures and formulas is checked. 🟢
 
-6.8.6: krilla currently does not support any non-textual annotations. 🔵
+6.8.6: krilla ensures that annotations have an alternate text. 🟢
 
-
-NOTE: krilla will discard any alt text / abbreviations specifications in PDF/A-1, because it's based on PDF 1.4,
-and we define them inline as properties to spans, which
-is actually only available for PDF >= 1.5. Maybe we
-can fix this in the future.
-6.8.7: The requirement to specify actual text is documented. 🟣
+6.8.7: The requirement to specify replacement text is documented. 🟣
 
 6.8.8: The requirement to specify the expansions of abbreviations is documented. 🟣
+NOTE: When inserting expansions of abbreviations, you must set them on the
+leaf `SpanTag` struct passed to `Surface::start_tagged` method instead of the
+`Tag` struct in the structure tree
 
 # 6.9 Interactive Forms
 krilla does not support interactive forms. 🔵
