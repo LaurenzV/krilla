@@ -315,7 +315,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
-                ValidationError::ContainsNotDefGlyph(_, _, _) => false,
+                ValidationError::ContainsNotDefGlyph(_, _, _) => self.requires_codepoint_mappings(),
                 ValidationError::NoCodepointMapping(_, _, _) => self.requires_codepoint_mappings(),
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => false,
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
