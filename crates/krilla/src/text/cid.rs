@@ -46,10 +46,9 @@ pub(crate) fn write_cmap_entry<G>(
     G: pdf_writer::types::GlyphId + Into<u32> + Copy,
 {
     match entry {
-        None => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+        None => sc.register_validation_error(ValidationError::NoCodepointMapping(
             font.clone(),
             GlyphId::new(g.into()),
-            None,
             None,
         )),
         Some((text, loc)) => {
@@ -68,13 +67,17 @@ pub(crate) fn write_cmap_entry<G>(
                 }
             }
 
-            if invalid_codepoint {
-                sc.register_validation_error(ValidationError::InvalidCodepointMapping(
+            match invalid_code {
+                Some(c) => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
                     font.clone(),
                     GlyphId::new(g.into()),
-                    invalid_code,
+                    c,
                     *loc,
-                ));
+                )),
+                None if invalid_codepoint => sc.register_validation_error(
+                    ValidationError::NoCodepointMapping(font.clone(), GlyphId::new(g.into()), *loc),
+                ),
+                _ => {}
             }
 
             if let Some(code) = private_unicode {

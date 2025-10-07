@@ -84,15 +84,15 @@ pub enum ValidationError {
     ///
     /// The third argument contains the text range of the glyph.
     ContainsNotDefGlyph(Font, Option<Location>, String),
-    /// A glyph was mapped either to the codepoint 0x0, 0xFEFF or 0xFFFE, or no codepoint at all,
-    /// which is forbidden by some standards.
+    /// A glyph was mapped to no codepoint at all, which is forbidden by some
+    /// standards.
+    NoCodepointMapping(Font, GlyphId, Option<Location>),
+    /// A glyph was mapped either to the codepoint 0x0, 0xFEFF or 0xFFFE, which
+    /// is forbidden by some standards.
     ///
-    /// Can occur if those codepoints appeared in the input text, or were explicitly
-    /// mapped to that glyph.
-    ///
-    /// If the third argument is `None`, the glyph was mapped to no codepoint at all (i.e.
-    /// an empty string). Otherwise, it was mapped to that codepoint.
-    InvalidCodepointMapping(Font, GlyphId, Option<char>, Option<Location>),
+    /// Can occur if those codepoints appeared in the input text, or were
+    /// explicitly mapped to that glyph.
+    InvalidCodepointMapping(Font, GlyphId, char, Option<Location>),
     /// A glyph was mapped to a codepoint in the Unicode private use area, which is forbidden
     /// by some standards, like for example PDF/A-2a.
     // Note that the standard doesn't explicitly forbid it, but instead requires an ActualText
@@ -316,9 +316,8 @@ impl Validator {
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => false,
-                ValidationError::InvalidCodepointMapping(_, _, _, _) => {
-                    self.requires_codepoint_mappings()
-                }
+                ValidationError::NoCodepointMapping(_, _, _) => self.requires_codepoint_mappings(),
+                ValidationError::InvalidCodepointMapping(_, _, _, _) => false,
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
                 ValidationError::RestrictedLicense(_) => true,
                 ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
@@ -355,7 +354,8 @@ impl Validator {
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::InvalidCodepointMapping(_, _, _, _) => {
+                ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A2_A,
@@ -394,7 +394,8 @@ impl Validator {
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::InvalidCodepointMapping(_, _, _, _) => {
+                ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A3_A,
@@ -428,7 +429,8 @@ impl Validator {
                 ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::InvalidCodepointMapping(_, _, _, _) => true,
+                ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _) => true,
                 // Not strictly forbidden if we surround with actual text, but
                 // easier to just forbid it.
                 ValidationError::UnicodePrivateArea(_, _, _, _) => true,
@@ -468,7 +470,8 @@ impl Validator {
                 ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => false,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::InvalidCodepointMapping(_, _, _, _) => {
+                ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
@@ -605,7 +608,7 @@ impl Validator {
     pub(crate) fn requires_codepoint_mappings(&self) -> bool {
         match self {
             Validator::None => false,
-            Validator::A1_A | Validator::A1_B => false,
+            Validator::A1_A | Validator::A1_B => *self != Validator::A1_B,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => *self != Validator::A2_B,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => *self != Validator::A3_B,
             Validator::A4 | Validator::A4F | Validator::A4E => true,
