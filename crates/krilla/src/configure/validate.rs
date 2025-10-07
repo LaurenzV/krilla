@@ -161,6 +161,7 @@ pub enum Validator {
     /// - You should provide an alternate text to span content tags, if applicable.
     /// - You should provide the expansion of abbreviations to span content tags, if applicable.
     ///
+    /// [`tagging`]: crate::interchange::tagging
     A1_A,
     /// The validator for the PDF/A-1b standard.
     ///
