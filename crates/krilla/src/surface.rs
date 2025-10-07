@@ -163,12 +163,8 @@ impl<'a> Surface<'a> {
                 // the API of krilla that conflates artifacts with tagged content,
                 // for the sake of simplicity. But the user of the library does not need to know
                 // about this.
-                ContentTag::Artifact(at) => {
-                    if at
-                        .map_pdf_version(self.sc.serialize_settings().pdf_version())
-                        .to_pdf_artifact_type()
-                        .is_some()
-                    {
+                ContentTag::Artifact(artifact) => {
+                    if artifact.requires_properties(self.sc.serialize_settings().pdf_version()) {
                         self.bd
                             .get_mut()
                             .start_marked_content_with_properties(self.sc, None, tag);

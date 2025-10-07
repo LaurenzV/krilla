@@ -137,6 +137,7 @@ use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
+use crate::geom::Rect;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 use crate::util::lazy::LazyInit;
@@ -146,8 +147,46 @@ pub use tag::*;
 pub mod fmt;
 mod tag;
 
+/// An artifact that should not be part of the accessible structure.
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
+pub struct Artifact {
+    /// The type of the artifact.
+    pub kind: ArtifactType,
+    /// The bounding box of the artifact. Required for background artifacts.
+    pub bbox: Option<Rect>,
+}
+
+impl Artifact {
+    /// Create a new artifact with a type and an optional BBox.
+    ///
+    /// This will panic if the artifact type is `Background` and no bounding box
+    /// is provided.
+    pub fn new(kind: ArtifactType, bbox: Option<Rect>) -> Self {
+        if kind == ArtifactType::Background && bbox.is_none() {
+            panic!("Background artifacts must have a bounding box");
+        }
+
+        Self { kind, bbox }
+    }
+
+    /// Create a new artifact with a type and no bounding box.
+    pub fn with_kind(kind: ArtifactType) -> Self {
+        Self::new(kind, None)
+    }
+
+    /// Whether the artifacts requires a property list.
+    pub(crate) fn requires_properties(self, pdf_version: PdfVersion) -> bool {
+        self.bbox.is_some()
+            || self
+                .kind
+                .map_pdf_version(pdf_version)
+                .to_pdf_artifact_type()
+                .is_some()
+    }
+}
+
 /// A type of artifact.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub enum ArtifactType {
     /// The header of a page.
     Header,
@@ -171,7 +210,8 @@ pub enum ArtifactType {
     Page,
     /// The background of a page or a graphical element.
     Background,
-    /// Any other type of artifact (e.g. table strokes).
+    /// Any other type of artifact.
+    #[default]
     Other,
 }
 
@@ -242,7 +282,7 @@ pub enum ContentTag<'a> {
     /// Artifacts represent pieces of content that are not really part of the logical structure
     /// of a document and should be excluded in the logical tree. These include for example headers,
     /// footers, page background and similar.
-    Artifact(ArtifactType),
+    Artifact(Artifact),
     /// A content tag that wraps some text with specific properties.
     ///
     /// Spans should not be too long. At most, they should contain a single line of text, but they
@@ -266,31 +306,33 @@ impl ContentTag<'_> {
 
     pub(crate) fn write_properties(&self, sc: &mut SerializeContext, mut properties: PropertyList) {
         match self {
-            ContentTag::Artifact(at) => {
-                let at = at.map_pdf_version(sc.serialize_settings().pdf_version());
-                let mut artifact = properties.artifact();
+            ContentTag::Artifact(artifact) => {
+                let at = artifact
+                    .kind
+                    .map_pdf_version(sc.serialize_settings().pdf_version());
+                let mut artifact_props = properties.artifact();
 
-                let Some(artifact_type) = at.to_pdf_artifact_type() else {
-                    // This method should only be called with artifacts that actually
-                    // require a property.
-                    unreachable!()
-                };
+                if let Some(bbox) = artifact.bbox {
+                    artifact_props.bounding_box(bbox.to_pdf_rect());
+                }
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
                     if at == ArtifactType::Header {
-                        artifact.attached([pdf_writer::types::ArtifactAttachment::Top]);
+                        artifact_props.attached([pdf_writer::types::ArtifactAttachment::Top]);
                     }
 
                     if at == ArtifactType::Footer {
-                        artifact.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
+                        artifact_props.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
                     }
 
                     if let Some(subtype) = at.to_pdf_artifact_subtype() {
-                        artifact.subtype(subtype);
+                        artifact_props.subtype(subtype);
                     }
                 }
 
-                artifact.kind(artifact_type);
+                if let Some(artifact_type) = at.to_pdf_artifact_type() {
+                    artifact_props.kind(artifact_type);
+                }
             }
             ContentTag::Span(SpanTag {
                 lang,
