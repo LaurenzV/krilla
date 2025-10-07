@@ -17,8 +17,9 @@ use krilla_macros::snapshot;
 use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
-    metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_23,
-    settings_24, settings_7, settings_8, settings_9, stops_with_2_solid_1, youtube_link, NOTO_SANS,
+    metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_20,
+    settings_23, settings_24, settings_7, settings_8, settings_9, stops_with_2_solid_1,
+    youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -371,9 +372,50 @@ fn validate_pdfu_invalid_codepoint() {
     assert_eq!(
         document.finish(),
         Err(KrillaError::Validation(vec![
-            ValidationError::InvalidCodepointMapping(font, GlyphId::new(2), Some('\u{FEFF}'), None)
+            ValidationError::InvalidCodepointMapping(font, GlyphId::new(2), '\u{FEFF}', None)
         ]))
     )
+}
+
+#[test]
+fn validate_pdfa_no_codepoint() {
+    let mut document = Document::new_with(settings_20());
+    let font_data = NOTO_SANS.clone();
+    let font = Font::new(font_data, 0).unwrap();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let glyphs = [KrillaGlyph::new(
+        GlyphId::new(3),
+        2048.0,
+        0.0,
+        0.0,
+        0.0,
+        0..0,
+        None,
+    )];
+
+    surface.draw_glyphs(
+        Point::from_xy(0.0, 100.0),
+        &glyphs,
+        font.clone(),
+        "",
+        20.0,
+        false,
+    );
+    surface.finish();
+    page.finish();
+
+    match document.finish() {
+        Err(KrillaError::Validation(errors)) => {
+            assert!(errors.contains(&ValidationError::NoCodepointMapping(
+                font,
+                GlyphId::new(1),
+                None
+            )));
+        }
+        _ => panic!("Expected validation error"),
+    }
 }
 
 #[test]
