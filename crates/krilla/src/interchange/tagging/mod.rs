@@ -130,7 +130,7 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write as _;
 
-use pdf_writer::types::{ArtifactSubtype, RoleMapOpts, StructRole, StructRole2};
+use pdf_writer::types::{RoleMapOpts, StructRole, StructRole2};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
@@ -153,19 +153,73 @@ pub enum ArtifactType {
     Header,
     /// The footer of the page.
     Footer,
+    /// For text in the back- or foreground of all pages.
+    Watermark,
+    /// Page numbers.
+    PageNumber,
+    /// Numbering artifacts before lines.
+    LineNumber,
+    /// Areas where there formerly was content, but which has been removed.
+    Redaction,
+    /// Bates numbering.
+    Bates,
+    /// Other artifacts arising from pagination not covered by the above variants.
+    PaginationOther,
+    /// Purely cosmetic typographical or design elements.
+    Layout,
     /// Page artifacts, such as for example cut marks or color bars.
     Page,
+    /// The background of a page or a graphical element.
+    Background,
     /// Any other type of artifact (e.g. table strokes).
     Other,
 }
 
 impl ArtifactType {
-    pub(crate) fn requires_properties(&self) -> bool {
+    pub(crate) fn map_pdf_version(self, version: PdfVersion) -> Self {
         match self {
-            ArtifactType::Header => true,
-            ArtifactType::Footer => true,
-            ArtifactType::Page => true,
-            ArtifactType::Other => false,
+            Self::PageNumber | Self::LineNumber | Self::Redaction | Self::Bates
+                if version < PdfVersion::Pdf20 =>
+            {
+                ArtifactType::PaginationOther
+            }
+            Self::Header | Self::Footer | Self::Watermark if version < PdfVersion::Pdf17 => {
+                ArtifactType::PaginationOther
+            }
+            Self::Background if version < PdfVersion::Pdf17 => ArtifactType::Other,
+            _ => self,
+        }
+    }
+
+    pub(crate) fn to_pdf_artifact_type(self) -> Option<pdf_writer::types::ArtifactType> {
+        match self {
+            ArtifactType::Header => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Footer => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Watermark => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::PageNumber => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::LineNumber => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Redaction => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Bates => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::PaginationOther => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Layout => Some(pdf_writer::types::ArtifactType::Layout),
+            ArtifactType::Page => Some(pdf_writer::types::ArtifactType::Page),
+            ArtifactType::Background => Some(pdf_writer::types::ArtifactType::Background),
+            ArtifactType::Other => None,
+        }
+    }
+
+    pub(crate) fn to_pdf_artifact_subtype(
+        self,
+    ) -> Option<pdf_writer::types::ArtifactSubtype<'static>> {
+        match self {
+            ArtifactType::Header => Some(pdf_writer::types::ArtifactSubtype::Header),
+            ArtifactType::Footer => Some(pdf_writer::types::ArtifactSubtype::Footer),
+            ArtifactType::Watermark => Some(pdf_writer::types::ArtifactSubtype::Watermark),
+            ArtifactType::PageNumber => Some(pdf_writer::types::ArtifactSubtype::PageNumber),
+            ArtifactType::LineNumber => Some(pdf_writer::types::ArtifactSubtype::LineNumber),
+            ArtifactType::Redaction => Some(pdf_writer::types::ArtifactSubtype::Redaction),
+            ArtifactType::Bates => Some(pdf_writer::types::ArtifactSubtype::Bates),
+            _ => None,
         }
     }
 }
@@ -213,26 +267,26 @@ impl ContentTag<'_> {
     pub(crate) fn write_properties(&self, sc: &mut SerializeContext, mut properties: PropertyList) {
         match self {
             ContentTag::Artifact(at) => {
+                let at = at.map_pdf_version(sc.serialize_settings().pdf_version());
                 let mut artifact = properties.artifact();
 
-                let artifact_type = match at {
-                    ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
-                    ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
-                    ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
+                let Some(artifact_type) = at.to_pdf_artifact_type() else {
                     // This method should only be called with artifacts that actually
                     // require a property.
-                    ArtifactType::Other => unreachable!(),
+                    unreachable!()
                 };
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
-                    if *at == ArtifactType::Header {
+                    if at == ArtifactType::Header {
                         artifact.attached([pdf_writer::types::ArtifactAttachment::Top]);
-                        artifact.subtype(ArtifactSubtype::Header);
                     }
 
-                    if *at == ArtifactType::Footer {
+                    if at == ArtifactType::Footer {
                         artifact.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
-                        artifact.subtype(ArtifactSubtype::Footer);
+                    }
+
+                    if let Some(subtype) = at.to_pdf_artifact_subtype() {
+                        artifact.subtype(subtype);
                     }
                 }
 

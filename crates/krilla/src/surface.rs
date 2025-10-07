@@ -164,7 +164,11 @@ impl<'a> Surface<'a> {
                 // for the sake of simplicity. But the user of the library does not need to know
                 // about this.
                 ContentTag::Artifact(at) => {
-                    if at.requires_properties() {
+                    if at
+                        .map_pdf_version(self.sc.serialize_settings().pdf_version())
+                        .to_pdf_artifact_type()
+                        .is_some()
+                    {
                         self.bd
                             .get_mut()
                             .start_marked_content_with_properties(self.sc, None, tag);
