@@ -799,6 +799,36 @@ fn validate_pdf_a1_b_cmyk_image_without_icc_profile() {
     );
 }
 
+#[snapshot(document, settings_15)]
+fn validate_pdf_ua1_only_annotation(document: &mut Document) {
+    let mut page = document.start_page();
+
+    let annotation = page.add_tagged_annotation(Annotation::new_link(
+        LinkAnnotation::new(
+            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        ),
+        Some("A link to youtube".to_string()),
+    ));
+
+    let mut link_group = TagGroup::new(Tag::Link);
+    link_group.push(annotation);
+
+    page.finish();
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(link_group);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+
+    let outline = Outline::new();
+    document.set_outline(outline);
+}
+
 #[test]
 fn validate_deduplicate_errors() {
     let mut document = Document::new_with(settings_19());
