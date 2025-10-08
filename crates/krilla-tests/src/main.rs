@@ -1085,9 +1085,23 @@ pub fn settings_30() -> SerializeSettings {
     }
 }
 
+pub fn settings_31() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with(Validator::UA1, PdfVersion::Pdf14).unwrap(),
+        ..settings_1()
+    }
+}
+
 pub fn metadata_1() -> Metadata {
     Metadata::new()
         .language("en".to_string())
+        .creation_date(DateTime::new(2001))
+}
+
+pub fn metadata_2() -> Metadata {
+    Metadata::new()
+        .language("en".to_string())
+        .title("Test Document".to_string())
         .creation_date(DateTime::new(2001))
 }
 
