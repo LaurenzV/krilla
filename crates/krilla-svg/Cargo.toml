@@ -1,6 +1,6 @@
 [package]
 name = "krilla-svg"
-version = "0.1.0"
+version = "0.2.0"
 description = "Converting SVG files to PDF."
 authors.workspace = true
 edition.workspace = true
