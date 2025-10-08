@@ -491,6 +491,82 @@ fn validate_pdf_a4e_full_example(document: &mut Document) {
     validate_pdf_full_example(document);
 }
 
+#[test]
+fn validate_pdf_ua1_empty_annotation_alt() {
+    let mut document = Document::new_with(settings_15());
+    let mut page = document.start_page();
+
+    let annot_loc = loc(1);
+    let annot = page.add_tagged_annotation(
+        Annotation::new_link(
+            LinkAnnotation::new(
+                Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+                Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+            ),
+            Some(String::new()),
+        )
+        .with_location(Some(annot_loc)),
+    );
+
+    page.finish();
+
+    let div_loc = loc(2);
+    let mut tag_group = TagGroup::new(Tag::Div.with_location(Some(div_loc)));
+    tag_group.push(annot);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(tag_group);
+    document.set_tag_tree(tag_tree);
+
+    match document.finish() {
+        Err(KrillaError::Validation(errors)) => {
+            assert!(errors.contains(&ValidationError::MissingAnnotationAltText(Some(annot_loc))));
+        }
+        _ => panic!("Expected validation error"),
+    }
+}
+
+#[test]
+fn validate_pdf_ua1_empty_alt() {
+    let mut document = Document::new_with(settings_15());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font_data = NOTO_SANS.clone();
+    let font = Font::new(font_data, 0).unwrap();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        20.0,
+        "Hi",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    surface.finish();
+
+    page.finish();
+
+    let formula_loc = loc(1);
+    let mut tag_group =
+        TagGroup::new(Tag::Formula(Some(String::new())).with_location(Some(formula_loc)));
+    tag_group.push(id1);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(tag_group);
+    document.set_tag_tree(tag_tree);
+
+    match document.finish() {
+        Err(KrillaError::Validation(errors)) => {
+            assert!(errors.contains(&ValidationError::MissingAltText(Some(formula_loc))));
+        }
+        _ => panic!("Expected validation error"),
+    }
+}
+
 #[snapshot(document, settings_15)]
 fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut page = document.start_page();
