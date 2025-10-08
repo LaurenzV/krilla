@@ -84,7 +84,9 @@ impl Annotation {
 
         if let Some(alt_text) = &self.alt {
             annotation.contents(TextStr(alt_text));
-        } else {
+        }
+
+        if self.alt.as_ref().is_none_or(String::is_empty) {
             sc.register_validation_error(ValidationError::MissingAnnotationAltText(self.location));
         }
 

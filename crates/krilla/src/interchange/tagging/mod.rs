@@ -711,10 +711,11 @@ impl TagGroup {
             *note_id += 1;
         }
 
-        if self.tag.can_have_title() && tag.title().is_none() {
+        if self.tag.can_have_title() && tag.title().is_none_or(str::is_empty) {
             sc.register_validation_error(ValidationError::MissingHeadingTitle);
         }
-        if self.tag.should_have_alt() && tag.alt_text().is_none() {
+
+        if self.tag.should_have_alt() && tag.alt_text().is_none_or(str::is_empty) {
             sc.register_validation_error(ValidationError::MissingAltText(tag.location));
         }
 
