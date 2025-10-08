@@ -137,6 +137,7 @@ use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
 use crate::chunk_container::ChunkContainer;
+use crate::configure::validate::VersionedFeature;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Rect;
@@ -825,6 +826,8 @@ impl TagGroup {
             sc.register_validation_error(ValidationError::MissingAltText(tag.location));
         }
 
+        // TODO: validate TH-outside-THead structure for PDF < 1.5
+
         for attr in tag.attrs.iter() {
             let Attr::Struct(attr) = attr else {
                 continue;
@@ -889,6 +892,12 @@ impl TagGroup {
                 TableAttr::HeaderScope(scope) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         table_attributes.scope(scope.to_pdf());
+                    } else if scope == &TableHeaderScope::Row {
+                        // Without `Scope`, the correct cell to point to is ambiguous.
+                        sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(
+                            VersionedFeature::TableHeaderScope,
+                            tag.location,
+                        ));
                     }
                 }
                 TableAttr::CellHeaders(headers) => {

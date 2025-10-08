@@ -8,6 +8,8 @@ use std::num::NonZeroU64;
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
+use crate::configure::validate::VersionedFeature;
+use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
 use crate::geom::Path;
 #[cfg(any(feature = "raster-images", feature = "pdf"))]
@@ -28,7 +30,7 @@ use crate::paint::{InnerPaint, Paint};
 use crate::pdf::PdfDocument;
 use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
-use crate::tagging::SpanTag;
+use crate::tagging::{ArtifactType, SpanTag};
 use crate::text::Font;
 use crate::text::{draw_glyph, Glyph};
 #[cfg(feature = "simple-text")]
@@ -181,6 +183,15 @@ impl<'a> Surface<'a> {
                 // for the sake of simplicity. But the user of the library does not need to know
                 // about this.
                 ContentTag::Artifact(artifact) => {
+                    if matches!(artifact.kind, ArtifactType::Header | ArtifactType::Footer) {
+                        self.sc.register_validation_error(
+                            ValidationError::RequiresNewerPdfVersion(
+                                VersionedFeature::HeaderFooterArtifactSubtypes,
+                                self.sc.location,
+                            ),
+                        );
+                    }
+
                     if artifact.requires_properties(self.sc.serialize_settings().pdf_version()) {
                         self.bd
                             .get_mut()

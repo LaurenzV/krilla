@@ -1170,6 +1170,27 @@ pub fn settings_32() -> SerializeSettings {
     }
 }
 
+pub fn settings_33() -> SerializeSettings {
+    SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_accessibility_validator(Accessibility::UA1)
+            .with_version(PdfVersion::Pdf14)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    }
+}
+
+pub fn settings_34() -> SerializeSettings {
+    SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_version(PdfVersion::Pdf14)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    }
+}
+
 pub fn metadata_1() -> Metadata {
     Metadata::new()
         .language("en".to_string())
@@ -1183,6 +1204,13 @@ pub fn validation_errors(
         Err(KrillaError::Validation(errors)) => errors.into_iter().map(|(e, _)| e).collect(),
         _ => panic!("expected KrillaError::Validation"),
     }
+}
+
+pub fn metadata_2() -> Metadata {
+    Metadata::new()
+        .language("en".to_string())
+        .title("Test Document".to_string())
+        .creation_date(DateTime::new(2001))
 }
 
 fn main() {

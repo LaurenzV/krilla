@@ -140,6 +140,30 @@ pub enum ValidationError {
     /// This is currently forbidden in validated export because we cannot manually verify
     /// whether the file actually fulfills all the criteria for the export mode.
     EmbeddedPDF(Option<Location>),
+    /// A feature only available in a later PDF version was required.
+    RequiresNewerPdfVersion(VersionedFeature, Option<Location>),
+}
+
+/// Features that may require a later PDF version than the current one.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum VersionedFeature {
+    /// Tabbing through the document according to the structure order.
+    StructureOrderTabbing,
+    /// Header and footer artifact subtypes.
+    HeaderFooterArtifactSubtypes,
+    /// Scope attribute for table header cells.
+    TableHeaderScope,
+}
+
+impl VersionedFeature {
+    /// Get the minimum PDF version required for this feature.
+    pub fn minimum_pdf_version(&self) -> PdfVersion {
+        match self {
+            VersionedFeature::StructureOrderTabbing => PdfVersion::Pdf15,
+            VersionedFeature::HeaderFooterArtifactSubtypes => PdfVersion::Pdf17,
+            VersionedFeature::TableHeaderScope => PdfVersion::Pdf15,
+        }
+    }
 }
 
 /// Collection of validators with at most one validator for each standard.
@@ -506,7 +530,13 @@ impl Archival {
                 | ValidationError::NoDocumentTitle
                 | ValidationError::MissingHeadingTitle
                 | ValidationError::MissingDocumentOutline
-                | ValidationError::EmbeddedFile(_, _),
+                | ValidationError::EmbeddedFile(_, _)
+                | ValidationError::RequiresNewerPdfVersion(
+                    VersionedFeature::HeaderFooterArtifactSubtypes
+                    | VersionedFeature::StructureOrderTabbing
+                    | VersionedFeature::TableHeaderScope,
+                    _,
+                ),
             ) => false,
             // Forbidden under PDF/A-1a but allowed under PDF/A-1b.
             (
@@ -544,7 +574,13 @@ impl Archival {
                 | ValidationError::NoDocumentTitle
                 | ValidationError::Transparency(_)
                 | ValidationError::MissingHeadingTitle
-                | ValidationError::MissingDocumentOutline,
+                | ValidationError::MissingDocumentOutline
+                | ValidationError::RequiresNewerPdfVersion(
+                    VersionedFeature::HeaderFooterArtifactSubtypes
+                    | VersionedFeature::StructureOrderTabbing
+                    | VersionedFeature::TableHeaderScope,
+                    _,
+                ),
             ) => false,
             // Forbidden under PDF/A-2 but allowed under PDF/A-3.
             (
@@ -615,7 +651,13 @@ impl Archival {
                     EmbedError::MissingDate | EmbedError::MissingMimeType,
                     _,
                 )
-                | ValidationError::MissingTagging,
+                | ValidationError::MissingTagging
+                | ValidationError::RequiresNewerPdfVersion(
+                    VersionedFeature::HeaderFooterArtifactSubtypes
+                    | VersionedFeature::StructureOrderTabbing
+                    | VersionedFeature::TableHeaderScope,
+                    _,
+                ),
             ) => false,
             // Forbidden under PDF/A-4 but allowed under other PDF/A-4 profiles.
             (
@@ -1033,7 +1075,13 @@ impl Accessibility {
                 | ValidationError::MissingAnnotationAltText(_)
                 | ValidationError::EmbeddedFile(EmbedError::MissingDescription, _)
                 | ValidationError::MissingTagging
-                | ValidationError::EmbeddedPDF(_),
+                | ValidationError::EmbeddedPDF(_)
+                | ValidationError::RequiresNewerPdfVersion(
+                    VersionedFeature::HeaderFooterArtifactSubtypes
+                    | VersionedFeature::StructureOrderTabbing
+                    | VersionedFeature::TableHeaderScope,
+                    _,
+                ),
             ) => true,
             (
                 Self::UA1,

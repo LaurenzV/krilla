@@ -1,6 +1,7 @@
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
+use krilla::configure::validate::VersionedFeature;
 use krilla::configure::ValidationError;
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
@@ -19,9 +20,9 @@ use krilla_macros::snapshot;
 use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
-    metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_20,
-    settings_23, settings_24, settings_32, settings_7, settings_8, settings_9,
-    stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS,
+    metadata_1, metadata_2, rect_to_path, red_fill, settings_13, settings_15, settings_19,
+    settings_20, settings_23, settings_24, settings_32, settings_33, settings_34, settings_7,
+    settings_8, settings_9, stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -964,6 +965,39 @@ fn validate_inconsistent_separation_fallback() {
     );
 }
 
+fn validate_pdf14_ua1_header_footer_artifact_subtypes() {
+    let mut document = Document::new_with(settings_33());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id = surface.start_tagged(ContentTag::Artifact(Artifact::with_kind(
+        ArtifactType::Header,
+    )));
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(id);
+    document.set_tag_tree(tag_tree);
+
+    document.set_metadata(metadata_2());
+
+    let outline = Outline::new();
+    document.set_outline(outline);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![ValidationError::RequiresNewerPdfVersion(
+            VersionedFeature::HeaderFooterArtifactSubtypes,
+            None
+        )]
+    );
+}
+
 #[snapshot(document)]
 fn no_validators_embedded_file_no_af(d: &mut Document) {
     // Embedded files are written but no AF (associated files) entry is
@@ -1041,4 +1075,109 @@ fn validate_multi_validator_pdf_a3b_pdf_ua1_full_example(document: &mut Document
     document.set_metadata(metadata);
 
     document.set_outline(Outline::new());
+}
+
+#[test]
+fn validate_pdf14_ua1_structure_order_tabbing() {
+    let mut document = Document::new_with(settings_33());
+    let mut page = document.start_page();
+
+    let annot = page.add_tagged_annotation(Annotation::new_link(
+        LinkAnnotation::new(
+            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        ),
+        Some("Link to YouTube".to_string()),
+    ));
+
+    page.finish();
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(annot);
+    document.set_tag_tree(tag_tree);
+
+    document.set_metadata(metadata_2());
+
+    let outline = Outline::new();
+    document.set_outline(outline);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![ValidationError::RequiresNewerPdfVersion(
+            VersionedFeature::StructureOrderTabbing,
+            None
+        )]
+    );
+}
+
+#[test]
+fn validate_pdf14_ua1_table_header_scope() {
+    let mut document = Document::new_with(settings_33());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font_data = NOTO_SANS.clone();
+    let font = Font::new(font_data, 0).unwrap();
+
+    let text_id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        20.0,
+        "header",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let mut row = TagGroup::new(Tag::TR);
+    let mut th = TagGroup::new(Tag::TH(TableHeaderScope::Row));
+    th.push(text_id);
+    row.push(th);
+
+    let mut table = TagGroup::new(Tag::Table);
+    table.push(row);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(table);
+    document.set_tag_tree(tag_tree);
+
+    document.set_metadata(metadata_2());
+
+    let outline = Outline::new();
+    document.set_outline(outline);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![ValidationError::RequiresNewerPdfVersion(
+            VersionedFeature::TableHeaderScope,
+            None
+        )]
+    );
+}
+
+#[test]
+fn validate_pdf14_tagged_annotation_no_ua() {
+    // tagging + annotation + PDF 1.4 without UA validator must not fail
+    let mut document = Document::new_with(settings_34());
+    let mut page = document.start_page();
+
+    let annot = page.add_tagged_annotation(Annotation::new_link(
+        LinkAnnotation::new(
+            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        ),
+        None,
+    ));
+
+    page.finish();
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(annot);
+    document.set_tag_tree(tag_tree);
+
+    assert!(document.finish().is_ok());
 }
