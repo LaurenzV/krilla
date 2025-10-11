@@ -5,8 +5,8 @@
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
-
 use pdf_writer::{Finish, Pdf, Ref, TextStr};
+use std::cell::LazyCell;
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
 use crate::configure::{Configuration, PdfVersion, ValidationError};
@@ -256,7 +256,7 @@ impl Metadata {
 
         if self.has_document_info() {
             let ref_ = ref_.bump();
-            let mut document_info = pdf.document_info(ref_);
+            let mut document_info = LazyCell::new(|| pdf.document_info(ref_));
 
             // ALl of those are deprecated in PDF 2.0 and will only be written
             // to the XMP metadata.
