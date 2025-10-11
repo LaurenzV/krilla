@@ -5,8 +5,8 @@
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
-use std::cell::LazyCell;
 use pdf_writer::{Finish, Pdf, Ref, TextStr};
+use std::cell::LazyCell;
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
 use crate::configure::{Configuration, PdfVersion, ValidationError};
