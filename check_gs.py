@@ -12,13 +12,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
 
 
-def process_pdf(pdf_path):
+def process_pdf(pdf_path, gs_bin):
     print(f"Processing: {pdf_path}")
 
     try:
         result = subprocess.run(
             [
-                "gs",
+                gs_bin,
                 "-sDEVICE=pdfwrite",
                 "-dNOPAUSE",
                 "-dBATCH",
@@ -46,6 +46,7 @@ def process_pdf(pdf_path):
 
 def main():
     pdf_dir = Path("store/")
+    gs_bin = os.environ.get("GHOSTSCRIPT_BIN", "gs")
 
     pdf_files = list(pdf_dir.rglob("*.pdf"))
 
@@ -58,7 +59,7 @@ def main():
     max_workers = os.cpu_count() or 1
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(process_pdf, pdf): pdf for pdf in pdf_files}
+        futures = {executor.submit(process_pdf, pdf, gs_bin): pdf for pdf in pdf_files}
 
         for future in as_completed(futures):
             pdf_path, success = future.result()
