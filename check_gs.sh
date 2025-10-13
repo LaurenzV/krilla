@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# A quick and dirty scripts that rewrites all PDFs in the store with GhostScript and checks
+# whether any errors/warnings were emitted.
+
 PDF_DIR="store/snapshots"
 had_errors=0
 
