@@ -66,21 +66,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: gs
-          key: gs-binary-v2
+          key: gs-binary-v3
       - name: Download GhostScript
         if: steps.cache-gs.outputs.cache-hit != 'true'
         run: |
-          curl -LO https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10040/ghostscript-10.04.0.tar.gz
-          tar -xvzf ./ghostscript-10.04.0.tar.gz
+          curl -LO https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10060/ghostscript-10.06.0.tar.gz
+          tar -xvzf ./ghostscript-10.06.0.tar.gz
       - name: Build GhostScript
         if: steps.cache-gs.outputs.cache-hit != 'true'
         run: |
-          cd ghostscript-10.04.0
+          cd ghostscript-10.06.0
           ./configure
           make
       - name: Finish
         if: steps.cache-gs.outputs.cache-hit != 'true'
-        run: mv ghostscript-10.04.0/bin/gs gs
+        run: mv ghostscript-10.06.0/bin/gs gs
 
   tests:
     name: Tests
@@ -121,7 +121,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: gs
-          key: gs-binary-v2
+          key: gs-binary-v3
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
