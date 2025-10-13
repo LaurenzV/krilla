@@ -192,6 +192,9 @@ jobs:
         run: find store -name "validate*.pdf"
           | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
 
+      - name: Check PDFs with ghostscript
+        run: python3 check_gs.py
+
   checks:
     name: Check clippy, formatting, and documentation
     runs-on: ubuntu-latest
