@@ -29,10 +29,8 @@ def process_pdf(pdf_path, gs_bin):
             text=True,
         )
 
-        # Combine stdout and stderr
         output = result.stdout + result.stderr
 
-        # Check if "error" appears in the output (case-insensitive)
         if "error" in output.lower():
             print(output)
             return (pdf_path, False)
@@ -48,8 +46,14 @@ def main():
     pdf_dir = Path("store/")
     gs_bin = os.environ.get("GHOSTSCRIPT_BIN", "gs")
 
-    # This one file seems to be buggy in the newest gs release, works fine on main.
-    pdf_files = [str(file) for file in list(pdf_dir.rglob("*.pdf")) if "validate_pdf_a4f_full_example" not in str(file)]
+    exception_files = [
+        "validate_pdf_a4f_full_example",
+    ]
+
+    pdf_files = [
+        str(file) for file in list(pdf_dir.rglob("*.pdf"))
+        if not any(exc in str(file) for exc in exception_files)
+    ]
     
 
     if not pdf_files:
