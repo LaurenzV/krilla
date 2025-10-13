@@ -193,7 +193,7 @@ jobs:
           | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
 
       - name: Check PDFs with ghostscript
-        run: ./check_gs.sh
+        run: python3 check_gs.py
 
   checks:
     name: Check clippy, formatting, and documentation
