@@ -48,7 +48,9 @@ def main():
     pdf_dir = Path("store/")
     gs_bin = os.environ.get("GHOSTSCRIPT_BIN", "gs")
 
-    pdf_files = list(pdf_dir.rglob("*.pdf"))
+    # This one file seems to be buggy in the newest gs release, works fine on main.
+    pdf_files = [str(file) for file in list(pdf_dir.rglob("*.pdf")) if "validate_pdf_a4f_full_example" not in str(file)]
+    
 
     if not pdf_files:
         print("No PDF files found")
