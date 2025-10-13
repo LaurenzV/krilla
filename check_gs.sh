@@ -17,8 +17,6 @@ while IFS= read -r -d '' pdf_file; do
          echo "$error_output"
         had_errors=1
     fi
-
-    echo ""
 done < <(find "$PDF_DIR" -type f -name "*.pdf" -print0)
 
 exit $had_errors
