@@ -506,7 +506,11 @@ impl Validator {
             Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
             // It can be any 2.x version, but we're not there yet.
             Validator::A4 | Validator::A4F | Validator::A4E => pdf_version == PdfVersion::Pdf20,
-            Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
+            // PDF/UA-1 requires artifacts to be tagged as header or footer
+            // artifacts. These subtypes have been introduced in 1.7. It also
+            // requires the `/Suspects` key in the output intent dictionary,
+            // which was introduced in PDF 1.6.
+            Validator::UA1 => pdf_version == PdfVersion::Pdf17,
         }
     }
 
