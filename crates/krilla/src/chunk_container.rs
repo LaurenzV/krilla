@@ -49,7 +49,7 @@ impl ChunkContainer {
         Self::default()
     }
 
-    pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
+    pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<(Pdf, Ref)> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -287,7 +287,7 @@ impl ChunkContainer {
             catalog.finish();
         }
 
-        Ok(pdf)
+        Ok((pdf, remapped_ref))
     }
 }
 

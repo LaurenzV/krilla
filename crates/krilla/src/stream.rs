@@ -170,6 +170,8 @@ impl StreamFilter {
 pub(crate) enum StreamFilters {
     None,
     Single(StreamFilter),
+    // Note that filters are stored in the order applied for encoding. So before writing it into
+    // a PDF file, the order needs to be reversed.
     Multiple(Vec<StreamFilter>),
 }
 
@@ -303,6 +305,10 @@ impl FilterStream<'_> {
                     .items(filters.iter().map(|f| f.to_name()).rev());
             }
         }
+    }
+    
+    pub(crate) fn filters(&self) -> &StreamFilters {
+        &self.filters
     }
 }
 

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
-use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Chunk, Filter, Finish, Limits, Name, Ref, Str, TextStr, XRefFilter};
 
 use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
@@ -27,6 +27,7 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
+use crate::stream::{FilterStreamBuilder, StreamFilter, StreamFilters};
 use crate::surface::{Location, Surface};
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
@@ -385,7 +386,7 @@ impl SerializeContext {
             .clone()
     }
 
-    pub(crate) fn finish(mut self) -> KrillaResult<Pdf> {
+    pub(crate) fn finish(mut self) -> KrillaResult<Vec<u8>> {
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use MaybeTake::take to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
@@ -406,7 +407,7 @@ impl SerializeContext {
         self.serialize_tag_tree()?;
 
         // Create the final PDF.
-        let pdf = {
+        let (pdf, mut next_ref) = {
             let chunk_container = std::mem::take(&mut self.chunk_container);
             chunk_container.finish(&mut self)?
         };
@@ -431,8 +432,40 @@ impl SerializeContext {
 
         // Just a sanity check that we've actually processed all items.
         self.global_objects.assert_all_taken();
+        
+        let serialize_settings = self.serialize_settings.clone();
+        
+        let serialized = {
+            pdf.finish_with_xref_stream(next_ref.bump(), Some(Box::new(move |data| {
+                let builder = FilterStreamBuilder::new_from_binary_data(data);
+                let res = builder.finish(&serialize_settings);
+                
+                let convert_stream_filter = |sf: StreamFilter| {
+                    match sf {
+                        StreamFilter::Flate => Filter::FlateDecode,
+                        StreamFilter::FlateMemoized => Filter::FlateDecode,
+                        StreamFilter::AsciiHex => Filter::AsciiHexDecode,
+                        StreamFilter::Dct => Filter::DctDecode,
+                    }
+                };
 
-        Ok(pdf)
+                let filter = match res.filters() {
+                    // A bit hacky, but the problem is that once we pass a closure, we have to 
+                    // apply _some_ filter. However, binary data will always have at least a flate
+                    // filter, so it can't happen that we don't have any filter at all here.
+                    StreamFilters::None => unreachable!(),
+                    StreamFilters::Single(s) => XRefFilter::Single(convert_stream_filter(*s)),
+                    StreamFilters::Multiple(s) => {
+                        // Don't forget to apply `rev`!
+                        XRefFilter::Multiple(s.iter().copied().map(convert_stream_filter).rev().collect())
+                    }
+                };
+
+                (res.encoded_data().to_vec(), filter)
+            })))
+        };
+
+        Ok(serialized)
     }
 }
 

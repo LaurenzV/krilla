@@ -114,6 +114,6 @@ impl Document {
             self.start_page();
         }
 
-        Ok(self.serializer_context.finish()?.finish())
+        self.serializer_context.finish()
     }
 }

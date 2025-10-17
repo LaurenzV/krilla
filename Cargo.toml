@@ -53,3 +53,6 @@ xmp-writer = "0.3.2"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.17.16"
 zune-jpeg = "0.4.13"
+
+[patch.crates-io]
+pdf-writer = { path = "../pdf-writer" }
