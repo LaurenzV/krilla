@@ -9,17 +9,17 @@ use crate::surface::Location;
 include!("generated.rs");
 
 impl TagKind {
-    /// The location.
+    /// Get the location.
     pub fn location(&self) -> Option<Location> {
         self.as_any().location
     }
 
-    /// The location.
+    /// Set the location.
     pub fn set_location(&mut self, location: Option<Location>) {
         self.as_any_mut().location = location;
     }
 
-    /// The location.
+    /// Set the location.
     pub fn with_location(mut self, location: Option<Location>) -> Self {
         self.as_any_mut().location = location;
         self
@@ -51,24 +51,6 @@ pub struct Tag<T> {
     pub(crate) ty: PhantomData<T>,
 }
 
-/// A raw tag, which allows reading all attributes and additionally writing all
-/// global ones.
-#[derive(Clone, Debug, PartialEq)]
-pub struct AnyTag {
-    /// The location of the tag.
-    pub location: Option<Location>,
-    pub(crate) attrs: OrdinalSet<Attr>,
-}
-
-impl AnyTag {
-    pub(crate) const fn new() -> Self {
-        Self {
-            attrs: OrdinalSet::new(),
-            location: None,
-        }
-    }
-}
-
 impl<T> Tag<T> {
     /// This can't be public, otherwise tags could be constructed without
     /// providing required attributes.
@@ -90,10 +72,38 @@ impl<T> Tag<T> {
         &mut self.inner
     }
 
-    /// The location.
+    /// Get the location.
+    pub fn location(&self) -> Option<Location> {
+        self.as_any().location
+    }
+
+    /// Set the location.
+    pub fn set_location(&mut self, location: Option<Location>) {
+        self.as_any_mut().location = location;
+    }
+
+    /// Set the location.
     pub fn with_location(mut self, location: Option<Location>) -> Self {
-        self.inner.location = location;
+        self.as_any_mut().location = location;
         self
+    }
+}
+
+/// A raw tag, which allows reading all attributes and additionally writing all
+/// global ones.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AnyTag {
+    /// The location of the tag.
+    pub location: Option<Location>,
+    pub(crate) attrs: OrdinalSet<Attr>,
+}
+
+impl AnyTag {
+    pub(crate) const fn new() -> Self {
+        Self {
+            attrs: OrdinalSet::new(),
+            location: None,
+        }
     }
 }
 
