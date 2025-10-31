@@ -512,7 +512,7 @@ fn png_metadata(data: &[u8]) -> Option<ImageMetadata> {
     let cursor = Cursor::new(data);
     let mut decoder = png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
-    let reader = decoder.read_info().unwrap();
+    let reader = decoder.read_info().ok()?;
     let info = reader.info();
 
     let size = (info.width, info.height);
@@ -778,4 +778,21 @@ fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<Gen
     };
 
     Some(wrapper)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+    use crate::image::Image;
+
+    #[test]
+    fn invalid_png_image() {
+        let _ = Image::from_png(Arc::new(b"dfngiudfg".to_vec()).into(), false);
+    }
+
+    #[test]
+    fn invalid_jpeg_image() {
+        let _ = Image::from_jpeg(Arc::new(b"dfngiudfg".to_vec()).into(), false);
+    }
 }
