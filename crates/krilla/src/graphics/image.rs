@@ -788,11 +788,13 @@ mod tests {
 
     #[test]
     fn invalid_png_image() {
+        // Just make sure we don't crash.
         let _ = Image::from_png(Arc::new(b"dfngiudfg".to_vec()).into(), false);
     }
 
     #[test]
     fn invalid_jpeg_image() {
+        // Just make sure we don't crash.
         let _ = Image::from_jpeg(Arc::new(b"dfngiudfg".to_vec()).into(), false);
     }
 }
