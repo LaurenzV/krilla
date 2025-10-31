@@ -303,7 +303,7 @@ pub struct DateTime {
     pub(crate) year: u16,
     /// The month (0-11).
     pub(crate) month: Option<u8>,
-    /// The month (0-30).
+    /// The day (0-31).
     pub(crate) day: Option<u8>,
     /// The hour (0-23).
     pub(crate) hour: Option<u8>,
