@@ -780,11 +780,10 @@ fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<Gen
     Some(wrapper)
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use crate::image::Image;
+    use std::sync::Arc;
 
     #[test]
     fn invalid_png_image() {
