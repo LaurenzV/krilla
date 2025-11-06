@@ -579,8 +579,6 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
     let mut decoder = JpegDecoder::new(reader);
     decoder.decode_headers().ok()?;
 
-    
-
     let size = {
         let dimensions = decoder.dimensions()?;
         (dimensions.0 as u32, dimensions.1 as u32)
@@ -606,7 +604,7 @@ fn decode_jpeg(data: Data) -> Option<Repr> {
     let reader = Cursor::new(data.as_ref());
     let mut decoder = JpegDecoder::new(reader);
     decoder.decode_headers().ok()?;
-    
+
     let input_color_space = decoder.input_colorspace()?;
 
     if matches!(
