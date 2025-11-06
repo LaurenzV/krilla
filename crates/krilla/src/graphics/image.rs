@@ -603,7 +603,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
 }
 
 fn decode_jpeg(data: Data) -> Option<Repr> {
-    let reader = Cursor::new(data.as_ref().as_ref());
+    let reader = Cursor::new(data.as_ref());
     let mut decoder = JpegDecoder::new(reader);
     decoder.decode_headers().ok()?;
     
