@@ -575,7 +575,8 @@ fn decode_png(data: &[u8]) -> Option<Repr> {
 }
 
 fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
-    let mut decoder = JpegDecoder::new(data);
+    let reader = Cursor::new(data);
+    let mut decoder = JpegDecoder::new(reader);
     decoder.decode_headers().ok()?;
 
     let size = {
@@ -583,7 +584,7 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
         (dimensions.0 as u32, dimensions.1 as u32)
     };
 
-    let input_color_space = decoder.get_input_colorspace()?;
+    let input_color_space = decoder.input_colorspace()?;
     let image_color_space = input_color_space.try_into().ok()?;
 
     let icc = decoder
@@ -600,10 +601,11 @@ fn jpeg_metadata(data: &[u8]) -> Option<ImageMetadata> {
 }
 
 fn decode_jpeg(data: Data) -> Option<Repr> {
-    let mut decoder = JpegDecoder::new(data.as_ref());
+    let reader = Cursor::new(data.as_ref());
+    let mut decoder = JpegDecoder::new(reader);
     decoder.decode_headers().ok()?;
 
-    let input_color_space = decoder.get_input_colorspace()?;
+    let input_color_space = decoder.input_colorspace()?;
 
     if matches!(
         input_color_space,

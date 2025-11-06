@@ -129,6 +129,17 @@ fn image_rgb8(page: &mut Page) {
     surface.draw_image(image, size);
 }
 
+// See https://github.com/typst/typst/issues/7268#issuecomment-3497148544.
+// The image has a APP14 marker with CMYK but it actually is RGB. This was
+// fixed in zune_jpeg 0.5.
+#[snapshot]
+fn image_rgb8_app14_cmyk(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_jpg_image("rgb8_app14_cmyk.jpg");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
 #[snapshot]
 fn image_luma8(page: &mut Page) {
     let mut surface = page.surface();
