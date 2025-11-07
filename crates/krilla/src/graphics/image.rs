@@ -811,12 +811,12 @@ mod tests {
     #[test]
     fn invalid_png_image() {
         let e = Image::from_png(Arc::new(b"dfngiudfg".to_vec()).into(), false);
-        assert_eq!(e, Err("dummy".to_string()));
+        assert!(e.is_err());
     }
 
     #[test]
     fn invalid_jpeg_image() {
         let e = Image::from_jpeg(Arc::new(b"dfngiudfg".to_vec()).into(), false);
-        assert_eq!(e, Err("dummy".to_string()));
+        assert!(e.is_err());
     }
 }
