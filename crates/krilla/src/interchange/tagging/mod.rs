@@ -787,7 +787,7 @@ impl TagGroup {
                     }
                 }
                 TableAttr::CellHeaders(headers) => {
-                    if pdf_version >= PdfVersion::Pdf15 && !headers.is_empty() {
+                    if pdf_version >= PdfVersion::Pdf15 {
                         let id_strs = headers.iter().map(|id| Str(id.as_bytes()));
                         table_attributes.get().headers().items(id_strs);
                     }

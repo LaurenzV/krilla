@@ -451,6 +451,44 @@ fn tagging_table_header_and_footer(document: &mut Document) {
 }
 
 #[snapshot(document)]
+fn tagging_empty_table_cell_headers(document: &mut Document) {
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let mut row1 = TagGroup::new(Tag::TR);
+    let mut th = TagGroup::new(Tag::TH(TableHeaderScope::Column));
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(0.0, "header");
+    surface.end_tagged();
+
+    th.push(id1);
+    row1.push(th);
+
+    let mut row2 = TagGroup::new(Tag::TR);
+    let mut td = TagGroup::new(Tag::TD.with_headers(Some([])));
+
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(25.0, "header");
+    surface.end_tagged();
+
+    td.push(id2);
+    row2.push(td);
+
+    surface.finish();
+    page.finish();
+
+    let mut table = TagGroup::new(Tag::Table);
+    table.push(row1);
+    table.push(row2);
+
+    tag_tree.push(table);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
 fn tagging_tag_attributes(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     let mut page = document.start_page();
