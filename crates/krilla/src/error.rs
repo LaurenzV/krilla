@@ -34,8 +34,10 @@ pub enum KrillaError {
     /// [`TagTree`]: crate::interchange::tagging::TagTree
     UnknownTagId(TagId, Option<Location>),
     /// An image couldn't be processed properly.
+    ///
+    /// The third argument contains the error message.
     #[cfg(feature = "raster-images")]
-    Image(Image, Option<Location>),
+    Image(Image, Option<Location>, String),
     /// An embedded PDF document couldn't be processed properly.
     #[cfg(feature = "pdf")]
     Pdf(PdfDocument, PdfError, Option<Location>),
