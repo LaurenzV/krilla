@@ -23,19 +23,19 @@ pub(crate) fn render(
 
     match image.kind() {
         ImageKind::JPEG(d) => {
-            let image = Image::from_jpeg(d.clone().into(), false)?;
+            let image = Image::from_jpeg(d.clone().into(), false).ok()?;
             surface.draw_image(image, size);
         }
         ImageKind::PNG(d) => {
-            let image = Image::from_png(d.clone().into(), false)?;
+            let image = Image::from_png(d.clone().into(), false).ok()?;
             surface.draw_image(image, size);
         }
         ImageKind::GIF(d) => {
-            let image = Image::from_gif(d.clone().into(), false)?;
+            let image = Image::from_gif(d.clone().into(), false).ok()?;
             surface.draw_image(image, size);
         }
         ImageKind::WEBP(d) => {
-            let image = Image::from_webp(d.clone().into(), false)?;
+            let image = Image::from_webp(d.clone().into(), false).ok()?;
             surface.draw_image(image, size);
         }
         ImageKind::SVG(t) => {
