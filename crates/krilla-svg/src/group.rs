@@ -27,7 +27,6 @@ pub(crate) fn render(
     if let Some(mask) = group.mask() {
         pop_count += mask::render(mask, surface, process_context);
     }
-    
 
     surface.push_blend_mode(convert_blend_mode(&group.blend_mode()));
     surface.push_opacity(NormalizedF32::new(group.opacity().get()).unwrap());
@@ -43,7 +42,7 @@ pub(crate) fn render(
         || group.opacity() != Opacity::ONE
         || group.mask().is_some()
         || group.blend_mode() != BlendMode::Normal;
-    
+
     if should_isolate {
         surface.push_isolated();
         pop_count += 1
