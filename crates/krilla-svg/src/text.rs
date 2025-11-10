@@ -104,34 +104,32 @@ pub(crate) fn render(
                     font,
                     process_context.svg_settings.embed_text,
                 )
+            } else if matches!(span.paint_order, PaintOrder::FillAndStroke)
+                || fill.is_none()
+                || stroke.is_none()
+            {
+                draw_op(
+                    surface,
+                    fill,
+                    stroke,
+                    font.clone(),
+                    process_context.svg_settings.embed_text,
+                );
             } else {
-                if matches!(span.paint_order, PaintOrder::FillAndStroke)
-                    || fill.is_none()
-                    || stroke.is_none()
-                {
-                    draw_op(
-                        surface,
-                        fill,
-                        stroke,
-                        font.clone(),
-                        process_context.svg_settings.embed_text,
-                    );
-                } else {
-                    // Paint order stroke and fill, and we have BOTH, a fill and
-                    // stroke.
+                // Paint order stroke and fill, and we have BOTH, a fill and
+                // stroke.
 
-                    // We always draw the text outlined in this case, so that
-                    // text won't be embedded twice.
-                    draw_op(surface, None, stroke, font.clone(), false);
+                // We always draw the text outlined in this case, so that
+                // text won't be embedded twice.
+                draw_op(surface, None, stroke, font.clone(), false);
 
-                    draw_op(
-                        surface,
-                        fill,
-                        None,
-                        font.clone(),
-                        process_context.svg_settings.embed_text,
-                    );
-                }
+                draw_op(
+                    surface,
+                    fill,
+                    None,
+                    font.clone(),
+                    process_context.svg_settings.embed_text,
+                );
             }
 
             surface.pop();
