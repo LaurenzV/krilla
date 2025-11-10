@@ -21,7 +21,7 @@ fn main() {
         };
 
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("/Users/lstampfl/Programming/GitHub/krilla/file.svg");
+            .join("../../assets/svgs/custom_integration_wikimedia_coat_of_the_arms_of_edinburgh_city_council.svg");
         let data = std::fs::read(&path).unwrap();
         usvg::Tree::from_data(&data, &opts).unwrap()
     };
