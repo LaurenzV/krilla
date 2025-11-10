@@ -80,6 +80,9 @@ fn issue_199(surface: &mut Surface) {
     );
 }
 
+#[visreg(svg)]
+fn issue291() {}
+
 #[visreg]
 fn svg_with_filter(surface: &mut Surface) {
     let data = std::fs::read(SVGS_PATH.join("small_text_with_filter.svg")).unwrap();
