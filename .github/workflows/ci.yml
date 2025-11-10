@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: pdfium
-          key: pdfium-binary-v1
+          key: pdfium-binary-v2
       - name: Clone sitro repo
         if: steps.cache-pdfium.outputs.cache-hit != 'true'
         run: |
@@ -111,7 +111,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: pdfium
-          key: pdfium-binary-v1
+          key: pdfium-binary-v2
 
       - uses: actions/cache@v4
         with:
@@ -130,7 +130,7 @@ jobs:
 
       - name: Download the pdfium library
         run: |
-          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F5880/pdfium-linux-x64.tgz
+          curl -LO https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7520/pdfium-linux-x64.tgz
           mkdir pdfium-linux-x64
           tar -xvzf ./pdfium-linux-x64.tgz -C pdfium-linux-x64
           sudo mv ./pdfium-linux-x64/lib/libpdfium.so /usr/lib
