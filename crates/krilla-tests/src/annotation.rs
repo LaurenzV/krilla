@@ -1,3 +1,4 @@
+use krilla::annotation::LinkBorder;
 use krilla::destination::XyzDestination;
 use krilla::geom::{Point, Quadrilateral, Rect};
 use krilla::page::{Page, PageSettings};
@@ -15,6 +16,19 @@ fn annotation_to_link(page: &mut Page) {
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         )
+        .into(),
+    );
+}
+
+#[snapshot]
+fn annotation_with_border(page: &mut Page) {
+    use krilla::color::{rgb, Color};
+    page.add_annotation(
+        LinkAnnotation::new(
+            Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
+            Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
+        )
+        .set_border(LinkBorder::new(1.0, Color::Rgb(rgb::Color::new(255, 0, 0))))
         .into(),
     );
 }
