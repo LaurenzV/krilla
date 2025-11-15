@@ -1,5 +1,6 @@
 //! This example shows how to use parley to create advanced layouted text.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path;
 
@@ -12,7 +13,7 @@ use krilla::text::Font;
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla::Document;
 use parley::layout::Alignment;
-use parley::style::{FontFamily, FontStack, FontWeight, StyleProperty};
+use parley::style::{FontFamily, FontStack, FontWeight, LineHeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
 
 fn main() {
@@ -29,33 +30,33 @@ fn main() {
     let text_color = rgb::Color::new(0, 0, 0);
     let mut font_cx = FontContext::default();
     let mut layout_cx = LayoutContext::new();
-    let mut builder = layout_cx.ranged_builder(&mut font_cx, &text, 1.0);
+    let mut builder = layout_cx.ranged_builder(&mut font_cx, &text, 1.0, false);
     let brush_style = StyleProperty::Brush(text_color);
-    builder.push_default(&brush_style);
+    builder.push_default(brush_style);
 
-    let font_stack = FontStack::List(&[
-        FontFamily::Named("Noto Sans"),
-        FontFamily::Named("Noto Sans Arabic"),
-        FontFamily::Named("Noto Sans Devanagari"),
-        FontFamily::Named("Noto Color Emoji"),
-    ]);
+    let font_stack = FontStack::List(Cow::Borrowed(&[
+        FontFamily::Named(Cow::Borrowed("Noto Sans")),
+        FontFamily::Named(Cow::Borrowed("Noto Sans Arabic")),
+        FontFamily::Named(Cow::Borrowed("Noto Sans Devanagari")),
+        FontFamily::Named(Cow::Borrowed("Noto Color Emoji")),
+    ]));
     let font_stack_style = StyleProperty::FontStack(font_stack);
-    builder.push_default(&font_stack_style);
-    builder.push_default(&StyleProperty::LineHeight(1.3));
-    builder.push_default(&StyleProperty::FontSize(16.0));
+    builder.push_default(font_stack_style);
+    builder.push_default(StyleProperty::LineHeight(LineHeight::FontSizeRelative(1.3)));
+    builder.push_default(StyleProperty::FontSize(16.0));
 
     // In our case, we set the first four characters to bold and also make some
     // part of the text red.
     let bold = FontWeight::new(600.0);
     let bold_style = StyleProperty::FontWeight(bold);
-    builder.push(&bold_style, 0..4);
+    builder.push(bold_style, 0..4);
 
     let color_style = StyleProperty::Brush(rgb::Color::new(255, 0, 0));
-    builder.push(&color_style, 2..12);
+    builder.push(color_style, 2..12);
 
-    let mut layout = builder.build();
+    let mut layout = builder.build(&text);
     layout.break_all_lines(max_advance);
-    layout.align(max_advance, Alignment::Start);
+    layout.align(max_advance, Alignment::Start, Default::default());
 
     // After setting up everything, now starts the actual part where we use krilla to write
     // the text to a PDF.
