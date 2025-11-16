@@ -250,9 +250,16 @@ impl ChunkContainer {
                     let mut dest_name_tree = names.destinations();
                     let mut dest_name_entries = dest_name_tree.names();
 
-                    // Sort to prevent inconsistent order.
+                    // "The Names entries in the leaf (or root) nodes shall
+                    // contain the tree’s keys and their associated values,
+                    // arranged in key-value pairs and shall be sorted lexically
+                    // in ascending order by key. Shorter keys shall appear
+                    // before longer ones beginning with the same byte sequence.
+                    // Any encoding of the keys may be used as long as it is
+                    // self-consistent; keys shall be compared for equality on
+                    // a simple byte-by-byte basis."
                     let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
-                    sorted.sort_by(|a, b| a.1.cmp(&b.1));
+                    sorted.sort_by(|a, b| a.0.name.as_bytes().cmp(&b.0.name.as_bytes()));
 
                     for (name, dest_ref) in sorted {
                         dest_name_entries.insert(Str(name.name.as_bytes()), remapper[&dest_ref]);
