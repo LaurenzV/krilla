@@ -87,9 +87,17 @@ fn main() {
             // current glyphs into the PDF, and build the next sequence of consecutive
             // glyphs.
             let mut cur_style = None;
-            let mut glyphs = vec![];
+            let mut glyphs = Vec::<KrillaGlyph>::new();
 
             for cluster in run.visual_clusters() {
+                if cluster.is_ligature_continuation() {
+                    if let Some(glyph) = glyphs.last_mut() {
+                        glyph.text_range.end = cluster.text_range().end;
+                    }
+                    // Ligature continuations have no glyphs of their own.
+                    continue;
+                }
+
                 for glyph in cluster.glyphs() {
                     let glyph_style = glyph.style_index;
 
