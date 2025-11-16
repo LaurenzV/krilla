@@ -28,7 +28,7 @@ fn annotation_with_border(page: &mut Page) {
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
             Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
         )
-        .set_border(LinkBorder::new(1.0, Color::Rgb(rgb::Color::new(255, 0, 0))))
+        .with_border(LinkBorder::new(1.0, Color::Rgb(rgb::Color::new(255, 0, 0))))
         .into(),
     );
 }

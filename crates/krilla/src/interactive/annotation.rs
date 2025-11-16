@@ -76,20 +76,20 @@ impl Annotation {
         self.annotation_type
             .serialize_type(sc, &mut annotation, page_height)?;
 
-        // If the annotation type is a link with a border and we do not comply
-        // with a PDF/A standard, do not set the print flag. This causes the
-        // border of links to be visible on screen but not when printed.
-        match (
-            &self.annotation_type,
-            sc.serialize_settings().configuration.validator(),
-        ) {
-            (
-                AnnotationType::Link(l),
-                crate::configure::Validator::None | crate::configure::Validator::UA1,
-            ) if l.border.is_some() => {}
-            _ => {
-                annotation.flags(AnnotationFlags::PRINT);
-            }
+        let AnnotationType::Link(l) = &self.annotation_type;
+        // Only set the print flag when really necessary (only PDF/A). Don't
+        // set it by default, so annotations with color borders will be shown
+        // on a screen but not printed.
+        // TODO: No need to write the print flag even if it is `None`,
+        // only for PDF/A.
+        if l.border.is_none()
+            || sc
+                .serialize_settings()
+                .configuration
+                .validator()
+                .requires_annotation_flags()
+        {
+            annotation.flags(AnnotationFlags::PRINT);
         }
 
         if let Some(struct_parent) = self.struct_parent {
@@ -217,8 +217,8 @@ impl LinkAnnotation {
     }
 
     /// Set a border for this link annotation. The border will be visible on
-    /// screen but not when printed, unless we comply with a PDF/A standard.
-    pub fn set_border(self, border: LinkBorder) -> Self {
+    /// screen but not when printed, unless when exporting with PDF/A standard.
+    pub fn with_border(self, border: LinkBorder) -> Self {
         Self {
             border: Some(border),
             ..self
