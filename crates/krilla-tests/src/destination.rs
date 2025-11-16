@@ -55,3 +55,26 @@ fn destination_named(d: &mut Document) {
     surface.finish();
     page.finish();
 }
+
+// See <https://github.com/typst/typst/issues/7248>. We forgot that the entries
+// need to be sorted by name. Not doing that can cause issues in Preview and
+// Chrome.
+#[snapshot(document)]
+fn destination_named_sorting(d: &mut Document) {
+    let mut page = d.start_page();
+
+    for name in ["aaa", "bb", "a", "zzz", "y", "aa", "x", "ab"] {
+        let dest = NamedDestination::new(
+            name.to_string(),
+            XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+        );
+
+        page.add_annotation(
+            LinkAnnotation::new(
+                Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
+                Target::Destination(dest.into()),
+            )
+            .into(),
+        );
+    }
+}
