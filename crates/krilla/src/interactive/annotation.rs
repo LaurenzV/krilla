@@ -11,6 +11,7 @@ use core::f32;
 use pdf_writer::types::AnnotationFlags;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
+use crate::color::Color;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::geom::{Quadrilateral, Rect};
@@ -75,8 +76,21 @@ impl Annotation {
         self.annotation_type
             .serialize_type(sc, &mut annotation, page_height)?;
 
-        // Only required by PDF/A, but we always write this regardless.
-        annotation.flags(AnnotationFlags::PRINT);
+        let AnnotationType::Link(l) = &self.annotation_type;
+        // Only set the print flag when really necessary (only PDF/A). Don't
+        // set it by default, so annotations with color borders will be shown
+        // on a screen but not printed.
+        // TODO: No need to write the print flag even if it is `None`,
+        // only for PDF/A.
+        if l.border.is_none()
+            || sc
+                .serialize_settings()
+                .configuration
+                .validator()
+                .requires_annotation_flags()
+        {
+            annotation.flags(AnnotationFlags::PRINT);
+        }
 
         if let Some(struct_parent) = self.struct_parent {
             annotation.struct_parent(struct_parent);
@@ -123,11 +137,28 @@ pub enum Target {
     Action(Action),
 }
 
+/// Border of a link annotation.
+pub struct LinkBorder {
+    pub(crate) width: f32,
+    pub(crate) color: Color,
+}
+
+impl LinkBorder {
+    /// Create a new link annotation border.
+    ///
+    /// `width`: The width of the border in pt.
+    /// `color`: The color of the border.
+    pub fn new(width: f32, color: Color) -> Self {
+        Self { width, color }
+    }
+}
+
 /// A link annotation.
 pub struct LinkAnnotation {
     pub(crate) rect: Rect,
     pub(crate) quad_points: Option<Vec<Quadrilateral>>,
     pub(crate) target: Target,
+    pub(crate) border: Option<LinkBorder>,
 }
 
 impl LinkAnnotation {
@@ -140,6 +171,7 @@ impl LinkAnnotation {
             rect,
             quad_points: None,
             target,
+            border: None,
         }
     }
 
@@ -180,6 +212,16 @@ impl LinkAnnotation {
             rect,
             quad_points: Some(quad_points),
             target,
+            border: None,
+        }
+    }
+
+    /// Set a border for this link annotation. The border will be visible on
+    /// screen but not when printed, unless when exporting with PDF/A standard.
+    pub fn with_border(self, border: LinkBorder) -> Self {
+        Self {
+            border: Some(border),
+            ..self
         }
     }
 
@@ -196,7 +238,28 @@ impl LinkAnnotation {
             .transform(page_root_transform(page_height))
             .unwrap();
         annotation.rect(actual_rect.to_pdf_rect());
-        annotation.border(0.0, 0.0, 0.0, None);
+        annotation.border(
+            0.0,
+            0.0,
+            self.border.as_ref().map_or(0.0, |x| x.width),
+            None,
+        );
+
+        if let Some(border) = &self.border {
+            match border.color {
+                Color::Rgb(rgb) => {
+                    let [r, g, b] = rgb.to_pdf_color();
+                    annotation.color_rgb(r, g, b);
+                }
+                Color::Cmyk(cmyk) => {
+                    let [c, m, y, k] = cmyk.to_pdf_color();
+                    annotation.color_cmyk(c, m, y, k);
+                }
+                Color::Luma(gray) => {
+                    annotation.color_gray(gray.to_pdf_color());
+                }
+            }
+        }
 
         if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16 {
             self.quad_points.as_ref().map(|p| {

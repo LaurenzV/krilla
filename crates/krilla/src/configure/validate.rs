@@ -638,6 +638,16 @@ impl Validator {
         }
     }
 
+    pub(crate) fn requires_annotation_flags(&self) -> bool {
+        match self {
+            Validator::None | Validator::UA1 => false,
+            Validator::A1_A | Validator::A1_B => true,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
+            Validator::A4 | Validator::A4F | Validator::A4E => true,
+        }
+    }
+
     pub(crate) fn requires_tagging(&self) -> bool {
         match self {
             Validator::None => false,
