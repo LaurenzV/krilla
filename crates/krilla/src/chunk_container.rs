@@ -259,7 +259,7 @@ impl ChunkContainer {
                     // self-consistent; keys shall be compared for equality on
                     // a simple byte-by-byte basis."
                     let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
-                    sorted.sort_by(|a, b| a.0.name.as_bytes().cmp(&b.0.name.as_bytes()));
+                    sorted.sort_by(|a, b| a.0.name.as_bytes().cmp(b.0.name.as_bytes()));
 
                     for (name, dest_ref) in sorted {
                         dest_name_entries.insert(Str(name.name.as_bytes()), remapper[&dest_ref]);
