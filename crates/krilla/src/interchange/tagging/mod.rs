@@ -135,6 +135,7 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
+use crate::configure::validate::PdfFeature;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::page::page_root_transform;
@@ -224,15 +225,27 @@ impl ContentTag<'_> {
                     ArtifactType::Other => unreachable!(),
                 };
 
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
-                    if *at == ArtifactType::Header {
-                        artifact.attached([pdf_writer::types::ArtifactAttachment::Top]);
-                        artifact.subtype(ArtifactSubtype::Header);
-                    }
+                let attachments_and_subtype = match &at {
+                    ArtifactType::Header => Some((
+                        [pdf_writer::types::ArtifactAttachment::Top],
+                        ArtifactSubtype::Header,
+                    )),
+                    ArtifactType::Footer => Some((
+                        [pdf_writer::types::ArtifactAttachment::Bottom],
+                        ArtifactSubtype::Footer,
+                    )),
+                    _ => None,
+                };
 
-                    if *at == ArtifactType::Footer {
-                        artifact.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
-                        artifact.subtype(ArtifactSubtype::Footer);
+                if let Some((attachments, subtype)) = attachments_and_subtype {
+                    if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
+                        artifact.attached(attachments);
+                        artifact.subtype(subtype);
+                    } else {
+                        sc.register_validation_error(ValidationError::RequiresLaterPdfVersion(
+                            PdfFeature::HeaderFooterArtifactSubtypes,
+                            sc.location,
+                        ));
                     }
                 }
 
@@ -605,6 +618,41 @@ impl Node {
             },
         }
     }
+
+    // For tables to be valid in PDF versions before 1.5, we need to ensure that
+    // each table header cell (`TH`) is inside a table header (`THead`).
+    // Otherwise, the unsupported `Scope` attribute would be required to express
+    // the correct semantics.
+    fn validate_table_structure_before_pdf15(&self, in_header: bool, sc: &mut SerializeContext) {
+        match self {
+            Node::Group(g) => {
+                let in_header = in_header || matches!(g.tag, TagKind::THead(_));
+                if !in_header && matches!(g.tag, TagKind::TH(_)) {
+                    sc.register_validation_error(ValidationError::RequiresLaterPdfVersion(
+                        PdfFeature::TableHeaderScope,
+                        g.tag.as_any().location,
+                    ));
+                }
+
+                match g.tag {
+                    TagKind::TBody(_)
+                    | TagKind::TFoot(_)
+                    | TagKind::THead(_)
+                    | TagKind::TR(_)
+                    | TagKind::TD(_)
+                    | TagKind::TH(_) => {
+                        // We want to recurse into table-related tags.
+                        for child in &g.children {
+                            child.validate_table_structure_before_pdf15(in_header, sc);
+                        }
+                    }
+                    // Other tags serve as a boundary for table structure.
+                    _ => {}
+                }
+            }
+            Node::Leaf(_) => {}
+        }
+    }
 }
 
 impl From<TagGroup> for Node {
@@ -719,6 +767,12 @@ impl TagGroup {
             sc.register_validation_error(ValidationError::MissingAltText(tag.location));
         }
 
+        if matches!(self.tag, TagKind::Table(_)) && pdf_version < PdfVersion::Pdf15 {
+            for child in &self.children {
+                child.validate_table_structure_before_pdf15(false, sc);
+            }
+        }
+
         for attr in tag.attrs.iter() {
             let Attr::Struct(attr) = attr else {
                 continue;
@@ -784,6 +838,12 @@ impl TagGroup {
                 TableAttr::HeaderScope(scope) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         table_attributes.get().scope(scope.to_pdf());
+                    } else if scope == &TableHeaderScope::Row {
+                        // Without `Scope`, the correct cell to point to is ambiguous.
+                        sc.register_validation_error(ValidationError::RequiresLaterPdfVersion(
+                            PdfFeature::TableHeaderScope,
+                            tag.location,
+                        ));
                     }
                 }
                 TableAttr::CellHeaders(headers) => {

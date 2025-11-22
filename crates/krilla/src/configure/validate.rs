@@ -132,6 +132,30 @@ pub enum ValidationError {
     /// This is currently forbidden in validated export because we cannot manually verify
     /// whether the file actually fulfills all the criteria for the export mode.
     EmbeddedPDF(Option<Location>),
+    /// A feature only available in a later PDF version was required.
+    RequiresLaterPdfVersion(PdfFeature, Option<Location>),
+}
+
+/// Features that may require a later PDF version than the current one.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PdfFeature {
+    /// Tabbing through the document according to the structure order.
+    StructureOrderTabbing,
+    /// Header and footer artifact subtypes.
+    HeaderFooterArtifactSubtypes,
+    /// Scope attribute for table header cells.
+    TableHeaderScope,
+}
+
+impl PdfFeature {
+    /// Get the minimum PDF version required for this feature.
+    pub fn minimum_pdf_version(&self) -> PdfVersion {
+        match self {
+            PdfFeature::StructureOrderTabbing => PdfVersion::Pdf15,
+            PdfFeature::HeaderFooterArtifactSubtypes => PdfVersion::Pdf17,
+            PdfFeature::TableHeaderScope => PdfVersion::Pdf15,
+        }
+    }
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
@@ -342,6 +366,7 @@ impl Validator {
                 ValidationError::MissingTagging => *self == Validator::A1_A,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
+                ValidationError::RequiresLaterPdfVersion(_, _) => false,
             },
             Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -382,6 +407,7 @@ impl Validator {
                 ValidationError::MissingTagging => *self == Validator::A2_A,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
+                ValidationError::RequiresLaterPdfVersion(_, _) => false,
             },
             Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
                 ValidationError::TooLongString => true,
@@ -417,6 +443,7 @@ impl Validator {
                 ValidationError::MissingTagging => *self == Validator::A3_A,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
+                ValidationError::RequiresLaterPdfVersion(_, _) => false,
             },
             Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
                 ValidationError::TooLongString => false,
@@ -458,6 +485,7 @@ impl Validator {
                 ValidationError::MissingTagging => false,
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
+                ValidationError::RequiresLaterPdfVersion(_, _) => false,
             },
             Validator::UA1 => match validation_error {
                 ValidationError::TooLongString => false,
@@ -493,6 +521,12 @@ impl Validator {
                 ValidationError::MissingTagging => true,
                 ValidationError::MissingDocumentDate => false,
                 ValidationError::EmbeddedPDF(_) => true,
+                ValidationError::RequiresLaterPdfVersion(
+                    PdfFeature::HeaderFooterArtifactSubtypes
+                    | PdfFeature::StructureOrderTabbing
+                    | PdfFeature::TableHeaderScope,
+                    _,
+                ) => true,
             },
         }
     }
