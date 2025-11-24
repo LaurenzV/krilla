@@ -27,7 +27,7 @@ pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PA
 fn main() {
     // The usual page setup.
     let mut document = Document::new();
-    let mut page = document.start_page_with(PageSettings::new(600.0, 280.0));
+    let mut page = document.start_page_with(PageSettings::from_wh(600.0, 280.0).unwrap());
     let mut surface = page.surface();
 
     let noto_font = Font::new(

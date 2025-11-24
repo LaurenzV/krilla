@@ -42,12 +42,19 @@ pub struct PageSettings {
 
 impl PageSettings {
     /// Create new page settings and define the size of the page surface.
-    pub fn new(width: f32, height: f32) -> Self {
+    pub fn new(size: Size) -> Self {
         Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
-            surface_size: Size::from_wh(width, height).unwrap(),
+            media_box: Some(Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap()),
+            surface_size: size,
             ..Default::default()
         }
+    }
+
+    /// Try to create new page settings with the specified width and height.
+    ///
+    /// Returns `None` if either the width or the height is not > 0.
+    pub fn from_wh(width: f32, height: f32) -> Option<Self> {
+        Some(Self::new(Size::from_wh(width, height)?))
     }
 
     /// Change the media box.

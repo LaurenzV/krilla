@@ -68,7 +68,7 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
             quote! {
                 #common
                 let settings = crate::#serialize_settings();
-                let page_settings = PageSettings::new(200.0, 200.0);
+                let page_settings = PageSettings::from_wh(200.0, 200.0).unwrap();
                 let mut d = Document::new_with(settings);
                 let mut page = d.start_page_with(page_settings);
                 #impl_ident(&mut page);
@@ -211,7 +211,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             let settings = crate::#serialize_settings();
             let mut d = Document::new_with(settings);
-            let page_settings = PageSettings::new(200.0, 200.0).with_media_box(None);
+            let page_settings = PageSettings::from_wh(200.0, 200.0).unwrap().with_media_box(None);
             let mut page = d.start_page_with(page_settings);
             let mut surface = page.surface();
             #impl_ident(&mut surface);

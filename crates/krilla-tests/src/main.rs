@@ -668,7 +668,8 @@ pub fn all_glyphs_to_pdf(
     let units_per_em = metrics.units_per_em as f32;
     let mut cur_point = 0;
 
-    let mut builder = d.start_page_with(PageSettings::new(width as f32, height as f32));
+    let mut builder =
+        d.start_page_with(PageSettings::from_wh(width as f32, height as f32).unwrap());
     let mut surface = builder.surface();
 
     let colors = if color_cycling {
@@ -850,11 +851,12 @@ pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
     )
     .unwrap();
 
-    let mut page = d.start_page_with(PageSettings::new(tree.size().width(), tree.size().height()));
+    let size = krilla::geom::Size::from_wh(tree.size().width(), tree.size().height()).unwrap();
+    let mut page = d.start_page_with(PageSettings::new(size));
     let mut surface = page.surface();
     surface.draw_svg(
         &tree,
-        krilla::geom::Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        size,
         SvgSettings {
             embed_text: true,
             filter_scale: 2.0,

@@ -11,7 +11,7 @@ fn main() {
     let mut document = Document::new();
     // We can now successively add new pages by calling `start_page`, or `start_page_with`
     // if we want to pass custom page settings.
-    let page = document.start_page_with(PageSettings::new(300.0, 600.0));
+    let page = document.start_page_with(PageSettings::from_wh(300.0, 600.0).unwrap());
     page.finish();
 
     // Create the PDF

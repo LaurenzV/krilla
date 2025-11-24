@@ -31,7 +31,7 @@ fn main() {
 
     let svg_size = Size::from_wh(svg_tree.size().width(), svg_tree.size().height()).unwrap();
     // Start a new page, with the same dimensions as the SVG.
-    let mut page = document.start_page_with(PageSettings::new(svg_size.width(), svg_size.height()));
+    let mut page = document.start_page_with(PageSettings::new(svg_size));
     let mut surface = page.surface();
     // Draw the SVG.
     surface.draw_svg(&svg_tree, svg_size, SvgSettings::default());

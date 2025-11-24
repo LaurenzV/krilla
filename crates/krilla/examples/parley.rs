@@ -65,7 +65,7 @@ fn main() {
 
     // The usual page setup.
     let mut document = Document::new();
-    let mut page = document.start_page_with(PageSettings::new(200.0, 300.0));
+    let mut page = document.start_page_with(PageSettings::from_wh(200.0, 300.0).unwrap());
     let mut surface = page.surface();
 
     for line in layout.lines() {

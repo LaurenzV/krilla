@@ -25,7 +25,7 @@ fn main() {
     };
 
     // Add a new page with dimensions 200x200.
-    let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+    let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     // Get the surface of the page.
     let mut surface = page.surface();
     // Draw some text.
@@ -58,7 +58,7 @@ fn main() {
     page.finish();
 
     // Start a new page.
-    let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+    let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     // Create the triangle.
     let triangle = {
         let mut pb = PathBuilder::new();

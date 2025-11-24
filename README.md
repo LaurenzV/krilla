@@ -4,8 +4,8 @@
 [![Documentation](https://docs.rs/krilla/badge.svg)](https://docs.rs/krilla)
 
 `krilla` is a high-level Rust crate that allows for the creation of PDF files. It builds
-on top of the [pdf-writer](https://github.com/typst/pdf-writer) crate, 
-but abstracts away all complexities that are involved in creating a PDF file, 
+on top of the [pdf-writer](https://github.com/typst/pdf-writer) crate,
+but abstracts away all complexities that are involved in creating a PDF file,
 instead providing an interface with high-level primitives, such
 as fills, strokes, gradient, glyphs and images which can be used and combined easily
 without having to worry about low-level details.
@@ -42,31 +42,31 @@ of the complexity of the PDF format and instead provides high-level primitives f
 creating PDF files. However from a document-creation perspective, this crate is still
 very low-level: It does not provide functionality like text layouting, creation of tables,
 page breaking, inserting headers/footers, etc. This kind of functionality is strictly out of scope for
-`krilla`. 
+`krilla`.
 
 `krilla`'s main "target group" is libraries that have some kind of intermediate representation
-of layouted content (whether it be from HTML or other input sources), and want to easily 
+of layouted content (whether it be from HTML or other input sources), and want to easily
 translate this representation into a PDF file. If this is your use case, then `krilla` is probably
-a very suitable, if not the most suitable choice for you. 
+a very suitable, if not the most suitable choice for you.
 
 If not, depending on what exactly you want to do, there are other Rust crates you can use:
 
 - Creating PDF files with very low-level access to the resulting file: [pdf-writer](https://github.com/typst/pdf-writer).
-- Creating documents requiring high-level functionality like automatic text layouting, 
+- Creating documents requiring high-level functionality like automatic text layouting,
 page breaking, inserting headers and footers: [typst](https://github.com/typst/typst/).
 - Reading existing PDF documents and manipulating them in a certain way: [pdf-rs](https://github.com/pdf-rs/pdf).
 
 Also worth mentioning is [printpdf](https://github.com/fschutt/printpdf) which operates at a similar level of abstraction as `krilla`, but is based on `lopdf` has a greater focus on creating print-friendly PDFs.
 
 The PDF specification is *huge* and supports tons of features with a lot of customization, including
-complex color spaces and shadings. The goal of `krilla` is not to expose high-level bindings 
+complex color spaces and shadings. The goal of `krilla` is not to expose high-level bindings
 for all functionality, but instead expose only a relevant subset of it. Implementing features like encryption or digital signatures, as well as many other PDF features, are (for now) out-of-scope for this crate.
 
 ## Testing
 Testing is a major pain point for most PDF-creation libraries. The reason is that it is very hard to do:
-It is very easy to accidentally create invalid PDF files, and just testing PDF files in one 
-PDF viewer is not enough to be confident about its correctness. The reason for this 
-is that PDF viewers are often tolerant in what they accept, meaning that it is possible 
+It is very easy to accidentally create invalid PDF files, and just testing PDF files in one
+PDF viewer is not enough to be confident about its correctness. The reason for this
+is that PDF viewers are often tolerant in what they accept, meaning that it is possible
 that a PDF just happens to show up fine in one viewer you tested, but fails in all other ones.
 
 **Because of this, ensuring proper testing has been one of my main priorities when building this crate,
@@ -81,7 +81,7 @@ regressions in the actual output of our PDFs. These snippets are also tested aga
 
 #### Unit tests
 As mentioned above, checking one PDF viewer for correct output is not enough. Because of this, our visual
-regression tests are run against **6 distinct PDF viewers** (although only 5 are run in CI) to ensure that basic 
+regression tests are run against **6 distinct PDF viewers** (although only 5 are run in CI) to ensure that basic
 `krilla` features are displayed correctly in all major viewers. The current selection of viewers includes:
 - ghostscript
 - mupdf
@@ -101,7 +101,7 @@ all tests have been opened at least once with Acrobat to ensure that no errors a
 Finally, we also have visual integration tests to test distinct features as well as combinations of them
 (like for example gradients with transforms). We use the `resvg` test suite for that, which conveniently
 also allows us to automatically test the accuracy of the SVG conversion of `krilla-svg`. Those tests are
-only run against one viewer (in most cases `pdfium`), as it would be pretty wasteful to save reference images for all of them. 
+only run against one viewer (in most cases `pdfium`), as it would be pretty wasteful to save reference images for all of them.
 
 *Currently, we have over 1500 such tests*, and although they mostly focus on
 testing adherence to the SVG specification, they indirectly also test various interactions of `krilla`-specific
@@ -134,7 +134,7 @@ let font = {
 };
 
 // Add a new page with dimensions 200x200.
-let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 // Get the surface of the page.
 let mut surface = page.surface();
 // Draw some text.
@@ -167,7 +167,7 @@ surface.finish();
 page.finish();
 
 // Start a new page.
-let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 // Create the triangle.
 let triangle = {
     let mut pb = PathBuilder::new();
