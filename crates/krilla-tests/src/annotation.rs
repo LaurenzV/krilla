@@ -1,6 +1,6 @@
 use krilla::annotation::LinkBorder;
 use krilla::destination::XyzDestination;
-use krilla::geom::{Point, Quadrilateral, Rect};
+use krilla::geom::{Point, Quadrilateral, Rect, Size};
 use krilla::page::{Page, PageSettings};
 use krilla::Document;
 use krilla_macros::{snapshot, visreg};
@@ -64,7 +64,7 @@ fn annotation_with_quad_points(page: &mut Page) {
 #[should_panic]
 fn annotation_to_invalid_destination() {
     let mut d = Document::new_with(settings_1());
-    let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 50.0, 100.0, 100.0).unwrap(),
@@ -79,7 +79,7 @@ fn annotation_to_invalid_destination() {
 
 #[snapshot(document)]
 fn annotation_to_destination(d: &mut Document) {
-    let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 0.0, 100.0, 100.0).unwrap(),
@@ -94,7 +94,7 @@ fn annotation_to_destination(d: &mut Document) {
     surface.finish();
     page.finish();
 
-    let mut page = d.start_page_with(PageSettings::new(200.0, 200.0));
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(50.0, 100.0, 100.0, 100.0).unwrap(),
@@ -115,7 +115,7 @@ fn annotation_to_embedded_pdf_page(document: &mut Document) {
     let pdf = load_pdf("page_media_box_bottom_right.pdf");
     document.embed_pdf_pages(&pdf, &[0]);
 
-    let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+    let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     page.add_annotation(
         LinkAnnotation::new(
             Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap(),

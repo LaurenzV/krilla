@@ -177,7 +177,7 @@ fn pdf_embedded_as_xobject_basic(page: &mut Page) {
 
 #[visreg(document)]
 fn pdf_embedded_as_xobject_different_sizes(document: &mut Document) {
-    let mut page = document.start_page_with(PageSettings::new(600.0, 600.0));
+    let mut page = document.start_page_with(PageSettings::from_wh(600.0, 600.0).unwrap());
     let mut surface = page.surface();
 
     let sizes = [(50.0, 50.0), (150.0, 150.0), (300.0, 150.0), (200.0, 400.0)];
@@ -201,7 +201,7 @@ fn pdf_embedded_as_xobject_multiple(document: &mut Document) {
     let pdf2 = load_pdf("pdftc_100k_1894.pdf");
     let pdf3 = load_pdf("page_media_box_bottom_right.pdf");
 
-    let mut page1 = document.start_page_with(PageSettings::new(600.0, 800.0));
+    let mut page1 = document.start_page_with(PageSettings::from_wh(600.0, 800.0).unwrap());
     let mut surface = page1.surface();
 
     surface.push_transform(&Transform::from_translate(10.0, 15.0));
@@ -219,7 +219,7 @@ fn pdf_embedded_as_xobject_multiple(document: &mut Document) {
     surface.finish();
     page1.finish();
 
-    let mut page2 = document.start_page_with(PageSettings::new(500.0, 500.0));
+    let mut page2 = document.start_page_with(PageSettings::from_wh(500.0, 500.0).unwrap());
     let mut surface = page2.surface();
 
     surface.draw_pdf_page(&pdf2, Size::from_wh(250.0, 250.8).unwrap(), 3);
