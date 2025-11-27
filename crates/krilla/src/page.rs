@@ -8,7 +8,8 @@ use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
-use crate::configure::PdfVersion;
+use crate::configure::validate::PdfFeature;
+use crate::configure::{PdfVersion, ValidationError};
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
 use crate::geom::{Rect, Size, Transform};
@@ -431,11 +432,15 @@ impl InternalPage {
         }
 
         // Only required for PDF/UA, but might as well always set it.
-        if !self.annotations.is_empty()
-            && sc.serialize_settings().enable_tagging
-            && sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
-        {
-            page.tab_order(TabOrder::StructureOrder);
+        if !self.annotations.is_empty() && sc.serialize_settings().enable_tagging {
+            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
+                page.tab_order(TabOrder::StructureOrder);
+            } else {
+                sc.register_validation_error(ValidationError::RequiresLaterPdfVersion(
+                    PdfFeature::StructureOrderTabbing,
+                    sc.location,
+                ));
+            }
         }
 
         page.parent(sc.page_tree_ref());
