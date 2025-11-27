@@ -783,6 +783,7 @@ dependencies = [
  "image 0.25.2",
  "image-webp",
  "imagesize 0.14.0",
+ "indexmap",
  "once_cell",
  "oxipng",
  "parley",

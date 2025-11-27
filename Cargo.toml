@@ -25,6 +25,7 @@ hayro-write = "0.3.0"
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.14.0"
 image-webp = "0.2.1"
+indexmap = "2.10.0"
 krilla = { path = "crates/krilla", version = "0.5.0" }
 krilla-svg = { path = "crates/krilla-svg", version = "0.2.0" }
 krilla-macros = { path = "crates/krilla-macros" }
