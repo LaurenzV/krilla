@@ -125,6 +125,7 @@
 //! [`Surface`]: crate::surface::Surface
 //! [`Document`]: crate::Document
 
+use std::cell::LazyCell;
 use std::cmp::PartialEq;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
@@ -139,7 +140,6 @@ use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
-use crate::util::lazy::LazyInit;
 
 pub use tag::*;
 
@@ -752,25 +752,24 @@ impl TagGroup {
             }
         }
 
-        let mut attributes = LazyInit::new(&mut struct_elem, |elem| elem.attributes());
+        let mut attributes = LazyCell::new(|| struct_elem.attributes());
 
         // Lazily initialize the list attributes to avoid an empty array.
-        let mut list_attributes = LazyInit::new(&mut attributes, |attrs| attrs.get().push().list());
+        let mut list_attributes = LazyCell::new(|| attributes.push().list());
         for attr in tag.attrs.iter() {
             let Attr::List(attr) = attr else {
                 continue;
             };
             match attr {
                 ListAttr::Numbering(numbering) => {
-                    list_attributes.get().list_numbering(numbering.to_pdf());
+                    list_attributes.list_numbering(numbering.to_pdf());
                 }
             }
         }
         list_attributes.finish();
 
         // Lazily initialize the table attributes to avoid an empty array.
-        let mut table_attributes =
-            LazyInit::new(&mut attributes, |attrs| attrs.get().push().table());
+        let mut table_attributes = LazyCell::new(|| attributes.push().table());
         for attr in tag.attrs.iter() {
             let Attr::Table(attr) = attr else {
                 continue;
@@ -778,43 +777,42 @@ impl TagGroup {
             match attr {
                 TableAttr::Summary(summary) => {
                     if pdf_version >= PdfVersion::Pdf17 {
-                        table_attributes.get().summary(TextStr(summary));
+                        table_attributes.summary(TextStr(summary));
                     }
                 }
                 TableAttr::HeaderScope(scope) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        table_attributes.get().scope(scope.to_pdf());
+                        table_attributes.scope(scope.to_pdf());
                     }
                 }
                 TableAttr::CellHeaders(headers) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         let id_strs = headers.iter().map(|id| Str(id.as_bytes()));
-                        table_attributes.get().headers().items(id_strs);
+                        table_attributes.headers().items(id_strs);
                     }
                 }
                 TableAttr::RowSpan(n) => {
-                    table_attributes.get().row_span(n.get() as i32);
+                    table_attributes.row_span(n.get() as i32);
                 }
                 TableAttr::ColSpan(n) => {
-                    table_attributes.get().col_span(n.get() as i32);
+                    table_attributes.col_span(n.get() as i32);
                 }
             }
         }
         table_attributes.finish();
 
         // Lazily initialize the list attributes to avoid an empty array.
-        let mut layout_attributes =
-            LazyInit::new(&mut attributes, |attrs| attrs.get().push().layout());
+        let mut layout_attributes = LazyCell::new(|| attributes.push().layout());
         for attr in tag.attrs.iter() {
             let Attr::Layout(attr) = attr else {
                 continue;
             };
             match attr {
                 LayoutAttr::Placement(placement) => {
-                    layout_attributes.get().placement(placement.to_pdf());
+                    layout_attributes.placement(placement.to_pdf());
                 }
                 LayoutAttr::WritingMode(writing_mode) => {
-                    layout_attributes.get().writing_mode(writing_mode.to_pdf());
+                    layout_attributes.writing_mode(writing_mode.to_pdf());
                 }
                 &LayoutAttr::BBox(BBox { page_idx, rect }) => {
                     let Some(page_info) = sc.page_infos().get(page_idx) else {
@@ -826,117 +824,115 @@ impl TagGroup {
                     };
                     let transform = page_root_transform(page_info.size().height());
                     let actual_rect = rect.transform(transform).unwrap();
-                    layout_attributes.get().bbox(actual_rect.to_pdf_rect());
+                    layout_attributes.bbox(actual_rect.to_pdf_rect());
                 }
                 &LayoutAttr::Width(width) => {
-                    layout_attributes.get().width(width);
+                    layout_attributes.width(width);
                 }
                 &LayoutAttr::Height(height) => {
-                    layout_attributes.get().height(height);
+                    layout_attributes.height(height);
                 }
                 &LayoutAttr::BackgroundColor(color) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().background_color(color.into());
+                        layout_attributes.background_color(color.into());
                     }
                 }
                 LayoutAttr::BorderColor(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         let sides = sides.map_pdf(NaiveRgbColor::into_f32_array);
-                        layout_attributes.get().border_color(sides);
+                        layout_attributes.border_color(sides);
                     }
                 }
                 LayoutAttr::BorderStyle(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         let sides = sides.map_pdf(BorderStyle::to_pdf);
-                        layout_attributes.get().border_style(sides);
+                        layout_attributes.border_style(sides);
                     }
                 }
                 LayoutAttr::BorderThickness(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().border_thickness(sides.into_pdf());
+                        layout_attributes.border_thickness(sides.into_pdf());
                     }
                 }
                 LayoutAttr::Padding(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().padding(sides.into_pdf());
+                        layout_attributes.padding(sides.into_pdf());
                     }
                 }
                 &LayoutAttr::Color(color) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().color(color.into());
+                        layout_attributes.color(color.into());
                     }
                 }
                 &LayoutAttr::SpaceBefore(margin) => {
-                    layout_attributes.get().space_before(margin);
+                    layout_attributes.space_before(margin);
                 }
                 &LayoutAttr::SpaceAfter(margin) => {
-                    layout_attributes.get().space_after(margin);
+                    layout_attributes.space_after(margin);
                 }
                 &LayoutAttr::StartIndent(margin) => {
-                    layout_attributes.get().start_indent(margin);
+                    layout_attributes.start_indent(margin);
                 }
                 &LayoutAttr::EndIndent(margin) => {
-                    layout_attributes.get().end_indent(margin);
+                    layout_attributes.end_indent(margin);
                 }
                 &LayoutAttr::TextIndent(indent) => {
-                    layout_attributes.get().text_indent(indent);
+                    layout_attributes.text_indent(indent);
                 }
                 LayoutAttr::BlockAlign(alignment) => {
-                    layout_attributes.get().block_align(alignment.to_pdf());
+                    layout_attributes.block_align(alignment.to_pdf());
                 }
                 LayoutAttr::InlineAlign(alignment) => {
-                    layout_attributes.get().inline_align(alignment.to_pdf());
+                    layout_attributes.inline_align(alignment.to_pdf());
                 }
                 LayoutAttr::TextAlign(alignment) => {
-                    layout_attributes.get().text_align(alignment.to_pdf());
+                    layout_attributes.text_align(alignment.to_pdf());
                 }
                 LayoutAttr::TableBorderStyle(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
                         let sides = sides.map_pdf(BorderStyle::to_pdf);
-                        layout_attributes.get().table_border_style(sides);
+                        layout_attributes.table_border_style(sides);
                     }
                 }
                 LayoutAttr::TablePadding(sides) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().table_padding(sides.into_pdf());
+                        layout_attributes.table_padding(sides.into_pdf());
                     }
                 }
                 &LayoutAttr::BaselineShift(shift) => {
-                    layout_attributes.get().baseline_shift(shift);
+                    layout_attributes.baseline_shift(shift);
                 }
                 LayoutAttr::LineHeight(height) => {
-                    layout_attributes.get().line_height(height.to_pdf());
+                    layout_attributes.line_height(height.to_pdf());
                 }
                 &LayoutAttr::TextDecorationColor(color) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().text_decoration_color(color.into());
+                        layout_attributes.text_decoration_color(color.into());
                     }
                 }
                 &LayoutAttr::TextDecorationThickness(thickness) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().text_decoration_thickness(thickness);
+                        layout_attributes.text_decoration_thickness(thickness);
                     }
                 }
                 LayoutAttr::TextDecorationType(style) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes.get().text_decoration_type(style.to_pdf());
+                        layout_attributes.text_decoration_type(style.to_pdf());
                     }
                 }
                 &LayoutAttr::GlyphOrientationVertical(orientation) => {
                     if pdf_version >= PdfVersion::Pdf15 {
-                        layout_attributes
-                            .get()
-                            .glyph_orientation_vertical(orientation.to_pdf());
+                        layout_attributes.glyph_orientation_vertical(orientation.to_pdf());
                     }
                 }
                 LayoutAttr::ColumnCount(columns) => {
                     if pdf_version >= PdfVersion::Pdf16 {
-                        layout_attributes.get().column_count(columns.get() as i32);
+                        layout_attributes.column_count(columns.get() as i32);
                     }
                 }
                 LayoutAttr::ColumnGap(gap) => {
                     if pdf_version >= PdfVersion::Pdf16 {
-                        let sizes = layout_attributes.get().column_gap();
+                        let sizes = layout_attributes.column_gap();
                         match gap {
                             ColumnDimensions::All(gap) => sizes.uniform(*gap),
                             ColumnDimensions::Specific(values) => {
@@ -947,7 +943,7 @@ impl TagGroup {
                 }
                 LayoutAttr::ColumnWidths(width) => {
                     if pdf_version >= PdfVersion::Pdf16 {
-                        let sizes = layout_attributes.get().column_widths();
+                        let sizes = layout_attributes.column_widths();
                         match width {
                             ColumnDimensions::All(width) => sizes.uniform(*width),
                             ColumnDimensions::Specific(values) => {

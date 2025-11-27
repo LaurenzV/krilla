@@ -172,45 +172,6 @@ pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {
     }
 }
 
-pub(crate) mod lazy {
-    /// Lazily initialize a value with a consuming function.
-    /// This allows producing a value from a mutable reference.
-    pub struct LazyInit<U, I, F> {
-        inner: Option<Repr<U, I>>,
-        f: F,
-    }
-
-    enum Repr<U, I> {
-        Uninit(U),
-        Init(I),
-    }
-
-    impl<U, I, F> LazyInit<U, I, F>
-    where
-        F: Fn(U) -> I,
-    {
-        pub fn new(uninit: U, f: F) -> Self {
-            Self {
-                inner: Some(Repr::Uninit(uninit)),
-                f,
-            }
-        }
-
-        // Using DerefMut would be nice, but that would require a Deref impl,
-        // which is not possible because initialization requires mutable access.
-        pub fn get(&mut self) -> &mut I {
-            let init = match self.inner.take().expect("inner to be present") {
-                Repr::Uninit(uninit) => (self.f)(uninit),
-                Repr::Init(init) => init,
-            };
-            match self.inner.insert(Repr::Init(init)) {
-                Repr::Uninit(_) => unreachable!(),
-                Repr::Init(init) => init,
-            }
-        }
-    }
-}
-
 #[cfg(not(feature = "rayon"))]
 mod deferred {
     pub(crate) struct Deferred<T>(T);
