@@ -8,7 +8,7 @@ use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
-use crate::util::{hash_base64, Deferred};
+use crate::util::{stable_hash_base64, Deferred};
 
 type DChunk = Deferred<Chunk>;
 
@@ -105,13 +105,13 @@ impl ChunkContainer {
             );
         }
 
-        let instance_id = hash_base64(pdf.as_bytes());
+        let instance_id = stable_hash_base64(pdf.as_bytes());
 
         let document_id = if let Some(metadata) = &self.metadata {
             if let Some(document_id) = &metadata.document_id {
-                hash_base64(&(sc.serialize_settings().pdf_version().as_str(), document_id))
+                stable_hash_base64(&(sc.serialize_settings().pdf_version().as_str(), document_id))
             } else if metadata.title.is_some() && metadata.authors.is_some() {
-                hash_base64(&(
+                stable_hash_base64(&(
                     sc.serialize_settings().pdf_version().as_str(),
                     &metadata.title,
                     &metadata.authors,

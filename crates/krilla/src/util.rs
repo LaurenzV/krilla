@@ -150,15 +150,33 @@ where
 }
 
 /// Create a base64-encoded hash of the value.
-pub(crate) fn hash_base64<T: Hash + ?Sized>(value: &T) -> String {
-    base64::engine::general_purpose::STANDARD.encode(hash128(value).to_be_bytes())
+pub(crate) fn stable_hash_base64<T: Hash + ?Sized>(value: &T) -> String {
+    base64::engine::general_purpose::STANDARD.encode(stable_hash128(value).to_be_bytes())
 }
 
 /// Calculate a 128-bit siphash of a value.
-pub(crate) fn hash128<T: Hash + ?Sized>(value: &T) -> u128 {
-    let mut state = SipHasher13::new();
+pub(crate) fn stable_hash128<T: Hash + ?Sized>(value: &T) -> u128 {
+    /// A hasher that hashes usize as u64 to produce stable hashes between
+    /// 32-bit and 64-bit architectures.
+    struct StableHasher(SipHasher13);
+
+    impl Hasher for StableHasher {
+        fn finish(&self) -> u64 {
+            self.0.finish()
+        }
+
+        fn write(&mut self, bytes: &[u8]) {
+            self.0.write(bytes);
+        }
+
+        fn write_usize(&mut self, i: usize) {
+            self.0.write_u64(i as u64);
+        }
+    }
+
+    let mut state = StableHasher(SipHasher13::new());
     value.hash(&mut state);
-    state.finish128().as_u128()
+    state.0.finish128().as_u128()
 }
 
 pub(crate) fn set_colorspace(cs: MaybeDeviceColorSpace, target: &mut Dict) {

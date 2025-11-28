@@ -22,7 +22,7 @@ use crate::surface::Location;
 use crate::text::outline::OutlineBuilder;
 use crate::text::Font;
 use crate::text::GlyphId;
-use crate::util::{hash128, SliceExt};
+use crate::util::{stable_hash128, SliceExt};
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
@@ -405,7 +405,7 @@ impl CIDFont {
 /// Create a tag for a font subset.
 pub(crate) fn subset_tag<T: Hash>(data: &T) -> String {
     const BASE: u128 = 26;
-    let mut hash = hash128(data);
+    let mut hash = stable_hash128(data);
     let mut letter = [b'A'; SUBSET_TAG_LEN];
     for l in letter.iter_mut() {
         *l = b'A' + (hash % BASE) as u8;
