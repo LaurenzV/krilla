@@ -1,4 +1,4 @@
-use std::num::NonZeroUsize;
+use std::num::NonZeroU32;
 
 use krilla::geom::Rect;
 use krilla::page::{NumberingStyle, PageLabel, PageSettings};
@@ -35,7 +35,7 @@ fn page_label(d: &mut Document) {
         .with_page_label(PageLabel::new(
             Some(NumberingStyle::LowerRoman),
             None,
-            NonZeroUsize::new(2),
+            NonZeroU32::new(2),
         ));
 
     d.start_page_with(settings);

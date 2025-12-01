@@ -1,7 +1,7 @@
 //! Working with pages of a PDF document.
 
 use std::cell::OnceCell;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU32;
 use std::ops::DerefMut;
 
 use pdf_writer::types::TabOrder;
@@ -468,7 +468,7 @@ pub struct PageLabel {
     /// The prefix of the page label.
     pub(crate) prefix: Option<String>,
     /// The numeric value of the page label.
-    pub(crate) offset: Option<NonZeroUsize>,
+    pub(crate) offset: Option<NonZeroU32>,
 }
 
 impl PageLabel {
@@ -476,7 +476,7 @@ impl PageLabel {
     pub fn new(
         style: Option<NumberingStyle>,
         prefix: Option<String>,
-        offset: Option<NonZeroUsize>,
+        offset: Option<NonZeroU32>,
     ) -> Self {
         Self {
             style,
