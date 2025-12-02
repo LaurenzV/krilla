@@ -215,6 +215,38 @@ jobs:
       - name: Run tests
         run: cargo test --workspace -- --nocapture
 
+  tests-linux-32:
+    name: Tests (Linux 32-bit)
+    runs-on: ubuntu-latest
+    env:
+      VISREG: ""
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Rust toolchain
+        uses: dtolnay/rust-toolchain@1.89.0
+
+      - name: Install 32-bit toolchain dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+
+      - name: Add 32-bit Rust target
+        run: rustup target add i686-unknown-linux-gnu
+
+      - name: Get Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: linux-i686
+
+      - name: Run tests
+        run: cargo test --workspace --target i686-unknown-linux-gnu -- --nocapture
+
   tests-windows:
     name: Tests (Windows)
     runs-on: windows-latest
