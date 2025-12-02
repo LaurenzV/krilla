@@ -5,6 +5,7 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
 
+use indexmap::IndexMap;
 use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
 use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
@@ -645,9 +646,7 @@ impl SerializeContext {
 
     fn serialize_fonts(&mut self) -> KrillaResult<()> {
         let fonts = self.global_objects.font_map.take();
-        let mut sorted = fonts.values().collect::<Vec<_>>();
-        sorted.sort_by_key(|e| e.borrow().font().sip_hash());
-        for font_container in sorted {
+        for font_container in fonts.values() {
             let borrowed = font_container.borrow();
 
             if !borrowed.type3_mapper().is_empty() {
@@ -928,7 +927,7 @@ pub(crate) struct GlobalObjects {
     // Needs to be pub(crate) because writing of named destinations happens in `ChunkContainer`.
     pub(crate) named_destinations: MaybeTaken<HashMap<NamedDestination, Ref>>,
     /// A map from fonts to font container.
-    font_map: MaybeTaken<HashMap<Font, Rc<RefCell<FontContainer>>>>,
+    font_map: MaybeTaken<IndexMap<Font, Rc<RefCell<FontContainer>>>>,
     /// All XYZ destinations used in the document. The reason we need to store them
     /// separately is that we can only serialize them in the very end, once all pages
     /// have been written, so that we know the Ref of the page they belong to.
