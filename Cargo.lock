@@ -769,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "krilla"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "base64",
  "bumpalo",
@@ -817,7 +817,7 @@ dependencies = [
 
 [[package]]
 name = "krilla-svg"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "flate2",
  "fontdb",
