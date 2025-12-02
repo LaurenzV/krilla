@@ -218,8 +218,6 @@ jobs:
   tests-linux-32:
     name: Tests (Linux 32-bit)
     runs-on: ubuntu-latest
-    env:
-      VISREG: ""
     defaults:
       run:
         shell: bash
