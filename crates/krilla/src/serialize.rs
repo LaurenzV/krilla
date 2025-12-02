@@ -29,7 +29,7 @@ use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
 use crate::text::GlyphId;
-use crate::text::{Font, FontContainer, FontIdentifier, FontInfo};
+use crate::text::{Font, FontContainer, FontIdentifier};
 use crate::util::{Deferred, SipHashable};
 
 /// Settings that should be applied when creating a PDF document.
@@ -206,10 +206,6 @@ pub(crate) enum MaybeDeviceColorSpace {
 /// - Annotations used in the document.
 ///   etc.
 pub(crate) struct SerializeContext {
-    /// A cache for mapping `FontInfo`s to existing Font objects. Is mainly used to
-    /// speed up SVG conversion, so that if we convert many SVGs with the same font,
-    /// we can cache the font.
-    pub(crate) font_cache: HashMap<Arc<FontInfo>, Font>,
     /// The ref of the page tree.
     page_tree_ref: Ref,
     /// PDF 2.0 namespaces.
@@ -257,7 +253,6 @@ impl SerializeContext {
 
         Self {
             cached_mappings: HashMap::new(),
-            font_cache: HashMap::new(),
             pdf2_ns,
             global_objects: GlobalObjects::default(),
             cur_ref,
@@ -376,12 +371,7 @@ impl SerializeContext {
         self.global_objects
             .font_map
             .entry(font.clone())
-            .or_insert_with(|| {
-                self.font_cache
-                    .insert(font.font_info().clone(), font.clone());
-
-                Rc::new(RefCell::new(FontContainer::new(font.clone())))
-            })
+            .or_insert_with(|| Rc::new(RefCell::new(FontContainer::new(font.clone()))))
             .clone()
     }
 
