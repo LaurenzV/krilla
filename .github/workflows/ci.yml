@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 env:
   KRILLA_THRESHOLD: "200"
-  VISREG: ""
   STORE: ""
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
@@ -83,9 +82,11 @@ jobs:
         run: mv ghostscript-10.06.0/bin/gs gs
 
   tests:
-    name: Tests
+    name: Tests (Linux)
     runs-on: ubuntu-latest
     needs: [pdfium, mupdf, gs]
+    env:
+      VISREG: ""
     defaults:
       run:
         shell: bash
@@ -194,6 +195,44 @@ jobs:
 
       - name: Check PDFs with ghostscript
         run: python3 check_gs.py
+
+  tests-macos:
+    name: Tests (macOS)
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Rust toolchain
+        uses: dtolnay/rust-toolchain@1.89.0
+
+      - name: Get Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --workspace -- --nocapture
+
+  tests-windows:
+    name: Tests (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Rust toolchain
+        uses: dtolnay/rust-toolchain@1.89.0
+
+      - name: Get Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --workspace -- --nocapture
 
   checks:
     name: Check clippy, formatting, and documentation
