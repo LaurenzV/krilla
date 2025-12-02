@@ -67,6 +67,19 @@ fn file_4() -> EmbeddedFile {
     }
 }
 
+pub(crate) fn empty_file() -> EmbeddedFile {
+    EmbeddedFile {
+        path: "empty_file".to_string(),
+        mime_type: Some(MimeType::new("text/plain").unwrap()),
+        description: Some("A zero-byte file.".to_string()),
+        association_kind: AssociationKind::Supplement,
+        data: vec![].into(),
+        modification_date: Some(DateTime::new(2001)),
+        compress: None,
+        location: None,
+    }
+}
+
 #[snapshot(document)]
 fn embedded_file(d: &mut Document) {
     let file = file_1();
@@ -106,6 +119,12 @@ fn embedded_file_multiple(d: &mut Document) {
     d.embed_file(f1);
     d.embed_file(f2);
     d.embed_file(f3);
+}
+
+#[snapshot(document)]
+fn embedded_zero_byte_file(d: &mut Document) {
+    let file = empty_file();
+    d.embed_file(file);
 }
 
 pub(crate) fn embedded_file_impl(d: &mut Document) {
