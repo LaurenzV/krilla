@@ -18,10 +18,13 @@ pub struct Graphic {
 }
 
 impl Graphic {
-    /// Create a new graphic. `stream` contains the content description of the graphic.
-    pub fn new(stream: Stream) -> Self {
+    /// Create a new graphic. 
+    /// `stream` contains the content description of the graphic.
+    /// `isolated` indicates whether the contents of the graphic should be isolated
+    /// from wherever the graphic is invoked.
+    pub fn new(stream: Stream, isolated: bool) -> Self {
         Self {
-            x_object: XObject::new(stream, false, false, None),
+            x_object: XObject::new(stream, isolated, false, None),
         }
     }
 }

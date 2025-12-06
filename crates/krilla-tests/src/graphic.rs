@@ -18,7 +18,7 @@ fn graphic(page: &mut Page) {
     stream_surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
     stream_surface.finish();
     let stream = stream_builder.finish();
-    let graphic = Graphic::new(stream);
+    let graphic = Graphic::new(stream, false);
 
     surface.draw_graphic(graphic.clone());
     surface.push_transform(&Transform::from_translate(20.0, 20.0));
@@ -44,7 +44,7 @@ fn graphic_svg(page: &mut Page) {
     );
     stream_surface.finish();
     let stream = stream_builder.finish();
-    let graphic = Graphic::new(stream);
+    let graphic = Graphic::new(stream, true);
 
     surface.draw_graphic(graphic.clone());
     surface.push_transform(&Transform::from_translate(100.0, 100.0));
