@@ -46,6 +46,7 @@ pub(crate) struct ContentBuilder {
     root_transform: Transform,
     graphics_states: GraphicsStates,
     bbox: Option<Rect>,
+    uses_mask: bool,
     // Calculating the bbox of text is expensive, so we should avoid doing it if not needed.
     // The only time we really need it is if we are currently inside of an XObject, where we
     // need to provide a bbox of all its contents. If we are on the main page stream, we only
@@ -71,6 +72,7 @@ impl ContentBuilder {
             validation_errors: HashSet::new(),
             content: Content::new(),
             root_transform,
+            uses_mask: false,
             bbox_important,
             graphics_states: GraphicsStates::new(),
             bbox: None,
@@ -98,6 +100,7 @@ impl ContentBuilder {
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
             self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
+            self.uses_mask,
         )
     }
 
@@ -856,6 +859,7 @@ impl ContentBuilder {
 
     pub(crate) fn draw_masked(&mut self, sc: &mut SerializeContext, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask, sc);
+        self.uses_mask = true;
         let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(sc, x_object, &state);
     }
@@ -1001,6 +1005,7 @@ impl ContentBuilder {
 
                     if let Some(shading_mask) = shading_mask {
                         let state = ExtGState::new().mask(shading_mask, sc);
+                        content_builder.uses_mask = true;
 
                         let ext = content_builder
                             .rd_builder

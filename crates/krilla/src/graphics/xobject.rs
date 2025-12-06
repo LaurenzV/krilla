@@ -28,9 +28,21 @@ impl XObject {
     pub(crate) fn new(
         stream: Stream,
         isolated: bool,
-        transparency_group_color_space: bool,
+        mut transparency_group_color_space: bool,
         custom_bbox: Option<Rect>,
     ) -> Self {
+        // In case a mask was invoked in the content stream, we _always_ create
+        // a new transparency group. Please see <https://github.com/typst/typst/issues/5509>.
+        // Just to provide a brief explanation: I have not found any mention
+        // of a transparency group being required when using a soft mask in the
+        // PDF spec. However, Apple Preview (and only them!) have a weird bug
+        // where if you transform an XObject with a soft mask but not transparency
+        // group, the transform gets applied twice to the mask, resulting in
+        // rendering issues. Using a transparency group in this case seems to
+        // fix the issue.
+        // TODO: Apply group transparency to page as well.
+        transparency_group_color_space |= stream.uses_mask;
+
         Self(Arc::new(Prehashed::new(Repr {
             stream,
             isolated,

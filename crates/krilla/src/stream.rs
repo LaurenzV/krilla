@@ -53,6 +53,7 @@ pub struct Stream {
     // `TilingPattern`, `InternalPage` and `XObject` require that.
     pub(crate) validation_errors: Vec<ValidationError>,
     pub(crate) resource_dictionary: ResourceDictionary,
+    pub(crate) uses_mask: bool,
 }
 
 impl Stream {
@@ -61,12 +62,14 @@ impl Stream {
         bbox: Rect,
         validation_errors: Vec<ValidationError>,
         resource_dictionary: ResourceDictionary,
+        uses_mask: bool,
     ) -> Self {
         Self {
             content,
             bbox,
             validation_errors,
             resource_dictionary,
+            uses_mask,
         }
     }
 
@@ -80,6 +83,7 @@ impl Stream {
             bbox: Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap(),
             validation_errors: vec![],
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
+            uses_mask: false,
         }
     }
 }
