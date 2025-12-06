@@ -1,6 +1,9 @@
 #![allow(non_snake_case)]
 
+use krilla::Document;
 use krilla::geom::{Size, Transform};
+use krilla::graphic::Graphic;
+use krilla::page::PageSettings;
 use krilla::surface::Surface;
 use krilla_macros::visreg;
 use krilla_svg::{SurfaceExt, SvgSettings};
@@ -85,6 +88,47 @@ fn issue291() {}
 
 #[visreg(svg)]
 fn issue293() {}
+
+fn typst_issue_5509_common(document: &mut Document, name: &str) {
+    const SCALE_FACTOR: f32 = 0.5;
+
+    let data = std::fs::read(SVGS_PATH.join(name)).unwrap();
+    let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+    let size = tree.size();
+
+    let mut page = document.start_page_with(PageSettings::from_wh(size.width() * SCALE_FACTOR, size.height() * SCALE_FACTOR).unwrap());
+    let mut surface = page.surface();
+
+    let mut stream_builder = surface.stream_builder();
+    let mut sur = stream_builder.surface();
+    sur.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings { embed_text: true, ..Default::default() },
+    );
+    sur.finish();
+    let stream = stream_builder.finish();
+    let graphic = Graphic::new(stream);
+
+    surface.push_transform(&krilla::geom::Transform::from_scale(SCALE_FACTOR, SCALE_FACTOR));
+    surface.draw_graphic(graphic);
+    surface.pop();
+}
+
+#[visreg(document, pdfium, quartz)]
+fn typst_issue_5509_1(document: &mut Document) {
+    typst_issue_5509_common(document, "custom_typst_issue_5509_1.svg");
+}
+
+#[visreg(document, pdfium, quartz)]
+fn typst_issue_5509_2(document: &mut Document) {
+    typst_issue_5509_common(document, "custom_typst_issue_5509_2.svg");
+}
+
+#[visreg(document, pdfium, quartz)]
+fn typst_issue_5509_3(document: &mut Document) {
+    typst_issue_5509_common(document, "custom_typst_issue_5509_3.svg");
+}
 
 #[visreg]
 fn svg_with_filter(surface: &mut Surface) {
