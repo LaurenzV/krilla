@@ -113,7 +113,7 @@ fn typst_issue_5509_common(document: &mut Document, name: &str) {
     );
     sur.finish();
     let stream = stream_builder.finish();
-    let graphic = Graphic::new(stream);
+    let graphic = Graphic::new(stream, true);
 
     surface.push_transform(&krilla::geom::Transform::from_scale(
         SCALE_FACTOR,
