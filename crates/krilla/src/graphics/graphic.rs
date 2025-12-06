@@ -18,7 +18,7 @@ pub struct Graphic {
 }
 
 impl Graphic {
-    /// Create a new graphic. 
+    /// Create a new graphic.
     /// `stream` contains the content description of the graphic.
     /// `isolated` indicates whether the contents of the graphic should be isolated
     /// from wherever the graphic is invoked.
