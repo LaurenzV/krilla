@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
-use krilla::Document;
 use krilla::geom::{Size, Transform};
 use krilla::graphic::Graphic;
 use krilla::page::PageSettings;
 use krilla::surface::Surface;
+use krilla::Document;
 use krilla_macros::visreg;
 use krilla_svg::{SurfaceExt, SvgSettings};
 
@@ -96,7 +96,9 @@ fn typst_issue_5509_common(document: &mut Document, name: &str) {
     let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
     let size = tree.size();
 
-    let mut page = document.start_page_with(PageSettings::from_wh(size.width() * SCALE_FACTOR, size.height() * SCALE_FACTOR).unwrap());
+    let mut page = document.start_page_with(
+        PageSettings::from_wh(size.width() * SCALE_FACTOR, size.height() * SCALE_FACTOR).unwrap(),
+    );
     let mut surface = page.surface();
 
     let mut stream_builder = surface.stream_builder();
@@ -104,13 +106,19 @@ fn typst_issue_5509_common(document: &mut Document, name: &str) {
     sur.draw_svg(
         &tree,
         Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
-        SvgSettings { embed_text: true, ..Default::default() },
+        SvgSettings {
+            embed_text: true,
+            ..Default::default()
+        },
     );
     sur.finish();
     let stream = stream_builder.finish();
     let graphic = Graphic::new(stream);
 
-    surface.push_transform(&krilla::geom::Transform::from_scale(SCALE_FACTOR, SCALE_FACTOR));
+    surface.push_transform(&krilla::geom::Transform::from_scale(
+        SCALE_FACTOR,
+        SCALE_FACTOR,
+    ));
     surface.draw_graphic(graphic);
     surface.pop();
 }
