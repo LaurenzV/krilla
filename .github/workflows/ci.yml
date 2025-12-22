@@ -1,5 +1,9 @@
 name: Continuous integration
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
 
 
 env:
@@ -222,3 +226,147 @@ jobs:
         run: cargo run --bin=codegen
       - name: check for uncommitted changes
         run: git diff --exit-code
+
+  # Python bindings (krilla-py)
+  python-build:
+    name: Build Python wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64 - manylinux
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            manylinux: auto
+          # Linux x86_64 - musllinux
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            manylinux: musllinux_1_2
+          # Linux aarch64 - manylinux
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            manylinux: auto
+          # Linux aarch64 - musllinux
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            manylinux: musllinux_1_2
+          # macOS x86_64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            manylinux: auto
+          # macOS aarch64 (Apple Silicon)
+          - os: macos-14
+            target: aarch64-apple-darwin
+            manylinux: auto
+          # Windows x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            manylinux: auto
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --manifest-path crates/krilla-py/Cargo.toml
+          manylinux: ${{ matrix.manylinux }}
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.target }}-${{ matrix.manylinux }}
+          path: dist
+
+  python-test:
+    name: Test Python bindings
+    needs: python-build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            manylinux: auto
+          - os: macos-14
+            target: aarch64-apple-darwin
+            manylinux: auto
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            manylinux: auto
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-${{ matrix.target }}-${{ matrix.manylinux }}
+          path: dist
+
+      - name: Install package and test dependencies
+        run: |
+          uv venv
+          uv pip install pytest
+          uv pip install --find-links dist krilla
+
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          source .venv/bin/activate
+          pytest crates/krilla-py/tests -v
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          .venv\Scripts\activate
+          pytest crates/krilla-py/tests -v
+
+  python-sdist:
+    name: Build Python source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist --manifest-path crates/krilla-py/Cargo.toml
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
+
+  python-publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [python-build, python-test, python-sdist]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/krilla
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish to PyPI
+        uses: PyO3/maturin-action@v1
+        with:
+          command: upload
+          args: --skip-existing dist/*
