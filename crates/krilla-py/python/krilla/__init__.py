@@ -48,6 +48,7 @@ from krilla._krilla import (
     # Streams and masks
     Stream,
     StreamBuilder,
+    StreamSurface,
     Mask,
     Pattern,
     # Configuration
@@ -127,6 +128,7 @@ __all__ = [
     # Streams and masks
     "Stream",
     "StreamBuilder",
+    "StreamSurface",
     "Mask",
     "Pattern",
     # Configuration

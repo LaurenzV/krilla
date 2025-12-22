@@ -369,6 +369,12 @@ impl Path {
         self.inner.take()
     }
 
+    /// Take the inner path, leaving None in its place.
+    /// Alias for take() used by stream module.
+    pub fn take_inner(&mut self) -> Option<krilla::geom::Path> {
+        self.inner.take()
+    }
+
     /// Borrow the inner path.
     pub fn as_inner(&self) -> Option<&krilla::geom::Path> {
         self.inner.as_ref()

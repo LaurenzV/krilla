@@ -90,6 +90,7 @@ fn _krilla(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Stream types
     m.add_class::<stream::Stream>()?;
     m.add_class::<stream::StreamBuilder>()?;
+    m.add_class::<stream::StreamSurface>()?;
 
     // Mask and pattern
     m.add_class::<mask::Mask>()?;

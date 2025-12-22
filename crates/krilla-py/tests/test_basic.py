@@ -488,7 +488,6 @@ class TestDocument:
 
 
 class TestStreamAndMask:
-    @pytest.mark.skip(reason="StreamBuilder not yet fully implemented")
     def test_stream_builder(self):
         size = Size.from_wh(100.0, 100.0)
         builder = StreamBuilder(size)
@@ -497,46 +496,90 @@ class TestStreamAndMask:
         pb = PathBuilder()
         pb.push_rect(Rect.from_xywh(0.0, 0.0, 100.0, 100.0))
         path = pb.finish()
-        surface.set_fill(Fill(paint=Paint(color.rgb(255, 255, 255))))
+        surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(255, 255, 255))))
         surface.draw_path(path)
         surface.finish()
 
         stream = builder.finish()
         assert stream is not None
 
-    @pytest.mark.skip(reason="StreamBuilder not yet fully implemented")
+    def test_stream_builder_with_context_manager(self):
+        size = Size.from_wh(100.0, 100.0)
+        builder = StreamBuilder(size)
+
+        with builder.surface() as surface:
+            pb = PathBuilder()
+            pb.push_rect(Rect.from_xywh(0.0, 0.0, 100.0, 100.0))
+            path = pb.finish()
+            surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(255, 0, 0))))
+            surface.draw_path(path)
+
+        stream = builder.finish()
+        assert stream is not None
+
     def test_mask(self):
         size = Size.from_wh(100.0, 100.0)
         builder = StreamBuilder(size)
 
-        surface = builder.surface()
-        pb = PathBuilder()
-        pb.push_rect(Rect.from_xywh(0.0, 0.0, 100.0, 100.0))
-        path = pb.finish()
-        surface.set_fill(Fill(paint=Paint(color.luma(255))))
-        surface.draw_path(path)
-        surface.finish()
+        with builder.surface() as surface:
+            pb = PathBuilder()
+            pb.push_rect(Rect.from_xywh(0.0, 0.0, 100.0, 100.0))
+            path = pb.finish()
+            surface.set_fill(Fill(paint=Paint.from_luma(color.luma(255))))
+            surface.draw_path(path)
 
         stream = builder.finish()
         mask = Mask(stream, MaskType.Luminosity)
         assert mask is not None
 
-    @pytest.mark.skip(reason="StreamBuilder not yet fully implemented")
     def test_pattern(self):
         size = Size.from_wh(20.0, 20.0)
         builder = StreamBuilder(size)
 
-        surface = builder.surface()
-        pb = PathBuilder()
-        pb.push_rect(Rect.from_xywh(0.0, 0.0, 10.0, 10.0))
-        path = pb.finish()
-        surface.set_fill(Fill(paint=Paint(color.rgb(255, 0, 0))))
-        surface.draw_path(path)
-        surface.finish()
+        with builder.surface() as surface:
+            pb = PathBuilder()
+            pb.push_rect(Rect.from_xywh(0.0, 0.0, 10.0, 10.0))
+            path = pb.finish()
+            surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(255, 0, 0))))
+            surface.draw_path(path)
 
         stream = builder.finish()
-        pattern = Pattern(stream)
+        pattern = Pattern(stream, width=20.0, height=20.0)
         assert pattern is not None
+        assert pattern.width == 20.0
+        assert pattern.height == 20.0
+
+    def test_stream_builder_push_pop(self):
+        size = Size.from_wh(100.0, 100.0)
+        builder = StreamBuilder(size)
+
+        with builder.surface() as surface:
+            surface.push_opacity(NormalizedF32(0.5))
+            pb = PathBuilder()
+            pb.push_rect(Rect.from_xywh(0.0, 0.0, 50.0, 50.0))
+            path = pb.finish()
+            surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(255, 0, 0))))
+            surface.draw_path(path)
+            surface.pop()
+
+        stream = builder.finish()
+        assert stream is not None
+
+    def test_stream_builder_transform(self):
+        size = Size.from_wh(100.0, 100.0)
+        builder = StreamBuilder(size)
+
+        with builder.surface() as surface:
+            surface.push_transform(Transform.from_translate(10.0, 10.0))
+            pb = PathBuilder()
+            pb.push_rect(Rect.from_xywh(0.0, 0.0, 50.0, 50.0))
+            path = pb.finish()
+            surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(0, 255, 0))))
+            surface.draw_path(path)
+            surface.pop()
+
+        stream = builder.finish()
+        assert stream is not None
 
 
 class TestAccessibility:
