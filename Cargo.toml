@@ -13,6 +13,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+pyo3 = { version = "0.23", features = ["extension-module"] }
 base64 = "0.22.1"
 bumpalo = "3.16.0"
 comemo = "0.5.0"

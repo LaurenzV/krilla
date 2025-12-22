@@ -4,6 +4,9 @@ data
 diffs
 store
 .DS_Store
+*.pyc
+*.so
+.venv/
 
 # Example files
 basic.pdf
