@@ -65,10 +65,17 @@ pub struct Size {
 impl Size {
     /// Create a new size from width and height.
     ///
-    /// Returns None if width or height is not positive.
+    /// Raises ValueError if width or height is not positive.
     #[staticmethod]
-    fn from_wh(width: f32, height: f32) -> Option<Self> {
-        krilla::geom::Size::from_wh(width, height).map(|s| Size { inner: s })
+    fn from_wh(width: f32, height: f32) -> PyResult<Self> {
+        krilla::geom::Size::from_wh(width, height)
+            .map(|s| Size { inner: s })
+            .ok_or_else(|| {
+                pyo3::exceptions::PyValueError::new_err(format!(
+                    "Size requires positive width and height, got width={}, height={}",
+                    width, height
+                ))
+            })
     }
 
     /// The width.
@@ -113,18 +120,32 @@ pub struct Rect {
 impl Rect {
     /// Create a new rectangle from x, y, width, height.
     ///
-    /// Returns None if width or height is not positive.
+    /// Raises ValueError if width or height is not positive.
     #[staticmethod]
-    fn from_xywh(x: f32, y: f32, width: f32, height: f32) -> Option<Self> {
-        krilla::geom::Rect::from_xywh(x, y, width, height).map(|r| Rect { inner: r })
+    fn from_xywh(x: f32, y: f32, width: f32, height: f32) -> PyResult<Self> {
+        krilla::geom::Rect::from_xywh(x, y, width, height)
+            .map(|r| Rect { inner: r })
+            .ok_or_else(|| {
+                pyo3::exceptions::PyValueError::new_err(format!(
+                    "Rect requires positive width and height, got x={}, y={}, width={}, height={}",
+                    x, y, width, height
+                ))
+            })
     }
 
     /// Create a new rectangle from left, top, right, bottom.
     ///
-    /// Returns None if the resulting width or height is not positive.
+    /// Raises ValueError if the resulting width or height is not positive.
     #[staticmethod]
-    fn from_ltrb(left: f32, top: f32, right: f32, bottom: f32) -> Option<Self> {
-        krilla::geom::Rect::from_ltrb(left, top, right, bottom).map(|r| Rect { inner: r })
+    fn from_ltrb(left: f32, top: f32, right: f32, bottom: f32) -> PyResult<Self> {
+        krilla::geom::Rect::from_ltrb(left, top, right, bottom)
+            .map(|r| Rect { inner: r })
+            .ok_or_else(|| {
+                pyo3::exceptions::PyValueError::new_err(format!(
+                    "Rect requires right > left and bottom > top, got left={}, top={}, right={}, bottom={}",
+                    left, top, right, bottom
+                ))
+            })
     }
 
     /// Left edge x coordinate.
@@ -456,12 +477,19 @@ impl PathBuilder {
 
     /// Finish building the path and return it.
     ///
-    /// This consumes the builder. Returns None if the path is empty or invalid.
-    fn finish(&mut self) -> PyResult<Option<Path>> {
+    /// This consumes the builder. Raises ValueError if the path is empty.
+    fn finish(&mut self) -> PyResult<Path> {
         let builder = self.inner.take().ok_or_else(|| {
             pyo3::exceptions::PyRuntimeError::new_err("PathBuilder was already consumed")
         })?;
-        Ok(builder.finish().map(|p| Path { inner: Some(p) }))
+        builder
+            .finish()
+            .map(|p| Path { inner: Some(p) })
+            .ok_or_else(|| {
+                pyo3::exceptions::PyValueError::new_err(
+                    "PathBuilder produced an empty path (no drawing commands were added)",
+                )
+            })
     }
 
     fn __repr__(&self) -> String {

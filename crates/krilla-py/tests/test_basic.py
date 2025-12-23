@@ -81,8 +81,10 @@ class TestGeometry:
         assert s.height == 200.0
 
     def test_size_invalid(self):
-        assert Size.from_wh(-1.0, 100.0) is None
-        assert Size.from_wh(100.0, 0.0) is None
+        with pytest.raises(ValueError):
+            Size.from_wh(-1.0, 100.0)
+        with pytest.raises(ValueError):
+            Size.from_wh(100.0, 0.0)
 
     def test_rect_xywh(self):
         r = Rect.from_xywh(10.0, 20.0, 100.0, 200.0)
@@ -674,8 +676,9 @@ class TestAccessibility:
                 # Set location
                 loc = Location(123)
                 surface.set_location(loc)
-                assert surface.get_location() is not None
-                assert surface.get_location().get() == 123
+                retrieved = surface.get_location()
+                assert retrieved is not None
+                assert retrieved.get() == 123
 
                 # Reset location
                 surface.reset_location()

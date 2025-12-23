@@ -1,7 +1,6 @@
 """Pytest configuration for krilla tests."""
 
 
-
 def pytest_configure(config):
     """Configure pytest markers."""
     config.addinivalue_line(

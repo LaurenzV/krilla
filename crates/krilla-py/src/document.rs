@@ -43,10 +43,17 @@ impl PageSettings {
 
     /// Create page settings from width and height.
     ///
-    /// Returns None if width or height is not positive.
+    /// Raises ValueError if width or height is not positive.
     #[staticmethod]
-    fn from_wh(width: f32, height: f32) -> Option<Self> {
-        krilla::page::PageSettings::from_wh(width, height).map(|s| PageSettings { inner: s })
+    fn from_wh(width: f32, height: f32) -> PyResult<Self> {
+        krilla::page::PageSettings::from_wh(width, height)
+            .map(|s| PageSettings { inner: s })
+            .ok_or_else(|| {
+                pyo3::exceptions::PyValueError::new_err(format!(
+                    "PageSettings requires positive width and height, got width={}, height={}",
+                    width, height
+                ))
+            })
     }
 
     /// Set the media box (visible area).
