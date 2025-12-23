@@ -19,13 +19,15 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Rust",
     "Topic :: Multimedia :: Graphics",
     "Topic :: Text Processing :: Fonts",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "mypy"]
+dev = ["pytest", "ruff", "pyright"]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
@@ -37,3 +39,15 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v"
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "UP"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+    "pyright>=1.1.407",
+]

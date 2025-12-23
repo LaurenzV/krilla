@@ -1,6 +1,5 @@
 """Pytest configuration for krilla tests."""
 
-import pytest
 
 
 def pytest_configure(config):

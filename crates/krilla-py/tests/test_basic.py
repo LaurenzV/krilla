@@ -3,14 +3,11 @@
 import pytest
 from krilla import (
     Document,
-    Page,
-    Surface,
     PageSettings,
     Point,
     Size,
     Rect,
     Transform,
-    Path,
     PathBuilder,
     Fill,
     Stroke,
@@ -26,10 +23,8 @@ from krilla import (
     LineJoin,
     SpreadMethod,
     MaskType,
-    Font,
     GlyphId,
     KrillaGlyph,
-    Stream,
     StreamBuilder,
     Mask,
     Pattern,
@@ -38,10 +33,6 @@ from krilla import (
     Validator,
     SerializeSettings,
     NormalizedF32,
-    KrillaError,
-    FontError,
-    ValidationError,
-    ImageError,
     has_image_support,
     has_text_support,
     color,
@@ -480,7 +471,9 @@ class TestDocument:
                     pb = PathBuilder()
                     pb.push_rect(Rect.from_xywh(10.0, 10.0, 50.0, 50.0))
                     path = pb.finish()
-                    surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(i * 80, 100, 100))))
+                    surface.set_fill(
+                        Fill(paint=Paint.from_rgb(color.rgb(i * 80, 100, 100)))
+                    )
                     surface.draw_path(path)
 
         pdf_bytes = doc.finish()
@@ -620,7 +613,9 @@ class TestAccessibility:
         assert tag.actual_text is None
 
         # With values
-        tag = SpanTag(lang="en-US", alt_text="Description", expanded="abbrev", actual_text="text")
+        tag = SpanTag(
+            lang="en-US", alt_text="Description", expanded="abbrev", actual_text="text"
+        )
         assert tag.lang == "en-US"
         assert tag.alt_text == "Description"
         assert tag.expanded == "abbrev"
@@ -650,7 +645,7 @@ class TestAccessibility:
         assert "Other" in repr(tag)
 
     def test_identifier(self):
-        from krilla import Identifier, Document, PageSettings, ContentTag, ArtifactType
+        from krilla import Document, PageSettings, ContentTag, ArtifactType
 
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)

@@ -4,9 +4,6 @@ data
 diffs
 store
 .DS_Store
-*.pyc
-*.so
-.venv/
 
 # Example files
 basic.pdf
@@ -15,3 +12,13 @@ parley.pdf
 simple_text.pdf
 stream_builder.pdf
 svg.pdf
+
+# Python
+*.pyc
+__pycache__/
+*.so
+.venv/
+.vscode/
+.pytest_cache/
+.ruff_cache/
+CLAUDE.md
