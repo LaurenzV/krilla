@@ -17,9 +17,9 @@ use crate::mask::Mask;
 use crate::num::NormalizedF32;
 use crate::paint::{Fill, Stroke};
 use crate::tagging::{ContentTag, Identifier, Location};
-use crate::text::{Font, GlyphWrapper, KrillaGlyph};
 #[cfg(feature = "simple-text")]
 use crate::text::TextDirection;
+use crate::text::{Font, GlyphWrapper, KrillaGlyph};
 
 /// Global counter for unique document IDs.
 static DOC_COUNTER: AtomicUsize = AtomicUsize::new(1);
@@ -29,6 +29,8 @@ static DOC_COUNTER: AtomicUsize = AtomicUsize::new(1);
 #[derive(Clone)]
 pub struct PageSettings {
     inner: krilla::page::PageSettings,
+    /// Store size separately since krilla::PageSettings doesn't expose it
+    size: krilla::geom::Size,
 }
 
 #[pymethods]
@@ -36,8 +38,10 @@ impl PageSettings {
     /// Create page settings from a size.
     #[new]
     fn new(size: &Size) -> Self {
+        let inner_size = size.into_inner();
         PageSettings {
-            inner: krilla::page::PageSettings::new(size.into_inner()),
+            inner: krilla::page::PageSettings::new(inner_size),
+            size: inner_size,
         }
     }
 
@@ -46,21 +50,27 @@ impl PageSettings {
     /// Raises ValueError if width or height is not positive.
     #[staticmethod]
     fn from_wh(width: f32, height: f32) -> PyResult<Self> {
-        krilla::page::PageSettings::from_wh(width, height)
-            .map(|s| PageSettings { inner: s })
-            .ok_or_else(|| {
-                pyo3::exceptions::PyValueError::new_err(format!(
-                    "PageSettings requires positive width and height, got width={}, height={}",
-                    width, height
-                ))
-            })
+        let size = krilla::geom::Size::from_wh(width, height).ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err(format!(
+                "PageSettings requires positive width and height, got width={}, height={}",
+                width, height
+            ))
+        })?;
+        Ok(PageSettings {
+            inner: krilla::page::PageSettings::new(size),
+            size,
+        })
     }
 
     /// Set the media box (visible area).
     #[pyo3(signature = (media_box=None))]
     fn with_media_box(&self, media_box: Option<&Rect>) -> Self {
         PageSettings {
-            inner: self.inner.clone().with_media_box(media_box.map(|r| r.into_inner())),
+            inner: self
+                .inner
+                .clone()
+                .with_media_box(media_box.map(|r| r.into_inner())),
+            size: self.size,
         }
     }
 
@@ -68,7 +78,11 @@ impl PageSettings {
     #[pyo3(signature = (crop_box=None))]
     fn with_crop_box(&self, crop_box: Option<&Rect>) -> Self {
         PageSettings {
-            inner: self.inner.clone().with_crop_box(crop_box.map(|r| r.into_inner())),
+            inner: self
+                .inner
+                .clone()
+                .with_crop_box(crop_box.map(|r| r.into_inner())),
+            size: self.size,
         }
     }
 
@@ -76,7 +90,11 @@ impl PageSettings {
     #[pyo3(signature = (bleed_box=None))]
     fn with_bleed_box(&self, bleed_box: Option<&Rect>) -> Self {
         PageSettings {
-            inner: self.inner.clone().with_bleed_box(bleed_box.map(|r| r.into_inner())),
+            inner: self
+                .inner
+                .clone()
+                .with_bleed_box(bleed_box.map(|r| r.into_inner())),
+            size: self.size,
         }
     }
 
@@ -84,7 +102,11 @@ impl PageSettings {
     #[pyo3(signature = (trim_box=None))]
     fn with_trim_box(&self, trim_box: Option<&Rect>) -> Self {
         PageSettings {
-            inner: self.inner.clone().with_trim_box(trim_box.map(|r| r.into_inner())),
+            inner: self
+                .inner
+                .clone()
+                .with_trim_box(trim_box.map(|r| r.into_inner())),
+            size: self.size,
         }
     }
 
@@ -92,18 +114,30 @@ impl PageSettings {
     #[pyo3(signature = (art_box=None))]
     fn with_art_box(&self, art_box: Option<&Rect>) -> Self {
         PageSettings {
-            inner: self.inner.clone().with_art_box(art_box.map(|r| r.into_inner())),
+            inner: self
+                .inner
+                .clone()
+                .with_art_box(art_box.map(|r| r.into_inner())),
+            size: self.size,
         }
     }
 
     fn __repr__(&self) -> String {
-        "PageSettings(...)".to_string()
+        format!(
+            "PageSettings(size={}x{})",
+            self.size.width(),
+            self.size.height()
+        )
     }
 }
 
 impl PageSettings {
     pub fn into_inner(self) -> krilla::page::PageSettings {
         self.inner
+    }
+
+    pub fn size(&self) -> krilla::geom::Size {
+        self.size
     }
 }
 
@@ -112,6 +146,8 @@ struct DocumentState {
     document: Option<krilla::Document>,
     doc_id: usize,
     has_active_page: bool,
+    /// Number of pages added to the document
+    page_count: usize,
 }
 
 /// A PDF document.
@@ -135,6 +171,7 @@ impl Document {
                 document: Some(krilla::Document::new()),
                 doc_id: DOC_COUNTER.fetch_add(1, Ordering::SeqCst),
                 has_active_page: false,
+                page_count: 0,
             })),
         }
     }
@@ -147,6 +184,7 @@ impl Document {
                 document: Some(krilla::Document::new_with(settings.into_inner())),
                 doc_id: DOC_COUNTER.fetch_add(1, Ordering::SeqCst),
                 has_active_page: false,
+                page_count: 0,
             })),
         }
     }
@@ -173,10 +211,14 @@ impl Document {
         }
 
         state.has_active_page = true;
+        state.page_count += 1;
 
+        let page_size = settings.size();
         Ok(Page {
             doc_state: Arc::clone(&self.state),
             page_settings: settings.into_inner(),
+            page_size,
+            page_index: state.page_count - 1,
             finished: false,
         })
     }
@@ -195,13 +237,23 @@ impl Document {
             pyo3::exceptions::PyRuntimeError::new_err("Document has already been finished")
         })?;
 
-        doc.finish().map(|bytes| bytes.to_vec()).map_err(to_py_err)
+        let bytes = doc.finish().map(|b| b.to_vec()).map_err(to_py_err)?;
+        Ok(bytes)
     }
 
     fn __repr__(&self) -> String {
         let state = self.state.lock().unwrap();
-        if state.document.is_some() {
-            "Document(active)".to_string()
+        if state.document.is_none() {
+            format!("Document(finished, {} pages)", state.page_count)
+        } else if state.document.is_some() {
+            if state.has_active_page {
+                format!(
+                    "Document(active, {} pages, page in progress)",
+                    state.page_count
+                )
+            } else {
+                format!("Document(active, {} pages)", state.page_count)
+            }
         } else {
             "Document(finished)".to_string()
         }
@@ -217,6 +269,8 @@ impl Document {
 pub struct Page {
     doc_state: Arc<Mutex<DocumentState>>,
     page_settings: krilla::page::PageSettings,
+    page_size: krilla::geom::Size,
+    page_index: usize,
     finished: bool,
 }
 
@@ -237,6 +291,7 @@ impl Page {
         Ok(Surface {
             doc_state: Arc::clone(&self.doc_state),
             page_settings: self.page_settings.clone(),
+            page_size: self.page_size,
             doc_id,
             push_count: 0,
             tagged_count: 0,
@@ -282,9 +337,19 @@ impl Page {
 
     fn __repr__(&self) -> String {
         if self.finished {
-            "Page(finished)".to_string()
+            format!(
+                "Page(finished, index={}, size={}x{})",
+                self.page_index,
+                self.page_size.width(),
+                self.page_size.height()
+            )
         } else {
-            "Page(active)".to_string()
+            format!(
+                "Page(active, index={}, size={}x{})",
+                self.page_index,
+                self.page_size.width(),
+                self.page_size.height()
+            )
         }
     }
 }
@@ -307,6 +372,7 @@ impl Drop for Page {
 pub struct Surface {
     doc_state: Arc<Mutex<DocumentState>>,
     page_settings: krilla::page::PageSettings,
+    page_size: krilla::geom::Size,
     doc_id: usize,
     push_count: usize,
     tagged_count: usize,
@@ -684,12 +750,30 @@ impl Surface {
 
     fn __repr__(&self) -> String {
         if self.finished {
-            "Surface(finished)".to_string()
-        } else {
             format!(
-                "Surface(active, push_count={}, tagged_count={})",
-                self.push_count, self.tagged_count
+                "Surface(finished, size={}x{})",
+                self.page_size.width(),
+                self.page_size.height()
             )
+        } else {
+            let mut parts = vec![format!(
+                "size={}x{}",
+                self.page_size.width(),
+                self.page_size.height()
+            )];
+            if self.push_count > 0 {
+                parts.push(format!("push_count={}", self.push_count));
+            }
+            if self.tagged_count > 0 {
+                parts.push(format!("tagged_count={}", self.tagged_count));
+            }
+            if self.fill.is_some() {
+                parts.push("has_fill".to_string());
+            }
+            if self.stroke.is_some() {
+                parts.push("has_stroke".to_string());
+            }
+            format!("Surface(active, {})", parts.join(", "))
         }
     }
 }
