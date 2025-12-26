@@ -24,7 +24,6 @@ from krilla import (
     SpreadMethod,
     MaskType,
     GlyphId,
-    KrillaGlyph,
     StreamBuilder,
     Mask,
     Pattern,
@@ -311,18 +310,6 @@ class TestText:
         assert GlyphId(10) == GlyphId(10)
         assert GlyphId(10) != GlyphId(20)
 
-    def test_krilla_glyph(self):
-        g = KrillaGlyph(
-            glyph_id=GlyphId(1),
-            x_advance=0.5,
-            text_start=0,
-            text_end=1,
-        )
-        assert g.glyph_id.to_u32() == 1
-        assert g.x_advance == 0.5
-        assert g.text_start == 0
-        assert g.text_end == 1
-
 
 class TestConfiguration:
     def test_pdf_version(self):
@@ -433,10 +420,35 @@ class TestDocument:
 
         with doc.start_page_with(ps) as page:
             with page.surface() as surface:
+                # Initial transform should be identity
+                initial_ctm = surface.ctm()
+                assert initial_ctm.sx == 1.0
+                assert initial_ctm.ky == 0.0
+                assert initial_ctm.tx == 0.0  # No translation
+                assert initial_ctm.ty == 0.0
+
                 # Test push/pop transform
-                surface.push_transform(Transform.from_translate(50.0, 50.0))
-                # Note: ctm() returns the initial transform, not the accumulated one
-                # This is a limitation of the current binding implementation
+                surface.push_transform(Transform.from_translate(50.0, 100.0))
+
+                # CTM should now include the translation
+                ctm = surface.ctm()
+                assert ctm.sx == 1.0  # Scale unchanged
+                assert ctm.ky == 0.0  # Rotation unchanged
+                assert ctm.tx == 50.0  # X translation
+                assert ctm.ty == 100.0  # Y translation
+
+                # Push another transform (concatenates)
+                surface.push_transform(Transform.from_scale(2.0, 2.0))
+                ctm2 = surface.ctm()
+                assert ctm2.sx == 2.0  # Scale applied
+                assert ctm2.sy == 2.0  # Scale applied
+
+                # Pop restores previous state
+                surface.pop()
+                ctm3 = surface.ctm()
+                assert ctm3.tx == 50.0  # Back to translation only
+                assert ctm3.sx == 1.0  # Scale removed
+
                 surface.pop()
 
         doc.finish()

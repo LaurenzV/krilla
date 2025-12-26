@@ -75,6 +75,14 @@ impl Paint {
         }
     }
 
+    /// Create a paint from a pattern.
+    #[staticmethod]
+    fn from_pattern(pattern: &crate::pattern::Pattern) -> Self {
+        Paint {
+            inner: krilla::paint::Paint::from(pattern.inner.clone()),
+        }
+    }
+
     fn __repr__(&self) -> String {
         "Paint(...)".to_string()
     }

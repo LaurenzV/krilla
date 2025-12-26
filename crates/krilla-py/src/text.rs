@@ -51,6 +51,22 @@ impl Font {
         self.inner.units_per_em()
     }
 
+    /// Get the font ascent (above baseline) in font units.
+    fn ascent(&self) -> f32 {
+        self.inner.ascent()
+    }
+
+    /// Get the font descent (below baseline) in font units.
+    /// Note: This value is typically negative.
+    fn descent(&self) -> f32 {
+        self.inner.descent()
+    }
+
+    /// Get the cap height of the font in font units, if available.
+    fn cap_height(&self) -> Option<f32> {
+        self.inner.cap_height()
+    }
+
     fn __repr__(&self) -> String {
         "Font(...)".to_string()
     }

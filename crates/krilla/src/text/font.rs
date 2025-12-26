@@ -88,11 +88,13 @@ impl Font {
         &self.0.font_info.var_coords
     }
 
-    pub(crate) fn cap_height(&self) -> Option<f32> {
+    /// Get the cap height of the font in font units, if available.
+    pub fn cap_height(&self) -> Option<f32> {
         self.0.font_info.cap_height.map(|n| n.get())
     }
 
-    pub(crate) fn ascent(&self) -> f32 {
+    /// Get the font ascent (above baseline) in font units.
+    pub fn ascent(&self) -> f32 {
         self.0.font_info.ascent.get()
     }
 
@@ -104,7 +106,9 @@ impl Font {
         self.0.font_info.stretch.get()
     }
 
-    pub(crate) fn descent(&self) -> f32 {
+    /// Get the font descent (below baseline) in font units.
+    /// Note: This value is typically negative.
+    pub fn descent(&self) -> f32 {
         self.0.font_info.descent.get()
     }
 
