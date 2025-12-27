@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from enum import IntEnum
-from typing import Union
+from typing import Any, Union
 from collections.abc import Sequence
 
 __version__: str
@@ -467,6 +467,18 @@ class Image:
     def from_webp(data: bytes, interpolate: bool = True) -> Image: ...
     @staticmethod
     def from_rgba8(data: bytes, width: int, height: int) -> Image: ...
+    @staticmethod
+    def from_pil(image: Any, interpolate: bool = True) -> Image:
+        """Convert a PIL/Pillow image to a krilla Image.
+
+        Args:
+            image: A PIL.Image.Image object or any object with a .save() method
+            interpolate: Whether to interpolate when scaling
+
+        Returns:
+            A krilla Image object
+        """
+        ...
     def size(self) -> tuple[int, int]: ...
     @property
     def width(self) -> int: ...

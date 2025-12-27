@@ -104,6 +104,44 @@ impl Image {
         })
     }
 
+    /// Load an image from a Python Pillow (PIL) Image.
+    ///
+    /// This method accepts any Python object that has a `.save()` method compatible
+    /// with PIL.Image.Image. The image is converted to PNG format in memory and then
+    /// loaded.
+    ///
+    /// Args:
+    ///     image: A PIL.Image.Image object or compatible object
+    ///     interpolate: Whether to interpolate when scaling
+    ///
+    /// Returns:
+    ///     An Image object, or raises an exception if conversion fails.
+    ///
+    /// Example:
+    ///     >>> from PIL import Image as PILImage
+    ///     >>> from krilla import Image
+    ///     >>> pil_img = PILImage.new('RGB', (100, 100), color='red')
+    ///     >>> krilla_img = Image.from_pil(pil_img)
+    #[staticmethod]
+    #[pyo3(signature = (image, interpolate=true))]
+    fn from_pil(py: Python<'_>, image: &Bound<'_, PyAny>, interpolate: bool) -> PyResult<Self> {
+        // Create a BytesIO buffer in memory
+        let io = py.import("io")?;
+        let bytes_io_class = io.getattr("BytesIO")?;
+        let bytes_io = bytes_io_class.call0()?;
+
+        // Save the PIL image to the buffer as PNG
+        image.call_method1("save", (&bytes_io, "PNG"))?;
+
+        // Get the bytes from the buffer
+        bytes_io.call_method1("seek", (0,))?;
+        let png_bytes = bytes_io.call_method0("getvalue")?;
+        let png_data: &[u8] = png_bytes.extract()?;
+
+        // Use the existing from_png method to load the PNG data
+        Self::from_png(png_data, interpolate)
+    }
+
     /// Get the image dimensions.
     ///
     /// Returns:

@@ -49,5 +49,6 @@ select = ["F", "E", "W", "UP"]
 [dependency-groups]
 dev = [
     "ipykernel>=7.1.0",
+    "pillow>=12.0.0",
     "pyright>=1.1.407",
 ]
