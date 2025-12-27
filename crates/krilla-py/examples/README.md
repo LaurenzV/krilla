@@ -49,19 +49,6 @@ Introduces the StreamBuilder API for creating reusable graphics patterns:
 uv run python examples/stream_builder.py
 ```
 
-### parley.py
-Demonstrates advanced text layout concepts:
-- Shows the draw_glyphs API for manual glyph positioning
-- Explains how to integrate with Python text shaping libraries (uharfbuzz, python-bidi)
-- Multi-line text with different styles
-
-**Note:** Unlike the Rust version which uses the parley library directly, this example shows how to use the low-level glyph drawing API and suggests Python text shaping libraries for advanced layout.
-
-**Run:**
-```bash
-uv run python examples/parley.py
-```
-
 ### uharfbuzz_simple.py
 A working example of using uharfbuzz for text shaping with krilla-py:
 - Single-line text rendering
