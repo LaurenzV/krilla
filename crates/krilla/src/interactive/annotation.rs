@@ -246,16 +246,16 @@ impl LinkAnnotation {
         );
 
         if let Some(border) = &self.border {
-            match border.color {
-                Color::Rgb(rgb) => {
+            match border.color.to_regular() {
+                crate::color::RegularColor::Rgb(rgb) => {
                     let [r, g, b] = rgb.to_pdf_color();
                     annotation.color_rgb(r, g, b);
                 }
-                Color::Cmyk(cmyk) => {
+                crate::color::RegularColor::Cmyk(cmyk) => {
                     let [c, m, y, k] = cmyk.to_pdf_color();
                     annotation.color_cmyk(c, m, y, k);
                 }
-                Color::Luma(gray) => {
+                crate::color::RegularColor::Luma(gray) => {
                     annotation.color_gray(gray.to_pdf_color());
                 }
             }

@@ -1023,7 +1023,7 @@ impl ContentBuilder {
             InnerPaint::Color(c) => {
                 let cs = c.color_space(sc);
                 let color_space_resource = Self::cs_to_content_cs(self, sc, cs);
-                set_solid_fn(&mut self.content, color_space_resource, *c);
+                set_solid_fn(&mut self.content, color_space_resource, c.clone());
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
@@ -1087,21 +1087,24 @@ impl ContentBuilder {
         fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
             match color_space {
                 ContentColorSpace::Device => match color {
-                    Color::Rgb(r) => {
+                    Color::Regular(crate::color::RegularColor::Rgb(r)) => {
                         let comps = r.to_pdf_color();
                         content.set_fill_rgb(comps[0], comps[1], comps[2]);
                     }
-                    Color::Luma(l) => {
+                    Color::Regular(crate::color::RegularColor::Luma(l)) => {
                         content.set_fill_gray(l.to_pdf_color());
                     }
-                    Color::Cmyk(c) => {
+                    Color::Regular(crate::color::RegularColor::Cmyk(c)) => {
                         let comps = c.to_pdf_color();
                         content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                    }
+                    Color::Special(_) => {
+                        panic!("Device color space cannot be used with special colors")
                     }
                 },
                 ContentColorSpace::Named(n) => {
                     content.set_fill_color_space(n.to_pdf_name());
-                    content.set_fill_color(color.to_pdf_color());
+                    content.set_fill_color(color.clone().to_pdf_color());
                 }
             }
         }
@@ -1130,21 +1133,24 @@ impl ContentBuilder {
         fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
             match color_space {
                 ContentColorSpace::Device => match color {
-                    Color::Rgb(r) => {
+                    Color::Regular(crate::color::RegularColor::Rgb(r)) => {
                         let comps = r.to_pdf_color();
                         content.set_stroke_rgb(comps[0], comps[1], comps[2]);
                     }
-                    Color::Luma(l) => {
+                    Color::Regular(crate::color::RegularColor::Luma(l)) => {
                         content.set_stroke_gray(l.to_pdf_color());
                     }
-                    Color::Cmyk(c) => {
+                    Color::Regular(crate::color::RegularColor::Cmyk(c)) => {
                         let comps = c.to_pdf_color();
                         content.set_stroke_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                    }
+                    Color::Special(_) => {
+                        panic!("Device color space cannot be used with special colors")
                     }
                 },
                 ContentColorSpace::Named(n) => {
                     content.set_stroke_color_space(n.to_pdf_name());
-                    content.set_stroke_color(color.to_pdf_color());
+                    content.set_stroke_color(color.clone().to_pdf_color());
                 }
             }
         }

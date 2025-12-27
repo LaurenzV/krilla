@@ -1,10 +1,12 @@
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
+use krilla::color::{rgb, separation};
 use krilla::configure::ValidationError;
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::geom::{Point, Rect, Size};
 use krilla::metadata::{DateTime, Metadata};
+use krilla::num::NormalizedF32;
 use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
@@ -927,6 +929,54 @@ fn validate_deduplicate_errors() {
         Err(KrillaError::Validation(vec![
             ValidationError::Transparency(None),
             ValidationError::Transparency(Some(loc(2)))
+        ]))
+    );
+}
+
+#[test]
+fn validate_inconsistent_separation_fallback() {
+    let mut document = Document::new_with(settings_7());
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    // First usage of "PANTONE 185 C" with red fallback
+    let space1 = separation::SeparationSpace::new(
+        separation::SeparationColorant::Custom("PANTONE 185 C".to_string()),
+        rgb::Color::new(255, 0, 0).into(),
+    );
+    let color1: krilla::color::Color = separation::Color::new(255, space1).into();
+    let fill1 = Fill {
+        paint: color1.into(),
+        opacity: NormalizedF32::ONE,
+        rule: Default::default(),
+    };
+    surface.set_fill(Some(fill1));
+    surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
+
+    // Second usage of "PANTONE 185 C" with DIFFERENT blue fallback
+    // This should trigger a validation error
+    let space2 = separation::SeparationSpace::new(
+        separation::SeparationColorant::Custom("PANTONE 185 C".to_string()),
+        rgb::Color::new(0, 0, 255).into(),
+    );
+    let color2: krilla::color::Color = separation::Color::new(255, space2).into();
+    let fill2 = Fill {
+        paint: color2.into(),
+        opacity: NormalizedF32::ONE,
+        rule: Default::default(),
+    };
+    surface.set_fill(Some(fill2));
+    surface.draw_path(&rect_to_path(30.0, 0.0, 50.0, 20.0));
+
+    surface.finish();
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::InconsistentSeparationFallback(
+                separation::SeparationColorant::Custom("PANTONE 185 C".to_string())
+            )
         ]))
     );
 }

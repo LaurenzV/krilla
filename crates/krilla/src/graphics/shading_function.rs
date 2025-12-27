@@ -89,12 +89,12 @@ impl GradientProperties {
         match self {
             GradientProperties::RadialAxialGradient(rag) => {
                 if rag.stops.len() == 1 {
-                    return Some((rag.stops[0].color, rag.stops[0].opacity));
+                    return Some((rag.stops[0].color.clone(), rag.stops[0].opacity));
                 }
             }
             GradientProperties::PostScriptGradient(psg) => {
                 if psg.stops.len() == 1 {
-                    return Some((psg.stops[0].color, psg.stops[0].opacity));
+                    return Some((psg.stops[0].color.clone(), psg.stops[0].opacity));
                 }
             }
         }
@@ -263,7 +263,7 @@ fn serialize_postscript_shading(
     let function_ref =
         select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
     let cs = if use_opacities {
-        luma::color_space(sc.serialize_settings().no_device_cs)
+        luma::color_space(sc.serialize_settings().no_device_cs).into()
     } else {
         post_script_gradient.stops[0].color.color_space(sc)
     };
@@ -293,7 +293,7 @@ fn serialize_axial_radial_shading(
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let cs = if use_opacities {
-        luma::color_space(sc.serialize_settings().no_device_cs)
+        luma::color_space(sc.serialize_settings().no_device_cs).into()
     } else {
         radial_axial_gradient.stops[0].color.color_space(sc)
     };
@@ -326,7 +326,7 @@ fn select_axial_radial_function(
 
     if let Some(first) = stops.first() {
         if first.offset.get() != 0.0 {
-            let mut new_stop = *first;
+            let mut new_stop = first.clone();
             new_stop.offset = NormalizedF32::ZERO;
             stops.insert(0, new_stop);
         }
@@ -334,7 +334,7 @@ fn select_axial_radial_function(
 
     if let Some(last) = stops.last() {
         if last.offset.get() != 1.0 {
-            let mut new_stop = *last;
+            let mut new_stop = last.clone();
             new_stop.offset = NormalizedF32::ONE;
             stops.push(new_stop);
         }
@@ -352,11 +352,13 @@ fn select_axial_radial_function(
             serialize_exponential(
                 stops[0]
                     .color
+                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops[1]
                     .color
+                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
@@ -490,7 +492,7 @@ fn trim_stops(stops: &[Stop]) -> Vec<Stop> {
     let mut new_stops = vec![];
 
     while get_index(cur_index) < stops.len() {
-        new_stops.push(stops[get_index(cur_index)]);
+        new_stops.push(stops[get_index(cur_index)].clone());
         cur_index += factor;
     }
 
@@ -657,13 +659,13 @@ fn encode_postscript_stops<'a>(
     }
 
     if let Some(first) = stops.first() {
-        let mut first = *first;
+        let mut first = first.clone();
         first.offset = NormalizedF32::ZERO;
         stops.insert(0, first);
     }
 
     if let Some(last) = stops.last() {
-        let mut last = *last;
+        let mut last = last.clone();
         last.offset = NormalizedF32::ONE;
         stops.push(last);
     }
@@ -723,7 +725,7 @@ fn encode_stops_impl<'a>(
         if use_opacities {
             code.push(Real(stops[0].opacity.get()));
         } else {
-            code.extend(stops[0].color.to_pdf_color().into_iter().map(Real));
+            code.extend(stops[0].color.clone().to_pdf_color().into_iter().map(Real));
         }
     } else {
         let length = max - min;
@@ -744,11 +746,13 @@ fn encode_stops_impl<'a>(
             encode_two_stops(
                 &stops[0]
                     .color
+                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 &stops[1]
                     .color
+                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
@@ -784,8 +788,18 @@ fn serialize_stitching(
             (vec![first.opacity.get()], vec![second.opacity.get()])
         } else {
             (
-                first.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
-                second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                first
+                    .color
+                    .clone()
+                    .to_pdf_color()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+                second
+                    .color
+                    .clone()
+                    .to_pdf_color()
+                    .into_iter()
+                    .collect::<Vec<_>>(),
             )
         };
 

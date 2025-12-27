@@ -74,7 +74,13 @@ See `README.md` for the meaning of each color.
 - krilla does not use the OPM entry. 🟢
 - krilla never uses CMYK profiles as the destination profile. 🟢
 - krilla does not use device color spaces in this mode. 🟢
-- krilla does not use separation and DeviceN color spaces in this mode. 🟢
+- krilla ensures the Alternate space in Separation color spaces obeys the restrictions
+  in the applicable clauses 🟢
+- krilla does not support DeviceN color spaces. 🔵
+- krilla fails export if a Separation colorant is associated with multiple different
+  fallback color spaces 🟢
+- krilla manages the `tintTransform` function and will always write the same function for
+  the same color space 🟢
 
 ### 6.2.5 Extended graphics state
 - krilla does not use the `TR`, `HTO`, `TR2` or `HT` keys. 🟢

@@ -23,17 +23,21 @@
 //!
 //! [`Configuration`]: crate::configure::Configuration
 
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 use pdf_writer::types::OutputIntentSubtype;
 use pdf_writer::Finish;
 use xmp_writer::XmpWriter;
 
+use crate::color::separation::SeparationColorant;
+use crate::color::separation::SeparationSpace;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
+use crate::util::SipHashable;
 
 /// An error that occurred during validation/
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -77,6 +81,10 @@ pub enum ValidationError {
     /// Occurs if the export format requires a device-independent color representation,
     /// and a CMYK color was used in the document.
     MissingCMYKProfile,
+    /// The same Separation colorant was used with multiple different fallback colors.
+    ///
+    /// Occurs if the user specified multiple Separation color spaces with the same colorant but a different fallback color.
+    InconsistentSeparationFallback(SeparationColorant),
     /// The `.notdef` glyph was used, which is forbidden by some export formats.
     ///
     /// Can occur if a glyph could not be found in the font for a corresponding codepoint
@@ -315,6 +323,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
+                ValidationError::InconsistentSeparationFallback(_) => false,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => self.requires_codepoint_mappings(),
                 ValidationError::NoCodepointMapping(_, _, _) => self.requires_codepoint_mappings(),
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => false,
@@ -353,6 +362,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
+                ValidationError::InconsistentSeparationFallback(_) => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::NoCodepointMapping(_, _, _)
                 | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
@@ -393,6 +403,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => true,
                 ValidationError::ContainsPostScript(_) => true,
                 ValidationError::MissingCMYKProfile => true,
+                ValidationError::InconsistentSeparationFallback(_) => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::NoCodepointMapping(_, _, _)
                 | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
@@ -428,6 +439,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => false,
                 ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => true,
+                ValidationError::InconsistentSeparationFallback(_) => true,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::NoCodepointMapping(_, _, _)
                 | ValidationError::InvalidCodepointMapping(_, _, _, _) => true,
@@ -469,6 +481,7 @@ impl Validator {
                 ValidationError::TooHighQNestingLevel => false,
                 ValidationError::ContainsPostScript(_) => false,
                 ValidationError::MissingCMYKProfile => false,
+                ValidationError::InconsistentSeparationFallback(_) => false,
                 ValidationError::ContainsNotDefGlyph(_, _, _) => true,
                 ValidationError::NoCodepointMapping(_, _, _)
                 | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
@@ -786,6 +799,42 @@ impl Validator {
             Validator::A4F => "PDF/A-4f",
             Validator::A4E => "PDF/A-4e",
             Validator::UA1 => "PDF/UA-1",
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub(crate) struct ValidationStore {
+    /// Maps from the name of a Separation colorant to a hash of its fallback
+    /// color. Used to track that a name is only ever matched with a single
+    /// fallback color. Since Krilla manages the `tintTransform` functions,
+    /// those are always equivalent.
+    separation_fallback_map: HashMap<SeparationColorant, u128>,
+}
+
+impl ValidationStore {
+    pub(crate) fn new() -> Self {
+        Default::default()
+    }
+
+    /// Register a colorant and its fallback and raise an error if it already
+    /// exists.
+    pub(crate) fn validate_separation(
+        &mut self,
+        separation: &SeparationSpace,
+    ) -> Result<(), ValidationError> {
+        let fallback_hash = separation.fallback.sip_hash();
+        if self
+            .separation_fallback_map
+            .entry(separation.colorant.clone())
+            .or_insert_with(|| fallback_hash)
+            == &fallback_hash
+        {
+            Ok(())
+        } else {
+            Err(ValidationError::InconsistentSeparationFallback(
+                separation.colorant.clone(),
+            ))
         }
     }
 }
