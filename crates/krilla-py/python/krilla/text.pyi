@@ -15,6 +15,10 @@ class Glyph:
     x_offset: float
     y_offset: float
     y_advance: float
+    # Private attributes for internal use
+    _source_text: str | None
+    _char_start: int | None
+    _char_end: int | None
 
     def __init__(
         self,

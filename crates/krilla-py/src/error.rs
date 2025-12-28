@@ -48,6 +48,10 @@ pub fn to_py_err(err: krilla::error::KrillaError) -> PyErr {
         KE::SixteenBitImage(_, _) => {
             ImageError::new_err("16-bit images require PDF version 1.5 or higher")
         }
+        #[cfg(feature = "pdf")]
         KE::Pdf(_, err, _) => KrillaError::new_err(format!("PDF embedding error: {:?}", err)),
+        // Catch-all for variants that exist due to features enabled by other crates
+        #[allow(unreachable_patterns)]
+        _ => KrillaError::new_err(format!("Unhandled error: {:?}", err)),
     }
 }
