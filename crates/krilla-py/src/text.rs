@@ -123,9 +123,12 @@ impl GlyphId {
 }
 
 /// A glyph with positioning information for low-level text rendering.
-#[pyclass]
+///
+/// This is an internal type. Python users should use the `Glyph` class instead,
+/// which provides a more Pythonic API with character-based indexing.
+#[pyclass(name = "_KrillaGlyph")]
 #[derive(Clone)]
-pub struct KrillaGlyph {
+pub struct _KrillaGlyph {
     /// The glyph ID.
     #[pyo3(get, set)]
     pub glyph_id: GlyphId,
@@ -150,7 +153,7 @@ pub struct KrillaGlyph {
 }
 
 #[pymethods]
-impl KrillaGlyph {
+impl _KrillaGlyph {
     /// Create a new glyph with positioning.
     #[new]
     #[pyo3(signature = (glyph_id, x_advance, text_start, text_end, x_offset=0.0, y_offset=0.0, y_advance=0.0))]
@@ -163,7 +166,7 @@ impl KrillaGlyph {
         y_offset: f32,
         y_advance: f32,
     ) -> Self {
-        KrillaGlyph {
+        _KrillaGlyph {
             glyph_id,
             text_start,
             text_end,
@@ -176,7 +179,7 @@ impl KrillaGlyph {
 
     fn __repr__(&self) -> String {
         format!(
-            "KrillaGlyph(id={}, x_advance={})",
+            "_KrillaGlyph(id={}, x_advance={})",
             self.glyph_id.to_u32(),
             self.x_advance
         )
@@ -223,8 +226,8 @@ impl krilla::text::Glyph for GlyphWrapper {
     }
 }
 
-impl From<&KrillaGlyph> for GlyphWrapper {
-    fn from(g: &KrillaGlyph) -> Self {
+impl From<&_KrillaGlyph> for GlyphWrapper {
+    fn from(g: &_KrillaGlyph) -> Self {
         GlyphWrapper {
             glyph_id: g.glyph_id.into_inner(),
             text_range: g.text_start..g.text_end,
@@ -258,4 +261,85 @@ impl TextDirection {
             TextDirection::RightToLeft => krilla::text::TextDirection::RightToLeft,
         }
     }
+}
+
+/// Convert a character index to a byte offset in a UTF-8 string.
+///
+/// Args:
+///     text: The UTF-8 string
+///     char_index: The character index (0-based)
+///
+/// Returns:
+///     The byte offset where the character starts
+///
+/// Raises:
+///     ValueError: If char_index is out of range
+#[pyfunction]
+pub fn char_to_byte_offset(text: &str, char_index: usize) -> PyResult<usize> {
+    text.char_indices()
+        .nth(char_index)
+        .map(|(byte_idx, _)| byte_idx)
+        .ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err(format!(
+                "Character index {} out of range for text with {} characters",
+                char_index,
+                text.chars().count()
+            ))
+        })
+}
+
+/// Convert a character range to a byte range in a UTF-8 string.
+///
+/// This is the primary conversion function used when creating glyphs from
+/// text shaper output (like HarfBuzz), which returns character-based clusters.
+///
+/// Args:
+///     text: The UTF-8 string
+///     char_start: The starting character index (0-based)
+///     char_end: The ending character index (exclusive)
+///
+/// Returns:
+///     A tuple of (byte_start, byte_end) offsets
+///
+/// Raises:
+///     ValueError: If indices are out of range
+///
+/// Example:
+///     >>> char_range_to_bytes("café", 3, 4)
+///     (3, 5)  # 'é' is at byte 3-5 (2 bytes in UTF-8)
+#[pyfunction]
+pub fn char_range_to_bytes(
+    text: &str,
+    char_start: usize,
+    char_end: usize,
+) -> PyResult<(usize, usize)> {
+    let char_count = text.chars().count();
+
+    // Validate indices
+    if char_start > char_count {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "char_start {} out of range for text with {} characters",
+            char_start, char_count
+        )));
+    }
+    if char_end > char_count {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "char_end {} out of range for text with {} characters",
+            char_end, char_count
+        )));
+    }
+
+    let byte_start = if char_start == 0 {
+        0
+    } else {
+        char_to_byte_offset(text, char_start)?
+    };
+
+    let byte_end = if char_end >= char_count {
+        text.len()
+    } else {
+        char_to_byte_offset(text, char_end)?
+    };
+
+    Ok((byte_start, byte_end))
 }

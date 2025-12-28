@@ -83,9 +83,13 @@ fn _krilla(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Text types
     m.add_class::<text::Font>()?;
     m.add_class::<text::GlyphId>()?;
-    m.add_class::<text::KrillaGlyph>()?;
+    m.add_class::<text::_KrillaGlyph>()?;
     #[cfg(feature = "simple-text")]
     m.add_class::<text::TextDirection>()?;
+
+    // Text conversion utilities
+    m.add_function(wrap_pyfunction!(text::char_to_byte_offset, m)?)?;
+    m.add_function(wrap_pyfunction!(text::char_range_to_bytes, m)?)?;
 
     // Stream types
     m.add_class::<stream::Stream>()?;

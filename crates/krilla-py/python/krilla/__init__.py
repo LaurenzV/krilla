@@ -12,67 +12,69 @@ A high-level library for creating PDF files with support for:
 """
 
 from krilla._krilla import (
-    # Core types
-    Document,
-    Page,
-    Surface,
-    PageSettings,
-    # Geometry
-    Point,
-    Size,
-    Rect,
-    Transform,
-    Path,
-    PathBuilder,
-    # Graphics
-    Fill,
-    Stroke,
-    Paint,
-    StrokeDash,
-    # Gradients
-    LinearGradient,
-    RadialGradient,
-    SweepGradient,
-    Stop,
+    ArtifactType,
     # Enums
     BlendMode,
+    # Configuration
+    Configuration,
+    ContentTag,
+    # Core types
+    Document,
+    # Graphics
+    Fill,
     FillRule,
+    # Text (low-level)
+    Font,
+    FontError,
+    GlyphId,
+    Identifier,
+    ImageError,
+    # Exceptions
+    KrillaError,
+    # Gradients
+    LinearGradient,
     LineCap,
     LineJoin,
-    SpreadMethod,
+    # Accessibility/Tagging
+    Location,
+    Mask,
     MaskType,
-    # Text
-    Font,
-    GlyphId,
-    KrillaGlyph,
+    # Numeric
+    NormalizedF32,
+    Page,
+    PageSettings,
+    Paint,
+    Path,
+    PathBuilder,
+    Pattern,
+    PdfVersion,
+    # Geometry
+    Point,
+    RadialGradient,
+    Rect,
+    SerializeSettings,
+    Size,
+    SpanTag,
+    SpreadMethod,
+    Stop,
     # Streams and masks
     Stream,
     StreamBuilder,
     StreamSurface,
-    Mask,
-    Pattern,
-    # Configuration
-    Configuration,
-    PdfVersion,
-    Validator,
-    SerializeSettings,
-    # Numeric
-    NormalizedF32,
-    # Accessibility/Tagging
-    Location,
-    ArtifactType,
-    SpanTag,
-    ContentTag,
-    Identifier,
-    # Exceptions
-    KrillaError,
-    FontError,
+    Stroke,
+    StrokeDash,
+    Surface,
+    SweepGradient,
+    Transform,
     ValidationError,
-    ImageError,
+    Validator,
     # Feature detection
     has_image_support,
     has_text_support,
 )
+
+# High-level Pythonic text API
+from krilla.text import Glyph, glyphs_to_text
 
 # Conditionally import feature-gated types
 try:
@@ -121,7 +123,8 @@ __all__ = [
     # Text
     "Font",
     "GlyphId",
-    "KrillaGlyph",
+    "Glyph",  # Pythonic high-level API
+    "glyphs_to_text",  # Helper function
     "TextDirection",
     # Image
     "Image",
