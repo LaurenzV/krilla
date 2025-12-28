@@ -8,7 +8,7 @@ requires byte offsets, `Glyph` works with natural Python string indexing.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Sequence
+from collections.abc import Sequence
 
 from krilla._krilla import _KrillaGlyph, GlyphId, char_range_to_bytes
 
@@ -187,7 +187,8 @@ class Glyph:
         ):
             raise ValueError(
                 "Cannot convert to _KrillaGlyph: missing source text information. "
-                "Use Glyph.from_shaper() to create Glyphs with proper conversion support."
+                "Use Glyph.from_shaper() to create Glyphs with proper "
+                "conversion support."
             )
 
         # Convert character indices to byte offsets

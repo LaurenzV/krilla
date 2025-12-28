@@ -5,8 +5,18 @@ use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
 // Create Python exception types
-create_exception!(_krilla, KrillaError, PyException, "Base exception for krilla errors.");
-create_exception!(_krilla, FontError, KrillaError, "Exception raised for font-related errors.");
+create_exception!(
+    _krilla,
+    KrillaError,
+    PyException,
+    "Base exception for krilla errors."
+);
+create_exception!(
+    _krilla,
+    FontError,
+    KrillaError,
+    "Exception raised for font-related errors."
+);
 create_exception!(
     _krilla,
     ValidationError,
@@ -38,7 +48,6 @@ pub fn to_py_err(err: krilla::error::KrillaError) -> PyErr {
         KE::SixteenBitImage(_, _) => {
             ImageError::new_err("16-bit images require PDF version 1.5 or higher")
         }
-        #[cfg(feature = "pdf")]
         KE::Pdf(_, err, _) => KrillaError::new_err(format!("PDF embedding error: {:?}", err)),
     }
 }

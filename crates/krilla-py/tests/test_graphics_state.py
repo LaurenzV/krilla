@@ -8,9 +8,7 @@ from krilla import (
     NormalizedF32,
     PageSettings,
     Paint,
-    Path,
     PathBuilder,
-    Point,
     Rect,
     Transform,
     color,
@@ -168,7 +166,9 @@ class TestPopRestoration:
         with doc.start_page_with(PageSettings.from_wh(200, 200)) as page:
             with page.surface() as surface:
                 # Should error - no matching push
-                with pytest.raises(RuntimeError, match="pop\\(\\) called without matching push"):
+                with pytest.raises(
+                    RuntimeError, match="pop\\(\\) called without matching push"
+                ):
                     surface.pop()
         doc.finish()
 
@@ -309,7 +309,8 @@ class TestComplexStateStack:
         doc = Document()
         with doc.start_page_with(PageSettings.from_wh(200, 200)) as page:
             with page.surface() as surface:
-                # Complex state stack - verify that mixing different push operations works
+                # Complex state stack - verify that mixing different push
+                # operations works
                 surface.push_transform(Transform.from_translate(50, 50))
                 surface.push_blend_mode(BlendMode.Multiply)
                 surface.push_transform(Transform.from_scale(1.5, 1.5))

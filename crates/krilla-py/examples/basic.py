@@ -37,38 +37,42 @@ def main():
         raise RuntimeError("Failed to load font")
 
     # Add a new page with dimensions 200x200.
-    with document.start_page_with(PageSettings.from_wh(200.0, 200.0)) as page:
-        # Get the surface of the page.
-        with page.surface() as surface:
-            # Draw some text.
-            surface.draw_text(
-                Point.from_xy(0.0, 25.0),
-                font,
-                14.0,
-                "This text has font size 14!",
-                False,
-                TextDirection.Auto,
-            )
+    with (
+        document.start_page_with(PageSettings.from_wh(200.0, 200.0)) as page,
+        page.surface() as surface,
+    ):
+        # Draw some text.
+        surface.draw_text(
+            Point.from_xy(0.0, 25.0),
+            font,
+            14.0,
+            "This text has font size 14!",
+            False,
+            TextDirection.Auto,
+        )
 
-            surface.set_fill(
-                Fill(
-                    paint=Paint.from_rgb(color.rgb(255, 0, 0)),
-                    opacity=NormalizedF32(0.5),
-                )
+        surface.set_fill(
+            Fill(
+                paint=Paint.from_rgb(color.rgb(255, 0, 0)),
+                opacity=NormalizedF32(0.5),
             )
-            # Draw some more text, in a different color with an opacity and
-            # bigger font size.
-            surface.draw_text(
-                Point.from_xy(0.0, 50.0),
-                font,
-                16.0,
-                "This text has font size 16!",
-                False,
-                TextDirection.Auto,
-            )
+        )
+        # Draw some more text, in a different color with an opacity and
+        # bigger font size.
+        surface.draw_text(
+            Point.from_xy(0.0, 50.0),
+            font,
+            16.0,
+            "This text has font size 16!",
+            False,
+            TextDirection.Auto,
+        )
 
     # Start a new page.
-    with document.start_page_with(PageSettings.from_wh(200.0, 200.0)) as page:
+    with (
+        document.start_page_with(PageSettings.from_wh(200.0, 200.0)) as page,
+        page.surface() as surface,
+    ):
         # Create the triangle.
         pb = PathBuilder()
         pb.move_to(100.0, 20.0)
@@ -97,18 +101,17 @@ def main():
             anti_alias=False,
         )
 
-        with page.surface() as surface:
-            # Set the fill.
-            surface.set_fill(
-                Fill(
-                    paint=Paint.from_linear_gradient(lg),
-                    rule=FillRule.EvenOdd,
-                    opacity=NormalizedF32.one(),
-                )
+        # Set the fill.
+        surface.set_fill(
+            Fill(
+                paint=Paint.from_linear_gradient(lg),
+                rule=FillRule.EvenOdd,
+                opacity=NormalizedF32.one(),
             )
+        )
 
-            # Fill the path.
-            surface.draw_path(triangle)
+        # Fill the path.
+        surface.draw_path(triangle)
 
     # Finish up and write the resulting PDF.
     pdf = document.finish()

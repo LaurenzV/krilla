@@ -160,3 +160,6 @@ __all__ = [
 ]
 
 __version__ = "0.1.0"
+
+# Load Surface extension methods for context managers
+from krilla import surface_extensions  # noqa: F401

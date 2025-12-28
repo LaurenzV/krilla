@@ -86,28 +86,30 @@ def main():
     font_size = 24.0
     doc = Document()
 
-    with doc.start_page_with(PageSettings.from_wh(200, 100)) as page:
-        with page.surface() as surface:
-            # Set fill color
-            surface.set_fill(
-                Fill(
-                    paint=Paint.from_rgb(color.rgb(0, 0, 0)),
-                    opacity=NormalizedF32.one(),
-                )
+    with (
+        doc.start_page_with(PageSettings.from_wh(200, 100)) as page,
+        page.surface() as surface,
+    ):
+        # Set fill color
+        surface.set_fill(
+            Fill(
+                paint=Paint.from_rgb(color.rgb(0, 0, 0)),
+                opacity=NormalizedF32.one(),
             )
+        )
 
-            # Calculate baseline position
-            baseline = (krilla_font.ascent() / units_per_em) * font_size
+        # Calculate baseline position
+        baseline = (krilla_font.ascent() / units_per_em) * font_size
 
-            # Draw all glyphs at once
-            surface.draw_glyphs(
-                Point.from_xy(10.0, 20.0 + baseline),
-                glyphs,
-                krilla_font,
-                text,
-                font_size,
-                False,
-            )
+        # Draw all glyphs at once
+        surface.draw_glyphs(
+            Point.from_xy(10.0, 20.0 + baseline),
+            glyphs,
+            krilla_font,
+            text,
+            font_size,
+            False,
+        )
 
     pdf = doc.finish()
 
