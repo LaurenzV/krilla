@@ -339,6 +339,33 @@ impl Transform {
     fn __eq__(&self, other: &Transform) -> bool {
         self.inner == other.inner
     }
+
+    /// Compose two transformations using the @ operator.
+    ///
+    /// `self @ other` applies `other` first, then `self`.
+    /// This is equivalent to mathematical matrix multiplication.
+    ///
+    /// Example:
+    ///     >>> translate = Transform.from_translate(10, 20)
+    ///     >>> scale = Transform.from_scale(2, 2)
+    ///     >>> combined = translate @ scale
+    ///     # Equivalent to: scale first, then translate
+    fn __matmul__(&self, other: &Transform) -> Transform {
+        // Matrix multiplication: self * other
+        // [[self.sx, self.kx, self.tx],   [[other.sx, other.kx, other.tx],
+        //  [self.ky, self.sy, self.ty], @  [other.ky, other.sy, other.ty],
+        //  [0,        0,        1]]         [0,         0,         1]]
+        let sx = self.sx() * other.sx() + self.kx() * other.ky();
+        let ky = self.ky() * other.sx() + self.sy() * other.ky();
+        let kx = self.sx() * other.kx() + self.kx() * other.sy();
+        let sy = self.ky() * other.kx() + self.sy() * other.sy();
+        let tx = self.sx() * other.tx() + self.kx() * other.ty() + self.tx();
+        let ty = self.ky() * other.tx() + self.sy() * other.ty() + self.ty();
+
+        Transform {
+            inner: krilla::geom::Transform::from_row(sx, ky, kx, sy, tx, ty),
+        }
+    }
 }
 
 impl Transform {

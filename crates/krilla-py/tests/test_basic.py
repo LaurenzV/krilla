@@ -125,6 +125,50 @@ class TestGeometry:
         assert inv.tx == -10.0
         assert inv.ty == -20.0
 
+    def test_transform_matmul(self):
+        # Test transform composition with @ operator
+        # Translate then scale
+        translate = Transform.from_translate(10.0, 20.0)
+        scale = Transform.from_scale(2.0, 3.0)
+
+        # combined = translate @ scale means: apply scale first, then translate
+        combined = translate @ scale
+        assert combined.sx == 2.0
+        assert combined.sy == 3.0
+        assert combined.tx == 10.0
+        assert combined.ty == 20.0
+
+        # Verify it's different from the reverse order
+        combined_reverse = scale @ translate
+        assert combined_reverse.sx == 2.0
+        assert combined_reverse.sy == 3.0
+        # After scaling, the translation is also scaled
+        assert combined_reverse.tx == 20.0  # 10.0 * 2.0
+        assert combined_reverse.ty == 60.0  # 20.0 * 3.0
+
+    def test_transform_matmul_identity(self):
+        # Identity is neutral element
+        t = Transform.from_translate(5.0, 10.0)
+        identity = Transform.identity()
+
+        result1 = t @ identity
+        assert result1.tx == 5.0
+        assert result1.ty == 10.0
+
+        result2 = identity @ t
+        assert result2.tx == 5.0
+        assert result2.ty == 10.0
+
+    def test_transform_matmul_multiple(self):
+        # Chain multiple transforms
+        t1 = Transform.from_translate(10.0, 0.0)
+        t2 = Transform.from_scale(2.0, 2.0)
+        t3 = Transform.from_rotate(90.0)
+
+        # Apply t3, then t2, then t1
+        combined = t1 @ t2 @ t3
+        assert combined is not None
+
 
 class TestPath:
     def test_path_builder_triangle(self):
