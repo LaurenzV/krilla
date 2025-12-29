@@ -6,6 +6,17 @@ Complete API documentation for krilla Python bindings, automatically generated f
 :maxdepth: 4
 
 ../autoapi/krilla/index
+core
+geometry
+paint
+color
+text
+image
+enums
+config
+tagging
+pattern_mask
+metadata
 ```
 
 ## Quick Links
@@ -29,6 +40,11 @@ Complete API documentation for krilla Python bindings, automatically generated f
 ### Text & Images
 - {py:class}`krilla.Font`, {py:class}`krilla.Glyph`
 - {py:class}`krilla.Image` (requires `raster-images` feature)
+
+### Metadata & Interchange
+- {py:class}`krilla.Metadata`, {py:class}`krilla.DateTime` - Document metadata
+- {py:class}`krilla.Outline`, {py:class}`krilla.OutlineNode` - Navigation tree
+- {py:class}`krilla.EmbeddedFile`, {py:class}`krilla.MimeType` - File attachments
 
 ### Configuration
 - {py:class}`krilla.PdfVersion`, {py:class}`krilla.Validator`, {py:class}`krilla.Configuration`

@@ -1,5 +1,6 @@
 [package]
 name = "krilla-py"
+authors = ["James R. Barlow <james@purplerock.ca>", "Laurenz Stampfl <laurenz.stampfl@gmail.com>"]
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true

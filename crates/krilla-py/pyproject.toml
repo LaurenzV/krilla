@@ -7,7 +7,7 @@ name = "krilla"
 version = "0.1.0"
 description = "Python bindings for the krilla PDF library"
 requires-python = ">=3.10"
-license = {text = "MIT OR Apache-2.0"}
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["pdf", "graphics", "document", "text", "fonts"]
 classifiers = [
@@ -25,6 +25,10 @@ classifiers = [
     "Topic :: Multimedia :: Graphics",
     "Topic :: Text Processing :: Fonts",
 ]
+
+[project.urls]
+Homepage = "https://github.com/LaurenzV/krilla"
+Repository = "https://github.com/LaurenzV/krilla"
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "pyright"]
@@ -52,13 +56,13 @@ line-length = 88
 fix = true
 
 [tool.ruff.lint]
-select = ["F", "E", "I", "W", "UP"]
+select = ["F", "E", "I", "W", "UP", "B", "SIM"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["D100", "D102", "D103", "B018", "F841", "FBT001"]
+"tests/**/*.py" = ["D100", "D102", "D103", "B018", "F841", "FBT001", "SIM"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -68,4 +72,5 @@ dev = [
     "ipykernel>=7.1.0",
     "pillow>=12.0.0",
     "pyright>=1.1.407",
+    "pytest>=9.0.2",
 ]
