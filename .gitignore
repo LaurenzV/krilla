@@ -22,3 +22,4 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 CLAUDE.md
+crates/krilla-py/docs/build/
