@@ -213,7 +213,14 @@ jobs:
       - run: cargo fmt --check --all
       - run: cargo doc --workspace --no-deps
       - run: RUSTFLAGS=-Awarnings cargo hack check --each-feature
-        
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Check Python formatting and linting
+        run: |
+          cd crates/krilla-py
+          uv run --with ruff ruff check
+
   check-generated-code:
     name: Ensure the generated code is up-to-date
     runs-on: ubuntu-latest
@@ -252,11 +259,11 @@ jobs:
             target: aarch64-unknown-linux-musl
             manylinux: musllinux_1_2
           # macOS x86_64
-          - os: macos-13
+          - os: macos-15-intel
             target: x86_64-apple-darwin
             manylinux: auto
           # macOS aarch64 (Apple Silicon)
-          - os: macos-14
+          - os: macos-15
             target: aarch64-apple-darwin
             manylinux: auto
           # Windows x86_64
@@ -266,11 +273,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --manifest-path crates/krilla-py/Cargo.toml
+          args: --find-interpreter --release --out dist --manifest-path crates/krilla-py/Cargo.toml
           manylinux: ${{ matrix.manylinux }}
 
       - name: Upload wheels
@@ -290,7 +301,7 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             manylinux: auto
-          - os: macos-14
+          - os: macos-15
             target: aarch64-apple-darwin
             manylinux: auto
           - os: windows-latest
@@ -356,7 +367,12 @@ jobs:
       name: pypi
       url: https://pypi.org/p/krilla
     permissions:
+      # Use to sign the release artifacts
       id-token: write
+      # Used to upload release artifacts
+      contents: write
+      # Used to generate artifact attestation
+      attestations: write
     steps:
       - name: Download all wheels
         uses: actions/download-artifact@v4
@@ -365,8 +381,13 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'wheels-*/*'
+
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         with:
           command: upload
-          args: --skip-existing dist/*
+          args: --non-interactive --skip-existing dist/*
