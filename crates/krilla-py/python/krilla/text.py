@@ -7,10 +7,10 @@ requires byte offsets, `Glyph` works with natural Python string indexing.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 
-from krilla._krilla import _KrillaGlyph, GlyphId, char_range_to_bytes
+from krilla._krilla import GlyphId, _KrillaGlyph, char_range_to_bytes
 
 
 @dataclass

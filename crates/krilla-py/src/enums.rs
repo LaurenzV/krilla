@@ -178,6 +178,7 @@ impl BlendMode {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_inner(inner: krilla::blend::BlendMode) -> Self {
         match inner {
             krilla::blend::BlendMode::Normal => BlendMode::Normal,

@@ -26,7 +26,10 @@ impl Mask {
     #[new]
     fn new(stream: Stream, mask_type: MaskType) -> Self {
         Mask {
-            inner: Arc::new(krilla::mask::Mask::new(stream.into_inner(), mask_type.into_inner())),
+            inner: Arc::new(krilla::mask::Mask::new(
+                stream.into_inner(),
+                mask_type.into_inner(),
+            )),
             doc_id: 0, // Will be set properly when used with a document
         }
     }

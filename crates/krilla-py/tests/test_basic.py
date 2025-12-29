@@ -2,39 +2,39 @@
 
 import pytest
 from krilla import (
-    Document,
-    PageSettings,
-    Point,
-    Size,
-    Rect,
-    Transform,
-    PathBuilder,
-    Fill,
-    Stroke,
-    Paint,
-    StrokeDash,
-    LinearGradient,
-    RadialGradient,
-    SweepGradient,
-    Stop,
     BlendMode,
+    Configuration,
+    Document,
+    Fill,
     FillRule,
+    GlyphId,
+    LinearGradient,
     LineCap,
     LineJoin,
-    SpreadMethod,
-    MaskType,
-    GlyphId,
-    StreamBuilder,
     Mask,
-    Pattern,
-    Configuration,
-    PdfVersion,
-    Validator,
-    SerializeSettings,
+    MaskType,
     NormalizedF32,
+    PageSettings,
+    Paint,
+    PathBuilder,
+    Pattern,
+    PdfVersion,
+    Point,
+    RadialGradient,
+    Rect,
+    SerializeSettings,
+    Size,
+    SpreadMethod,
+    Stop,
+    StreamBuilder,
+    Stroke,
+    StrokeDash,
+    SweepGradient,
+    Transform,
+    Validator,
+    color,
     has_image_support,
     has_text_support,
-    color,
 )
 
 
@@ -400,15 +400,14 @@ class TestDocument:
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                # Draw a simple rectangle
-                pb = PathBuilder()
-                pb.push_rect(Rect.from_xywh(10.0, 10.0, 50.0, 50.0))
-                path = pb.finish()
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            # Draw a simple rectangle
+            pb = PathBuilder()
+            pb.push_rect(Rect.from_xywh(10.0, 10.0, 50.0, 50.0))
+            path = pb.finish()
 
-                surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(255, 0, 0))))
-                surface.draw_path(path)
+            surface.set_fill(Fill(paint=Paint.from_rgb(color.rgb(255, 0, 0))))
+            surface.draw_path(path)
 
         pdf_bytes = doc.finish()
         assert isinstance(pdf_bytes, bytes)
@@ -418,38 +417,37 @@ class TestDocument:
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                # Initial transform should be identity
-                initial_ctm = surface.ctm()
-                assert initial_ctm.sx == 1.0
-                assert initial_ctm.ky == 0.0
-                assert initial_ctm.tx == 0.0  # No translation
-                assert initial_ctm.ty == 0.0
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            # Initial transform should be identity
+            initial_ctm = surface.ctm()
+            assert initial_ctm.sx == 1.0
+            assert initial_ctm.ky == 0.0
+            assert initial_ctm.tx == 0.0  # No translation
+            assert initial_ctm.ty == 0.0
 
-                # Test push/pop transform
-                surface.push_transform(Transform.from_translate(50.0, 100.0))
+            # Test push/pop transform
+            surface.push_transform(Transform.from_translate(50.0, 100.0))
 
-                # CTM should now include the translation
-                ctm = surface.ctm()
-                assert ctm.sx == 1.0  # Scale unchanged
-                assert ctm.ky == 0.0  # Rotation unchanged
-                assert ctm.tx == 50.0  # X translation
-                assert ctm.ty == 100.0  # Y translation
+            # CTM should now include the translation
+            ctm = surface.ctm()
+            assert ctm.sx == 1.0  # Scale unchanged
+            assert ctm.ky == 0.0  # Rotation unchanged
+            assert ctm.tx == 50.0  # X translation
+            assert ctm.ty == 100.0  # Y translation
 
-                # Push another transform (concatenates)
-                surface.push_transform(Transform.from_scale(2.0, 2.0))
-                ctm2 = surface.ctm()
-                assert ctm2.sx == 2.0  # Scale applied
-                assert ctm2.sy == 2.0  # Scale applied
+            # Push another transform (concatenates)
+            surface.push_transform(Transform.from_scale(2.0, 2.0))
+            ctm2 = surface.ctm()
+            assert ctm2.sx == 2.0  # Scale applied
+            assert ctm2.sy == 2.0  # Scale applied
 
-                # Pop restores previous state
-                surface.pop()
-                ctm3 = surface.ctm()
-                assert ctm3.tx == 50.0  # Back to translation only
-                assert ctm3.sx == 1.0  # Scale removed
+            # Pop restores previous state
+            surface.pop()
+            ctm3 = surface.ctm()
+            assert ctm3.tx == 50.0  # Back to translation only
+            assert ctm3.sx == 1.0  # Scale removed
 
-                surface.pop()
+            surface.pop()
 
         doc.finish()
 
@@ -457,10 +455,9 @@ class TestDocument:
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                surface.push_blend_mode(BlendMode.Multiply)
-                surface.pop()
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            surface.push_blend_mode(BlendMode.Multiply)
+            surface.pop()
 
         doc.finish()
 
@@ -468,10 +465,9 @@ class TestDocument:
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                surface.push_opacity(NormalizedF32(0.5))
-                surface.pop()
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            surface.push_opacity(NormalizedF32(0.5))
+            surface.pop()
 
         doc.finish()
 
@@ -480,15 +476,14 @@ class TestDocument:
 
         for i in range(3):
             ps = PageSettings.from_wh(200.0, 200.0)
-            with doc.start_page_with(ps) as page:
-                with page.surface() as surface:
-                    pb = PathBuilder()
-                    pb.push_rect(Rect.from_xywh(10.0, 10.0, 50.0, 50.0))
-                    path = pb.finish()
-                    surface.set_fill(
-                        Fill(paint=Paint.from_rgb(color.rgb(i * 80, 100, 100)))
-                    )
-                    surface.draw_path(path)
+            with doc.start_page_with(ps) as page, page.surface() as surface:
+                pb = PathBuilder()
+                pb.push_rect(Rect.from_xywh(10.0, 10.0, 50.0, 50.0))
+                path = pb.finish()
+                surface.set_fill(
+                    Fill(paint=Paint.from_rgb(color.rgb(i * 80, 100, 100)))
+                )
+                surface.draw_path(path)
 
         pdf_bytes = doc.finish()
         assert len(pdf_bytes) > 0
@@ -640,7 +635,7 @@ class TestAccessibility:
         assert tag.lang == "de-DE"
 
     def test_content_tag_artifact(self):
-        from krilla import ContentTag, ArtifactType
+        from krilla import ArtifactType, ContentTag
 
         tag = ContentTag.artifact(ArtifactType.Header)
         assert "Artifact" in repr(tag)
@@ -659,70 +654,67 @@ class TestAccessibility:
         assert "Other" in repr(tag)
 
     def test_identifier(self):
-        from krilla import Document, PageSettings, ContentTag, ArtifactType
+        from krilla import ArtifactType, ContentTag, Document, PageSettings
 
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                tag = ContentTag.artifact(ArtifactType.Other)
-                identifier = surface.start_tagged(tag)
-                assert identifier is not None
-                assert identifier.is_dummy()  # Artifacts return dummy identifiers
-                surface.end_tagged()
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            tag = ContentTag.artifact(ArtifactType.Other)
+            identifier = surface.start_tagged(tag)
+            assert identifier is not None
+            assert identifier.is_dummy()  # Artifacts return dummy identifiers
+            surface.end_tagged()
 
         doc.finish()
 
     def test_surface_location(self):
-        from krilla import Document, PageSettings, Location
+        from krilla import Document, Location, PageSettings
 
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                # Initially no location
-                assert surface.get_location() is None
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            # Initially no location
+            assert surface.get_location() is None
 
-                # Set location
-                loc = Location(123)
-                surface.set_location(loc)
-                retrieved = surface.get_location()
-                assert retrieved is not None
-                assert retrieved.get() == 123
+            # Set location
+            loc = Location(123)
+            surface.set_location(loc)
+            retrieved = surface.get_location()
+            assert retrieved is not None
+            assert retrieved.get() == 123
 
-                # Reset location
-                surface.reset_location()
-                assert surface.get_location() is None
+            # Reset location
+            surface.reset_location()
+            assert surface.get_location() is None
 
         doc.finish()
 
     def test_surface_tagged_balanced(self):
-        from krilla import Document, PageSettings, ContentTag, SpanTag
+        from krilla import ContentTag, Document, PageSettings, SpanTag
 
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                # Balanced tagged sections
-                span = SpanTag(lang="en-US")
-                tag = ContentTag.span(span)
-                identifier = surface.start_tagged(tag)
-                assert identifier is not None
-                surface.end_tagged()
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            # Balanced tagged sections
+            span = SpanTag(lang="en-US")
+            tag = ContentTag.span(span)
+            identifier = surface.start_tagged(tag)
+            assert identifier is not None
+            surface.end_tagged()
 
-                # Multiple nested
-                surface.start_tagged(ContentTag.other())
-                surface.start_tagged(ContentTag.other())
-                surface.end_tagged()
-                surface.end_tagged()
+            # Multiple nested
+            surface.start_tagged(ContentTag.other())
+            surface.start_tagged(ContentTag.other())
+            surface.end_tagged()
+            surface.end_tagged()
 
         doc.finish()
 
     def test_surface_tagged_unbalanced_raises(self):
-        from krilla import Document, PageSettings, ContentTag
+        from krilla import ContentTag, Document, PageSettings
 
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
@@ -752,10 +744,9 @@ class TestAccessibility:
         doc = Document()
         ps = PageSettings.from_wh(200.0, 200.0)
 
-        with doc.start_page_with(ps) as page:
-            with page.surface() as surface:
-                surface.start_alt_text("Alternative text description")
-                surface.end_alt_text()
+        with doc.start_page_with(ps) as page, page.surface() as surface:
+            surface.start_alt_text("Alternative text description")
+            surface.end_alt_text()
 
         doc.finish()
 

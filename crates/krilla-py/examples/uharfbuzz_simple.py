@@ -62,7 +62,7 @@ def main():
     clusters = sorted(set(info.cluster for info in infos))
     clusters.append(len(text))  # Add end position (character count)
 
-    for info, pos in zip(infos, positions):
+    for info, pos in zip(infos, positions, strict=True):
         # info.cluster is a CHARACTER index - use it directly!
         char_start = info.cluster
 
@@ -74,7 +74,7 @@ def main():
         glyph = Glyph.from_shaper(
             text=text,
             char_start=char_start,  # Character index (natural!)
-            char_end=char_end,      # Character index
+            char_end=char_end,  # Character index
             glyph_id=GlyphId(info.codepoint),
             x_advance=pos.x_advance / units_per_em,
             x_offset=pos.x_offset / units_per_em,

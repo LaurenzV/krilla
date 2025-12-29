@@ -13,6 +13,7 @@ mod error;
 mod geometry;
 #[cfg(feature = "raster-images")]
 mod image;
+mod interchange;
 mod mask;
 mod num;
 mod paint;
@@ -116,6 +117,45 @@ fn _krilla(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tagging::SpanTag>()?;
     m.add_class::<tagging::ContentTag>()?;
     m.add_class::<tagging::Identifier>()?;
+
+    // Tag tree types
+    m.add_class::<tagging::TagTree>()?;
+    m.add_class::<tagging::TagGroup>()?;
+    m.add_class::<tagging::Node>()?;
+    m.add_class::<tagging::TagKind>()?;
+    m.add_class::<tagging::Tag>()?;
+
+    // Tag attribute enums
+    m.add_class::<tagging::ListNumbering>()?;
+    m.add_class::<tagging::TableHeaderScope>()?;
+    m.add_class::<tagging::Placement>()?;
+    m.add_class::<tagging::WritingMode>()?;
+    m.add_class::<tagging::BorderStyle>()?;
+    m.add_class::<tagging::TextAlign>()?;
+    m.add_class::<tagging::BlockAlign>()?;
+    m.add_class::<tagging::InlineAlign>()?;
+    m.add_class::<tagging::TextDecorationType>()?;
+    m.add_class::<tagging::GlyphOrientationVertical>()?;
+    m.add_class::<tagging::LineHeight>()?;
+
+    // Tag attribute complex types
+    m.add_class::<tagging::TagId>()?;
+    m.add_class::<tagging::BBox>()?;
+    m.add_class::<tagging::NaiveRgbColor>()?;
+    m.add_class::<tagging::SidesF32>()?;
+    m.add_class::<tagging::ColumnDimensions>()?;
+
+    // Interchange types (metadata, outline, embed)
+    m.add_class::<interchange::DateTime>()?;
+    m.add_class::<interchange::MetadataTextDirection>()?;
+    m.add_class::<interchange::PageLayout>()?;
+    m.add_class::<interchange::Metadata>()?;
+    m.add_class::<interchange::XyzDestination>()?;
+    m.add_class::<interchange::OutlineNode>()?;
+    m.add_class::<interchange::Outline>()?;
+    m.add_class::<interchange::AssociationKind>()?;
+    m.add_class::<interchange::MimeType>()?;
+    m.add_class::<interchange::EmbeddedFile>()?;
 
     // Core document types
     m.add_class::<document::PageSettings>()?;

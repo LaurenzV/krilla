@@ -51,7 +51,10 @@ impl Pattern {
     }
 
     fn __repr__(&self) -> String {
-        format!("Pattern(width={}, height={})", self.inner.width, self.inner.height)
+        format!(
+            "Pattern(width={}, height={})",
+            self.inner.width, self.inner.height
+        )
     }
 }
 

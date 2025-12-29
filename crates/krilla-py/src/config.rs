@@ -88,7 +88,8 @@ pub enum Validator {
 impl Validator {
     /// Check if this validator is compatible with a PDF version.
     fn compatible_with_version(&self, version: PdfVersion) -> bool {
-        self.into_inner().compatible_with_version(version.into_inner())
+        self.into_inner()
+            .compatible_with_version(version.into_inner())
     }
 
     /// Get the recommended PDF version for this validator.

@@ -1,12 +1,14 @@
 """Type stubs for krilla Python bindings."""
 
 from __future__ import annotations
+
+from collections.abc import Sequence
 from enum import IntEnum
 from typing import Any, Union
-from collections.abc import Sequence
 
 # Re-export high-level text API
-from krilla.text import Glyph as Glyph, glyphs_to_text as glyphs_to_text
+from krilla.text import Glyph as Glyph
+from krilla.text import glyphs_to_text as glyphs_to_text
 
 __version__: str
 

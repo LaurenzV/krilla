@@ -179,10 +179,7 @@ impl CmykColor {
     fn __repr__(&self) -> String {
         format!(
             "cmyk({}, {}, {}, {})",
-            self.cyan_val,
-            self.magenta_val,
-            self.yellow_val,
-            self.black_val
+            self.cyan_val, self.magenta_val, self.yellow_val, self.black_val
         )
     }
 
@@ -233,7 +230,9 @@ impl Color {
 
     fn __repr__(&self) -> String {
         match &self.inner {
-            krilla::color::Color::Rgb(c) => format!("Color.rgb({}, {}, {})", c.red(), c.green(), c.blue()),
+            krilla::color::Color::Rgb(c) => {
+                format!("Color.rgb({}, {}, {})", c.red(), c.green(), c.blue())
+            }
             krilla::color::Color::Luma(_) => "Color.luma(...)".to_string(),
             krilla::color::Color::Cmyk(_) => "Color.cmyk(...)".to_string(),
         }

@@ -26,7 +26,7 @@ impl Image {
     fn from_png(data: &[u8], interpolate: bool) -> PyResult<Self> {
         krilla::image::Image::from_png(data.to_vec().into(), interpolate)
             .map(|img| Image { inner: img })
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+            .map_err(pyo3::exceptions::PyValueError::new_err)
     }
 
     /// Load an image from JPEG data.
@@ -42,7 +42,7 @@ impl Image {
     fn from_jpeg(data: &[u8], interpolate: bool) -> PyResult<Self> {
         krilla::image::Image::from_jpeg(data.to_vec().into(), interpolate)
             .map(|img| Image { inner: img })
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+            .map_err(pyo3::exceptions::PyValueError::new_err)
     }
 
     /// Load an image from GIF data.
@@ -58,7 +58,7 @@ impl Image {
     fn from_gif(data: &[u8], interpolate: bool) -> PyResult<Self> {
         krilla::image::Image::from_gif(data.to_vec().into(), interpolate)
             .map(|img| Image { inner: img })
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+            .map_err(pyo3::exceptions::PyValueError::new_err)
     }
 
     /// Load an image from WebP data.
@@ -74,7 +74,7 @@ impl Image {
     fn from_webp(data: &[u8], interpolate: bool) -> PyResult<Self> {
         krilla::image::Image::from_webp(data.to_vec().into(), interpolate)
             .map(|img| Image { inner: img })
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e))
+            .map_err(pyo3::exceptions::PyValueError::new_err)
     }
 
     /// Create an image from raw RGBA8 data.

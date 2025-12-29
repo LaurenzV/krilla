@@ -43,7 +43,8 @@ impl Font {
             .filter_map(|(tag, value)| krilla::text::Tag::try_from_str(tag).map(|t| (t, *value)))
             .collect();
 
-        krilla::text::Font::new_variable(data.to_vec().into(), index, &coords).map(|f| Font { inner: f })
+        krilla::text::Font::new_variable(data.to_vec().into(), index, &coords)
+            .map(|f| Font { inner: f })
     }
 
     /// Get the units per em of the font.
@@ -96,6 +97,7 @@ impl GlyphId {
     }
 
     /// Get the numeric value of the glyph ID.
+    #[allow(clippy::wrong_self_convention)]
     fn to_u32(&self) -> u32 {
         self.inner.to_u32()
     }

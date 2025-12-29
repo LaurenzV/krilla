@@ -367,12 +367,13 @@ impl Path {
     /// Returns a new transformed path, or None if the transformation fails.
     /// Note: This consumes the original path.
     fn transform(&mut self, transform: &Transform) -> PyResult<Option<Path>> {
-        let path = self
-            .inner
-            .take()
-            .ok_or_else(|| pyo3::exceptions::PyRuntimeError::new_err("Path was already consumed"))?;
+        let path = self.inner.take().ok_or_else(|| {
+            pyo3::exceptions::PyRuntimeError::new_err("Path was already consumed")
+        })?;
 
-        Ok(path.transform(transform.inner).map(|p| Path { inner: Some(p) }))
+        Ok(path
+            .transform(transform.inner)
+            .map(|p| Path { inner: Some(p) }))
     }
 
     fn __repr__(&self) -> String {

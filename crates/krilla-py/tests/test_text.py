@@ -1,9 +1,8 @@
 """Tests for Pythonic text API (Glyph class and conversion utilities)."""
 
 import pytest
-
 from krilla import Glyph, GlyphId
-from krilla._krilla import char_to_byte_offset, char_range_to_bytes
+from krilla._krilla import char_range_to_bytes, char_to_byte_offset
 
 
 class TestCharToByteConversion:

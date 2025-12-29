@@ -6,10 +6,9 @@ Python Pillow (PIL) images into krilla images that can be embedded in PDFs.
 
 from pathlib import Path
 
+from krilla import Document, Image, PageSettings, Size
 from PIL import Image as PILImage
 from PIL import ImageDraw
-
-from krilla import Document, Image, PageSettings, Size
 
 
 def main():
@@ -37,10 +36,9 @@ def main():
     # Create a PDF and embed the image
     doc = Document()
 
-    with doc.start_page_with(PageSettings.from_wh(450, 250)) as page:
-        with page.surface() as surface:
-            # Draw the image at its full size
-            surface.draw_image(krilla_img, Size.from_wh(400, 200))
+    with doc.start_page_with(PageSettings.from_wh(450, 250)) as page, page.surface() as surface:
+        # Draw the image at its full size
+        surface.draw_image(krilla_img, Size.from_wh(400, 200))
 
     pdf = doc.finish()
 

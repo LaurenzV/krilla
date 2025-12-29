@@ -5,15 +5,15 @@ blend modes, opacity, and other graphics state operations.
 """
 
 from krilla import (
-    Document,
-    PageSettings,
-    Transform,
     BlendMode,
+    Document,
+    Fill,
+    NormalizedF32,
+    PageSettings,
+    Paint,
     PathBuilder,
     Rect,
-    Fill,
-    Paint,
-    NormalizedF32,
+    Transform,
     color,
 )
 
@@ -26,10 +26,12 @@ def main():
         page.surface() as surface,
     ):
         # Set fill for drawing
-        surface.set_fill(Fill(
-            paint=Paint.from_rgb(color.rgb(255, 0, 0)),
-            opacity=NormalizedF32.one(),
-        ))
+        surface.set_fill(
+            Fill(
+                paint=Paint.from_rgb(color.rgb(255, 0, 0)),
+                opacity=NormalizedF32.one(),
+            )
+        )
 
         # Old style - manual push/pop
         print("Drawing with manual push/pop style...")
@@ -54,10 +56,12 @@ def main():
             surface.blend_mode(BlendMode.Multiply),
             surface.opacity(NormalizedF32(0.7)),
         ):
-            surface.set_fill(Fill(
-                paint=Paint.from_rgb(color.rgb(0, 255, 0)),
-                opacity=NormalizedF32.one(),
-            ))
+            surface.set_fill(
+                Fill(
+                    paint=Paint.from_rgb(color.rgb(0, 255, 0)),
+                    opacity=NormalizedF32.one(),
+                )
+            )
             path3 = PathBuilder()
             path3.push_rect(Rect.from_xywh(0, 0, 50, 50))
             surface.draw_path(path3.finish())
@@ -70,10 +74,12 @@ def main():
             surface.transform(Transform.from_rotate(45)),
             surface.transform(Transform.from_scale(1.5, 1.5)),
         ):
-            surface.set_fill(Fill(
-                paint=Paint.from_rgb(color.rgb(0, 0, 255)),
-                opacity=NormalizedF32.one(),
-            ))
+            surface.set_fill(
+                Fill(
+                    paint=Paint.from_rgb(color.rgb(0, 0, 255)),
+                    opacity=NormalizedF32.one(),
+                )
+            )
             path4 = PathBuilder()
             path4.push_rect(Rect.from_xywh(-25, -25, 50, 50))
             surface.draw_path(path4.finish())
@@ -85,18 +91,22 @@ def main():
             surface.isolated(),
         ):
             # Everything in this group composites separately
-            surface.set_fill(Fill(
-                paint=Paint.from_rgb(color.rgb(255, 255, 0)),
-                opacity=NormalizedF32(0.5),
-            ))
+            surface.set_fill(
+                Fill(
+                    paint=Paint.from_rgb(color.rgb(255, 255, 0)),
+                    opacity=NormalizedF32(0.5),
+                )
+            )
             path5 = PathBuilder()
             path5.push_rect(Rect.from_xywh(0, 0, 60, 60))
             surface.draw_path(path5.finish())
 
-            surface.set_fill(Fill(
-                paint=Paint.from_rgb(color.rgb(0, 255, 255)),
-                opacity=NormalizedF32(0.5),
-            ))
+            surface.set_fill(
+                Fill(
+                    paint=Paint.from_rgb(color.rgb(0, 255, 255)),
+                    opacity=NormalizedF32(0.5),
+                )
+            )
             path6 = PathBuilder()
             path6.push_rect(Rect.from_xywh(30, 30, 60, 60))
             surface.draw_path(path6.finish())

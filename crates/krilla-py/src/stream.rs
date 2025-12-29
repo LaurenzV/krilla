@@ -292,9 +292,10 @@ impl StreamSurface {
 
         let mut state = self.builder_state.borrow_mut();
         state.push_count += 1;
-        state
-            .operations
-            .push(DrawOp::PushClipPath(Some(path_inner), clip_rule.into_inner()));
+        state.operations.push(DrawOp::PushClipPath(
+            Some(path_inner),
+            clip_rule.into_inner(),
+        ));
         Ok(())
     }
 

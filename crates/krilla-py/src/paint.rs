@@ -1,6 +1,6 @@
 //! Paint types for krilla Python bindings.
 
-use pyo3::prelude::*;
+use pyo3::{prelude::*, PyClassGuard};
 
 use crate::color::{CmykColor, Color, LumaColor, RgbColor};
 use crate::enums::{FillRule, LineCap, LineJoin, SpreadMethod};
@@ -179,6 +179,7 @@ pub struct LinearGradient {
 impl LinearGradient {
     /// Create a new linear gradient.
     #[new]
+    #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (x1, y1, x2, y2, stops, transform=None, spread_method=None, anti_alias=false))]
     fn new(
         x1: f32,
@@ -203,8 +204,8 @@ impl LinearGradient {
     }
 
     /// Convert to a Paint.
-    fn into_paint(&self) -> Paint {
-        Paint::from_linear_gradient(self)
+    fn into_paint(slf: PyClassGuard<'_, Self>) -> Paint {
+        Paint::from_linear_gradient(&slf)
     }
 
     fn __repr__(&self) -> String {
@@ -303,8 +304,8 @@ impl RadialGradient {
     }
 
     /// Convert to a Paint.
-    fn into_paint(&self) -> Paint {
-        Paint::from_radial_gradient(self)
+    fn into_paint(slf: PyClassGuard<'_, Self>) -> Paint {
+        Paint::from_radial_gradient(&slf)
     }
 
     fn __repr__(&self) -> String {
@@ -397,8 +398,8 @@ impl SweepGradient {
     }
 
     /// Convert to a Paint.
-    fn into_paint(&self) -> Paint {
-        Paint::from_sweep_gradient(self)
+    fn into_paint(slf: PyClassGuard<'_, Self>) -> Paint {
+        Paint::from_sweep_gradient(&slf)
     }
 
     fn __repr__(&self) -> String {
