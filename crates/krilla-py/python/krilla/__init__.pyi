@@ -897,26 +897,54 @@ class Validator(IntEnum):
     def recommended_version(self) -> PdfVersion: ...
 
 class Configuration:
-    """PDF generation configuration."""
-    def __init__(self) -> None: ...
-    @staticmethod
-    def with_validator(validator: Validator) -> Configuration: ...
-    @staticmethod
-    def with_version(version: PdfVersion) -> Configuration: ...
-    @staticmethod
-    def with_validator_and_version(
-        validator: Validator, version: PdfVersion
-    ) -> Configuration | None: ...
+    """PDF generation configuration.
+
+    Args:
+        validator: The validation standard to use (e.g., Validator.A2B for PDF/A-2b).
+                   If not specified, no validation is performed.
+        version: The PDF version to target. If not specified, uses the recommended
+                 version for the validator, or PDF 1.7 if no validator is set.
+
+    Raises:
+        ValueError: If the validator is incompatible with the specified version.
+    """
+
+    def __init__(
+        self,
+        validator: Validator | None = None,
+        version: PdfVersion | None = None,
+    ) -> None: ...
     @property
     def validator(self) -> Validator: ...
     @property
     def version(self) -> PdfVersion: ...
 
 class SerializeSettings:
-    """Settings for PDF serialization."""
-    def __init__(self) -> None: ...
-    @staticmethod
-    def with_configuration(configuration: Configuration) -> SerializeSettings: ...
+    """Settings for PDF serialization.
+
+    Args:
+        configuration: The PDF configuration (validator and version).
+        compress: Whether to compress content streams. Defaults to True.
+            Leads to significantly smaller files but longer running times.
+        ascii_compatible: Whether the PDF should be ASCII-compatible.
+            Defaults to False. This is best-effort; some content may be binary.
+        xmp_metadata: Whether to include XMP metadata. Defaults to False.
+            May be overridden by certain validators (e.g., PDF/A requires it).
+        no_device_cs: Whether to use device-independent colors. Defaults to False.
+            May be overridden by certain validators (e.g., PDF/A requires it).
+        enable_tagging: Whether to enable tagged PDF creation. Defaults to False.
+            May be overridden by certain validators (e.g., PDF/UA requires it).
+    """
+
+    def __init__(
+        self,
+        configuration: Configuration | None = None,
+        compress: bool = True,
+        ascii_compatible: bool = False,
+        xmp_metadata: bool = False,
+        no_device_cs: bool = False,
+        enable_tagging: bool = False,
+    ) -> None: ...
 
 # Metadata and interchange types
 class DateTime:
@@ -979,14 +1007,31 @@ class EmbeddedFile:
 # Page settings
 class PageSettings:
     """Settings for a PDF page."""
+
     def __init__(self, size: Size) -> None: ...
     @staticmethod
     def from_wh(width: float, height: float) -> PageSettings: ...
-    def with_media_box(self, media_box: Rect | None) -> PageSettings: ...
-    def with_crop_box(self, crop_box: Rect | None) -> PageSettings: ...
-    def with_bleed_box(self, bleed_box: Rect | None) -> PageSettings: ...
-    def with_trim_box(self, trim_box: Rect | None) -> PageSettings: ...
-    def with_art_box(self, art_box: Rect | None) -> PageSettings: ...
+    def with_page_boxes(
+        self,
+        media_box: Rect | None = None,
+        crop_box: Rect | None = None,
+        bleed_box: Rect | None = None,
+        trim_box: Rect | None = None,
+        art_box: Rect | None = None,
+    ) -> PageSettings:
+        """Set page boxes for the page.
+
+        Args:
+            media_box: The media box (total physical page size).
+            crop_box: The crop box (visible region when displayed/printed).
+            bleed_box: The bleed box (region for printing bleed).
+            trim_box: The trim box (intended final page size after trimming).
+            art_box: The art box (meaningful content region).
+
+        Returns:
+            A new PageSettings with the specified boxes set.
+        """
+        ...
 
 # Context manager types for graphics state operations
 class TransformContext:

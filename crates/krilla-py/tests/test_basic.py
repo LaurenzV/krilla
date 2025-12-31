@@ -377,21 +377,40 @@ class TestConfiguration:
         assert c.version == PdfVersion.Pdf17
 
     def test_configuration_with_validator(self):
-        c = Configuration.with_validator(Validator.A2B)
+        c = Configuration(validator=Validator.A2B)
         assert c.validator == Validator.A2B
 
     def test_configuration_with_version(self):
-        c = Configuration.with_version(PdfVersion.Pdf20)
+        c = Configuration(version=PdfVersion.Pdf20)
         assert c.version == PdfVersion.Pdf20
+
+    def test_configuration_with_both(self):
+        c = Configuration(validator=Validator.A2B, version=PdfVersion.Pdf17)
+        assert c.validator == Validator.A2B
+        assert c.version == PdfVersion.Pdf17
+
+    def test_configuration_incompatible_raises(self):
+        import pytest
+
+        # PDF/A-4 requires PDF 2.0, so PDF 1.7 is incompatible
+        with pytest.raises(ValueError):
+            Configuration(validator=Validator.A4, version=PdfVersion.Pdf17)
 
     def test_serialize_settings(self):
         s = SerializeSettings()
         assert s is not None
 
     def test_serialize_settings_with_config(self):
-        c = Configuration.with_validator(Validator.A2B)
-        s = SerializeSettings.with_configuration(c)
+        c = Configuration(validator=Validator.A2B)
+        s = SerializeSettings(configuration=c)
         assert s is not None
+
+    def test_serialize_settings_with_options(self):
+        s = SerializeSettings(compress=False, xmp_metadata=True, enable_tagging=True)
+        assert s is not None
+        assert "compress=false" in repr(s).lower()
+        assert "xmp_metadata=true" in repr(s).lower()
+        assert "enable_tagging=true" in repr(s).lower()
 
 
 class TestPageSettings:
@@ -407,7 +426,8 @@ class TestPageSettings:
     def test_page_settings_with_boxes(self):
         ps = PageSettings.from_wh(200.0, 200.0)
         crop = Rect.from_xywh(10.0, 10.0, 180.0, 180.0)
-        ps2 = ps.with_crop_box(crop)
+        bleed = Rect.from_xywh(5.0, 5.0, 190.0, 190.0)
+        ps2 = ps.with_page_boxes(crop_box=crop, bleed_box=bleed)
         assert ps2 is not None
 
 

@@ -149,37 +149,35 @@ pub struct Configuration {
 
 #[pymethods]
 impl Configuration {
-    /// Create a new configuration with defaults.
-    #[new]
-    fn new() -> Self {
-        Configuration {
-            inner: krilla::configure::Configuration::new(),
-        }
-    }
-
-    /// Create a configuration with a specific validator.
-    #[staticmethod]
-    fn with_validator(validator: Validator) -> Self {
-        Configuration {
-            inner: krilla::configure::Configuration::new_with_validator(validator.into_inner()),
-        }
-    }
-
-    /// Create a configuration with a specific PDF version.
-    #[staticmethod]
-    fn with_version(version: PdfVersion) -> Self {
-        Configuration {
-            inner: krilla::configure::Configuration::new_with_version(version.into_inner()),
-        }
-    }
-
-    /// Create a configuration with both validator and version.
+    /// Create a new configuration.
     ///
-    /// Returns None if the validator is incompatible with the version.
-    #[staticmethod]
-    fn with_validator_and_version(validator: Validator, version: PdfVersion) -> Option<Self> {
-        krilla::configure::Configuration::new_with(validator.into_inner(), version.into_inner())
-            .map(|c| Configuration { inner: c })
+    /// Args:
+    ///     validator: The validation standard to use (e.g., Validator.A2B for PDF/A-2b).
+    ///                If not specified, no validation is performed.
+    ///     version: The PDF version to target. If not specified, uses the recommended
+    ///              version for the validator, or PDF 1.7 if no validator is set.
+    ///
+    /// Raises:
+    ///     ValueError: If the validator is incompatible with the specified version.
+    #[new]
+    #[pyo3(signature = (validator=None, version=None))]
+    fn new(validator: Option<Validator>, version: Option<PdfVersion>) -> PyResult<Self> {
+        let inner = match (validator, version) {
+            (None, None) => krilla::configure::Configuration::new(),
+            (Some(v), None) => krilla::configure::Configuration::new_with_validator(v.into_inner()),
+            (None, Some(v)) => krilla::configure::Configuration::new_with_version(v.into_inner()),
+            (Some(val), Some(ver)) => {
+                krilla::configure::Configuration::new_with(val.into_inner(), ver.into_inner())
+                    .ok_or_else(|| {
+                        pyo3::exceptions::PyValueError::new_err(format!(
+                            "Validator {:?} is incompatible with PDF version {}",
+                            val,
+                            ver.as_str()
+                        ))
+                    })?
+            }
+        };
+        Ok(Configuration { inner })
     }
 
     /// Get the validator.
@@ -218,27 +216,53 @@ pub struct SerializeSettings {
 
 #[pymethods]
 impl SerializeSettings {
-    /// Create new serialize settings with defaults.
+    /// Create new serialize settings.
+    ///
+    /// Args:
+    ///     configuration: The PDF configuration (validator and version).
+    ///     compress: Whether to compress content streams. Defaults to True.
+    ///               Leads to significantly smaller files but longer running times.
+    ///     ascii_compatible: Whether the PDF should be ASCII-compatible. Defaults to False.
+    ///                       Note: This is best-effort only; some content may still be binary.
+    ///     xmp_metadata: Whether to include XMP metadata. Defaults to False.
+    ///                   May be overridden by certain validators (e.g., PDF/A requires it).
+    ///     no_device_cs: Whether to use device-independent colors. Defaults to False.
+    ///                   May be overridden by certain validators (e.g., PDF/A requires it).
+    ///     enable_tagging: Whether to enable tagged PDF creation. Defaults to False.
+    ///                     May be overridden by certain validators (e.g., PDF/UA requires it).
     #[new]
-    fn new() -> Self {
-        SerializeSettings {
-            inner: krilla::SerializeSettings::default(),
-        }
-    }
-
-    /// Create serialize settings with a specific configuration.
-    #[staticmethod]
-    fn with_configuration(configuration: Configuration) -> Self {
+    #[pyo3(signature = (configuration=None, compress=true, ascii_compatible=false, xmp_metadata=false, no_device_cs=false, enable_tagging=false))]
+    fn new(
+        configuration: Option<Configuration>,
+        compress: bool,
+        ascii_compatible: bool,
+        xmp_metadata: bool,
+        no_device_cs: bool,
+        enable_tagging: bool,
+    ) -> Self {
         SerializeSettings {
             inner: krilla::SerializeSettings {
-                configuration: configuration.into_inner(),
-                ..Default::default()
+                configuration: configuration.map(|c| c.into_inner()).unwrap_or_default(),
+                compress_content_streams: compress,
+                ascii_compatible,
+                xmp_metadata,
+                no_device_cs,
+                cmyk_profile: None,
+                enable_tagging,
+                render_svg_glyph_fn: |_, _, _, _, _| None,
             },
         }
     }
 
     fn __repr__(&self) -> String {
-        "SerializeSettings(...)".to_string()
+        format!(
+            "SerializeSettings(compress={}, ascii_compatible={}, xmp_metadata={}, no_device_cs={}, enable_tagging={})",
+            self.inner.compress_content_streams,
+            self.inner.ascii_compatible,
+            self.inner.xmp_metadata,
+            self.inner.no_device_cs,
+            self.inner.enable_tagging
+        )
     }
 }
 
