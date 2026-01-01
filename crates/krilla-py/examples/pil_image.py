@@ -36,7 +36,10 @@ def main():
     # Create a PDF and embed the image
     doc = Document()
 
-    with doc.start_page_with(PageSettings.from_wh(450, 250)) as page, page.surface() as surface:
+    with (
+        doc.start_page_with(PageSettings.from_wh(450, 250)) as page,
+        page.surface() as surface,
+    ):
         # Draw the image at its full size
         surface.draw_image(krilla_img, Size.from_wh(400, 200))
 
