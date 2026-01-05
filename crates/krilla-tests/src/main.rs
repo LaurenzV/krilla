@@ -561,7 +561,11 @@ pub fn check_render(
 pub fn render_document(doc: &[u8], renderer: &Backend) -> RenderedDocument {
     let options = RenderOptions { scale: 1.0 };
 
-    RENDER_INSTANCE.as_ref().unwrap().render(renderer, doc, &options).unwrap()
+    RENDER_INSTANCE
+        .as_ref()
+        .unwrap()
+        .render(renderer, doc, &options)
+        .unwrap()
 }
 
 pub fn get_diff(expected_image: &RgbaImage, actual_image: &RgbaImage) -> (RgbaImage, u32) {
