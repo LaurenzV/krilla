@@ -37,10 +37,7 @@ use krilla::SerializeSettings;
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
-use sitro::{
-    render_ghostscript, render_mupdf, render_pdfbox, render_pdfium, render_poppler, render_quartz,
-    RenderOptions, RenderedDocument, RenderedPage, Renderer,
-};
+use sitro::{Backend, RenderOptions, RenderedDocument, RenderedPage, RENDER_INSTANCE};
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
@@ -465,7 +462,7 @@ pub const fn loc(l: u64) -> Location {
 pub fn check_render(
     name: &str,
     sub_folder: Option<&str>,
-    renderer: &Renderer,
+    renderer: &Backend,
     document: RenderedDocument,
     pdf: &[u8],
     ignore_renderer: bool,
@@ -561,18 +558,10 @@ pub fn check_render(
     }
 }
 
-pub fn render_document(doc: &[u8], renderer: &Renderer) -> RenderedDocument {
+pub fn render_document(doc: &[u8], renderer: &Backend) -> RenderedDocument {
     let options = RenderOptions { scale: 1.0 };
 
-    match renderer {
-        Renderer::Pdfium => render_pdfium(doc, &options).unwrap(),
-        Renderer::Mupdf => render_mupdf(doc, &options).unwrap(),
-        Renderer::Poppler => render_poppler(doc, &options).unwrap(),
-        Renderer::Quartz => render_quartz(doc, &options).unwrap(),
-        Renderer::Pdfbox => render_pdfbox(doc, &options).unwrap(),
-        Renderer::Ghostscript => render_ghostscript(doc, &options).unwrap(),
-        _ => unreachable!(),
-    }
+    RENDER_INSTANCE.as_ref().unwrap().render(renderer, doc, &options).unwrap()
 }
 
 pub fn get_diff(expected_image: &RgbaImage, actual_image: &RgbaImage) -> (RgbaImage, u32) {
@@ -837,7 +826,7 @@ pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     Arc::new(fontdb)
 });
 
-pub(crate) fn svg_impl(name: &str, renderer: Renderer, ignore_renderer: bool) {
+pub(crate) fn svg_impl(name: &str, renderer: Backend, ignore_renderer: bool) {
     let settings = default();
     let mut d = Document::new_with(settings);
     let svg_path = ASSETS_PATH.join(format!("svgs/{name}.svg"));

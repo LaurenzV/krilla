@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use sitro::Renderer;
+use sitro::Backend;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Ident, ItemFn, Token};
@@ -110,15 +110,15 @@ trait RendererExt {
     fn as_token_stream(&self) -> proc_macro2::TokenStream;
 }
 
-impl RendererExt for Renderer {
+impl RendererExt for Backend {
     fn as_token_stream(&self) -> proc_macro2::TokenStream {
         match self {
-            Renderer::Pdfium => quote!(Renderer::Pdfium),
-            Renderer::Mupdf => quote!(Renderer::Mupdf),
-            Renderer::Poppler => quote!(Renderer::Poppler),
-            Renderer::Quartz => quote!(Renderer::Quartz),
-            Renderer::Pdfbox => quote!(Renderer::Pdfbox),
-            Renderer::Ghostscript => quote!(Renderer::Ghostscript),
+            Backend::Pdfium => quote!(Backend::Pdfium),
+            Backend::Mupdf => quote!(Backend::Mupdf),
+            Backend::Poppler => quote!(Backend::Poppler),
+            Backend::Quartz => quote!(Backend::Quartz),
+            Backend::Pdfbox => quote!(Backend::Pdfbox),
+            Backend::Ghostscript => quote!(Backend::Ghostscript),
             _ => unreachable!(),
         }
     }
@@ -224,7 +224,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let renderer_body = |renderer: Renderer, include: bool| {
+    let renderer_body = |renderer: Backend, include: bool| {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
@@ -234,7 +234,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
             quote! {}
         };
 
-        let quartz_snippet = if renderer == Renderer::Quartz || only_macos {
+        let quartz_snippet = if renderer == Backend::Quartz || only_macos {
             quote! { #[cfg(target_os = "macos")] }
         } else {
             quote! {}
@@ -250,7 +250,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                     use krilla::geom::Size;
                     use krilla::{Document, SerializeSettings};
                     use krilla::page::PageSettings;
-                    use sitro::Renderer;
+                    use sitro::Backend;
                     let renderer = #renderer_ident;
 
                     #fn_body
@@ -261,12 +261,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let pdfium = renderer_body(Renderer::Pdfium, pdfium);
-    let mupdf = renderer_body(Renderer::Mupdf, mupdf);
-    let ghostscript = renderer_body(Renderer::Ghostscript, ghostscript);
-    let pdfbox = renderer_body(Renderer::Pdfbox, pdfbox);
-    let poppler = renderer_body(Renderer::Poppler, poppler);
-    let quartz = renderer_body(Renderer::Quartz, quartz);
+    let pdfium = renderer_body(Backend::Pdfium, pdfium);
+    let mupdf = renderer_body(Backend::Mupdf, mupdf);
+    let ghostscript = renderer_body(Backend::Ghostscript, ghostscript);
+    let pdfbox = renderer_body(Backend::Pdfbox, pdfbox);
+    let poppler = renderer_body(Backend::Poppler, poppler);
+    let quartz = renderer_body(Backend::Quartz, quartz);
 
     let expanded = quote! {
         #input_fn
