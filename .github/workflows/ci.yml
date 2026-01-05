@@ -30,6 +30,9 @@ jobs:
       - name: Pull sitro Docker image
         run: docker pull vallaris/sitro-backends:latest
 
+      - name: Install ghostscript
+        run: sudo apt-get update && sudo apt-get install -y ghostscript
+
       - name: Download Arlington model
         run: |
           curl -LO https://software.verapdf.org/dev/arlington/1.29/verapdf-arlington-1.29.9-installer.zip
@@ -65,6 +68,9 @@ jobs:
       - name: Run veraPDF tests
         run: find store -name "validate*.pdf"
           | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
+
+      - name: Check PDFs with ghostscript
+        run: python3 check_gs.py
 
   checks:
     name: Check clippy, formatting, and documentation
