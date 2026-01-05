@@ -1829,7 +1829,7 @@ checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 [[package]]
 name = "sitro"
 version = "0.1.0"
-source = "git+https://github.com/LaurenzV/sitro?rev=df2f331#df2f3311e515b2f27ae1e9db36b23924947032d4"
+source = "git+https://github.com/LaurenzV/sitro?rev=1af93db#1af93dbb13df90d7f4b7ad4cc01278333eac2a98"
 dependencies = [
  "core-foundation",
  "core-graphics",
