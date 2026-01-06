@@ -72,13 +72,22 @@ impl Cacheable for XObject {
             sc.register_validation_error(validation_error.clone());
         }
 
-        if self.0.isolated || self.0.transparency_group_color_space {
+        let use_transparency_group = self.0.isolated || self.0.transparency_group_color_space;
+
+        if use_transparency_group {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
         }
 
         let serialize_settings = sc.serialize_settings();
 
-        let transparency_group_cs = if self.0.transparency_group_color_space {
+        // "Ordinarily, the CS entry may be present only for isolated transparency groups (those
+        // for which I is true), and even then it is optional. However, this entry shall be present in
+        // the group attributes dictionary for any transparency group XObject that has no parent
+        // group or page from which to inherit."
+        //
+        // So while we don't technically always need to write it, let's just play it save
+        // and always add a group color space in case we have a transparency group.
+        let transparency_group_cs = if use_transparency_group {
             Some(sc.register_colorspace(rgb::color_space(serialize_settings.no_device_cs)))
         } else {
             None
@@ -104,7 +113,7 @@ impl Cacheable for XObject {
                     .to_pdf_rect(),
             );
 
-            if self.0.isolated || self.0.transparency_group_color_space {
+            if use_transparency_group {
                 let mut group = x_object.group();
                 let transparency = group.transparency();
 
