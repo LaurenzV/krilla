@@ -3,7 +3,6 @@ on: [push, pull_request]
 
 env:
   KRILLA_THRESHOLD: "100"
-  VISREG: ""
   STORE: ""
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
@@ -51,7 +50,7 @@ jobs:
         run: cargo build
 
       - name: Run tests
-        run: cargo test --workspace -- --nocapture
+        run: cargo test -p krilla-tests --features visreg -- --nocapture
 
       - name: Upload artifacts
         if: failure()

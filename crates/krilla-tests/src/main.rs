@@ -37,6 +37,7 @@ use krilla::SerializeSettings;
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
 use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
+#[cfg(feature = "visreg")]
 use sitro::{Backend, RenderOptions, RenderedDocument, RenderedPage, RENDER_INSTANCE};
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
@@ -459,6 +460,7 @@ pub const fn loc(l: u64) -> Location {
     NonZeroU64::new(l).unwrap()
 }
 
+#[cfg(feature = "visreg")]
 pub fn check_render(
     name: &str,
     sub_folder: Option<&str>,
@@ -558,6 +560,7 @@ pub fn check_render(
     }
 }
 
+#[cfg(feature = "visreg")]
 pub fn render_document(doc: &[u8], renderer: &Backend) -> RenderedDocument {
     let options = RenderOptions { scale: 1.0 };
 
@@ -830,6 +833,7 @@ pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     Arc::new(fontdb)
 });
 
+#[cfg(feature = "visreg")]
 pub(crate) fn svg_impl(name: &str, renderer: Backend, ignore_renderer: bool) {
     let settings = default();
     let mut d = Document::new_with(settings);

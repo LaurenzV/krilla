@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
+#[cfg(feature = "visreg")]
 use sitro::Backend;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -106,10 +107,12 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
+#[cfg(feature = "visreg")]
 trait RendererExt {
     fn as_token_stream(&self) -> proc_macro2::TokenStream;
 }
 
+#[cfg(feature = "visreg")]
 impl RendererExt for Backend {
     fn as_token_stream(&self) -> proc_macro2::TokenStream {
         match self {
@@ -124,9 +127,20 @@ impl RendererExt for Backend {
     }
 }
 
-const VISREG: Option<&str> = option_env!("VISREG");
+#[cfg(feature = "visreg")]
 const SKIP_SVG: Option<&str> = option_env!("SKIP_SVG");
 
+#[cfg(not(feature = "visreg"))]
+#[proc_macro_attribute]
+pub fn visreg(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(item as ItemFn);
+    let expanded = quote! {
+        #input_fn
+    };
+    expanded.into()
+}
+
+#[cfg(feature = "visreg")]
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
@@ -228,7 +242,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
-        let ignore_snippet = if VISREG.is_none() || ignore || (SKIP_SVG.is_some() && is_svg) {
+        let ignore_snippet = if ignore || (SKIP_SVG.is_some() && is_svg) {
             quote! { #[ignore] }
         } else {
             quote! {}
