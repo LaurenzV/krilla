@@ -7,6 +7,9 @@ repository.workspace = true
 readme.workspace = true
 license.workspace = true
 
+[features]
+visreg = ["krilla-macros/visreg", "dep:sitro"]
+
 [dependencies]
 krilla-svg = { workspace = true }
 krilla = { workspace = true, features = ["raster-images", "simple-text", "pdf"] }
@@ -16,7 +19,7 @@ usvg = { workspace = true }
 skrifa = { workspace = true }
 oxipng = { workspace = true }
 image = { workspace = true, features = ["png"] }
-sitro = { workspace = true }
+sitro = { workspace = true, optional = true }
 difference = { workspace = true }
 tiny-skia-path = { workspace = true }
 once_cell = { workspace = true }

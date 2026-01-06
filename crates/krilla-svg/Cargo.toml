@@ -8,7 +8,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-png = { workspace = true }
 krilla = { workspace = true, features = ["raster-images"] }
 usvg = { workspace = true }
 tiny-skia = { workspace = true }
@@ -16,7 +15,3 @@ resvg = { workspace = true }
 flate2 = { workspace = true }
 fontdb = { workspace = true }
 
-[dev-dependencies]
-krilla-macros = { workspace = true }
-sitro = { workspace = true }
-once_cell = { workspace = true }

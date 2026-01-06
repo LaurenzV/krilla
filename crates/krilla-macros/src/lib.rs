@@ -1,6 +1,7 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use sitro::Renderer;
+#[cfg(feature = "visreg")]
+use sitro::Backend;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Ident, ItemFn, Token};
@@ -106,27 +107,40 @@ pub fn snapshot(attr: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
+#[cfg(feature = "visreg")]
 trait RendererExt {
     fn as_token_stream(&self) -> proc_macro2::TokenStream;
 }
 
-impl RendererExt for Renderer {
+#[cfg(feature = "visreg")]
+impl RendererExt for Backend {
     fn as_token_stream(&self) -> proc_macro2::TokenStream {
         match self {
-            Renderer::Pdfium => quote!(Renderer::Pdfium),
-            Renderer::Mupdf => quote!(Renderer::Mupdf),
-            Renderer::Poppler => quote!(Renderer::Poppler),
-            Renderer::Quartz => quote!(Renderer::Quartz),
-            Renderer::Pdfbox => quote!(Renderer::Pdfbox),
-            Renderer::Ghostscript => quote!(Renderer::Ghostscript),
+            Backend::Pdfium => quote!(Backend::Pdfium),
+            Backend::Mupdf => quote!(Backend::Mupdf),
+            Backend::Poppler => quote!(Backend::Poppler),
+            Backend::Quartz => quote!(Backend::Quartz),
+            Backend::Pdfbox => quote!(Backend::Pdfbox),
+            Backend::Ghostscript => quote!(Backend::Ghostscript),
             _ => unreachable!(),
         }
     }
 }
 
-const VISREG: Option<&str> = option_env!("VISREG");
+#[cfg(feature = "visreg")]
 const SKIP_SVG: Option<&str> = option_env!("SKIP_SVG");
 
+#[cfg(not(feature = "visreg"))]
+#[proc_macro_attribute]
+pub fn visreg(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(item as ItemFn);
+    let expanded = quote! {
+        #input_fn
+    };
+    expanded.into()
+}
+
+#[cfg(feature = "visreg")]
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
@@ -224,17 +238,17 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let renderer_body = |renderer: Renderer, include: bool| {
+    let renderer_body = |renderer: Backend, include: bool| {
         let name = format_ident!("{}_visreg_{}", fn_name.to_string(), renderer.name());
         let renderer_ident = renderer.as_token_stream();
 
-        let ignore_snippet = if VISREG.is_none() || ignore || (SKIP_SVG.is_some() && is_svg) {
+        let ignore_snippet = if ignore || (SKIP_SVG.is_some() && is_svg) {
             quote! { #[ignore] }
         } else {
             quote! {}
         };
 
-        let quartz_snippet = if renderer == Renderer::Quartz || only_macos {
+        let quartz_snippet = if renderer == Backend::Quartz || only_macos {
             quote! { #[cfg(target_os = "macos")] }
         } else {
             quote! {}
@@ -250,7 +264,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
                     use krilla::geom::Size;
                     use krilla::{Document, SerializeSettings};
                     use krilla::page::PageSettings;
-                    use sitro::Renderer;
+                    use sitro::Backend;
                     let renderer = #renderer_ident;
 
                     #fn_body
@@ -261,12 +275,12 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let pdfium = renderer_body(Renderer::Pdfium, pdfium);
-    let mupdf = renderer_body(Renderer::Mupdf, mupdf);
-    let ghostscript = renderer_body(Renderer::Ghostscript, ghostscript);
-    let pdfbox = renderer_body(Renderer::Pdfbox, pdfbox);
-    let poppler = renderer_body(Renderer::Poppler, poppler);
-    let quartz = renderer_body(Renderer::Quartz, quartz);
+    let pdfium = renderer_body(Backend::Pdfium, pdfium);
+    let mupdf = renderer_body(Backend::Mupdf, mupdf);
+    let ghostscript = renderer_body(Backend::Ghostscript, ghostscript);
+    let pdfbox = renderer_body(Backend::Pdfbox, pdfbox);
+    let poppler = renderer_body(Backend::Poppler, poppler);
+    let quartz = renderer_body(Backend::Quartz, quartz);
 
     let expanded = quote! {
         #input_fn
