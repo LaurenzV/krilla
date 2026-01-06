@@ -123,17 +123,22 @@ fn typst_issue_5509_common(document: &mut Document, name: &str) {
     surface.pop();
 }
 
-#[visreg(document, pdfium, quartz)]
+// Unfortunately since macOS 26, it seems like a new bug was introduced such that
+// the below issues render incorrectly when rendered as a thumbnail (the one shown
+// in Finder), but it still displays fine in Apple Preview. Therefore, we have
+// to disable the tests.
+
+#[visreg(document, pdfium, quartz, ignore)]
 fn typst_issue_5509_1(document: &mut Document) {
     typst_issue_5509_common(document, "custom_typst_issue_5509_1.svg");
 }
 
-#[visreg(document, pdfium, quartz)]
+#[visreg(document, pdfium, quartz, ignore)]
 fn typst_issue_5509_2(document: &mut Document) {
     typst_issue_5509_common(document, "custom_typst_issue_5509_2.svg");
 }
 
-#[visreg(document, pdfium, quartz)]
+#[visreg(document, pdfium, quartz, ignore)]
 fn typst_issue_5509_3(document: &mut Document) {
     typst_issue_5509_common(document, "custom_typst_issue_5509_3.svg");
 }
