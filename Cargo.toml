@@ -8,6 +8,7 @@ members = [
 [workspace.package]
 authors = ["Laurenz Stampfl <laurenz.stampfl@gmail.com>"]
 edition = "2021"
+rust-version = "1.89" # also change in ci.yml
 repository = "https://github.com/LaurenzV/krilla"
 readme = "README.md"
 license = "MIT OR Apache-2.0"

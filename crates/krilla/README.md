@@ -13,6 +13,9 @@ involved in creating a PDF file, instead providing an interface with high-level 
 as fills, strokes, gradient, glyphs and images which can be used and combined easily
 without having to worry about low-level details.
 
+To get started, take a look at the [`document`] module that explains how you can create
+a document using krilla.
+
 ## Example
 
 The following example shows some of the features of krilla in action.
@@ -47,7 +50,7 @@ let font = {
 };
 
 // Add a new page with dimensions 200x200.
-let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 // Get the surface of the page.
 let mut surface = page.surface();
 // Draw some text.
@@ -80,7 +83,7 @@ surface.finish();
 page.finish();
 
 // Start a new page.
-let mut page = document.start_page_with(PageSettings::new(200.0, 200.0));
+let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 // Create the triangle.
 let triangle = {
     let mut pb = PathBuilder::new();
@@ -137,9 +140,15 @@ eprintln!("Saved PDF to '{}'", path.display());
 // Write the PDF to a file.
 std::fs::write(path, &pdf).unwrap();
 ```
+
+## Minimum Supported Rust Version (MSRV)
+
+The minimum supported Rust version is **1.89**.
+
 [krilla]: https://github.com/LaurenzV/krilla
 [pdf-writer]: https://github.com/typst/pdf-writer
 [examples]: https://github.com/LaurenzV/krilla/tree/main/crates/krilla/examples
+[`document`]: https://docs.rs/krilla/latest/krilla/document/
 
 <!-- cargo-rdme end -->
 
