@@ -25,12 +25,9 @@ a very specific setup on your computer.
 If you really do need to run the visual regression tests, you can run
 `VISREG="" cargo test`. `krilla` uses my own small library called `sitro` (https://github.com/LaurenzV/sitro) that
 I built for this purpose to render PDFs, which basically is an abstraction over different PDF viewers and allows
-rendering PDF to bitmap images. However, the prerequisite is that you have the programs installed on your system and
-set the corresponding environment variables. You can take a look at the `ci.yml` file to see what the basic necessary
-setup is. On MacOS systems, you need to build another additional program that uses Quartz to render PDFs. See the README
-of `sitro` for more information on how to do that. As you can imagine, setting this up is quite a pain, but hopefully,
-for most cases it should be enough to just run the snapshot tests.
+rendering PDF to bitmap images. You simply need to download the DOcker image (see the README of the crate) and
+make sure that Docker is enabled when running the tests.
 
-In addition to that, you can prepend `SKIP_SVG` to skip the SVG-related visual regression tests. You can prepent
+In addition to that, you can prepend `SKIP_SVG` to skip the SVG-related visual regression tests. You can prepend
 `REPLACE` to overwrite the currently existing references images/snapshots, and you can use `STORE` to store the
 final PDF version of each tests in the `store` directory, which makes it easier to manually inspect them.
