@@ -134,9 +134,15 @@ eprintln!("Saved PDF to '{}'", path.display());
 // Write the PDF to a file.
 std::fs::write(path, &pdf).unwrap();
 ```
+
+# Minimum Supported Rust Version (MSRV)
+
+The minimum supported Rust version is **1.89**.
+
 [krilla]: https://github.com/LaurenzV/krilla
 [pdf-writer]: https://github.com/typst/pdf-writer
 [examples]: https://github.com/LaurenzV/krilla/tree/main/crates/krilla/examples
+[`document`]: crate::document
 */
 
 #![deny(missing_docs)]

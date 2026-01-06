@@ -241,20 +241,15 @@ impl From<Pattern> for Paint {
 }
 
 /// A spread method.
-#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone, Default)]
 pub enum SpreadMethod {
     /// The pad spread method.
+    #[default]
     Pad,
     /// The reflect spread method.
     Reflect,
     /// The repeat spread method.
     Repeat,
-}
-
-impl Default for SpreadMethod {
-    fn default() -> Self {
-        Self::Pad
-    }
 }
 
 /// A color stop in a gradient.
@@ -408,18 +403,13 @@ impl Stroke {
 }
 
 /// A fill rule.
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Default)]
 pub enum FillRule {
     /// The `non-zero` fill rule.
+    #[default]
     NonZero,
     /// The `even-odd` fill rule.
     EvenOdd,
-}
-
-impl Default for FillRule {
-    fn default() -> Self {
-        Self::NonZero
-    }
 }
 
 /// A fill.

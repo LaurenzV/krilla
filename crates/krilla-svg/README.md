@@ -12,5 +12,8 @@ to PDF.
 
 [krilla]: https://github.com/LaurenzV/krilla
 
+## Minimum Supported Rust Version (MSRV)
+The minimum supported Rust version is **1.89**.
+
 ## License
 This crate is dual-licensed under the MIT and Apache 2.0 licenses.

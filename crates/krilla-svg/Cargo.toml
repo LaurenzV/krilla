@@ -2,10 +2,11 @@
 name = "krilla-svg"
 version = "0.3.0"
 description = "Converting SVG files to PDF."
-authors.workspace = true
-edition.workspace = true
-repository.workspace = true
-license.workspace = true
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+license = { workspace = true }
 
 [dependencies]
 krilla = { workspace = true, features = ["raster-images"] }
