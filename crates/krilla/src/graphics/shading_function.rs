@@ -85,16 +85,16 @@ pub(crate) enum GradientProperties {
 
 impl GradientProperties {
     // Check if the gradient could be encoded as a solid fill instead.
-    pub(crate) fn single_stop_color(&self) -> Option<(Color, NormalizedF32)> {
+    pub(crate) fn single_stop_color(&self) -> Option<(&Color, NormalizedF32)> {
         match self {
             GradientProperties::RadialAxialGradient(rag) => {
                 if rag.stops.len() == 1 {
-                    return Some((rag.stops[0].color.clone(), rag.stops[0].opacity));
+                    return Some((&rag.stops[0].color, rag.stops[0].opacity));
                 }
             }
             GradientProperties::PostScriptGradient(psg) => {
                 if psg.stops.len() == 1 {
-                    return Some((psg.stops[0].color.clone(), psg.stops[0].opacity));
+                    return Some((&psg.stops[0].color, psg.stops[0].opacity));
                 }
             }
         }
@@ -352,13 +352,11 @@ fn select_axial_radial_function(
             serialize_exponential(
                 stops[0]
                     .color
-                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 stops[1]
                     .color
-                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
@@ -725,7 +723,7 @@ fn encode_stops_impl<'a>(
         if use_opacities {
             code.push(Real(stops[0].opacity.get()));
         } else {
-            code.extend(stops[0].color.clone().to_pdf_color().into_iter().map(Real));
+            code.extend(stops[0].color.to_pdf_color().into_iter().map(Real));
         }
     } else {
         let length = max - min;
@@ -746,13 +744,11 @@ fn encode_stops_impl<'a>(
             encode_two_stops(
                 &stops[0]
                     .color
-                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
                 &stops[1]
                     .color
-                    .clone()
                     .to_pdf_color()
                     .into_iter()
                     .collect::<Vec<_>>(),
@@ -788,18 +784,8 @@ fn serialize_stitching(
             (vec![first.opacity.get()], vec![second.opacity.get()])
         } else {
             (
-                first
-                    .color
-                    .clone()
-                    .to_pdf_color()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                second
-                    .color
-                    .clone()
-                    .to_pdf_color()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
+                first.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
             )
         };
 

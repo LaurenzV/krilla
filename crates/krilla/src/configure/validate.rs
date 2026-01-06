@@ -32,12 +32,12 @@ use xmp_writer::XmpWriter;
 
 use crate::color::separation::SeparationColorant;
 use crate::color::separation::SeparationSpace;
+use crate::color::RegularColor;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
-use crate::util::SipHashable;
 
 /// An error that occurred during validation/
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -809,7 +809,7 @@ pub(crate) struct ValidationStore {
     /// color. Used to track that a name is only ever matched with a single
     /// fallback color. Since Krilla manages the `tintTransform` functions,
     /// those are always equivalent.
-    separation_fallback_map: HashMap<SeparationColorant, u128>,
+    separation_fallback_map: HashMap<SeparationColorant, RegularColor>,
 }
 
 impl ValidationStore {
@@ -823,12 +823,11 @@ impl ValidationStore {
         &mut self,
         separation: &SeparationSpace,
     ) -> Result<(), ValidationError> {
-        let fallback_hash = separation.fallback.sip_hash();
         if self
             .separation_fallback_map
             .entry(separation.colorant.clone())
-            .or_insert_with(|| fallback_hash)
-            == &fallback_hash
+            .or_insert(separation.fallback)
+            == &separation.fallback
         {
             Ok(())
         } else {

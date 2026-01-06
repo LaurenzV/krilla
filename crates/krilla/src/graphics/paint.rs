@@ -185,7 +185,7 @@ impl Paint {
         match &self.0 {
             InnerPaint::Color(c) => match c {
                 Color::Regular(c) => c.as_rgb(),
-                Color::Special(SpecialColor::Separation(c)) => c.1.fallback.as_rgb(),
+                Color::Special(SpecialColor::Separation(c)) => c.space.fallback.as_rgb(),
             },
             _ => None,
         }

@@ -2,7 +2,7 @@
 //!
 //! # Color spaces
 //!
-//! krilla currently supports three color models:
+//! krilla currently supports four color models:
 //! - RGB
 //! - Luma
 //! - CMYK
@@ -121,7 +121,7 @@ impl Color {
     pub(crate) fn to_regular(&self) -> RegularColor {
         match self {
             Color::Regular(c) => *c,
-            Color::Special(SpecialColor::Separation(c)) => c.1.fallback,
+            Color::Special(SpecialColor::Separation(c)) => c.space.fallback,
         }
     }
 }
@@ -379,20 +379,23 @@ pub mod separation {
 
     /// A spot color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone)]
-    pub struct Color(pub(crate) u8, pub(crate) SeparationSpace);
+    pub struct Color {
+        pub(crate) tint: u8,
+        pub(crate) space: SeparationSpace,
+    }
 
     impl Color {
         /// Create a new spot color.
         pub fn new(tint: u8, space: SeparationSpace) -> Self {
-            Self(tint, space)
+            Self { tint, space }
         }
 
         pub(crate) fn to_pdf_color(&self) -> f32 {
-            self.0 as f32 / 255.0
+            self.tint as f32 / 255.0
         }
 
         pub(crate) fn color_space(&self) -> SeparationSpace {
-            self.1.clone()
+            self.space.clone()
         }
     }
 

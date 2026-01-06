@@ -970,7 +970,7 @@ impl ContentBuilder {
         opacity: NormalizedF32,
         sc: &mut SerializeContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
-        mut set_solid_fn: impl FnMut(&mut Content, ContentColorSpace, Color),
+        mut set_solid_fn: impl FnMut(&mut Content, ContentColorSpace, &Color),
     ) {
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.cur_transform_with_root_transform())
@@ -1023,7 +1023,7 @@ impl ContentBuilder {
             InnerPaint::Color(c) => {
                 let cs = c.color_space(sc);
                 let color_space_resource = Self::cs_to_content_cs(self, sc, cs);
-                set_solid_fn(&mut self.content, color_space_resource, c.clone());
+                set_solid_fn(&mut self.content, color_space_resource, c);
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
@@ -1084,7 +1084,7 @@ impl ContentBuilder {
             content.set_fill_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
+        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: &Color) {
             match color_space {
                 ContentColorSpace::Device => match color {
                     Color::Regular(crate::color::RegularColor::Rgb(r)) => {
@@ -1104,7 +1104,7 @@ impl ContentBuilder {
                 },
                 ContentColorSpace::Named(n) => {
                     content.set_fill_color_space(n.to_pdf_name());
-                    content.set_fill_color(color.clone().to_pdf_color());
+                    content.set_fill_color(color.to_pdf_color());
                 }
             }
         }
@@ -1130,7 +1130,7 @@ impl ContentBuilder {
             content.set_stroke_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
+        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: &Color) {
             match color_space {
                 ContentColorSpace::Device => match color {
                     Color::Regular(crate::color::RegularColor::Rgb(r)) => {
@@ -1150,7 +1150,7 @@ impl ContentBuilder {
                 },
                 ContentColorSpace::Named(n) => {
                     content.set_stroke_color_space(n.to_pdf_name());
-                    content.set_stroke_color(color.clone().to_pdf_color());
+                    content.set_stroke_color(color.to_pdf_color());
                 }
             }
         }
