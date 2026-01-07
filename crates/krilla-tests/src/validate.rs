@@ -10,7 +10,7 @@ use krilla::num::NormalizedF32;
 use krilla::outline::Outline;
 use krilla::page::Page;
 use krilla::paint::{Fill, FillRule, LinearGradient, SpreadMethod};
-use krilla::tagging::{ArtifactType, ContentTag, SpanTag, TagGroup, TagKind, TagTree};
+use krilla::tagging::{Artifact, ArtifactType, ContentTag, SpanTag, TagGroup, TagKind, TagTree};
 use krilla::tagging::{ListNumbering, TableHeaderScope, Tag};
 use krilla::text::{Font, TextDirection};
 use krilla::text::{GlyphId, KrillaGlyph};
@@ -326,7 +326,9 @@ pub(crate) fn validate_pdf_tagged_full_example(document: &mut Document) {
     );
     surface.end_tagged();
 
-    let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
+    let id2 = surface.start_tagged(ContentTag::Artifact(Artifact::with_kind(
+        ArtifactType::Header,
+    )));
     surface.set_fill(Some(red_fill(1.0)));
     surface.draw_path(&rect_to_path(30.0, 30.0, 70.0, 70.0));
     surface.end_tagged();
