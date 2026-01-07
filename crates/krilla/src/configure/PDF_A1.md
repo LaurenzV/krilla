@@ -78,7 +78,10 @@ in case CMYK is used but no profile was provided, export fails. 🟢
 - krilla always uses an CMYK ICC profile, and always sets CMYK as the output intent. 🟢
   It fails export if no CMYK ICC profile was provided. 🟢
 
-6.2.3.4: krilla does not support DeviceN/Separation color spaces. 🔵
+6.2.3.4:
+- krilla ensures the Alternate space in Separation color spaces obeys the restrictions
+  in the applicable clauses 🟢
+- krilla does not support DeviceN color spaces. 🔵
 
 6.2.4: 
 - krilla does not use the `Alternates`/`Intent` keys for images. 🔵

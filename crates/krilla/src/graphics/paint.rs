@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 
+use crate::color::SpecialColor;
 use crate::geom::Transform;
 use crate::graphics::color::{cmyk, luma, rgb, Color};
 use crate::num::NormalizedF32;
@@ -181,11 +182,10 @@ pub struct Paint(pub(crate) InnerPaint);
 
 impl Paint {
     pub(crate) fn as_rgb(&self) -> Option<rgb::Color> {
-        match self.0 {
+        match &self.0 {
             InnerPaint::Color(c) => match c {
-                Color::Rgb(rgb) => Some(rgb),
-                Color::Luma(l) => Some(rgb::Color::new(l.0, l.0, l.0)),
-                Color::Cmyk(_) => None,
+                Color::Regular(c) => c.as_rgb(),
+                Color::Special(SpecialColor::Separation(c)) => c.space.fallback.as_rgb(),
             },
             _ => None,
         }
@@ -253,7 +253,7 @@ pub enum SpreadMethod {
 }
 
 /// A color stop in a gradient.
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 #[allow(private_bounds)]
 pub struct Stop {
     /// The normalized offset of the stop.

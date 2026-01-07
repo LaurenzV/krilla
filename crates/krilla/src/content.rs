@@ -970,7 +970,7 @@ impl ContentBuilder {
         opacity: NormalizedF32,
         sc: &mut SerializeContext,
         mut set_pattern_fn: impl FnMut(&mut Content, String),
-        mut set_solid_fn: impl FnMut(&mut Content, ContentColorSpace, Color),
+        mut set_solid_fn: impl FnMut(&mut Content, ContentColorSpace, &Color),
     ) {
         let pattern_transform = |transform: Transform| -> Transform {
             transform.post_concat(self.cur_transform_with_root_transform())
@@ -1023,7 +1023,7 @@ impl ContentBuilder {
             InnerPaint::Color(c) => {
                 let cs = c.color_space(sc);
                 let color_space_resource = Self::cs_to_content_cs(self, sc, cs);
-                set_solid_fn(&mut self.content, color_space_resource, *c);
+                set_solid_fn(&mut self.content, color_space_resource, c);
             }
             InnerPaint::LinearGradient(lg) => {
                 let (gradient_props, transform) = lg.clone().gradient_properties(bounds);
@@ -1084,19 +1084,22 @@ impl ContentBuilder {
             content.set_fill_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
+        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: &Color) {
             match color_space {
                 ContentColorSpace::Device => match color {
-                    Color::Rgb(r) => {
+                    Color::Regular(crate::color::RegularColor::Rgb(r)) => {
                         let comps = r.to_pdf_color();
                         content.set_fill_rgb(comps[0], comps[1], comps[2]);
                     }
-                    Color::Luma(l) => {
+                    Color::Regular(crate::color::RegularColor::Luma(l)) => {
                         content.set_fill_gray(l.to_pdf_color());
                     }
-                    Color::Cmyk(c) => {
+                    Color::Regular(crate::color::RegularColor::Cmyk(c)) => {
                         let comps = c.to_pdf_color();
                         content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                    }
+                    Color::Special(_) => {
+                        panic!("Device color space cannot be used with special colors")
                     }
                 },
                 ContentColorSpace::Named(n) => {
@@ -1127,19 +1130,22 @@ impl ContentBuilder {
             content.set_stroke_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: Color) {
+        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: &Color) {
             match color_space {
                 ContentColorSpace::Device => match color {
-                    Color::Rgb(r) => {
+                    Color::Regular(crate::color::RegularColor::Rgb(r)) => {
                         let comps = r.to_pdf_color();
                         content.set_stroke_rgb(comps[0], comps[1], comps[2]);
                     }
-                    Color::Luma(l) => {
+                    Color::Regular(crate::color::RegularColor::Luma(l)) => {
                         content.set_stroke_gray(l.to_pdf_color());
                     }
-                    Color::Cmyk(c) => {
+                    Color::Regular(crate::color::RegularColor::Cmyk(c)) => {
                         let comps = c.to_pdf_color();
                         content.set_stroke_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                    }
+                    Color::Special(_) => {
+                        panic!("Device color space cannot be used with special colors")
                     }
                 },
                 ContentColorSpace::Named(n) => {

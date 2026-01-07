@@ -88,7 +88,7 @@ impl Cacheable for XObject {
         // So while we don't technically always need to write it, let's just play it save
         // and always add a group color space in case we have a transparency group.
         let transparency_group_cs = if use_transparency_group {
-            Some(sc.register_colorspace(rgb::color_space(serialize_settings.no_device_cs)))
+            Some(sc.register_colorspace(rgb::color_space(serialize_settings.no_device_cs).into()))
         } else {
             None
         };
