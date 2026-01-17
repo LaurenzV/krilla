@@ -39,7 +39,7 @@ pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 rayon = "1.10.0"
-resvg = "0.45.0"
+resvg = "0.46.0"
 rustc-hash = "2.1.1"
 rustybuzz = "0.20.1"
 siphasher = "1.0.1"
@@ -50,7 +50,7 @@ subsetter = { version = "0.2.3", features = ["variable-fonts"] }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.11.4"
 tiny-skia-path = "0.11.4"
-usvg = "0.45.0"
+usvg = "0.46.0"
 xmp-writer = "0.3.2"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.17.16"
