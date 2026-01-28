@@ -52,10 +52,12 @@ impl From<NamedDestination> for Destination {
 
 impl NamedDestination {
     /// Create a new named destination.
-    /// Note that named destinations need to be added via
-    /// `add_named_destination` on [`Document`] when being used!
     ///
-    /// [`Document`]: crate::Document
+    /// When used as part of a link annotation, the destination will be automatically registered
+    /// with the [`Document`](crate::Document).
+    ///
+    /// That said, you can also manually register a destination without linking to it by calling
+    /// [`Document::register_named_destination`](crate::Document::register_named_destination).
     pub fn new(name: String, xyz_dest: XyzDestination) -> Self {
         Self {
             name: Arc::new(name),
