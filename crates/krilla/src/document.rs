@@ -14,6 +14,7 @@
 //!
 //! [`Page`]: Page
 
+use crate::destination::NamedDestination;
 use crate::error::KrillaResult;
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
@@ -105,6 +106,11 @@ impl Document {
     /// with the same name has already been embedded.
     pub fn embed_file(&mut self, file: EmbeddedFile) -> Option<()> {
         self.serializer_context.embed_file(file)
+    }
+
+    /// Add a global named destination.
+    pub fn register_named_destination(&mut self, dest: NamedDestination) {
+        self.serializer_context.register_named_destination(dest);
     }
 
     /// Attempt to export the document to a PDF file.
