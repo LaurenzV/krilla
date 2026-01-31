@@ -5,10 +5,10 @@ pub(crate) mod graphics_state;
 pub mod icc;
 #[cfg(feature = "raster-images")]
 pub mod image;
-#[cfg(feature = "raster-images")]
-pub(crate) mod png_raw;
 pub mod mask;
 pub mod paint;
+#[cfg(feature = "raster-images")]
+pub(crate) mod png_raw;
 pub(crate) mod separation;
 pub(crate) mod shading_function;
 pub(crate) mod shading_pattern;

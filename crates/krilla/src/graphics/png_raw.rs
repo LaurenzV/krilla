@@ -59,9 +59,7 @@ pub fn extract_idat(data: &[u8]) -> Result<Vec<u8>, &'static str> {
             chunk::PLTE => return Err("indexed color is not supported"),
             chunk::IDAT => idat.extend_from_slice(payload),
             chunk::IEND => break,
-            ty if chunk::is_critical(ty) => {
-                return Err("unrecognized critical chunk type")
-            }
+            ty if chunk::is_critical(ty) => return Err("unrecognized critical chunk type"),
             _ => (),
         }
     }
