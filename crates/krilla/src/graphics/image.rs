@@ -14,7 +14,7 @@ use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Chunk, Finish, Name, Null, Ref};
 use png::{BitDepth, ColorType, Transformations};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
@@ -489,7 +489,7 @@ impl Image {
             };
 
             let mut image_x_object = chunk.image_xobject(root_ref, filter_stream.encoded_data());
-            filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
+            let num_filters = filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
 
             if let Repr::Png(PngRepr {
                 bits_per_component,
@@ -497,13 +497,28 @@ impl Image {
                 ..
             }) = repr
             {
-                let mut params = image_x_object.insert(Name(b"DecodeParms")).dict();
+                let params = image_x_object.insert(Name(b"DecodeParms"));
+                debug_assert_ne!(num_filters, 0);
+
+                // Set decode params for the last applicable filter
+                let mut array;
+                let mut flate_params = match num_filters {
+                    0 | 1 => params.dict(),
+                    n => {
+                        array = params.array();
+                        for _ in 0..(n - 1) {
+                            array.push().primitive(Null);
+                        }
+                        array.push().dict()
+                    }
+                };
+
                 // Any integer >= 10 indicates PNG predictor. Specifically, 15 means "PNG optimum" when encoding.
-                params.pair(Name(b"Predictor"), 15);
-                params.pair(Name(b"Colors"), color_type.samples() as i32);
-                params.pair(Name(b"BitsPerComponent"), bits_per_component.as_u8() as i32);
-                params.pair(Name(b"Columns"), self.size().0 as i32);
-                params.finish();
+                flate_params.pair(Name(b"Predictor"), 15);
+                flate_params.pair(Name(b"Colors"), color_type.samples() as i32);
+                flate_params.pair(Name(b"BitsPerComponent"), bits_per_component.as_u8() as i32);
+                flate_params.pair(Name(b"Columns"), self.size().0 as i32);
+                flate_params.finish();
             }
 
             image_x_object.width(self.size().0 as i32);
