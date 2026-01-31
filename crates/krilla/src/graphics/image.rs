@@ -27,7 +27,7 @@ use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCProfile};
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};
-use crate::Data;
+use crate::{png_raw, Data};
 
 /// The number of bits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
@@ -44,6 +44,18 @@ impl BitsPerComponent {
             BitsPerComponent::Eight => 8,
             BitsPerComponent::Sixteen => 16,
         }
+    }
+}
+
+impl TryFrom<BitDepth> for BitsPerComponent {
+    type Error = ();
+
+    fn try_from(value: BitDepth) -> Result<Self, Self::Error> {
+        Ok(match value {
+            BitDepth::Eight => Self::Eight,
+            BitDepth::Sixteen => Self::Sixteen,
+            _ => return Err(()),
+        })
     }
 }
 
@@ -105,9 +117,16 @@ struct JpegRepr {
     invert_cmyk: bool,
 }
 
+struct PngRepr {
+    data: Data,
+    bits_per_component: BitsPerComponent,
+    color_type: png::ColorType,
+}
+
 enum Repr {
     Sampled(SampledRepr),
     Jpeg(JpegRepr),
+    Png(PngRepr),
 }
 
 impl Repr {
@@ -115,6 +134,7 @@ impl Repr {
         match self {
             Repr::Sampled(s) => s.bits_per_component,
             Repr::Jpeg(j) => j.bits_per_component,
+            Repr::Png(p) => p.bits_per_component,
         }
     }
 }
@@ -456,7 +476,7 @@ impl Image {
                     s_mask.bits_per_component(repr.bits_per_component().as_u8() as i32);
                     soft_mask_id
                 }),
-                Repr::Jpeg(_) => None,
+                Repr::Jpeg(_) | Repr::Png(_) => None,
             };
 
             let filter_stream = match repr {
@@ -464,10 +484,28 @@ impl Image {
                     .finish(&serialize_settings),
                 Repr::Jpeg(j) => FilterStreamBuilder::new_from_jpeg_data(j.data.as_ref())
                     .finish(&serialize_settings),
+                Repr::Png(p) => FilterStreamBuilder::new_from_deflated(p.data.as_ref())
+                    .finish(&serialize_settings),
             };
 
             let mut image_x_object = chunk.image_xobject(root_ref, filter_stream.encoded_data());
             filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
+
+            if let Repr::Png(PngRepr {
+                bits_per_component,
+                color_type,
+                ..
+            }) = repr
+            {
+                let mut params = image_x_object.insert(Name(b"DecodeParms")).dict();
+                // Any integer >= 10 indicates PNG predictor. Specifically, 15 means "PNG optimum" when encoding.
+                params.pair(Name(b"Predictor"), 15);
+                params.pair(Name(b"Colors"), color_type.samples() as i32);
+                params.pair(Name(b"BitsPerComponent"), bits_per_component.as_u8() as i32);
+                params.pair(Name(b"Columns"), self.size().0 as i32);
+                params.finish();
+            }
+
             image_x_object.width(self.size().0 as i32);
             image_x_object.height(self.size().1 as i32);
 
@@ -553,11 +591,27 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let mut reader = decoder
         .read_info()
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
+    let (color_type, bit_depth) = reader.output_color_type();
+
+    if png_raw::is_supported_in_pdf(reader.info()) {
+        // While PDF itself supports all bit depth, the reencoding logic only handles 8 and 16 for now
+        if let Ok(bits_per_component) = BitsPerComponent::try_from(bit_depth) {
+            if let Ok(raw_data) = png_raw::extract_idat(data) {
+                return Ok(Repr::Png(PngRepr {
+                    data: Data::from(raw_data),
+                    bits_per_component,
+                    color_type,
+                }));
+            } else {
+                // Fall back to decoding & reencoding
+            }
+        }
+    }
+
     let mut img_data = vec![0; reader.output_buffer_size()];
     let _ = reader
         .next_frame(&mut img_data)
         .map_err(|e| e.to_string())?;
-    let (color_type, bit_depth) = reader.output_color_type();
 
     let color_space = match color_type {
         ColorType::Rgb => ColorSpace::RGB,

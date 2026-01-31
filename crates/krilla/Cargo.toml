@@ -22,7 +22,7 @@ default = ["raster-images", "simple-text"]
 # Allow for rendering simple text without having to shape it yourself.
 "simple-text" = ["dep:rustybuzz"]
 # Allow for adding raster images to your document.
-"raster-images" = ["dep:png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize"]
+"raster-images" = ["dep:png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize", "dep:crc32fast"]
 # Allow embedding pages from other PDF documents.
 "pdf" = ["dep:hayro-write"]
 
@@ -30,6 +30,7 @@ default = ["raster-images", "simple-text"]
 base64 = { workspace = true }
 bumpalo = { workspace = true }
 comemo = { workspace = true, optional = true }
+crc32fast = { workspace = true, optional = true }
 flate2 = { workspace = true }
 float-cmp = { workspace = true }
 gif = { workspace = true, optional = true }
