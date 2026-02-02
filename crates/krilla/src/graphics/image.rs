@@ -121,6 +121,7 @@ struct PngRepr {
     data: Data,
     bits_per_component: BitsPerComponent,
     color_type: png::ColorType,
+    rendering_intent: Option<png::SrgbRenderingIntent>,
 }
 
 enum Repr {
@@ -547,6 +548,24 @@ impl Image {
             }
 
             image_x_object.bits_per_component(repr.bits_per_component().as_u8() as i32);
+
+            if let Repr::Png(PngRepr {
+                rendering_intent: Some(intent),
+                ..
+            }) = repr
+            {
+                use png::SrgbRenderingIntent::*;
+                image_x_object.pair(
+                    Name(b"Intent"),
+                    Name(match intent {
+                        Perceptual => b"Perceptual",
+                        RelativeColorimetric => b"RelativeColorimetric",
+                        Saturation => b"Saturation",
+                        AbsoluteColorimetric => b"AbsoluteColorimetric",
+                    }),
+                );
+            }
+
             if let Some(soft_mask_id) = alpha_mask {
                 image_x_object.s_mask(soft_mask_id);
             }
@@ -606,6 +625,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let mut reader = decoder
         .read_info()
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
+    let info = reader.info();
     let (color_type, bit_depth) = reader.output_color_type();
 
     if png_raw::is_supported_in_pdf(reader.info()) {
@@ -616,6 +636,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
                     data: Data::from(raw_data),
                     bits_per_component,
                     color_type,
+                    rendering_intent: info.srgb,
                 }));
             } else {
                 // Fall back to decoding & reencoding
