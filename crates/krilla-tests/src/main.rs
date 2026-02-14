@@ -892,6 +892,7 @@ pub fn settings_1() -> SerializeSettings {
         enable_tagging: true,
         configuration: Configuration::new(),
         render_svg_glyph_fn: render_svg_glyph,
+        no_embed_fonts: false,
     }
 }
 
@@ -1081,6 +1082,13 @@ pub fn settings_30() -> SerializeSettings {
     SerializeSettings {
         configuration: Configuration::new_with_version(PdfVersion::Pdf20),
         xmp_metadata: true,
+        ..settings_1()
+    }
+}
+
+pub fn settings_no_embed() -> SerializeSettings {
+    SerializeSettings {
+        no_embed_fonts: true,
         ..settings_1()
     }
 }

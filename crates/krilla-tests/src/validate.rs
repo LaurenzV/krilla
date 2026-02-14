@@ -20,8 +20,8 @@ use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_20,
-    settings_23, settings_24, settings_7, settings_8, settings_9, stops_with_2_solid_1,
-    youtube_link, NOTO_SANS,
+    settings_23, settings_24, settings_7, settings_8, settings_9, settings_no_embed,
+    stops_with_2_solid_1, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -978,5 +978,134 @@ fn validate_inconsistent_separation_fallback() {
                 separation::SeparationColorant::Custom("PANTONE 185 C".to_string())
             )
         ]))
+    );
+}
+
+/// Helper: create a simple document with text using the given settings.
+fn no_embed_text_document(settings: SerializeSettings) -> Document {
+    let mut document = Document::new_with(settings);
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font_data = NOTO_SANS.clone();
+    let font = Font::new(font_data, 0).unwrap();
+
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        20.0,
+        "Hello world",
+        false,
+        TextDirection::Auto,
+    );
+
+    surface.finish();
+    page.finish();
+
+    document
+}
+
+#[test]
+fn no_embed_fonts_produces_valid_pdf() {
+    let document = no_embed_text_document(settings_no_embed());
+    assert!(document.finish().is_ok());
+}
+
+#[test]
+fn no_embed_fonts_no_font_file_entries() {
+    let document = no_embed_text_document(settings_no_embed());
+    let pdf_bytes = document.finish().unwrap();
+    let pdf_str = String::from_utf8_lossy(&pdf_bytes);
+
+    // The PDF must NOT contain FontFile2 or FontFile3 references.
+    assert!(
+        !pdf_str.contains("/FontFile2"),
+        "PDF should not contain /FontFile2 when no_embed_fonts is set"
+    );
+    assert!(
+        !pdf_str.contains("/FontFile3"),
+        "PDF should not contain /FontFile3 when no_embed_fonts is set"
+    );
+}
+
+#[test]
+fn no_embed_fonts_still_has_to_unicode() {
+    let document = no_embed_text_document(settings_no_embed());
+    let pdf_bytes = document.finish().unwrap();
+    let pdf_str = String::from_utf8_lossy(&pdf_bytes);
+
+    // The PDF must still contain a ToUnicode CMap for text extraction.
+    assert!(
+        pdf_str.contains("/ToUnicode"),
+        "PDF should still contain /ToUnicode when no_embed_fonts is set"
+    );
+}
+
+#[test]
+fn no_embed_fonts_still_has_widths() {
+    let document = no_embed_text_document(settings_no_embed());
+    let pdf_bytes = document.finish().unwrap();
+    let pdf_str = String::from_utf8_lossy(&pdf_bytes);
+
+    // The PDF must still contain glyph widths for correct positioning.
+    assert!(
+        pdf_str.contains("/W ") || pdf_str.contains("/W["),
+        "PDF should still contain /W (widths) when no_embed_fonts is set"
+    );
+}
+
+#[test]
+fn no_embed_fonts_still_has_font_descriptor() {
+    let document = no_embed_text_document(settings_no_embed());
+    let pdf_bytes = document.finish().unwrap();
+    let pdf_str = String::from_utf8_lossy(&pdf_bytes);
+
+    // The PDF must still contain a font descriptor for substitution hints.
+    assert!(
+        pdf_str.contains("/FontDescriptor"),
+        "PDF should still contain /FontDescriptor when no_embed_fonts is set"
+    );
+}
+
+#[test]
+fn no_embed_fonts_with_pdfa_validator_produces_error() {
+    let settings = SerializeSettings {
+        no_embed_fonts: true,
+        configuration: krilla::configure::Configuration::new_with_validator(
+            krilla::configure::Validator::A2_B,
+        ),
+        ..settings_no_embed()
+    };
+    let document = no_embed_text_document(settings);
+
+    match document.finish() {
+        Err(KrillaError::Validation(errors)) => {
+            assert!(
+                errors.contains(&ValidationError::FontsNotEmbedded),
+                "Expected FontsNotEmbedded error, got: {:?}",
+                errors
+            );
+        }
+        other => panic!(
+            "Expected validation error with FontsNotEmbedded, got: {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn embed_fonts_default_has_font_file() {
+    // Verify that the default (no_embed_fonts: false) still embeds fonts.
+    let settings = SerializeSettings {
+        no_embed_fonts: false,
+        ..settings_no_embed()
+    };
+    let document = no_embed_text_document(settings);
+    let pdf_bytes = document.finish().unwrap();
+    let pdf_str = String::from_utf8_lossy(&pdf_bytes);
+
+    assert!(
+        pdf_str.contains("/FontFile2") || pdf_str.contains("/FontFile3"),
+        "PDF should contain /FontFile2 or /FontFile3 when fonts are embedded"
     );
 }

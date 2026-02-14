@@ -106,6 +106,20 @@ pub struct SerializeSettings {
     /// just use the default function which doesn't render them at all. If you do want this, it
     /// is recommended that you use the function provided by the `krilla-svg` crate.
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
+    /// When `true`, font programs (the binary font data) will **not** be
+    /// embedded in the PDF. Font descriptors, metrics, and Unicode CMaps
+    /// are still written so that text remains selectable. PDF viewers will
+    /// substitute with locally-installed or fallback fonts.
+    ///
+    /// This can be useful for complying with font licenses that prohibit
+    /// embedding. It is incompatible with PDF/A standards (which require
+    /// all fonts to be embedded); setting this together with a PDF/A
+    /// validator will produce a validation error.
+    ///
+    /// Note that this only applies to CID fonts (i.e. regular OpenType/TrueType
+    /// fonts). Type 3 fonts (used for color/SVG/bitmap glyphs) are inherently
+    /// embedded and are not affected by this setting.
+    pub no_embed_fonts: bool,
 }
 
 pub type RenderSvgGlyphFn = fn(&[u8], rgb::Color, GlyphId, (f32, f32), &mut Surface) -> Option<()>;
@@ -131,6 +145,7 @@ impl Default for SerializeSettings {
             configuration: Configuration::new(),
             enable_tagging: true,
             render_svg_glyph_fn: |_, _, _, _, _| None,
+            no_embed_fonts: false,
         }
     }
 }
@@ -415,6 +430,10 @@ impl SerializeContext {
         self.register_limits(pdf.limits());
 
         self.check_limits();
+
+        if self.serialize_settings.no_embed_fonts {
+            self.register_validation_error(ValidationError::FontsNotEmbedded);
+        }
 
         if !self.validation_errors.is_empty() {
             // Deduplicate errors, while still preserving order.

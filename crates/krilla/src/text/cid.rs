@@ -193,8 +193,8 @@ impl CIDFont {
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
         let cmap_ref = sc.new_ref();
-        let cid_set_ref = sc.new_ref();
-        let data_ref = sc.new_ref();
+
+        let no_embed_fonts = sc.serialize_settings().no_embed_fonts;
 
         let glyph_remapper = &self.glyph_remapper;
 
@@ -231,23 +231,34 @@ impl CIDFont {
             sc.register_validation_error(ValidationError::RestrictedLicense(self.font.clone()));
         }
 
-        let (subsetted, global_bbox) = subset_font(self.font.clone(), glyph_remapper)?;
-        let num_glyphs = subsetted.num_glyphs();
-        let subsetted_data = subsetted.font_data().0;
+        // When not embedding fonts, skip subsetting entirely and use the original
+        // font's bounding box. When embedding, subset the font and compute an
+        // accurate bounding box from the subset.
+        let (subsetted, global_bbox) = if no_embed_fonts {
+            (None, self.font.bbox())
+        } else {
+            let (font, bbox) = subset_font(self.font.clone(), glyph_remapper)?;
+            (Some(font), bbox)
+        };
 
-        let font_stream = {
-            let mut data = subsetted_data.as_ref().as_ref();
+        let num_glyphs = subsetted.as_ref().map(|f| f.num_glyphs());
+        let subsetted_data = subsetted.as_ref().map(|f| f.font_data().0);
+
+        let font_stream = if let Some(ref data) = subsetted_data {
+            let mut slice = data.as_ref().as_ref();
 
             // If we have a CFF font, only embed the standalone CFF program.
-            let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
+            let subsetted_ref = skrifa::FontRef::new(slice).map_err(|_| {
                 KrillaError::Font(self.font.clone(), "failed to read font subset".to_string())
             })?;
 
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
-                data = cff.as_bytes();
+                slice = cff.as_bytes();
             }
 
-            FilterStreamBuilder::new_from_binary_data(data).finish(&sc.serialize_settings())
+            Some(FilterStreamBuilder::new_from_binary_data(slice).finish(&sc.serialize_settings()))
+        } else {
+            None
         };
 
         let base_font = base_font_name(&self.font, &self.glyph_remapper);
@@ -296,28 +307,35 @@ impl CIDFont {
         width_writer.finish();
         cid.finish();
 
+        // CIDSet and font stream refs are only needed when embedding.
+        let cid_set_ref = if !no_embed_fonts { Some(sc.new_ref()) } else { None };
+        let data_ref = if !no_embed_fonts { Some(sc.new_ref()) } else { None };
+
         // The only reason we write this in the first place is that PDF/A-1b requires
         // a CIDSet.
-        if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
-            let cid_stream_data = {
-                // It's always guaranteed by the subsetter that CIDs start from 0 and are
-                // consecutive, so this encoding is very straight-forward.
-                let mut bytes = vec![];
-                bytes.extend([0xFFu8].repeat((num_glyphs / 8) as usize));
-                let padding = num_glyphs % 8;
-                if padding != 0 {
-                    bytes.push(!(0xFF >> padding))
-                }
+        if let Some(num_glyphs) = num_glyphs {
+            if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
+                let cid_set_ref = cid_set_ref.unwrap();
+                let cid_stream_data = {
+                    // It's always guaranteed by the subsetter that CIDs start from 0 and are
+                    // consecutive, so this encoding is very straight-forward.
+                    let mut bytes = vec![];
+                    bytes.extend([0xFFu8].repeat((num_glyphs / 8) as usize));
+                    let padding = num_glyphs % 8;
+                    if padding != 0 {
+                        bytes.push(!(0xFF >> padding))
+                    }
 
-                bytes
-            };
+                    bytes
+                };
 
-            let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
-                .finish(&sc.serialize_settings());
-            let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
-            cid_stream.write_filters(cid_set.deref_mut());
-            cid_set.finish();
-            cid_stream.finish();
+                let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
+                    .finish(&sc.serialize_settings());
+                let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
+                cid_stream.write_filters(cid_set.deref_mut());
+                cid_set.finish();
+                cid_stream.finish();
+            }
         }
 
         let mut flags = FontFlags::empty();
@@ -360,14 +378,16 @@ impl CIDFont {
             .cap_height(cap_height)
             .stem_v(stem_v);
 
-        if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
-            font_descriptor.cid_set(cid_set_ref);
-        }
+        if !no_embed_fonts {
+            if !sc.serialize_settings().pdf_version().deprecates_cid_set() {
+                font_descriptor.cid_set(cid_set_ref.unwrap());
+            }
 
-        if is_cff {
-            font_descriptor.font_file3(data_ref);
-        } else {
-            font_descriptor.font_file2(data_ref);
+            if is_cff {
+                font_descriptor.font_file3(data_ref.unwrap());
+            } else {
+                font_descriptor.font_file2(data_ref.unwrap());
+            }
         }
 
         font_descriptor.finish();
@@ -390,13 +410,17 @@ impl CIDFont {
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
 
-        let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
-        font_stream.write_filters(stream.deref_mut());
-        if is_cff {
-            stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
-        }
+        // Write the font program stream only when embedding.
+        if let Some(font_stream) = &font_stream {
+            let data_ref = data_ref.unwrap();
+            let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
+            font_stream.write_filters(stream.deref_mut());
+            if is_cff {
+                stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
+            }
 
-        stream.finish();
+            stream.finish();
+        }
 
         Ok(chunk)
     }
