@@ -394,7 +394,7 @@ impl SerializeContext {
         self.global_objects
             .font_map
             .entry(font.clone())
-            .or_insert_with(|| Rc::new(RefCell::new(FontContainer::new(font.clone()))))
+            .or_insert_with(|| Rc::new(RefCell::new(FontContainer::new(font.clone(), self.serialize_settings.no_embed_fonts))))
             .clone()
     }
 

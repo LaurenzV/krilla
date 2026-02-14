@@ -112,12 +112,17 @@ pub(crate) struct CIDFont {
     cmap_entries: FxHashMap<u16, (String, Option<Location>)>,
     /// The widths of the glyphs, _indexed by their CID_.
     widths: Vec<f32>,
+    /// When true, use original glyph IDs as CIDs (identity mapping) so that
+    /// PDF viewers can use locally installed fonts to render the glyphs.
+    no_embed_fonts: bool,
+    /// Set of original glyph IDs that have been added (used when no_embed_fonts is true).
+    identity_gids: FxHashMap<u16, ()>,
     is_empty: bool,
 }
 
 impl CIDFont {
     /// Create a new CID-keyed font.
-    pub(crate) fn new(font: Font) -> CIDFont {
+    pub(crate) fn new(font: Font, no_embed_fonts: bool) -> CIDFont {
         // Always include the .notdef glyph. Will also always be included by the subsetter in
         // the glyph remapper.
         let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
@@ -127,6 +132,8 @@ impl CIDFont {
             cmap_entries: FxHashMap::default(),
             widths,
             font,
+            no_embed_fonts,
+            identity_gids: FxHashMap::default(),
             is_empty: true,
         }
     }
@@ -147,7 +154,16 @@ impl CIDFont {
 
     #[inline]
     pub(crate) fn get_cid(&self, glyph_id: GlyphId) -> Option<u16> {
-        self.glyph_remapper.get(glyph_id.to_u32() as u16)
+        if self.no_embed_fonts {
+            let gid = glyph_id.to_u32() as u16;
+            if self.identity_gids.contains_key(&gid) {
+                Some(gid)
+            } else {
+                None
+            }
+        } else {
+            self.glyph_remapper.get(glyph_id.to_u32() as u16)
+        }
     }
 
     /// Add a new glyph (if it has not already been added) and return its CID.
@@ -155,17 +171,28 @@ impl CIDFont {
     pub(crate) fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
         self.is_empty = false;
 
-        let new_id = self
-            .glyph_remapper
-            .remap(u16::try_from(glyph_id.to_u32()).unwrap());
+        if self.no_embed_fonts {
+            // Use the original glyph ID as the CID directly so that
+            // PDF viewers can use locally installed fonts.
+            let gid = u16::try_from(glyph_id.to_u32()).unwrap();
+            // Still track in the remapper for serialization purposes,
+            // but the CID we return is the original GID.
+            self.glyph_remapper.remap(gid);
+            self.identity_gids.insert(gid, ());
+            gid
+        } else {
+            let new_id = self
+                .glyph_remapper
+                .remap(u16::try_from(glyph_id.to_u32()).unwrap());
 
-        // This means that the glyph ID has been newly assigned, and thus we need to add its width.
-        if new_id as usize >= self.widths.len() {
-            self.widths
-                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
+            // This means that the glyph ID has been newly assigned, and thus we need to add its width.
+            if new_id as usize >= self.widths.len() {
+                self.widths
+                    .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
+            }
+
+            new_id
         }
-
-        new_id
     }
 
     #[inline]
@@ -261,7 +288,14 @@ impl CIDFont {
             None
         };
 
-        let base_font = base_font_name(&self.font, &self.glyph_remapper);
+        // When not embedding fonts, use the real PostScript name (without
+        // subset tag) so that PDF viewers can locate the font by name.
+        let base_font = if no_embed_fonts {
+            self.font.postscript_name().unwrap_or("unknown").to_string()
+        } else {
+            base_font_name(&self.font, &self.glyph_remapper)
+        };
+
         let base_font_type0 = if is_cff {
             format!("{base_font}-{IDENTITY_H}")
         } else {
@@ -293,18 +327,32 @@ impl CIDFont {
         // IN CID fonts, a upem value of 1000 is assumed for all fonts, so we need to convert.
         let to_pdf_units = |v: f32| v / self.font.units_per_em() * self.units_per_em();
 
-        let mut first = 0;
-        let mut width_writer = cid.widths();
-        for (w, group) in self.widths.group_by_key(|&w| w) {
-            let end = first + group.len();
-            if w != 0.0 {
-                let last = end - 1;
-                width_writer.same(first as u16, last as u16, to_pdf_units(w));
+        if no_embed_fonts {
+            // When not embedding, CIDs are original glyph IDs. Write widths
+            // for each used glyph ID individually.
+            let mut gids: Vec<u16> = self.identity_gids.keys().copied().collect();
+            gids.sort();
+            let mut width_writer = cid.widths();
+            for gid in &gids {
+                let w = self.font.advance_width(GlyphId::new(*gid as u32)).unwrap_or(0.0);
+                if w != 0.0 {
+                    width_writer.same(*gid, *gid, to_pdf_units(w));
+                }
             }
-            first = end;
+            width_writer.finish();
+        } else {
+            let mut first = 0;
+            let mut width_writer = cid.widths();
+            for (w, group) in self.widths.group_by_key(|&w| w) {
+                let end = first + group.len();
+                if w != 0.0 {
+                    let last = end - 1;
+                    width_writer.same(first as u16, last as u16, to_pdf_units(w));
+                }
+                first = end;
+            }
+            width_writer.finish();
         }
-
-        width_writer.finish();
         cid.finish();
 
         // CIDSet and font stream refs are only needed when embedding.
@@ -395,11 +443,24 @@ impl CIDFont {
         let cmap = {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
 
-            // For the .notdef glyph, it's fine if no mapping exists, since it is included
-            // even if it was not referenced in the text.
-            for g in 1..self.glyph_remapper.num_gids() {
-                let entry = self.cmap_entries.get(&g);
-                write_cmap_entry(&self.font, entry, sc, &mut cmap, g);
+            if no_embed_fonts {
+                // CIDs are original glyph IDs; cmap_entries are keyed by GID.
+                let mut gids: Vec<u16> = self.identity_gids.keys().copied().collect();
+                gids.sort();
+                for gid in gids {
+                    if gid == 0 {
+                        continue; // skip .notdef
+                    }
+                    let entry = self.cmap_entries.get(&gid);
+                    write_cmap_entry(&self.font, entry, sc, &mut cmap, gid);
+                }
+            } else {
+                // For the .notdef glyph, it's fine if no mapping exists, since it is included
+                // even if it was not referenced in the text.
+                for g in 1..self.glyph_remapper.num_gids() {
+                    let entry = self.cmap_entries.get(&g);
+                    write_cmap_entry(&self.font, entry, sc, &mut cmap, g);
+                }
             }
 
             cmap

@@ -61,11 +61,11 @@ pub(crate) struct FontContainer {
 }
 
 impl FontContainer {
-    pub(crate) fn new(font: Font) -> Self {
+    pub(crate) fn new(font: Font, no_embed_fonts: bool) -> Self {
         Self {
             font: font.clone(),
             type3_mapper: Type3FontMapper::new(font.clone()),
-            cid_font: CIDFont::new(font.clone()),
+            cid_font: CIDFont::new(font.clone(), no_embed_fonts),
             cid_cache: Default::default(),
             type3_cache: Default::default(),
         }
