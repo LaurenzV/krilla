@@ -994,18 +994,36 @@ impl TagGroup {
 pub struct TagTree {
     /// The children of the tag tree.
     pub children: Vec<Node>,
+    /// Language attribute for the auto-generated Document root structure element.
+    pub lang: Option<String>,
 }
 
 impl From<Vec<Node>> for TagTree {
     fn from(children: Vec<Node>) -> Self {
-        Self { children }
+        Self {
+            children,
+            lang: None,
+        }
     }
 }
 
 impl TagTree {
     /// Create a new tag tree.
     pub fn new() -> Self {
-        Self { children: vec![] }
+        Self {
+            children: vec![],
+            lang: None,
+        }
+    }
+
+    /// Set the language attribute on the Document root structure element.
+    ///
+    /// This sets `/Lang` on the auto-generated Document structure element,
+    /// which is distinct from the catalog-level `/Lang` set via
+    /// [`Metadata::language`](crate::metadata::Metadata::language).
+    pub fn with_lang(mut self, lang: Option<String>) -> Self {
+        self.lang = lang;
+        self
     }
 
     /// Append a new child to the tag tree.
@@ -1049,6 +1067,11 @@ impl TagTree {
         let mut struct_elem = chunk.indirect(root_ref).start::<StructElement>();
         struct_elem.kind(StructRole::Document);
         struct_elem.parent(struct_tree_ref);
+        if let Some(lang) = &self.lang {
+            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf14 {
+                struct_elem.lang(TextStr(lang));
+            }
+        }
         serialize_children(
             sc,
             root_ref,
