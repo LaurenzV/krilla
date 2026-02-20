@@ -24,7 +24,7 @@ impl Graphic {
     /// from wherever the graphic is invoked.
     pub fn new(stream: Stream, isolated: bool) -> Self {
         Self {
-            x_object: XObject::new(stream, isolated, false, None),
+            x_object: XObject::new(stream, isolated, false, None, None, None, 0),
         }
     }
 }

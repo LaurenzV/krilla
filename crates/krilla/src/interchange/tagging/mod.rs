@@ -322,6 +322,34 @@ impl<'a> SpanTag<'a> {
     }
 }
 
+/// A unique identifier for a tagged sub-builder (XObject).
+/// Assigned when creating a sub-builder for transparency groups.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct XObjectTagId(pub(crate) usize);
+
+/// Tracks MCIDs within a specific XObject content stream.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct XObjectTagIdentifier {
+    /// The page where the XObject is drawn (for MCR /Pg reference).
+    pub(crate) page_index: usize,
+    /// The unique XObject tag ID.
+    pub(crate) xobject_tag_id: XObjectTagId,
+    /// The marked content identifier within this XObject.
+    pub(crate) mcid: i32,
+}
+
+impl From<XObjectTagIdentifier> for IdentifierType {
+    fn from(value: XObjectTagIdentifier) -> Self {
+        IdentifierType::XObjectIdentifier(value)
+    }
+}
+
+impl From<XObjectTagIdentifier> for Identifier {
+    fn from(value: XObjectTagIdentifier) -> Self {
+        Identifier(IdentifierInner::Real(value.into()))
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct PageTagIdentifier {
     pub(crate) page_index: usize,
@@ -382,9 +410,11 @@ impl AnnotationIdentifier {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[allow(clippy::enum_variant_names)]
 pub(crate) enum IdentifierType {
     PageIdentifier(PageTagIdentifier),
     AnnotationIdentifier(AnnotationIdentifier),
+    XObjectIdentifier(XObjectTagIdentifier),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -1183,6 +1213,33 @@ fn serialize_children(
                         .object_ref()
                         .page(page_ref)
                         .object(*annotation_ref);
+                }
+                IdentifierType::XObjectIdentifier(xi) => {
+                    let page_ref = sc
+                        .page_infos()
+                        .get(xi.page_index)
+                        .unwrap_or_else(|| panic!(
+                            "tag tree contains xobject identifier from page {}, but document only has {} pages",
+                            xi.page_index + 1,
+                            sc.page_infos().len()
+                        ))
+                        .ref_();
+
+                    let xobj_ref = sc.xobject_tag_ref(xi.xobject_tag_id).unwrap_or_else(|| {
+                        panic!("xobject tag ref not found for {:?}", xi.xobject_tag_id)
+                    });
+
+                    if parent_tree_map.contains_key(&xi.into()) {
+                        panic!("identifier {xi:?} appears twice in the tag tree");
+                    }
+
+                    parent_tree_map.insert(xi.into(), parent_ref);
+
+                    struct_children
+                        .marked_content_ref()
+                        .marked_content_id(xi.mcid)
+                        .page(page_ref)
+                        .stream(xobj_ref);
                 }
             },
         }
