@@ -451,6 +451,7 @@ impl TagKind {
             Self::Annot(_) => write_kind_compat(sc, struct_elem, StructRole2::Annot),
             Self::Figure(_) => write_kind_compat(sc, struct_elem, StructRole2::Figure),
             Self::Formula(_) => write_kind_compat(sc, struct_elem, StructRole2::Formula),
+            Self::Form(_) => write_kind_compat(sc, struct_elem, StructRole2::Form),
             Self::NonStruct(_) => write_kind_compat(sc, struct_elem, StructRole2::NonStruct),
             // Custom structure roles that are registered in the `RoleMap`.
             Self::Datetime(_) => write_kind_custom(sc, struct_elem, Name(b"Datetime")),
@@ -525,6 +526,7 @@ impl TagKind {
             Self::Annot(_) => PdfVersion::Pdf15,
             Self::Figure(_) => PdfVersion::Pdf14,
             Self::Formula(_) => PdfVersion::Pdf14,
+            Self::Form(_) => PdfVersion::Pdf14,
             Self::NonStruct(_) => PdfVersion::Pdf14,
             Self::Datetime(_) => PdfVersion::Pdf14,
             Self::Terms(_) => PdfVersion::Pdf14,

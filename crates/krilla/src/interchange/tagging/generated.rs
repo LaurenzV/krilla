@@ -117,6 +117,8 @@ pub enum TagKind {
     ///
     /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     Formula(Tag<kind::Formula>),
+    /// An interactive form field.
+    Form(Tag<kind::Form>),
     /// Non-structural element. A grouping element having no inherent structural significance;
     /// it serves solely for grouping purposes.
     NonStruct(Tag<kind::NonStruct>),
@@ -168,6 +170,7 @@ impl TagKind {
             Self::Annot(tag) => tag.as_any(),
             Self::Figure(tag) => tag.as_any(),
             Self::Formula(tag) => tag.as_any(),
+            Self::Form(tag) => tag.as_any(),
             Self::NonStruct(tag) => tag.as_any(),
             Self::Datetime(tag) => tag.as_any(),
             Self::Terms(tag) => tag.as_any(),
@@ -213,6 +216,7 @@ impl TagKind {
             Self::Annot(tag) => tag.as_any_mut(),
             Self::Figure(tag) => tag.as_any_mut(),
             Self::Formula(tag) => tag.as_any_mut(),
+            Self::Form(tag) => tag.as_any_mut(),
             Self::NonStruct(tag) => tag.as_any_mut(),
             Self::Datetime(tag) => tag.as_any_mut(),
             Self::Terms(tag) => tag.as_any_mut(),
@@ -1677,6 +1681,10 @@ pub mod kind {
     /// Providing `alt_text` is required in some export modes, like for example PDF/UA-1.
     #[derive(Clone, Debug, PartialEq)]
     pub struct Formula;
+
+    /// An interactive form field.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Form;
 
     /// Non-structural element. A grouping element having no inherent structural significance;
     /// it serves solely for grouping purposes.
@@ -4028,6 +4036,17 @@ impl Tag<kind::Formula> {
         self.set_height(height);
         self
     }
+}
+
+impl From<Tag<kind::Form>> for TagKind {
+    fn from(value: Tag<kind::Form>) -> Self {
+        Self::Form(value)
+    }
+}
+impl Tag<kind::Form> {
+    /// An interactive form field.
+    #[allow(non_upper_case_globals)]
+    pub const Form: Tag<kind::Form> = Tag::new();
 }
 
 impl From<Tag<kind::NonStruct>> for TagKind {

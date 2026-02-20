@@ -151,6 +151,7 @@ impl Output for TagKind {
             TagKind::Annot(_) => write!(f, "Annot"),
             TagKind::Figure(_) => write!(f, "Figure"),
             TagKind::Formula(_) => write!(f, "Formula"),
+            TagKind::Form(_) => write!(f, "Form"),
             TagKind::NonStruct(_) => write!(f, "NonStruct"),
             TagKind::Datetime(_) => write!(f, "Datetime"),
             TagKind::Terms(_) => write!(f, "Terms"),

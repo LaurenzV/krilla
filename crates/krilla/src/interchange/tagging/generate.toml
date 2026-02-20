@@ -347,6 +347,8 @@ optional = [
   "Layout::Width",
   "Layout::Height",
 ]
+# An interactive form field.
+[Tag.Form]
 # Non-structural element. A grouping element having no inherent structural significance;
 # it serves solely for grouping purposes.
 [Tag.NonStruct]
