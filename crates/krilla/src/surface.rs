@@ -25,7 +25,10 @@ use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
 use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
-use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
+use crate::interchange::tagging::{
+    ContentTag, Identifier, IdentifierInner, IdentifierType, PageTagIdentifier,
+    XObjectTagIdentifier,
+};
 use crate::num::NormalizedF32;
 use crate::paint::{InnerPaint, Paint};
 #[cfg(feature = "pdf")]
@@ -179,7 +182,48 @@ impl<'a> Surface<'a> {
     /// [`Surface::start_variable_text`]).
     /// Panics if an artifact with a required bbox has none.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
-        if let Some(id) = &mut self.page_identifier {
+        // Check if we're in a tagged sub-builder (transparency group) first,
+        // since page_identifier stays set on the Surface even inside sub-builders.
+        let tag_info = {
+            let builder = self.bd.get();
+            builder
+                .xobject_tag_id
+                .map(|tag_id| (tag_id, builder.page_index.unwrap()))
+        };
+
+        if let Some((tag_id, page_index)) = tag_info {
+            match tag {
+                ContentTag::Artifact(at) => {
+                    if at.requires_properties(self.sc.serialize_settings().pdf_version()) {
+                        self.bd
+                            .get_mut()
+                            .start_marked_content_with_properties(self.sc, None, tag);
+                    } else {
+                        self.bd.get_mut().start_marked_content(tag.name());
+                    }
+                    Identifier::dummy()
+                }
+                ContentTag::Span(_) | ContentTag::Other => {
+                    let mcid = {
+                        let builder = self.bd.get_mut();
+                        let mcid = builder.mcid_counter;
+                        builder.mcid_counter += 1;
+                        mcid
+                    };
+                    self.bd.get_mut().start_marked_content_with_properties(
+                        self.sc,
+                        Some(mcid),
+                        tag,
+                    );
+                    let xi = XObjectTagIdentifier {
+                        page_index,
+                        xobject_tag_id: tag_id,
+                        mcid,
+                    };
+                    Identifier(IdentifierInner::Real(IdentifierType::XObjectIdentifier(xi)))
+                }
+            }
+        } else if let Some(id) = &mut self.page_identifier {
             match tag {
                 // An artifact is actually not really part of tagged PDF and doesn't have
                 // a marked content identifier, so we need to return a dummy one here. It's just
@@ -234,7 +278,7 @@ impl<'a> Surface<'a> {
     /// # Panics
     /// Panics if no tagged section has been started.
     pub fn end_tagged(&mut self) {
-        if self.page_identifier.is_some() {
+        if self.page_identifier.is_some() || self.bd.get().xobject_tag_id.is_some() {
             self.bd.get_mut().end_marked_content();
         }
     }
@@ -453,9 +497,9 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions
             .push(PushInstruction::Mask(Box::new(mask)));
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        let mut builder = ContentBuilder::new(Transform::identity(), true, self.sc);
+        self.setup_sub_builder_tagging(&mut builder);
+        self.bd.sub_builders.push(builder);
     }
 
     #[cfg(feature = "pdf")]
@@ -499,18 +543,18 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.bd
-                .sub_builders
-                .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+            let mut builder = ContentBuilder::new(Transform::identity(), true, self.sc);
+            self.setup_sub_builder_tagging(&mut builder);
+            self.bd.sub_builders.push(builder);
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        let mut builder = ContentBuilder::new(Transform::identity(), true, self.sc);
+        self.setup_sub_builder_tagging(&mut builder);
+        self.bd.sub_builders.push(builder);
     }
 
     /// Pop the last `push` instruction.
@@ -522,25 +566,71 @@ impl<'a> Surface<'a> {
             PushInstruction::Transform => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
-                    let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                    self.bd
-                        .get_mut()
-                        .draw_opacified(self.sc, self.chunk_container, o, stream);
+                    let sub = self.bd.sub_builders.pop().unwrap();
+                    let tag_id = sub.xobject_tag_id;
+                    let page_index = sub.page_index;
+                    let num_mcids = sub.mcid_counter;
+                    let stream = sub.finish(self.sc);
+                    self.bd.get_mut().draw_opacified(
+                        self.sc,
+                        self.chunk_container,
+                        o,
+                        stream,
+                        tag_id,
+                        page_index,
+                        num_mcids,
+                    );
                 }
             }
             PushInstruction::ClipPath => self.bd.get_mut().pop_clip_path(),
             PushInstruction::BlendMode => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Mask(mask) => {
-                let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                self.bd
-                    .get_mut()
-                    .draw_masked(self.sc, self.chunk_container, *mask, stream)
+                let sub = self.bd.sub_builders.pop().unwrap();
+                let tag_id = sub.xobject_tag_id;
+                let page_index = sub.page_index;
+                let num_mcids = sub.mcid_counter;
+                let stream = sub.finish(self.sc);
+                self.bd.get_mut().draw_masked(
+                    self.sc,
+                    self.chunk_container,
+                    *mask,
+                    stream,
+                    tag_id,
+                    page_index,
+                    num_mcids,
+                )
             }
             PushInstruction::Isolated => {
-                let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                self.bd
-                    .get_mut()
-                    .draw_isolated(self.sc, self.chunk_container, stream);
+                let sub = self.bd.sub_builders.pop().unwrap();
+                let tag_id = sub.xobject_tag_id;
+                let page_index = sub.page_index;
+                let num_mcids = sub.mcid_counter;
+                let stream = sub.finish(self.sc);
+                self.bd.get_mut().draw_isolated(
+                    self.sc,
+                    self.chunk_container,
+                    stream,
+                    tag_id,
+                    page_index,
+                    num_mcids,
+                );
+            }
+        }
+    }
+
+    /// Set up tagging on a new sub-builder by assigning an XObject tag ID
+    /// and propagating the page index from the parent context.
+    fn setup_sub_builder_tagging(&mut self, builder: &mut ContentBuilder) {
+        if self.sc.serialize_settings().enable_tagging {
+            // Get page_index from page-level identifier or from parent sub-builder.
+            let page_index = self
+                .page_identifier
+                .map(|pi| pi.page_index)
+                .or_else(|| self.bd.get().page_index);
+
+            if let Some(page_index) = page_index {
+                builder.xobject_tag_id = Some(self.sc.new_xobject_tag_id());
+                builder.page_index = Some(page_index);
             }
         }
     }
@@ -579,9 +669,15 @@ impl<'a> Surface<'a> {
     pub fn finish(self) {}
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
-        self.bd
-            .get_mut()
-            .draw_opacified(self.sc, self.chunk_container, opacity, stream)
+        self.bd.get_mut().draw_opacified(
+            self.sc,
+            self.chunk_container,
+            opacity,
+            stream,
+            None,
+            None,
+            0,
+        )
     }
 
     /// Return the current transformation matrix of the surface.
