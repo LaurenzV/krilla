@@ -131,7 +131,7 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write as _;
 
-use pdf_writer::types::{ArtifactSubtype, RoleMapOpts, StructRole, StructRole2};
+use pdf_writer::types::{ArtifactSubtype, RoleMapOpts, StructRole2};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
@@ -141,6 +141,7 @@ use crate::error::{KrillaError, KrillaResult};
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 
+pub use pdf_writer::types::StructRole;
 pub use tag::*;
 
 pub mod fmt;
@@ -486,6 +487,11 @@ impl TagKind {
                     struct_elem.kind_2(StructRole2::Em, sc.pdf2_ns.ssn_ref);
                 }
             }
+            // Arbitrary custom role-mapped tags.
+            Self::Custom(ct) => {
+                write_kind_custom(sc, struct_elem, Name(ct.name.as_bytes()));
+                sc.register_custom_role(&ct.name, ct.maps_to);
+            }
         };
     }
 
@@ -533,6 +539,7 @@ impl TagKind {
             Self::Title(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
+            Self::Custom(_) => PdfVersion::Pdf14,
         }
     }
 

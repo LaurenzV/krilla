@@ -158,6 +158,7 @@ impl Output for TagKind {
             TagKind::Title(_) => write!(f, "Title"),
             TagKind::Strong(_) => write!(f, "Strong"),
             TagKind::Em(_) => write!(f, "Em"),
+            TagKind::Custom(ct) => write!(f, "{}", ct.name()),
         }?;
         writeln!(f)?;
 

@@ -325,6 +325,12 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
         }
         writeln!(f, "    {name}(Tag<kind::{name}>),").ok();
     }
+    writeln!(
+        f,
+        "    /// An arbitrary custom tag with role mapping to a standard PDF role."
+    )
+    .ok();
+    writeln!(f, "    Custom(CustomTag),").ok();
     writeln!(f, "}}").ok();
     writeln!(f).ok();
 
@@ -336,6 +342,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     for TagVariant { name, .. } in TAG.variants.iter() {
         writeln!(f, "            Self::{name}(tag) => tag.as_any(),").ok();
     }
+    writeln!(f, "            Self::Custom(ct) => &ct.inner,").ok();
     writeln!(f, "        }}").ok();
     writeln!(f, "    }}").ok();
     writeln!(f).ok();
@@ -347,6 +354,7 @@ fn write_tag_kind(f: &mut impl std::fmt::Write) {
     for TagVariant { name, .. } in TAG.variants.iter() {
         writeln!(f, "            Self::{name}(tag) => tag.as_any_mut(),").ok();
     }
+    writeln!(f, "            Self::Custom(ct) => &mut ct.inner,").ok();
     writeln!(f, "        }}").ok();
     writeln!(f, "    }}").ok();
 

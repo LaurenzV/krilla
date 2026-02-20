@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use std::num::{NonZeroU16, NonZeroU32};
 
+use pdf_writer::types::StructRole;
 use smallvec::SmallVec;
 
 use crate::geom::Rect;
@@ -86,6 +87,91 @@ impl<T> Tag<T> {
     pub fn with_location(mut self, location: Option<Location>) -> Self {
         self.as_any_mut().location = location;
         self
+    }
+}
+
+/// An arbitrary custom tag with role mapping to a standard PDF role.
+///
+/// Custom tags are emitted with a custom `/S` name and registered in the
+/// PDF's `/RoleMap` (PDF 1.7) or namespace role map (PDF 2.0), mapping them
+/// to a standard structure role.
+///
+/// # Example
+/// ```
+/// use krilla::tagging::{Tag, StructRole};
+///
+/// let tag = Tag::custom("Slide", StructRole::NonStruct)
+///     .with_lang(Some("en".to_string()));
+/// ```
+#[derive(Clone, Debug, PartialEq)]
+pub struct CustomTag {
+    /// The raw PDF tag name (e.g., "Slide", "Textbox").
+    pub(crate) name: String,
+    /// The standard PDF 1.7 role this maps to.
+    pub(crate) maps_to: StructRole,
+    /// Global attributes (lang, alt, id, etc.)
+    pub(crate) inner: AnyTag,
+}
+
+impl CustomTag {
+    /// The raw PDF tag name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// The standard role this custom tag maps to.
+    pub fn maps_to(&self) -> StructRole {
+        self.maps_to
+    }
+
+    /// A raw tag, which allows reading all attributes.
+    pub fn as_any(&self) -> &AnyTag {
+        &self.inner
+    }
+
+    /// A raw tag, which allows reading all attributes and additionally writing
+    /// all global ones.
+    pub fn as_any_mut(&mut self) -> &mut AnyTag {
+        &mut self.inner
+    }
+
+    /// Set the language.
+    pub fn with_lang(mut self, lang: Option<String>) -> Self {
+        self.inner.set_lang(lang);
+        self
+    }
+
+    /// Set the alt text.
+    pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
+        self.inner.set_alt_text(alt_text);
+        self
+    }
+
+    /// Set the tag id.
+    pub fn with_id(mut self, id: Option<TagId>) -> Self {
+        self.inner.set_id(id);
+        self
+    }
+}
+
+impl From<CustomTag> for TagKind {
+    fn from(value: CustomTag) -> Self {
+        Self::Custom(value)
+    }
+}
+
+// Constructor for custom tags via `Tag::custom()`.
+impl Tag<()> {
+    /// Create a custom tag with the given name, role-mapped to a standard role.
+    ///
+    /// The tag name will be used as-is in the PDF structure tree's `/S` entry,
+    /// and registered in the `/RoleMap` to map to the given standard role.
+    pub fn custom(name: impl Into<String>, maps_to: StructRole) -> CustomTag {
+        CustomTag {
+            name: name.into(),
+            maps_to,
+            inner: AnyTag::new(),
+        }
     }
 }
 

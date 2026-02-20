@@ -489,6 +489,14 @@ impl SerializeContext {
         self.global_objects.named_destinations.insert(nd, dest_ref);
     }
 
+    /// Register a custom role-mapped tag for inclusion in the PDF's RoleMap.
+    pub(crate) fn register_custom_role(&mut self, name: &str, maps_to: StructRole) {
+        self.global_objects
+            .custom_roles
+            .entry(name.to_string())
+            .or_insert(maps_to);
+    }
+
     pub(crate) fn register_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo::Krilla {
@@ -754,6 +762,11 @@ impl SerializeContext {
                     let role2 = StructRole2::Heading(*level);
                     role_map.insert(role2.to_name(&mut [0; 6]), StructRole::P);
                 }
+
+                // Dynamic custom role-mapped tags.
+                for (name, role) in self.global_objects.custom_roles.iter() {
+                    role_map.insert(Name(name.as_bytes()), *role);
+                }
             } else {
                 let mut namespaces = tree.namespaces();
 
@@ -770,9 +783,18 @@ impl SerializeContext {
                 ns.ns(TextStr("https://github.com/LaurenzV/krilla"));
 
                 // Custom structure elements.
-                ns.role_map_ns()
+                let mut role_map_ns = ns.role_map_ns();
+                role_map_ns
                     .to_pdf_2_0(Name(b"Datetime"), StructRole2::Span, self.pdf2_ns.ssn_ref)
                     .to_pdf_2_0(Name(b"Terms"), StructRole2::Part, self.pdf2_ns.ssn_ref);
+
+                // Dynamic custom role-mapped tags.
+                for (name, role) in self.global_objects.custom_roles.iter() {
+                    if let Some(role2) = role.into_pdf_2_0() {
+                        role_map_ns.to_pdf_2_0(Name(name.as_bytes()), role2, self.pdf2_ns.ssn_ref);
+                    }
+                }
+                role_map_ns.finish();
 
                 ns.finish();
                 sub_chunks.push(ns_chunk);
@@ -968,6 +990,8 @@ pub(crate) struct GlobalObjects {
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
     /// A list of custom headings numbers used in the document.
     pub(crate) custom_heading_roles: BTreeSet<NonZeroU16>,
+    /// Dynamically registered custom role-mapped tags.
+    pub(crate) custom_roles: BTreeMap<String, StructRole>,
     /// The context tracking all of the pdfs and their pages that have been inserted.
     #[cfg(feature = "pdf")]
     pub(crate) pdf_ctx: MaybeTaken<PdfSerializerContext>,
