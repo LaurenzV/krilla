@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 use std::num::{NonZeroU16, NonZeroU32};
 
-use pdf_writer::types::StructRole;
 use smallvec::SmallVec;
 
 use crate::geom::Rect;
@@ -90,6 +89,117 @@ impl<T> Tag<T> {
     }
 }
 
+/// Standard PDF 1.7 structure roles.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[allow(missing_docs)]
+pub enum StandardRole {
+    Document,
+    Part,
+    Art,
+    Sect,
+    Div,
+    BlockQuote,
+    Caption,
+    TOC,
+    TOCI,
+    Index,
+    NonStruct,
+    Private,
+    P,
+    StructuredHeading,
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+    L,
+    LI,
+    Lbl,
+    LBody,
+    Table,
+    TR,
+    TH,
+    TD,
+    THead,
+    TBody,
+    TFoot,
+    Span,
+    Quote,
+    Note,
+    Reference,
+    BibEntry,
+    Code,
+    Link,
+    Annot,
+    Ruby,
+    RB,
+    RT,
+    RP,
+    Warichu,
+    WT,
+    WP,
+    Figure,
+    Formula,
+    Form,
+}
+
+impl From<StandardRole> for pdf_writer::types::StructRole {
+    fn from(role: StandardRole) -> Self {
+        match role {
+            StandardRole::Document => Self::Document,
+            StandardRole::Part => Self::Part,
+            StandardRole::Art => Self::Art,
+            StandardRole::Sect => Self::Sect,
+            StandardRole::Div => Self::Div,
+            StandardRole::BlockQuote => Self::BlockQuote,
+            StandardRole::Caption => Self::Caption,
+            StandardRole::TOC => Self::TOC,
+            StandardRole::TOCI => Self::TOCI,
+            StandardRole::Index => Self::Index,
+            StandardRole::NonStruct => Self::NonStruct,
+            StandardRole::Private => Self::Private,
+            StandardRole::P => Self::P,
+            StandardRole::StructuredHeading => Self::StructuredHeading,
+            StandardRole::H1 => Self::H1,
+            StandardRole::H2 => Self::H2,
+            StandardRole::H3 => Self::H3,
+            StandardRole::H4 => Self::H4,
+            StandardRole::H5 => Self::H5,
+            StandardRole::H6 => Self::H6,
+            StandardRole::L => Self::L,
+            StandardRole::LI => Self::LI,
+            StandardRole::Lbl => Self::Lbl,
+            StandardRole::LBody => Self::LBody,
+            StandardRole::Table => Self::Table,
+            StandardRole::TR => Self::TR,
+            StandardRole::TH => Self::TH,
+            StandardRole::TD => Self::TD,
+            StandardRole::THead => Self::THead,
+            StandardRole::TBody => Self::TBody,
+            StandardRole::TFoot => Self::TFoot,
+            StandardRole::Span => Self::Span,
+            StandardRole::Quote => Self::Quote,
+            StandardRole::Note => Self::Note,
+            StandardRole::Reference => Self::Reference,
+            StandardRole::BibEntry => Self::BibEntry,
+            StandardRole::Code => Self::Code,
+            StandardRole::Link => Self::Link,
+            StandardRole::Annot => Self::Annot,
+            StandardRole::Ruby => Self::Ruby,
+            StandardRole::RB => Self::RB,
+            StandardRole::RT => Self::RT,
+            StandardRole::RP => Self::RP,
+            StandardRole::Warichu => Self::Warichu,
+            StandardRole::WT => Self::WT,
+            StandardRole::WP => Self::WP,
+            StandardRole::Figure => Self::Figure,
+            StandardRole::Formula => Self::Formula,
+            StandardRole::Form => Self::Form,
+        }
+    }
+}
+
 /// An arbitrary custom tag with role mapping to a standard PDF role.
 ///
 /// Custom tags are emitted with a custom `/S` name and registered in the
@@ -98,9 +208,9 @@ impl<T> Tag<T> {
 ///
 /// # Example
 /// ```
-/// use krilla::tagging::{Tag, StructRole};
+/// use krilla::tagging::{Tag, StandardRole};
 ///
-/// let tag = Tag::custom("Slide", StructRole::NonStruct)
+/// let tag = Tag::custom("Slide", StandardRole::NonStruct)
 ///     .with_lang(Some("en".to_string()));
 /// ```
 #[derive(Clone, Debug, PartialEq)]
@@ -108,7 +218,7 @@ pub struct CustomTag {
     /// The raw PDF tag name (e.g., "Slide", "Textbox").
     pub(crate) name: String,
     /// The standard PDF 1.7 role this maps to.
-    pub(crate) maps_to: StructRole,
+    pub(crate) maps_to: StandardRole,
     /// Global attributes (lang, alt, id, etc.)
     pub(crate) inner: AnyTag,
 }
@@ -120,7 +230,7 @@ impl CustomTag {
     }
 
     /// The standard role this custom tag maps to.
-    pub fn maps_to(&self) -> StructRole {
+    pub fn maps_to(&self) -> StandardRole {
         self.maps_to
     }
 
@@ -166,7 +276,7 @@ impl Tag<()> {
     ///
     /// The tag name will be used as-is in the PDF structure tree's `/S` entry,
     /// and registered in the `/RoleMap` to map to the given standard role.
-    pub fn custom(name: impl Into<String>, maps_to: StructRole) -> CustomTag {
+    pub fn custom(name: impl Into<String>, maps_to: StandardRole) -> CustomTag {
         CustomTag {
             name: name.into(),
             maps_to,
