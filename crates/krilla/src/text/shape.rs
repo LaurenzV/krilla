@@ -87,6 +87,7 @@ pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> V
 }
 
 /// The direction of a text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TextDirection {
     /// Determine the direction automatically.
     Auto,
