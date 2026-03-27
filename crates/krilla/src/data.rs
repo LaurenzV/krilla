@@ -24,6 +24,12 @@ impl From<Arc<dyn AsRef<[u8]> + Send + Sync>> for Data {
     }
 }
 
+impl From<&'static [u8]> for Data {
+    fn from(value: &'static [u8]) -> Self {
+        Self(Arc::new(value))
+    }
+}
+
 impl From<Vec<u8>> for Data {
     fn from(value: Vec<u8>) -> Self {
         Self(Arc::new(value))
