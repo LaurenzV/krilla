@@ -131,13 +131,14 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write as _;
 
-use pdf_writer::types::{ArtifactSubtype, RoleMapOpts, StructRole, StructRole2};
+use pdf_writer::types::{RoleMapOpts, StructRole, StructRole2};
 use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
+use crate::geom::Rect;
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 
@@ -146,26 +147,119 @@ pub use tag::*;
 pub mod fmt;
 mod tag;
 
+/// An artifact that should not be part of the accessible structure.
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
+pub struct Artifact {
+    /// The type of the artifact.
+    pub kind: ArtifactType,
+    /// The bounding box of the artifact. Required for background artifacts.
+    pub bbox: Option<Rect>,
+}
+
+impl Artifact {
+    /// Create a new artifact with a type and an optional BBox.
+    ///
+    /// This will panic if the artifact type is `Background` and no bounding box
+    /// is provided.
+    pub fn new(kind: ArtifactType, bbox: Option<Rect>) -> Self {
+        if kind == ArtifactType::Background && bbox.is_none() {
+            panic!("Background artifacts must have a bounding box");
+        }
+
+        Self { kind, bbox }
+    }
+
+    /// Create a new artifact with a type and no bounding box.
+    pub fn with_kind(kind: ArtifactType) -> Self {
+        Self::new(kind, None)
+    }
+
+    /// Whether the artifacts requires a property list.
+    pub(crate) fn requires_properties(self, pdf_version: PdfVersion) -> bool {
+        self.bbox.is_some()
+            || self
+                .kind
+                .map_pdf_version(pdf_version)
+                .to_pdf_artifact_type()
+                .is_some()
+    }
+}
+
 /// A type of artifact.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub enum ArtifactType {
     /// The header of a page.
     Header,
     /// The footer of the page.
     Footer,
+    /// For text in the back- or foreground of all pages.
+    Watermark,
+    /// Page numbers.
+    PageNumber,
+    /// Numbering artifacts before lines.
+    LineNumber,
+    /// Areas where there formerly was content, but which has been removed.
+    Redaction,
+    /// Bates numbering.
+    Bates,
+    /// Other artifacts arising from pagination not covered by the above variants.
+    PaginationOther,
+    /// Purely cosmetic typographical or design elements.
+    Layout,
     /// Page artifacts, such as for example cut marks or color bars.
     Page,
-    /// Any other type of artifact (e.g. table strokes).
+    /// The background of a page or a graphical element.
+    Background,
+    /// Any other type of artifact.
+    #[default]
     Other,
 }
 
 impl ArtifactType {
-    pub(crate) fn requires_properties(&self) -> bool {
+    pub(crate) fn map_pdf_version(self, version: PdfVersion) -> Self {
         match self {
-            ArtifactType::Header => true,
-            ArtifactType::Footer => true,
-            ArtifactType::Page => true,
-            ArtifactType::Other => false,
+            Self::PageNumber | Self::LineNumber | Self::Redaction | Self::Bates
+                if version < PdfVersion::Pdf20 =>
+            {
+                ArtifactType::PaginationOther
+            }
+            Self::Header | Self::Footer | Self::Watermark if version < PdfVersion::Pdf17 => {
+                ArtifactType::PaginationOther
+            }
+            Self::Background if version < PdfVersion::Pdf17 => ArtifactType::Other,
+            _ => self,
+        }
+    }
+
+    pub(crate) fn to_pdf_artifact_type(self) -> Option<pdf_writer::types::ArtifactType> {
+        match self {
+            ArtifactType::Header => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Footer => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Watermark => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::PageNumber => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::LineNumber => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Redaction => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Bates => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::PaginationOther => Some(pdf_writer::types::ArtifactType::Pagination),
+            ArtifactType::Layout => Some(pdf_writer::types::ArtifactType::Layout),
+            ArtifactType::Page => Some(pdf_writer::types::ArtifactType::Page),
+            ArtifactType::Background => Some(pdf_writer::types::ArtifactType::Background),
+            ArtifactType::Other => None,
+        }
+    }
+
+    pub(crate) fn to_pdf_artifact_subtype(
+        self,
+    ) -> Option<pdf_writer::types::ArtifactSubtype<'static>> {
+        match self {
+            ArtifactType::Header => Some(pdf_writer::types::ArtifactSubtype::Header),
+            ArtifactType::Footer => Some(pdf_writer::types::ArtifactSubtype::Footer),
+            ArtifactType::Watermark => Some(pdf_writer::types::ArtifactSubtype::Watermark),
+            ArtifactType::PageNumber => Some(pdf_writer::types::ArtifactSubtype::PageNumber),
+            ArtifactType::LineNumber => Some(pdf_writer::types::ArtifactSubtype::LineNumber),
+            ArtifactType::Redaction => Some(pdf_writer::types::ArtifactSubtype::Redaction),
+            ArtifactType::Bates => Some(pdf_writer::types::ArtifactSubtype::Bates),
+            _ => None,
         }
     }
 }
@@ -188,7 +282,7 @@ pub enum ContentTag<'a> {
     /// Artifacts represent pieces of content that are not really part of the logical structure
     /// of a document and should be excluded in the logical tree. These include for example headers,
     /// footers, page background and similar.
-    Artifact(ArtifactType),
+    Artifact(Artifact),
     /// A content tag that wraps some text with specific properties.
     ///
     /// Spans should not be too long. At most, they should contain a single line of text, but they
@@ -212,31 +306,33 @@ impl ContentTag<'_> {
 
     pub(crate) fn write_properties(&self, sc: &mut SerializeContext, mut properties: PropertyList) {
         match self {
-            ContentTag::Artifact(at) => {
-                let mut artifact = properties.artifact();
+            ContentTag::Artifact(artifact) => {
+                let at = artifact
+                    .kind
+                    .map_pdf_version(sc.serialize_settings().pdf_version());
+                let mut artifact_props = properties.artifact();
 
-                let artifact_type = match at {
-                    ArtifactType::Header => pdf_writer::types::ArtifactType::Pagination,
-                    ArtifactType::Footer => pdf_writer::types::ArtifactType::Pagination,
-                    ArtifactType::Page => pdf_writer::types::ArtifactType::Page,
-                    // This method should only be called with artifacts that actually
-                    // require a property.
-                    ArtifactType::Other => unreachable!(),
-                };
+                if let Some(bbox) = artifact.bbox {
+                    artifact_props.bounding_box(bbox.to_pdf_rect());
+                }
 
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf17 {
-                    if *at == ArtifactType::Header {
-                        artifact.attached([pdf_writer::types::ArtifactAttachment::Top]);
-                        artifact.subtype(ArtifactSubtype::Header);
+                    if at == ArtifactType::Header {
+                        artifact_props.attached([pdf_writer::types::ArtifactAttachment::Top]);
                     }
 
-                    if *at == ArtifactType::Footer {
-                        artifact.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
-                        artifact.subtype(ArtifactSubtype::Footer);
+                    if at == ArtifactType::Footer {
+                        artifact_props.attached([pdf_writer::types::ArtifactAttachment::Bottom]);
+                    }
+
+                    if let Some(subtype) = at.to_pdf_artifact_subtype() {
+                        artifact_props.subtype(subtype);
                     }
                 }
 
-                artifact.kind(artifact_type);
+                if let Some(artifact_type) = at.to_pdf_artifact_type() {
+                    artifact_props.kind(artifact_type);
+                }
             }
             ContentTag::Span(SpanTag {
                 lang,
