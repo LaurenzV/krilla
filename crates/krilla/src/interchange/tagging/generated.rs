@@ -132,6 +132,8 @@ pub enum TagKind {
     Strong(Tag<kind::Strong>),
     /// Encloses content that is emphasized, most commonly *italic* text.
     Em(Tag<kind::Em>),
+    /// An arbitrary custom tag with role mapping to a standard PDF role.
+    Custom(CustomTag),
 }
 
 impl TagKind {
@@ -177,6 +179,7 @@ impl TagKind {
             Self::Title(tag) => tag.as_any(),
             Self::Strong(tag) => tag.as_any(),
             Self::Em(tag) => tag.as_any(),
+            Self::Custom(ct) => &ct.inner,
         }
     }
 
@@ -223,6 +226,7 @@ impl TagKind {
             Self::Title(tag) => tag.as_any_mut(),
             Self::Strong(tag) => tag.as_any_mut(),
             Self::Em(tag) => tag.as_any_mut(),
+            Self::Custom(ct) => &mut ct.inner,
         }
     }
 
