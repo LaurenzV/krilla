@@ -181,7 +181,7 @@ impl Type3Font {
                 // and showing that, but it seems like many viewers don't like that, and emojis
                 // look messed up. Using XObjects seems like the best choice here.
                 content.start_color_glyph(self.widths[index]);
-                let x_object = XObject::new(stream, false, false, None);
+                let x_object = XObject::new(stream, false, false, None, None, None, 0);
                 if !x_object.is_empty() {
                     font_bbox.expand(&x_object.bbox());
                     let x_name = rd_builder.register_resource(sc.register_resourceable(x_object));

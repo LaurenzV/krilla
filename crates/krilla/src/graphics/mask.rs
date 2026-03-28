@@ -109,8 +109,15 @@ impl Cacheable for Mask {
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
         let mut chunk = Chunk::new();
 
-        let x_object =
-            sc.register_cacheable(XObject::new(self.stream, false, true, self.custom_bbox));
+        let x_object = sc.register_cacheable(XObject::new(
+            self.stream,
+            false,
+            true,
+            self.custom_bbox,
+            None,
+            None,
+            0,
+        ));
 
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));

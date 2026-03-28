@@ -7,6 +7,7 @@ use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
 use crate::graphics::color::{rgb, DEVICE_RGB};
+use crate::interchange::tagging::XObjectTagId;
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
@@ -19,6 +20,12 @@ struct Repr {
     isolated: bool,
     transparency_group_color_space: bool,
     custom_bbox: Option<Rect>,
+    /// If set, this XObject contains tagged content and needs StructParents.
+    xobject_tag_id: Option<XObjectTagId>,
+    /// The page index where this XObject is drawn (for parent tree lookup).
+    page_index: Option<usize>,
+    /// Number of MCIDs allocated in this XObject's content stream.
+    num_mcids: i32,
 }
 
 #[derive(Debug, Hash, Clone, Eq, PartialEq)]
@@ -30,6 +37,9 @@ impl XObject {
         isolated: bool,
         mut transparency_group_color_space: bool,
         custom_bbox: Option<Rect>,
+        xobject_tag_id: Option<XObjectTagId>,
+        page_index: Option<usize>,
+        num_mcids: i32,
     ) -> Self {
         // In case a mask was invoked in the content stream, we _always_ create
         // a new transparency group. Please see <https://github.com/typst/typst/issues/5509>.
@@ -48,6 +58,9 @@ impl XObject {
             isolated,
             transparency_group_color_space,
             custom_bbox,
+            xobject_tag_id,
+            page_index,
+            num_mcids,
         })))
     }
 
@@ -77,6 +90,15 @@ impl Cacheable for XObject {
         if use_transparency_group {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
         }
+
+        // Register the XObject's tag ref and struct parent before the deferred closure.
+        let struct_parents_key = if let Some(tag_id) = self.0.xobject_tag_id {
+            let page_index = self.0.page_index.unwrap();
+            sc.register_xobject_tag_ref(tag_id, root_ref);
+            sc.register_xobject_struct_parent(tag_id, page_index, self.0.num_mcids)
+        } else {
+            None
+        };
 
         let serialize_settings = sc.serialize_settings();
 
@@ -112,6 +134,10 @@ impl Cacheable for XObject {
                     .unwrap_or(self.0.stream.bbox)
                     .to_pdf_rect(),
             );
+
+            if let Some(key) = struct_parents_key {
+                x_object.struct_parents(key);
+            }
 
             if use_transparency_group {
                 let mut group = x_object.group();
