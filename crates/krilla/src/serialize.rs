@@ -25,7 +25,9 @@ use crate::interactive::destination::{NamedDestination, XyzDestination};
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
-use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
+use crate::interchange::tagging::{
+    AnnotationIdentifier, PageTagIdentifier, TagTree, XObjectTagId, XObjectTagIdentifier,
+};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 #[cfg(feature = "pdf")]
 use crate::pdf::{PdfDocument, PdfSerializerContext};
@@ -192,6 +194,8 @@ enum StructParentElement {
     /// The index of the page where the annotation is present, as well as the index of the
     /// annotation within that one page.
     Annotation(AnnotationIdentifier),
+    /// A tagged XObject with its tag ID, page index, and number of MCIDs.
+    XObject(XObjectTagId, usize, i32),
 }
 
 #[derive(Debug)]
@@ -242,6 +246,10 @@ pub(crate) struct SerializeContext {
     validation_store: ValidationStore,
     /// The current location, if set.
     pub(crate) location: Option<Location>,
+    /// Counter for allocating unique XObject tag IDs.
+    xobject_tag_counter: usize,
+    /// Maps XObject tag IDs to their PDF object references.
+    xobject_tag_refs: HashMap<XObjectTagId, Ref>,
 }
 
 impl SerializeContext {
@@ -270,6 +278,8 @@ impl SerializeContext {
             validation_errors: vec![],
             serialize_settings: Arc::new(serialize_settings),
             limits: Limits::new(),
+            xobject_tag_counter: 0,
+            xobject_tag_refs: HashMap::new(),
             validation_store: ValidationStore::new(),
         }
     }
@@ -478,6 +488,41 @@ impl SerializeContext {
             self.global_objects
                 .struct_parents
                 .push(StructParentElement::Annotation(ai));
+            Some(i32::try_from(id).unwrap())
+        } else {
+            None
+        }
+    }
+
+    /// Allocate a new unique XObject tag ID.
+    pub(crate) fn new_xobject_tag_id(&mut self) -> XObjectTagId {
+        let id = XObjectTagId(self.xobject_tag_counter);
+        self.xobject_tag_counter += 1;
+        id
+    }
+
+    /// Register the PDF object reference for a tagged XObject.
+    pub(crate) fn register_xobject_tag_ref(&mut self, tag_id: XObjectTagId, obj_ref: Ref) {
+        self.xobject_tag_refs.insert(tag_id, obj_ref);
+    }
+
+    /// Look up the PDF object reference for a tagged XObject.
+    pub(crate) fn xobject_tag_ref(&self, tag_id: XObjectTagId) -> Option<Ref> {
+        self.xobject_tag_refs.get(&tag_id).copied()
+    }
+
+    /// Register a tagged XObject in the parent tree.
+    pub(crate) fn register_xobject_struct_parent(
+        &mut self,
+        tag_id: XObjectTagId,
+        page_index: usize,
+        num_mcids: i32,
+    ) -> Option<i32> {
+        if self.serialize_settings.enable_tagging && num_mcids > 0 {
+            let id = self.global_objects.struct_parents.len();
+            self.global_objects
+                .struct_parents
+                .push(StructParentElement::XObject(tag_id, page_index, num_mcids));
             Some(i32::try_from(id).unwrap())
         } else {
             None
@@ -817,6 +862,31 @@ impl SerializeContext {
                                     panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
                                 });
                             tree_nums.insert(index as i32, parent_ref);
+                        }
+                        StructParentElement::XObject(tag_id, page_index, num_mcids) => {
+                            // XObjects work like pages: map MCIDs to struct element refs.
+                            let mut list_chunk = Chunk::new();
+                            let list_ref = self.new_ref();
+
+                            let mut refs = list_chunk.indirect(list_ref).array();
+
+                            for mcid in 0..num_mcids {
+                                let xi = XObjectTagIdentifier {
+                                    page_index,
+                                    xobject_tag_id: tag_id,
+                                    mcid,
+                                };
+                                refs.item(parent_tree_map.get(&xi.into()).unwrap_or_else(|| {
+                                    panic!(
+                                        "xobject tag identifier {xi:?} doesn't appear in the tag tree"
+                                    )
+                                }));
+                            }
+
+                            refs.finish();
+
+                            sub_chunks.push(list_chunk);
+                            tree_nums.insert(index as i32, list_ref);
                         }
                     }
                 }
