@@ -1,11 +1,9 @@
-use std::sync::Arc;
-
 use image::load_from_memory;
 use krilla::configure::{PdfVersion, ValidationError};
 use krilla::error::KrillaError;
 use krilla::geom::{Size, Transform};
 use krilla::page::{Page, PageSettings};
-use krilla::pdf::{PdfDocument, PdfError};
+use krilla::pdf::PdfError;
 use krilla::surface::Surface;
 use krilla::{Document, SerializeSettings};
 use krilla_macros::{snapshot, visreg};
@@ -14,7 +12,7 @@ use krilla_svg::{SurfaceExt, SvgSettings};
 use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
-use crate::{load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, NOTO_SANS};
+use crate::{NOTO_SANS, load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16};
 
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
@@ -166,6 +164,12 @@ fn pdf_embedded_consistency() {
 fn pdf_embedded_as_xobject_basic(surface: &mut Surface) {
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
     surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
+}
+
+#[visreg(pdfium, quartz)]
+fn pdf_embedded_as_xobject_typst_issue7269(surface: &mut Surface) {
+    let pdf = load_pdf("typst_issue7269.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(1224.0, 969.6).unwrap(), 0);
 }
 
 #[snapshot]
