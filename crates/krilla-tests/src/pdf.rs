@@ -12,7 +12,9 @@ use krilla_svg::{SurfaceExt, SvgSettings};
 use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
-use crate::{NOTO_SANS, load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16};
+use crate::{
+    load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, settings_2, NOTO_SANS,
+};
 
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
@@ -86,6 +88,24 @@ fn pdf_embedded_multiple(document: &mut Document) {
     let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
     document.embed_pdf_pages(&pdf1, &[0]);
     document.embed_pdf_pages(&pdf2, &[0]);
+}
+
+#[snapshot(document, settings_2)]
+fn pdf_embedded_multiple_no_device_cs(document: &mut Document) {
+    let pdf1 = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
+    let pdf2 = load_pdf("page_media_box_bottom_right.pdf");
+
+    let mut page1 = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+    let mut surface = page1.surface();
+    surface.draw_pdf_page(&pdf1, Size::from_wh(200.0, 200.0).unwrap(), 0);
+    surface.finish();
+    page1.finish();
+
+    let mut page2 = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+    let mut surface = page2.surface();
+    surface.draw_pdf_page(&pdf2, Size::from_wh(200.0, 200.0).unwrap(), 0);
+    surface.finish();
+    page2.finish();
 }
 
 #[test]
@@ -166,7 +186,11 @@ fn pdf_embedded_as_xobject_basic(surface: &mut Surface) {
     surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
 }
 
-#[visreg(pdfium, quartz)]
+// In case this test changes, make sure to open it in Apple Preview to ensure
+// it displays correctly. The PDF looks correctly when opened in viewer,
+// but not when rendered via Quartz directly, hence why we don't add it
+// in CI.
+#[visreg(pdfium)]
 fn pdf_embedded_as_xobject_typst_issue7269(surface: &mut Surface) {
     let pdf = load_pdf("typst_issue7269.pdf");
     surface.draw_pdf_page(&pdf, Size::from_wh(1224.0, 969.6).unwrap(), 0);
