@@ -118,6 +118,11 @@ impl Outline {
 ///
 /// This represents either an intermediate node in the outline tree, or a leaf node
 /// if it does not contain any further children itself.
+///
+/// An outline node can be either *open* or *closed*, which controls whether its
+/// children are initially shown expanded or collapsed when the document is opened
+/// in a PDF viewer. The sign of the `/Count` entry emitted in the PDF (see PDF 1.7
+/// §12.3.3) reflects this state. By default, a node is *closed*.
 #[derive(Debug, Clone)]
 pub struct OutlineNode {
     /// The children of the outline node.
@@ -126,6 +131,8 @@ pub struct OutlineNode {
     text: String,
     /// The destination of the outline entry.
     destination: XyzDestination,
+    /// Whether this node is initially open (children shown expanded).
+    open: bool,
 }
 
 impl OutlineNode {
@@ -133,13 +140,37 @@ impl OutlineNode {
     ///
     /// `text` is the string that should be displayed in the outline tree, and
     /// `destination` is the destination that should be jumped to when clicking on
-    /// the outline entry.
+    /// the outline entry. The node is created in the *closed* state; use
+    /// [`OutlineNode::new_with_state`] or [`OutlineNode::set_open`] to change this.
     pub fn new(text: String, destination: XyzDestination) -> Self {
         Self {
             children: vec![],
             text,
             destination,
+            open: false,
         }
+    }
+
+    /// Create a new outline node, explicitly specifying the initial open state.
+    ///
+    /// If `open` is `true`, the node's children will be shown expanded when the
+    /// document is opened in a PDF viewer; if `false`, the children will be
+    /// collapsed. Leaf nodes (nodes without children) are unaffected by this flag.
+    pub fn new_with_state(text: String, destination: XyzDestination, open: bool) -> Self {
+        Self {
+            children: vec![],
+            text,
+            destination,
+            open,
+        }
+    }
+
+    /// Set whether this node is initially open (children shown expanded).
+    ///
+    /// Returns `&mut Self` to allow chaining with other builder-style calls.
+    pub fn set_open(&mut self, open: bool) -> &mut Self {
+        self.open = open;
+        self
     }
 
     /// Add a new child to the outline node.
@@ -176,7 +207,7 @@ impl OutlineNode {
             &mut sub_chunks,
             sc,
             &mut outline_entry,
-            true,
+            !self.open,
         )?;
 
         outline_entry.title(TextStr(&self.text));
@@ -227,7 +258,7 @@ fn serialize_children(
         outlineable.first(first);
         outlineable.last(last);
 
-        let mut count = i32::try_from(children.len()).unwrap();
+        let mut count = i32::try_from(visible_descendant_count(children)).unwrap();
         if negate_count {
             count = -count;
         }
@@ -235,4 +266,18 @@ fn serialize_children(
     }
 
     Ok(())
+}
+
+/// Recursively count outline items visible below a given set of siblings,
+/// descending into a node only when that node itself is open. This matches the
+/// semantics of the `/Count` entry described in PDF 1.7 §12.3.3.
+fn visible_descendant_count(children: &[OutlineNode]) -> usize {
+    let mut total = 0;
+    for child in children {
+        total += 1;
+        if child.open {
+            total += visible_descendant_count(&child.children);
+        }
+    }
+    total
 }
