@@ -1,5 +1,5 @@
-use once_cell::sync::Lazy;
 use pdf_writer::Pdf;
+use std::sync::LazyLock;
 use xmp_writer::XmpWriter;
 
 use crate::graphics::icc::{ICCMetadata, ICCProfile};
@@ -101,14 +101,14 @@ impl PdfVersion {
 }
 
 /// The ICC v4 profile for the SRGB color space.
-static SRGB_V4_ICC: Lazy<ICCProfile<3>> =
-    Lazy::new(|| ICCProfile::new(include_bytes!("../../icc/sRGB-v4.icc")).unwrap());
+static SRGB_V4_ICC: LazyLock<ICCProfile<3>> =
+    LazyLock::new(|| ICCProfile::new(include_bytes!("../../icc/sRGB-v4.icc")).unwrap());
 /// The ICC v2 profile for the SRGB color space.
-static SRGB_V2_ICC: Lazy<ICCProfile<3>> =
-    Lazy::new(|| ICCProfile::new(include_bytes!("../../icc/sRGB-v2-magic.icc")).unwrap());
+static SRGB_V2_ICC: LazyLock<ICCProfile<3>> =
+    LazyLock::new(|| ICCProfile::new(include_bytes!("../../icc/sRGB-v2-magic.icc")).unwrap());
 /// The ICC v4 profile for the sgray color space.
-static GREY_V4_ICC: Lazy<ICCProfile<1>> =
-    Lazy::new(|| ICCProfile::new(include_bytes!("../../icc/sGrey-v4.icc")).unwrap());
+static GREY_V4_ICC: LazyLock<ICCProfile<1>> =
+    LazyLock::new(|| ICCProfile::new(include_bytes!("../../icc/sGrey-v4.icc")).unwrap());
 /// The ICC v2 profile for the sgray color space.
-static GREY_V2_ICC: Lazy<ICCProfile<1>> =
-    Lazy::new(|| ICCProfile::new(include_bytes!("../../icc/sGrey-v2-magic.icc")).unwrap());
+static GREY_V2_ICC: LazyLock<ICCProfile<1>> =
+    LazyLock::new(|| ICCProfile::new(include_bytes!("../../icc/sGrey-v2-magic.icc")).unwrap());
