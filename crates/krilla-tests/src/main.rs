@@ -35,7 +35,6 @@ use krilla::Data;
 use krilla::Document;
 use krilla::SerializeSettings;
 use krilla_svg::{render_svg_glyph, SurfaceExt, SvgSettings};
-use once_cell::sync::Lazy;
 use oxipng::{InFile, OutFile};
 #[cfg(feature = "visreg")]
 use sitro::{Backend, RenderOptions, RenderedDocument, RenderedPage, RENDER_INSTANCE};
@@ -66,8 +65,8 @@ mod validate;
 const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
 
-pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
-    Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+pub(crate) static WORKSPACE_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
 
 pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 
@@ -821,7 +820,7 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
     stream_builder.finish()
 }
 
-pub static FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
+pub static FONTDB: LazyLock<Arc<fontdb::Database>> = LazyLock::new(|| {
     let mut fontdb = fontdb::Database::new();
     fontdb.load_fonts_dir(ASSETS_PATH.join("svg_fonts"));
 

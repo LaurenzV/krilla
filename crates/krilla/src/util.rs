@@ -213,7 +213,7 @@ mod deferred {
     /// A value that is lazily executed on another thread.
     ///
     /// Execution will be started in the background and can be waited on.
-    pub(crate) struct Deferred<T>(std::sync::Arc<once_cell::sync::OnceCell<T>>);
+    pub(crate) struct Deferred<T>(std::sync::Arc<std::sync::OnceLock<T>>);
 
     #[cfg(feature = "rayon")]
     impl<T: Send + Sync + 'static> Deferred<T> {
@@ -225,7 +225,7 @@ mod deferred {
         where
             F: FnOnce() -> T + Send + Sync + 'static,
         {
-            let inner = std::sync::Arc::new(once_cell::sync::OnceCell::new());
+            let inner = std::sync::Arc::new(std::sync::OnceLock::new());
             let cloned = std::sync::Arc::clone(&inner);
             rayon::spawn(move || {
                 // Initialize the value if it hasn't been initialized yet.
@@ -262,12 +262,10 @@ pub(crate) mod test_utils {
     use std::sync::Arc;
     use std::sync::LazyLock;
 
-    use once_cell::sync::Lazy;
-
     use crate::Data;
 
-    pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
-        Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+    pub(crate) static WORKSPACE_PATH: LazyLock<PathBuf> =
+        LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
 
     pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
         LazyLock::new(|| WORKSPACE_PATH.join("assets"));

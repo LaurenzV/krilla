@@ -17,10 +17,8 @@ use krilla::page::PageSettings;
 use krilla::paint::{Fill, LinearGradient, SpreadMethod, Stop, Stroke};
 use krilla::text::{Font, TextDirection};
 use krilla::Document;
-use once_cell::sync::Lazy;
-
-pub(crate) static WORKSPACE_PATH: Lazy<PathBuf> =
-    Lazy::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+pub(crate) static WORKSPACE_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
 
 pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 
