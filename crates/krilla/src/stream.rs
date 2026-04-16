@@ -293,20 +293,22 @@ impl FilterStream<'_> {
         &self.content
     }
 
-    pub(crate) fn write_filters<'b, T>(&self, mut dict: T)
+    pub(crate) fn write_filters<'b, T>(&self, mut dict: T) -> usize
     where
         T: DerefMut<Target = Dict<'b>>,
     {
         match &self.filters {
-            StreamFilters::None => {}
+            StreamFilters::None => 0,
             StreamFilters::Single(filter) => {
                 dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
+                1
             }
             StreamFilters::Multiple(filters) => {
                 dict.deref_mut()
                     .insert(Name(b"Filter"))
                     .start::<Array>()
                     .items(filters.iter().map(|f| f.to_name()).rev());
+                filters.len()
             }
         }
     }

@@ -895,6 +895,7 @@ dependencies = [
  "base64",
  "bumpalo",
  "comemo",
+ "crc32fast",
  "flate2",
  "float-cmp 0.10.0",
  "gif",

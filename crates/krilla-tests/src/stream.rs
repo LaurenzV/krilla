@@ -59,7 +59,7 @@ fn stream_compress_by_default(page: &mut Page) {
     surface.set_fill(Some(green_fill(0.5)));
     surface.draw_path(&path1);
 
-    let image = load_png_image("luma8.png");
+    let image = load_png_image("rgba8.png");
     let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
     surface.draw_image(image, size);
 }
