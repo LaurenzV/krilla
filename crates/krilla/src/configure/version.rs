@@ -82,13 +82,21 @@ impl PdfVersion {
     }
 
     pub(crate) fn set_version(&self, pdf: &mut Pdf) {
+        let (major, minor) = self.version_tuple();
+        pdf.set_version(major, minor);
+    }
+
+    /// The `(major, minor)` numbers for this PDF version. Split out so it
+    /// can be used by streaming-serialize paths that don't have a `Pdf`
+    /// instance handy.
+    pub(crate) fn version_tuple(&self) -> (u8, u8) {
         match self {
-            PdfVersion::Pdf14 => pdf.set_version(1, 4),
-            PdfVersion::Pdf15 => pdf.set_version(1, 5),
-            PdfVersion::Pdf16 => pdf.set_version(1, 6),
-            PdfVersion::Pdf17 => pdf.set_version(1, 7),
-            PdfVersion::Pdf20 => pdf.set_version(2, 0),
-        };
+            PdfVersion::Pdf14 => (1, 4),
+            PdfVersion::Pdf15 => (1, 5),
+            PdfVersion::Pdf16 => (1, 6),
+            PdfVersion::Pdf17 => (1, 7),
+            PdfVersion::Pdf20 => (2, 0),
+        }
     }
 
     pub(crate) fn deprecates_proc_sets(&self) -> bool {

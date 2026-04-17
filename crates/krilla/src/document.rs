@@ -125,4 +125,83 @@ impl Document {
 
         Ok(self.serializer_context.finish()?.finish())
     }
+
+    /// Attempt to export the document as PDF bytes, streaming them to a
+    /// [`std::io::Write`] sink instead of returning them as a `Vec<u8>`.
+    ///
+    /// Semantically, this produces the same PDF as [`Document::finish`] —
+    /// the byte stream written to `writer` is identical to the `Vec<u8>`
+    /// that `finish()` would return. Use this when you want to pipe the
+    /// output straight to a file, socket, pipe, or any other writer
+    /// without allocating the full document in memory first.
+    ///
+    /// # Errors
+    ///
+    /// Returns the usual [`KrillaError`] variants on serialization
+    /// failures, plus [`KrillaError::Io`] wrapping the underlying
+    /// [`io::Error`] message if the writer fails.
+    ///
+    /// [`KrillaError`]: crate::error::KrillaError
+    /// [`KrillaError::Io`]: crate::error::KrillaError::Io
+    /// [`io::Error`]: std::io::Error
+    pub fn finish_to_writer<W: std::io::Write>(mut self, mut writer: W) -> KrillaResult<()> {
+        // Write empty page if none has been created yet.
+        if self.serializer_context.page_infos().is_empty() {
+            self.start_page();
+        }
+
+        let bytes = self.serializer_context.finish()?.finish();
+        writer
+            .write_all(&bytes)
+            .map_err(|e| crate::error::KrillaError::Io(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Two documents built identically must produce identical bytes whether
+    /// we call `finish()` (returning a Vec) or `finish_to_writer()`
+    /// (streaming into a Vec-as-writer).
+    #[test]
+    fn finish_to_writer_matches_finish() {
+        fn build() -> Document {
+            let mut doc = Document::new();
+            doc.start_page_with(PageSettings::from_wh(200.0, 150.0).expect("valid size"));
+            doc.start_page_with(PageSettings::from_wh(300.0, 200.0).expect("valid size"));
+            doc
+        }
+
+        let via_finish = build().finish().expect("finish");
+
+        let mut via_writer: Vec<u8> = Vec::new();
+        build()
+            .finish_to_writer(&mut via_writer)
+            .expect("finish_to_writer");
+
+        assert_eq!(via_finish, via_writer);
+    }
+
+    /// A writer that always fails must surface as `KrillaError::Io`.
+    #[test]
+    fn finish_to_writer_propagates_io_error() {
+        struct FailingWriter;
+        impl std::io::Write for FailingWriter {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "boom"))
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+
+        let mut doc = Document::new();
+        doc.start_page_with(PageSettings::from_wh(100.0, 100.0).expect("valid size"));
+
+        let err = doc
+            .finish_to_writer(FailingWriter)
+            .expect_err("should fail");
+        assert!(matches!(err, crate::error::KrillaError::Io(_)));
+    }
 }

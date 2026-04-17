@@ -45,4 +45,9 @@ pub enum KrillaError {
     /// supported by the used PDF version (only available in PDF 1.5+).
     #[cfg(feature = "raster-images")]
     SixteenBitImage(Image, Option<Location>),
+    /// An I/O error occurred while streaming PDF output to a
+    /// [`std::io::Write`] sink (see [`Document::finish_to_writer`]).
+    ///
+    /// [`Document::finish_to_writer`]: crate::Document::finish_to_writer
+    Io(String),
 }
