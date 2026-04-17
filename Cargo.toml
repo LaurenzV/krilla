@@ -19,9 +19,10 @@ bumpalo = "3.16.0"
 comemo = "0.5.0"
 difference = "2.0.0"
 flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
-float-cmp = "0.10.0"
+# Can't bump because usvg uses older version.
+float-cmp = "0.9.0"
 fontdb = "0.23.0"
-gif = "0.13.1"
+gif = "0.14.2"
 hayro-write = { version = "0.5.0" }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.14.0"
@@ -30,28 +31,28 @@ indexmap = "2.10.0"
 krilla = { path = "crates/krilla", version = "0.7.0" }
 krilla-svg = { path = "crates/krilla-svg", version = "0.7.0" }
 krilla-macros = { path = "crates/krilla-macros" }
-oxipng = "9.1.2"
-parley = "0.6.0"
+oxipng = "10.1.0"
+parley = "0.8.0"
 paste = "1.0.15"
 pdf-writer = "0.14.0"
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 rayon = "1.10.0"
-resvg = "0.45.0"
+resvg = "0.47.0"
 rustc-hash = "2.1.1"
 rustybuzz = "0.20.1"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "c0b26d14", default-features = false }
-skrifa = "0.37.0"
+skrifa = "0.42.0"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
-subsetter = { version = "0.2.3", features = ["variable-fonts"] }
+subsetter = { git = "https://github.com/typst/subsetter/", rev = "d849a0e5ab178e62b7c80c7eace30260c85d0b7a", version = "0.2.3", features = ["variable-fonts"] }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
-tiny-skia = "0.11.4"
-tiny-skia-path = "0.11.4"
-usvg = "0.45.0"
+tiny-skia = "0.12.0"
+tiny-skia-path = "0.12.0"
+usvg = "0.47.0"
 xmp-writer = "0.3.2"
 yoke = { version = "0.8.0", features = ["derive"] }
-png = "0.17.16"
+png = "0.18.1"
 zune-jpeg = "0.5.5"
  

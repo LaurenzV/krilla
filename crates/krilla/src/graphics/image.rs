@@ -553,7 +553,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let mut reader = decoder
         .read_info()
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
-    let mut img_data = vec![0; reader.output_buffer_size()];
+    let mut img_data = vec![0; reader.output_buffer_size().ok_or("image is too large")?];
     let _ = reader
         .next_frame(&mut img_data)
         .map_err(|e| e.to_string())?;
