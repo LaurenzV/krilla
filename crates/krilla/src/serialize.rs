@@ -38,6 +38,8 @@ use crate::util::{Deferred, SipHashable};
 
 const STR_LEN: usize = 32767;
 const NAME_LEN: usize = 127;
+
+// These only apply to PDF 1.4 and PDF/A-1.
 const MAX_FLOAT: f32 = 32767.0;
 const DICT_LEN: usize = 4095;
 const ARRAY_LEN: usize = 8191;
