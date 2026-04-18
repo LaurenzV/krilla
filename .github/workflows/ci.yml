@@ -66,9 +66,11 @@ jobs:
 
       - name: Validate store PDFs with pdfcpu
         run: |
+          set -o pipefail
           cd store
           shopt -s globstar nullglob
-          "$HOME/go/bin/pdfcpu" validate -m strict **/*.pdf
+          "$HOME/go/bin/pdfcpu" validate -m strict **/*.pdf 2>&1 | tee /tmp/pdfcpu-validate.log
+          ! grep -q "validation error" /tmp/pdfcpu-validate.log
 
       - name: Upload artifacts
         if: failure()
