@@ -158,10 +158,16 @@ pub(crate) enum PageInfo {
         /// `page_infos` in `SerializeContext`, and only once we actually serialize
         /// the page will the annotations be populated.
         annotations: Vec<(Ref, OnceCell<Ref>)>,
+        /// The page label of the page.
+        page_label: PageLabel,
     },
     /// A page embedded from an external PDF file.
     #[allow(dead_code)]
-    Pdf { ref_: Ref, size: Size },
+    Pdf {
+        ref_: Ref,
+        size: Size,
+        page_label: PageLabel,
+    },
 }
 
 impl PageInfo {
@@ -176,6 +182,13 @@ impl PageInfo {
         match self {
             PageInfo::Krilla { surface_size, .. } => *surface_size,
             PageInfo::Pdf { size, .. } => *size,
+        }
+    }
+
+    pub(crate) fn page_label(&self) -> &PageLabel {
+        match self {
+            PageInfo::Krilla { page_label, .. } => page_label,
+            PageInfo::Pdf { page_label, .. } => page_label,
         }
     }
 
@@ -365,6 +378,8 @@ impl SerializeContext {
             self.page_infos.push(PageInfo::Pdf {
                 ref_: page_ref,
                 size,
+                // TODO: Maybe this should be configurable.
+                page_label: PageLabel::default(),
             });
         }
     }
@@ -508,6 +523,7 @@ impl SerializeContext {
             surface_size: page.page_settings.surface_size(),
             // Will be populated when the page is serialized.
             annotations: vec![],
+            page_label: page.page_settings.page_label().clone(),
         });
         self.global_objects.pages.push((ref_, page));
     }
@@ -644,10 +660,9 @@ impl SerializeContext {
     fn serialize_page_label_tree(&mut self) {
         if let Some(container) = PageLabelContainer::new(
             &self
-                .global_objects
-                .pages
+                .page_infos
                 .iter()
-                .map(|(_, p)| p.page_settings.page_label().clone())
+                .map(|page| page.page_label().clone())
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();
