@@ -1,0 +1,56 @@
+%PDF-1.4
+%µ¶
+% Written by MuPDF 1.27.0
+
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [ 3 0 R ]
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [ 0 0 1 1 ]
+  /Resources <<
+  >>
+  /Contents 5 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+xref
+0 6
+0000000004 65535 f 
+0000000042 00000 n 
+0000000096 00000 n 
+0000000162 00000 n 
+0000000000 00001 f 
+0000000277 00000 n 
+
+trailer
+<<
+  /Size 6
+  /Root 1 0 R
+>>
+startxref
+329
+%%EOF

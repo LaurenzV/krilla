@@ -6,7 +6,7 @@ use krilla::Document;
 use krilla_macros::{snapshot, visreg};
 use tiny_skia_path::PathBuilder;
 
-use crate::{blue_fill, green_fill, purple_fill, rect_to_path, red_fill};
+use crate::{blue_fill, green_fill, load_pdf, purple_fill, rect_to_path, red_fill};
 
 fn media_box_impl(d: &mut Document, media_box: Rect) {
     let mut page = d.start_page_with(
@@ -39,6 +39,22 @@ fn page_label(d: &mut Document) {
         ));
 
     d.start_page_with(settings);
+}
+
+#[snapshot(document)]
+fn page_label_after_embedded_page(document: &mut Document) {
+    let pdf = load_pdf("empty_pdf.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
+
+    let settings = PageSettings::from_wh(250.0, 200.0)
+        .unwrap()
+        .with_page_label(PageLabel::new(
+            Some(NumberingStyle::LowerRoman),
+            None,
+            NonZeroU32::new(2),
+        ));
+
+    document.start_page_with(settings);
 }
 
 #[snapshot(document)]
