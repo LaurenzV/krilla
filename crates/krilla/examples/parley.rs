@@ -13,7 +13,7 @@ use krilla::text::Font;
 use krilla::text::{GlyphId, KrillaGlyph};
 use krilla::Document;
 use parley::layout::Alignment;
-use parley::style::{FontFamily, FontStack, FontWeight, LineHeight, StyleProperty};
+use parley::style::{FontFamily, FontFamilyName, FontWeight, LineHeight, StyleProperty};
 use parley::{FontContext, LayoutContext};
 
 fn main() {
@@ -34,13 +34,13 @@ fn main() {
     let brush_style = StyleProperty::Brush(text_color);
     builder.push_default(brush_style);
 
-    let font_stack = FontStack::List(Cow::Borrowed(&[
-        FontFamily::Named(Cow::Borrowed("Noto Sans")),
-        FontFamily::Named(Cow::Borrowed("Noto Sans Arabic")),
-        FontFamily::Named(Cow::Borrowed("Noto Sans Devanagari")),
-        FontFamily::Named(Cow::Borrowed("Noto Color Emoji")),
+    let font_stack = FontFamily::List(Cow::Borrowed(&[
+        FontFamilyName::Named(Cow::Borrowed("Noto Sans")),
+        FontFamilyName::Named(Cow::Borrowed("Noto Sans Arabic")),
+        FontFamilyName::Named(Cow::Borrowed("Noto Sans Devanagari")),
+        FontFamilyName::Named(Cow::Borrowed("Noto Color Emoji")),
     ]));
-    let font_stack_style = StyleProperty::FontStack(font_stack);
+    let font_stack_style = StyleProperty::FontFamily(font_stack);
     builder.push_default(font_stack_style);
     builder.push_default(StyleProperty::LineHeight(LineHeight::FontSizeRelative(1.3)));
     builder.push_default(StyleProperty::FontSize(16.0));
